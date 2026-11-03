@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104g';
-const CACHE = 'hub-shell-v139';  // 2026-11-04g: Desktop address desktop/
+const V = '20261104h';
+const CACHE = 'hub-shell-v140';  // 2026-11-04h: Desktop window parts moved to desktop/
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -89,6 +89,7 @@ const SHELL = [
   'hub/core/hub_dialog_bridge.js', 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js',   // H85: H81/H82 engine files (hub.html + phone.html load them)
   'hub/core/hub_break.js', 'hub/core/hub_break.css',   // H65: Computer break lock (hub.html loads them)
   'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js', 'phone/hidden-apps.csv',   // H85: the phone look opens offline too
+  'phone/phone_connect.js', 'phone/vendor/jsQR.js',   // H129b: PH14 Connect sheet + its QR reader, so phone.html's Connect works offline
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
