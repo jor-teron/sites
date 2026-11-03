@@ -309,3 +309,10 @@ button.tap { width: 100%; text-align: left; border: 1px solid var(--line); font:
 /* H97: trust passcode row */
 .trust-pass { display: flex; align-items: center; gap: 8px; margin: 6px 0 10px; }
 .trust-pass-val { font-size: 1.1em; letter-spacing: 2px; }
+/* H117: Settings › Network drives (sec_drives.js), on top of the .key-* styles */
+.nd-list { display: grid; gap: 10px; margin: 6px 0 12px; }
+.nd-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 8px; }
+.nd-info { display: grid; gap: 2px; min-width: 0; }
+.nd-url { color: var(--muted); overflow-wrap: anywhere; }
+.nd-form { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.nd-form [hidden] { display: none; }
