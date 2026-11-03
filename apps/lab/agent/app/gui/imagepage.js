@@ -9,6 +9,8 @@
    Gallery (HR.imgstore, IndexedDB 'agent-images'): newest first; tap = large view with ⬇ Download and 🗑 Delete.
    AG17: Steps on every tab — providers with p.steps {min, max(m), def(m)} send it (setting `imageSteps_<id>`, Ollama falls
    back to `imageSteps`), others show it disabled 'fixed by provider'. Size chips (HR.imgsize, setting `imageSize`).
+   AG19: Provider is a dropdown (#imgProv) in the top row next to Model; Steps is a dropdown hidden where unsupported;
+   Ratio / Size come from HR.imgsize.draw(provider).
    Model options show the API price (m.price). Recent group: last 5 models used per tab (`imageRecent_<id>`).
    Download name = slugified prompt (+ '-2', '-3' for repeats in the gallery or this session) + real extension. */
 HR.imgpage = (function () {
@@ -45,20 +47,17 @@ HR.imgpage = (function () {
     var rt = document.createElement('button'); rt.type = 'button'; rt.className = 'hb wide'; rt.textContent = '↻ Retry'; rt.onclick = function () { c.hidden = true; load(); };
     row.appendChild(rt); c.appendChild(row);
   }
+  /* AG19: Provider dropdown (#imgProv) replaces the AG15 tabs; ready providers only, ORDER kept */
   function drawTabs() {
-    var box = $('imgTabs'), l = tabs(); box.innerHTML = '';
+    var box = $('imgProv'), l = tabs(); box.innerHTML = '';
     if (l.indexOf(prov) < 0) prov = l.indexOf(HR.set.get('imageProvider')) >= 0 ? HR.set.get('imageProvider') : l[0];
-    l.forEach(function (id) {
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'ig-tab' + (id === prov ? ' on' : ''); b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', String(id === prov)); b.textContent = HR.imgProviders[id].label; b.dataset.p = id;
-      b.onclick = function () { if (ctrl || id === prov) return; prov = id; HR.set.put('imageProvider', id); drawTabs(); load(); };
-      box.appendChild(b);
-    });
+    l.forEach(function (id) { var o = document.createElement('option'); o.value = id; o.textContent = HR.imgProviders[id].label; box.appendChild(o); });
+    box.value = prov; box.title = 'Provider: ' + HR.imgProviders[prov].label;
   }
   function mkey() { return 'imageModel_' + prov; }
   function load() {
     var p = P(), sel = $('imgModel'), want = HR.set.get(mkey()) || (prov === 'ollama' ? HR.set.get('imageModel') : '') || '', tok = prov;
-    $('imgCard').hidden = true; $('imgNote').textContent = p.note || ''; stepsUi(); sizeUi();
+    $('imgCard').hidden = true; $('imgNote').textContent = p.note || ''; stepsUi(); HR.imgsize.draw(p, sizeUi); sizeUi();
     sel.innerHTML = '<option value="">Loading…</option>'; sel.disabled = true; cool();
     p.models().then(function (l) {
       if (tok !== prov) return;
@@ -69,7 +68,7 @@ HR.imgpage = (function () {
         var g2 = document.createElement('optgroup'); g2.label = 'All models'; l.forEach(function (m) { opt(m, g2); }); sel.appendChild(g2); }
       else l.forEach(function (m) { opt(m, sel); });
       if (!by[want]) want = l[0] ? l[0].name : '';
-      sel.value = want; sel.disabled = false; if (want) HR.set.put(mkey(), want); stepsUi(); cool();
+      sel.value = want; sel.title = want; sel.disabled = false; if (want) HR.set.put(mkey(), want); stepsUi(); cool();
     }).catch(function (e) { if (tok !== prov) return; sel.innerHTML = '<option value="">No image model</option>'; card(e); cool(); });
   }
   /* AG17: steps per provider */
@@ -80,8 +79,11 @@ HR.imgpage = (function () {
     if (isNaN(v)) v = t.def($('imgModel').value); return Math.max(t.min || 1, Math.min(sMax(), v));
   }
   function stepsUi() {
-    var t = P().steps, st = $('imgSteps'); st.disabled = !t; $('imgStepsNote').textContent = t ? '' : 'fixed by provider';
-    if (t) { st.max = sMax(); st.value = steps(); } else st.value = '';
+    var t = P().steps, st = $('imgSteps'); st.hidden = !t; st.innerHTML = ''; if (!t) return;   /* AG19: dropdown, only where supported */
+    var mx = sMax(), cur = steps(), l = [1, 2, 4, 8, 12, 20, 25, 30, 40, 50].filter(function (n) { return n >= (t.min || 1) && n <= mx; });
+    if (l.indexOf(cur) < 0) l.push(cur); l.sort(function (a, b) { return a - b; });
+    l.forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n + ' steps'; st.appendChild(o); });
+    st.value = String(cur); st.title = 'Steps (default ' + t.def($('imgModel').value) + ', max ' + mx + ')';
   }
   function recent() { var l = HR.set.get('imageRecent_' + prov); return Array.isArray(l) ? l : []; }
   function used(m) { var l = recent().filter(function (x) { return x !== m; }); l.unshift(m); HR.set.put('imageRecent_' + prov, l.slice(0, 5)); }
@@ -154,10 +156,10 @@ HR.imgpage = (function () {
   }
   function init() {
     $('imgGo').onclick = go;
-    $('imgModel').onchange = function () { HR.set.put(mkey(), this.value); stepsUi(); cool(); };
+    $('imgModel').onchange = function () { HR.set.put(mkey(), this.value); this.title = this.value; stepsUi(); cool(); };
+    $('imgProv').onchange = function () { if (ctrl) { this.value = prov; return; } prov = this.value; HR.set.put('imageProvider', prov); drawTabs(); load(); };
     var st = $('imgSteps'); st.onchange = function () { var t = P().steps; if (!t) return; var v = parseInt(st.value, 10);
       HR.set.put('imageSteps_' + prov, isNaN(v) ? t.def($('imgModel').value) : Math.max(t.min || 1, Math.min(sMax(), v))); stepsUi(); };
-    HR.imgsize.draw(sizeUi);
     $('imgPrompt').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); go(); } });
     $('imgViewX').onclick = function () { $('imgView').close(); };
     $('imgDel').onclick = function () { if (!cur || !confirm('Delete this picture?')) return; HR.imgstore.del(cur.id).then(function () { $('imgView').close(); gallery(); }); };

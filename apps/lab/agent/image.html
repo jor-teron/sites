@@ -4,6 +4,7 @@
   Provider tabs (only ready ones): Pollinations (free, no key, 50 s cooldown), Gemini, DeepInfra, OpenRouter (each when its key exists; AG16), Ollama.
   Same settings (localStorage 'agent.settings'), keys (Hub first, app/core/hubkeys.js) and gallery (IndexedDB 'agent-images').
   AG17: Steps on every tab, size chips (app/gui/imagesize.js), prices in the picker, prompt filenames, Recent models.
+  AG19: top row = Provider + Model dropdowns (no tabs); Ratio / Size / Steps as one compact line of dropdowns.
   Scripts: hubkeys, presets, registry (keys + Ollama URL), settings (HR.set only), imagegen + img_* providers, imagestore, imagepage.
 -->
 <html lang="en">
@@ -16,27 +17,28 @@
   <link rel="icon" href="agent_icon.png">
   <link rel="stylesheet" href="ui/main.css">
   <link rel="stylesheet" href="ui/components.css">
+  <link rel="stylesheet" href="ui/modelbar.css">
   <link rel="stylesheet" href="ui/imagepage.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
 <body class="igbody">
-<header class="top">
-  <a class="hb ig-back" id="imgBack" href="agent.html" aria-label="Back to chat">← Chat</a>
-  <h1 class="brand">🖼 Image</h1>
-  <span class="grow"></span>
+<header class="top ig-top">
+  <a class="hb ig-back" id="imgBack" href="agent.html" aria-label="Back to chat" title="Back to chat">← <span class="ig-bt">Chat</span></a>
+  <span class="mbar">   <!-- AG19: Provider + Model dropdowns, same look as the chat top row (ui/modelbar.css) -->
+    <select id="imgProv" class="mb-sel mb-prov" aria-label="Image provider"></select>
+    <select id="imgModel" class="mb-sel mb-model" aria-label="Image model"></select>
+  </span>
 </header>
 <main class="ig-body">
-  <div id="imgTabs" class="ig-tabs" role="tablist" aria-label="Image provider"></div>
   <p id="imgNote" class="hint ig-note"></p>
   <textarea id="imgPrompt" class="inp ig-prompt" rows="3" placeholder="Describe a picture to make…" aria-label="Picture prompt"></textarea>
-  <div class="ig-opts">
-    <label class="lbl">Model <select id="imgModel" class="inp" aria-label="Image model"></select></label>
-    <label class="lbl" id="imgStepsL">Steps <input id="imgSteps" class="inp num" type="number" min="1" max="50" step="1"></label>
-    <span id="imgStepsNote" class="ig-size"></span>
+  <div class="ig-line">   <!-- AG19: one compact line: Ratio, Size (or Custom W / H), Steps -->
+    <select id="imgRatio" class="ig-dd" aria-label="Shape" title="Shape"></select>
+    <select id="imgSize" class="ig-dd" aria-label="Size"></select>
+    <span id="imgCustom" class="ig-cust" hidden><input id="imgW" class="ig-dd ig-num" type="number" min="256" max="4096" step="16" aria-label="Width" title="Width"><span>×</span><input id="imgH" class="ig-dd ig-num" type="number" min="256" max="4096" step="16" aria-label="Height" title="Height"></span>
+    <select id="imgSteps" class="ig-dd" aria-label="Steps" title="Steps"></select>
   </div>
-  <div id="imgSizes" class="ig-sizes" role="group" aria-label="Picture size"></div>
-  <div id="imgCustom" class="ig-opts" hidden><label class="lbl">Width <input id="imgW" class="inp num" type="number" min="256" max="4096" step="16"></label><label class="lbl">Height <input id="imgH" class="inp num" type="number" min="256" max="4096" step="16"></label></div>
   <p id="imgSizeNote" class="hint ig-note"></p>
   <button type="button" class="hb ig-go" id="imgGo">✨ Generate</button>
   <div id="imgBar" class="ig-bar" hidden><span class="mt-bar"><i id="imgFill"></i></span><span id="imgStep" class="mt-t"></span></div>

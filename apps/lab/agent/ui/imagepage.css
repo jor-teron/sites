@@ -3,9 +3,6 @@
 body.igbody{min-height:100vh;display:flex;flex-direction:column}
 .hb.ig-back{height:44px;padding:0 14px;font-size:17px;font-weight:600}
 .ig-body{flex:1;overflow:auto;padding:14px;max-width:900px;width:100%;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
-.ig-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px}
-.ig-tab{flex:0 0 auto;min-height:48px;padding:0 18px;border-radius:24px;border:1.5px solid var(--line);background:var(--card);color:inherit;font:inherit;font-size:16px;font-weight:600;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
-.ig-tab:active{transform:scale(.92)}.ig-tab.on{background:var(--acc);border-color:var(--acc);color:var(--ink);transform:scale(1.04)}
 .ig-note{margin:-4px 0 0}
 .ig-prompt{width:100%;min-height:96px;font-size:17px;resize:vertical;box-sizing:border-box}
 .ig-prompt.shake{animation:igshake .35s}
@@ -31,10 +28,16 @@ body.igbody{min-height:100vh;display:flex;flex-direction:column}
 .ig-view .hb{height:44px}.ig-a{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
 @media (max-width:520px){.ig-body{padding:10px}.ig-opts select{min-width:0;width:100%}.ig-opts .lbl{flex:1 1 100%}}
 /* AG17: size chips, disabled steps */
-.ig-sizes{display:flex;flex-wrap:wrap;gap:8px}
-.ig-chip{min-height:52px;min-width:84px;padding:6px 12px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:inherit;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
-.ig-chip b{font-size:15px}.ig-chip small{font-size:12px;color:var(--mut)}
-.ig-chip:active{transform:scale(.92)}.ig-chip.on{background:var(--acc);border-color:var(--acc);color:var(--ink);transform:scale(1.04)}.ig-chip.on small{color:inherit;opacity:.8}
-#imgCustom[hidden]{display:none}
 .ig-opts input:disabled{opacity:.5}
-@media (max-width:520px){.ig-chip{flex:1 1 28%;min-width:0}}
+/* AG19: top row = ← Chat + Provider / Model dropdowns (ui/modelbar.css); one compact settings line; tabs and chips retired */
+.ig-top{position:relative;z-index:2;flex-wrap:nowrap}.ig-top .mbar{flex:1 1 auto;justify-content:flex-start}
+.ig-top .mb-model{flex:1 1 auto;max-width:420px}
+.ig-line{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ig-dd{height:40px;min-width:0;padding:0 8px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:inherit;font:inherit;font-size:14px;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.ig-dd:active{transform:scale(.94)}.ig-dd:disabled{opacity:.55;cursor:default}.ig-dd[hidden],.ig-cust[hidden]{display:none}
+.ig-cust{display:inline-flex;align-items:center;gap:4px}.ig-num{width:78px;cursor:text}
+@media (max-width:520px){
+  .ig-top{flex-wrap:nowrap}.ig-top .mbar{order:0;flex:1 1 0}.ig-bt{display:none}.hb.ig-back{padding:0 12px;min-width:44px}
+  .ig-top .mb-prov{flex:0 1 40%}.ig-top .mb-model{flex:1 1 0}
+  .ig-dd{flex:1 1 0;height:44px}.ig-num{width:68px;flex:0 0 auto}
+}
