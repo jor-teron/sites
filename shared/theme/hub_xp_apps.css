@@ -1,0 +1,36 @@
+/*
+ * H104 XP theme for the system apps (shared/theme/hub_xp_apps.css).
+ * Added by shared/theme/hub_theme.js (only under /apps/system/) when the Hub's XP theme is on:
+ * html.hub-xp on top of html.light. Opaque, like the rest of XP: white content, a light-blue XP task-pane
+ * side column, off-white (#ECE9D8) pop-ups with thin blue borders, the XP selection blue and Tahoma, then
+ * Segoe UI, then system fonts. Apps keep their own layout; this only swaps the colour variables
+ * (--bg / --side / --card / --line / --text / --uid-* / --ctx-* ...) that every system app already uses.
+ */
+html.light.hub-xp {
+  --xp-font: Tahoma, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --bg: #ffffff; --side: #d6dff7; --card: #ffffff; --card2: #f4f3ee; --sheet: #ece9d8;
+  --chip: #ece9d8; --bar: #ece9d8; --tb: #f4f3ee; --tb-hi: #e3e1d8; --tb-line: #aca899;
+  --line: #c9c6b8; --text: #000000; --muted: #4d4d4d; --desc: #333333;
+  --soft: rgba(49, 106, 197, 0.08); --soft2: rgba(49, 106, 197, 0.16); --grid: rgba(0, 0, 0, 0.08);
+  --hi: rgba(49, 106, 197, 0.20);
+  /* pop-ups (dialogs / context menus): XP face, black text */
+  --uid-bg: #ece9d8; --uid-line: #aca899; --uid-text: #000; --uid-muted: #3c3c3c; --uid-bad: #c42b2b;
+  --ctx-bg: #f6f5ef; --ctx-line: #aca899; --ctx-text: #000; --ctx-muted: #6d6d6d; --ctx-bad: #c42b2b;
+  color-scheme: light;
+}
+html.light.hub-xp body { font-family: var(--xp-font); }
+html.light.hub-xp button, html.light.hub-xp input, html.light.hub-xp select, html.light.hub-xp textarea { font-family: inherit; }
+/* the side column: XP task-pane blue with a darker edge */
+html.light.hub-xp .side { background: linear-gradient(180deg, #7ba2e7 0%, #6375d6 100%); border-right-color: #5a6fc9; color: #fff; }
+html.light.hub-xp .side { --text: #ffffff; --muted: #e4ebfa; --line: rgba(255, 255, 255, 0.22); --hi: rgba(255, 255, 255, 0.26); }
+html.light.hub-xp .side .nav-item.on { box-shadow: inset 3px 0 0 #fff; }
+/* right-click menus + dialogs: thin blue borders, square XP corners */
+html.light.hub-xp .ctx { border: 1px solid #316ac5; border-radius: 2px; padding: 2px; box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.30); }
+html.light.hub-xp .ctx-item { border-radius: 0; }
+html.light.hub-xp .ctx-item:hover, html.light.hub-xp .ctx-item:focus-visible, html.light.hub-xp .ctx-item:focus { background: #316ac5; color: #fff; }
+html.light.hub-xp .uid { border: 1px solid #0831d9; border-top: 4px solid #0058ee; border-radius: 8px 8px 0 0; }
+html.light.hub-xp .uid-in { background: #fff; color: #000; border: 1px solid #7f9db9; border-radius: 0; }
+html.light.hub-xp .uid-btn { border: 1px solid #003c74; border-radius: 3px; background: linear-gradient(180deg, #fff 0%, #f4f3ee 70%, #e3e1d8 100%); color: #000; }
+
+/* menus / dialogs set their own font (system-ui); use the XP font there too */
+html.light.hub-xp .ctx, html.light.hub-xp .ctx-item, html.light.hub-xp .uid, html.light.hub-xp .uid button, html.light.hub-xp .uid input, html.light.hub-xp .gb-tabmenu { font-family: var(--xp-font); }

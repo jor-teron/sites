@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261103d';
-const CACHE = 'hub-shell-v131';  // 2026-11-03d: H65: Computer break (25/5 Hub lock)
+const V = '20261103e';
+const CACHE = 'hub-shell-v132';  // 2026-11-03e: H104: XP theme
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -54,6 +54,7 @@ const SHELL = [
   'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'shared/favorites/favorites.js',
   'shared/theme/hub_theme.js',   // H22
   'shared/theme/hub_glass_apps.css',   // H103
+  'hub/core/hub_xp.css', 'shared/theme/hub_xp_apps.css', 'shared/wallpaper/hub_hills.jpg', 'shared/wallpaper/thumbs/hub_hills.webp',   // H104: XP theme + its default wallpaper
   'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link_chat.js', 'shared/link/link_scan.js', 'shared/link/link.css',
   'shared/image/hub_icon_192.png', 'shared/image/hub_icon_512.png',
   // Start menu / taskbar / home icons and the app lists, so a first visit also works offline

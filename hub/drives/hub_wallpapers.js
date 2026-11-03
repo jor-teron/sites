@@ -12,6 +12,9 @@
  * 'mine' (any value starting with 'mine') = Your picture: a file in the Local drive (OPFS)
  * folder Wallpapers/, shown through an object URL — window.hubWallpaperMine() → Promise<url|''>,
  * window.hubWallpaperSaveMine(file) → Promise (Settings → Wallpaper).
+ * H104: a theme can bring its own default wallpaper, used while sites-hub.wallpaper is empty:
+ * window.HUB_THEME_WALLPAPER = { xp: 'pic:hub_hills.jpg' }; window.hubWallpaperDefault() → that id when the
+ * XP theme is on (sites-hub.xp '1', not Dark / Auto; or a theme of 'xp'), else 'night'.
  */
 window.HUB_WALLPAPERS = [
   { id: 'night', name: 'Night', slide: true,
@@ -95,4 +98,13 @@ window.hubWallpaper = function (v) {
     return { id: v, name: 'Custom', color: v, light: (0.299 * r + 0.587 * g + 0.114 * b) > 150 };
   }
   return list[0];
+};
+
+// H104: theme default wallpapers (XP = Green hills, our own drawing in shared/wallpaper/hub_hills.jpg)
+window.HUB_THEME_WALLPAPER = { xp: 'pic:hub_hills.jpg' };
+window.hubWallpaperDefault = function () {
+  const rd = (k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } };
+  const t = rd('theme');
+  const xp = rd('themeAuto') !== '1' && (t === 'xp' || (rd('xp') === '1' && t !== 'dark'));
+  return xp ? window.HUB_THEME_WALLPAPER.xp : 'night';
 };
