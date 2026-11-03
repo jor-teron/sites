@@ -1156,3 +1156,277 @@ Open limits / bugs:
     the phone it may need a hard refresh for updates.
   - Security: the Google OAuth tvClientSecret is still in git history;
     Jor to rotate it in Google Cloud.
+
+
+==========================================================================
+WEEK NOTES: Sun 2026-11-01 to Tue 2026-11-03 evening - Team 1
+Written by Hub Main Builder Team 1, with notes from Hub Apps Builder, Hub
+Games Builder and Hub Phone Builder. GitHub main at end of day: d81257a.
+==========================================================================
+
+--- HUB MAIN BUILDER (hub/, hub.html, sw.js, phone.html, apps/system/**, shared/**, Pooh Chat)
+
+Releases (all pushed), Sun 1:
+  - NV-S2 f48728b  hub.html ?v= labels removed (69); hub.js?v= kept for build number.
+  - (phone) ae7e9b5  phone/index.html becomes redirect to phone.html; ?v= dropped.
+  - H79 e9f2f77  Phone page at /phone.html on the Hub link stack (7 files +50/-22).
+  - H80 e7a071b  Phone page shares Hub settings/theme; Settings from quick panel (+45/-11).
+  - H81 2b7700d  Hub dialogs and notifications on the phone page (7 files +86).
+  - H82 ee41952  Hub-wide Do Not Disturb (HubDnd) + attention call pop-up (12 files +199/-2).
+  - H83 f980667  5-digit codes, public lobby 00000, per-device 5-digit number (16 files +101/-38).
+  - H84 5caf24f  Hub group chat over the Mesh (00000 public, private code = private room) (+100/-3).
+  - H85 0eb6ca7  Offline cache for /phone.html + H81/H82 files; shell cache v127 (+17/-1).
+  - PC1+PC2 b4ac1eb, 9043735  Pooh Chat public group lobby chat, then own-peer
+    mode on the Hub mesh (H84 broadcast/onMsg), SharedChat history.
+  - H86 b83d946  Pooh Chat relay + poohOpen in desktop windows (+23/-3).
+  - H87 1a80c6a  Devices Join with code takes 5 digits; mesh log shows full code (+3/-3).
+  - H88 578d4ac  Messages in Hub catalog/app index (Connectivity > Chat); index regen (+61/-50).
+  - H51 0d39cab  Mesh security: join approval, signed messages, trust in Mesh Viewer (+344/-21).
+  - H89 f7da9b3  Mesh join redial (fixes ~60 s race) + chat catch-up 'chat-sync' (+130/-7).
+  - NV-S3 ffbedf7  13 stale ?v= labels dropped in hub/controller/controller.html.
+  - H91 e6a8968  Hub Line: always-on call/msg receptionist on public mesh (HubLine API) (+277/-3).
+  - H92 db8f8ae  Phone number is the Hub link identity; separate gamepad pad code (+164/-47).
+Mon 2:
+  - H93 60455aa  Choose your own number, only in Settings > Devices (+43/-1).
+  - H95 754f718  Always-on public Hub network (auto-join lobby by number) (+94/-26).
+  - H96 65381c9  One Change number control in Settings > Devices (+1).
+  - H94 fe0c462  Gamepad pop-up split into This Hub and Gamepad cards (+33/-4).
+  - H97 2dac983  Per-device passcode pairing (HubTrust, hub/link/hub_trust.js) (7 files +164/-2).
+  - H101 4c05de0  phone/hidden-apps.csv in the Hub shell cache (for Phone PH10) (+1/-1).
+  - H102 acedac3  Clearer, shinier Glass on the Hub desktop (+15/-9).
+  - H103 5080b10  Glass theme for system apps (+83/-1).
+  - H100 f7f52f2  Device Benchmark moved to Tools (apps/tools/devbench), hard move (38 files +74/-95).
+  - H105 5baa1f4  Files quick fixes: empty state buttons, light context menu, contrast (+32/-11).
+  - H110 5d91f06  Title bar buttons can sit left with icon + label (align, showLabel) (+23/-5).
+  - H106 fc7c242  Files Explorer-style toolbar: Back/Forward/Up, breadcrumbs, SVG icons, view/sort (+132/-36).
+  - H109 b2b0ac0  Files sidebar quick links, storage meter, type badges, glass contrast (+149/-6).
+  - H107 acccfa9  Files status bar (count/size/selection) + sticky sortable List header (+72/-6).
+  - H111 79ab9d6  DeepInfra key slot in Settings > API Keys with Test (for Apps AG12) (+4/-1).
+Tue 3:
+  - H112 f09cff2  Private mesh member left -> one 🔌 HubNotify card (60 s debounce) (+14/-2).
+  - H113 d54fcc4  Build bump 20261103a / hub-shell-v128 (H97-H112 reach installed Hubs) (+13/-13).
+  - H114 d8f0bc8  Right-click menus follow Light theme (--ctx-* on html.hub-light) (+3).
+  - H115 441da0f  WebDAV drive adapter shared/fs/webdav_fs.js (+198/-1).
+  - H116 5d7991d  Saved Network drive accounts in FsDrives (webdav:1, webdav:2...) (+84/-2).
+  - H117 7676788  Settings › Network drives: add, test, edit, remove; masked password (+126).
+  - H118 d81257a  Files 🌐 Network drives group (Google Drive + WebDAV servers) (+49/-6).
+  (WebDAV shown to users as "Network drive"; local-only accounts, not profile-synced.)
+
+Notes: Files lives in apps/system/files. WebDAV H115-H118 shipped under the
+user label "Network drive".
+
+Fixes:
+  - H89 mesh join race (~60 s join) fixed by redial.
+  - H105 Files empty state / light context menu / contrast.
+  - H112 private-mesh leave now a notification card on desktop instead of nothing.
+  - H114 right-click menus were dark in Light theme.
+  - H87 Join with code rejected 5-digit codes.
+
+Fixes / pushes done for other teams:
+  - Games: pushed C4-1 29f84d8 (Connect 4), LIFE-1 0b1935d (Game of Life), index regen 113bcd2.
+  - Phone: H101 for PH10 hidden apps; H79-H81, H85 phone.html engine/caching.
+  - Apps: H111 DeepInfra key for AG12 (AG12.1 249f85f); H88 Messages catalog entry; H91 HubLine used by CX1.
+
+Diagnoses:
+  - "No passcode prompt on private mesh join": devices were already trusted (trust is permanent);
+    stale device name on the other phone confused it. Allow/Deny prompt confirmed working.
+  - Connect link has no gate: SharedLink attachLink (shared/link/link_core.js) accepts anyone
+    with the 5-digit number; only HubMesh gate() is gated.
+  - Hub Phone leave toast is by design (phone/phone_notify.js, H81) - Phone Builder's area.
+  - Connectivity audit: almost all connectivity apps depend on public 0.peerjs.com + unpkg PeerJS.
+
+Ideas / plans discussed (not built):
+  - Launcher relay plan for APK Maker 1 (Home launcher APK): 1) self-hosted PeerJS broker
+    (+ local PeerJS lib, public broker fallback); 2) WS-to-TCP bridge for SSH/Telnet/VNC with
+    allowlist + token; 3) WebDAV server for phone storage; 4) AI proxy holding API keys in one
+    place (also Ollama/CORS); 5) LAN discovery. Remote via Tailscale (+ subnet router).
+    Foreground service, battery exemption, https via .ts.net cert.
+  - Protocol shortlist: plan SSH/SFTP/SCP, VNC, Telnet (LAN), WebDAV, HTTP/WS, MQTT;
+    later RDP, SMB, FTP, IMAP/SMTP, SOCKS; skip SPICE, TFTP, NFS, DHCP, SNMP, DNS, NTP, Syslog, LDAP, AMQP.
+  - noVNC client in Hub (Apps shipped VNC1 3b433d9); RDP via Apache Guacamole on a PC.
+
+Open, not approved:
+  - Connect-link Allow/passcode gate (~40 lines, 45-60 min).
+  - H98 "Pair a device" card in Settings > Devices (~15 min).
+  - H104 XP theme.
+
+Parked:
+  - H90 5-wrong-guess blocking for passcode pairing (ties to H97 / HubTrust).
+  - H99 default 000000 passcode + masked passcode.
+  - H108 Files compact phone layout.
+  - OS4-OS8 system apps migration to os/packages.
+  - H119 native SFTP/FTP in Files via SSH + relay (idea for Team 2).
+
+Moved:
+  - H100 Device Benchmark to apps/tools/devbench.
+
+Pending:
+  - Shell cache bump after H115-H118 (not done).
+  - Next Hub id: H120.
+
+--- HUB APPS BUILDER (everything pushed, nothing local)
+
+Releases
+Agent (apps/lab/agent)
+  - AG11 9e47cb0: photo attach (from Vision) and Chat|Image mode
+  - AG12 e85ea4d: provider tabs, grouped model picker with search, stale-list fix
+  - AG12.1 249f85f: DeepInfra key from the Hub (H111)
+  - AG13 b7270ea: one model label everywhere; AI Story Lite/Mini/Pro labels match
+  - AG14 c90ffba: Image Gen's first own view, IndexedDB gallery
+  - AG15 73f6cea: Image as own page image.html; Pollinations (keyless, 50 s cooldown), DeepInfra, Ollama
+  - AG16 ede2681: Gemini and OpenRouter image tabs
+  - AG17 3c2e288: image steps, size, API prices, prompt-named downloads, Recent models
+  - AG18 26d1afb: chat Provider + Model dropdowns in top row
+  - AG19 e7e1983: same on Image page; Ratio/Size/Steps dropdowns under prompt
+  - AG20 f7de229: favourite models; full-screen image viewer (arrow keys, swipe)
+Lab
+  - LB1 8b802a4: Local AI Chat, Image Gen, Vision moved to Legacy
+  - ML1 fa9fbd8: MyLLM Train|Plan tabs; LLM Calculator merged in as Plan
+Photo Studio (apps/media/photo-studio)
+  - HPS5 11b74bd: New blank page (A4/Letter/Legal/Square/Custom, true-size print)
+  - HPS5.1 4638769: Export, Save, Print in title bar
+  - HPS5.2 ba5151a: Ctrl+S saves project, Ctrl+Shift+S exports PNG
+  - HPS5.3 a8bee3a: Save/Export/Print on left with labels, Ctrl+E exports
+  - HPS6.1 71658f6: Eraser tool (E)
+Calendar
+  - CM20 d2a5425/6b86b33: Holidays page full width, phone tab bar
+  - CM21 4957795: Holidays card order, Repeat select
+  - CM22 2318f7c: full-height previews, centred zoom
+  - CM23 6e5afe4: Streaks/Stretches column grid
+  - CM24 46ac826: Design ticks to hide Restricted/Public/School holidays
+  - C6 + CM25 766b4d7: Calendar shares Calendar Maker holidays
+My Day
+  - PD4.5 7414886: night dial sun as faint ring
+  - MD1 c42f117: night sun on day side
+  - MD2a 5f8b9dc + MD2b 2f31fda: night flip undone, noon on top; network-first service worker
+Comms and Maps
+  - MS2 0308dfd, MS3 b03c06c, MS4 d40538d: Messages offline queue, file sharing, read ticks, clean-up
+  - CX1 3e89208 + CX1.1 2e0ea11: Messages and Telephone use the Hub line (H91)
+  - CT1 7a86b1c: Contacts app + shared HubContacts
+  - TP10 d922e68 + TP10.1 dc9d7cc: Telephone clean-up, Recent calls, phone layout
+  - LL1 feb9319 + LL1.1 a39d032: Live Location app
+  - FD1 57c81cc: Find My Device (ring and locate)
+  - MAP1 07f9c7c: OpenStreetMap app
+  - NL2 3798d77: Notely clean-up, theme follows Hub
+Connectivity
+  - VNC1 3b433d9: VNC remote desktop (noVNC 1.7.0) through SSH relay
+
+Fixes
+  - AG19 shipped empty agent_sw.js; restored in AG20.
+  - Agent Image page listed no models (Ollama image models Mac-only); fixed by provider tabs AG15/AG16.
+  - My Day night dial reverted to noon on top.
+
+For Other Teams
+  - Parked for Team 2: MD3 (My Day Auto theme doesn't follow Hub theme), SS1 (Spreadsheet dark-only, needs Light/Auto).
+
+Ideas And Plans
+  - Remote: VNC2 relay in Home Launcher APK (phone as relay; APK Maker 1); VNC3 WebRTC screen view with pairing code for PCs without Tailscale; VNC4 RDP (Guacamole/IronRDP).
+  - WebDAV: WD1 webdav.html standalone + https CORS proxy (driver part now covered by Hub H115).
+
+Parked
+  - HPS5.4 (Photo Studio title bar align:left + showLabel, ready)
+  - HPS6 close project
+  - PH11 (apps-side)
+  - AI Story icon/README
+  - Real paid-key tests for Gemini/DeepInfra/OpenRouter image
+  - LLM Calculator training-steps setting
+  - Agent: Jor to OK that a model pick also becomes default for new chats (AG18).
+
+(from git) Sun 1, not in Apps' list:
+  - IX7 e6c62f3, IX8 0b36cb4  redirect pages; real pages moved to <folder>.html.
+  - CM19 2341f43  Calendar Maker moving holidays carry over by name.
+  - CB3 ed13982  Shared Clipboard private only.
+  - TP5 690091f, TP6 7f6e7e5, TP7 1d2f26f  Telephone minimal screen, call
+    notification, follows Hub DND.
+  - IC5 6df483f  Intercom follows Hub DND, call card.
+  - VC5 39be7c1  Video Chat minimal UI.
+  - FC5 c7c2ff4  5-digit Hub codes (H83), Telephone number = Hub number.
+  - FX1 759b525  in-flow switch buttons and notify banner (VC6, IC7, TP9).
+  - MS1 38a0b28  Messages: private 1:1 by Hub number.
+
+--- HUB GAMES BUILDER (apps/games, apps/learn)
+
+RELEASES (all pushed, live on main)
+  - LRN-WK1 2febe08: Water Kingdom crash fix (doneBtn not defined) + 2 missing tile icons (Water Kingdom, Animal Kingdom).
+  - NIX-G3 d849556: ar-game, neon-raid, pacman, browser-fps, island-demo moved to standard layout (ui/ core/ assets/; island-demo GLBs in assets/models/); css/ renamed ui/ in ant-farm, neon-fist, neon-fist-3d. Moves and path fixes only, 87 files.
+  - C4-1 29f84d8: new Connect 4 (apps/games/connect-4/): 2 players or vs computer Easy/Medium/Hard (minimax capped 600ms), undo, saved score, shared settings + theme. Puzzle tile.
+  - LIFE-1 0b1935d: new Conway's Game of Life (apps/games/game-of-life/): wrap-around grid, paint, play/step, speed, pinch/wheel zoom, patterns (glider, gun...), shared settings + theme. Simulator tile.
+  - Index regen for C4-1 and LIFE-1: 113bcd2 (pushed by Main Builder).
+
+Fixes For Other Teams
+  - LRN-WK1 and NIX-G3 were open items from the Team 3 handover (README_technical_team3.txt, wrap-up part 4).
+
+PARKED (waiting for Jor's go)
+  - GO-1 Go (medium): 9/13/19 boards, ko, area scoring with komi, simple computer opponent.
+  - ORB-1 Orbito (small): 4x4 rotating-ring board.
+  - LUDO-1 Ludo (medium): 2–4 players, computer seats.
+  - SHIP-1 Battleship (small): vs computer + pass-the-phone.
+  - BLKD-1 Blockade (1975 Philip Slater, small-medium); Jor felt too big; Quoridor simpler fallback.
+  - Dropped: Hasbro Game of Life board game.
+  - Still parked: LandCraft LC1 (file:// + 30fps clock), LC2 (phone speed).
+
+Open Items / Future Plans
+  - Tiny: contra-alpha double redirect via neon-raid; lab/aoe-rts link to Games version; missing Sudoku and RPS icons.
+  - Small: Tetris landscape cut-off on short phones; AoE balance.
+  - Next shared-settings batch: Ant Farm, Turbo Lap, Desert Road.
+  - Learn apps follow Hub theme; LRN3a; AoE Ages then fog of war; optional Neon Fist 3D menu page.
+  - Connect 4 and Game of Life lack hub bridge (stats, action buttons) — possible add-on.
+  - Waiting on Jor: Hero Builder folder (keep/move/remove), Technology Learn topic.
+
+Notes
+  - 26MB island-demo GLB still in git history.
+  - C4-1 and LIFE-1 not yet tested on a real phone (pinch-zoom, Draw/Pan).
+
+(from git):
+  - NIX-G1 93e8097  games use <name>.html as real page; index.html redirects.
+  - NIX-G2 f8de97c  8 flat games restructured into ui/ core/ assets/.
+
+--- HUB PHONE BUILDER (phone/)
+
+RELEASES (all pushed to main)
+  - PH6 16041186: window.hubBack for Android launcher, Back works after reload, newTab apps, cap on page 1, null-safe toasts, README refresh.
+  - PH7 dc743543: bottom-up home grid, bottom drawer bar with bottom-up list, Favorite tab hidden.
+  - PH8 fa28ca7a: section headings inside drawer categories, from <cat>-apps.csv.
+  - PH9 5a75bbdf: search bar back on top, dock-style category bar.
+  - PH10 7770f34f: hidden apps (phone/hidden-apps.csv + hide/unhide on this phone).
+  - PH11 4c075b68: drawer swipe-down scrolls, closes only at top or from bars; phone registers Hub's sw.js (updateViaCache none) so icons cache; CSVs kept locally (phone-csv-v1:*) and drawn at once; eager icon loading.
+  - PH12 d9d508fe: Night blue (copy of Hub's Night gradient) default wallpaper, also in WebView; saved 'auto' -> 'night'; 'None' renamed 'See-through (needs APK support)'; ?bg=night.
+  - PH13 fe5ef98e: Phone settings 'Reload (get latest)': reg.update(), {type:'refresh'} to sw.js, waits sw-refreshed (max 8 s), clears phone-csv-v1:* copies, reloads. Page side only.
+
+Fixes
+  - Drawer couldn't scroll (swipe down at list bottom closed it) — PH11.
+  - Slow icons (phone.html never registered service worker) — PH11.
+  - WebView kept previous day's version (APK never clears cache) — PH13.
+  - Plain/odd wallpaper was WebView opacity, handled by Night default — PH12.
+
+For Other Teams
+  - Team 1: phone registers root sw.js and uses its {type:'refresh'}; no new phone/ files need SHELL beyond existing.
+  - APK Maker 1: transparent WebView needed for See-through; 10-point improvement list for next APK; hubBack contract unchanged; v0.53 hard-reload hook cancelled at Jor's request.
+  - Hub Apps Builder: missing icons found: sudoku_icon.png, rps_icon.png, connectivity/video-chat, media/gif-maker, media/screen-recorder, tools/altimeter, tools/password-generator, tools/speedtest (handover offered, Jor hasn't answered).
+
+Findings
+  - index.html?mode=phone does nothing (root index.html forwards to hub.html; nothing reads mode=phone).
+
+Parked Ideas
+  - Clock off / smaller clock, icon size and shape, frosted/glass dock, greeting, wallpaper picker with all Hub wallpapers.
+  - Earlier risks: data loss if catalog fails, dead code, touch tab bar.
+
+Future Plans
+  - Real-device tests on Jor's Lava for PH11–PH13.
+  - See-through wallpaper once APK has transparent WebView.
+  - Homescreen beautification from parked list when Jor picks.
+
+(from git), Sun 1:
+  - PH2 84c5ca5  phone notices kept across reloads, one toast queue.
+  - PH4 d733b6f  drawer without All, opens on last-used category.
+  - PH5 654adda  phone home cleanup (dock, higher clock, light dock).
+
+--- OTHER (repo)
+
+  - ai-exp v3, v4, v5 and MANUAL.md via PRs #365-#370 (Sun 1 morning).
+  - J T's own Nov 1 edits: ownership wording Bot -> Builder (b1cf270),
+    README ownership update (ce33c4a), Team 3 wrap-up revised (6e9a896),
+    team3_unfinished_readme.txt created then deleted (bf47e85, 8777ff2).
+  - Unmerged remote branches not owned by these builders: ag-f1-dup-chats,
+    ag-f6-merge-msgs, df15b1, ig4-online-gen, mm4-merge-pdf, qr1-code-maker,
+    sr-f1-ids, vs2-cloud-vision.
