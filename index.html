@@ -1,5 +1,133 @@
 <!DOCTYPE html>
-<!-- Site root → desktop/desktop.html (H129a: straight to the desktop Hub page; before H129a → hub.html, which is now itself a redirect to desktop/desktop.html). R56: keep ?query and #hash (e.g. ?join=CODE, #app). H78: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: visible "Redirecting to hub.html…" body text; the meta refresh was already in <noscript>. -->
+<!-- H129d: the site root is the mode entry: Desktop or Phone | Touch.
+     · Saved choice (localStorage sites-hub.mode = 'desktop' | 'phone') → straight there, no cards.
+     · ?os=desktop / ?os=phone → straight there, and saved.
+     · ?choose → the saved choice is cleared and the two cards show again (Settings › Desktop › Choose mode…).
+     · Nothing saved → two cards, "Desktop" and "Phone | Touch". A guess (shorter screen side under 600 px, or a
+       touch-first device: pointer:coarse without hover) only HIGHLIGHTS one card; it never picks for you.
+       Clicking a card saves it and goes there.
+     Every other ?query and the #hash pass through to the target (?join=CODE, #2048 …).
+     Targets: MODE_TARGET below (the phone one is the ONE place to change when phone/index.html becomes the real phone page).
+     desktop/desktop.html saves 'desktop' itself when opened directly; phone.html should save 'phone' (Hub Apps Builder 2).
+     H129d also removed hub.html: the service worker (hub/update/hub_sw.js) answers an old hub.html navigation with this page.
+     Theme: sites-hub.theme ('dark' = dark, any other saved value = light; Auto writes the effective value there),
+     nothing saved = the device setting; accent sites-hub.accent.
+     (before H129d) This file was only a redirect to desktop/desktop.html (H129a; before H129a → hub.html), keeping
+     ?query and #hash; the full old file is in the comment at the end. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hub</title>
+  <meta name="theme-color" content="#0B1033">
+  <link rel="icon" href="favicon.ico">
+  <script>
+    (function () {
+      'use strict';
+      var KEY = 'sites-hub.mode';
+      // ONE place for the targets (relative to the site root). Phone: phone.html for now (phone/index.html only
+      // redirects to it today); change it to 'phone/' when Hub Apps Builder 2 makes phone/index.html the real page.
+      var MODE_TARGET = { desktop: 'desktop/desktop.html', phone: 'phone.html' };
+      var root = document.documentElement;
+      var get = function () { try { return localStorage.getItem(KEY) || ''; } catch (_) { return ''; } };
+      var put = function (m) { try { if (m) localStorage.setItem(KEY, m); else localStorage.removeItem(KEY); } catch (_) { /* blocked */ } };
+
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) root.classList.add('dark');
+      try { var a = localStorage.getItem('sites-hub.accent'); if (/^#[0-9a-f]{6}$/i.test(a || '')) root.style.setProperty('--accent', a); } catch (_) { /* blocked */ }
+
+      // ?os= and ?choose are for this page only; everything else (and the #hash) goes on to the target
+      var q = location.search.replace(/^\?/, '').split('&').filter(Boolean);
+      var os = '', choose = false;
+      q = q.filter(function (p) {
+        var k = decodeURIComponent(p.split('=')[0].replace(/\+/g, ' '));
+        if (k === 'os') { os = decodeURIComponent((p.split('=')[1] || '').replace(/\+/g, ' ')).toLowerCase(); return false; }
+        if (k === 'choose') { choose = true; return false; }
+        return true;
+      });
+      var rest = (q.length ? '?' + q.join('&') : '') + location.hash;
+      function go(m) { put(m); location.replace(MODE_TARGET[m] + rest); }
+      window.__hubModeGo = go;   // the cards (below)
+      window.__hubModeRest = rest;
+
+      if (choose) put('');
+      else if (MODE_TARGET.hasOwnProperty(os)) { go(os); return; }
+      else if (MODE_TARGET.hasOwnProperty(get())) { go(get()); return; }
+
+      // the guess: highlight only
+      var mq = function (s) { return !!(window.matchMedia && matchMedia(s).matches); };
+      // Screen (not window) size, so a small desktop window still guesses Desktop. 600 px, not 768, so
+      // 1280×720 laptops guess Desktop; tablets are caught by the touch-first test instead.
+      var short = Math.min(screen.width || innerWidth, screen.height || innerHeight);
+      var touchFirst = mq('(pointer: coarse)') && !mq('(hover: hover)');
+      window.__hubModeGuess = (short < 600 || touchFirst) ? 'phone' : 'desktop';
+      root.classList.add('pick');
+    })();
+  </script>
+  <style>
+    :root { --bg: #f3f5f9; --card: #ffffff; --text: #202124; --muted: #5f6368; --line: #dadce0; --accent: #1a73e8; }
+    html.dark { --bg: #121418; --card: #1a1e26; --text: #e8eaed; --muted: #9aa0a6; --line: #2a303a; --accent: #6ea8fe; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    #pick { display: none; }
+    html.pick #pick { display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; min-height: 100%; box-sizing: border-box; padding: 24px 16px; }
+    #pick h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .cards { display: flex; gap: 18px; justify-content: center; align-items: stretch; flex-wrap: nowrap; }
+    .card { appearance: none; font: inherit; color: inherit; cursor: pointer; position: relative;
+      width: 220px; padding: 26px 18px 20px; border-radius: 16px; border: 2px solid var(--line);
+      background: var(--card); display: flex; flex-direction: column; align-items: center; gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12); transition: transform .12s, border-color .12s, box-shadow .12s; }
+    .card:hover, .card:focus-visible { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.18); outline: none; border-color: var(--accent); }
+    .card svg { width: 64px; height: 64px; color: var(--accent); }
+    .card b { font-size: 19px; }
+    .card small { color: var(--muted); font-size: 13px; line-height: 1.35; text-align: center; }
+    .card.guess { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent), 0 6px 18px rgba(0,0,0,.18); }
+    .card .tag { display: none; position: absolute; top: -11px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+      background: var(--accent); color: #fff; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; }
+    html.dark .card .tag { color: #0b1033; }
+    .card.guess .tag { display: block; }
+    .hint { margin: 0; color: var(--muted); font-size: 12.5px; text-align: center; max-width: 460px; }
+    @media (max-width: 520px) { .cards { flex-direction: column; } .card { width: min(300px, 86vw); } }
+    @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+  </style>
+</head>
+<body>
+  <main id="pick" aria-labelledby="pick-h">
+    <h1 id="pick-h">Open the Hub as</h1>
+    <div class="cards" role="group" aria-label="Mode">
+      <button type="button" class="card" data-mode="desktop">
+        <span class="tag">Suggested</span>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2.5" y="4" width="19" height="12.5" rx="1.8" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 20h7M12 16.5V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Desktop</b>
+        <small>Windows, a taskbar and right-click menus. Best with a mouse and keyboard.</small>
+      </button>
+      <button type="button" class="card" data-mode="phone">
+        <span class="tag">Suggested</span>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.2" stroke="currentColor" stroke-width="1.8"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b>Phone | Touch</b>
+        <small>One app at a time, full screen, with swipes. Best for phones and touch tablets.</small>
+      </button>
+    </div>
+    <p class="hint">Your choice is saved on this device. To choose again later: Settings › Desktop › Choose mode…, or open <code>index.html?choose</code>.</p>
+  </main>
+  <noscript><p style="text-align:center"><a href="desktop/desktop.html">Desktop</a> · <a href="phone.html">Phone | Touch</a></p></noscript>
+  <script>
+    (function () {
+      if (!document.documentElement.classList.contains('pick')) return;
+      var cards = document.querySelectorAll('.card');
+      Array.prototype.forEach.call(cards, function (c) {
+        if (c.dataset.mode === window.__hubModeGuess) { c.classList.add('guess'); c.setAttribute('aria-describedby', 'pick-h'); setTimeout(function () { c.focus({ preventScroll: true }); }, 0); }
+        c.addEventListener('click', function () { window.__hubModeGo(c.dataset.mode); });
+      });
+    })();
+  </script>
+</body>
+</html>
+<!-- (before H129d) the whole file was:
+<!DOCTYPE html>
+<!~~ Site root → desktop/desktop.html (H129a: straight to the desktop Hub page; before H129a → hub.html, which is now itself a redirect to desktop/desktop.html). R56: keep ?query and #hash (e.g. ?join=CODE, #app). H78: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: visible "Redirecting to hub.html…" body text; the meta refresh was already in <noscript>. ~~>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -15,8 +143,9 @@
       location.replace('desktop/desktop.html' + location.search + location.hash);   // H129a
     })();
   </script>
-  <!-- <noscript><meta http-equiv="refresh" content="0; url=hub.html"></noscript>   (before H129a) -->
+  <!~~ <noscript><meta http-equiv="refresh" content="0; url=hub.html"></noscript>   (before H129a) ~~>
   <noscript><meta http-equiv="refresh" content="0; url=desktop/desktop.html"></noscript>
 </head>
-<body><noscript><p><a href="desktop/desktop.html">Open the Hub</a></p></noscript></body><!-- (before H129a) href="hub.html" -->
+<body><noscript><p><a href="desktop/desktop.html">Open the Hub</a></p></noscript></body><!~~ (before H129a) href="hub.html" ~~>
 </html>
+-->

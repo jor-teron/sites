@@ -134,7 +134,8 @@
   /** Connect QR: the phone opens the Hub homepage already joined (hub_role.js). */
   function connectUrl(c) {
     // (before H129a) const u = new URL('hub.html', location.href);   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
-    const u = new URL('hub.html', document.baseURI);
+    // const u = new URL('hub.html', document.baseURI);   (before H129d: hub.html removed)
+    const u = new URL('desktop/desktop.html', document.baseURI);   // H129d: the desktop page itself (index.html would pass ?join on too)
     u.search = '?join=' + c;
     u.hash = '';
     return u.href;

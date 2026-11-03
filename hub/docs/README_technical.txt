@@ -38,6 +38,11 @@ Step a of 3 of H129 (desktop shell into desktop/). New layout of the Hub split:
     Desktop-only files still in hub/ (candidates for later, not moved in H129c to keep it small):
     hub/drives/hub_traymeter.js (taskbar busy meter), hub/core/hub_eye.js, hub/core/hub_break.js / .css.
   phone/      the phone screen (phone.html + phone/, Hub Apps Builder 2; untouched by H129a)
+Addresses since H129d (all keep ?query and #hash):
+  index.html (root)   = mode entry: saved sites-hub.mode → desktop/desktop.html or phone.html; else the
+                        Desktop / Phone | Touch cards; ?os=desktop|phone, ?choose (details: H129d below)
+  hub.html            removed; with the service worker a navigation to it gets index.html (fallback)
+(before H129d)
 Addresses (all keep ?query and #hash, meta refresh in <noscript> + location.replace):
   hub.html            → desktop/desktop.html   (tiny redirect; bookmarks, the installed app's start_url,
                                                 Connect QR hub.html?join=CODE, hub.html#app links)
@@ -85,6 +90,41 @@ Forwarders: the 16 old paths (hub/link/hub_panels.*, hub_chat.*, hub-gamebar.js,
 hub_pointer.js, hub_receive.js; hub/viewer/hub_notify.js, hub_notification.css, hub_notifcenter.*;
 hub/controller/hub-controller.js, hub_textedit.js, hub_controller.css, hub_controller_config.js) are the
 same one-release stubs as H129b's; not in SHELL. Remove them with hub/wm/ and hub/menu/ in a later release.
+H129d (build 20261104j / hub-shell-v142, 2026-11-04 IST): mode entry, hub.html removed.
+  Root index.html = the mode entry. Order: ?choose clears localStorage sites-hub.mode and shows the cards;
+  ?os=desktop|phone saves that mode and goes there; else a saved valid mode goes there at once (no cards);
+  else two cards "Desktop" / "Phone | Touch" (Hub theme: sites-hub.theme / accent, centred, side by side,
+  stacked under 520 px). A device guess (shorter SCREEN side < 600 px, or pointer:coarse without
+  hover:hover) only highlights a card ("Suggested", focused); it never picks. A click saves and goes.
+  Targets live in ONE constant in index.html: MODE_TARGET = { desktop: 'desktop/desktop.html',
+  phone: 'phone.html' }. ?os / ?choose are removed; every other ?query and the #hash pass through
+  (index.html?join=CODE#2048 → desktop/desktop.html?join=CODE#2048). Redirects use location.replace.
+  desktop/desktop.html saves sites-hub.mode = 'desktop' when opened directly (top window only, and not
+  with ?join=, so a phone that scans the Connect QR keeps its own choice).
+  desktop/mode/hub_osmode.js: window.HubOsMode { KEY, NAME, get(), switchTo(mode), choose(), url(q) }.
+  switchTo('phone') asks UiDialog.confirm('Switch to Phone | Touch mode?', 'Open windows will close.',
+  'Switch') and then saves the mode and opens index.html?os=phone (so the phone path stays only in
+  index.html); choose() confirms and opens index.html?choose. Entry points: Settings › Desktop › Screen
+  mode ("Switch to Phone | Touch ›", shown only inside the desktop page, and "Choose mode… ›") and the
+  desktop right-click menu ("Switch to Phone | Touch…"). The Start menu holds only categories, so no item
+  there. Phone mode inside the desktop (Screen mode) is unchanged.
+  hub.html removed. Its dependencies and what replaced them:
+    update check (hub_update.js latest())     → fetches desktop/desktop.html (no-store), same ?v= stamp
+    Settings › About standaloneCheck()        → fetches desktop/desktop.html
+    hub-controller.js Connect QR (connectUrl) → desktop/desktop.html?join=CODE
+    hub_appindex_gen.py goto                  → desktop/desktop.html
+    manifest start_url                        → index.html; "id": "/sites/hub.html" keeps the installed
+                                                 PWA's identity (id resolves against start_url's origin)
+    hub_sw.js SHELL 'hub.html'                → removed (+ index.html, desktop/mode/hub_osmode.js)
+    sw fallback: a navigation to <scope>hub.html (old bookmarks, old QR codes, old home-screen icons) is
+      answered with the cached index.html (stale-while-revalidate, key ROOT_KEY), so ?join and #hash still
+      pass through the mode entry. Without a service worker /hub.html is a 404.
+    hub_bump.py: 7 places now (desktop/desktop.html ?v=, sw.js, hub_sw V + CACHE, hub_ctx V,
+      hub_loader V, build.txt); the hub.html place is commented out.
+    Settings help texts (sec_howto, sec_keys) no longer name hub.html.
+  Old clients (v141 and older) still fetch hub.html in their in-page update check; it fails quietly, and
+  the browser's own sw.js update on the next navigation installs v142 anyway.
+  Old hub.html page: hub/docs/hub_html_before_H129a.txt.
 
 ================================================================================
 Hub core entry: hub/core/hub_core.js (H127, 2026-11-04 IST, build 20261104f)

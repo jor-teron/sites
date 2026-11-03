@@ -19,6 +19,7 @@
  *     and only when the cached copy is over a day old (its Date header), not on every request
  *     (R25 did that), so an edited icon / wallpaper still shows within a day. Fonts: cache first (RUNTIME).
  *   · navigations not in a cache when offline: hub/update/hub_offline.html.
+ *   · H129d: a navigation to / is the index.html shell copy; one to the removed /hub.html gets that same copy.
  * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
  *   changed ones in place (the cache is never wiped); replies {type:'sw-refreshed', changed:[paths]}.
  * R58: install logs every SHELL file it could not fetch (console.warn) and records it in 'hub-meta'
@@ -27,17 +28,19 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104i';
-const CACHE = 'hub-shell-v141';  // 2026-11-04i: Desktop panels, Game Bar and controller moved to desktop/
+const V = '20261104j';
+const CACHE = 'hub-shell-v142';  // 2026-11-04j: Mode entry: Desktop / Phone | Touch cards, hub.html removed
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
 //   '__hub_failed__' shell files the install could not fetch (retried, see below)
 const META = 'hub-meta';
 const SHELL = [
-  'hub.html',   // H129a: now the tiny redirect to desktop/desktop.html (kept, so an offline hub.html link still lands)
+  // 'hub.html',   // H129a: now the tiny redirect to desktop/desktop.html (kept, so an offline hub.html link still lands)   (before H129d: removed)
+  'index.html',   // H129d: the mode entry (Desktop / Phone | Touch cards, saved-mode redirect); also answers / and old hub.html links
   'desktop/desktop.html',   // H129a: the desktop Hub page
   'desktop/index.html',   // H129a: desktop/ (folder index): tiny redirect to desktop.html
+  'desktop/mode/hub_osmode.js',   // H129d: Switch to Phone | Touch / Choose mode… (HubOsMode)
   'manifest.webmanifest',
   // (before H129b) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css
   // (before H129c) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',
@@ -100,6 +103,7 @@ const SHELL = [
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
 const SHELL_SET = new Set(SHELL.map(abs));
+const ROOT_KEY = abs('index.html');   // H129d: the mode entry; a navigation to / (or an old /hub.html) is served this copy
 const DESK_KEY = abs('desktop/index.html');   // H129a: a navigation to desktop/ is served the desktop/index.html redirect
 const SCOPE_PATH = new URL(self.registration.scope).pathname;   // H129a: only the Hub's own desktop/, not e.g. apps/…/desktop/
 
@@ -228,12 +232,22 @@ self.addEventListener('fetch', (e) => {
   if (/\.csv$/i.test(path) || path.endsWith('/hub/version.txt')) {
     e.respondWith(networkFirst(req, RUNTIME, bare, false)); return;
   }
-  // hub.html (also opened as / or /hub.html?join=…): the shell copy, keyed without the query
+  // hub.html (also opened as / or /hub.html?join=…): the shell copy, keyed without the query   (before H129d; see below)
   // (before H129a) const shellKey = nav && /\/hub\.html$/.test(path) ? bare : (SHELL_SET.has(bare) ? bare : '');
   // H129a: the desktop Hub page is desktop/desktop.html (a SHELL file); desktop/ = its folder-index redirect
   // (cached as desktop/index.html), and hub.html is a redirect too
+  // const shellKey = nav && path === SCOPE_PATH + 'desktop/' ? DESK_KEY
+  //   : nav && /\/hub\.html$/.test(path) ? bare : (SHELL_SET.has(bare) ? bare : '');   (before H129d)
+  // H129d: hub.html was removed. Old bookmarks, installed apps (start_url hub.html before H129d), Connect QR links
+  // (hub.html?join=CODE) and hub.html#app links still land: a navigation to the site's own /hub.html is answered
+  // with the index.html copy (the address bar keeps hub.html?…#…; index.html's relative targets still resolve from
+  // the root and it passes ?join / #hash on). Cache first (offline too); the network fetch goes to index.html, never hub.html.
+  if (nav && path === SCOPE_PATH + 'hub.html') {
+    const idx = new Request(ROOT_KEY, { credentials: 'same-origin' });
+    e.respondWith(staleWhileRevalidate(e, idx, ROOT_KEY).catch(() => caches.match(abs(OFFLINE)))); return;
+  }
   const shellKey = nav && path === SCOPE_PATH + 'desktop/' ? DESK_KEY
-    : nav && /\/hub\.html$/.test(path) ? bare : (SHELL_SET.has(bare) ? bare : '');
+    : nav && path === SCOPE_PATH ? ROOT_KEY : (SHELL_SET.has(bare) ? bare : '');   // H129d: / = index.html
   if (shellKey && (!v || v === V)) { e.respondWith(staleWhileRevalidate(e, req, shellKey)); return; }
   if (shellKey) { e.respondWith(networkFirst(req, CACHE, shellKey, nav)); return; }   // newer ?v= than this worker
   if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(path)) {   // R25 / R58: see the header (images)

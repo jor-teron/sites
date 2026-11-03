@@ -1,10 +1,10 @@
-20261104i
-hub-shell-v141
-H129c
+20261104j
+hub-shell-v142
+H129d
 2026-11-04 IST
 
 # hub/build.txt: the current Hub build, one place.
-# Line 1 build tag (?v= in hub.html, sw.js, hub_sw.js V, hub_ctx.js V, hub_loader.js V),
+# Line 1 build tag (?v= in desktop/desktop.html (H129d; before: hub.html), sw.js, hub_sw.js V, hub_ctx.js V, hub_loader.js V),
 # line 2 shell cache name (hub_sw.js CACHE), line 3 release, line 4 date (IST).
 # Updated on every Hub release bump (README_technical section 13).
 # hub/version.txt is separate: the user-facing version, Jor decides it.

@@ -150,7 +150,10 @@
   });
 
   async function latest() {
-    const html = await fetch('hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    // (before H129d) const html = await fetch('hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    // H129d: hub.html is gone; the desktop page carries the same hub/core/hub.js?v=<tag> (hub_bump.py moves it).
+    // Resolved from the site root (document.baseURI: <base href="../"> on desktop.html, location on phone.html).
+    const html = await fetch(new URL('desktop/desktop.html', document.baseURI).href, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
     const build = (html.match(/hub\/core\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
     const v = await readVersion('no-store');
     return { build, version: v.version, date: v.date };

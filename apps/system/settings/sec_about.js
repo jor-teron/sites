@@ -5,7 +5,7 @@
  * the first Release date, and a real
  * "Update" button. Inside the Hub that uses the Hub's own updater (HubUpdate.check in
  * hub/update/hub_update.js: clears the hub-shell caches and reloads the Hub when a newer build is
- * live); opened on its own it reads the live hub.html / version.txt and updates the service
+ * live); opened on its own it reads the live desktop/desktop.html (H129d; before: hub.html) / version.txt and updates the service
  * worker itself. Contact / Feedback link to the public GitHub repo (no other contact details).
  * R16c: "Last refreshed" (localStorage 'sites-hub.lastRefresh', the Hub's daily 09:00 refresh) and
  * "Clear Cache" (confirm → HubUpdate.clearCache(): Hub caches + cached Start list, reload).
@@ -74,7 +74,8 @@
   }
 
   async function standaloneCheck() {
-    const html = await fetch(ROOT + 'hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    // (before H129d) const html = await fetch(ROOT + 'hub.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    const html = await fetch(ROOT + 'desktop/desktop.html', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
     const build = (html.match(/hub\/core\/hub\.js\?v=([\w.-]+)/) || [])[1] || '';
     const v = await readVersion('no-store');
     let reg = null;

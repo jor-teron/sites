@@ -38,6 +38,7 @@
         if (ok) W().closeAll();
       } },
       { sep: true },
+      window.HubOsMode && { label: 'Switch to Phone | Touch\u2026', icon: '\uD83D\uDCF1', action: () => window.HubOsMode.switchTo('phone') },   // H129d: confirm, then the phone page
       { label: 'About', icon: '\u2139', action: () => C.openApp(C.SETTINGS, { hash: 'about' }) }
     ];
   });

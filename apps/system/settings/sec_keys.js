@@ -259,7 +259,8 @@
     d.addEventListener('toggle', () => {
       if (!d.open || loaded) return;
       loaded = true;
-      if (location.protocol === 'file:') { pre.textContent = 'Open hub/keys.readme.md next to hub.html, or the GitHub link below.'; return; }
+      // if (location.protocol === 'file:') { pre.textContent = 'Open hub/keys.readme.md next to hub.html, or the GitHub link below.'; return; }   (before H129d: hub.html removed)
+      if (location.protocol === 'file:') { pre.textContent = 'Open hub/keys.readme.md in the site folder, or the GitHub link below.'; return; }
       fetch(README, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
         .then((t) => { pre.textContent = t; }).catch(() => { pre.textContent = 'Could not load the guide (offline?). Use the GitHub link below.'; });
     });
