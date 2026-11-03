@@ -682,15 +682,27 @@ function onPointerUp(e) {
  * fitBoard
  * Portrait phones: size the board to the space left under the stats row so the
  * page never overflows (390x844, 360x800, short screens with browser bars).
+ * Landscape / desktop: the board sits beside the sidebar at its normal size and
+ * only shrinks when the window is too short or narrow for it (phones sideways,
+ * e.g. 844x390, 740x360, 667x375; short desktop windows).
  * --------------------------------------------------------------------------- */
 function fitBoard() {
   var portrait = window.matchMedia("(max-aspect-ratio: 3/4)").matches;
-  if (!portrait) { canvas.style.height = ""; canvas.style.width = ""; return; }
   var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   var vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
   var side = document.getElementById("side");
-  var avail = vh - side.offsetHeight - 8 /* gap */ - 16 /* padding */ - 4 /* border */;
-  var h = Math.floor(Math.max(120, Math.min(avail, (vw - 20) * ROWS / COLS)));
+  var h;
+  if (portrait) {
+    var avail = vh - side.offsetHeight - 8 /* gap */ - 16 /* padding */ - 4 /* border */;
+    h = Math.floor(Math.max(120, Math.min(avail, (vw - 20) * ROWS / COLS)));
+  } else {
+    var wrapCs = getComputedStyle(document.getElementById("wrap"));
+    var pad = 2 * (parseFloat(wrapCs.paddingTop) || 0), gap = parseFloat(wrapCs.columnGap) || 16;
+    var availH = vh - pad - 4 /* border */ - 4 /* spare */;
+    var availW = vw - side.offsetWidth - gap - pad - 4 - 4;
+    h = Math.floor(Math.max(120, Math.min(ROWS * CELL, availH, availW * ROWS / COLS)));
+    if (h >= ROWS * CELL) { canvas.style.height = ""; canvas.style.width = ""; return; }   /* fits: normal size */
+  }
   canvas.style.height = h + "px";
   canvas.style.width = Math.floor(h * COLS / ROWS) + "px";
 }
