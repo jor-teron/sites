@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
-  Star Pinball (PIN-1a, PIN-1b) — page. Title bar (ball, best, buttons) + message panel (rank, score,
+  Star Pinball (PIN-1a, PIN-1b, PIN-1c) — page. Title bar (ball, best, buttons) + message panel (rank, score,
   bonus multiplier, mission + progress, messages) / the table canvas: a bar on top in portrait, a side
   panel on wide screens. Numbers: core/config.js. Table layout: core/table.js. Physics (fixed
   sub-steps): core/physics.js. Missions + ranks: core/missions.js. Drawing: ui/render.js. Shared settings
-  bridge: ui/settings.js. Loop, controls, balls, bonus, ball save, save + resume: core/game.js.
+  bridge: ui/settings.js. Sounds: ui/sound.js. Loop, controls, nudge + tilt, balls, bonus, ball save, effects,
+  save + resume: core/game.js. Overlays: pause card (game so far, Resume / How to play / New game), game over,
+  How to play (controls table, scoring, missions + ranks filled in from core/missions.js).
   Classic scripts only, so it opens from file://.
   An original space table: no art or names from any other pinball game.
 -->
@@ -12,7 +14,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Star Pinball PIN-1b</title>
+  <title>Star Pinball PIN-1c</title>
   <link rel="stylesheet" href="ui/style.css">
 </head>
 <body>
@@ -35,26 +37,52 @@
         <button id="helpBtn">How to play</button>
         <span id="gearSlot" class="gear-slot"></span>
       </div>
-      <p class="keys">Z / ← left flipper · / / → right flipper · hold Space to pull the plunger, let go to launch · P pause</p>
+      <p class="keys">Z / ← left flipper · / / → right flipper · hold Space to pull the plunger, let go to launch · Shift nudge (not too often) · P pause</p>
     </div>
     <div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="Pinball table"></canvas></div>
   </div>
-  <div class="overlay" id="pause" hidden><div class="card"><h2>Paused</h2><p>Tap or press P to play on.</p></div></div>
-  <div class="overlay" id="over" hidden><div class="card"><h2 id="overText">Game over</h2><button id="againBtn">Play again</button></div></div>
+  <div class="overlay" id="pause" hidden>
+    <div class="card pause-card" role="dialog" aria-label="Paused">
+      <h2>Paused</h2>
+      <p id="pauseInfo" class="p-info"></p>
+      <p id="pauseMission" class="p-mission"></p>
+      <div class="p-btns">
+        <button id="resumeBtn" class="primary">Resume</button>
+        <button id="pHelpBtn">How to play</button>
+        <button id="pNewBtn">New game</button>
+      </div>
+      <p class="p-hint">Press P or Esc, or tap outside this box, to play on.</p>
+    </div>
+  </div>
+  <div class="overlay" id="over" hidden><div class="card"><h2 id="overText">Game over</h2><button id="againBtn" class="primary">Play again</button></div></div>
   <div class="overlay help" id="help" hidden>
     <div class="card help-card" role="dialog" aria-label="How to play Star Pinball">
       <h2>How to play</h2>
+      <p>Keep the ball on the table with the two flippers. You have 3 balls. A ball that falls between or beside the flippers is lost.</p>
+      <h3>Controls</h3>
+      <table class="ctl">
+        <tr><th></th><th>Keyboard</th><th>Phone / tablet</th></tr>
+        <tr><td>Left flipper</td><td>Z or ←</td><td>hold the left half</td></tr>
+        <tr><td>Right flipper</td><td>/ or →</td><td>hold the right half</td></tr>
+        <tr><td>Launch</td><td>hold Space, let go</td><td>hold the bottom-right corner, let go</td></tr>
+        <tr><td>Nudge</td><td>Left or Right Shift</td><td>flick a finger up</td></tr>
+        <tr><td>Pause</td><td>P or Esc</td><td>Pause button</td></tr>
+      </table>
+      <p>Hold longer to launch harder. Nudge gives the ball a small push left, right or up. Nudge too often (3 times in a few seconds) and you get a tilt warning; 5 times and the table tilts: the flippers stop until that ball drains and its bonus is lost.</p>
+      <h3>Scoring</h3>
       <ul>
-        <li>Keep the ball on the table with the two flippers. You have 3 balls.</li>
-        <li><b>Launch:</b> hold Space (or hold the bottom-right corner of the screen), then let go. Hold longer for a stronger shot.</li>
-        <li><b>Flippers:</b> Z or ← for the left one, / or → for the right one. On a phone, hold the left or right half of the screen.</li>
-        <li><b>Star lanes:</b> roll through the three stars at the top to light them; each flipper press moves the lit stars one step. All three lit: +2,000 and the bonus multiplier goes up (up to ×5).</li>
-        <li><b>Missions:</b> sink the ball in the hole under the stars to start one (the panel shows it and your progress). Finish it to score and rise in rank, from Cadet to Admiral.</li>
-        <li><b>Ramp:</b> shoot up the covered entry on the right; a strong shot rides over the top and comes back to the left flipper. The <b>spinner</b> is in the lane beside it. Knock down all four <b>drop targets</b> on the left to clear them.</li>
-        <li><b>Bonus:</b> builds up as you play and is paid × the multiplier when the ball drains. <b>Ball save:</b> lose a new ball in the first few seconds and you get it back.</li>
-        <li>A ball that falls between or beside the flippers is lost. A game in progress is kept if you leave, and your best score is kept.</li>
+        <li><b>Star lanes</b> at the top light up when the ball rolls through. Each flipper press moves the lit stars one step. All three lit: +2,000 and the bonus multiplier goes up (up to ×5).</li>
+        <li><b>Ramp:</b> shoot up the leaning entry on the right. A strong shot rides over the top and comes back to the left flipper. Easiest from the left flipper: catch the ball on it (hold the flipper up), let go so it rolls, then flip.</li>
+        <li><b>Spinner</b> in the right lane, <b>pop bumpers</b>, <b>slingshots</b>, and four <b>drop targets</b> on the left (knock all four down to clear them).</li>
+        <li><b>Bonus</b> builds up as you play and is paid × the multiplier when the ball drains. <b>Ball save:</b> lose a new ball in the first 6 seconds and you get it back once.</li>
       </ul>
-      <button id="helpClose">Got it</button>
+      <h3>Missions</h3>
+      <p>Sink the ball in the hole under the stars to start the next mission. The panel shows it and your progress. Goals get bigger each time round the list.</p>
+      <ul id="helpMissions"></ul>
+      <h3>Ranks</h3>
+      <p>Each mission you finish scores and moves you up one rank: <span id="helpRanks"></span>.</p>
+      <p class="p-hint">Leave at any time: the game in progress is kept, and so is your best score.</p>
+      <button id="helpClose" class="primary">Got it</button>
     </div>
   </div>
   <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
@@ -64,6 +92,7 @@
   <script src="core/table.js"></script>
   <script src="core/physics.js"></script>
   <script src="core/missions.js"></script>
+  <script src="ui/sound.js"></script>
   <script src="ui/render.js"></script>
   <script src="core/game.js"></script>
 </body>

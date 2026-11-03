@@ -1,5 +1,5 @@
 /*
- * Star Pinball — canvas renderer (PIN-1a; PIN-1b parts). Draws the whole table in code, no images:
+ * Star Pinball — canvas renderer (PIN-1a; PIN-1b parts; PIN-1c effects). Draws the whole table in code, no images:
  * a space backdrop (stars; planets at the sides when the screen is wide), the table body,
  * neon walls, slingshots, pop bumpers (flash when hit), rollover lanes (lit), the flippers,
  * the plunger spring and the ball (with a mark that turns with its spin).
@@ -8,11 +8,16 @@
  * needs drawn brighter, and a SAVE light while ball save is on.
  * The table is portrait and scaled to fit the height; on a wide screen the canvas fills the width,
  * so you see more backdrop around the table. Low graphics: fewer stars and no glow.
+ * PIN-1c: effects come in view.fx (core/game.js only sets them when Low graphics and reduced motion are
+ * off): a short camera shake of the table on big hits (lastShake keeps the last offset, for tests), flashes
+ * on drop targets, the hole and the ramp, and a light show (rim + stars pulsing) when a mission is done.
+ * The ramp entry arrow sits in the leaning entry channel; TILT shows over the flippers after a tilt.
  * Drawn only by the game loop (core/game.js), at the shared fpsLimit.
  */
 const PBRender = (() => {
   const C = PB_CONFIG, T = PB_TABLE;
   let cv, cx, cw = 300, ch = 500, dpr = 1, k = 0.4, ox = 0, oy = 0, stars = [];
+  const lastShake = { dx: 0, dy: 0, n: 0 };                       // last camera-shake offset (table units)
 
   const pal = () => PB_SETTINGS.isDark()
     ? { sky0: '#05060f', sky1: '#140b2e', body0: '#120a33', body1: '#1d1452', neon: '#38bdf8', sling: '#f472b6', bump: '#a78bfa', bumpHot: '#fde047', post: '#94a3b8', flip: '#f8fafc', lane: '#334155', laneLit: '#facc15', text: 'rgba(226,232,240,.22)', planet: '#7c3aed' }
@@ -57,8 +62,15 @@ const PBRender = (() => {
       cx.fillStyle = '#0ea5e9'; cx.beginPath(); cx.arc(cw - ox * 0.5, ch * 0.72, Math.min(ox * 0.22, 60), 0, Math.PI * 2); cx.fill();
       cx.globalAlpha = 1;
     }
-    // table space
-    cx.setTransform(dpr * k, 0, 0, dpr * k, dpr * ox, dpr * oy);
+    // table space (shaken for a moment after a big hit)
+    const FX = view.fx || {};
+    let sx = 0, sy = 0;
+    if (FX.on && FX.shakeAmp && now - FX.shakeAt < 260) {
+      const d = 1 - (now - FX.shakeAt) / 260, a = FX.shakeAmp * d;
+      sx = a * Math.sin(now / 13); sy = a * Math.cos(now / 17);
+      lastShake.dx = sx; lastShake.dy = sy; lastShake.n++;
+    }
+    cx.setTransform(dpr * k, 0, 0, dpr * k, dpr * (ox + sx * k), dpr * (oy + sy * k));
     const bg = cx.createLinearGradient(0, 0, 0, C.H); bg.addColorStop(0, P.body1); bg.addColorStop(1, P.body0);
     outline(); cx.fillStyle = bg; cx.fill();
     // playfield art: a ringed planet, a comet trail and the title
@@ -83,6 +95,10 @@ const PBRender = (() => {
     cx.lineWidth = 3; cx.strokeStyle = view.holeLit ? P.laneLit : P.lane;
     cx.globalAlpha = view.holeLit ? 0.55 + 0.45 * Math.sin(now / 180) : 1;
     cx.beginPath(); cx.arc(H[0], H[1], 21, 0, Math.PI * 2); cx.stroke(); cx.globalAlpha = 1;
+    if (view.flash && now - (view.flash.hole || -1e9) < 300) {             // hole flash
+      cx.fillStyle = P.bumpHot; cx.globalAlpha = 0.5 * (1 - (now - view.flash.hole) / 300);
+      cx.beginPath(); cx.arc(H[0], H[1], 40, 0, Math.PI * 2); cx.fill(); cx.globalAlpha = 1;
+    }
     // slings (filled triangles, flash when kicked)
     for (const side of [0, 1]) {
       const v = side ? [[445, 800], [445, 900], [390, 930]] : [[115, 800], [115, 900], [170, 930]];
@@ -103,8 +119,8 @@ const PBRender = (() => {
     // drop targets
     const mDrops = view.mission === 'drops';
     for (const d of T.drops) {
-      const up = world.drops[d.id];
-      cx.strokeStyle = up ? (mDrops ? P.laneLit : P.sling) : P.lane; cx.lineWidth = up ? 7 : 3; cx.globalAlpha = up ? 1 : 0.6;
+      const up = world.drops[d.id], hotD = view.flash && now - (view.flash[d.id] || -1e9) < 160;
+      cx.strokeStyle = hotD ? P.bumpHot : up ? (mDrops ? P.laneLit : P.sling) : P.lane; cx.lineWidth = up || hotD ? 7 : 3; cx.globalAlpha = up || hotD ? 1 : 0.6;
       cx.beginPath(); cx.moveTo(d.segs[0][0][0], d.segs[0][0][1]); for (const sg of d.segs) cx.lineTo(sg[1][0], sg[1][1]); cx.stroke();
       cx.globalAlpha = 1;
     }
@@ -145,6 +161,19 @@ const PBRender = (() => {
       cx.beginPath(); cx.arc(t[0], t[1], f.rt, 0, Math.PI * 2); cx.fill(); cx.shadowBlur = 0;
       cx.fillStyle = P.sling; cx.beginPath(); cx.arc(f.p[0], f.p[1], 4, 0, Math.PI * 2); cx.fill();
     }
+    if (view.tilted) {                                                     // tilt
+      cx.fillStyle = '#f87171'; cx.globalAlpha = 0.7 + 0.3 * Math.sin(now / 120);
+      cx.font = 'bold 30px sans-serif'; cx.textAlign = 'center'; cx.fillText('TILT', 280, 1050); cx.globalAlpha = 1;
+    }
+    if (FX.on && FX.show) {                                                // mission light show: rim + stars pulse
+      const pulse = 0.5 + 0.5 * Math.sin(now / 40);
+      cx.save(); cx.strokeStyle = P.laneLit; cx.lineWidth = 10; cx.globalAlpha = 0.25 + 0.5 * pulse;
+      if (!low) { cx.shadowColor = P.laneLit; cx.shadowBlur = 24; }
+      outline(); cx.stroke();
+      cx.fillStyle = P.laneLit;
+      for (const s of T.sensors) if (s.kind === 'top') { cx.beginPath(); cx.arc(s.c[0], s.c[1], 14 + 6 * pulse, 0, Math.PI * 2); cx.fill(); }
+      cx.restore();
+    }
     if (view.saveOn) {                                                     // ball save light
       cx.fillStyle = P.laneLit; cx.globalAlpha = 0.6 + 0.4 * Math.sin(now / 150);
       cx.font = 'bold 18px sans-serif'; cx.textAlign = 'center'; cx.fillText('SAVE', 280, 1075); cx.globalAlpha = 1;
@@ -180,9 +209,12 @@ const PBRender = (() => {
     if (!low) { cx.shadowColor = hot ? P.laneLit : P.neon; cx.shadowBlur = 8; }
     cx.strokeStyle = hot ? P.laneLit : '#a5f3fc'; cx.lineWidth = 3; rail(17); rail(-17);
     cx.shadowBlur = 0;
-    // entry arrow under the covered mouth
-    cx.fillStyle = hot ? P.laneLit : P.neon; cx.globalAlpha = 0.8;
-    cx.beginPath(); cx.moveTo(465, 560); cx.lineTo(452, 585); cx.lineTo(478, 585); cx.closePath(); cx.fill(); cx.globalAlpha = 1;
+    // entry arrow in the leaning entry channel, pointing up it
+    const E = T.ramp.entry, at = (al, ac) => [E.base[0] + E.ax[0] * al + E.px[0] * ac, E.base[1] + E.ax[1] * al + E.px[1] * ac];
+    const now = view.now || 0, hotR = view.flash && now - (view.flash.ramp || -1e9) < 400;
+    cx.fillStyle = hot || hotR ? P.laneLit : P.neon; cx.globalAlpha = hotR ? 1 : 0.8;
+    const A = at(E.on - 4, 0), B = at(E.on - 30, -14), D = at(E.on - 30, 14);
+    cx.beginPath(); cx.moveTo(A[0], A[1]); cx.lineTo(B[0], B[1]); cx.lineTo(D[0], D[1]); cx.closePath(); cx.fill(); cx.globalAlpha = 1;
   }
-  return { init, resize, draw, tableRect };
+  return { init, resize, draw, tableRect, lastShake };
 })();

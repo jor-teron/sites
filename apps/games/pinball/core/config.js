@@ -1,5 +1,5 @@
 /*
- * Star Pinball — config (PIN-1a, targets + missions PIN-1b). All tunable numbers live here.
+ * Star Pinball — config (PIN-1a, targets + missions PIN-1b, nudge + tilt + fairer ramp PIN-1c). All tunable numbers live here.
  * Table units: 600 wide x 1120 tall, y grows down the table (towards the flippers).
  * The physics runs in fixed sub-steps of `step` seconds (1/1440 s = 24 per frame at 60 fps,
  * 48 at 30 fps, never fewer than 8 below 180 fps). Fast balls move under 3 units per sub-step,
@@ -25,8 +25,11 @@ const PB_CONFIG = {
   // PIN-1b parts
   drop: { minHit: 90, resetDelay: 1.0 },              // drop targets: approach speed that knocks one down; bank reset delay (s)
   spinner: { kick: 0.03, decay: 1.4 },                // spin added per unit/s of crossing speed (rad/s); loss per second
-  ramp: { g: 1000000, drag: 0.25, exitMin: 250, exitMax: 750 },   // climb: need ~1400/s at the entry to make it
+  ramp: { g: 820000, drag: 0.25, exitMin: 250, exitMax: 750 },    // climb: need ~1250/s at the entry to make it (PIN-1c: was 1e6)
+  rampEntry: { top: [420, 500], tilt: 30, w: 63, len: 85, at: 0.45 },  // PIN-1c: covered entry channel (top centre, lean to the right in degrees, inside width, length; past `at` of its length = on the ramp)
   hole: { R: 14, maxSpeed: 1700, hold: 1.2, kick: 650, cool: 0.8 }, // catch radius, faster balls skip over, hold (s), kick-out
+  nudge: { side: 170, up: 150, gap: 0.25 },          // PIN-1c: push (units / s) sideways + up; Shift key repeats under `gap` s are ignored
+  tilt: { window: 4, warnAt: 3, tiltAt: 5 },         // nudges inside `window` s: warning at the 3rd, tilt at the 5th (flippers off, bonus lost)
   ballSave: 6,              // s after a new ball leaves the launch lane: a drain gives the ball back (once per ball)
   multMax: 5,               // bonus multiplier cap (all 3 star lanes lit = +1)
   msgMs: 2600,              // how long a panel message shows

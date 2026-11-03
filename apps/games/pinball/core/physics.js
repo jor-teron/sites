@@ -1,5 +1,5 @@
 /*
- * Star Pinball — physics (PIN-1a; drop targets, spinner, ramp, hole PIN-1b). No page code: a world
+ * Star Pinball — physics (PIN-1a; drop targets, spinner, ramp, hole PIN-1b; nudge, leaning ramp entry PIN-1c). No page code: a world
  * object stepped in fixed sub-steps.
  * Ball: position, velocity and spin (a rolling disc: friction at a contact turns slide into spin and back).
  * Each sub-step: move the flippers and plunger, add gravity, move the ball, then push it out of every
@@ -12,6 +12,9 @@
  * anything there) or 'hole' (held in the saucer, then kicked out).
  * Drop targets are solid segments while up; the bank pops back up once all are down (when the ball
  * is clear of it). The spinner is a flap the ball passes through: it spins with the crossing speed.
+ * PIN-1c: nudge(world, dx, dy) gives a ball on the table a small push (tilt rules live in core/game.js).
+ * The ramp entry channel leans to the right (PB_CONFIG.rampEntry) and the ball goes onto the ramp once it
+ * is past the `on` line inside it, moving up the channel; its speed up the channel carries it.
  * world.step(input) → events [{ type: 'bumper' | 'sling' | 'sensor' | 'drop' | 'dropsClear' |
  *   'dropsReset' | 'spin' | 'rampIn' | 'ramp' | 'rampBack' | 'hole' | 'kick' | 'drain' | 'escape', id }]
  */
@@ -215,10 +218,11 @@ const PBPhysics = (() => {
     // spinner: the ball crossing its line spins it
     const SP = T.spinner;
     if (b.x > SP.a[0] && b.x < SP.b[0] && (py0 - SP.a[1]) * (b.y - SP.a[1]) < 0) w.spinner.w = Math.min(90, w.spinner.w + Math.abs(b.vy) * C.spinner.kick);
-    // ramp entry: moving up inside the covered channel
-    const M = T.ramp.mouth;
-    if (b.vy < 0 && b.y < M.y && b.x > M.x0 && b.x < M.x1 && b.y > M.y - 60) {
-      const v = Math.max(1, -b.vy); w.ramp = { s: 0, v }; b.mode = 'ramp'; ev.push({ type: 'rampIn' }); return ev;
+    // ramp entry: moving up the covered channel past its `on` line
+    const E = T.ramp.entry, ex = b.x - E.base[0], ey = b.y - E.base[1], along = ex * E.ax[0] + ey * E.ax[1];
+    if (along > E.on && along < E.len && Math.abs(ex * E.px[0] + ey * E.px[1]) < E.w / 2) {
+      const v = b.vx * E.ax[0] + b.vy * E.ax[1];
+      if (v > 0) { w.ramp = { s: 0, v }; b.mode = 'ramp'; ev.push({ type: 'rampIn' }); return ev; }
     }
     // hole: a slow enough ball over it is caught
     const hx = b.x - T.hole.c[0], hy = b.y - T.hole.c[1];
@@ -240,5 +244,13 @@ const PBPhysics = (() => {
     for (const f of w.flippers) { const q = closestSeg(p, f.p, tipOf(f)); m = Math.min(m, Math.hypot(x - q[0], y - q[1]) - (f.rp + (f.rt - f.rp) * q[2])); }
     return m - r;
   }
-  return { create, newBall, tipOf, closestSeg, closestArc, clearance, rampAt, rampLength: RL };
+  /** Nudge (PIN-1c): a small push to a ball on the table (not on the ramp or in the hole). */
+  function nudge(w, dx, dy) {
+    const b = w.ball;
+    if (!b || !b.live || b.mode !== 'table') return false;
+    b.vx += dx; b.vy += dy;
+    const s = Math.hypot(b.vx, b.vy); if (s > C.vmax) { b.vx *= C.vmax / s; b.vy *= C.vmax / s; }
+    return true;
+  }
+  return { nudge, create, newBall, tipOf, closestSeg, closestArc, clearance, rampAt, rampLength: RL };
 })();
