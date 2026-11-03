@@ -5,6 +5,7 @@
   Same settings (localStorage 'agent.settings'), keys (Hub first, app/core/hubkeys.js) and gallery (IndexedDB 'agent-images').
   AG17: Steps on every tab, size chips (app/gui/imagesize.js), prices in the picker, prompt filenames, Recent models.
   AG19: top row = Provider + Model dropdowns (no tabs); Ratio / Size / Steps as one compact line of dropdowns.
+  AG20: ☆/★ favourite models (⭐ Favourites group on top), full-screen viewer (app/gui/imageviewer.js).
   Scripts: hubkeys, presets, registry (keys + Ollama URL), settings (HR.set only), imagegen + img_* providers, imagestore, imagepage.
 -->
 <html lang="en">
@@ -28,6 +29,7 @@
   <span class="mbar">   <!-- AG19: Provider + Model dropdowns, same look as the chat top row (ui/modelbar.css) -->
     <select id="imgProv" class="mb-sel mb-prov" aria-label="Image provider"></select>
     <select id="imgModel" class="mb-sel mb-model" aria-label="Image model"></select>
+    <button type="button" class="hb mb-find ig-fav" id="imgFav" title="Add to favourites" aria-label="Add to favourites" aria-pressed="false">☆</button>
   </span>
 </header>
 <main class="ig-body">
@@ -47,10 +49,12 @@
   <p id="imgEmpty" class="hint">No pictures yet. They stay in this browser, apart from your chats.</p>
   <div id="imgGrid" class="ig-grid"></div>
 </main>
-<dialog id="imgView" class="dlg ig-view" aria-label="Picture">
-  <img id="imgBig" alt="">
-  <p id="imgCap" class="hint"></p>
-  <div class="ec-row"><a id="imgDl" class="hb wide ig-a" href="#">⬇ Download</a><button type="button" class="hb wide" id="imgDel">🗑 Delete</button><button type="button" class="hb wide" id="imgViewX">✕ Close</button></div>
+<dialog id="imgView" class="iv" aria-label="Picture" tabindex="-1">   <!-- AG20: full-screen viewer (app/gui/imageviewer.js) -->
+  <div class="iv-top"><span id="ivCount" class="iv-n"></span><span class="grow"></span><button type="button" class="iv-b" id="ivX" title="Close (Esc)" aria-label="Close">✕</button></div>
+  <div class="iv-stage" id="ivStage"><img id="ivImg" alt="" draggable="false"></div>
+  <button type="button" class="iv-side iv-prev" id="ivPrev" title="Previous (←)" aria-label="Previous picture">‹</button>
+  <button type="button" class="iv-side iv-next" id="ivNext" title="Next (→)" aria-label="Next picture">›</button>
+  <div class="iv-bar"><p id="ivCap" class="iv-cap"></p><a id="ivDl" class="iv-b iv-w" href="#">⬇ Download</a><button type="button" class="iv-b iv-w" id="ivDel">🗑 Delete</button></div>
 </dialog>
 <script>window.HR = window.HR || {};</script>
 <script src="app/core/hubkeys.js"></script>
@@ -65,6 +69,7 @@
 <script src="app/models/img_ollama.js"></script>
 <script src="app/storage/imagestore.js"></script>
 <script src="app/gui/imagesize.js"></script>
+<script src="app/gui/imageviewer.js"></script>
 <script src="app/gui/imagepage.js"></script>
 <script>
   HR.set.applyTheme();

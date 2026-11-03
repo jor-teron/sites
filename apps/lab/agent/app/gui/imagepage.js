@@ -11,6 +11,8 @@
    back to `imageSteps`), others show it disabled 'fixed by provider'. Size chips (HR.imgsize, setting `imageSize`).
    AG19: Provider is a dropdown (#imgProv) in the top row next to Model; Steps is a dropdown hidden where unsupported;
    Ratio / Size come from HR.imgsize.draw(provider).
+   AG20: ☆/★ (#imgFav) stars the current model (`imageFav_<id>`); '⭐ Favourites' optgroup on top, then Recent (no repeats).
+   Gallery tap -> HR.imgviewer (full screen, ← → / swipe, Esc).
    Model options show the API price (m.price). Recent group: last 5 models used per tab (`imageRecent_<id>`).
    Download name = slugified prompt (+ '-2', '-3' for repeats in the gallery or this session) + real extension. */
 HR.imgpage = (function () {
@@ -58,17 +60,19 @@ HR.imgpage = (function () {
   function load() {
     var p = P(), sel = $('imgModel'), want = HR.set.get(mkey()) || (prov === 'ollama' ? HR.set.get('imageModel') : '') || '', tok = prov;
     $('imgCard').hidden = true; $('imgNote').textContent = p.note || ''; stepsUi(); HR.imgsize.draw(p, sizeUi); sizeUi();
-    sel.innerHTML = '<option value="">Loading…</option>'; sel.disabled = true; cool();
+    sel.innerHTML = '<option value="">Loading…</option>'; sel.disabled = true; favUi(); cool();
     p.models().then(function (l) {
       if (tok !== prov) return;
       sel.innerHTML = ''; var by = {}; l.forEach(function (m) { by[m.name] = m; });
       var opt = function (m, g) { var o = document.createElement('option'); o.value = m.name; o.textContent = (m.label || m.name) + (m.price ? ' · ' + m.price : ''); g.appendChild(o); };
-      var rec = recent().filter(function (n) { return by[n]; });
-      if (rec.length) { var g1 = document.createElement('optgroup'); g1.label = '🕘 Recent'; rec.forEach(function (n) { opt(by[n], g1); }); sel.appendChild(g1);
-        var g2 = document.createElement('optgroup'); g2.label = 'All models'; l.forEach(function (m) { opt(m, g2); }); sel.appendChild(g2); }
+      var fv = favs().filter(function (n) { return by[n]; }), rec = recent().filter(function (n) { return by[n] && fv.indexOf(n) < 0; });
+      var grp = function (lab, l) { var g = document.createElement('optgroup'); g.label = lab; l.forEach(function (n) { opt(by[n], g); }); sel.appendChild(g); };
+      if (fv.length) grp('⭐ Favourites', fv);
+      if (rec.length) grp('🕘 Recent', rec);
+      if (fv.length || rec.length) { var g2 = document.createElement('optgroup'); g2.label = 'All models'; l.forEach(function (m) { opt(m, g2); }); sel.appendChild(g2); }
       else l.forEach(function (m) { opt(m, sel); });
       if (!by[want]) want = l[0] ? l[0].name : '';
-      sel.value = want; sel.title = want; sel.disabled = false; if (want) HR.set.put(mkey(), want); stepsUi(); cool();
+      sel.value = want; sel.title = want; sel.disabled = false; if (want) HR.set.put(mkey(), want); stepsUi(); favUi(); cool();
     }).catch(function (e) { if (tok !== prov) return; sel.innerHTML = '<option value="">No image model</option>'; card(e); cool(); });
   }
   /* AG17: steps per provider */
@@ -85,6 +89,11 @@ HR.imgpage = (function () {
     l.forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n + ' steps'; st.appendChild(o); });
     st.value = String(cur); st.title = 'Steps (default ' + t.def($('imgModel').value) + ', max ' + mx + ')';
   }
+  /* AG20: favourites per provider (imageFav_<id>) */
+  function favs() { var l = HR.set.get('imageFav_' + prov); return Array.isArray(l) ? l : []; }
+  function favUi() { var b = $('imgFav'), m = $('imgModel').value, on = !!m && favs().indexOf(m) >= 0, t = on ? 'Remove from favourites' : 'Add to favourites';
+    b.textContent = on ? '★' : '☆'; b.classList.toggle('on', on); b.disabled = !m; b.title = t; b.setAttribute('aria-label', t); b.setAttribute('aria-pressed', String(on)); }
+  function star() { var m = $('imgModel').value; if (!m) return; var l = favs(), k = l.indexOf(m); if (k >= 0) l.splice(k, 1); else l.push(m); HR.set.put('imageFav_' + prov, l); load(); }
   function recent() { var l = HR.set.get('imageRecent_' + prov); return Array.isArray(l) ? l : []; }
   function used(m) { var l = recent().filter(function (x) { return x !== m; }); l.unshift(m); HR.set.put('imageRecent_' + prov, l.slice(0, 5)); }
   function sizeUi() { var f = HR.imgsize.fit(P()); $('imgSizeNote').textContent = (P().size === 'ratio' ? '📐 shape ' + f.ratio : '📐 ' + f.width + ' × ' + f.height) + (f.note ? ' · ' + f.note : ''); }
@@ -136,7 +145,7 @@ HR.imgpage = (function () {
         var u = URL.createObjectURL(r.blob); urls.push(u);
         var b = document.createElement('button'); b.type = 'button'; b.className = 'ig-th'; b.title = r.prompt;
         var i = document.createElement('img'); i.src = u; i.alt = r.prompt; i.loading = 'lazy'; b.appendChild(i);
-        b.onclick = function () { view(r, u); }; g.appendChild(b);
+        b.onclick = function () { view(r); }; g.appendChild(b);
       });
     }).catch(function () { $('imgEmpty').hidden = false; });
   }
@@ -150,19 +159,19 @@ HR.imgpage = (function () {
     while (done[n] && done[n] !== r.id) { k++; n = s + '-' + k; }
     return n + ext(r.blob);
   }
-  function view(r, u) {
-    cur = r; $('imgBig').src = u; $('imgCap').textContent = r.prompt + ' · ' + r.model + ' · ' + new Date(r.time).toLocaleString();
-    var d = $('imgDl'), fn = fname(r); d.href = u; d.download = fn; d.onclick = function () { done[fn.replace(/\.\w+$/, '')] = r.id; }; $('imgView').showModal();
+  function view(r) {   /* AG20: full-screen viewer, gallery order */
+    var items = gl.map(function (x, k) { return { rec: x, url: urls[k] }; });
+    HR.imgviewer.open(items, gl.indexOf(r), { fname: fname, onDownload: function (x, fn) { done[fn.replace(/\.\w+$/, '')] = x.id; },
+      onDelete: function (x) { return HR.imgstore.del(x.id).then(function () { return gallery(); }); } });
   }
   function init() {
     $('imgGo').onclick = go;
-    $('imgModel').onchange = function () { HR.set.put(mkey(), this.value); this.title = this.value; stepsUi(); cool(); };
+    $('imgModel').onchange = function () { HR.set.put(mkey(), this.value); this.title = this.value; stepsUi(); favUi(); cool(); };
     $('imgProv').onchange = function () { if (ctrl) { this.value = prov; return; } prov = this.value; HR.set.put('imageProvider', prov); drawTabs(); load(); };
     var st = $('imgSteps'); st.onchange = function () { var t = P().steps; if (!t) return; var v = parseInt(st.value, 10);
       HR.set.put('imageSteps_' + prov, isNaN(v) ? t.def($('imgModel').value) : Math.max(t.min || 1, Math.min(sMax(), v))); stepsUi(); };
     $('imgPrompt').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); go(); } });
-    $('imgViewX').onclick = function () { $('imgView').close(); };
-    $('imgDel').onclick = function () { if (!cur || !confirm('Delete this picture?')) return; HR.imgstore.del(cur.id).then(function () { $('imgView').close(); gallery(); }); };
+    $('imgFav').onclick = star;
     if (HR.hubKeys) HR.hubKeys.onChange(function () { if (!ctrl) { var was = prov; drawTabs(); if (was !== prov) load(); } });
     drawTabs(); load(); gallery();
   }
