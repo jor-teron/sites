@@ -47,7 +47,7 @@ const SHELL = [
   'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',
   'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
   'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
-  'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js',
+  'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js', 'shared/fs/webdav_fs.js',
   'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js', 'shared/google/google_gis.js', 'shared/google/phonekey.js', 'shared/google/google.css',
   'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
   'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'shared/favorites/favorites.js',
