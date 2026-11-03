@@ -113,4 +113,5 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 | Connect 4 (`connect-4`) | done (C4-1) | theme (light/dark; auto = Hub theme), sfx + masterVolume (WebAudio beeps), difficulty (default CPU level), fpsLimit (drop animation, max 30), vibration, gear (button row). showFps, autoPause, controls unused |
 | Game of Life (`game-of-life`) | done (LIFE-1) | theme (light/dark; auto = Hub theme), fpsLimit (render cap, max 30; generations on real time), autoPause, gear (button row). No sound; difficulty, vibration, controls unused |
 | Go (`go`) | done (GO-1) | theme (light/dark; auto = Hub theme), sfx + masterVolume (WebAudio clicks), difficulty (default CPU level), vibration (capture / game end), gear (button row). Draws on change only, no loop: fpsLimit, showFps, autoPause, controls unused |
+| Blockade (`blockade`) | done (BLKD-1) | theme (light/dark; auto = Hub theme), sfx + masterVolume (WebAudio beeps), difficulty (default CPU level), vibration (win / loss), gear (button row). Draws on change only, no loop: fpsLimit, showFps, autoPause, controls unused |
 | All other games | pending | |
