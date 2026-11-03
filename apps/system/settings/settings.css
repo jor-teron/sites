@@ -180,6 +180,7 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .saver-min{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .saver-min input{width:5.5em;padding:6px 8px;border-radius:8px;border:1px solid var(--line,#444);background:transparent;color:inherit;font:inherit}
 .saver-min small{margin:0;flex-basis:100%}
+.break-min{margin:6px 0}.break-min .break-lbl{min-width:5.5em}   /* H65: Computer break minutes */
 
 /* H28: API Keys (sec_keys.js) */
 .key-note { display: block; }
