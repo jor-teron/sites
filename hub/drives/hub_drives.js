@@ -116,7 +116,7 @@
       if (lock) locked.add(d.id);
       // R56: a folder that needs access again (the browser forgets it on reload) stays as a greyed tile;
       //  the click is the user gesture requestPermission (FsDrives.allow) needs, then Files opens it.
-      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2', d.name,
+      const t = tile('drv-' + d.kind, d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : '\uD83D\uDCC2', d.name,
         lock ? () => allowDrive(d) : (e) => openFiles(d.id, e.shiftKey));
       t.title = lock ? 'Click to allow access (' + d.name + ')' : tip;
       if (lock) {

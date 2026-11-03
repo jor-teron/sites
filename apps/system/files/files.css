@@ -247,3 +247,9 @@ button:disabled { opacity: .4; cursor: default; }
 .gd-panel[hidden] { display: none; }
 .gd-panel .gdc { max-width: 380px; }
 .list[hidden] { display: none; }
+/* H118: 🌐 Network drives group (Google Drive + WebDAV) */
+.drive-group { margin: 12px 10px 2px; font-size: .78rem; font-weight: 700; letter-spacing: .02em; color: var(--muted); }
+.drive.bad .drive-name::after { content: ''; display: inline-block; width: 8px; height: 8px; margin-left: 6px; border-radius: 50%; background: var(--bad, #f87171); vertical-align: middle; }
+.drive-set { font-size: 1rem; }
+.drive-addnet { display: block; margin: 12px 10px 4px; font-size: .84rem; color: var(--accent); text-decoration: none; }
+.drive-addnet:hover { text-decoration: underline; }

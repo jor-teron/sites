@@ -9,6 +9,10 @@
  * then shows the QR sign-in panel (#gd-panel, shared/google/gdrive_connect.js) instead of files;
  * signed in → a normal drive (Drive adapter, shared/google/gdrive_fs.js) with a ⏏ Sign out button,
  * opened at the "hub" folder of My Drive (crumb "Google Drive › hub"); "Renew" when a phone sign-in ran out.
+ * H118: drives are grouped: Local + added folders, then "🌐 Network drives" (Google Drive when signed in and each
+ *   saved WebDAV server, kind 'webdav', 🌐 + its name, a small ⚙ to Settings › Network drives). No network drive
+ *   → just a small "+ Add network drive" link there. Opening a WebDAV drive first lists its top folder; a wrong
+ *   password / no reply shows the "not connected" note (+ Settings button) and a red dot on the row until it opens.
  * H109: quick links (Documents, Photos, ... on Local; made on first click) and the storage meter.
  * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash(), meter().
  */
@@ -26,22 +30,43 @@
     try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
     if (!(hub && hub.__hubOpenApp('apps/system/disk/') !== false)) location.href = DISK;
   }
+  /* H118: Settings › Network drives (#drives), in the Hub when Files runs inside it, else this tab. */
+  function openNetSettings() {
+    let hub = null;
+    try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
+    if (!(hub && hub.__hubOpenApp('apps/system/settings/', { hash: 'drives' }) !== false)) location.href = '../settings/#drives';
+  }
+  const netBad = new Map();   // H118: drive id → message of the last failed open (red dot until it opens)
   async function draw() {
     const list = await D.list();
     const rows = [];
-    for (const d of list) {
+    let netHead = false;
+    const isNet = (d) => d.kind === 'gdrive' || d.kind === 'webdav';
+    for (const d of list.filter((x) => !isNet(x)).concat(list.filter(isNet))) {   // H118: local + folders first
+      const net = d.kind === 'gdrive' || d.kind === 'webdav';
+      if (net && !(d.kind === 'gdrive' && D.gdriveState() !== 'ok') && !netHead) {
+        netHead = true; rows.push(el('p', 'drive-group', '\uD83C\uDF10 Network drives'));
+      }
       if (d.kind === 'gdrive' && D.gdriveState() !== 'ok') continue;
       // R56: an added folder that needs access again (after every reload) is listed greyed with
       //  "Allow access" (a click = the user gesture requestPermission needs) instead of being hidden
       const lock = d.kind === 'folder' && (await D.access(d.id)) !== 'granted';
-      const r = el('div', 'drive' + (d.id === st.driveId ? ' on' : '') + (lock ? ' locked' : ''));
+      const r = el('div', 'drive' + (d.id === st.driveId ? ' on' : '') + (lock ? ' locked' : '') + (netBad.has(d.id) ? ' bad' : ''));
+      if (netBad.has(d.id)) r.title = netBad.get(d.id);
       r.setAttribute('role', 'listitem');
       const open = btn('drive-open', '', lock ? 'Allow access to ' + d.name : 'Open ' + d.name, () => (lock ? allowDrive(d) : openDrive(d.id, true)));
-      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
+      open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));
       r.appendChild(open);
+      if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
       if (lock) r.appendChild(btn('drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)));
       else FX.view.dropTarget(open, () => D.handle(d.id), d.id);
       rows.push(r);
+    }
+    if (!list.some((d) => d.kind === 'webdav') && window.WebDavAccounts) {   // H118
+      const a = el('a', 'drive-addnet', '\uFF0B Add network drive'); a.href = '../settings/#drives';
+      a.title = 'Add a WebDAV server in Settings \u203A Network drives';
+      a.addEventListener('click', (e) => { e.preventDefault(); openNetSettings(); });
+      rows.push(a);
     }
     if (!list.length) rows.unshift(el('p', 'drive-none', 'This browser has no file storage for web pages.'));
     // H109: "Manage drives" is a small icon row in the sidebar footer (above the storage meter)
@@ -120,10 +145,11 @@
   }
   /** R54b: a drive that is not connected → a short note + "Open Disk" instead of the QR panel / allow button.
    *  R56: an added folder (d) also gets an "Allow access" button. */
-  function notConnected(text, d) {
+  function notConnected(text, d, net) {
     const p = $('gd-panel');
     $('list').hidden = true;
-    const b = btn('tb drive-allow', 'Open Disk', 'Manage drives in Disk', openDisk);
+    const b = net ? btn('tb drive-allow', 'Open Settings', 'Settings \u203A Network drives', openNetSettings)   // H118
+      : btn('tb drive-allow', 'Open Disk', 'Manage drives in Disk', openDisk);
     const a = d ? btn('tb drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)) : null;
     p.replaceChildren(el('p', 'nc-text', text), ...(a ? [a, b] : [b]));
     p.hidden = false; p.classList.add('nc');
@@ -223,6 +249,17 @@
       return;
     }
     const d = (await D.list()).find((x) => x.id === id);
+    if (d && d.kind === 'webdav') {   // H118: try the server once; a failure = note + red dot
+      try { for await (const _ of h.keys()) break; netBad.delete(id); }
+      catch (e) {
+        const m = e && e.name === 'NotAllowedError' ? 'Wrong user or password for \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives.'
+          : 'Can\u2019t reach \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives (it must be on, https and allow CORS).';
+        netBad.set(id, m);
+        st.driveId = id; st.driveName = d.name; st.stack = []; draw(); crumbs(); setHash(); FX.view.load();
+        notConnected(m, null, true);
+        return;
+      }
+    }
     st.driveId = id; st.driveName = d ? d.name : h.name;
     st.stack = [{ name: h.crumb || st.driveName, handle: h }];   // Google Drive: "Google Drive › hub"
     // walk into the saved path as far as it still exists
