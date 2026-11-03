@@ -14,8 +14,8 @@
  *     (#snake …), names / icons / NEW_TAB of known apps, window session restore (an app not
  *     listed here is re-checked with a HEAD request), __hubOpenApp (hub_chat.js) and the
  *     load-error message when this file is broken;
- *   - hub/menu/hub_tiles.js (home tiles): icon and NEW_TAB fallback of the same app;
- *   - hub/menu/hub_flyout.js: a hash of this text — a change drops the cached Start list;
+ *   - desktop/menu/hub_tiles.js (home tiles): icon and NEW_TAB fallback of the same app;
+ *   - desktop/menu/hub_flyout.js: a hash of this text — a change drops the cached Start list;
  *   - hub/update/hub_sw.js SHELL and hub.html <script> (precached, loaded before hub.js).
  * An app that is only in a category CSV still opens (from its page / flyout) as a hidden extra.
  * Do not remove, reorder or "clean up" rows without checking the readers above.

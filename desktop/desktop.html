@@ -33,8 +33,10 @@
   <link rel="stylesheet" href="hub/link/hub_panels.css" />
   <!-- H66: Notification Centre 🔔 + side panel -->
   <link rel="stylesheet" href="hub/viewer/hub_notifcenter.css" />
-  <link rel="stylesheet" href="hub/menu/hub_flyout.css" />
-  <link rel="stylesheet" href="hub/wm/wm.css" />
+  <!-- <link rel="stylesheet" href="hub/menu/hub_flyout.css" />   (before H129b) -->
+  <link rel="stylesheet" href="desktop/menu/hub_flyout.css" />
+  <!-- <link rel="stylesheet" href="hub/wm/wm.css" />   (before H129b) -->
+  <link rel="stylesheet" href="desktop/wm/wm.css" />
   <link rel="stylesheet" href="shared/dialog/dialog.css" />
   <link rel="stylesheet" href="shared/ctxmenu/ctxmenu.css" />
   <link rel="stylesheet" href="hub/update/hub_update.css" />
@@ -146,29 +148,38 @@
   <script src="hub/core/hub_eye.js"></script><!-- H63: Eye comfort warm layer + 🌙 -->
   <script src="hub/core/hub_break.js"></script><!-- H65: Computer break (25 / 5 Hub lock); early, so a reload mid-break locks at once -->
   <!-- Desktop mode (big screen + mouse): windows + taskbar; Phone mode = the single frame -->
-  <script src="hub/wm/wm_mode.js"></script>
+  <!-- <script src="hub/wm/wm_mode.js"></script>   (before H129b) -->
+  <script src="desktop/wm/wm_mode.js"></script>
   <!-- Our own right-click / long-press menus (shared/ctxmenu); modules below register theirs -->
   <script src="shared/ctxmenu/ctxmenu.js"></script>
   <script>window.__ctxInAppManual = true;</script>
   <script src="shared/ctxmenu/ctx_in_app.js"></script>
-  <script src="hub/menu/hub_ctx.js"></script>
-  <script src="hub/wm/wm_windows.js"></script>
-  <script src="hub/wm/wm_taskbar.js"></script>
+  <!-- <script src="hub/menu/hub_ctx.js"></script>   (before H129b) -->
+  <script src="desktop/menu/hub_ctx.js"></script>
+  <!-- <script src="hub/wm/wm_windows.js"></script>   (before H129b) -->
+  <script src="desktop/wm/wm_windows.js"></script>
+  <!-- <script src="hub/wm/wm_taskbar.js"></script>   (before H129b) -->
+  <script src="desktop/wm/wm_taskbar.js"></script>
   <!-- R10: two workspaces (Desktop mode); snapping is in hub_loader.js (R16a) -->
-  <script src="hub/wm/wm_workspaces.js"></script>
+  <!-- <script src="hub/wm/wm_workspaces.js"></script>   (before H129b) -->
+  <script src="desktop/wm/wm_workspaces.js"></script>
   <!-- Optional taskbar busy meter (off by default; Settings → Desktop) -->
   <script src="shared/perf/busy_meter.js"></script>
   <script src="hub/drives/hub_traymeter.js"></script>
   <!-- App list + home tiles (plain JS data, work over http and file://) -->
   <script src="hub/core/hub_apps.js"></script>
-  <script src="hub/menu/hub_tiles.js"></script>
+  <!-- <script src="hub/menu/hub_tiles.js"></script>   (before H129b) -->
+  <script src="desktop/menu/hub_tiles.js"></script>
   <script src="hub/core/hub.js?v=20261104g"></script>
   <!-- Desktop mouse only: GNOME 2 style category flyout (CSV parser shared with the category pages) -->
   <script src="shared/tiles/tiles.js"></script>
   <script src="shared/favorites/favorites.js"></script>
-  <script src="hub/menu/hub_flyout.js"></script>
-  <script src="hub/menu/hub_ctx_menus.js"></script>
-  <script src="hub/menu/hub_settings.js"></script>
+  <!-- <script src="hub/menu/hub_flyout.js"></script>   (before H129b) -->
+  <script src="desktop/menu/hub_flyout.js"></script>
+  <!-- <script src="hub/menu/hub_ctx_menus.js"></script>   (before H129b) -->
+  <script src="desktop/menu/hub_ctx_menus.js"></script>
+  <!-- <script src="hub/menu/hub_settings.js"></script>   (before H129b) -->
+  <script src="desktop/menu/hub_settings.js"></script>
   <script src="shared/dialog/dialog.js"></script>
   <script src="hub/core/hub_dialog_bridge.js"></script><!-- H75: app frames ask the Hub to draw their dialogs -->
   <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->

@@ -8,7 +8,7 @@ Moves the Hub build tag and shell cache name in all 8 places at once:
   2. sw.js                    importScripts('hub/update/hub_sw.js?v=<tag>')
   3. hub/update/hub_sw.js     const V = '<tag>'
   4. hub/update/hub_sw.js     const CACHE = 'hub-shell-vNN';  // comment
-  5. hub/menu/hub_ctx.js      const V = '<tag>'
+  5. desktop/menu/hub_ctx.js  const V = '<tag>'   (H129b; before H129b hub/menu/hub_ctx.js)
   6. hub/core/hub_loader.js   const V = '<tag>'
   7. hub/build.txt            lines 1-4: tag, cache name, release, 'YYYY-MM-DD IST'
 hub/version.txt (the user-facing version) changes only with --version.
@@ -38,7 +38,8 @@ PLACES = [
     ('sw.js importScripts', 'sw.js', r"hub_sw\.js\?v=(" + TAG_RE + r")'"),
     ('hub_sw.js V', 'hub/update/hub_sw.js', r"^const V = '(" + TAG_RE + r")';"),
     ('hub_sw.js CACHE', 'hub/update/hub_sw.js', r"^const CACHE = '(hub-shell-v\d+)';"),
-    ('hub_ctx.js V', 'hub/menu/hub_ctx.js', r"^  const V = '(" + TAG_RE + r")';"),
+    # (before H129b) ('hub_ctx.js V', 'hub/menu/hub_ctx.js', r"^  const V = '(" + TAG_RE + r")';"),
+    ('hub_ctx.js V', 'desktop/menu/hub_ctx.js', r"^  const V = '(" + TAG_RE + r")';"),   # H129b: moved to desktop/menu/
     ('hub_loader.js V', 'hub/core/hub_loader.js', r"^  const V = '(" + TAG_RE + r")';"),
     ('build.txt', 'hub/build.txt', None),
 ]
@@ -155,7 +156,8 @@ def main():
     add('hub/update/hub_sw.js', r"^const V = '" + T + "';", "const V = '%s';" % new_tag, 'hub_sw.js V')
     add('hub/update/hub_sw.js', r"^const CACHE = 'hub-shell-v\d+';.*$",
         "const CACHE = '%s';  // %s: %s" % (new_cache, tag_date, note.replace('\\', '\\\\')), 'hub_sw.js CACHE')
-    add('hub/menu/hub_ctx.js', r"^  const V = '" + T + "';", "  const V = '%s';" % new_tag, 'hub_ctx.js V')
+    # (before H129b) add('hub/menu/hub_ctx.js', r"^  const V = '" + T + "';", "  const V = '%s';" % new_tag, 'hub_ctx.js V')
+    add('desktop/menu/hub_ctx.js', r"^  const V = '" + T + "';", "  const V = '%s';" % new_tag, 'hub_ctx.js V')   # H129b
     add('hub/core/hub_loader.js', r"^  const V = '" + T + "';", "  const V = '%s';" % new_tag, 'hub_loader.js V')
     bl = build_lines()
     while len(bl) < 4:

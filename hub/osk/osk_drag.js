@@ -4,7 +4,7 @@
  *   edge it snaps to that edge; a translucent preview (#osk-snap-pv) shows where it lands.
  *   Edge snapping follows Settings → Windows "Snap windows to screen edges" (html.hub-snap-off).
  *   It also sticks flush to the screen edges within the magnet distance (window.HubMagnet from
- *   hub/wm/wm_snap.js; "Magnetic edges", html.hub-magnet-off; Alt / Shift held = off).
+ *   desktop/wm/wm_snap.js; "Magnetic edges", html.hub-magnet-off; Alt / Shift held = off).
  * - Nothing is saved: reset() puts it at bottom centre, just above the taskbar (osk.js calls it on every open).
  * - Dragging never takes focus from the app: pointerdown / mousedown are cancelled, pointer capture.
  * API: OSK_DRAG.attach({ panel, grip }) → { reset() }

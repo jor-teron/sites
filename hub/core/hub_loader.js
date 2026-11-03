@@ -32,7 +32,8 @@
       // (before H119) 'shared/fs/webdav_fs.js', 'shared/fs/webdav_accounts.js', 'shared/fs/fs_drives.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js'],
       'shared/fs/webdav_fs.js', 'shared/fs/webdav_accounts.js', 'shared/fs/sftp_fs.js', 'shared/fs/sftp_accounts.js',   // H119: + SFTP drives
       'shared/fs/fs_drives.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js'],
-    snap: ['hub/wm/wm_snap.js'],
+    // (before H129b) snap: ['hub/wm/wm_snap.js'],
+    snap: ['desktop/wm/wm_snap.js'],   // H129b: moved to desktop/wm/
     osk: ['hub/osk/osk.css', 'hub/controller/kb_common.js', 'hub/osk/osk_layout.js',
       'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js'],
     viewer: ['hub/viewer/hub_viewer_pdf.js', 'hub/viewer/hub_viewer.js'],
