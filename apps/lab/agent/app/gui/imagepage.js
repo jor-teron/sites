@@ -6,7 +6,11 @@
    time in localStorage 'agent.imgCool.<id>', so a reload can't skip it; the Generate button counts down (a failed or
    stopped try clears it, except 'busy' / 429).
    Errors -> one friendly card (title, plain text, ↻ Retry; Ollama adds the pull command + 📋 Copy).
-   Gallery (HR.imgstore, IndexedDB 'agent-images'): newest first; tap = large view with ⬇ Download and 🗑 Delete. */
+   Gallery (HR.imgstore, IndexedDB 'agent-images'): newest first; tap = large view with ⬇ Download and 🗑 Delete.
+   AG17: Steps on every tab — providers with p.steps {min, max(m), def(m)} send it (setting `imageSteps_<id>`, Ollama falls
+   back to `imageSteps`), others show it disabled 'fixed by provider'. Size chips (HR.imgsize, setting `imageSize`).
+   Model options show the API price (m.price). Recent group: last 5 models used per tab (`imageRecent_<id>`).
+   Download name = slugified prompt (+ '-2', '-3' for repeats in the gallery or this session) + real extension. */
 HR.imgpage = (function () {
   var $ = function (id) { return document.getElementById(id); }, ctrl = null, urls = [], cur = null, tick = null, prov = '';
   var ORDER = ['pollinations', 'gemini', 'deepinfra', 'openrouter', 'ollama'], PULL = 'ollama pull x/z-image-turbo';
@@ -54,16 +58,34 @@ HR.imgpage = (function () {
   function mkey() { return 'imageModel_' + prov; }
   function load() {
     var p = P(), sel = $('imgModel'), want = HR.set.get(mkey()) || (prov === 'ollama' ? HR.set.get('imageModel') : '') || '', tok = prov;
-    $('imgCard').hidden = true; $('imgNote').textContent = p.note || ''; $('imgStepsL').hidden = !p.steps;
+    $('imgCard').hidden = true; $('imgNote').textContent = p.note || ''; stepsUi(); sizeUi();
     sel.innerHTML = '<option value="">Loading…</option>'; sel.disabled = true; cool();
     p.models().then(function (l) {
       if (tok !== prov) return;
-      sel.innerHTML = ''; l.forEach(function (m) { var o = document.createElement('option'); o.value = m.name; o.textContent = m.label || m.name; sel.appendChild(o); });
-      if (!l.some(function (m) { return m.name === want; })) want = l[0] ? l[0].name : '';
-      sel.value = want; sel.disabled = false; if (want) HR.set.put(mkey(), want); cool();
+      sel.innerHTML = ''; var by = {}; l.forEach(function (m) { by[m.name] = m; });
+      var opt = function (m, g) { var o = document.createElement('option'); o.value = m.name; o.textContent = (m.label || m.name) + (m.price ? ' · ' + m.price : ''); g.appendChild(o); };
+      var rec = recent().filter(function (n) { return by[n]; });
+      if (rec.length) { var g1 = document.createElement('optgroup'); g1.label = '🕘 Recent'; rec.forEach(function (n) { opt(by[n], g1); }); sel.appendChild(g1);
+        var g2 = document.createElement('optgroup'); g2.label = 'All models'; l.forEach(function (m) { opt(m, g2); }); sel.appendChild(g2); }
+      else l.forEach(function (m) { opt(m, sel); });
+      if (!by[want]) want = l[0] ? l[0].name : '';
+      sel.value = want; sel.disabled = false; if (want) HR.set.put(mkey(), want); stepsUi(); cool();
     }).catch(function (e) { if (tok !== prov) return; sel.innerHTML = '<option value="">No image model</option>'; card(e); cool(); });
   }
-  function steps() { var v = parseInt(HR.set.get('imageSteps'), 10); return Math.max(1, Math.min(50, isNaN(v) ? 8 : v)); }
+  /* AG17: steps per provider */
+  function sMax() { var t = P().steps, m = $('imgModel').value; return typeof t.max === 'function' ? t.max(m) : t.max || 50; }
+  function steps() {
+    var t = P().steps; if (!t) return 0;
+    var v = parseInt(HR.set.get('imageSteps_' + prov), 10); if (isNaN(v) && prov === 'ollama') v = parseInt(HR.set.get('imageSteps'), 10);
+    if (isNaN(v)) v = t.def($('imgModel').value); return Math.max(t.min || 1, Math.min(sMax(), v));
+  }
+  function stepsUi() {
+    var t = P().steps, st = $('imgSteps'); st.disabled = !t; $('imgStepsNote').textContent = t ? '' : 'fixed by provider';
+    if (t) { st.max = sMax(); st.value = steps(); } else st.value = '';
+  }
+  function recent() { var l = HR.set.get('imageRecent_' + prov); return Array.isArray(l) ? l : []; }
+  function used(m) { var l = recent().filter(function (x) { return x !== m; }); l.unshift(m); HR.set.put('imageRecent_' + prov, l.slice(0, 5)); }
+  function sizeUi() { var f = HR.imgsize.fit(P()); $('imgSizeNote').textContent = (P().size === 'ratio' ? '📐 shape ' + f.ratio : '📐 ' + f.width + ' × ' + f.height) + (f.note ? ' · ' + f.note : ''); }
   /* cooldown */
   function ckey() { return 'agent.imgCool.' + prov; }
   function left() { var p = P(); if (!p || !p.cooldown) return 0; var t = parseInt(localStorage.getItem(ckey()), 10) || 0; return Math.max(0, Math.ceil((t + p.cooldown * 1000 - Date.now()) / 1000)); }
@@ -93,9 +115,11 @@ HR.imgpage = (function () {
     if (!m) { load(); return; } if (left() > 0) return;
     $('imgCard').hidden = true; ctrl = new AbortController(); busy(true); bar(0, 0);
     if (p.cooldown) try { localStorage.setItem(ckey(), String(Date.now())); } catch (e) {}
-    p.generate({ model: m, prompt: prompt, steps: p.steps ? steps() : 0, width: 1024, height: 1024, signal: ctrl.signal, onProgress: bar })
-      .then(function (r) { return shrink(r.blob); })
+    var f = HR.imgsize.fit(p);
+    p.generate({ model: m, prompt: prompt, steps: steps(), width: f.width, height: f.height, ratio: f.ratio, signal: ctrl.signal, onProgress: bar })
+      .then(function (r) { used(m); return shrink(r.blob); })
       .then(function (b) { return HR.imgstore.add({ blob: b, prompt: prompt, model: p.label + ' · ' + m, time: Date.now() }); }).then(gallery)
+      .then(function () { if (recent()[0] === m && recent().length && !$('imgModel').querySelector('optgroup')) load(); })
       .catch(function (e) { if (e.kind !== 'busy') try { localStorage.removeItem(ckey()); } catch (x) {} if (e.kind !== 'abort') card(e); })
       .then(function () { ctrl = null; busy(false); cool(); });
   }
@@ -103,6 +127,7 @@ HR.imgpage = (function () {
   function busy(on) { var g = $('imgGo'); if (on) { clearTimeout(tick); g.disabled = false; g.textContent = '■ Stop'; g.classList.add('stop'); g.classList.remove('wait'); } else $('imgBar').hidden = true; }
   function gallery() {
     return HR.imgstore.list().then(function (l) {
+      gl = l;
       urls.forEach(URL.revokeObjectURL); urls = [];
       var g = $('imgGrid'); g.innerHTML = ''; $('imgEmpty').hidden = l.length > 0;
       l.forEach(function (r) {
@@ -113,14 +138,26 @@ HR.imgpage = (function () {
       });
     }).catch(function () { $('imgEmpty').hidden = false; });
   }
+  /* AG17: download name from the prompt */
+  var done = {}, gl = [];
+  function slug(t) { var x = String(t || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, ''); return x || 'agent-image'; }
+  function ext(b) { var t = b && b.type || ''; return /png/.test(t) ? '.png' : /webp/.test(t) ? '.webp' : '.jpg'; }
+  function fname(r) {
+    var s = slug(r.prompt), same = gl.filter(function (x) { return slug(x.prompt) === s; }).sort(function (a, b) { return a.time - b.time || a.id - b.id; });
+    var i = Math.max(0, same.findIndex(function (x) { return x.id === r.id; })), n = i ? s + '-' + (i + 1) : s, k = i + 1;
+    while (done[n] && done[n] !== r.id) { k++; n = s + '-' + k; }
+    return n + ext(r.blob);
+  }
   function view(r, u) {
     cur = r; $('imgBig').src = u; $('imgCap').textContent = r.prompt + ' · ' + r.model + ' · ' + new Date(r.time).toLocaleString();
-    var d = $('imgDl'); d.href = u; d.download = 'agent-image-' + r.id + '.jpg'; $('imgView').showModal();
+    var d = $('imgDl'), fn = fname(r); d.href = u; d.download = fn; d.onclick = function () { done[fn.replace(/\.\w+$/, '')] = r.id; }; $('imgView').showModal();
   }
   function init() {
     $('imgGo').onclick = go;
-    $('imgModel').onchange = function () { HR.set.put(mkey(), this.value); cool(); };
-    var st = $('imgSteps'); st.value = steps(); st.onchange = function () { HR.set.put('imageSteps', Math.max(1, Math.min(50, parseInt(st.value, 10) || 8))); st.value = steps(); };
+    $('imgModel').onchange = function () { HR.set.put(mkey(), this.value); stepsUi(); cool(); };
+    var st = $('imgSteps'); st.onchange = function () { var t = P().steps; if (!t) return; var v = parseInt(st.value, 10);
+      HR.set.put('imageSteps_' + prov, isNaN(v) ? t.def($('imgModel').value) : Math.max(t.min || 1, Math.min(sMax(), v))); stepsUi(); };
+    HR.imgsize.draw(sizeUi);
     $('imgPrompt').addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); go(); } });
     $('imgViewX').onclick = function () { $('imgView').close(); };
     $('imgDel').onclick = function () { if (!cur || !confirm('Delete this picture?')) return; HR.imgstore.del(cur.id).then(function () { $('imgView').close(); gallery(); }); };

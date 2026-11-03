@@ -3,6 +3,7 @@
   Agent — image.html: the Image page (AG15; was the AG14 slide-over inside agent.html). Own URL, Back works; '← Chat' goes to agent.html.
   Provider tabs (only ready ones): Pollinations (free, no key, 50 s cooldown), Gemini, DeepInfra, OpenRouter (each when its key exists; AG16), Ollama.
   Same settings (localStorage 'agent.settings'), keys (Hub first, app/core/hubkeys.js) and gallery (IndexedDB 'agent-images').
+  AG17: Steps on every tab, size chips (app/gui/imagesize.js), prices in the picker, prompt filenames, Recent models.
   Scripts: hubkeys, presets, registry (keys + Ollama URL), settings (HR.set only), imagegen + img_* providers, imagestore, imagepage.
 -->
 <html lang="en">
@@ -32,8 +33,11 @@
   <div class="ig-opts">
     <label class="lbl">Model <select id="imgModel" class="inp" aria-label="Image model"></select></label>
     <label class="lbl" id="imgStepsL">Steps <input id="imgSteps" class="inp num" type="number" min="1" max="50" step="1"></label>
-    <span class="ig-size">📐 1024 × 1024</span>
+    <span id="imgStepsNote" class="ig-size"></span>
   </div>
+  <div id="imgSizes" class="ig-sizes" role="group" aria-label="Picture size"></div>
+  <div id="imgCustom" class="ig-opts" hidden><label class="lbl">Width <input id="imgW" class="inp num" type="number" min="256" max="4096" step="16"></label><label class="lbl">Height <input id="imgH" class="inp num" type="number" min="256" max="4096" step="16"></label></div>
+  <p id="imgSizeNote" class="hint ig-note"></p>
   <button type="button" class="hb ig-go" id="imgGo">✨ Generate</button>
   <div id="imgBar" class="ig-bar" hidden><span class="mt-bar"><i id="imgFill"></i></span><span id="imgStep" class="mt-t"></span></div>
   <div id="imgCard" class="ig-card" hidden></div>
@@ -58,6 +62,7 @@
 <script src="app/models/img_openrouter.js"></script>
 <script src="app/models/img_ollama.js"></script>
 <script src="app/storage/imagestore.js"></script>
+<script src="app/gui/imagesize.js"></script>
 <script src="app/gui/imagepage.js"></script>
 <script>
   HR.set.applyTheme();

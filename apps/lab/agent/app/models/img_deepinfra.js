@@ -3,20 +3,34 @@
    models(): GET api.deepinfra.com/models/list, keep type 'text-to-image' minus edit / background / erase tools; fallback
    FLUX-1-schnell, FLUX-1-dev, sdxl-turbo. generate(): POST /v1/openai/images/generations {model,prompt,size,n:1,
    response_format:'b64_json'}; on 404/400 falls back to /v1/inference/<model> {prompt,width,height,num_inference_steps}.
+   AG17: generate tries /v1/inference/<model> first ({prompt,width,height,num_inference_steps}; steps default schnell 4,
+   sdxl-turbo 4, dev 25, else the list's default_iterations; max schnell 4, sdxl-turbo 10, else 50), then the OpenAI images
+   API ({size:'WxH'}). Price from the list's pricing (short, or cents_per_image_unit). Size px, multiples of 64, max 1536.
    Errors: 'nokey' (401/403), 'nocredit' (402), 'http', 'unreachable', 'abort'. */
 window.HR = window.HR || {}; HR.imgProviders = HR.imgProviders || {};
 HR.imgProviders.deepinfra = (function () {
   var API = 'https://api.deepinfra.com', OA = API + '/v1/openai';
   var CURATED = ['black-forest-labs/FLUX-1-schnell', 'black-forest-labs/FLUX-1-dev', 'stabilityai/sdxl-turbo'];
   var SKIP = /edit|remove|erase|expand|gen_fill|enhance|background|redux|kontext|vector|layer/i;
+  var info = {}, DEF = { 'black-forest-labs/FLUX-1-schnell': 4, 'stabilityai/sdxl-turbo': 4, 'black-forest-labs/FLUX-1-dev': 25 };
+  var MAX = { 'black-forest-labs/FLUX-1-schnell': 4, 'stabilityai/sdxl-turbo': 10 };
+  function price(p) {   /* AG17: only what the API says */
+    if (!p) return ''; if (p.short) return String(p.short);
+    if (p.cents_per_image_unit != null) return p.cents_per_image_unit + '¢ / image unit';
+    if (p.default_price_cents != null) return p.default_price_cents + '¢ / image';
+    return '';
+  }
+  function sdef(m) { return DEF[m] || (info[m] && info[m].default_iterations > 1 ? info[m].default_iterations : 0) || 20; }
   function key() { return HR.models ? HR.models.getKey('deepinfra', OA) : ''; }
   function err(kind, msg, st) { var e = new Error(msg); e.kind = kind; e.status = st; return e; }
   function models() {
     return fetch(API + '/models/list').then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }).then(function (l) {
-      var n = (Array.isArray(l) ? l : []).filter(function (m) { return m && m.type === 'text-to-image' && !SKIP.test(m.model_name); }).map(function (m) { return m.model_name; });
+      var all = (Array.isArray(l) ? l : []).filter(function (m) { return m && m.type === 'text-to-image' && !SKIP.test(m.model_name); });
+      all.forEach(function (m) { info[m.model_name] = m.pricing || {}; });
+      var n = all.map(function (m) { return m.model_name; });
       if (!n.length) n = CURATED.slice();
       n.sort(function (a, b) { var ia = CURATED.indexOf(a), ib = CURATED.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b); });
-      return n.map(function (x) { return { name: x, label: x }; });
+      return n.map(function (x) { return { name: x, label: x, price: price(info[x]) }; });
     });
   }
   function post(url, body, o) {
@@ -33,16 +47,15 @@ HR.imgProviders.deepinfra = (function () {
   function generate(o) {
     if (!key()) return Promise.reject(err('nokey', 'No DeepInfra key yet.'));
     var w = o.width || 1024, h = o.height || 1024, body = { model: o.model, prompt: o.prompt, size: w + 'x' + h, n: 1, response_format: 'b64_json' };
-    return post(OA + '/images/generations', body, o).catch(function (e) {
-      if (e.kind !== 'http' || (e.status !== 404 && e.status !== 400 && e.status !== 422)) throw e;
-      var b = { prompt: o.prompt, width: w, height: h }; if (o.steps) b.num_inference_steps = o.steps;
-      return post(API + '/v1/inference/' + o.model, b, o);
-    }).then(function (j) {
+    var nat = { prompt: o.prompt, width: w, height: h }; if (o.steps) nat.num_inference_steps = o.steps;
+    var bad = function (e) { return e.kind === 'http' && (e.status === 404 || e.status === 400 || e.status === 422); };
+    /* AG17: steps only go through the native inference API, so it is tried first; OpenAI images API as fallback */
+    return post(API + '/v1/inference/' + o.model, nat, o).catch(function (e) { if (!bad(e)) throw e; return post(OA + '/images/generations', body, o); }).then(function (j) {
       var d = b64of(j); if (!d) throw err('noimage', 'DeepInfra finished without a picture.');
       var src = /^(data:|https?:)/.test(d) ? d : 'data:image/png;base64,' + d;
       return fetch(src).then(function (r) { return r.blob(); }).then(function (blob) { return { blob: blob }; });
     });
   }
-  return { id: 'deepinfra', label: 'DeepInfra', note: 'Your DeepInfra key · FLUX, SDXL and more', steps: false, cooldown: 0,
+  return { id: 'deepinfra', label: 'DeepInfra', note: 'Your DeepInfra key · FLUX, SDXL and more', steps: { min: 1, max: function (m) { return MAX[m] || 50; }, def: sdef }, size: 'px', mult: 64, max: 1536, cooldown: 0,
     ready: function () { return !!key(); }, models: models, generate: generate };
 })();

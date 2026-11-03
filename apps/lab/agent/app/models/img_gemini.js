@@ -3,6 +3,7 @@
    gemini-*image* (generateContent) and imagen-* with 'predict'; fallback gemini-2.5-flash-image.
    generate(): gemini -> :generateContent with responseModalities ['TEXT','IMAGE'], reads inlineData; imagen -> :predict
    {instances:[{prompt}], parameters:{sampleCount:1}}, reads predictions[0].bytesBase64Encoded.
+   AG17: aspect ratio sent (generationConfig.imageConfig.aspectRatio / Imagen parameters.aspectRatio); no price in the API.
    Errors: 'quota' (429 / RESOURCE_EXHAUSTED / limit: 0 — free tier blocks image gen), 'nokey', 'noimage' (text only), 'http'. */
 window.HR = window.HR || {}; HR.imgProviders = HR.imgProviders || {};
 HR.imgProviders.gemini = (function () {
@@ -32,8 +33,8 @@ HR.imgProviders.gemini = (function () {
   function generate(o) {
     if (!key()) return Promise.reject(err('nokey', 'No Gemini key yet.'));
     var u = API + '/models/' + o.model, im = /^imagen-/.test(o.model);
-    var req = im ? post(u + ':predict', { instances: [{ prompt: o.prompt }], parameters: { sampleCount: 1 } }, o)
-      : post(u + ':generateContent', { contents: [{ role: 'user', parts: [{ text: o.prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } }, o);
+    var req = im ? post(u + ':predict', { instances: [{ prompt: o.prompt }], parameters: { sampleCount: 1, aspectRatio: o.ratio || '1:1' } }, o)
+      : post(u + ':generateContent', { contents: [{ role: 'user', parts: [{ text: o.prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: o.ratio || '1:1' } } }, o);
     return req.then(function (j) {
       var d = '', mt = 'image/png';
       if (im) { var p = j.predictions && j.predictions[0]; if (p) { d = p.bytesBase64Encoded || ''; mt = p.mimeType || mt; } }
@@ -42,6 +43,6 @@ HR.imgProviders.gemini = (function () {
       return fetch('data:' + mt + ';base64,' + d).then(function (r) { return r.blob(); }).then(function (b) { return { blob: b }; });
     });
   }
-  return { id: 'gemini', label: 'Gemini', note: 'Your Gemini key · Flash Image / Imagen (free tier often blocks images)', steps: false, cooldown: 0,
+  return { id: 'gemini', label: 'Gemini', note: 'Your Gemini key · Flash Image / Imagen (free tier often blocks images)', steps: false, size: 'ratio', ratios: ['1:1', '3:4', '4:3', '9:16', '16:9'], cooldown: 0,
     ready: function () { return !!key(); }, models: models, generate: generate };
 })();
