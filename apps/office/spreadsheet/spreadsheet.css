@@ -1,6 +1,7 @@
 /*
  * spreadsheet.css
- * Dark theme (default) + SH1 light theme (body.sheet-light) and gridlines off (body.sheet-no-grid).
+ * Dark theme + SH1/SS1 light theme (body.sheet-light) and gridlines off (body.sheet-no-grid).
+ * SS1: theme default is Auto (spreadsheet_settings.js); the dark values below are unchanged.
  * Cells min 150px, grow on wide screens.
  * Print stylesheet for browser Print / Save as PDF.
  */
@@ -22,14 +23,27 @@
   --hover: #3a3a3a;
   --input: #161616;
   --on: #3d5a80;
+  --on-text: #fff;                       /* SS1: text on selected tabs / pressed ribbon buttons */
+  --err: #ff6b6b;                        /* SS1: formula error text */
+  --shadow: rgba(0, 0, 0, 0.5);          /* SS1: dialog / menu shadow */
 }
 
 /* SH1 light theme (spreadsheet_settings.js via ../shared/office-theme.js) */
+/* legacy (SH1): --bg #f3f4f7 --head #eceef3 --muted #6a7080 --border #d4d8e0 --on #cfe0ff */
 body.sheet-light {
-  --bg: #f3f4f7; --panel: #ffffff; --cell: #ffffff; --head: #eceef3; --text: #1f2330; --muted: #6a7080;
-  --border: #d4d8e0; --sel: #2f6fe0; --band: rgba(47, 111, 224, 0.14); --btn: #f1f2f6;
-  --hover: #e2e5ec; --input: #ffffff; --on: #cfe0ff;
+  --bg: #f3f4f7; --panel: #ffffff; --cell: #ffffff; --head: #f0f2f6; --text: #1f2330; --muted: #5f6676;
+  --border: #d9dde5; --sel: #1a73e8; --band: rgba(26, 115, 232, 0.12); --btn: #f1f3f7;
+  --hover: #e4e8ef; --input: #ffffff; --on: #d3e3fd; --on-text: #0b3d91;
+  --err: #c5221f; --shadow: rgba(30, 40, 70, 0.22);
 }
+/* SS1 light: selected tab / pressed buttons use dark text on the pale accent */
+body.sheet-light .of-tab[aria-selected="true"] { color: var(--on-text); box-shadow: 0 1px 3px rgba(30, 40, 70, 0.18); }
+body.sheet-light .of-ribbon .of-group button.on,
+body.sheet-light .of-ribbon .of-group button[aria-pressed="true"],
+body.sheet-light .toolbar button.on { color: var(--on-text); }
+body.sheet-light .of-file-menu { box-shadow: 0 10px 30px var(--shadow); }
+body.sheet-light .dlg-backdrop { background: rgba(20, 24, 40, 0.28); }
+body.sheet-light th.sel-band, body.sheet-light td.row-num.sel-band { color: var(--on-text); }
 
 
 * { box-sizing: border-box; }
@@ -192,7 +206,7 @@ td.cell input {
 td.cell.selected { outline: 2px solid var(--sel); outline-offset: -2px; }
 th.sel-band, td.row-num.sel-band { background: var(--band); }
 td.cell.sel-band { box-shadow: inset 0 0 0 999px var(--band); }
-td.cell.error input { color: #ff6b6b; }
+td.cell.error input { color: var(--err); }   /* legacy (SH1): #ff6b6b */
 
 /* SH1 gridlines off (screen only; print keeps its own Page > Gridlines option) */
 body.sheet-no-grid td.cell { border-color: transparent; }
