@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104g';
-const CACHE = 'hub-shell-v139';  // 2026-11-04g: Desktop address desktop/
+const V = '20261104h';
+const CACHE = 'hub-shell-v140';  // 2026-11-04h: Desktop window parts moved to desktop/
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -39,12 +39,16 @@ const SHELL = [
   'desktop/desktop.html',   // H129a: the desktop Hub page
   'desktop/index.html',   // H129a: desktop/ (folder index): tiny redirect to desktop.html
   'manifest.webmanifest',
-  'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css
+  // (before H129b) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css
+  'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css   (H129b: hub/wm, hub/menu → desktop/)
   // (before H64) 'hub/core/hub_role.js', ... 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js
-  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js
+  // (before H129b) 'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js
+  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'desktop/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js   (H129b: hub/wm, hub/menu → desktop/)
  
-  'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
-  'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
+  // (before H129b) 'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
+  'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js', 'desktop/wm/wm_workspaces.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/
+  // (before H129b) 'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
+  'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/
   'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
   'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',
   'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
@@ -85,6 +89,7 @@ const SHELL = [
   'hub/core/hub_dialog_bridge.js', 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js',   // H85: H81/H82 engine files (hub.html + phone.html load them)
   'hub/core/hub_break.js', 'hub/core/hub_break.css',   // H65: Computer break lock (hub.html loads them)
   'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js', 'phone/hidden-apps.csv',   // H85: the phone look opens offline too
+  'phone/phone_connect.js', 'phone/vendor/jsQR.js',   // H129b: PH14 Connect sheet + its QR reader, so phone.html's Connect works offline
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;

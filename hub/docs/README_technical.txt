@@ -8,6 +8,12 @@ Step a of 3 of H129 (desktop shell into desktop/). New layout of the Hub split:
   desktop/    the desktop screen on top of the core: desktop/desktop.html = the desktop Hub page
               (the page that was hub.html). H129b / H129c move the desktop-only files (wm/, menus,
               panels, Game Bar, hub-controller.js) here.
+    desktop/wm/    (H129b, was hub/wm/) wm.css, wm_mode.js (Desktop / Phone), wm_windows.js (HubWM:
+                   windows + title bars), wm_taskbar.js, wm_snap.js (hub_loader.js 'snap' batch),
+                   wm_workspaces.js
+    desktop/menu/  (H129b, was hub/menu/) hub_ctx.js (HubCtx; carries the build stamp V moved by
+                   hub_bump.py), hub_ctx_menus.js, hub_flyout.js / .css, hub_settings.js, hub_tiles.js
+    Still in hub/ until H129c: hub/link/hub_panels.*, hub/link/hub-gamebar.js, hub/controller/hub-controller.js.
   phone/      the phone screen (phone.html + phone/, Hub Apps Builder 2; untouched by H129a)
 Addresses (all keep ?query and #hash, meta refresh in <noscript> + location.replace):
   hub.html            → desktop/desktop.html   (tiny redirect; bookmarks, the installed app's start_url,
@@ -35,6 +41,16 @@ hub_bump.py moves it with the rest (now 8 places: + desktop/desktop.html every ?
 Service worker: the root sw.js (scope = the whole site) controls desktop/. SHELL has hub.html (stub),
 desktop/desktop.html and desktop/index.html; a navigation to desktop/ is served the desktop/index.html copy.
 manifest start_url stays hub.html (changing it would change the installed app's identity).
+H129b (build 20261104h / hub-shell-v140): the window parts and menus moved with git mv (list above).
+Only their tags in desktop.html (old ones kept as comments, marked "before H129b"), the hub_sw.js SHELL
+list, hub_loader.js (snap batch) and hub_bump.py changed; no code inside them builds a path from its own
+location (all paths are root-relative through document.baseURI), so nothing else moved. Forwarders: the
+12 old paths (hub/wm/*, hub/menu/*) are tiny stubs kept for ONE release, for old cached pages and
+anything that loads an old path directly. JS stub: resolves ../../desktop/<dir>/<file> from its own src,
+returns if that file is already a <script> on the page, else document.write()s it while the page is
+parsing (same order / timing as the old tag) or appends it (async = false) later. CSS stub: @import of
+the new file. desktop.html never requests them (tested: no hub/wm or hub/menu request, each moved file
+loaded once). Remove both folders hub/wm/ and hub/menu/ in a later release (they are not in SHELL).
 
 ================================================================================
 Hub core entry: hub/core/hub_core.js (H127, 2026-11-04 IST, build 20261104f)
