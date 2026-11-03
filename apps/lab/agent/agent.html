@@ -15,6 +15,7 @@
   AG12: a tab per provider (app/models/presets.js), grouped model picker with search + Recent (app/gui/pickgroups.js).
   AG14: 🖼 Image page (app/gui/imagepage.js, gallery in IndexedDB via app/storage/imagestore.js); the composer Chat | Image toggle is gone.
   AG15: 🖼 is a link to image.html, the Image page's own page (provider tabs Pollinations / DeepInfra / Ollama).
+  AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
 -->
 <html lang="en">
@@ -30,6 +31,7 @@
   <link rel="stylesheet" href="ui/steps.css">
   <link rel="stylesheet" href="ui/chats.css">
   <link rel="stylesheet" href="ui/settings.css">
+  <link rel="stylesheet" href="ui/modelbar.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
   <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
 </head>
@@ -37,7 +39,12 @@
 <header class="top">
   <button type="button" class="hb" id="btnChats" title="Chats" aria-label="Chats">💬</button>
   <h1 class="brand">🧪 Agent</h1>
-  <button type="button" class="chip mchip" id="modelChip" aria-haspopup="dialog">Loading…</button>
+  <span class="mbar">   <!-- AG18: Provider + Model dropdowns (app/gui/modelbar.js); 🔍 opens the picker dialog -->
+    <select id="barProv" class="mb-sel mb-prov" aria-label="Provider"></select>
+    <select id="barModel" class="mb-sel mb-model" aria-label="Model"></select>
+    <button type="button" class="hb mb-find" id="btnPick" title="Search models" aria-label="Search models" aria-haspopup="dialog">🔍</button>
+  </span>
+  <button type="button" class="chip mchip" id="modelChip" aria-haspopup="dialog" hidden>Loading…</button>
   <span class="grow"></span>
   <button type="button" class="chip" id="btnFolder" hidden>📁 Pick folder</button>
   <a class="hb" id="btnImage" href="image.html" title="Image" aria-label="Make a picture">🖼</a>
@@ -181,6 +188,7 @@
 <script src="app/gui/settings.js"></script>
 <script src="app/gui/pickgroups.js"></script>
 <script src="app/gui/model.js"></script>
+<script src="app/gui/modelbar.js"></script>
 <script src="app/gui/steps.js"></script>
 <script src="app/gui/bubbles.js"></script>
 <script src="app/gui/approve.js"></script>

@@ -6,9 +6,12 @@
    other errors -> error card. Browser provider -> HR.bcard.check() shows the download card until the model is cached.
    List rows may carry ctx (context window, AG5 token meter).
    AG12: only ready tabs show (HR.models.ready; the current one always); load() has a request token so a late list from the
-   previous tab is dropped; rows are grouped under folding headings with a 🔍 search and a Recent group (app/gui/pickgroups.js). */
+   previous tab is dropped; rows are grouped under folding headings with a 🔍 search and a Recent group (app/gui/pickgroups.js).
+   AG18: the chip is hidden (kept for Settings' 'Choose…' and modelNow); the top-row dropdowns (app/gui/modelbar.js) follow
+   onChange(f) (called on every paintChip) and use pickProvider(id) / pickModel(name), the same paths the dialog uses.
+   AG18: a pick also saves provider + model_<provider> (the Settings default), so a reload or new chat keeps it. */
 HR.model = (function () {
-  var chip, dlg, listEl, findEl, models = [], cur = '', state = 'loading', tok = 0, open = {}, $ = function (id) { return document.getElementById(id); };
+  var subs = [], chip, dlg, listEl, findEl, models = [], cur = '', state = 'loading', tok = 0, open = {}, $ = function (id) { return document.getElementById(id); };
   function label(p) { var a = HR.models.all().filter(function (x) { return x.id === p; })[0]; return a ? a.label : p; }
   function short(p) { return label(p); }
   function paintChip() {
@@ -16,6 +19,7 @@ HR.model = (function () {
     chip.textContent = short(p) + ' · ' + t; chip.title = 'Model for this chat: ' + label(p) + ' · ' + t + ' (tap to change)';
     chip.classList.toggle('warn', state !== 'ok' && state !== 'loading');
     if (HR.meter) HR.meter.update();
+    subs.forEach(function (f) { try { f(); } catch (e) {} });
   }
   function drawList() {
     if (!dlg || !dlg.open) return;
@@ -24,7 +28,7 @@ HR.model = (function () {
       if (!HR.models.ready(a.id) && HR.models.id() !== a.id) return;   /* AG12: only tabs that are ready */
       var b = document.createElement('button'); b.type = 'button'; b.className = 'hb'; b.textContent = short(a.id); b.setAttribute('role', 'radio');
       b.setAttribute('aria-checked', HR.models.id() === a.id ? 'true' : 'false');
-      b.onclick = function () { HR.models.setChat(a.id, ''); HR.chats.picked(); findEl.value = ''; load(); drawList(); };
+      b.onclick = function () { findEl.value = ''; pickProvider(a.id); };
       ps.appendChild(b);
     });
     listEl.innerHTML = '';
@@ -37,7 +41,7 @@ HR.model = (function () {
   }
   function row(m, box) {
     var b = document.createElement('button'); b.type = 'button'; b.className = 'pk-row' + (m.name === cur ? ' on' : ''); b.textContent = m.label || m.name;
-    b.onclick = function () { cur = m.name; HR.models.setChat(HR.models.id(), m.name); HR.pickGroups.remember(HR.models.id(), m.name); HR.chats.picked(); paintChip(); dlg.close(); };
+    b.onclick = function () { pickModel(m.name); dlg.close(); };
     (box || listEl).appendChild(b);
   }
   /* AG12: folding heading; the current pick's group (and Recent) start open, a tap is remembered while the picker lives */
@@ -78,6 +82,10 @@ HR.model = (function () {
       fill([]); state = 'off'; paintChip(); HR.chat.errorCard(e);
     });
   }
+  function pickProvider(id) { HR.models.setChat(id, ''); HR.chats.picked(); load(); drawList(); }
+  function pickModel(n) { cur = n; HR.models.setChat(HR.models.id(), n); HR.pickGroups.remember(HR.models.id(), n); HR.chats.picked();
+    if (!HR.models.fallen()) { HR.set.put('provider', HR.models.id()); HR.set.put(HR.models.modelKey(), n); }   /* AG18: remembered per provider, survives a reload */
+    paintChip(); drawList(); }
   function makeDefault() {
     var p = HR.models.id(); if (!cur || HR.models.fallen()) return;
     HR.set.put('provider', p); HR.set.put(HR.models.modelKey(), cur);
@@ -95,5 +103,6 @@ HR.model = (function () {
   }
   function current() { return state === 'ok' ? cur : ''; }
   function info() { var n = cur; return models.filter(function (m) { return m.name === n; })[0] || null; }
-  return { init: init, load: load, fall: fall, current: current, info: info, list: function () { return models; } };
+  return { init: init, load: load, onChange: function (f) { subs.push(f); }, pickProvider: pickProvider, pickModel: pickModel, state: function () { return state; }, label: label,
+    openPicker: function () { chip.click(); }, fall: fall, current: current, info: info, list: function () { return models; } };
 })();

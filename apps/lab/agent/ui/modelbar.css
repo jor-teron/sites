@@ -1,0 +1,15 @@
+/* Agent — ui/modelbar.css: AG18 top-row Provider + Model dropdowns (app/gui/modelbar.js). Native selects styled as chips;
+   phone width: compact side-by-side, long names end in an ellipsis (full name in title), 40 px+ tap targets. */
+.mbar{display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto}
+.mb-sel{height:40px;min-width:0;padding:0 26px 0 12px;border-radius:20px;border:1.5px solid var(--line);background:var(--card);color:inherit;font:inherit;font-size:15px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.mb-sel:active{transform:scale(.94)}.mb-sel:disabled{opacity:.6;cursor:default}
+.mb-prov{max-width:150px}.mb-model{max-width:280px}
+.hb.mb-find{min-width:40px;height:40px;padding:0}
+.top .grow{min-width:0}
+@media (max-width:520px){
+  .top{flex-wrap:wrap}.top .brand{display:none}
+  .mbar{order:9;flex:1 1 100%}
+  .mb-prov{flex:0 1 38%;max-width:none}.mb-model{flex:1 1 0;max-width:none}
+  .mb-sel{height:44px;font-size:14px;padding:0 22px 0 10px}.hb.mb-find{height:44px;min-width:44px}
+}
