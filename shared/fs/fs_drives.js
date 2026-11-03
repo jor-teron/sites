@@ -23,6 +23,11 @@
  *   sftp    "SFTP server" (H119): each saved SFTP server (shared/fs/sftp_accounts.js), only when sftp_fs.js +
  *           sftp_accounts.js are loaded. Ids 'sftp:<n>', listed right after the WebDAV drives; handle(id) =
  *           SftpFs.root(account) (through the relay hub/relay/sftp_relay.py); access / allow / remove like webdav.
+ *   H125: a page that loads only fs_drives.js (the Viewer, any app opened on a FsRef hash) still opens
+ *           'webdav:<n>' / 'sftp:<n>': handle / access / allow / remove load webdav_fs.js + webdav_accounts.js
+ *           (or sftp_fs.js + sftp_accounts.js) from this folder on first use (same origin, so the saved
+ *           accounts in localStorage are there). list() still shows them only when the page loaded them itself
+ *           (so Disk / Terminal / System monitor see the same drives as before).
  * Changes are announced on BroadcastChannel 'sites-fs' ({type:'drives'}) so every open page redraws.
  *
  * API window.FsDrives:
@@ -97,8 +102,33 @@
     }
     return out;
   }
+  /* H125: network drive scripts on demand (they were only loaded by Files, so the Viewer said
+     "That drive is not here any more" for a WebDAV / SFTP picture). */
+  const BASE = (() => { try { return new URL('./', document.currentScript.src).href; } catch (_) { return ''; } })();
+  const NET = { webdav: ['webdav_fs.js', 'webdav_accounts.js'], sftp: ['sftp_fs.js', 'sftp_accounts.js'] };
+  const netP = {};
+  function addScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.async = false;
+      s.onload = () => res(); s.onerror = () => rej(new Error('could not load ' + src));
+      (document.head || document.documentElement).appendChild(s);
+    });
+  }
+  function needNet(id) {
+    const kind = isW(id) ? 'webdav' : isS(id) ? 'sftp' : '';
+    if (!kind) return Promise.resolve(true);
+    const has = kind === 'webdav' ? hasW : hasS;
+    if (has() || !BASE) return Promise.resolve(has());
+    if (!netP[kind]) {
+      netP[kind] = NET[kind].reduce((p, f) => p.then(() => addScript(BASE + f)), Promise.resolve())
+        .then(() => has(), () => { netP[kind] = null; return has(); });
+    }
+    return netP[kind];
+  }
   async function rec(id) { return (await folders()).find((f) => f.id === id) || null; }
   async function handle(id) {
+    await needNet(id);   // H125
     if (isW(id)) { const a = hasW() && window.WebDavAccounts.get(id); return a ? window.WebDavFs.root(a) : null; }
     if (isS(id)) { const a = hasS() && window.SftpAccounts.get(id); return a ? window.SftpFs.root(a) : null; }   // H119
     if (id === 'gdrive') return hasG() && gdriveState() === 'ok' ? window.GDriveFs.hubRoot() : null;   // the "hub" folder
@@ -111,6 +141,7 @@
     return r ? r.handle : null;
   }
   async function access(id) {
+    await needNet(id);   // H125
     if (isW(id)) return hasW() && window.WebDavAccounts.get(id) ? 'granted' : 'denied';
     if (isS(id)) return hasS() && window.SftpAccounts.get(id) ? 'granted' : 'denied';   // H119
     if (id === 'gdrive') return gdriveState() === 'ok' ? 'granted' : 'prompt';
@@ -120,6 +151,7 @@
     try { return h.queryPermission ? await h.queryPermission({ mode: 'readwrite' }) : 'granted'; } catch (_) { return 'prompt'; }
   }
   async function allow(id) {
+    await needNet(id);   // H125
     if (isW(id)) return !!(hasW() && window.WebDavAccounts.get(id));
     if (isS(id)) return !!(hasS() && window.SftpAccounts.get(id));   // H119
     if (id === 'gdrive') return gdriveState() === 'ok';
@@ -142,6 +174,7 @@
   }
   async function remove(id) {
     if (id === 'local' || id === 'gdrive') return;
+    await needNet(id);   // H125
     if (isW(id)) { if (hasW()) window.WebDavAccounts.remove(id); changed(); return; }
     if (isS(id)) {   // H119: forget the account and log out of its relay session
       if (hasS()) { const a = window.SftpAccounts.get(id); if (a) window.SftpFs.close(a); window.SftpAccounts.remove(id); }
