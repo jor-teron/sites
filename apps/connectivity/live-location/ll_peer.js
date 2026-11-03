@@ -1,4 +1,4 @@
-/* Live Location LL1 — copied from shared-clipboard/clipboard_peer.js (CB pattern). presence + data relay over PeerJS data connections only (no media; the Hub's peer is never touched).
+/* Live Location LL2 — copied from shared-clipboard/clipboard_peer.js (CB pattern; LL1, unchanged in LL2: the history server joins as one more member). presence + data relay over PeerJS data connections only (no media; the Hub's peer is never touched).
    Ids: me = 'jtsites-<code>-ll-<random>'; lobby = 'jtsites-<code>-ll-0' (same pattern as Video Chat VC1).
    The first device to claim the lobby id keeps the roster; every device (lobby owner too) opens a data
    connection to the lobby and sends {t:'hi', id, name}; the lobby broadcasts {t:'roster', list}.

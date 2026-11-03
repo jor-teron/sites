@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<!-- Live Location LL1.1 (full-screen map, toggle in the top row, device sheet): share your position with devices on your private Hub mesh while this page is open. -->
+<!-- Live Location LL2 (history: trails + last-seen, optional home history server): share your position with devices on your private Hub mesh while this page is open. -->
+<!-- legacy (LL1.1): "Live Location LL1.1 (full-screen map, toggle in the top row, device sheet)"; <title>Live Location</title>; no ?v= on the app files. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Live Location</title>
+  <title>Live Location LL2</title>
   <link rel="icon" href="live-location_icon.svg">
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="live-location.css">
+  <link rel="stylesheet" href="live-location.css?v=LL2">
 </head>
 <body>
 <div id="app">
@@ -16,20 +17,36 @@
     <span id="status" class="mut">Starting…</span>
     <button class="mini jelly" id="btn-code" title="Private code">Code</button>
     <button class="mini jelly" id="btn-list" aria-expanded="false" title="Devices">👥 0</button>
+    <button class="mini jelly" id="btn-menu" aria-expanded="false" aria-haspopup="menu" title="History">⋮</button>
+  </div>
+  <div id="menu" role="menu" hidden>
+    <div class="mh">Keep history</div>
+    <div class="seg"><button data-keep="1" role="menuitemradio">1 day</button><button data-keep="7" role="menuitemradio">7 days</button><button data-keep="30" role="menuitemradio">30 days</button></div>
+    <div id="menu-count" class="mut"></div>
+    <button id="m-clear" class="danger" role="menuitem">Clear history…</button>
   </div>
   <div id="geo-note" class="mut" hidden></div>
   <div id="code-box" hidden><input id="code-in" inputmode="numeric" maxlength="5" placeholder="5-digit private code"><button class="mini jelly" id="code-go">Join</button></div>
   <div id="mapwrap"><div id="map"></div>
+    <div id="trail-bar" hidden><b id="trail-who"></b><div class="seg"><button data-r="today">Today</button><button data-r="24h">24 h</button><button data-r="7d">7 days</button></div><span id="trail-n" class="mut"></span><button id="trail-x" title="Hide trail" aria-label="Hide trail">✕</button></div>
+    <div id="toast" hidden></div>
+    <div id="srv-chip" hidden title="A home history server is in this group: trails are filled in from it">History server online</div>
     <div id="sheet" hidden><div id="list"></div><div id="empty" class="mut">Nobody is sharing yet.</div></div>
   </div>
   <span id="me-name" hidden></span>
+  <div id="dlg" hidden><div class="card" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <b id="dlg-t">Clear location history?</b>
+    <p class="mut">Deletes every saved trail and last-seen spot on this device. A history server keeps its own copy.</p>
+    <div class="row"><button id="dlg-no" class="mini">Cancel</button><button id="dlg-yes" class="mini danger">Clear history</button></div>
+  </div></div>
 </div>
 <script src="../../../shared/link/link_devices.js"></script>
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="ll_store.js"></script>
-<script src="ll_peer.js"></script>
-<script src="ll_geo.js"></script>
-<script src="ll_map.js"></script>
-<script src="ll_app.js"></script>
+<script src="ll_store.js?v=LL2"></script>
+<script src="ll_peer.js?v=LL2"></script>
+<script src="ll_geo.js?v=LL2"></script>
+<script src="ll_hist.js?v=LL2"></script>
+<script src="ll_map.js?v=LL2"></script>
+<script src="ll_app.js?v=LL2"></script>
 </body>
 </html>

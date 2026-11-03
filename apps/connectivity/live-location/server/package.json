@@ -1,0 +1,14 @@
+{
+  "name": "live-location-history-server",
+  "version": "2.0.0",
+  "description": "Live Location LL2 optional home history server (PeerJS group member + SQLite)",
+  "private": true,
+  "main": "ll_server.js",
+  "scripts": { "start": "node ll_server.js" },
+  "engines": { "node": ">=22.13" },
+  "dependencies": {
+    "node-datachannel": "0.33.6",
+    "peerjs": "1.5.4"
+  },
+  "optionalDependencies": {}
+}
