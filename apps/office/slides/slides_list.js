@@ -2,20 +2,25 @@
    scale; up to 9 bullets each, so 100+ slides stay light), click to select, drag to reorder.
    Drag: mouse = press and move 6 px; touch / pen = hold 350 ms, then move (a quick swipe still scrolls the list).
    Vertical list on desktop, horizontal strip on phones (<= 760 px): the drop point follows the list's direction.
-   No Delete key here on purpose (deleting is only in the ⋯ menu, with a confirm). */
+   No Delete key here on purpose (deleting is only in the ⋯ menu, with a confirm).
+   SL3: thumbnails carry the slide's layout, the deck theme (o.theme()) and pictures (SLEdit.paint, same as Present). */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var listEl, inEl, cb = {}, slides = [], cur = 0;
   var MAX_LINES = 9;
   function thumbScale() { return matchMedia('(max-width:760px)').matches ? 112 / 960 : 144 / 960; }
-  function inner(s, i) { return SLEdit.html(s, i, { max: MAX_LINES }); }   /* SL2: one renderer, shared with Present */
+  /* SL2: one renderer, shared with Present (legacy: inner(s, i) = SLEdit.html(s, i, { max: MAX_LINES })) */
+  function th() { return cb.theme ? cb.theme() : 'light'; }
   function item(s, i) {
     var li = document.createElement('li');
     li.className = 'th' + (i === cur ? ' cur' : ''); li.dataset.i = i;
     li.setAttribute('aria-label', 'Slide ' + (i + 1) + (s.title ? ': ' + s.title : ''));
     li.setAttribute('aria-current', i === cur ? 'true' : 'false');
-    li.innerHTML = '<span class="num">' + (i + 1) + '</span><div class="mini-s"><div class="mini-in slide sv" style="transform:scale(' + thumbScale() + ')">' + inner(s, i) + '</div></div>';
+    /* legacy (SL1 / SL2): '<div class="mini-in slide sv" style="transform:scale(..)">' + SLEdit.html(..) + '</div>' */
+    li.innerHTML = '<span class="num">' + (i + 1) + '</span><div class="mini-s"><div class="mini-in slide sv"></div></div>';
+    var mi = li.querySelector('.mini-in'); mi.style.transform = 'scale(' + thumbScale() + ')';
+    SLEdit.paint(mi, s, i, { max: MAX_LINES }, th(), 'mini-in slide sv');
     return li;
   }
   function render(arr, c) {
@@ -27,7 +32,7 @@
   }
   function update(i) {
     var li = inEl.children[i]; if (!li || !slides[i]) return;
-    li.querySelector('.mini-in').innerHTML = inner(slides[i], i);
+    SLEdit.paint(li.querySelector('.mini-in'), slides[i], i, { max: MAX_LINES }, th(), 'mini-in slide sv');
     li.setAttribute('aria-label', 'Slide ' + (i + 1) + (slides[i].title ? ': ' + slides[i].title : ''));
   }
   function reveal() {

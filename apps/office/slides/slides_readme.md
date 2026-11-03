@@ -1,8 +1,10 @@
-# Hub Office Slides (Office → Hub Office) — release SL2
+# Hub Office Slides (Office → Hub Office) — release SL3
+<!-- legacy: release SL2 -->
 
 A basic slide editor. Static, no build step, no libraries, works from `file://`. Built to stay light on a Celeron / 4 GB
 laptop: only the slide being edited is live (two textareas), thumbnails are plain text in the slide design scaled down
-(up to 9 bullets each), saving is debounced (400 ms) and one deck is one localStorage record.
+(up to 9 bullets each), saving is debounced (400 ms) and one deck is one localStorage record. Pictures (SL3) are kept
+in IndexedDB, so the deck record stays small.
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -40,10 +42,50 @@ laptop: only the slide being edited is live (two textareas), thumbnails are plai
     come back to the tab, released when the show ends). Without it, the device's own sleep timer applies.
   - Light on purpose: only the shown slide is in the page (drawn by the same renderer as the thumbnails), no animations,
     no loops; the editor underneath is hidden while the show is open.
+- **Layouts (SL3)**: seven layouts: Title, Title + Content (the default, the SL1 / SL2 slide), Two Columns, Section Header,
+  Picture + Caption, Title Only, Blank. **▦ Layout** (or ⋯ → Layout…) changes the current slide; **▾** next to ＋ Slide
+  (or ⋯ → New slide with layout…) adds a slide with a layout. ＋ Slide / Ctrl+Enter adds one with the current slide's
+  layout (after Title or Section Header: Title + Content). The picker is an in-app sheet with live previews (arrows,
+  Enter, Esc).
+  - Changing the layout keeps the text where it fits: the right column of Two Columns is added under the left one when
+    the new layout has one text box; text that the new layout has no box for (e.g. bullets on Title Only) is kept,
+    hidden, and comes back when you pick a layout that has the box (a toast says so).
+  - Title, Section Header and Picture + Caption have a plain text box (subtitle / caption, no bullet dots).
+- **Pictures (SL3)**: **🖼 Picture** (or ⋯ → Insert picture…, or a click on the Picture + Caption placeholder) picks a
+  file; you can also **paste** an image (Ctrl+V; while typing in a text box, text on the clipboard wins) or **drop** one on
+  the window (it lands where you drop it on the slide). On Picture + Caption the first picture fills the placeholder;
+  elsewhere it is centred at up to 60 % of the slide.
+  - Click a picture to select it: drag to move, drag one of the 8 handles to resize (hold **Shift** to keep the shape).
+    The bar under the slide has **Crop to fill** (fills its frame, the default) / **Fit** (whole picture inside the frame),
+    **Original shape** and **🗑 Delete**. Keys with a picture selected (not while typing): **Delete** / Backspace deletes it,
+    arrows nudge 1 px (Shift = 10), Esc deselects.
+  - Pictures are made smaller on insert: the long side is at most **1920 px**; saved as WebP (JPEG where the browser
+    can't), or **PNG when the picture has transparency**. A smaller original that needs no scaling is kept as it is. Files
+    over 40 MB are refused with a message.
+- **Themes (SL3)**: **🎨 Theme** (or ⋯ → Theme…) picks the deck theme, **Light** (the SL1 / SL2 look, the default) or
+  **Dark**: background, title and body fonts and colours, and an accent (title rule, bullet dots). It applies to every
+  slide. The same sheet has **This slide's background**: Theme (default), 9 colours or any colour, for the current slide only.
+  More themes can be added later (one CSS rule + one entry, see below).
+- **Undo / Redo (SL3)**: Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) outside the text boxes, or ⋯ → Undo / Redo, for pictures
+  (insert, move, resize, crop / fit, delete), layouts, backgrounds and the theme (50 steps, per deck; going to the slide
+  it changed). Inside the title and text boxes the browser's own text undo works as before.
+- **Present** shows layouts, themes, backgrounds and pictures exactly as the editor (the same CSS and the same
+  placement; checked box by box in the tests).
 - **Settings (⚙)**: Theme System / Light / Dark (dark is the default; System follows the Hub's `sites-hub.theme`, then the
   device), storage state, keyboard list (with the Present keys) and About. In-app dialogs only. SL2 adds no new setting.
 
-## The .hslides file (open format, version 1)
+## The .hslides file (open format, version 2 since SL3)
+SL3 writes version 2 and reads versions 1 and 2. Version 2 adds, all optional (a missing field = the SL1 / SL2 default):
+- top level `theme`: `"light"` | `"dark"` (missing or unknown = light)
+- per slide `layout`: `title` | `tc` | `two` | `sec` | `pic` | `to` | `blank` (missing or unknown = `tc`, Title + Content);
+  `bullets2` (right column of Two Columns, same shape as `bullets`); `background`: `"#rrggbb"` (missing = the theme's);
+  `pictures`: `[{ "src": "data:image/webp;base64,…", "x", "y", "w", "h", "iw", "ih", "fit": "cover" | "contain" }]`
+  with x / y / w / h in 960 × 540 design pixels (pictures may hang off the slide edge), iw / ih = the stored bitmap size.
+  `src` must be a PNG / JPEG / WebP / GIF data URL under 16 MB; anything else is dropped. 50 pictures per slide max.
+- Import limit is now 40 MB (legacy 5 MB). Note: an SL2 app refuses version-2 files ("newer version"); SL3 files
+  without pictures could be saved for SL2 by changing `version` to 1 (layouts / themes are then ignored).
+
+Version 1 (SL1 / SL2):
 Plain UTF-8 JSON, so any editor or script can read and write it:
 
 ```json
@@ -59,7 +101,7 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   ]
 }
 ```
-- `format` must be `"hub-slides"`. `version` is 1; a file with a higher version is refused with a message.
+- `format` must be `"hub-slides"`. `version` is 1 (SL3 writes 2); a file with a higher version than the app knows is refused with a message.
 - `slides[].title`: text (line breaks become spaces, 300 characters max).
 - `slides[].bullets[]`: `{ "text", "level" }`, level 0 = top bullet, 1 = indented once (SL1 has two levels; higher counts as 1).
   A plain string is accepted as a level-0 bullet. Empty text = an empty line on the slide.
@@ -73,23 +115,39 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides-decks-v1` = `{ current, decks: [{ id, name, updated, count }] }` (newest first)
 - `slides-deck-v1:<id>` = `{ id, name, created, updated, cur, slides: [{ id, title, body }] }`; `body` is the bullet text,
   one bullet per line, a leading TAB = level 1.
+- SL3 adds to the deck record `fmt: 3` and `theme`, and per slide `layout`, `body2`, `bg` and `pics: [{ id, key, x, y, w, h,
+  iw, ih, fit, inl }]`. SL1 / SL2 records (no `fmt`) open unchanged: Light, Title + Content, no pictures.
+- Pictures: IndexedDB `hub-slides-pics`, store `pics`, key = content hash of the data URL, value `{ src, at }`. The deck
+  record keeps only the key. If IndexedDB is missing or fails, the picture stays inside the record (`inl: true`, the
+  data URL in `src`) — then localStorage can fill up sooner. On start (after 4 s) pictures that no deck uses any more and
+  that are older than a day are removed.
+- Adding a theme: one entry in `SLSave.THEMES` (`slides_save.js`) and one `.slide.th-<id>{…}` rule in `slides.css`
+  setting the variables `--s-bg --s-tc --s-fg --s-acc --s-mut --s-ph --s-em --s-ft --s-fb --s-tw --s-line`.
 
 ## Files
 - `slides.html`, `slides.css`, `index.html` (redirect), `slides_icon.png` (192 px), `slides_readme.md`
 - `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback
 - `slides_file.js` (`SLFile`): .hslides export / import and checks
-- `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, title, bullets (mirror dots), Tab / Shift+Tab, and `SLEdit.html()`,
-  the one static slide renderer used by the thumbnails and by Present
+- `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, title, bullets (mirror dots), Tab / Shift+Tab, layouts (placeholders),
+  picture select / move / resize / crop, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
+  the thumbnails, the pickers and Present
+- `slides_pics.js` (`SLPics`, SL3): picture decode, downscale and re-encode, IndexedDB store, blob URLs, clean-up
 - `slides_show.js` (`SLShow`, SL2): Present: full screen / overlay, fit, keys, taps, swipes, jump, end screen, idle fade, wake lock
 - `slides_list.js` (`SLList`): thumbnails, selection, drag to reorder
-- `slides_app.js`: top bar, menus, decks, dialogs, settings, keys, Present buttons; `window.Slides` (read-only helpers for tests)
+- `slides_app.js`: top bar, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture insert
+  (file / paste / drop), undo / redo; `window.Slides` (helpers for tests)
 
-## Limits (SL1 + SL2)
-- Text only: no layouts, pictures, colours or fonts yet (SL3). Long text can run past the bottom of the slide; it scrolls
+## Limits (SL1 – SL3)
+- Long text can run past the bottom of the slide; it scrolls
   inside the slide but is not shrunk to fit.
 - Present: no transitions, speaker notes, presenter view, second-screen output or timer; text that runs past the bottom
   of a slide is cut off in the show (it is not shrunk). Tested headless with emulated touch and a stubbed wake lock only.
-- No app-level Undo / Redo (the browser's own undo works inside the title and bullets). The Office
+- App Undo / Redo covers pictures, layouts, backgrounds and the theme only; text uses the browser's undo inside each box.
+- Pictures live in IndexedDB on this device: another device only gets them through Export / Import. Animated GIFs become
+  still pictures. Thumbnails draw the full stored picture (fine for normal decks; a deck with very many large pictures
+  uses more memory). Pictures cannot be rotated, layered (front / back) or cropped to a custom area.
+- Two deck themes in SL3 (Light, Dark); no custom fonts.
+- The Office
   ribbon, the Undo / Redo / Save / Print bar, the Hub title bar and printing / PDF come with SL4.
 - Decks live in this browser's localStorage (about 5 MB for everything); use Export for backups or to move a deck.
 - Touch drag was tested with emulated touch only, not yet on a real phone.

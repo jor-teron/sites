@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <!--
-  Hub Office Slides SL2 — SL1 + Present (full-screen slideshow, slides_show.js / SLShow). SL1: a basic slide editor: slide list (left; a strip on top on phones), a 16:9 slide with a title and
+  Hub Office Slides SL3 — SL2 + layouts (7), pictures (file / paste / drop, move, resize, crop to fill / fit, stored
+  downscaled to 1920 px as WebP / JPEG, PNG when transparent; slides_pics.js / SLPics) and deck themes (Light + Dark, + a per-slide
+  background), with app Undo / Redo for those. Legacy: Hub Office Slides SL2 — SL1 + Present (full-screen slideshow, slides_show.js / SLShow). SL1: a basic slide editor: slide list (left; a strip on top on phones), a 16:9 slide with a title and
   bullets, add / delete (confirm) / reorder (▲▼ + drag), several decks, auto-save, .hslides export / import.
   Files: slides_save.js (SLSave, the one save module), slides_file.js (SLFile, .hslides), slides_edit.js (SLEdit, the slide
   canvas + the one static slide renderer), slides_show.js (SLShow, Present), slides_list.js (SLList, the slide list + drag), slides_app.js (top bar, menus, decks, dialogs, settings, keys).
   Stopwatch style: dark default, System / Light / Dark following sites-hub.theme, in-app dialogs only. No libraries.
-  SL3 Layouts, SL4 Office bits (shared ribbon + quick bar, print / PDF) come later.
+  SL4 Office bits (shared ribbon + quick bar, print / PDF) come later.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Slides SL2</title>
+  <title>Slides SL3</title><!-- legacy: <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="slides.css">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
@@ -24,7 +26,10 @@
       <span id="deck-name">Slides</span><span class="caret">▾</span></button>
     <span id="saved" class="mut" aria-live="polite"></span>
     <span class="sp"></span>
-    <button type="button" class="mini acc" id="b-add" title="Add a slide after this one (Ctrl+Enter)">＋ Slide</button>
+    <span class="split"><button type="button" class="mini acc" id="b-add" title="Add a slide after this one (Ctrl+Enter)" aria-label="Add a slide">＋<span class="lbl"> Slide</span></button><button type="button" class="mini acc sq" id="b-addlay" title="Add a slide with a layout…" aria-label="Add a slide with a layout" aria-haspopup="dialog">▾</button></span>
+    <button type="button" class="mini" id="b-lay" title="Layout of this slide" aria-haspopup="dialog">▦<span class="lbl"> Layout</span></button>
+    <button type="button" class="mini" id="b-pic" title="Insert a picture (or paste / drop one)">🖼<span class="lbl"> Picture</span></button>
+    <button type="button" class="mini" id="b-theme" title="Deck theme and slide background" aria-haspopup="dialog">🎨<span class="lbl"> Theme</span></button>
     <button type="button" class="mini sq" id="b-up" title="Move slide up (Alt+↑)" aria-label="Move slide up">▲</button>
     <button type="button" class="mini sq" id="b-down" title="Move slide down (Alt+↓)" aria-label="Move slide down">▼</button>
     <button type="button" class="mini sq" id="b-more" title="More slide actions" aria-label="More slide actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
@@ -34,15 +39,29 @@
   <div id="warn" role="alert" hidden><span id="warn-t"></span><button type="button" class="x" id="warn-x" aria-label="Hide warning">×</button></div>
   <div id="main">
     <nav id="list" aria-label="Slides" tabindex="0"><ol id="list-in"></ol></nav>
-    <section id="stage" aria-label="Slide">
+    <section id="stage" aria-label="Slide" tabindex="-1">
       <div id="fit">
-        <div id="slide" class="slide">
+        <!-- SL3: the same placeholder order as the static renderer (SLEdit.html): picture placeholder, title, columns, pictures -->
+        <div id="slide" class="slide lay-tc th-light">
+          <button type="button" id="s-picph" class="s-picph" hidden>🖼 Click to add a picture<small>or paste / drop one</small></button>
           <textarea id="s-title" class="s-title" rows="1" spellcheck="true" maxlength="300" placeholder="Click to add a title" aria-label="Slide title"></textarea>
-          <div class="s-body-wrap">
-            <div id="mirror" class="s-body s-mirror" aria-hidden="true"></div>
-            <textarea id="s-body" class="s-body" spellcheck="true" maxlength="5000" placeholder="Click to add bullets: one per line, Tab to indent" aria-label="Slide bullets, one per line"></textarea>
+          <div class="s-cols">
+            <div class="s-body-wrap">
+              <div id="mirror" class="s-body s-mirror" aria-hidden="true"></div>
+              <textarea id="s-body" class="s-body" spellcheck="true" maxlength="5000" placeholder="Click to add bullets: one per line, Tab to indent" aria-label="Slide bullets, one per line"></textarea>
+            </div>
+            <div class="s-body-wrap b2" hidden>
+              <div id="mirror2" class="s-body s-mirror" aria-hidden="true"></div>
+              <textarea id="s-body2" class="s-body" spellcheck="true" maxlength="5000" placeholder="Right column: one bullet per line" aria-label="Right column bullets, one per line"></textarea>
+            </div>
           </div>
+          <div id="pics" class="pics"></div>
         </div>
+      </div>
+      <div id="picbar" role="toolbar" aria-label="Picture" hidden>
+        <div class="seg"><button type="button" data-fit="cover" title="Crop the picture to fill its frame">Crop to fill</button><button type="button" data-fit="contain" title="Show the whole picture inside its frame">Fit</button></div>
+        <button type="button" class="mini" data-a="shape" title="Give the frame the picture's own shape">Original shape</button>
+        <button type="button" class="mini danger-t" data-a="del" title="Delete the picture (Delete key; Ctrl+Z brings it back)">🗑 Delete</button>
       </div>
       <div id="pos" class="mut"></div>
     </section>
@@ -64,13 +83,21 @@
   </div>
   <div class="menu" id="menu-slide" role="menu" hidden>
     <button type="button" role="menuitem" data-a="add">＋ Add slide after</button>
+    <button type="button" role="menuitem" data-a="addlay">＋ New slide with layout…</button>
     <button type="button" role="menuitem" data-a="dup">⧉ Duplicate slide</button>
     <button type="button" role="menuitem" data-a="up">▲ Move up</button>
     <button type="button" role="menuitem" data-a="down">▼ Move down</button>
     <div class="sep"></div>
+    <button type="button" role="menuitem" data-a="lay">▦ Layout…</button>
+    <button type="button" role="menuitem" data-a="pic">🖼 Insert picture…</button>
+    <button type="button" role="menuitem" data-a="theme">🎨 Theme and background…</button>
+    <button type="button" role="menuitem" data-a="undo">↶ Undo</button>
+    <button type="button" role="menuitem" data-a="redo">↷ Redo</button>
+    <div class="sep"></div>
     <button type="button" role="menuitem" data-a="del" class="danger-t">🗑 Delete slide…</button>
   </div>
   <input type="file" id="file-in" accept=".hslides,application/json,.json" hidden>
+  <input type="file" id="pic-in" accept="image/*" hidden>
 
   <!-- settings + about -->
   <div id="settings" class="sheet" hidden>
@@ -88,6 +115,15 @@
         <span><kbd>Alt</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> Move the slide</span>
         <span><kbd>Esc</kbd> Close a menu or dialog</span>
       </div>
+      <h3>Pictures, layouts, themes</h3>
+      <div class="keys">
+        <span><kbd>Ctrl</kbd>+<kbd>V</kbd> Paste a picture (or drop one on the slide)</span>
+        <span>Drag a picture to move it, a handle to resize it</span>
+        <span><kbd>Shift</kbd> while resizing: keep the shape</span>
+        <span><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> Nudge the picture (<kbd>Shift</kbd>: 10 px)</span>
+        <span><kbd>Delete</kbd> Delete the selected picture</span>
+        <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> Undo / redo pictures, layouts, themes (outside the text)</span>
+      </div>
       <h3>Present</h3>
       <div class="keys">
         <span><kbd>F5</kbd> Present from the start</span>
@@ -102,10 +138,10 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Slides</b> <span id="ver">SL2</span>
-          <p>Make simple slide decks: a title and bullets on each slide. Decks save on this device as you type, and you can keep several.
-            Export a deck as a .hslides file (open JSON) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
-          <p class="mut">Coming next: SL3 Layouts and pictures, SL4 Office ribbon and print / PDF.</p></div>
+        <div><b>Hub Office Slides</b> <span id="ver">SL3</span><!-- legacy: SL2 -->
+          <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
+            Export a deck as a .hslides file (open JSON, pictures inside) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
+          <p class="mut">Coming next: SL4 Office ribbon and print / PDF.</p></div>
       </div>
     </div>
   </div>
@@ -117,6 +153,18 @@
       <input type="text" id="dlg-in" maxlength="80" hidden>
       <ul id="dlg-list" class="rows" hidden></ul>
       <div class="row" id="dlg-btns"></div>
+    </div>
+  </div>
+  <!-- SL3 picker: layouts (change this slide / add a slide) and deck themes + this slide's background -->
+  <div id="pick" class="sheet" hidden>
+    <div class="box pick-wrap" role="dialog" aria-modal="true" aria-labelledby="pick-h">
+      <div class="bar"><h2 id="pick-h">Layout</h2><button type="button" class="mini sq" id="pick-x" aria-label="Close">✕</button></div>
+      <p id="pick-m" class="mut"></p>
+      <div id="pick-grid" class="tiles"></div>
+      <div id="pick-bg" hidden>
+        <h3>This slide's background</h3>
+        <div class="swatches" id="pick-sw"></div>
+      </div>
     </div>
   </div>
   <div id="toast" role="status"></div>
@@ -133,6 +181,7 @@
     </div>
   </div>
 </div>
+<script src="slides_pics.js"></script>
 <script src="slides_save.js"></script>
 <script src="slides_file.js"></script>
 <script src="slides_edit.js"></script>
