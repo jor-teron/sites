@@ -12,6 +12,8 @@
  *   Test = SftpFs.test(account) (a fresh login + listing of the folder). The list shows both kinds, 🌐 WebDAV / 🔐 SFTP.
  *   Rows and the form keep a .nd-row / .nd-form look; lines that change with the type are hidden with style.display
  *   (.key-line's display beats [hidden], see H96).
+ * H122: a "Thumbnails" switch under the card (key 'sites-hub.netThumbs', '0' = off, default on): picture previews
+ *   in Files for WebDAV / SFTP drives (apps/system/files/files_thumbs.js). Also needs Settings › Windows "Show thumbnails".
  */
 (function () {
   'use strict';
@@ -110,6 +112,14 @@
     type.addEventListener('change', () => { showKind(); fsay(''); });
     card.append(list, form);
     pane.appendChild(card);
+    // H122: picture thumbnails on network drives (Files app, files_thumbs.js; key 'netThumbs', '0' = off, default on)
+    const St = window.SettingsStore;
+    if (St) {
+      const th = ui.switch('Thumbnails', 'Pictures on network drives show a small preview in Files (downloads each picture once, up to 15 MB). Turn off on slow connections.',
+        St.get('netThumbs') !== '0', (on) => St.set('netThumbs', on ? '' : '0'));
+      th.classList.add('nd-thumbs');
+      pane.appendChild(th);
+    }
 
     let editing = null;
     const fsay = (t, c) => { fout.textContent = t || ''; fout.className = 'key-out' + (c ? ' ' + c : ''); };

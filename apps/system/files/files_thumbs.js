@@ -14,6 +14,12 @@
  * remembered too, so a broken file isn't tried on every visit.
  * Setting 'sites-hub.filesThumbs' ('0' = off, default on): Files' ⋯ menu or Settings → Windows;
  * changes apply at once.
+ * H122: network drives (WebDAV 'webdav:<n>' / SFTP 'sftp:<n>', shared/fs/webdav_fs.js / sftp_fs.js) get picture
+ *   thumbnails too: the same lazy queue + cache, the file is read with handle.getFile() (one download each, the
+ *   listing's meta size / modified make the key, so a changed file refreshes). Pictures only (no video), up to
+ *   MAX_NET (15 MB), at most 2 at once. Extra setting 'sites-hub.netThumbs' ('0' = off, default on), Settings →
+ *   Network drives "Thumbnails"; both settings must be on. (Before H122 their meta.thumb = '' made them look like
+ *   Google Drive with no preview link, so they always kept the icon.)
  * API FX.thumbs: reset() (before a render), attach(iconSpan, entry), on(), set(on), clearCache(),
  *   stats { made, cached, failed, drive }
  */
@@ -22,6 +28,7 @@
   const { st, cur, el } = FX;
   const T = window.FileTypes, S = window.ThumbStore;
   const KEY = 'sites-hub.filesThumbs', BOX = 160, MAX_IMG = 60 * 1024 * 1024, VID_WAIT = 8000;
+  const NET_KEY = 'sites-hub.netThumbs', MAX_NET = 15 * 1024 * 1024;   // H122
   const list = FX.$('list');
   const stats = { made: 0, cached: 0, failed: 0, drive: 0 };
   let gen = 0, dirSeen = null, io = null, cancelVid = null;
@@ -30,6 +37,8 @@
   let runImg = 0, runVid = 0;
 
   const on = () => { try { return localStorage.getItem(KEY) !== '0'; } catch (_) { return true; } };
+  const netOn = () => { try { return localStorage.getItem(NET_KEY) !== '0'; } catch (_) { return true; } };   // H122
+  const isNet = () => /^(webdav|sftp):/.test(st.driveId || '');   // H122
   function set(v) { try { if (v) localStorage.removeItem(KEY); else localStorage.setItem(KEY, '0'); } catch (_) { /* blocked */ } FX.view.render(); }
   const pathNow = () => st.stack.slice(1).map((s) => s.name).join('/');
   const keyOf = (e) => [st.driveId, pathNow(), e.name, e.size, e.modified].join('|');
@@ -51,7 +60,10 @@
     const k = T.kind(e.name, e.type);
     if (k !== 'image' && k !== 'video') return;
     const m = e.handle && e.handle.meta;
-    if (st.driveId === 'gdrive' || (m && 'thumb' in m)) { if (m && m.thumb) driveThumb(ico, m, k); return; }
+    const net = isNet();   // H122: WebDAV / SFTP — pictures only, small enough, own switch
+    if (net && (!netOn() || k !== 'image' || !(e.size <= MAX_NET))) return;
+    // (before H122) if (st.driveId === 'gdrive' || (m && 'thumb' in m)) { if (m && m.thumb) driveThumb(ico, m, k); return; }
+    if (!net && (st.driveId === 'gdrive' || (m && 'thumb' in m))) { if (m && m.thumb) driveThumb(ico, m, k); return; }
     if (k === 'image' && e.size > MAX_IMG) return;
     const key = keyOf(e);
     ico.dataset.tkey = key;
@@ -171,9 +183,10 @@
     FX.say('Thumbnail cache cleared');
   }
   S.onClear(() => { dirSeen = null; drop(); FX.view.render(); });
-  window.addEventListener('storage', (e) => { if (e.key === KEY || e.key === null) FX.view.render(); });
+  // (before H122) window.addEventListener('storage', (e) => { if (e.key === KEY || e.key === null) FX.view.render(); });
+  window.addEventListener('storage', (e) => { if (e.key === KEY || e.key === NET_KEY || e.key === null) FX.view.render(); });   // H122: + netThumbs
   window.addEventListener('pagehide', drop);
   window.addEventListener('pageshow', (e) => { if (e.persisted) { dirSeen = null; FX.view.render(); } });
 
-  FX.thumbs = { reset, attach, on, set, clearCache, stats };
+  FX.thumbs = { reset, attach, on, set, clearCache, stats, netOn };
 })();
