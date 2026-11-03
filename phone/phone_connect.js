@@ -178,7 +178,7 @@
   function btn(label, cls, fn) { var b = el('button', 'mini' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.addEventListener('click', fn); return b; }
   // The Connect link opens the desktop Hub page, like hub-controller.js connectUrl. When the desktop shell moves to
   // desktop/, only JOIN_PAGE changes (hub_role.js reads ?join=CODE on any shell page that loads the core).
-  var JOIN_PAGE = window.PHONE_CONNECT_JOIN_PAGE || 'hub.html';
+  var JOIN_PAGE = window.PHONE_CONNECT_JOIN_PAGE || 'desktop/desktop.html';   // was 'hub.html' (redirects since H129a)
   function connectUrl(c) { try { var u = new URL(JOIN_PAGE, location.href); u.search = '?join=' + c; u.hash = ''; return u.href; } catch (_) { return JOIN_PAGE + '?join=' + c; } }
   var libs = {};
   function lib(src, ok) {   // one lazy <script> per file (QR libraries load only when used)
