@@ -1473,6 +1473,7 @@
 │   │   │   ├── files_drives.js
 │   │   │   ├── files_icon.png
 │   │   │   ├── files.js
+│   │   │   ├── files_marquee.js
 │   │   │   ├── files_menu.js
 │   │   │   ├── files_thumbs.js
 │   │   │   ├── files_viewer.js

@@ -113,7 +113,18 @@ button:disabled { opacity: .4; cursor: default; }
 @media (max-width: 980px) { .seg span { display: none; } .seg button { padding: 0 9px; } }
 
 /* folder contents: grid (big icons) or list */
-.list { flex: 1; overflow-y: auto; padding: 6px 8px 20px; outline: none; }
+/* .list { flex: 1; overflow-y: auto; padding: 6px 8px 20px; outline: none; }   (before H124: no position) */
+.list { position: relative; flex: 1; overflow-y: auto; padding: 6px 8px 20px; outline: none; }
+/* H124: drag-to-select box (files_marquee.js) — accent, low alpha, 1 px border; in the list's content box */
+.marquee { --marq: var(--accent); position: absolute; z-index: 1;   /* under the sticky list header (2) */
+  pointer-events: none; border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--marq) 85%, transparent); background: color-mix(in srgb, var(--marq) 18%, transparent); }
+.list.marqueeing { user-select: none; cursor: default; }
+.list.marqueeing .item { transition: background .06s; }
+.list.marqueeing .item:active { transform: none; }
+html.light .marquee { background: color-mix(in srgb, var(--marq) 14%, transparent); }
+html.hub-glass .marquee { background: color-mix(in srgb, var(--marq) 22%, rgba(255,255,255,.06)); box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset; }
+html.hub-xp .marquee { --marq: #316ac5; border-radius: 0; }   /* XP selection blue, square */
 .list.dragging .item.sel { opacity: .5; }
 .empty { color: var(--muted); text-align: center; margin-top: 40px; padding: 0 16px; grid-column: 1 / -1; }
 /* H105: empty folder box (files_view.js emptyBox): full width in grid and list, centred */

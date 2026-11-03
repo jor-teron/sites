@@ -8,6 +8,7 @@
   shared/google/* (Google Drive drive: QR sign-in + Drive adapter; shared/vendor/qrcode.js),
   shared/dialog/ (ask / confirm / choose), shared/ctxmenu/ (menu).
   App: files_core.js (state + helpers), files_view.js (grid / list, selection, drag & drop),
+  files_marquee.js (H124: mouse drag-to-select box),
   files_drives.js (drives, path, hash), files_actions.js (operations, Open with), files_viewer.js
   (text view), files_thumbs.js (previews; cache shared/fs/thumbs_store.js), files_menu.js (menu + keys), files.js (start-up), files.css.
   Open with: shared/fs/filetypes.js (which app) + shared/fs/fs_ref.js (hand the file to the
@@ -96,6 +97,7 @@
   <script src="../../../shared/ctxmenu/ctxmenu.js"></script>
   <script src="files_core.js"></script>
   <script src="files_view.js"></script>
+  <script src="files_marquee.js"></script><!-- H124: drag-to-select box -->
   <script src="files_drives.js"></script>
   <script src="files_actions.js"></script>
   <script src="files_viewer.js"></script>
