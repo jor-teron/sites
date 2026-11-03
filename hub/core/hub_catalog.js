@@ -38,6 +38,7 @@ Tower Defence,     tower-defence/, , , Strategy, Build gun - cannon and frost to
 Chess,             chess/,         , , Strategy, Classic chess against the computer with hints and undo - two levels for learners
 Go,                go/,            , , Strategy, Surround more of the board than your rival - capture stones - play a friend or computer
 Blockade,          blockade/,      , , Strategy, Race two pawns to the far home squares and block your rival with walls
+Battleship,        battleship/,    , , Strategy, Hide five ships and take turns firing to sink the rival fleet - play a friend or computer
 AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
 Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
 Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
