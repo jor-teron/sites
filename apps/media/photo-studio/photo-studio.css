@@ -173,3 +173,16 @@ body.hub-titlebar #ps-topbar { display: none; }
 .ps-top-btn { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 480px) { .ps-top-btn { min-width: 40px; padding: 0 10px; } .ps-top-lb { display: none; } }
 @media (hover: hover) { .ps-top-btn:hover { background: rgba(127,127,140,.3); } }
+
+/* HPS6: own hover tips (ps_tip.js) and the Close project dialog (ps_close.js) */
+#ps-tip { position: fixed; z-index: 50; max-width: 260px; padding: 5px 9px; border-radius: 7px; background: #2b2c33; color: #eceef3;
+  border: 1px solid #3a3b42; box-shadow: 0 4px 14px rgba(0,0,0,.35); font: 500 12px/1.35 system-ui, sans-serif; white-space: pre-line;
+  pointer-events: none; }
+#ps-tip[hidden] { display: none; }
+html.light #ps-tip { background: #ffffff; color: #1d1e22; border-color: #d4d6dc; box-shadow: 0 4px 14px rgba(0,0,0,.16); }
+.dlg.ps-close { max-width: 380px; }
+.ps-close .row { flex-wrap: wrap; }
+.btn.cl-discard { color: #ffb4ab; }
+html.light .btn.cl-discard { color: #b3261e; }
+#ps-close { border-top: 1px solid #2c2d33; }
+html.light #ps-close { border-top-color: #e3e4e8; }

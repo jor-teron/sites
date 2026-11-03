@@ -17,11 +17,14 @@
   <meta name="theme-color" content="#141518">
   <!-- legacy: <title>Hub Photo Studio HPS3</title> -->
   <!-- legacy: <title>Hub Photo Studio HPS4</title> -->
-  <title>Hub Photo Studio HPS5</title>
+  <!-- legacy: <title>Hub Photo Studio HPS5</title> -->
+  <!-- legacy: <title>Hub Photo Studio HPS5.4</title> -->
+  <title>Hub Photo Studio HPS6</title>
   <link rel="icon" href="photo-studio_icon.png">
   <link rel="stylesheet" href="../photo-editor-v2/photo-editor-v2.css">
   <link rel="stylesheet" href="photo-studio.css">
   <script src="ps_save.js"></script>
+  <script src="ps_tip.js"></script>   <!-- HPS6 -->
 </head>
 <body class="ps">
 <div id="app">
@@ -144,6 +147,7 @@
     <button type="button" tabindex="-1" id="ps-open-hps">Open project (.hps)</button>
     <button type="button" tabindex="-1" data-act="print" title="Ctrl+P">Print 🖨</button>
     <button type="button" tabindex="-1" data-act="send">Send 📤</button>
+    <button type="button" tabindex="-1" id="ps-close" title="Close this photo or project, keep the app open (Ctrl+W or Alt+W)">Close project ✕</button><!-- HPS6 -->
   </div>
 
   <div id="dlg-resize" class="dlg-wrap" hidden>
@@ -184,12 +188,15 @@
         <div class="seg" data-key="format"><button type="button" tabindex="-1" data-v="auto">Auto</button><button type="button" tabindex="-1" data-v="jpeg">JPEG</button><button type="button" tabindex="-1" data-v="png">PNG</button></div></div>
       <div class="ps-row"><span>JPEG quality<small>Also used by Print and Send</small></span>
         <div class="seg" data-key="quality"><button type="button" tabindex="-1" data-v="0.8">Smaller</button><button type="button" tabindex="-1" data-v="0.92">High</button><button type="button" tabindex="-1" data-v="0.98">Best</button></div></div>
+      <div class="ps-row"><span>Hover tips<small>How soon a button's tip shows (mouse only)</small></span>
+        <div class="seg" data-key="tip"><button type="button" tabindex="-1" data-v="0">Off</button><button type="button" tabindex="-1" data-v="100">100 ms</button><button type="button" tabindex="-1" data-v="500">500 ms</button><button type="button" tabindex="-1" data-v="1000">1000 ms</button></div></div>
       <h3>Keyboard</h3>
       <div class="ps-keys">
         <span><kbd>Ctrl</kbd>+<kbd>O</kbd> Open</span><span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save project</span><span><kbd>Ctrl</kbd>+<kbd>E</kbd> Export PNG</span><span><kbd>Ctrl</kbd>+<kbd>P</kbd> Print</span>
+        <span><kbd>Ctrl</kbd>+<kbd>W</kbd> / <kbd>Alt</kbd>+<kbd>W</kbd> Close project</span>
         <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd> Undo / redo</span><span><kbd>C</kbd> Crop (<kbd>Enter</kbd> applies)</span>
         <span><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd> Rotate</span><span><kbd>H</kbd> / <kbd>V</kbd> Flip</span>
-        <span><kbd>A</kbd> Adjust</span><span><kbd>E</kbd> Resize</span>
+        <span><kbd>A</kbd> Adjust</span><span><kbd>E</kbd> Eraser</span>
         <span><kbd>L</kbd> Layers</span><span><kbd>Del</kbd> Delete layer</span>
         <span><kbd>+</kbd> <kbd>-</kbd> <kbd>0</kbd> Zoom</span><span><kbd>,</kbd> Settings</span>
         <span><kbd>M</kbd> Marquee (rect / ellipse)</span><span><kbd>Shift</kbd>+<kbd>L</kbd> Lasso</span>
@@ -264,6 +271,18 @@
       </div>
     </div>
   </div>
+  <!-- HPS6: Close project with unsaved changes (ps_close.js) -->
+  <div id="dlg-close" class="dlg-wrap" hidden>
+    <div class="dlg ps-msg ps-close" role="alertdialog" aria-modal="true" aria-labelledby="cl-title" aria-describedby="cl-text">
+      <h2 id="cl-title">Save changes before closing?</h2>
+      <p id="cl-text"></p>
+      <div class="row">
+        <button type="button" tabindex="-1" class="btn ghost" id="cl-cancel">Cancel</button>
+        <button type="button" tabindex="-1" class="btn ghost cl-discard" id="cl-discard">Don't save</button>
+        <button type="button" tabindex="-1" class="btn primary" id="cl-save">Save</button>
+      </div>
+    </div>
+  </div>
   <input type="file" id="file-in" accept="image/*,.hps" hidden>
   <input type="file" id="ps-hps-in" accept=".hps,application/zip" hidden>
 </div>
@@ -295,6 +314,7 @@
 <script src="ps_erase.js"></script>   <!-- HPS6.1 -->
 <script src="ps_blank.js"></script>   <!-- HPS5 -->
 <script src="ps_project.js"></script>
+<script src="ps_close.js"></script>    <!-- HPS6 -->
 <script src="ps_app.js"></script>
 <script src="ps_titlebar.js"></script> <!-- HPS5.1 -->
 <script src="ps_keys.js"></script>     <!-- HPS5.2 -->

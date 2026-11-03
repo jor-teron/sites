@@ -53,6 +53,8 @@ Studio's own files:
 | `ps_blank.js` | HPS5: New blank page `PE.blank`: ＋ card, blank PNG via PE.io.load, Open/drop/paste → image layer on a blank page, checkerboard preview, true-size print |
 | `ps_retouch.js` | HPS4: retouch `PE.retouch`: healing, clone, red-eye, blur, smudge, RGBA patches, retouch bar, .hps retouch entries |
 | `ps_erase.js` | HPS6.1: plain Eraser `PE.erase` (E): paints Hide / Restore (Show) into the target's mask via `PE.masks.ext`; Size, Hardness, Strength, erase bar |
+| `ps_close.js` | HPS6: Close project `PE.closeProject` (Ctrl+W / Alt+W in `ps_keys.js`, Save menu item): in-app Save / Don't save / Cancel when there are unsaved changes, then back to the start card |
+| `ps_tip.js` | HPS6: own hover tips (one delegated listener, `title` → `data-tip`), delay Off / 100 / 500 / 1000 ms in Settings (`tip`), mouse only, theme-aware |
 
 Photo Editor v2 stores nothing in localStorage of its own, and Studio writes only
 `photo-studio-*` keys (plus the shared `shared-link-*` keys written by `shared/link` for Send),

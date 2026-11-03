@@ -1,7 +1,8 @@
 /*
  * Hub Photo Studio (HPS1) — ps_save.js, the ONE save module (Hub Drive can replace it later).
  * localStorage only, keys owned by Photo Studio (Photo Editor v2 stores nothing of its own):
- *   'photo-studio-settings-v1' = { theme:'system'|'light'|'dark', format:'auto'|'jpeg'|'png', quality:0.8|0.92|0.98 }
+ *   'photo-studio-settings-v1' = { theme:'system'|'light'|'dark', format:'auto'|'jpeg'|'png', quality:0.8|0.92|0.98,
+ *                                  tip:0|100|500|1000 (HPS6 hover tip delay in ms, 0 = Off, default 100) }
  *   'photo-studio-state-v1'    = { adj:'b'|'c'|'s'|'w'|'sh', blank:{paper,orient,bg,cw,ch} (HPS5 New blank) }
  * Theme 'system' follows the Hub's sites-hub.theme when set, else the device. Default theme: dark.
  * Loaded in <head> so the theme class is set before the first paint.
@@ -9,17 +10,18 @@
 (function () {
   'use strict';
   var SET = 'photo-studio-settings-v1', ST = 'photo-studio-state-v1';
-  var QUAL = [0.8, 0.92, 0.98];
+  var QUAL = [0.8, 0.92, 0.98], TIPS = [0, 100, 500, 1000];
   function rd(k) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v && typeof v === 'object' ? v : null; } catch (_) { return null; } }
   function wr(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (_) { return false; } }
   function ls(k) { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }
 
   function clean(p) {
-    var o = { theme: 'dark', format: 'auto', quality: 0.92 };
+    var o = { theme: 'dark', format: 'auto', quality: 0.92, tip: 100 };
     if (p) {
       if (['system', 'light', 'dark'].indexOf(p.theme) >= 0) o.theme = p.theme;
       if (['auto', 'jpeg', 'png'].indexOf(p.format) >= 0) o.format = p.format;
       if (QUAL.indexOf(+p.quality) >= 0) o.quality = +p.quality;
+      if (p.tip != null && TIPS.indexOf(+p.tip) >= 0) o.tip = +p.tip;   // HPS6
     }
     return o;
   }
