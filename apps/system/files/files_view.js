@@ -2,10 +2,11 @@
  * Files view (apps/system/files/files_view.js) — draws the open folder as big-icon grid or
  * list (toggle remembered), sorted by name / size / date modified (asc / desc, folders first,
  * remembered) and filtered by the search box. Selection: click = select, double-click / Enter
- * = open (single-click mode, FX.singleClick(): click = open; Ctrl / Shift / the round check still
- * select), Ctrl/Cmd-click = add / remove, Shift-click = range, click empty space = none;
- * touch: tap opens, the round checkbox (or a long-press) selects, and while something is
- * selected a tap adds / removes. Right-click / long-press = FX.menu.
+ * = open (single-click mode, FX.singleClick(): click = open; Ctrl / Shift still select),
+ * Ctrl/Cmd-click = add / remove, Shift-click = range, click empty space = none;
+ * touch: tap opens, a long-press selects, and while something is selected a tap adds / removes.
+ * Right-click / long-press = FX.menu.
+ * H123: no select ticks — the round checkbox (.chk) is gone; the highlight alone shows selection.
  * Drag & drop: drag items onto a folder, a path crumb or a drive = move (Ctrl = copy);
  * drop files from the computer into the folder (or onto a sub-folder) = upload.
  * H107: status bar (#status: count, total size, selection) + sticky list column header (click = sort).
@@ -86,9 +87,9 @@
     it.setAttribute('role', 'option');
     it.setAttribute('aria-selected', st.sel.has(e.name) ? 'true' : 'false');
     it.draggable = true;
-    const chk = el('span', 'chk'); chk.setAttribute('aria-hidden', 'true');
+    // H123: no select tick — was: const chk = el('span', 'chk'); chk.setAttribute('aria-hidden', 'true'); it.append(chk, ...)
     const ico = el('span', 'item-ico', icon(e));
-    it.append(chk, ico, el('span', 'item-name', e.name));
+    it.append(ico, el('span', 'item-name', e.name));
     if (FX.thumbs) FX.thumbs.attach(ico, e);   // R12b: preview instead of the icon (lazy)
     const bd = e.kind === 'file' ? badge(e.name) : null;   // H109: file-type label (sibling: thumbs replace ico's children)
     if (bd) it.appendChild(bd);
@@ -192,7 +193,7 @@
     const it = e.target.closest('.item');
     if (!it) { if (e.target === list || e.target.classList.contains('empty')) clear(); return; }
     const name = it.dataset.name;
-    if (e.target.closest('.chk')) { pick(name, 'toggle'); return; }
+    // H123: no tick to click — was: if (e.target.closest('.chk')) { pick(name, 'toggle'); return; }
     if (lastPointer !== 'mouse') {
       if (st.sel.size) pick(name, 'toggle'); else FX.act.open(entryOf(it));
       return;
@@ -201,9 +202,10 @@
     else if (e.shiftKey) pick(name, 'range');
     else { pick(name, 'one'); if (FX.singleClick()) FX.act.open(entryOf(it)); }   // single-click mode opens
   });
+  // H123: was `it && !e.target.closest('.chk') && ...` (the tick is gone)
   list.addEventListener('dblclick', (e) => {
     const it = e.target.closest('.item');
-    if (it && !e.target.closest('.chk') && lastPointer === 'mouse' && !FX.singleClick()) FX.act.open(entryOf(it));
+    if (it && lastPointer === 'mouse' && !FX.singleClick()) FX.act.open(entryOf(it));
   });
   list.addEventListener('contextmenu', (e) => {
     if (e.shiftKey) return;   // Shift + right-click = the browser's own menu

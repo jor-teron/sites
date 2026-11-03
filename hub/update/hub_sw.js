@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104a';
-const CACHE = 'hub-shell-v133';  // 2026-11-04a: H121: Open Terminal here in Files
+const V = '20261104b';
+const CACHE = 'hub-shell-v134';  // 2026-11-04b: H123: Files without select ticks
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
