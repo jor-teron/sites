@@ -15,7 +15,8 @@
   const C = window.HubCtx;
   if (!C) return;
   const W = () => window.HubWM;
-  const abs = (u) => new URL(u, location.href).href;
+  // (before H129a) const abs = (u) => new URL(u, location.href).href;   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+  const abs = (u) => new URL(u, document.baseURI).href;
 
   /* ---------- desktop background ---------- */
   C.add('#wm-desk, #empty, #frame-wrap', (el, e) => {
@@ -88,7 +89,8 @@
     return [
       { label: 'Open', icon: '\u2197', action: () => el.click() },
       C.isDesk() && { label: 'Open in new window', icon: '\u29C9', action: () => C.shiftClick(el) },
-      F && F.catUrl && { label: 'Open in new tab', icon: '\u2934', action: () => window.open(new URL(F.catUrl(cat), location.href).href, '_blank', 'noopener') }
+      // (before H129a) F && F.catUrl && { label: 'Open in new tab', icon: '\u2934', action: () => window.open(new URL(F.catUrl(cat), location.href).href, '_blank', 'noopener') }   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+      F && F.catUrl && { label: 'Open in new tab', icon: '\u2934', action: () => window.open(new URL(F.catUrl(cat), document.baseURI).href, '_blank', 'noopener') }
     ];
   }, { touch: true });
   C.add('.fly-app', (el) => rowItems(el, el.dataset.entryUrl || '', el.dataset.newTab === '1'), { touch: true });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Site root → hub.html. R56: keep ?query and #hash (e.g. ?join=CODE, #app). H78: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: visible "Redirecting to hub.html…" body text; the meta refresh was already in <noscript>. -->
+<!-- Site root → desktop/desktop.html (H129a: straight to the desktop Hub page; before H129a → hub.html, which is now itself a redirect to desktop/desktop.html). R56: keep ?query and #hash (e.g. ?join=CODE, #app). H78: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: visible "Redirecting to hub.html…" body text; the meta refresh was already in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -11,10 +11,12 @@
       var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
       var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
       if (dark) document.documentElement.className = 'dark';
-      location.replace('hub.html' + location.search + location.hash);
+      // location.replace('hub.html' + location.search + location.hash);   (before H129a)
+      location.replace('desktop/desktop.html' + location.search + location.hash);   // H129a
     })();
   </script>
-  <noscript><meta http-equiv="refresh" content="0; url=hub.html"></noscript>
+  <!-- <noscript><meta http-equiv="refresh" content="0; url=hub.html"></noscript>   (before H129a) -->
+  <noscript><meta http-equiv="refresh" content="0; url=desktop/desktop.html"></noscript>
 </head>
-<body><noscript><p><a href="hub.html">Open the Hub</a></p></noscript></body>
+<body><noscript><p><a href="desktop/desktop.html">Open the Hub</a></p></noscript></body><!-- (before H129a) href="hub.html" -->
 </html>

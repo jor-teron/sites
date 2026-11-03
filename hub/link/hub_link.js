@@ -171,7 +171,8 @@
       const active = frame.__slReg = { app: app, types: Array.isArray(d.types) ? d.types : [] };
       const r = receivers();
       let url = '';
-      try { url = new URL(frame === hubFrame ? frame.src : frame.contentWindow.location.href, location.href).pathname.replace(location.pathname.replace(/[^/]*$/, ''), ''); } catch (_) { /* ignore */ }
+      // (before H129a) try { url = new URL(frame === hubFrame ? frame.src : frame.contentWindow.location.href, location.href).pathname.replace(location.pathname.replace(/[^/]*$/, ''), ''); } catch (_) { /* ignore */ }   H129a: document.baseURI = the site root under desktop/ (<base href="../">); = location.href on hub.html / phone.html
+      try { url = new URL(frame === hubFrame ? frame.src : frame.contentWindow.location.href, document.baseURI).pathname.replace(new URL('./', document.baseURI).pathname, ''); } catch (_) { /* ignore */ }
       r[app] = { url: url || r[app] && r[app].url || '', types: active.types };
       try { localStorage.setItem(RECV_KEY, JSON.stringify(r)); } catch (_) { /* full */ }
       post({ sharedLink: 'hello', code: SharedLink.code, prefix: 'jtsites-', devices: SharedLink.devices });
