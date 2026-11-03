@@ -1,5 +1,5 @@
 /*
- * Ludo — styles (LUDO-1a). Follows the shared theme (html.dark).
+ * Ludo — styles (LUDO-1a; house rules box LUDO-1c). Follows the shared theme (html.dark).
  * Portrait: info / board / die + buttons stacked. Short landscape: info left, board centre, die + buttons right.
  * Board size is set by JS (largest square that fits #boardWrap).
  */
@@ -46,6 +46,10 @@ button.link { background: none; border-color: transparent; color: var(--muted); 
 .seat:not([data-t="human"]) { font-weight: 600; }
 .cp { border: 2px solid var(--c); font-weight: 600; padding: 12px; }
 .cp[aria-pressed="true"] { background: var(--c); color: #fff; }
+.house { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px 8px; margin-bottom: 10px; }
+.house legend { font-size: .85rem; font-weight: 600; padding: 0 4px; }
+.hr { display: flex; gap: 8px; align-items: center; font-size: .86rem; padding: 5px 0; cursor: pointer; }
+.hr input { width: 20px; height: 20px; flex: 0 0 auto; accent-color: var(--accent); }
 @media (orientation: portrait) and (max-height: 700px) {
   .title { font-size: 1rem; } .status { font-size: .8rem; min-height: 2.4em; } .chip { font-size: .7rem; padding: 1px 6px; }
   button { padding: 5px 8px; font-size: .8rem; } .die-btn { width: 64px; height: 64px; } #die { width: 54px; height: 54px; }
