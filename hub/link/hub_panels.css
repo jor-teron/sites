@@ -1,0 +1,4 @@
+/* Forwarder (H129c, 2026-11-04 IST): hub_panels.css moved to desktop/panels/hub_panels.css. Kept for one release so an old cached page
+   or anything that still links hub/link/hub_panels.css keeps working; removed in a later release. desktop/desktop.html links
+   desktop/panels/hub_panels.css directly and never loads this file. */
+@import url("../../desktop/panels/hub_panels.css");
