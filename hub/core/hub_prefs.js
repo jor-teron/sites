@@ -47,6 +47,7 @@
  *   sites-hub.barEye     H63: '1' = shown (default HIDDEN), the Eye comfort 🌙, both modes → html.hub-bar-off-eye
  *   sites-hub.barNotif   H66: '0' = hidden (default SHOWN), the Notification Centre 🔔, both modes → html.hub-bar-off-notif
  *   H63 Eye comfort keys eyeWarm / eyeMode / eyeFrom / eyeTo / eyeNow: read by hub/core/hub_eye.js (apply() calls HubEye.apply())
+ *   H65 Computer break keys breakOn / breakWork / breakLen: read by hub/core/hub_break.js (apply() calls HubBreak.apply())
  *   (the busy meter keeps its own key sites-hub.trayMeter, hub_traymeter.js; Settings shows it in Hub bar)
  * Live: the 'storage' event (Settings runs in another document) and a
  * {type:'hub-prefs'} postMessage from a same-origin frame both re-apply everything.
@@ -142,6 +143,8 @@
     if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);
     // H63: Eye comfort (hub_eye.js, loaded after this file; it also checks its schedule every minute)
     if (window.HubEye) window.HubEye.apply();
+    // H65: Computer break (hub_break.js, loaded after this file; it ticks every second while on)
+    if (window.HubBreak) window.HubBreak.apply();
   }
 
   window.HubPrefs = { get, apply, BAR, barOn };   // H52: + BAR, barOn

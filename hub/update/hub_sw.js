@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261103c';
-const CACHE = 'hub-shell-v130';  // 2026-11-03c: H119: SFTP network drives in Files
+const V = '20261103d';
+const CACHE = 'hub-shell-v131';  // 2026-11-03d: H65: Computer break (25/5 Hub lock)
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -79,6 +79,7 @@ const SHELL = [
   'apps/system/notifications/', 'apps/system/notifications/index.html', 'apps/system/notifications/nc.js', 'apps/system/notifications/nc.css', 'apps/system/notifications/notifications_icon.png',   // H66: the Notification Centre app opens offline too
   'hub/controller/vendor/jsQR.js',   // H59: the 🎮 pop-up's 📷 camera scanner (lazy-loaded) works offline
   'hub/core/hub_dialog_bridge.js', 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js',   // H85: H81/H82 engine files (hub.html + phone.html load them)
+  'hub/core/hub_break.js', 'hub/core/hub_break.css',   // H65: Computer break lock (hub.html loads them)
   'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js', 'phone/hidden-apps.csv',   // H85: the phone look opens offline too
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
