@@ -12,6 +12,8 @@ body {   /* on body (not :root) so the SH1 light theme vars flow through */
   --bg-group: var(--btn); --border-light: var(--border); --btn-hover: var(--hover);
   --btn-active: var(--on); --btn-active-text: var(--text); --text-primary: var(--text);
   --text-secondary: var(--muted); --accent: var(--sel);
+  /* SS1: in-app dialogs (../shared/office-dialog.css) follow the sheet theme (fell back to dark #1c1c1c) */
+  --select-bg: var(--panel);
 }
 /* SH4: shared File menu items inside the sheet's dropdown */
 .of-file-menu.file-menu { width: 240px; }

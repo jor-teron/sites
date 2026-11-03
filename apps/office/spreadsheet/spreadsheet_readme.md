@@ -125,3 +125,6 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 
 ## SH6 — XLSX open / save
 `spreadsheet_xlsx.js` + vendored SheetJS CE 0.20.3 (`vendor/sheetjs/`, Apache-2.0, ~930 KB, lazy-loaded on first XLSX use). File → Open takes .xlsx/.xls/.csv; File → Export XLSX. Import: first sheet only (toast names it and says if there are more), values + formulas, cells outside A–Z × 100 skipped. Export: values + formulas, sheet/file name from the title. Styles (bold/align/colours) are not read or written.
+
+## SS1 — Light / Auto themes
+Settings → View → Theme: Auto (default) / Light / Dark. Auto inside the Sites Hub (same-origin parent frame) follows `localStorage['sites-hub.theme']` ('dark' = Dark, else Light), live on `storage`, a same-origin `{type:'hub-prefs'}` message and focus; standalone it follows `prefers-color-scheme`. Light / Dark always win. Saved in `spreadsheet_settings` (`theme`, plus `ss1: true`; pre-SS1 settings with the old default 'dark' move to Auto once). Light palette tuned (headers, selection, pressed buttons, dialogs now follow the theme via `--select-bg`); dark values unchanged.
