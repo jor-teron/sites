@@ -2,7 +2,7 @@
  * Files app start-up (apps/system/files/files.js) — wires the toolbar (H106: Back, Forward, Up,
  * New folder, Upload, Refresh, More; view / sort / search live in files_view.js) and opens the drive from the hash
  * (#drive=<id>&path=<a/b>, set by the Hub's drive tiles and kept by a window session), else Local.
- * Modules (load order): files_core, files_view, files_drives, files_actions, files_viewer, files_thumbs, files_menu.
+ * Modules (load order): files_core, files_view, files_marquee (H124), files_drives, files_actions, files_viewer, files_thumbs, files_menu.
  */
 (function () {
   'use strict';

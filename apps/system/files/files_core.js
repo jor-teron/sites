@@ -7,7 +7,8 @@
  *   Shift-click), clip ({ mode:'copy'|'cut', dir, driveId, entries }), view ('grid'|'list'),
  *   sort ('name'|'size'|'modified'), dir (1 | -1), q (search text).
  * Other modules add: FX.drives (files_drives.js), FX.view (files_view.js),
- * FX.act (files_actions.js), FX.viewer (files_viewer.js), FX.menu (files_menu.js).
+ * FX.act (files_actions.js), FX.viewer (files_viewer.js), FX.menu (files_menu.js),
+ * FX.marquee (files_marquee.js, H124).
  */
 window.FX = (function () {
   'use strict';

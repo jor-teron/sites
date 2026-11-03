@@ -7,6 +7,7 @@
  * touch: tap opens, a long-press selects, and while something is selected a tap adds / removes.
  * Right-click / long-press = FX.menu.
  * H123: no select ticks — the round checkbox (.chk) is gone; the highlight alone shows selection.
+ * H124: mouse / pen drag on blank space = selection box (files_marquee.js; Ctrl = toggle, Shift = add).
  * Drag & drop: drag items onto a folder, a path crumb or a drive = move (Ctrl = copy);
  * drop files from the computer into the folder (or onto a sub-folder) = upload.
  * H107: status bar (#status: count, total size, selection) + sticky list column header (click = sort).
