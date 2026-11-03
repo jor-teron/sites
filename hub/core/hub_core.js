@@ -31,6 +31,9 @@
  * Settings drawer, dialogs + notifications (shell-drawn), the Gamepad controller host hub/controller/hub-controller.js
  * (#ctrl-* popover + key forwarding into app frames; it hosts the private Hub number peer), hub_remote.js,
  * hub_chat.js, link_scan.js, hub_panels.js (tied to hub.html's layout) and the Game Bar.
+ *   (H129b / H129c: those shell files now live in desktop/: desktop/wm, desktop/menu, desktop/panels (hub_panels, hub_chat),
+ *   desktop/notify, desktop/gamebar, desktop/controller (hub-controller.js), desktop/link (hub_remote); link_scan.js stays
+ *   in shared/link/ (the phone and apps load it).)
  *
  * How a shell uses it
  *   - Everything at once (phone.html for PH14, a bare page):

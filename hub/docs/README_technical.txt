@@ -13,7 +13,30 @@ Step a of 3 of H129 (desktop shell into desktop/). New layout of the Hub split:
                    wm_workspaces.js
     desktop/menu/  (H129b, was hub/menu/) hub_ctx.js (HubCtx; carries the build stamp V moved by
                    hub_bump.py), hub_ctx_menus.js, hub_flyout.js / .css, hub_settings.js, hub_tiles.js
-    Still in hub/ until H129c: hub/link/hub_panels.*, hub/link/hub-gamebar.js, hub/controller/hub-controller.js.
+    (before H129c) Still in hub/ until H129c: hub/link/hub_panels.*, hub/link/hub-gamebar.js, hub/controller/hub-controller.js.
+    desktop/panels/     (H129c, was hub/link/) hub_panels.js / .css (H27 side panels: 🎮 Devices popover,
+                        🐻 Pooh Chat), hub_chat.js / .css (chat bubble + group chat relay)
+    desktop/notify/     (H129c, was hub/viewer/) hub_notify.js (HubNotify, hubToast, received-file cards),
+                        hub_notification.css, hub_notifcenter.js / .css (H66 🔔 Notification Centre)
+    desktop/gamebar/    (H129c, was hub/link/) hub-gamebar.js (app bar / Game Bar, H49 hubTitleBar contract)
+    desktop/controller/ (H129c, was hub/controller/) hub-controller.js (🎮 Gamepad host: QR pairing popover,
+                        private Hub number peer, key forwarding), hub_textedit.js, hub_controller.css,
+                        hub_controller_config.js (HUB_CTRL_CONFIG)
+    desktop/link/       (H129c, was hub/link/) hub_remote.js (phone remote Hub), hub_pointer.js (trackpad
+                        pointer), hub_receive.js (phone → hub files)
+  Final split after H129c (what stays in hub/, the shared core + engines every screen may use):
+    hub/core/       hub_core.js and its 19 scripts, hub.js, hub_apps / appindex / catalog / config, hub_loader.js,
+                    hub_dialog_bridge.js + hub_attention.js + hub_dnd.js (phone.html loads them too), hub_eye,
+                    hub_break, hub_saver, the CSS themes (hub_main, hub_glass, hub_xp, hub_break)
+    hub/link/       the core mesh part (hub_link, hub_sync, hub_meshlog, hub_meshlink, hub_line, hub_trust,
+                    hub_linkstate) + hub_phonekey.js (hub_loader.js 'drives' batch)
+    hub/controller/ the phone Gamepad page itself (controller.html / index.html, controller_*.js, ctrl_*.js,
+                    kb_*.js (osk batch uses kb_common.js), dpad.html, vendor/jsQR.js, icons): it is an app page
+                    the phone opens, not desktop shell, and hub.js / hub_tiles.js / hub_panels.js link to it
+    hub/drives/, hub/osk/, hub/viewer/ (hub_viewer*.js), hub/update/, hub/relay/, hub/tools/, hub/docs/
+    shared/link/link_scan.js stays in shared/ (phone/phone_connect.js and 4 apps load it).
+    Desktop-only files still in hub/ (candidates for later, not moved in H129c to keep it small):
+    hub/drives/hub_traymeter.js (taskbar busy meter), hub/core/hub_eye.js, hub/core/hub_break.js / .css.
   phone/      the phone screen (phone.html + phone/, Hub Apps Builder 2; untouched by H129a)
 Addresses (all keep ?query and #hash, meta refresh in <noscript> + location.replace):
   hub.html            → desktop/desktop.html   (tiny redirect; bookmarks, the installed app's start_url,
@@ -51,6 +74,17 @@ returns if that file is already a <script> on the page, else document.write()s i
 parsing (same order / timing as the old tag) or appends it (async = false) later. CSS stub: @import of
 the new file. desktop.html never requests them (tested: no hub/wm or hub/menu request, each moved file
 loaded once). Remove both folders hub/wm/ and hub/menu/ in a later release (they are not in SHELL).
+H129c (build 20261104i / hub-shell-v141): panels, notifications, Game Bar, controller host and the
+desktop link files moved with git mv (16 files, list above), in their own commit so history follows.
+Changed: their tags in desktop.html (old ones kept as comments, "before H129c"), the hub_sw.js SHELL list
+(old lines kept as comments) and hub_notifcenter.js (source-app regexes + the stack walk's "skip
+hub_notify / stop at a Hub file" checks now also match desktop/ paths; old hub/ paths still match).
+hub_loader.js batches and hub_bump.py were not affected (none of the moved files is lazy-loaded or
+carries a build stamp). No moved file builds a path from its own location (all through document.baseURI).
+Forwarders: the 16 old paths (hub/link/hub_panels.*, hub_chat.*, hub-gamebar.js, hub_remote.js,
+hub_pointer.js, hub_receive.js; hub/viewer/hub_notify.js, hub_notification.css, hub_notifcenter.*;
+hub/controller/hub-controller.js, hub_textedit.js, hub_controller.css, hub_controller_config.js) are the
+same one-release stubs as H129b's; not in SHELL. Remove them with hub/wm/ and hub/menu/ in a later release.
 
 ================================================================================
 Hub core entry: hub/core/hub_core.js (H127, 2026-11-04 IST, build 20261104f)

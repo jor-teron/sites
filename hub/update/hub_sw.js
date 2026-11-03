@@ -27,8 +27,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104h';
-const CACHE = 'hub-shell-v140';  // 2026-11-04h: Desktop window parts moved to desktop/
+const V = '20261104i';
+const CACHE = 'hub-shell-v141';  // 2026-11-04i: Desktop panels, Game Bar and controller moved to desktop/
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -40,7 +40,8 @@ const SHELL = [
   'desktop/index.html',   // H129a: desktop/ (folder index): tiny redirect to desktop.html
   'manifest.webmanifest',
   // (before H129b) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css
-  'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css   (H129b: hub/wm, hub/menu → desktop/)
+  // (before H129c) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',
+  'hub/core/hub_main.css', 'desktop/controller/hub_controller.css', 'desktop/notify/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'desktop/panels/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css   (H129b: hub/wm, hub/menu → desktop/)   (H129c: → desktop/)
   // (before H64) 'hub/core/hub_role.js', ... 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js
   // (before H129b) 'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js
   'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'desktop/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js   (H129b: hub/wm, hub/menu → desktop/)
@@ -48,9 +49,12 @@ const SHELL = [
   // (before H129b) 'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
   'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js', 'desktop/wm/wm_workspaces.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/
   // (before H129b) 'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
-  'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/
-  'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
-  'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',
+  // (before H129c) 'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
+  'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'desktop/controller/hub_controller_config.js', 'desktop/notify/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/   (H129c: → desktop/)
+  // (before H129c) 'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
+  'desktop/link/hub_pointer.js', 'desktop/link/hub_receive.js', 'desktop/link/hub_remote.js', 'desktop/controller/hub-controller.js', 'desktop/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',   // H129c: desktop shell files → desktop/
+  // (before H129c) 'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',
+  'desktop/panels/hub_chat.js', 'desktop/gamebar/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',   // H129c: desktop shell files → desktop/
   'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
   'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
   'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js', 'shared/fs/webdav_fs.js', 'shared/fs/webdav_accounts.js',
@@ -73,7 +77,8 @@ const SHELL = [
   'hub/update/hub_offline.html',
   'apps/system/terminal/terminal_bb.js', 'apps/system/terminal/terminal_etc.js', 'apps/system/terminal/bin/busybox.js', 'apps/system/terminal/bin/busybox.wasm',   // T5: BusyBox works offline
   'apps/system/terminal/terminal_worker.js', 'apps/system/terminal/terminal_rc.js',   // T7: the BusyBox worker (+ T6 settings file) work offline
-  'hub/link/hub_panels.css', 'hub/link/hub_panels.js',   // H27
+  // (before H129c) 'hub/link/hub_panels.css', 'hub/link/hub_panels.js',
+  'desktop/panels/hub_panels.css', 'desktop/panels/hub_panels.js',   // H27   (H129c: → desktop/)
   'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
   'hub/core/hub_profile.js',   // H30.1
   'hub/link/hub_sync.js',   // H29.1
@@ -83,7 +88,8 @@ const SHELL = [
   'hub/link/hub_meshlog.js',   // H69: mesh connection log (hub.html loads it)
   'hub/core/hub_core.js',   // H127: Hub core entry (loads role, theme, settings, link + mesh in order)
   'apps/system/mesh-viewer/', 'apps/system/mesh-viewer/index.html', 'apps/system/mesh-viewer/mv.js', 'apps/system/mesh-viewer/mv.css', 'apps/system/mesh-viewer/mesh-viewer_icon.png',   // H69: Mesh Viewer opens offline too (the log and roster live in the Hub page)
-  'hub/viewer/hub_notifcenter.js', 'hub/viewer/hub_notifcenter.css',   // H66: Notification Centre (hub.html loads them)
+  // (before H129c) 'hub/viewer/hub_notifcenter.js', 'hub/viewer/hub_notifcenter.css',
+  'desktop/notify/hub_notifcenter.js', 'desktop/notify/hub_notifcenter.css',   // H66: Notification Centre (hub.html loads them)   (H129c: → desktop/)
   'apps/system/notifications/', 'apps/system/notifications/index.html', 'apps/system/notifications/nc.js', 'apps/system/notifications/nc.css', 'apps/system/notifications/notifications_icon.png',   // H66: the Notification Centre app opens offline too
   'hub/controller/vendor/jsQR.js',   // H59: the 🎮 pop-up's 📷 camera scanner (lazy-loaded) works offline
   'hub/core/hub_dialog_bridge.js', 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js',   // H85: H81/H82 engine files (hub.html + phone.html load them)

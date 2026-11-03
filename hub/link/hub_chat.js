@@ -1,134 +1,16 @@
-/**
- * Hub — chat bubble + group chat relay (release 4). Needs shared/link/link_chat.js.
- * - SharedChat on the Hub's link: Hub messages go to every device; device messages
- *   ({bcast:true}) are re-broadcast by link_core and stored here (history last 200).
- * - Pooh Chat inside the Hub posts {sharedLink:'chat', text}; the Hub sends + stores it,
- *   the iframe repaints from the same localStorage history.
- * - #chat-btn (🐻, before the Gamepad icon): unread badge; tap → H27 full-height side panel
- *   (hub_panels.css): header (title, this device's name, Full chat, ✕), bubbles (mine right,
- *   others left with name + time; last 100), input bar pinned at the bottom. Closes on outside
- *   click / Esc. New message while closed (and Pooh Chat not open) → one notification card (H26, HubNotify.notice)
- *   (6 s, updates in place, no sound); tapping it opens the panel.
- * H84: transport = HubMesh channel 'chat' (HubMesh.broadcast / onMsg), so chat reaches every device on the
- *   current mesh: 00000 = public room, a private code = private room. SharedLink still sent as before (a no-op with no link)
- *   (fallback, older Hubs); duplicates dropped by SharedChat id. One history for all rooms (rows tagged room).
- * H89: SharedChat.meshSync(HubMesh): recent chat of the room is fetched on join ('chat-sync', link_chat.js).
+/*
+ * Forwarder (H129c, 2026-11-04 IST): hub_chat.js moved to desktop/panels/hub_chat.js.
+ * Kept for one release so an old cached page or anything that still loads hub/link/hub_chat.js keeps working;
+ * removed in a later release. desktop/desktop.html loads desktop/panels/hub_chat.js directly and never loads this file.
+ * Loads the new file once (skipped if it is already on the page): while the page is still parsing it is
+ * written in place (same order and timing as the old tag), afterwards it is appended (async = false).
  */
 (function () {
   'use strict';
-  if (!window.SharedLink || !window.SharedChat) return;
-  const btn = document.getElementById('chat-btn');
-  const badge = document.getElementById('chat-badge');
-  const frame = document.getElementById('app-frame');
-  if (!btn) return;
-  let unread = 0, toastN = 0;
-
-  // H19: a joined Hub sends with bcast so the host relays it to the other devices too.
-  // SharedChat.init((m) => SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m));   (before H84)
-  // H84: chat goes over the Hub mesh (every device on 00000 or the private code). The old SharedLink path stays
-  // as a fallback / for Hubs before H84 (sent as before); SharedChat dedupes by id.
-  const M = window.HubMesh;
-  SharedChat.init((m) => {
-    if (M && M.broadcast) { try { M.broadcast(Object.assign({ t: 'chat' }, m)); } catch (e) { console.warn('chat mesh', e); } }
-    SharedLink.send(SharedLink.role === 'join' ? Object.assign({ bcast: true }, m) : m);
-  });
-  SharedChat.listen();
-  if (M && M.onMsg) M.onMsg('chat', (d, from) => { if (d && d.type === 'chat') SharedChat.add(Object.assign({}, d, { from: from, room: d.room || (M.room ? M.room() : '') })); });
-  if (M && SharedChat.meshSync) SharedChat.meshSync(M);   // H89: chat catch-up when this device joins a room (quiet, not unread)
-
-  /* ---------- panel ---------- */
-  const panel = document.createElement('div');
-  panel.id = 'chat-panel'; panel.className = 'hub-side-panel'; panel.hidden = true;
-  panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Chat');
-  const head = document.createElement('div'); head.className = 'cp-head';
-  const title = document.createElement('div'); title.className = 'cp-title';
-  const tName = document.createElement('strong'); tName.textContent = '🐻 Pooh Chat';
-  const me = document.createElement('label'); me.className = 'cp-me'; me.textContent = 'You are ';
-  const meIn = document.createElement('input'); meIn.type = 'text'; meIn.maxLength = 40; meIn.setAttribute('aria-label', 'Your device name');
-  me.appendChild(meIn);
-  title.append(tName, me);
-  meIn.addEventListener('change', () => { if (window.SharedLinkDevices) meIn.value = SharedLinkDevices.setName(meIn.value); });
-  const full = document.createElement('button'); full.type = 'button'; full.className = 'cp-full'; full.textContent = 'Full chat';
-  const x = document.createElement('button'); x.type = 'button'; x.className = 'hp-x'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close');
-  head.append(title, full, x);
-  const log = document.createElement('div'); log.className = 'cp-log';
-  const form = document.createElement('form'); form.className = 'cp-form'; form.autocomplete = 'off';
-  const input = document.createElement('input'); input.type = 'text'; input.maxLength = 2000; input.placeholder = 'Message everyone…';
-  const send = document.createElement('button'); send.type = 'submit'; send.className = 'cp-send'; send.textContent = 'Send'; send.setAttribute('aria-label', 'Send');
-  form.append(input, send);
-  panel.append(head, log, form);
-  document.body.appendChild(panel);
-
-  let card = null;   // H26: the current chat notice card (HubNotify.notice), updated as messages arrive
-
-  function paint() {
-    log.textContent = '';
-    const list = SharedChat.history().slice(-100);
-    if (!list.length) { const e = document.createElement('div'); e.className = 'cp-empty'; e.textContent = 'No messages yet. Say hi to your devices 👋'; log.appendChild(e); }
-    let prev = null;
-    list.forEach((m) => {
-      const d = document.createElement('div');
-      const mine = SharedChat.isMine(m);
-      const same = prev && prev.from === m.from && (m.ts - prev.ts) < 120000;
-      d.className = 'cp-msg' + (mine ? ' me' : '') + (same ? ' cont' : '');
-      if (!mine && !same) { const b = document.createElement('b'); b.className = 'cp-who'; b.textContent = m.name || 'Device'; d.appendChild(b); }
-      const t = document.createElement('div'); t.className = 'cp-text'; t.textContent = m.text;
-      const tm = document.createElement('time'); tm.className = 'cp-time';
-      try { tm.textContent = new Date(m.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (_) { tm.textContent = ''; }
-      d.append(t, tm);
-      log.appendChild(d);
-      prev = m;
-    });
-    log.scrollTop = log.scrollHeight;
-  }
-  function setUnread(n) { unread = n; badge.textContent = n > 99 ? '99+' : String(n); badge.hidden = !n; }
-  // function poohOpen() { return /pooh-chat/.test(String(frame && frame.src || '')); }   (before H86: #app-frame only)
-  // H86: Pooh Chat can also run in a desktop window (.wm-body iframe), so look at every Hub iframe showing it.
-  function poohFrames() {
-    return Array.prototype.filter.call(document.querySelectorAll('iframe'), (f) => /pooh-chat/.test(String(f.src || '')));
-  }
-  function poohOpen() {   // #app-frame as before; a desktop window only while it is on screen (not minimised / hidden)
-    return poohFrames().some((f) => f === frame || f.getClientRects().length > 0);
-  }
-
-  function open() {
-    hideToast(); setUnread(0); paint();
-    if (window.SharedLinkDevices && document.activeElement !== meIn) meIn.value = SharedLinkDevices.name();
-    panel.hidden = false; btn.setAttribute('aria-expanded', 'true');
-    setTimeout(() => input.focus(), 30);
-  }
-  function close() { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
-  function hideToast() { if (card) card.close(); card = null; toastN = 0; }
-
-  btn.addEventListener('click', (e) => { e.stopPropagation(); panel.hidden ? open() : close(); });
-  x.addEventListener('click', close);
-  full.addEventListener('click', () => {
-    close();
-    if (!(window.__hubOpenApp && window.__hubOpenApp('pooh-chat')) && window.__hubOpenUrl) window.__hubOpenUrl('apps/connectivity/pooh-chat/pooh-chat.html');
-  });
-  document.addEventListener('pointerdown', (e) => { if (!panel.hidden && !panel.contains(e.target) && !btn.contains(e.target)) close(); }, true);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { e.stopPropagation(); close(); } }, true);
-  form.addEventListener('submit', (e) => { e.preventDefault(); if (SharedChat.send(input.value)) input.value = ''; });
-
-  /* ---------- incoming ---------- */
-  SharedChat.on((m) => {
-    if (!panel.hidden) { paint(); return; }
-    if (!m || m.mine || m.from === 'host' || SharedChat.isMine(m)) return;   // own / storage repaint (H84: + isMine)
-    if (poohOpen()) return;                           // Pooh Chat is showing it
-    setUnread(unread + 1);
-    toastN++;
-    const text = toastN > 1 ? toastN + ' new messages' : m.text;
-    const title = toastN > 1 ? 'Pooh Chat' : (m.name || 'Pooh Chat');
-    if (card) card.close();
-    const N = window.HubNotify;
-    if (N && N.notice) card = N.notice({ icon: '🐻', title: title, text: text, onClick: () => { card = null; toastN = 0; open(); } });
-  });
-
-  /* Pooh Chat inside the Hub sends through here (H86: from #app-frame or a desktop window). */
-  window.addEventListener('message', (e) => {
-    // if (!frame || e.source !== frame.contentWindow) return;   (before H86: #app-frame only)
-    if (!e.source || !poohFrames().some((f) => f.contentWindow === e.source)) return;   // H86: any Hub iframe showing Pooh Chat
-    const d = e.data;
-    if (d && d.sharedLink === 'chat' && typeof d.text === 'string') SharedChat.send(d.text);
-  });
+  var me = document.currentScript, rel = 'desktop/panels/hub_chat.js', u;
+  try { u = (me && me.src ? new URL('../../' + rel, me.src) : new URL(rel, document.baseURI)).href; } catch (_) { u = rel; }
+  var bare = u.split(/[?#]/)[0], ss = document.scripts;
+  for (var i = 0; i < ss.length; i++) if (ss[i] !== me && ss[i].src && ss[i].src.split(/[?#]/)[0] === bare) return;
+  if (document.readyState === 'loading') { document.write('<script src="' + u + '"><\/script>'); return; }
+  var s = document.createElement('script'); s.src = u; s.async = false; (document.head || document.documentElement).appendChild(s);
 })();
