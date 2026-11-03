@@ -1,4 +1,4 @@
-/* Live Location LL1 — geolocation watcher. watchPosition runs only between start() and stop().
+/* Live Location LL1 (unchanged in LL2; LL2 reuses dist() for the history throttle) — geolocation watcher. watchPosition runs only between start() and stop().
    Calls onFix({lat, lon, acc, at}) at most every 5 s, or sooner when moved > 10 m. */
 (function () {
   'use strict';

@@ -1,4 +1,4 @@
-/* Live Location LL1.1 — full-bleed map under one slim top row; big jelly toggle; device list as a bottom sheet. */
+/* Live Location LL2 — full-bleed map under one slim top row; big jelly toggle; device list as a bottom sheet; LL2 history menu, trail bar, confirm dialog. (legacy LL1.1 header: "Live Location LL1.1 — full-bleed map …") */
 :root{--bg:#f6f7fb;--fg:#202124;--card:#fff;--mut:#5f6368;--acc:#1a73e8}
 @media (prefers-color-scheme:dark){:root{--bg:#121418;--fg:#e8eaed;--card:#1e2127;--mut:#9aa0a6;--acc:#6ea8fe}}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif;overflow:hidden}
@@ -26,3 +26,27 @@
 .dev i{width:18px;height:18px;border-radius:50%;flex:none}.dev b{flex:1}.dev.stale{opacity:.6}
 #empty{text-align:center;padding:14px}
 @media (max-width:380px){#share-lbl{display:none}}
+/* LL2: history menu, trail bar, in-app confirm, greyed offline rows, toast */
+#status.srv{color:var(--fg)}
+#menu{position:absolute;right:6px;top:calc(52px + env(safe-area-inset-top));z-index:1200;background:var(--card);border-radius:14px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:8px;min-width:230px}
+#menu .mh{font-weight:600;font-size:14px}
+.seg{display:flex;gap:4px;background:var(--bg);border-radius:12px;padding:3px}
+.seg button{flex:1;min-height:36px;border:0;border-radius:10px;background:transparent;color:var(--fg);font-size:14px;padding:0 8px;white-space:nowrap}
+.seg button.on{background:var(--acc);color:#fff}
+.danger{color:#d93025!important;font-weight:600}
+#m-clear{min-height:44px;border:0;border-radius:12px;background:var(--bg);text-align:left;padding:0 12px;font-size:15px}
+#m-clear:hover{background:rgba(217,48,37,.1)}
+#trail-bar{position:absolute;left:54px;right:6px;top:6px;z-index:1000;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border-radius:14px;padding:4px 6px 4px 12px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:14px}
+#trail-bar b{max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#trail-bar .seg{flex:none}
+#trail-n{flex:1;min-width:0}
+#trail-x{min-width:36px;min-height:36px;border:0;border-radius:18px;background:var(--bg);color:var(--fg);font-size:16px}
+.dev.sel{outline:2px solid var(--acc)}
+#dlg{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+#dlg .card{background:var(--card);color:var(--fg);border-radius:16px;padding:18px;max-width:340px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#dlg p{margin:8px 0 14px;line-height:1.4}
+#dlg .row{display:flex;justify-content:flex-end;gap:8px}
+#dlg .mini{background:var(--bg)}
+#toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:1500;background:#323232;color:#fff;border-radius:20px;padding:8px 16px;font-size:14px}
+#srv-chip{position:absolute;left:8px;bottom:22px;z-index:900;background:var(--card);color:var(--fg);border-radius:14px;padding:4px 10px 4px 22px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.25);pointer-events:none}
+#srv-chip::before{content:'';position:absolute;left:9px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:#188038}

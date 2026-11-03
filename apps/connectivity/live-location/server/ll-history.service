@@ -1,0 +1,22 @@
+# Live Location LL2 history server — systemd unit example.
+# Copy to /etc/systemd/system/ll-history.service, set User, WorkingDirectory and the --code, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now ll-history
+#   journalctl -u ll-history -f
+[Unit]
+Description=Live Location history server (LL2)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/sites/apps/connectivity/live-location/server
+ExecStart=/usr/bin/node ll_server.js --code 12345 --db /home/pi/ll-history.db --days 30 --quiet
+Restart=always
+RestartSec=10
+# light on an old PC / Pi: cap memory and lower priority
+MemoryMax=200M
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
