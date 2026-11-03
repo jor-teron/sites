@@ -97,7 +97,8 @@
     m.textContent = text;
     if (link) {
       m.appendChild(document.createTextNode(' '));
-      const a = document.createElement('a'); a.href = ROOT + 'hub.html'; a.textContent = link; m.appendChild(a);
+      // (before H129d) const a = document.createElement('a'); a.href = ROOT + 'hub.html'; a.textContent = link; m.appendChild(a);
+      const a = document.createElement('a'); a.href = ROOT + 'index.html'; a.textContent = link; m.appendChild(a);
     }
     m.hidden = false; clearTimeout(msgT); msgT = setTimeout(() => { m.hidden = true; }, 6000);
   }
