@@ -289,7 +289,10 @@ html.hub-light {
   --wm-bar-bg: linear-gradient(#eef0f4, #e3e7ee); --wm-bar-bg-on: linear-gradient(#dfe7f7, #cfdbf3);
   --wm-bar-fg: #4a5160; --wm-bar-fg-on: #111827;
   --wm-task-bg: rgba(246, 247, 250, 0.96); --wm-hover: rgba(0,0,0,0.06);
+  /* H114: Hub right-click menus (shared/ctxmenu, dark var() fallbacks) follow Light; Glass sets its own on .ctx */
+  --ctx-bg: #ffffff; --ctx-text: #1d2330; --ctx-muted: #5d6675; --ctx-line: rgba(0,0,0,0.10); --ctx-bad: #c42b2b;
 }
+html.hub-light:not(.hub-glass) .ctx { box-shadow: 0 12px 32px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08); }
 html.hub-light .menu .menu-cat:hover, html.hub-light .menu button.app:hover { background: rgba(0,0,0,0.05); color: var(--text); }
 html.hub-light .menu .menu-cat.fly-on, html.hub-light .menu-fly .fly-app:hover { background: var(--wm-hi); color: var(--text); }
 html.hub-light .menu-fly .fly-app { color: var(--text); }
