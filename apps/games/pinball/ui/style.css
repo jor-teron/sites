@@ -1,0 +1,47 @@
+/*
+ * Star Pinball — styles (PIN-1a). Follows the shared theme (html.dark) for the title bar and panels;
+ * the table itself is always a night-sky space table (drawn on the canvas).
+ * Portrait: a compact title bar on top, the table below. Wide screens: a side panel on the left
+ * and a wider canvas (more backdrop around the table). The canvas size is set by JS.
+ */
+:root { --bg: #eef2ff; --panel: #ffffff; --text: #0f172a; --muted: #475569; --border: #c7d2fe; --accent: #4f46e5; }
+html.dark { --bg: #0b1020; --panel: #1e1b4b; --text: #f1f5f9; --muted: #cbd5e1; --border: #3730a3; --accent: #818cf8; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { width: 100%; height: 100%; height: 100dvh; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; user-select: none; -webkit-user-select: none; }
+.container { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 4px;
+  padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); }
+.side { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; }
+.title { font-size: 1.1rem; white-space: nowrap; }
+.score, .btns { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.chip { display: flex; gap: 5px; align-items: center; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-size: .82rem; }
+.chip b { font-variant-numeric: tabular-nums; }
+.keys { display: none; color: var(--muted); font-size: .8rem; line-height: 1.4; }
+.board-wrap { flex: 1 1 auto; min-height: 0; min-width: 0; position: relative; touch-action: none; }
+#board { display: block; touch-action: none; border-radius: 6px; }
+button { font: inherit; font-size: .84rem; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
+.gear-slot { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.gear-slot a { position: static !important; display: inline-flex !important; visibility: visible !important; }
+.overlay { position: fixed; inset: 0; background: rgba(2,6,23,.55); display: flex; align-items: center; justify-content: center; padding: 12px; z-index: 10; }
+.card { background: var(--panel); color: var(--text); border-radius: 12px; padding: 16px 18px; max-width: 440px; max-height: 100%; overflow: auto; text-align: center; }
+.card h2 { font-size: 1.1rem; margin-bottom: 8px; }
+.card p { margin-bottom: 4px; }
+.help-card { text-align: left; }
+.help-card ul { padding-left: 18px; margin-bottom: 12px; font-size: .9rem; line-height: 1.4; }
+.help-card li { margin-bottom: 5px; }
+/* wide screens: side panel */
+@media (min-aspect-ratio: 1/1) {
+  .container { flex-direction: row; }
+  .side-info { flex: 0 0 200px; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 10px; padding-top: 8px; }
+  .title { font-size: 1.3rem; text-align: center; }
+  .score { flex-direction: column; align-items: stretch; } .chip { justify-content: space-between; font-size: .92rem; padding: 4px 12px; }
+  .btns { flex-direction: column; align-items: stretch; } .btns .gear-slot { align-self: center; }
+  button { font-size: .92rem; padding: 6px 10px; }
+  .keys { display: block; }
+}
+@media (min-aspect-ratio: 1/1) and (max-height: 500px) {
+  .side-info { flex-basis: 150px; gap: 5px; padding-top: 2px; }
+  .title { font-size: 1rem; } .chip { font-size: .8rem; padding: 2px 8px; } button { font-size: .8rem; padding: 3px 8px; }
+  .keys { display: none; }
+}

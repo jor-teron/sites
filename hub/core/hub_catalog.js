@@ -30,6 +30,7 @@ Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon a
 Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buildings and fight enemies with physics weapons
 Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
 Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
+Star Pinball,      pinball/,       , , Arcade, Original space pinball table: launch the ball and flip it into pop bumpers and star lanes - 3 balls and a high score
 Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
 Car Run,           car-run/,       , , Runners, Endless driving: change lanes - jump and use nitro to dodge traffic and potholes
 Desert Road,       desert-road/,   , , Runners, Drive a desert highway and dodge cacti - animals and rocks on the road
