@@ -9,7 +9,8 @@
  * Open with Notely: hand-off through sessionStorage 'notely-handoff' ({ name, text, t }), read by
  * apps/office/notely/nl_handoff.js (text files up to 2 MB).
  * API FX.act: open, openWith (dialog), withItems(entry) (menu rows), choices, launch(appId, entry), clip(mode), paste(dir?), transfer(entries, srcDir, destDir, mode),
- *   upload(files, dir?), newFolder, rename(entry), remove(entries), download(entries), props(entries).
+ *   upload(files, dir?), newFolder, rename(entry), remove(entries), download(entries), props(entries),
+ *   terminalOk(), terminal() (H121: the Terminal app opened at this folder, #drive=<id>&path=<a/b>).
  */
 (function () {
   'use strict';
@@ -253,5 +254,19 @@
       ['Modified', e.modified ? new Date(e.modified).toLocaleString() : '\u2014']]);
   }
 
-  FX.act = { open, openWith, withItems, choices, launch, toNotely, clip, paste, transfer, upload, newFolder, rename, remove, download, saveBlob, props };
+  /* ---------- H121: Terminal at this folder ---------- */
+  const TERMINAL = 'apps/system/terminal/';
+  /** The Terminal mounts Local, Google Drive and added folders only (not WebDAV / SFTP network drives). */
+  const terminalOk = () => !!st.driveId && !/^(webdav|sftp):/.test(st.driveId);
+  /** Open the Terminal (a new window in Desktop mode) with its folder in the hash, same form as ours. */
+  function terminal() {
+    if (!terminalOk()) { say('Terminal can\u2019t open network drives', true); return; }
+    const p = st.stack.slice(1).map((s) => s.name).join('/');
+    const hash = 'drive=' + encodeURIComponent(st.driveId) + (p ? '&path=' + encodeURIComponent(p) : '');
+    const hub = hubWin();
+    if (!(hub && hub.__hubOpenApp(TERMINAL, { hash, newInstance: true }) !== false)) window.open('../terminal/#' + hash, '_blank');
+  }
+
+  // (before H121) FX.act = { open, openWith, withItems, choices, launch, toNotely, clip, paste, transfer, upload, newFolder, rename, remove, download, saveBlob, props };
+  FX.act = { open, openWith, withItems, choices, launch, toNotely, clip, paste, transfer, upload, newFolder, rename, remove, download, saveBlob, props, terminalOk, terminal };
 })();
