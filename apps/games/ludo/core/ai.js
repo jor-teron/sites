@@ -8,7 +8,9 @@
  *            rival tokens up to 6 squares behind the landing square (and escaping danger where it stands
  *            now), progress, getting home, coming out, forming a two-token block (a pair can't be captured),
  *            and threatening rivals just ahead.
- * Weights live in LD_CONFIG.ai so 1c can tune them. Needs LD_CONFIG, LDBoard, LDRules.
+ * House rules (LUDO-1c): moves come from LDRules.legalMoves, so exact-home, 1-or-6-out and blocks are always
+ * obeyed; with blocks on, Hard also knows a rival can't get past a block, and values its own blocks more.
+ * Weights live in LD_CONFIG.ai. Needs LD_CONFIG, LDBoard, LDRules.
  */
 const LDAI = (() => {
   const C = LD_CONFIG, B = LDBoard, R = LDRules, W = C.ai;
@@ -17,13 +19,15 @@ const LDAI = (() => {
   /** Rival tokens that could land on track square i with one roll: number of distinct distances 1..6 that hit, as a chance 0..1. */
   function threat(s, c, i) {
     if (i < 0 || B.isSafe(i)) return 0;
-    const hit = new Set();
+    const RU = R.rulesOf(s), hit = new Set();
     for (const q of s.players) {
       if (q === c || s.finished.indexOf(q) >= 0) continue;
       s.tokens[q].forEach((pe) => {
         if (!onTrack(pe)) return;
         const d = (i - B.abs(q, pe) + C.trackLen) % C.trackLen;
-        if (d >= 1 && d <= 6 && pe + d <= B.lastTrack) hit.add(q + d);   // it can still reach i before turning home
+        if (!(d >= 1 && d <= 6 && pe + d <= B.lastTrack)) return;         // it can still reach i before turning home
+        if (RU.blocks && R.blockedPath(s, q, pe, pe + d - 1)) return;        // a block in between stops it
+        hit.add(q + d);
       });
     }
     return Math.min(1, hit.size / 6);
@@ -65,8 +69,9 @@ const LDAI = (() => {
     const riskAfter = pairAfter ? 0 : threat(after, c, i), riskBefore = pairBefore ? 0 : threat(s, c, f);
     v -= W.danger * riskAfter * (m.to + W.dangerBase);
     v += W.escape * riskBefore * (m.from + W.dangerBase);
-    if (pairAfter && !B.isSafe(i)) v += W.block;
-    if (pairBefore && !B.isSafe(f)) v -= W.block / 2;   // breaking a block
+    const blk = R.rulesOf(s).blocks ? 2 : 1;
+    if (pairAfter && !B.isSafe(i)) v += W.block * blk;
+    if (pairBefore && !B.isSafe(f)) v -= (W.block / 2) * blk;   // breaking a block
     // leaving a team-mate alone (it was paired with this token) exposes it
     if (pairBefore && mates(s, c, k, f) === 1) v -= W.danger * threat(after, c, f) * W.dangerBase;
     if (i >= 0) v += W.threaten * targets(after, c, i);
