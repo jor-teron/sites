@@ -7,35 +7,65 @@
   Files: slides_save.js (SLSave, the one save module), slides_file.js (SLFile, .hslides), slides_edit.js (SLEdit, the slide
   canvas + the one static slide renderer), slides_show.js (SLShow, Present), slides_list.js (SLList, the slide list + drag), slides_app.js (top bar, menus, decks, dialogs, settings, keys).
   Stopwatch style: dark default, System / Light / Dark following sites-hub.theme, in-app dialogs only. No libraries.
-  SL4 Office bits (shared ribbon + quick bar, print / PDF) come later.
+  SL4 (this release): the Office ribbon (../shared/office-ribbon.*: File | Home | Insert | Design | Slide Show, ⋯ menu at the
+  end for phones), the HO1 Quick Access bar (../shared/office-quick.* + office-hubbar.js: Undo / Redo / Save / Print,
+  Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
+  body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
+  browser's print window; PDF = "Save as PDF" there, with an in-app hint). No libraries.
+  Legacy (SL3): "SL4 Office bits (shared ribbon + quick bar, print / PDF) come later."
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Slides SL3</title><!-- legacy: <title>Slides SL2</title> -->
+  <title>Slides SL4</title><!-- legacy: <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
+  <link rel="stylesheet" href="../shared/office-ribbon.css">
+  <link rel="stylesheet" href="../shared/office-quick.css">
   <link rel="stylesheet" href="slides.css">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
 <div id="app">
-  <header id="top">
-    <button type="button" id="b-deck" class="deck-btn" aria-haspopup="menu" aria-expanded="false" title="Deck: new, open, rename, import, export">
-      <span id="deck-name">Slides</span><span class="caret">▾</span></button>
+  <!-- SL4: Office top row (shared ../shared/office-ribbon.*): Quick Access (HO1, ../shared/office-quick.js) | File | tabs | deck name | ⚙.
+       Legacy (SL1 - SL3): <header id="top"> with the deck button (#b-deck ▾ deck menu), ＋ Slide ▾, Layout, Picture, Theme, ▲▼, ⋯, ▶ Present, ⚙. -->
+  <header id="top" class="of-topbar">
+    <button type="button" id="b-deck" class="of-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-deck" title="File: decks, import, export, print, PDF">File</button>
+    <div class="of-tabs" id="of-tabs" role="tablist" aria-label="Ribbon"></div>
+    <button type="button" id="b-name" class="deck-btn" title="Rename deck"><span id="deck-name">Slides</span></button>
     <span id="saved" class="mut" aria-live="polite"></span>
     <span class="sp"></span>
-    <span class="split"><button type="button" class="mini acc" id="b-add" title="Add a slide after this one (Ctrl+Enter)" aria-label="Add a slide">＋<span class="lbl"> Slide</span></button><button type="button" class="mini acc sq" id="b-addlay" title="Add a slide with a layout…" aria-label="Add a slide with a layout" aria-haspopup="dialog">▾</button></span>
-    <button type="button" class="mini" id="b-lay" title="Layout of this slide" aria-haspopup="dialog">▦<span class="lbl"> Layout</span></button>
-    <button type="button" class="mini" id="b-pic" title="Insert a picture (or paste / drop one)">🖼<span class="lbl"> Picture</span></button>
-    <button type="button" class="mini" id="b-theme" title="Deck theme and slide background" aria-haspopup="dialog">🎨<span class="lbl"> Theme</span></button>
-    <button type="button" class="mini sq" id="b-up" title="Move slide up (Alt+↑)" aria-label="Move slide up">▲</button>
-    <button type="button" class="mini sq" id="b-down" title="Move slide down (Alt+↓)" aria-label="Move slide down">▼</button>
-    <button type="button" class="mini sq" id="b-more" title="More slide actions" aria-label="More slide actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
-    <button type="button" class="mini" id="b-show" title="Present from this slide (Shift+F5; F5 from the start)" aria-label="Present from this slide">▶<span class="lbl"> Present</span></button>
-    <button type="button" class="mini sq" id="b-set" title="Settings and About" aria-label="Settings">⚙</button>
+    <button type="button" class="mini sq gear" id="b-set" title="Settings and About" aria-label="Settings">⚙</button>
   </header>
+  <!-- SL4 ribbon: one row per tab (scrolls sideways when narrow); the ⋯ menu at the end has every slide action (phones) -->
+  <nav id="of-ribbon" class="of-ribbon" aria-label="Ribbon commands">
+    <div class="of-panel" role="tabpanel" id="sl-panel-home" data-tab="home" aria-labelledby="sl-tab-home">
+      <div class="of-group"><span class="split"><button type="button" id="b-add" title="New slide after this one (Ctrl+Enter)" aria-label="New slide">＋<span class="lbl"> New slide</span></button><button type="button" class="sq" id="b-addlay" title="New slide with a layout…" aria-label="New slide with a layout" aria-haspopup="dialog">▾</button></span>
+        <button type="button" id="b-lay" title="Layout of this slide" aria-haspopup="dialog">▦<span class="lbl"> Layout</span></button></div>
+      <div class="of-group"><button type="button" id="r-dup" title="Duplicate this slide">⧉<span class="lbl"> Duplicate</span></button>
+        <button type="button" id="r-del" class="danger-t" title="Delete this slide (asks first)">🗑<span class="lbl"> Delete</span></button></div>
+      <div class="of-group"><button type="button" class="sq" id="b-up" title="Move slide up (Alt+↑)" aria-label="Move slide up">▲</button>
+        <button type="button" class="sq" id="b-down" title="Move slide down (Alt+↓)" aria-label="Move slide down">▼</button></div>
+      <div class="of-group"><button type="button" class="sq" id="r-undo" title="Undo pictures, layouts, themes (Ctrl+Z outside the text)" aria-label="Undo">↶</button>
+        <button type="button" class="sq" id="r-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button></div>
+    </div>
+    <div class="of-panel" role="tabpanel" id="sl-panel-insert" data-tab="insert" aria-labelledby="sl-tab-insert" hidden>
+      <div class="of-group"><button type="button" id="b-pic" title="Insert a picture (or paste / drop one)">🖼<span class="lbl"> Picture</span></button></div>
+      <div class="of-group"><button type="button" id="r-addlay" title="New slide with a layout…" aria-haspopup="dialog">＋<span class="lbl"> New slide with layout…</span></button></div>
+    </div>
+    <div class="of-panel" role="tabpanel" id="sl-panel-design" data-tab="design" aria-labelledby="sl-tab-design" hidden>
+      <div class="of-group" role="group" aria-label="Deck theme"><span class="of-group-label">Theme</span>
+        <button type="button" id="r-th-light" data-theme="light" aria-pressed="false" title="Light theme for every slide">Light</button>
+        <button type="button" id="r-th-dark" data-theme="dark" aria-pressed="false" title="Dark theme for every slide">Dark</button></div>
+      <div class="of-group"><button type="button" id="b-theme" title="This slide's background (and the deck theme)" aria-haspopup="dialog">🎨<span class="lbl"> Slide background…</span></button></div>
+    </div>
+    <div class="of-panel" role="tabpanel" id="sl-panel-show" data-tab="show" aria-labelledby="sl-tab-show" hidden>
+      <div class="of-group"><button type="button" id="r-show0" title="Present from the first slide (F5)">▶<span class="lbl"> From beginning</span></button>
+        <button type="button" id="b-show" title="Present from this slide (Shift+F5)" aria-label="Present from this slide">▶<span class="lbl"> From current slide</span></button></div>
+    </div>
+    <button type="button" class="sq" id="b-more" title="All slide actions" aria-label="All slide actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
+  </nav>
   <div id="warn" role="alert" hidden><span id="warn-t"></span><button type="button" class="x" id="warn-x" aria-label="Hide warning">×</button></div>
   <div id="main">
     <nav id="list" aria-label="Slides" tabindex="0"><ol id="list-in"></ol></nav>
@@ -68,16 +98,19 @@
   </div>
 
   <!-- menus (in-app; Delete items are red and always ask first) -->
-  <div class="menu" id="menu-deck" role="menu" hidden>
+  <!-- SL4: the deck menu is the ribbon's File menu (opened by File / the Hub's File tab). Legacy (SL1 - SL3): it also had
+       Present from start / from this slide (now the Slide Show tab and the ⋯ menu). -->
+  <div class="menu of-file-menu" id="menu-deck" role="menu" aria-labelledby="b-deck" hidden>
     <button type="button" role="menuitem" data-a="new">＋ New deck</button>
     <button type="button" role="menuitem" data-a="open">📂 Open deck…</button>
     <button type="button" role="menuitem" data-a="rename">✎ Rename deck…</button>
     <div class="sep"></div>
-    <button type="button" role="menuitem" data-a="show0">▶ Present from start</button>
-    <button type="button" role="menuitem" data-a="showcur">▶ Present from this slide</button>
-    <div class="sep"></div>
     <button type="button" role="menuitem" data-a="import">⬆ Import .hslides…</button>
     <button type="button" role="menuitem" data-a="export">⬇ Export .hslides</button>
+    <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
+    <button type="button" role="menuitem" data-a="print">🖨 Print… <small>Ctrl+P</small></button>
+    <div class="sep"></div>
+    <button type="button" role="menuitem" data-a="settings">⚙ Settings</button>
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="deldeck" class="danger-t">🗑 Delete deck…</button>
   </div>
@@ -93,6 +126,10 @@
     <button type="button" role="menuitem" data-a="theme">🎨 Theme and background…</button>
     <button type="button" role="menuitem" data-a="undo">↶ Undo</button>
     <button type="button" role="menuitem" data-a="redo">↷ Redo</button>
+    <div class="sep"></div>
+    <button type="button" role="menuitem" data-a="show0">▶ Present from start</button>
+    <button type="button" role="menuitem" data-a="showcur">▶ Present from this slide</button>
+    <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="del" class="danger-t">🗑 Delete slide…</button>
   </div>
@@ -113,6 +150,8 @@
         <span><kbd>Enter</kbd> in the title: go to the bullets</span>
         <span><kbd>↑</kbd> <kbd>↓</kbd> Previous / next slide (in the slide list)</span>
         <span><kbd>Alt</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> Move the slide</span>
+        <span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save now (✓ Saved)</span>
+        <span><kbd>Ctrl</kbd>+<kbd>P</kbd> Print (one 16:9 page per slide; also Save as PDF)</span>
         <span><kbd>Esc</kbd> Close a menu or dialog</span>
       </div>
       <h3>Pictures, layouts, themes</h3>
@@ -138,10 +177,11 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Slides</b> <span id="ver">SL3</span><!-- legacy: SL2 -->
+        <div><b>Hub Office Slides</b> <span id="ver">SL4</span><!-- legacy: SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
             Export a deck as a .hslides file (open JSON, pictures inside) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
-          <p class="mut">Coming next: SL4 Office ribbon and print / PDF.</p></div>
+          <p>SL4: the same ribbon and Quick Access bar (Undo, Redo, Save, Print) as Draftly and Spreadsheet, and Print / Export PDF with one 16:9 page per slide.</p>
+          <!-- legacy (SL3): <p class="mut">Coming next: SL4 Office ribbon and print / PDF.</p> --></div>
       </div>
     </div>
   </div>
@@ -181,12 +221,19 @@
     </div>
   </div>
 </div>
+<!-- SL4 print view: filled just before printing (slides_print.js), one 16:9 page per slide; empty on screen -->
+<div id="print" aria-hidden="true"></div>
+<script src="../shared/office-ribbon.js"></script>
+<script src="../shared/office-hubbar.js"></script>
+<script src="../shared/office-quick.js"></script>
 <script src="slides_pics.js"></script>
 <script src="slides_save.js"></script>
 <script src="slides_file.js"></script>
 <script src="slides_edit.js"></script>
 <script src="slides_show.js"></script>
 <script src="slides_list.js"></script>
+<script src="slides_print.js"></script>
+<script src="slides_hub.js"></script>
 <script src="slides_app.js"></script>
 </body>
 </html>

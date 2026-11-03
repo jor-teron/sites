@@ -1,5 +1,5 @@
-# Hub Office Slides (Office → Hub Office) — release SL3
-<!-- legacy: release SL2 -->
+# Hub Office Slides (Office → Hub Office) — release SL4
+<!-- legacy: release SL3 · release SL2 -->
 
 A basic slide editor. Static, no build step, no libraries, works from `file://`. Built to stay light on a Celeron / 4 GB
 laptop: only the slide being edited is live (two textareas), thumbnails are plain text in the slide design scaled down
@@ -71,6 +71,24 @@ in IndexedDB, so the deck record stays small.
   it changed). Inside the title and text boxes the browser's own text undo works as before.
 - **Present** shows layouts, themes, backgrounds and pictures exactly as the editor (the same CSS and the same
   placement; checked box by box in the tests).
+- **Ribbon (SL4)**: the shared Office ribbon (`../shared/office-ribbon.js`, like Draftly and Spreadsheet). **File** = the
+  deck menu (New, Open, Rename, Import, Export .hslides, **Export PDF…**, **Print…**, Settings, Delete deck). Tabs:
+  - **Home**: ＋ New slide | ▾ (with a layout), ▦ Layout, Duplicate, Delete slide (asks), ▲ / ▼, Undo, Redo
+  - **Insert**: 🖼 Picture, New slide with layout…
+  - **Design**: deck theme **Light / Dark**, **Slide background…**
+  - **Slide Show**: **From beginning**, **From current slide**
+  The last tab is remembered. The deck name next to the tabs renames the deck. **⋯** at the end of the ribbon keeps
+  every slide action (also Present from start / this slide and Export PDF) — on phones it is the main menu; the ribbon
+  scrolls sideways and shows icons only.
+- **Quick Access bar (SL4, HO1)**: Undo, Redo, Save, Print left of File (`../shared/office-quick.js`), with **Ctrl+Z**,
+  **Ctrl+Y** / Ctrl+Shift+Z, **Ctrl+S** (saves now, shows **✓ Saved**) and **Ctrl+P** (the Slides print, not the
+  browser's page print). Undo / Redo are the app undo (SL3); inside a text box Ctrl+Z stays the browser's text undo.
+  Inside the Hub the buttons move to the Hub window title bar (H49 `hubTitleBar` protocol, `../shared/office-hubbar.js`);
+  the Hub app bar gets the tabs and the deck name (`slides_hub.js`, `hub-app` protocol).
+- **Print / Export PDF (SL4)**: one 16:9 page per slide (10 × 5.625 in, no margins), with pictures, the theme and
+  backgrounds, drawn by the same renderer as Present. **Print** opens the browser's print window. **Export PDF** shows a
+  short in-app hint, then the same print window: choose **Save as PDF** as the printer (the file name is the deck name).
+  No PDF library is loaded (light on a Celeron); turn on "Background graphics" if a browser prints white slides.
 - **Settings (⚙)**: Theme System / Light / Dark (dark is the default; System follows the Hub's `sites-hub.theme`, then the
   device), storage state, keyboard list (with the Present keys) and About. In-app dialogs only. SL2 adds no new setting.
 
@@ -134,10 +152,12 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_pics.js` (`SLPics`, SL3): picture decode, downscale and re-encode, IndexedDB store, blob URLs, clean-up
 - `slides_show.js` (`SLShow`, SL2): Present: full screen / overlay, fit, keys, taps, swipes, jump, end screen, idle fade, wake lock
 - `slides_list.js` (`SLList`): thumbnails, selection, drag to reorder
-- `slides_app.js`: top bar, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture insert
+- `slides_print.js` (`SLPrint`, SL4): the print view (#print, one page per slide) and print / PDF
+- `slides_hub.js` (`SLHub`, SL4): Hub app-bar bridge (tabs, deck name, File, Settings)
+- `slides_app.js`: top bar, ribbon, Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture insert
   (file / paste / drop), undo / redo; `window.Slides` (helpers for tests)
 
-## Limits (SL1 – SL3)
+## Limits (SL1 – SL4)
 - Long text can run past the bottom of the slide; it scrolls
   inside the slide but is not shrunk to fit.
 - Present: no transitions, speaker notes, presenter view, second-screen output or timer; text that runs past the bottom
@@ -147,7 +167,8 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   still pictures. Thumbnails draw the full stored picture (fine for normal decks; a deck with very many large pictures
   uses more memory). Pictures cannot be rotated, layered (front / back) or cropped to a custom area.
 - Two deck themes in SL3 (Light, Dark); no custom fonts.
-- The Office
-  ribbon, the Undo / Redo / Save / Print bar, the Hub title bar and printing / PDF come with SL4.
+<!-- legacy (SL3): The Office ribbon, the Undo / Redo / Save / Print bar, the Hub title bar and printing / PDF come with SL4. -->
+- PDF goes through the browser's print window ("Save as PDF"); there is no one-click PDF download. Ctrl+Z with nothing
+  to undo does nothing (the ⋯ / ribbon buttons are greyed out). Printing was tested headless (page.pdf), not on a real printer.
 - Decks live in this browser's localStorage (about 5 MB for everything); use Export for backups or to move a deck.
 - Touch drag was tested with emulated touch only, not yet on a real phone.
