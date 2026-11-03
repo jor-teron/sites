@@ -1,8 +1,11 @@
 /*
- * Star Pinball — canvas renderer (PIN-1a). Draws the whole table in code, no images:
+ * Star Pinball — canvas renderer (PIN-1a; PIN-1b parts). Draws the whole table in code, no images:
  * a space backdrop (stars; planets at the sides when the screen is wide), the table body,
  * neon walls, slingshots, pop bumpers (flash when hit), rollover lanes (lit), the flippers,
  * the plunger spring and the ball (with a mark that turns with its spin).
+ * PIN-1b: drop targets (up / down), the spinner flap, the hole (pulses when it will start a mission),
+ * the raised ramp drawn over the table (the ball on it is drawn on top), the part the running mission
+ * needs drawn brighter, and a SAVE light while ball save is on.
  * The table is portrait and scaled to fit the height; on a wide screen the canvas fills the width,
  * so you see more backdrop around the table. Low graphics: fewer stars and no glow.
  * Drawn only by the game loop (core/game.js), at the shared fpsLimit.
@@ -63,7 +66,7 @@ const PBRender = (() => {
     cx.globalAlpha = 0.35; cx.fillStyle = P.planet; cx.beginPath(); cx.arc(280, 700, 70, 0, Math.PI * 2); cx.fill();
     cx.strokeStyle = P.neon; cx.lineWidth = 4; cx.beginPath(); cx.ellipse(280, 700, 120, 26, -0.25, 0, Math.PI * 2); cx.stroke();
     cx.globalAlpha = 1; cx.fillStyle = P.text; cx.font = 'bold 34px sans-serif'; cx.textAlign = 'center';
-    cx.fillText('STAR PINBALL', 280, 300);
+    cx.fillText('STAR PINBALL', 280, 612);
     cx.restore();
     // rollover lanes
     for (const s of T.sensors) {
@@ -74,6 +77,12 @@ const PBRender = (() => {
       else cx.arc(s.c[0], s.c[1], 6, 0, Math.PI * 2);
       cx.closePath(); cx.fill(); cx.globalAlpha = 1;
     }
+    // hole (kick-out saucer)
+    const H = T.hole.c;
+    cx.fillStyle = '#05030f'; cx.beginPath(); cx.arc(H[0], H[1], 17, 0, Math.PI * 2); cx.fill();
+    cx.lineWidth = 3; cx.strokeStyle = view.holeLit ? P.laneLit : P.lane;
+    cx.globalAlpha = view.holeLit ? 0.55 + 0.45 * Math.sin(now / 180) : 1;
+    cx.beginPath(); cx.arc(H[0], H[1], 21, 0, Math.PI * 2); cx.stroke(); cx.globalAlpha = 1;
     // slings (filled triangles, flash when kicked)
     for (const side of [0, 1]) {
       const v = side ? [[445, 800], [445, 900], [390, 930]] : [[115, 800], [115, 900], [170, 930]];
@@ -91,6 +100,20 @@ const PBRender = (() => {
       if (s.a[0] === s.b[0] && (s.a[0] === 20 || s.a[0] === 585)) continue;   // outer walls: drawn with the outline above
       cx.strokeStyle = s.kind === 'sling' ? P.sling : P.neon; cx.lineWidth = s.kind === 'sling' ? 7 : 6; seg(s.a, s.b);
     }
+    // drop targets
+    const mDrops = view.mission === 'drops';
+    for (const d of T.drops) {
+      const up = world.drops[d.id];
+      cx.strokeStyle = up ? (mDrops ? P.laneLit : P.sling) : P.lane; cx.lineWidth = up ? 7 : 3; cx.globalAlpha = up ? 1 : 0.6;
+      cx.beginPath(); cx.moveTo(d.segs[0][0][0], d.segs[0][0][1]); for (const sg of d.segs) cx.lineTo(sg[1][0], sg[1][1]); cx.stroke();
+      cx.globalAlpha = 1;
+    }
+    // spinner: a flap seen edge-on as it turns
+    const SPn = T.spinner, sa = world.spinner.a, thick = 2 + 6 * Math.abs(Math.cos(sa));
+    cx.shadowBlur = 0; cx.strokeStyle = view.mission === 'spin' ? P.laneLit : P.post; cx.lineWidth = thick;
+    seg(SPn.a, SPn.b);
+    cx.fillStyle = P.post; for (const p of [SPn.a, SPn.b]) { cx.beginPath(); cx.arc(p[0], p[1], 3, 0, Math.PI * 2); cx.fill(); }
+    if (!low) { cx.shadowColor = P.neon; cx.shadowBlur = 10; }
     // bumpers + posts
     for (const c of T.circles) {
       const hot = view.flash && now - (view.flash[c.id] || -1e9) < 110;
@@ -122,15 +145,44 @@ const PBRender = (() => {
       cx.beginPath(); cx.arc(t[0], t[1], f.rt, 0, Math.PI * 2); cx.fill(); cx.shadowBlur = 0;
       cx.fillStyle = P.sling; cx.beginPath(); cx.arc(f.p[0], f.p[1], 4, 0, Math.PI * 2); cx.fill();
     }
-    // ball
-    const b = world.ball;
-    if (b && b.live) {
-      const r = C.ballR, gg = cx.createRadialGradient(b.x - r * 0.4, b.y - r * 0.4, r * 0.15, b.x, b.y, r);
-      gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.5, '#cbd5e1'); gg.addColorStop(1, '#475569');
-      cx.fillStyle = gg; cx.beginPath(); cx.arc(b.x, b.y, r, 0, Math.PI * 2); cx.fill();
-      cx.strokeStyle = 'rgba(30,41,59,.55)'; cx.lineWidth = 2.5;                   // spin mark
-      cx.beginPath(); cx.arc(b.x, b.y, r * 0.62, b.ang, b.ang + 1.3); cx.stroke();
+    if (view.saveOn) {                                                     // ball save light
+      cx.fillStyle = P.laneLit; cx.globalAlpha = 0.6 + 0.4 * Math.sin(now / 150);
+      cx.font = 'bold 18px sans-serif'; cx.textAlign = 'center'; cx.fillText('SAVE', 280, 1075); cx.globalAlpha = 1;
     }
+    // ball: under the ramp on the table, over it while riding the ramp
+    const b = world.ball;
+    if (b && b.live && b.mode !== 'ramp') ball(b, b.mode === 'hole' ? 0.8 : 1);
+    drawRamp(P, view, low);
+    if (b && b.live && b.mode === 'ramp') ball(b, 1.12);
+  }
+  function ball(b, sc) {
+    const r = C.ballR * sc, gg = cx.createRadialGradient(b.x - r * 0.4, b.y - r * 0.4, r * 0.15, b.x, b.y, r);
+    gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.5, '#cbd5e1'); gg.addColorStop(1, '#475569');
+    if (sc > 1) { cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.arc(b.x + 5, b.y + 7, r, 0, Math.PI * 2); cx.fill(); }
+    cx.fillStyle = gg; cx.beginPath(); cx.arc(b.x, b.y, r, 0, Math.PI * 2); cx.fill();
+    cx.strokeStyle = 'rgba(30,41,59,.55)'; cx.lineWidth = 2.5;                     // spin mark
+    cx.beginPath(); cx.arc(b.x, b.y, r * 0.62, b.ang, b.ang + 1.3); cx.stroke();
+  }
+  /** The raised ramp: a see-through deck with two rails along the path. */
+  function drawRamp(P, view, low) {
+    const path = T.ramp.path, hot = view.mission === 'ramp';
+    cx.lineCap = 'round'; cx.lineJoin = 'round';
+    cx.strokeStyle = 'rgba(103,232,249,.13)'; cx.lineWidth = 34;
+    cx.beginPath(); cx.moveTo(path[0][0], path[0][1]); for (const p of path) cx.lineTo(p[0], p[1]); cx.stroke();
+    const rail = (off) => {
+      cx.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        const a = path[Math.max(0, i - 1)], c = path[Math.min(path.length - 1, i + 1)], dx = c[0] - a[0], dy = c[1] - a[1], L = Math.hypot(dx, dy);
+        cx.lineTo(path[i][0] - dy / L * off, path[i][1] + dx / L * off);
+      }
+      cx.stroke();
+    };
+    if (!low) { cx.shadowColor = hot ? P.laneLit : P.neon; cx.shadowBlur = 8; }
+    cx.strokeStyle = hot ? P.laneLit : '#a5f3fc'; cx.lineWidth = 3; rail(17); rail(-17);
+    cx.shadowBlur = 0;
+    // entry arrow under the covered mouth
+    cx.fillStyle = hot ? P.laneLit : P.neon; cx.globalAlpha = 0.8;
+    cx.beginPath(); cx.moveTo(465, 560); cx.lineTo(452, 585); cx.lineTo(478, 585); cx.closePath(); cx.fill(); cx.globalAlpha = 1;
   }
   return { init, resize, draw, tableRect };
 })();

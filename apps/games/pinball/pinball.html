@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <!--
-  Star Pinball (PIN-1a) — page. Title bar (score, ball, best, buttons) / the table canvas: a bar on
-  top in portrait, a side panel on wide screens. Numbers: core/config.js. Table layout: core/table.js.
-  Physics (fixed sub-steps): core/physics.js. Drawing: ui/render.js. Shared settings bridge: ui/settings.js.
-  Loop, controls, balls, score + high score: core/game.js. Classic scripts only, so it opens from file://.
+  Star Pinball (PIN-1a, PIN-1b) — page. Title bar (ball, best, buttons) + message panel (rank, score,
+  bonus multiplier, mission + progress, messages) / the table canvas: a bar on top in portrait, a side
+  panel on wide screens. Numbers: core/config.js. Table layout: core/table.js. Physics (fixed
+  sub-steps): core/physics.js. Missions + ranks: core/missions.js. Drawing: ui/render.js. Shared settings
+  bridge: ui/settings.js. Loop, controls, balls, bonus, ball save, save + resume: core/game.js.
+  Classic scripts only, so it opens from file://.
   An original space table: no art or names from any other pinball game.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Star Pinball PIN-1a</title>
+  <title>Star Pinball PIN-1b</title>
   <link rel="stylesheet" href="ui/style.css">
 </head>
 <body>
   <div class="container" id="app">
     <div class="side side-info">
       <h1 class="title">Star Pinball</h1>
+      <div class="panel" id="panel" aria-live="polite">
+        <div class="p-top"><span id="rank" class="rank">Cadet</span><b id="score" class="p-score">0</b><span id="mult" class="mult" title="Bonus multiplier">×1</span></div>
+        <div class="p-line" id="missionLine"><span id="mission">No mission</span><span id="progress" class="prog"></span></div>
+        <div class="p-line p-msg" id="msg" hidden></div>
+        <div class="bar"><i id="progBar"></i></div>
+      </div>
       <div class="score">
-        <div class="chip">Score <b id="score">0</b></div>
         <div class="chip">Ball <b id="ball">1 / 3</b></div>
         <div class="chip">Best <b id="best">0</b></div>
       </div>
@@ -41,8 +48,11 @@
         <li>Keep the ball on the table with the two flippers. You have 3 balls.</li>
         <li><b>Launch:</b> hold Space (or hold the bottom-right corner of the screen), then let go. Hold longer for a stronger shot.</li>
         <li><b>Flippers:</b> Z or ← for the left one, / or → for the right one. On a phone, hold the left or right half of the screen.</li>
-        <li>Score: pop bumpers 100, slingshots 30, each star lane at the top 250, and 2,000 more when all three stars are lit.</li>
-        <li>A ball that falls between or beside the flippers is lost. Your best score is kept.</li>
+        <li><b>Star lanes:</b> roll through the three stars at the top to light them; each flipper press moves the lit stars one step. All three lit: +2,000 and the bonus multiplier goes up (up to ×5).</li>
+        <li><b>Missions:</b> sink the ball in the hole under the stars to start one (the panel shows it and your progress). Finish it to score and rise in rank, from Cadet to Admiral.</li>
+        <li><b>Ramp:</b> shoot up the covered entry on the right; a strong shot rides over the top and comes back to the left flipper. The <b>spinner</b> is in the lane beside it. Knock down all four <b>drop targets</b> on the left to clear them.</li>
+        <li><b>Bonus:</b> builds up as you play and is paid × the multiplier when the ball drains. <b>Ball save:</b> lose a new ball in the first few seconds and you get it back.</li>
+        <li>A ball that falls between or beside the flippers is lost. A game in progress is kept if you leave, and your best score is kept.</li>
       </ul>
       <button id="helpClose">Got it</button>
     </div>
@@ -53,6 +63,7 @@
   <script src="ui/settings.js"></script>
   <script src="core/table.js"></script>
   <script src="core/physics.js"></script>
+  <script src="core/missions.js"></script>
   <script src="ui/render.js"></script>
   <script src="core/game.js"></script>
 </body>

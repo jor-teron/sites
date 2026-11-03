@@ -11,6 +11,7 @@
  * While Auto is on, this file keeps writing the effective value into sites-hub.theme ('light' / 'dark'),
  * so hub_prefs.js, shared/theme/hub_theme.js (System apps) and any app reading sites-hub.theme follow it
  * through their normal 'storage' listeners. Auto is never Glass (sites-hub.glass is cleared / ignored).
+ * H104: Auto is never XP either (sites-hub.xp is cleared / ignored).
  * Checks: every HubPrefs.apply() (Settings, storage events, load), every whole minute and on
  * visibilitychange / focus (HubDayNight.watch; tests fake the clock with HubDayNight.now).
  * A switch made by the clock fades the colours for ~0.8 s (html.hub-theme-fade; none with Animations Off).
@@ -56,6 +57,7 @@
       put('theme', want); changed = true;
     }
     if (get('glass')) { put('glass', ''); changed = true; }   // Auto and Glass do not mix
+    if (get('xp')) { put('xp', ''); changed = true; }   // H104: Auto and XP do not mix either
     return changed;
   }
   function state() {

@@ -1,5 +1,5 @@
 /*
- * Star Pinball — styles (PIN-1a). Follows the shared theme (html.dark) for the title bar and panels;
+ * Star Pinball — styles (PIN-1a; message panel PIN-1b). Follows the shared theme (html.dark) for the title bar and panels;
  * the table itself is always a night-sky space table (drawn on the canvas).
  * Portrait: a compact title bar on top, the table below. Wide screens: a side panel on the left
  * and a wider canvas (more backdrop around the table). The canvas size is set by JS.
@@ -18,6 +18,15 @@ html, body { width: 100%; height: 100%; height: 100dvh; background: var(--bg); c
 .chip { display: flex; gap: 5px; align-items: center; padding: 2px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); font-size: .82rem; }
 .chip b { font-variant-numeric: tabular-nums; }
 .keys { display: none; color: var(--muted); font-size: .8rem; line-height: 1.4; }
+.panel { order: 9; flex: 1 1 100%; max-width: 460px; background: #0f0a2e; color: #e0e7ff; border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px 4px; font-size: .8rem; }
+.p-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rank { color: #fde047; font-weight: 600; } .mult { color: #67e8f9; font-weight: 600; }
+.p-score { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.p-line { display: flex; justify-content: space-between; gap: 8px; min-height: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-msg { color: #fde047; display: block; text-align: center; }
+.prog { font-variant-numeric: tabular-nums; color: #c4b5fd; }
+.bar { height: 3px; background: rgba(255,255,255,.15); border-radius: 2px; margin-top: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: #fde047; transition: width .3s; }
 .board-wrap { flex: 1 1 auto; min-height: 0; min-width: 0; position: relative; touch-action: none; }
 #board { display: block; touch-action: none; border-radius: 6px; }
 button { font: inherit; font-size: .84rem; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
@@ -39,9 +48,13 @@ button { font: inherit; font-size: .84rem; padding: 4px 10px; border-radius: 8px
   .btns { flex-direction: column; align-items: stretch; } .btns .gear-slot { align-self: center; }
   button { font-size: .92rem; padding: 6px 10px; }
   .keys { display: block; }
+  .panel { order: 0; flex: 0 0 auto; max-width: none; padding: 6px 10px; font-size: .84rem; }
+  .p-top { flex-wrap: wrap; } .p-score { order: 3; flex: 1 1 100%; text-align: center; font-size: 1.35rem; }
+  .p-line, .p-msg { white-space: normal; min-height: 2.4em; }
 }
 @media (min-aspect-ratio: 1/1) and (max-height: 500px) {
   .side-info { flex-basis: 150px; gap: 5px; padding-top: 2px; }
   .title { font-size: 1rem; } .chip { font-size: .8rem; padding: 2px 8px; } button { font-size: .8rem; padding: 3px 8px; }
   .keys { display: none; }
+  .panel { padding: 3px 8px; font-size: .76rem; } .p-score { font-size: 1.05rem; } .p-line, .p-msg { min-height: 2.3em; }
 }

@@ -22,6 +22,10 @@
  *                        effective 'light' / 'dark' into sites-hub.theme (so every app reading it follows) and
  *                        clears sites-hub.glass. Times: themeSunrise / themeSunset / themeOffset (hub_autotheme.js).
  *   sites-hub.glassSolid H61: '1' = Reduce transparency (Glass without blur, solid colours) → html.hub-glass-solid
+ *   sites-hub.xp         H104: '1' = XP theme (Settings › Look saves it with theme 'light', like Glass; a theme of 'xp'
+ *                        is read as XP too) → html.hub-xp (+ html.hub-light; CSS in hub/core/hub_xp.css). Ignored when
+ *                        theme is 'dark' or Auto is on; XP wins over a stale glass '1'. While the wallpaper key is empty,
+ *                        XP shows its own default (Green hills, window.hubWallpaperDefault() in hub_wallpapers.js).
  *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
  *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
  *   sites-hub.showFiles  '0' = no Files icons on the Desktop home (H7; default on) → html.hub-files-off, HubDrives.sync()
@@ -102,8 +106,13 @@
     // H61: Glass = a light theme with frosted bars / menus / pop-ups (hub_glass.css)
     // const glass = get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark');   (before H64)
     const glass = get('themeAuto') !== '1' && (get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark'));   // H64: Auto is never Glass
-    root.classList.toggle('hub-glass', glass);
-    root.classList.toggle('hub-glass-solid', glass && get('glassSolid') === '1');
+    // H104: XP = a light, opaque theme (hub_xp.css). Glass and XP do not mix: XP wins.
+    const xp = get('themeAuto') !== '1' && (get('theme') === 'xp' || (get('xp') === '1' && get('theme') !== 'dark'));
+    root.classList.toggle('hub-xp', xp);
+    // root.classList.toggle('hub-glass', glass);   (before H104)
+    // root.classList.toggle('hub-glass-solid', glass && get('glassSolid') === '1');   (before H104)
+    root.classList.toggle('hub-glass', glass && !xp);
+    root.classList.toggle('hub-glass-solid', glass && !xp && get('glassSolid') === '1');
     root.classList.toggle('hub-hover-focus', get('hoverFocus') === '1');
     root.classList.toggle('hub-snap-off', get('snapEdges') === '0');
     root.classList.toggle('hub-magnet-off', get('snapMagnet') === '0');
@@ -113,7 +122,8 @@
     // wallpaper
     const empty = document.getElementById('empty');
     if (empty && window.hubWallpaper) {
-      const v = get('wallpaper'), w = window.hubWallpaper(v);
+      // const v = get('wallpaper'), w = window.hubWallpaper(v);   (before H104)
+      const v = get('wallpaper') || (window.hubWallpaperDefault ? window.hubWallpaperDefault() : ''), w = window.hubWallpaper(v);   // H104: XP's own default
       const s = empty.style;
       s.backgroundColor = w.color || '#000';
       s.backgroundImage = w.image || 'none';
