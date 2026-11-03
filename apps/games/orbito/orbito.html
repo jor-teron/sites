@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+  Orbito (ORB-1) — page. Info (status, marbles in hand, wins) / board / buttons: stacked in
+  portrait, side by side in landscape. Numbers + the two rings: core/config.js.
+  Rules (push, place, the board turning, 4 in a row, the 5 final turns): core/rules.js. Computer: core/ai.js.
+  Drawing (on change only): ui/render.js. Turning / sliding animation: ui/anim.js. Sound: ui/sound.js.
+  Shared settings bridge: ui/settings.js. Wiring + saves: core/game.js. Classic scripts only, so it opens from file://.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Orbito ORB-1</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="side side-info">
+      <h1 class="title">Orbito</h1>
+      <p class="status" id="status">Black's turn</p>
+      <div class="score">
+        <div class="chip" title="Marbles still in hand"><i class="dot dot-b"></i><span id="lblB">Black</span> has <b id="leftB">8</b></div>
+        <div class="chip" title="Marbles still in hand"><i class="dot dot-w"></i><span id="lblW">White</span> has <b id="leftW">8</b></div>
+      </div>
+      <div class="score wins">
+        <div class="chip">Wins ● <b id="winB">0</b></div>
+        <div class="chip">○ <b id="winW">0</b></div>
+        <div class="chip">Draws <b id="winD">0</b></div>
+      </div>
+    </div>
+    <div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="Orbito board"></canvas></div>
+    <div class="side side-btns" id="btns">
+      <button id="newBtn">New game</button>
+      <button id="undoBtn">Undo</button>
+      <select id="modeSel" aria-label="Mode">
+        <option value="2p">2 Players</option>
+        <option value="easy">vs CPU Easy</option>
+        <option value="medium">vs CPU Medium</option>
+        <option value="hard">vs CPU Hard</option>
+      </select>
+      <button id="helpBtn">How to play</button>
+      <button id="clearBtn" class="link">Reset wins</button>
+      <span id="gearSlot" class="gear-slot"></span>
+    </div>
+  </div>
+  <div class="help" id="help" hidden>
+    <div class="help-card" role="dialog" aria-label="How to play Orbito">
+      <h2>How to play</h2>
+      <ul>
+        <li>Two players, 8 marbles each: Black and White. Black goes first. Against the computer you are Black.</li>
+        <li>Goal: get <b>4 of your marbles in a row</b>: across, down or corner to corner.</li>
+        <li>Each turn has three steps:</li>
+        <li><b>1. Push (if you like):</b> tap one of your rival's marbles, then a green dot to move it one hole up, down, left or right into an empty hole.</li>
+        <li><b>2. Place:</b> tap an empty hole to put down one of your own marbles. You must do this.</li>
+        <li><b>3. The board turns</b> on its own: every marble on the outer ring moves one hole anticlockwise, and so do the 4 in the middle (follow the arrows).</li>
+        <li>Rows are checked only after the board turns. If both players have 4 in a row at once, it's a draw.</li>
+        <li>All 16 marbles down and no winner? The board turns up to 5 more times, checking each time. Still nobody: a draw.</li>
+        <li>Changed your mind about the push? Press <b>Undo</b> before you place. Undo after that takes back a whole turn (against the computer, its turn and yours).</li>
+      </ul>
+      <button id="helpClose">Got it</button>
+    </div>
+  </div>
+  <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/config.js"></script>
+  <script src="ui/settings.js"></script>
+  <script src="core/rules.js"></script>
+  <script src="core/ai.js"></script>
+  <script src="ui/sound.js"></script>
+  <script src="ui/anim.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="core/game.js"></script>
+</body>
+</html>
