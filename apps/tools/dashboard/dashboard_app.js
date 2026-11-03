@@ -2,6 +2,11 @@
 (function(){
   MyDay.applyTheme();
   if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',MyDay.applyTheme);
+  /* MD3: live Hub theme changes - 'storage' (the Hub writes sites-hub.theme), a {type:'hub-prefs'} message
+     from the same-origin Hub, and window focus (same signals as shared/theme/hub_theme.js) */
+  addEventListener('storage',function(e){if(!e.key||e.key==='sites-hub.theme'||e.key==='myday.theme')MyDay.applyTheme();});
+  addEventListener('message',function(e){if(e.origin===location.origin&&e.data&&e.data.type==='hub-prefs')MyDay.applyTheme();});
+  addEventListener('focus',MyDay.applyTheme);
   MyDay.tick();setInterval(MyDay.tick,1000*15);
   MyDay.renderAll();MDSettings.init();
   /* Arrow keys move focus through controls in DOM order (TV remotes). Skipped while typing. */

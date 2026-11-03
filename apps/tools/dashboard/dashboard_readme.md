@@ -41,3 +41,4 @@ Adding a card: create `cards/card_x.js` calling `MyDay.register(...)`, add a `<s
 - **MD1** — Sun & Moon dial: at night the sun sits on the day (yellow) side, straight across from now; the night arrow ends at a small now mark.
 - **MD2a** — Undo the PD4.2 night flip (and PD4.5 / MD1): noon always on top, the sun follows the clock day and night. Service worker is now network-first (fresh files online, cache only offline).
 - **MD2b** — Night flip back, dial only: the dial turns 180° at night (midnight on top) but the sun stays at its clock spot, which is then on the yellow side; a small now mark ends the night arrow.
+- **MD3** — Settings › Theme › Auto follows the Hub theme (`sites-hub.theme`, live through storage / `hub-prefs` message / focus) when My Day runs inside the Hub; standalone it follows the device setting. Light and Dark unchanged. SW `myday-md3`, `<title>My Day MD3</title>`.

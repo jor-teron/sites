@@ -35,12 +35,21 @@
   }
   function drawAlerts(){var a=document.getElementById('alerts');a.innerHTML='';
     Object.keys(alerts).forEach(function(k){var x=alerts[k];a.appendChild(el('div',{'class':'alert'+(x.level==='high'?' hi':''),role:'status'},[x.text]));});}
+  /* legacy (before MD3): Auto = device setting only, even inside the Hub
   function applyTheme(){var t=MDStore.get('theme','auto');
     if(t==='auto')t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-    document.documentElement.setAttribute('data-theme',t);}
+    document.documentElement.setAttribute('data-theme',t);} */
+  /* MD3: Auto follows the Hub when My Day runs in a same-origin Hub frame (sites-hub.theme: 'dark' = Dark,
+     anything else = Light, the Hub default since H60a; the Hub's own Auto writes the effective value there).
+     Standalone: the device prefers-color-scheme. Light / Dark picks are unchanged. */
+  function inHub(){try{return window.parent!==window&&window.parent.location.origin===location.origin;}catch(e){return false;}}
+  function hubTheme(){var v='';try{v=localStorage.getItem('sites-hub.theme')||'';}catch(e){}return v==='dark'?'dark':'light';}
+  function applyTheme(){var t=MDStore.get('theme','auto');
+    if(t==='auto')t=inHub()?hubTheme():(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var r=document.documentElement;if(r.getAttribute('data-theme')!==t)r.setAttribute('data-theme',t);}
   window.MyDay={
     el:el,register:function(c){cards.push(c);},cards:function(){return cards;},layout:layout,
-    saveLayout:function(l){MDStore.set('layout',l);renderAll();},renderAll:renderAll,tick:tick,applyTheme:applyTheme,
+    saveLayout:function(l){MDStore.set('layout',l);renderAll();},renderAll:renderAll,tick:tick,applyTheme:applyTheme,inHub:inHub,
     /* alert(key,text,level 'high'|'med') adds/replaces; clearAlert(key) removes */
     alert:function(k,t,l){alerts[k]={text:t,level:l||'med'};drawAlerts();},clearAlert:function(k){delete alerts[k];drawAlerts();}
   };
