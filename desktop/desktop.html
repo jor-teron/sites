@@ -24,15 +24,20 @@
        It replaces every "?v=20261104h" in this file (and the other 7 build places, H129a) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
   <link rel="stylesheet" href="hub/core/hub_main.css" />
-  <link rel="stylesheet" href="hub/controller/hub_controller.css" />
-  <link rel="stylesheet" href="hub/viewer/hub_notification.css" />
+  <!-- <link rel="stylesheet" href="hub/controller/hub_controller.css" />   (before H129c) -->
+  <link rel="stylesheet" href="desktop/controller/hub_controller.css" />
+  <!-- <link rel="stylesheet" href="hub/viewer/hub_notification.css" />   (before H129c) -->
+  <link rel="stylesheet" href="desktop/notify/hub_notification.css" />
   <link rel="stylesheet" href="shared/style/no-scrollbar.css" />
   <link rel="stylesheet" href="shared/link/link.css" />
-  <link rel="stylesheet" href="hub/link/hub_chat.css" />
+  <!-- <link rel="stylesheet" href="hub/link/hub_chat.css" />   (before H129c) -->
+  <link rel="stylesheet" href="desktop/panels/hub_chat.css" />
   <!-- H27: Devices + Pooh Chat as full-height side panels -->
-  <link rel="stylesheet" href="hub/link/hub_panels.css" />
+  <!-- <link rel="stylesheet" href="hub/link/hub_panels.css" />   (before H129c) -->
+  <link rel="stylesheet" href="desktop/panels/hub_panels.css" />
   <!-- H66: Notification Centre 🔔 + side panel -->
-  <link rel="stylesheet" href="hub/viewer/hub_notifcenter.css" />
+  <!-- <link rel="stylesheet" href="hub/viewer/hub_notifcenter.css" />   (before H129c) -->
+  <link rel="stylesheet" href="desktop/notify/hub_notifcenter.css" />
   <!-- <link rel="stylesheet" href="hub/menu/hub_flyout.css" />   (before H129b) -->
   <link rel="stylesheet" href="desktop/menu/hub_flyout.css" />
   <!-- <link rel="stylesheet" href="hub/wm/wm.css" />   (before H129b) -->
@@ -183,19 +188,24 @@
   <script src="shared/dialog/dialog.js"></script>
   <script src="hub/core/hub_dialog_bridge.js"></script><!-- H75: app frames ask the Hub to draw their dialogs -->
   <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->
-  <script src="hub/controller/hub_controller_config.js"></script>
+  <!-- <script src="hub/controller/hub_controller_config.js"></script>   (before H129c) -->
+  <script src="desktop/controller/hub_controller_config.js"></script>
   <!-- <script src="hub/viewer/hub_notify.js?v=20261027h26"></script>   (before H66) -->
-  <script src="hub/viewer/hub_notify.js"></script>
+  <!-- <script src="hub/viewer/hub_notify.js"></script>   (before H129c) -->
+  <script src="desktop/notify/hub_notify.js"></script>
   <!-- H66: Notification Centre history + Do Not Disturb + 🔔 panel (window.HubNotifCenter; hub_notify.js saves into it) -->
   <script src="hub/core/hub_dnd.js"></script><!-- H82: Hub-wide Do Not Disturb (HubDnd) -->
-  <script src="hub/viewer/hub_notifcenter.js"></script>
+  <!-- <script src="hub/viewer/hub_notifcenter.js"></script>   (before H129c) -->
+  <script src="desktop/notify/hub_notifcenter.js"></script>
   <script src="hub/core/hub_attention.js"></script><!-- H82: app call pop-up (sharedLink attention) -->
   <!-- H28: one key store for API keys (window.HubKeys; apps call window.top.HubKeys, Settings → API Keys) -->
   <!-- <script src="hub/core/hub_keys.js"></script>   (before H127; now in hub_core.js part 'link') -->
   <!-- H30.1: Hub settings saved to the connected folder (hub/hub-profile/hub.json; window.HubProfile) -->
   <!-- <script src="hub/core/hub_profile.js"></script>   (before H127; now in hub_core.js part 'link') -->
-  <script src="hub/link/hub_pointer.js"></script>
-  <script src="hub/link/hub_receive.js"></script>
+  <!-- <script src="hub/link/hub_pointer.js"></script>   (before H129c) -->
+  <script src="desktop/link/hub_pointer.js"></script>
+  <!-- <script src="hub/link/hub_receive.js"></script>   (before H129c) -->
+  <script src="desktop/link/hub_receive.js"></script>
   <!-- SharedLink: one connection layer (PeerJS from the pinned CDN url in link_core.js) -->
   <!-- <script src="shared/link/link_core.js"></script>   (before H127)
   <script src="shared/link/link_devices.js"></script>
@@ -205,8 +215,10 @@
   <!-- H127: core part 'link' = hub_keys.js, hub_profile.js (moved down past hub_pointer / hub_receive, which use neither),
        link_core.js, link_devices.js, link_files.js, link_ui.js, link_chat.js -->
   <script>HubCore.load('link');</script>
-  <script src="hub/controller/hub_textedit.js"></script>
-  <script src="hub/controller/hub-controller.js"></script>
+  <!-- <script src="hub/controller/hub_textedit.js"></script>   (before H129c) -->
+  <script src="desktop/controller/hub_textedit.js"></script>
+  <!-- <script src="hub/controller/hub-controller.js"></script>   (before H129c) -->
+  <script src="desktop/controller/hub-controller.js"></script>
   <!-- <script src="hub/link/hub_link.js"></script>   (before H127)
   <script src="hub/link/hub_sync.js"></script> H29.1: Send profile to a connected device
   <script src="shared/link/hub_mesh.js"></script> H50: Hub mesh core (one shared connection per Connect Code)
@@ -219,10 +231,14 @@
        hub_meshlink.js, hub_line.js, hub_trust.js, hub_linkstate.js -->
   <script>HubCore.load('mesh');</script>
   <script src="shared/link/link_scan.js"></script>
-  <script src="hub/link/hub_remote.js"></script>
-  <script src="hub/link/hub_chat.js"></script>
-  <script src="hub/link/hub_panels.js"></script>
-  <script src="hub/link/hub-gamebar.js"></script>
+  <!-- <script src="hub/link/hub_remote.js"></script>   (before H129c) -->
+  <script src="desktop/link/hub_remote.js"></script>
+  <!-- <script src="hub/link/hub_chat.js"></script>   (before H129c) -->
+  <script src="desktop/panels/hub_chat.js"></script>
+  <!-- <script src="hub/link/hub_panels.js"></script>   (before H129c) -->
+  <script src="desktop/panels/hub_panels.js"></script>
+  <!-- <script src="hub/link/hub-gamebar.js"></script>   (before H129c) -->
+  <script src="desktop/gamebar/hub-gamebar.js"></script>
   <!-- PWA service worker (root sw.js) + stale-shell guard / Check for update -->
   <script src="hub/update/hub_update.js"></script>
   <!-- R16a: everything not needed for the first paint (Drive, snap, keyboard, Viewer) loads here, after idle -->

@@ -1,5 +1,5 @@
 /*
- * Hub — H66 Notification Centre (hub/viewer/hub_notifcenter.js). Loaded right after hub_notify.js.
+ * Hub — H66 Notification Centre (desktop/notify/hub_notifcenter.js; before H129c hub/viewer/). Loaded right after hub_notify.js.
  * Every notification the Hub shows (HubNotify.notice / window.hubToast / received-file cards from
  * HubNotify.done / fail) is also saved to a history on THIS device:
  *   localStorage 'sites-hub.notifs' = JSON [{ id, t, app, appId, entry, hash, aicon, icon, title, text, read }]
@@ -67,10 +67,15 @@
     return best;
   }
   const HUB_SRC = [   // Hub files → the app a tap should open
-    [/hub\/link\/hub_chat\.js/, { app: 'Pooh Chat', appId: 'pooh-chat', entry: 'apps/connectivity/pooh-chat/' }],
-    [/hub\/link\/hub_receive\.js/, { app: 'Received files', entry: 'apps/system/files/' }],
+    // (before H129c) [/hub\/link\/hub_chat\.js/, { app: 'Pooh Chat', appId: 'pooh-chat', entry: 'apps/connectivity/pooh-chat/' }],
+    // (before H129c) [/hub\/link\/hub_receive\.js/, { app: 'Received files', entry: 'apps/system/files/' }],
+    // (before H129c) [/hub\/(link\/hub_(link|meshlink|panels|linkstate|remote)|controller\/[\w-]+)\.js/, { app: 'Devices', entry: 'apps/system/settings/', hash: 'devices' }],
+    // H129c: hub_chat / hub_panels → desktop/panels/, hub_receive / hub_remote → desktop/link/, hub-controller.js etc. → desktop/controller/
+    //   (the old hub/ paths stay matched too, for the one-release forwarders and old cached pages)
+    [/(hub\/link|desktop\/panels)\/hub_chat\.js/, { app: 'Pooh Chat', appId: 'pooh-chat', entry: 'apps/connectivity/pooh-chat/' }],
+    [/(hub\/link|desktop\/link)\/hub_receive\.js/, { app: 'Received files', entry: 'apps/system/files/' }],
     [/hub\/(link\/hub_sync|core\/hub_profile)\.js/, { app: 'Settings', appId: 'settings', entry: 'apps/system/settings/', hash: 'devices' }],
-    [/hub\/(link\/hub_(link|meshlink|panels|linkstate|remote)|controller\/[\w-]+)\.js/, { app: 'Devices', entry: 'apps/system/settings/', hash: 'devices' }],
+    [/(hub\/(link\/hub_(link|meshlink|panels|linkstate|remote)|controller\/[\w-]+)|desktop\/(panels\/hub_panels|link\/hub_remote|controller\/[\w-]+))\.js/, { app: 'Devices', entry: 'apps/system/settings/', hash: 'devices' }],
     [/apps\/system\/settings\//, { app: 'Settings', appId: 'settings', entry: 'apps/system/settings/' }],
   ];
   function source(o) {
@@ -83,11 +88,13 @@
     const urls = stack.match(/(?:https?|file):\/\/[^\s)]+/g) || [];
     for (const u0 of urls) {
       const u = u0.replace(/:\d+(:\d+)?$/, '').split(/[?#]/)[0];
-      if (/hub\/viewer\/hub_notif(y|center)\.js$/.test(u)) continue;
+      // (before H129c) if (/hub\/viewer\/hub_notif(y|center)\.js$/.test(u)) continue;
+      if (/(hub\/viewer|desktop\/notify)\/hub_notif(y|center)\.js$/.test(u)) continue;   // H129c: moved to desktop/notify/
       const rel = BASE && u.indexOf(BASE) === 0 ? u.slice(BASE.length) : u.replace(/^[a-z]+:\/\/[^/]*\//, '');
       for (const [re, s] of HUB_SRC) if (re.test(rel)) { const e = s.appId ? fromEntry(s.entry) : null; return Object.assign({ hash: '', aicon: '' }, e || {}, s, { aicon: (e && e.aicon) || '' }); }
       if (/^apps\//.test(rel)) { const e = fromEntry(rel); if (e) return Object.assign({ hash: '' }, e); }
-      if (/^hub\//.test(rel) || /hub\.html$/.test(rel)) break;
+      // (before H129c) if (/^hub\//.test(rel) || /hub\.html$/.test(rel)) break;
+      if (/^(hub|desktop)\//.test(rel) || /hub\.html$/.test(rel)) break;   // H129c: desktop shell files live in desktop/ now (H129b / H129c)
     }
     return { app: 'Hub', appId: '', entry: '', hash: '', aicon: '' };
   }
