@@ -36,6 +36,8 @@ Desert Road,       desert-road/,   , , Runners, Drive a desert highway and dodge
 Turbo Lap,         turbo-lap/,     , , Runners, Top-down lap racing against AI cars with gas - brake and steering
 Tower Defence,     tower-defence/, , , Strategy, Build gun - cannon and frost towers to stop enemy waves on many maps
 Chess,             chess/,         , , Strategy, Classic chess against the computer with hints and undo - two levels for learners
+Go,                go/,            , , Strategy, Surround more of the board than your rival - capture stones - play a friend or computer
+Blockade,          blockade/,      , , Strategy, Race two pawns to the far home squares and block your rival with walls
 AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
 Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
 Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom

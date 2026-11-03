@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--
+  Go (GO-1) — page. Info (status, captures, wins) / board / buttons: stacked in
+  portrait, side by side in landscape. Numbers + star points: core/config.js.
+  Rules (capture, ko, suicide, area score): core/rules.js. Computer: core/ai.js.
+  Drawing (on change only): ui/render.js. Sound: ui/sound.js. Shared settings bridge: ui/settings.js.
+  Wiring + saves: core/game.js. Classic scripts only, so it opens from file://.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Go GO-1</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="side side-info">
+      <h1 class="title">Go</h1>
+      <p class="status" id="status">Black to play</p>
+      <div class="score">
+        <div class="chip" title="Stones captured"><i class="dot dot-b"></i><span id="lblB">Black</span> took <b id="capB">0</b></div>
+        <div class="chip" title="Stones captured"><i class="dot dot-w"></i><span id="lblW">White</span> took <b id="capW">0</b></div>
+      </div>
+      <div class="score wins">
+        <div class="chip">Wins ● <b id="winB">0</b></div>
+        <div class="chip">○ <b id="winW">0</b></div>
+      </div>
+    </div>
+    <div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="Go board"></canvas></div>
+    <div class="side side-btns" id="btns">
+      <button id="newBtn">New game</button>
+      <button id="passBtn">Pass</button>
+      <button id="undoBtn">Undo</button>
+      <select id="sizeSel" aria-label="Board size">
+        <option value="9">9×9</option>
+        <option value="13">13×13</option>
+        <option value="19">19×19</option>
+      </select>
+      <select id="modeSel" aria-label="Mode">
+        <option value="2p">2 Players</option>
+        <option value="easy">vs CPU Easy</option>
+        <option value="medium">vs CPU Medium</option>
+        <option value="hard">vs CPU Hard</option>
+      </select>
+      <select id="tapSel" aria-label="Tap to place">
+        <option value="auto">Tap: Auto</option>
+        <option value="once">Tap once</option>
+        <option value="twice">Tap twice</option>
+      </select>
+      <button id="helpBtn">How to play</button>
+      <button id="clearBtn" class="link">Reset wins</button>
+      <span id="gearSlot" class="gear-slot"></span>
+    </div>
+  </div>
+  <div class="help" id="help" hidden>
+    <div class="help-card" role="dialog" aria-label="How to play Go">
+      <h2>How to play</h2>
+      <ul>
+        <li>Black and White take turns putting one stone on a crossing of the lines. Black goes first.</li>
+        <li>The empty crossings next to a stone (or a joined group) are its <b>liberties</b>.</li>
+        <li>Fill a group's last liberty and you <b>capture</b> it: those stones come off the board.</li>
+        <li>You can't play where your stone would have no liberties, unless that move captures.</li>
+        <li><b>Ko:</b> if one stone was just taken, you can't take one straight back. Play elsewhere first.</li>
+        <li>Nothing useful left? Press <b>Pass</b>. Two passes in a row end the game.</li>
+        <li>Then tap groups that are surely lost (<b>dead</b>) and press <b>Count score</b>.</li>
+        <li>Score = your stones + the empty points only you surround. White gets 6.5 extra (komi) for going second.</li>
+        <li>Small screen? Set <b>Tap twice</b>: the first tap shows the stone, the second places it.</li>
+      </ul>
+      <button id="helpClose">Got it</button>
+    </div>
+  </div>
+  <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/config.js"></script>
+  <script src="ui/settings.js"></script>
+  <script src="core/rules.js"></script>
+  <script src="core/ai.js"></script>
+  <script src="ui/sound.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="core/game.js"></script>
+</body>
+</html>
