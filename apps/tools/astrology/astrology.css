@@ -56,3 +56,8 @@ footer{text-align:center;margin-top:16px}
 .el-fire{fill:#d9534f!important}.el-earth{fill:#3d8b40!important}.el-air{fill:#c79a00!important}.el-water{fill:#2f7fd1!important}
 .ptab{width:100%;border-collapse:collapse;font-size:14px}.ptab th{text-align:left;color:var(--mut);font-weight:500;font-size:12px}
 .ptab td,.ptab th{padding:5px 4px;border-bottom:1px solid var(--line)}.ptab tr.ang td{color:var(--acc)}
+/* AS3 Vedic chart */
+#tabs button{padding:8px 4px;font-size:14px}
+.vchart text{font-size:10px}.vchart .w-p2{font-size:11px;font-weight:600;fill:var(--fg)}
+.vchart rect.w-l,.vchart path.w-l{fill:none;stroke:var(--mut)}.vchart rect.w-o{fill:none}
+.kv span{display:block}

@@ -814,6 +814,16 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   default, Equal option (st.houses). No time/place: Asc/MC/houses hidden + Moon note. Sign tab adds Sun/Moon/Rising.
 - RELEASE/title/?v= AS2 (legacy AS1 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.52 Astrology Vedic chart, release AS3
+
+- apps/tools/astrology only. New vedic_calc.js (pure, no DOM): ayanamsa Lahiri (default) / Raman / KP (linear, 50.29"/yr),
+  sidereal chart Sun..Saturn + Rahu (mean node) / Ketu + Lagna, nakshatra/pada/lord, Vimshottari Maha+Antar dasha, panchang.
+- New Vedic tab: Rashi (Sanskrit + English), Lagna (hidden without time), sidereal Sun, Moon nakshatra + meaning, North Indian
+  (default) / South Indian SVG chart (st.vstyle; Chandra lagna when no time), graha table, dasha card, Panchang card for now
+  (tithi+paksha, nakshatra, yoga, karana, vara) at st.panPlace (default first profile's place, else Delhi). Settings: st.ayanamsa.
+- Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
+- RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
