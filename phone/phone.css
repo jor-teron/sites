@@ -209,3 +209,28 @@ body.app-open #net-dot,body.drawer-open #net-dot{opacity:0;pointer-events:none}
 .pc-devs li.none{color:var(--mut);justify-content:center}
 .pc-on{width:8px;height:8px;border-radius:50%;background:var(--good);flex:none}
 .pc-disc{margin-top:6px}
+
+/* PH19: Recent apps */
+#recents{z-index:6;background:rgba(0,0,0,.55);display:flex;flex-direction:column;justify-content:center;opacity:0;transition:opacity .18s,visibility 0s .18s;touch-action:none}
+#recents.open{opacity:1;transition:opacity .18s}
+#rec-list{display:flex;gap:14px;overflow-x:auto;overflow-y:visible;padding:40px 18px 24px;scrollbar-width:none;touch-action:none}
+#rec-list::-webkit-scrollbar{display:none}
+.rc{flex:none;width:min(62vw,260px);display:flex;flex-direction:column;gap:8px;transition:transform .16s ease,opacity .16s ease}
+.rc.drag{transition:none}
+.rc-hd{display:flex;align-items:center;gap:8px;color:#fff}
+.rc-hd .im,.rc-snap .im{border-radius:8px;overflow:hidden;display:grid;place-items:center;flex:none;pointer-events:none}
+.rc-hd .im{width:28px;height:28px}
+.rc-hd .im img,.rc-snap .im img{width:100%;height:100%;object-fit:cover}
+.rc-hd .im .lt{font-size:14px;font-weight:600;color:#fff}
+.rc-snap .im .lt{font-size:34px;font-weight:600;color:#fff}
+.rc-name{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-pin,.rc-x{width:32px;height:32px;border-radius:16px;border:0;background:rgba(255,255,255,.16);color:#fff;font-size:14px;cursor:pointer;flex:none}
+.rc-pin{filter:grayscale(1);opacity:.6}
+.rc-pin.on{filter:none;opacity:1;background:var(--acc)}
+.rc-snap{height:min(56vh,440px);border-radius:18px;background:linear-gradient(160deg,var(--tint),var(--card) 70%);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--fg);box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer}
+.rc-snap .im{width:72px;height:72px;border-radius:18px}
+.rc-snap small{font-size:12px;color:var(--mut)}
+#rec-empty{color:#fff;text-align:center;opacity:.8;font-size:15px}
+#rec-clear{align-self:center;height:38px;padding:0 20px;border-radius:19px;border:0;background:var(--card);color:var(--fg);font-size:14px;cursor:pointer;margin-bottom:calc(env(safe-area-inset-bottom) + 18px)}
+#rec-edge{position:absolute;left:0;right:0;bottom:0;height:10px;z-index:2;touch-action:none}
+body.rec-hint #drawer,body.rec-hint #apps{opacity:.6}
