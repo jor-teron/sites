@@ -25,12 +25,16 @@
   <meta name="theme-color" content="#000000">
   <!-- <title>Phone PH1</title>   (PH1 … PH13; phone_app.js sets the live title) -->
   <!-- <title>Phone PH14</title>   (PH14) -->
-  <title>Phone PH15</title>
+  <!-- <title>Phone PH15</title> -->
+  <title>Phone PH16</title>
   <link rel="icon" href="favicon.ico">
   <!-- <link rel="stylesheet" href="phone/phone.css">   (before PH14) -->
-  <link rel="stylesheet" href="phone/phone.css?v=PH14"><!-- unchanged in PH15 -->
+  <!-- <link rel="stylesheet" href="phone/phone.css?v=PH14"> (PH14, PH15) -->
+  <link rel="stylesheet" href="phone/phone.css?v=PH16">
 <link rel="stylesheet" href="shared/dialog/dialog.css"><!-- H81 -->
-  <script>try{var s=JSON.parse(localStorage.getItem('phone-launcher-v1')||'{}'),m=(s.settings&&s.settings.th80&&s.settings.theme)||'system',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}try{var a=localStorage.getItem('sites-hub.accent');if(/^#[0-9a-f]{6}$/i.test(a||''))document.documentElement.style.setProperty('--acc',a)}catch(e){}</script>
+  <!-- PH16: Light / Dark only; an old 'system' (Hub) save resolves like phone_save.js. Before PH16:
+  <!--script>try{var s=JSON.parse(localStorage.getItem('phone-launcher-v1')||'{}'),m=(s.settings&&s.settings.th80&&s.settings.theme)||'system',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}try{var a=localStorage.getItem('sites-hub.accent');if(/^#[0-9a-f]{6}$/i.test(a||''))document.documentElement.style.setProperty('--acc',a)}catch(e){}</script--> -->
+  <script>try{var s=JSON.parse(localStorage.getItem('phone-launcher-v1')||'{}'),m=s.settings&&s.settings.th80&&s.settings.theme,t=localStorage.getItem('sites-hub.theme');if(m!=='light'&&m!=='dark')m=t==='dark'||t==='light'?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(m==='dark')document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}try{var a=localStorage.getItem('sites-hub.accent');if(/^#[0-9a-f]{6}$/i.test(a||''))document.documentElement.style.setProperty('--acc',a)}catch(e){}</script>
 </head>
 <body>
 <div id="wall" hidden></div>
@@ -99,15 +103,18 @@
 <!-- PH14: the whole Hub core (boot + link + mesh, incl. hub_line H91 and hub_trust H97) in one tag, after the dialogs
      and notices like desktop/desktop.html (was hub.html) (link part after the notifications). Every global exists for the next tag. -->
 <script src="hub/core/hub_core.js"></script>
-<script src="phone/phone_save.js"></script>
+<!-- <script src="phone/phone_save.js"></script>   (before PH16) -->
+<script src="phone/phone_save.js?v=PH16"></script>
 <!-- <script src="phone/phone_apps.js"></script>   (before PH15) -->
 <script src="phone/phone_apps.js?v=PH15"></script>
 <script src="phone/phone_gesture.js"></script>
 <!-- <script src="phone/phone_app.js"></script>   (before PH14) -->
 <!-- <script src="phone/phone_app.js?v=PH14"></script>   (PH14) -->
-<script src="phone/phone_app.js?v=PH15"></script>
+<!-- <script src="phone/phone_app.js?v=PH15"></script>   (PH15) -->
+<script src="phone/phone_app.js?v=PH16"></script>
 <!-- <script src="phone/phone_connect.js?v=PH14"></script>   (PH14) -->
-<script src="phone/phone_connect.js?v=PH15"></script><!-- PH14: Connect sheet + status dot (waits for HubCore.ready) -->
+<!-- <script src="phone/phone_connect.js?v=PH15"></script>   (PH15) -->
+<script src="phone/phone_connect.js?v=PH16"></script><!-- PH14: Connect sheet + status dot (waits for HubCore.ready) -->
 <!-- <script src="hub/link/hub_line.js"></script>   H91: Hub Line   (before PH14; now in hub_core.js part 'mesh')
 <script src="hub/link/hub_trust.js"></script>   H97: HubTrust   (before PH14; now in hub_core.js part 'mesh') -->
 </body>

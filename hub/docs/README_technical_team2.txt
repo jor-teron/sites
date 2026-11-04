@@ -767,6 +767,16 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - hub.html (removed in H129d) mentions replaced with `desktop/desktop.html` / `index.html` in comments and docs. Functional uses: none left; `JOIN_PAGE` in phone_connect.js already = `desktop/desktop.html` (?join= kept).
 - Release id: `RELEASE = 'PH15'`, `PhoneConnect.VERSION = 'PH15'`, `<title>Phone PH15</title>`, `?v=PH15` on phone_app.js / phone_connect.js / phone_apps.js (legacy comments keep PH14 / none). No build bumps. phone.html stays at the root (MODE_TARGET.phone).
 
+### 1.47 Phone shade trims, Light / Dark only, wider lower dock with Messages, release PH16
+
+- phone/ + phone.html only. Quick panel: Intercom, Telephone, Location tiles removed (apps stay in the drawer).
+- Theme Light / Dark only: 'system' (Hub) removed from Settings, tile and head script. Old 'system' / missing
+  saves resolve once (sites-hub.theme, else device) and are saved as light / dark (settings.ph16). The phone no
+  longer follows sites-hub.theme live; sites-hub.accent still does.
+- Dock lower and wider (phone.css #dock-wrap / #dock); Messages (catalog id 'messages', was the unmatched
+  'message') is in the default dock and added once to existing saves when there is room.
+- Details: phone/README.md "PH16".
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

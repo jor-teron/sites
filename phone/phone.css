@@ -34,9 +34,11 @@ body.app-open #home,body.drawer-open #home{opacity:0}
 #dots .dot{width:20px;height:16px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center}
 #dots .dot::after{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.45;box-shadow:var(--shadow)}
 #dots .dot.on::after{opacity:1}
-#dock-wrap{flex:none;padding:0 10px 12px;display:flex;flex-direction:column;align-items:center}
+/* #dock-wrap{flex:none;padding:0 10px 12px;...}  (before PH16) */
+#dock-wrap{flex:none;padding:0 8px 6px;display:flex;flex-direction:column;align-items:center}
 #dock-handle{width:38px;height:4px;border-radius:2px;background:currentColor;opacity:.55;margin:2px 0 8px}
-#dock{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;max-width:560px;padding:10px 6px;border-radius:26px;background:rgba(255,255,255,.18)}/* PH5: was var(--glass) */
+/* #dock{...gap:6px;width:100%;max-width:560px;padding:10px 6px;...}  (before PH16) */
+#dock{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;width:100%;max-width:640px;padding:9px 6px;border-radius:26px;background:rgba(255,255,255,.18)}/* PH5: was var(--glass) */
 #dock .ic .lbl{display:none}
 
 /* ---------- icons ---------- */
