@@ -14,7 +14,7 @@ WebRTC data channels are already encrypted in transit.
 - **Room code:** `#code=` / `?hub=` (5 digits only; 4-digit codes are rejected) → the Hub's private mesh
   (`parent.HubMeshLink.isPrivate()/privateCode()`) → `SharedLink.LOBBY` (self/parent/top) → `00000`.
 - **Transport** (`PoohCore.mode`, checked once at boot, same-origin try/catch):
-  1. `relay`: `parent.SharedChat.send` exists (hub.html). Release-4 relay unchanged (`{sharedLink:'ready'}`,
+  1. `relay`: `parent.SharedChat.send` exists (`desktop/desktop.html`, was `hub.html`). Release-4 relay unchanged (`{sharedLink:'ready'}`,
      `{sharedLink:'chat', text}`, repaint from `shared-chat-history`). H84 makes the Hub carry it over the mesh.
   2. `parent`: `parent.HubMesh.broadcast/onMsg` exist but no relay (e.g. `/phone.html`). Uses the parent's mesh;
      never starts a second HubMesh (same device id would clash). The room is the parent's mesh room.

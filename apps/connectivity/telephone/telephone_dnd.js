@@ -1,5 +1,5 @@
 /* Telephone TP7 — Do Not Disturb belongs to the Hub. Telephone has no DND switch of its own any more; it follows the Hub's.
-   Inside a host (hub.html, /phone.html): window.parent.HubDnd (H82) isOn() / allowFavs() / on('change', fn) / off('change', fn).
+   Inside a host (desktop/desktop.html, was hub.html; /phone.html): window.parent.HubDnd (H82) isOn() / allowFavs() / on('change', fn) / off('change', fn).
    Standalone (or a host without HubDnd): localStorage 'sites-hub.dnd' === '1' and 'sites-hub.dndFavs' === '1' + the 'storage' event.
    Everything in try/catch. The old Telephone settings dnd / dndFav (telephone-settings-v1) are ignored on purpose. */
 (function () {

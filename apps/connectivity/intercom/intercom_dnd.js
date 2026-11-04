@@ -1,5 +1,5 @@
 /* Intercom IC5 — Do Not Disturb belongs to the Hub. Intercom has no DND switch of its own any more; it follows the Hub's.
-   Inside a host (hub.html, /phone.html): window.parent.HubDnd (H82) isOn() / allowFavs() / on('change', fn) / off('change', fn).
+   Inside a host (desktop/desktop.html, was hub.html; /phone.html): window.parent.HubDnd (H82) isOn() / allowFavs() / on('change', fn) / off('change', fn).
    Standalone (or a host without HubDnd): localStorage 'sites-hub.dnd' === '1' and 'sites-hub.dndFavs' === '1' + the 'storage' event.
    Everything in try/catch. The old Intercom setting dnd (intercom-settings-v1) is ignored on purpose. */
 (function () {
