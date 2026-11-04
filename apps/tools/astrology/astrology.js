@@ -1,10 +1,12 @@
+/* AS3 Astrology — adds Vedic tab (vedic_calc.js): Rashi, Lagna, nakshatra, North/South Indian chart, Vimshottari dasha, Panchang; ayanamsa setting.
+   Legacy header (AS2): */
 /* AS2 Astrology — adds birth time/place, full Western chart (astro_calc.js), Chart tab, Sun/Moon/Rising summary.
    Legacy header (AS1): */
 /* AS1 Astrology — offline. Profiles (localStorage 'astrology-v1'), tropical sun sign, daily card, element match.
    Readings are traditional meanings, shown for fun; nothing here is a prediction. */
 (function () {
   'use strict';
-  var RELEASE = 'AS2'; // legacy: 'AS1'
+  var RELEASE = 'AS3'; // legacy: 'AS2' (AS1 before)
   var KEY = 'astrology-v1';
   var $ = function (id) { return document.getElementById(id); };
 
@@ -225,6 +227,91 @@
       '<div class="card"><table class="ptab"><thead><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>House</th><th>R</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' +
       '<p class="note small">Tropical zodiac, geocentric. Positions from compact published formulas (about 1° or better). R = retrograde. Traditional chart, for fun.</p></div>';
   }
+  // ---- AS3 Vedic (sidereal) ----
+  var RASHI = [['Mesha', 'Aries'], ['Vrishabha', 'Taurus'], ['Mithuna', 'Gemini'], ['Karka', 'Cancer'], ['Simha', 'Leo'], ['Kanya', 'Virgo'],
+    ['Tula', 'Libra'], ['Vrishchika', 'Scorpio'], ['Dhanu', 'Sagittarius'], ['Makara', 'Capricorn'], ['Kumbha', 'Aquarius'], ['Meena', 'Pisces']];
+  var RASHI_T = ['Bold and enterprising; quick to act and to lead.', 'Steady and sensual; values security, food and comfort.',
+    'Witty and communicative; loves learning and company.', 'Emotional and protective; deeply attached to home and mother.',
+    'Dignified and generous; seeks respect and to shine.', 'Analytical and modest; careful with details and health.',
+    'Balanced and courteous; seeks harmony and fair trade.', 'Intense and secretive; strong will and deep feelings.',
+    'Principled and optimistic; drawn to dharma, teaching and travel.', 'Practical and hard-working; patient climb to success.',
+    'Humanitarian and unconventional; thinks of the group.', 'Compassionate and spiritual; imaginative and giving.'];
+  var NAK = [['Ashwini', 'Swift healer, energetic starts.'], ['Bharani', 'Bearer of burdens; strong will and restraint.'], ['Krittika', 'Sharp, purifying, frank.'],
+    ['Rohini', 'Beauty, growth and charm.'], ['Mrigashira', 'Curious seeker, gentle and searching.'], ['Ardra', 'Storm and renewal; intense thinker.'],
+    ['Punarvasu', 'Return of light; optimistic and forgiving.'], ['Pushya', 'Nourishing and dutiful; considered most auspicious.'], ['Ashlesha', 'Coiled serpent; perceptive and guarded.'],
+    ['Magha', 'Royal and ancestral; pride in roots.'], ['Purva Phalguni', 'Pleasure, rest and creativity.'], ['Uttara Phalguni', 'Patronage and loyalty; reliable friend.'],
+    ['Hasta', 'Skilful hands; clever and practical.'], ['Chitra', 'Bright architect; artistic flair.'], ['Swati', 'Independent like the wind; flexible trader.'],
+    ['Vishakha', 'Goal-driven; determined to reach the prize.'], ['Anuradha', 'Devotion and friendship; organiser.'], ['Jyeshtha', 'Eldest; protective, responsible, proud.'],
+    ['Mula', 'The root; digs deep, radical change.'], ['Purva Ashadha', 'Invincible; persuasive and confident.'], ['Uttara Ashadha', 'Final victory; principled and lasting.'],
+    ['Shravana', 'The listener; learning and connection.'], ['Dhanishtha', 'Wealth and rhythm; musical and generous.'], ['Shatabhisha', 'Hundred healers; private, scientific.'],
+    ['Purva Bhadrapada', 'Fiery idealist; intense convictions.'], ['Uttara Bhadrapada', 'Deep and calm; wisdom and restraint.'], ['Revati', 'Gentle guardian of journeys; kind ending.']];
+  var VG = { Sun: 'Su', Moon: 'Mo', Mars: 'Ma', Mercury: 'Me', Jupiter: 'Ju', Venus: 'Ve', Saturn: 'Sa', Rahu: 'Ra', Ketu: 'Ke' };
+  var VARA = ['Ravivara (Sunday)', 'Somavara (Monday)', 'Mangalavara (Tuesday)', 'Budhavara (Wednesday)', 'Guruvara (Thursday)', 'Shukravara (Friday)', 'Shanivara (Saturday)'];
+  function aya() { return st.ayanamsa || 'lahiri'; }
+  function vchartOf(p) { var b = birth(p); return window.VedicCalc.chart(b.ms, b.timeKnown ? b.place.lat : null, b.timeKnown ? b.place.lon : null, aya()); }
+  function rName(i) { return RASHI[i][0] + ' (' + RASHI[i][1] + ')'; }
+  function fmtD(ms) { return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function vDiagram(c, lagnaSign) {
+    var byS = {}; c.planets.forEach(function (pl) { var z = zIdx(pl.lon); (byS[z] = byS[z] || []).push(VG[pl.name] + (pl.retro && pl.name !== 'Rahu' && pl.name !== 'Ketu' ? '℞' : '')); });
+    var W = 300, svg = ['<rect class="w-o" x="1" y="1" width="298" height="298"/>'];
+    function txt(x, y, s, cls) { return '<text class="' + cls + '" x="' + x + '" y="' + y + '">' + s + '</text>'; }
+    function plist(x, y, z) { var a = byS[z] || [], h = ''; for (var i = 0; i < a.length; i += 3) h += txt(x, y + (i / 3) * 14, a.slice(i, i + 3).join(' '), 'w-p2'); return h; }
+    if (st.vstyle === 'south') {
+      var POS = [[1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3], [0, 3], [0, 2], [0, 1], [0, 0]];
+      svg.push('<rect class="w-l" x="75" y="75" width="150" height="150"/>');
+      POS.forEach(function (q, z) { var x = q[0] * 75, y = q[1] * 75; svg.push('<rect class="w-l" x="' + x + '" y="' + y + '" width="75" height="75"/>');
+        svg.push(txt(x + 12, y + 10, SIGNS[z].s, 'w-n'));
+        if (z === lagnaSign) svg.push('<line class="w-a" x1="' + x + '" y1="' + (y + 18) + '" x2="' + (x + 18) + '" y2="' + y + '"/>' + txt(x + 60, y + 10, 'Lg', 'w-t'));
+        svg.push(plist(x + 37.5, y + 32, z)); });
+      svg.push(txt(150, 150, 'South Indian', 'w-n'));
+    } else {
+      var T = [150, 0], R_ = [300, 150], B = [150, 300], L = [0, 150], C = [150, 150], TL = [0, 0], TR = [300, 0], BR = [300, 300], BL = [0, 300], P1 = [75, 75], P2 = [225, 75], P3 = [225, 225], P4 = [75, 225];
+      var H = [[T, P2, C, P1], [TL, T, P1], [TL, P1, L], [L, P1, C, P4], [L, P4, BL], [BL, P4, B], [B, P4, C, P3], [B, P3, BR], [BR, P3, R_], [R_, P3, C, P2], [R_, P2, TR], [TR, P2, T]];
+      svg.push('<path class="w-l" d="M0 0L300 300M300 0L0 300M150 0L300 150L150 300L0 150Z"/>');
+      H.forEach(function (poly, h) { var cx = 0, cy = 0; poly.forEach(function (q) { cx += q[0]; cy += q[1]; }); cx /= poly.length; cy /= poly.length;
+        var z = (lagnaSign + h) % 12; svg.push(txt(cx.toFixed(0), (cy - (poly.length === 4 ? 22 : 12)).toFixed(0), z + 1, h === 0 ? 'w-t' : 'w-n'));
+        svg.push(plist(cx.toFixed(0), (cy - (poly.length === 4 ? 4 : 0)).toFixed(0), z)); });
+    }
+    return '<svg class="wheel vchart" viewBox="0 0 ' + W + ' ' + W + '" role="img" aria-label="Vedic chart">' + svg.join('') + '</svg>';
+  }
+  function renderVedic(p) {
+    if (!p) return empty(); var b = birth(p), c = vchartOf(p), tk = b.timeKnown, mo = c.planets[1], su = c.planets[0], mi = zIdx(mo.lon), nk = window.VedicCalc.nakOf(mo.lon);
+    var lg = tk ? zIdx(c.lagna) : mi, h = '<div class="card"><div class="tag">Vedic (sidereal) · ' + aya().toUpperCase() + ' ayanamsa ' + c.ayanamsa.toFixed(2) + '°</div><div class="grid g3" style="margin-top:8px">';
+    h += '<div class="kv"><b>' + SIGNS[mi].s + ' ' + RASHI[mi][0] + '</b><span>Rashi · ' + RASHI[mi][1] + '</span></div>';
+    h += tk ? '<div class="kv"><b>' + SIGNS[lg].s + ' ' + RASHI[lg][0] + '</b><span>Lagna · ' + RASHI[lg][1] + '</span></div>' : '<div class="kv"><b>?</b><span>Lagna needs time + place</span></div>';
+    h += '<div class="kv"><b>' + SIGNS[zIdx(su.lon)].s + ' ' + RASHI[zIdx(su.lon)][0] + '</b><span>Sun · ' + RASHI[zIdx(su.lon)][1] + '</span></div></div>';
+    h += '<p><b>Moon nakshatra: ' + NAK[nk.i][0] + '</b>, pada ' + nk.pada + ' · lord ' + nk.lord + '<br>' + NAK[nk.i][1] + '</p><p><b>' + rName(mi) + ' Rashi:</b> ' + RASHI_T[mi] + '</p>';
+    if (!tk) h += '<p class="note">No birth time/place: Moon worked out for midday, so the nakshatra or pada may be off near a boundary.</p>';
+    h += '<p class="note small">Traditional meanings, for fun.</p></div>';
+    h += '<div class="card"><div class="seg" id="vstyleSeg"><button type="button" data-vs="north"' + (st.vstyle !== 'south' ? ' class="on"' : '') + '>North Indian</button><button type="button" data-vs="south"' + (st.vstyle === 'south' ? ' class="on"' : '') + '>South Indian</button></div>' +
+      vDiagram(c, lg) + '<p class="note small">' + (tk ? 'Whole-sign houses from Lagna (' + rName(lg) + ').' : 'Chandra lagna: houses counted from the Moon sign, as birth time is unknown.') + ' Numbers in the North chart are signs (1 = Mesha). ℞ = retrograde.</p></div>';
+    var rows = c.planets.map(function (pl) { var zi = zIdx(pl.lon), n = window.VedicCalc.nakOf(pl.lon);
+      return '<tr><td>' + VG[pl.name] + ' ' + pl.name + '</td><td>' + RASHI[zi][0] + '</td><td>' + dm(pl.lon) + '</td><td>' + NAK[n.i][0] + ' ' + n.pada + '</td><td>' + (pl.retro && pl.name !== 'Rahu' && pl.name !== 'Ketu' ? 'R' : '') + '</td></tr>'; });
+    if (tk) { var ln = window.VedicCalc.nakOf(c.lagna); rows.unshift('<tr class="ang"><td>Lg Lagna</td><td>' + RASHI[lg][0] + '</td><td>' + dm(c.lagna) + '</td><td>' + NAK[ln.i][0] + ' ' + ln.pada + '</td><td></td></tr>'); }
+    h += '<div class="card"><table class="ptab"><thead><tr><th>Graha</th><th>Rashi</th><th>Degree</th><th>Nakshatra</th><th>R</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' +
+      '<p class="note small">Sidereal = tropical minus ayanamsa. Rahu is the mean node, Ketu opposite.</p></div>';
+    var ds = window.VedicCalc.dasha(b.ms, mo.lon, Date.now());
+    h += '<div class="card"><div class="tag">Vimshottari dasha (now)</div><div class="grid" style="margin-top:8px"><div class="kv"><b>' + ds.maha.lord + '</b><span>Mahadasha<br>' + fmtD(ds.maha.start) + ' – ' + fmtD(ds.maha.end) + '</span></div>' +
+      '<div class="kv"><b>' + ds.antar.lord + '</b><span>Antardasha<br>' + fmtD(ds.antar.start) + ' – ' + fmtD(ds.antar.end) + '</span></div></div>' +
+      '<p class="note small">From the Moon\'s nakshatra at birth (balance ' + ds.balanceYears.toFixed(1) + ' yrs of ' + nk.lord + '). Dates are approximate' + (tk ? '' : ', more so without a birth time') + '. Traditional, for fun.</p></div>';
+    return h + renderPanchang();
+  }
+  function panPlace() {
+    if (st.panPlace) { var f = findCity(st.panPlace); if (f) return f; }
+    var p0 = st.profiles[0]; if (p0 && p0.place) return p0.place; return findCity('Delhi') || { name: 'Delhi', lat: 28.704, lon: 77.102, tz: 'Asia/Kolkata' };
+  }
+  function renderPanchang() {
+    var now = Date.now(), pl = panPlace(), P = window.VedicCalc.panchang(now, aya()), off = pl.tz ? tzOff(pl.tz, now) : (+pl.off || 0) * 60;
+    var loc = new Date(now + off * 60000), wd = loc.getUTCDay(), tstr = ('0' + loc.getUTCHours()).slice(-2) + ':' + ('0' + loc.getUTCMinutes()).slice(-2);
+    var opts = CITIES.map(function (c) { var l = cityLabel(c); return '<option value="' + esc(l) + '"' + (pl.tz && cityLabel(pl) === l ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('');
+    if (!pl.tz) opts = '<option selected>' + esc(pl.lat + ', ' + pl.lon) + '</option>' + opts;
+    return '<div class="card" id="panCard"><div class="tag">Panchang · now (' + tstr + ' local)</div><div class="row" style="margin:8px 0"><select id="panSel" aria-label="Panchang place">' + opts + '</select></div>' +
+      '<div class="grid"><div class="kv"><b>' + P.paksha + ' ' + P.tithiName + '</b><span>Tithi ' + P.tithi + ' · ' + Math.round(P.tithiLeft * 100) + '% left</span></div>' +
+      '<div class="kv"><b>' + NAK[P.nak.i][0] + '</b><span>Nakshatra · pada ' + P.nak.pada + '</span></div>' +
+      '<div class="kv"><b>' + P.yogaName + '</b><span>Yoga</span></div><div class="kv"><b>' + P.karana + '</b><span>Karana</span></div>' +
+      '<div class="kv" style="grid-column:1/-1"><b>' + VARA[wd] + '</b><span>Vara (weekday)</span></div></div>' +
+      '<p class="note small">Worked out for this moment, not at sunrise as printed panchangs do, and the vara here changes at midnight rather than sunrise. Traditional, for fun.</p></div>';
+  }
   function dayHash(iso, salt) { var h = 2166136261; var s = iso + '|' + salt; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function renderToday(p) {
     if (!p) return empty(); var z = signOf(p.dob);
@@ -264,6 +351,8 @@
     $('pane-sign').innerHTML = renderSign(p);
     $('pane-today').innerHTML = renderToday(p);
     $('pane-chart').innerHTML = renderChart(p);
+    $('pane-vedic').innerHTML = renderVedic(p);
+    var as = $('ayaSeg').querySelectorAll('button'); for (var ai = 0; ai < as.length; ai++) as[ai].classList.toggle('on', as[ai].getAttribute('data-v') === aya());
     renderMatch();
     $('profList').innerHTML = st.profiles.map(function (x) { var z = signOf(x.dob);
       return '<li><span>' + z.s + ' ' + esc(x.name) + ' <small class="note">' + esc(fmtDate(x.dob)) + '</small></span><button type="button" class="mini" data-edit="' + x.id + '">Edit</button><button type="button" class="mini" data-del="' + x.id + '">🗑</button></li>'; }).join('') || '<li><span class="note">No profiles yet.</span></li>';
@@ -281,6 +370,9 @@
   $('pane-chart').addEventListener('click', function (e) { var b = e.target.closest('[data-h]'); if (!b) return; st.houses = b.getAttribute('data-h'); save(); $('pane-chart').innerHTML = renderChart(cur()); });
   document.addEventListener('change', function (e) { if (e.target && e.target.id === 'fTU' && e.target.checked) $('fTime').value = ''; if (e.target && e.target.id === 'fTime' && e.target.value) $('fTU').checked = false; });
   document.addEventListener('input', function (e) { if (e.target && e.target.id === 'fTime' && e.target.value) $('fTU').checked = false; });
+  $('pane-vedic').addEventListener('click', function (e) { var b = e.target.closest('[data-vs]'); if (!b) return; st.vstyle = b.getAttribute('data-vs'); save(); $('pane-vedic').innerHTML = renderVedic(cur()); });
+  $('pane-vedic').addEventListener('change', function (e) { if (e.target.id !== 'panSel') return; st.panPlace = e.target.value; save(); var pc = $('panCard'); pc.outerHTML = renderPanchang(); });
+  $('ayaSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.ayanamsa = b.getAttribute('data-v'); save(); render(); });
   $('themeSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.theme = b.getAttribute('data-v'); save(); applyTheme(); });
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-add],[data-edit],[data-del]'); if (!t) return;
@@ -291,5 +383,5 @@
 
   $('rel').textContent = RELEASE;
   render(); show(st.tab || 'sign');
-  window.Astrology = { RELEASE: RELEASE, signOf: signOf, chartOf: chartOf, birth: birth }; // legacy AS1: { RELEASE, signOf }
+  window.Astrology = { RELEASE: RELEASE, signOf: signOf, chartOf: chartOf, birth: birth, vchartOf: vchartOf }; // legacy AS2: no vchartOf; legacy AS1: { RELEASE, signOf }
 })();

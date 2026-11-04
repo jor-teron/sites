@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<!-- AS2 Astrology: adds birth time/place, Chart tab (wheel + planet table), Sun/Moon/Rising. Logic: astrology.js, astro_calc.js, cities.js. -->
+<!-- AS3 Astrology: adds Vedic tab (Rashi, Lagna, nakshatra, North/South chart, dasha, Panchang). Logic: vedic_calc.js. -->
+<!-- Legacy AS2 Astrology: adds birth time/place, Chart tab (wheel + planet table), Sun/Moon/Rising. Logic: astrology.js, astro_calc.js, cities.js. -->
 <!-- Legacy AS1 Astrology: profiles, Western sun sign, daily card, sun-sign compatibility. Offline, no libraries. Logic: astrology.js. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Astrology · AS2</title><!-- legacy: Astrology · AS1 -->
+  <title>Astrology · AS3</title><!-- legacy: Astrology · AS2 -->
   <link rel="icon" href="astrology_icon.svg">
-  <link rel="stylesheet" href="astrology.css?v=AS2"><!-- legacy: ?v=AS1 -->
+  <link rel="stylesheet" href="astrology.css?v=AS3"><!-- legacy: ?v=AS2 -->
   <script>try{var s=JSON.parse(localStorage.getItem('astrology-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
 </head>
 <body>
@@ -21,6 +22,7 @@
   <nav id="tabs" role="tablist">
     <button type="button" data-tab="sign" class="on">Sign</button>
     <button type="button" data-tab="chart">Chart</button>
+    <button type="button" data-tab="vedic">Vedic</button>
     <button type="button" data-tab="today">Today</button>
     <button type="button" data-tab="match">Match</button>
     <button type="button" data-tab="set">Settings</button>
@@ -28,6 +30,7 @@
   <main>
     <section class="pane on" id="pane-sign"></section>
     <section class="pane" id="pane-chart"></section>
+    <section class="pane" id="pane-vedic"></section>
     <section class="pane" id="pane-today"></section>
     <section class="pane" id="pane-match">
       <div class="row"><select id="mA" aria-label="First profile"></select><span>♥</span><select id="mB" aria-label="Second profile"></select></div>
@@ -36,18 +39,21 @@
     <section class="pane" id="pane-set">
       <h2>Theme</h2>
       <div class="seg" id="themeSeg"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div>
+      <h2>Ayanamsa (Vedic tab)</h2>
+      <div class="seg" id="ayaSeg"><button type="button" data-v="lahiri">Lahiri</button><button type="button" data-v="raman">Raman</button><button type="button" data-v="kp">KP</button></div>
       <h2>Profiles</h2>
       <ul id="profList"></ul>
       <button type="button" class="btn" id="addBtn2">＋ Add profile</button>
-      <p class="note">Readings are traditional meanings from Western astrology, shown for fun. They are not facts or predictions. Everything stays on this device.</p>
+      <p class="note">Readings are traditional meanings from Western and Vedic astrology, shown for fun. They are not facts or predictions. Everything stays on this device.</p>
       <p class="note small">Release <span id="rel"></span></p>
     </section>
   </main>
   <footer class="note">Traditional readings, for fun · not predictions</footer>
 </div>
 <div id="dlg" class="dlg" hidden><div class="box" role="dialog" aria-modal="true"><div id="dlgBody"></div><div class="acts" id="dlgActs"></div></div></div>
-<script src="cities.js?v=AS2"></script>
-<script src="astro_calc.js?v=AS2"></script>
-<script src="astrology.js?v=AS2"></script><!-- legacy: astrology.js?v=AS1 -->
+<script src="cities.js?v=AS3"></script><!-- legacy: ?v=AS2 -->
+<script src="astro_calc.js?v=AS3"></script><!-- legacy: ?v=AS2 -->
+<script src="vedic_calc.js?v=AS3"></script>
+<script src="astrology.js?v=AS3"></script><!-- legacy: astrology.js?v=AS2 -->
 </body>
 </html>
