@@ -13,3 +13,5 @@
   .mb-prov{flex:0 1 38%;max-width:none}.mb-model{flex:1 1 0;max-width:none}
   .mb-sel{height:44px;font-size:14px;padding:0 22px 0 10px}.hb.mb-find{height:44px;min-width:44px}
 }
+/* AG21: favourite star next to the Model dropdown */
+#barFav[aria-pressed="true"]{color:#e6a700}
