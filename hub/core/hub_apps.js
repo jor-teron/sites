@@ -85,7 +85,7 @@ Games,    Tennis Ball Blitz,     apps/games/tennis-throw/,                   ,  
 Games,    Sling Birds,           apps/games/sling-birds/,                    ,         0,       0,      151
 Games,    Pacman,                apps/games/pacman/,                         ,         0,       0,      152
 Games,    Desert Road,           apps/games/desert-road/,                    ,         0,       0,      160
-Games,    Contra (alpha),        apps/games/contra-alpha/,                   ,         0,       0,      170
+(before H135) Games,    Contra (alpha),        apps/games/contra-alpha/,                   ,         0,       0,      170   (H135: off the Games list; not in games-apps.csv)
 Games,    Space Invaders,        apps/games/space-invader/,                  ,         0,       0,      175
 Games,    AR Game,               apps/games/ar-game/,                        ,         0,       0,      180
 Games,    Browser FPS,           apps/games/browser-fps/,                    ,         0,       0,      190
@@ -93,6 +93,14 @@ Games,    Island (Alpha),        apps/games/island-alpha/,                   ,  
 Games,    Tower Defence,         apps/games/tower-defence/,                  ,         0,       0,      111
 Games,    Demolisher,            apps/games/demolisher/,                     ,         0,       0,      195
 Games,    AoE RTS,               apps/games/aoe-rts/,                        ,         0,       0,      196   (R45: was Lab apps/lab/aoe-rts/, moved by PR #56)
+Games,    Connect 4,             apps/games/connect-4/,                      ,         0,       0,      153   (H135: same row as games-apps.csv)
+Games,    Game of Life,          apps/games/game-of-life/,                   ,         0,       0,      154   (H135: same row as games-apps.csv)
+Games,    Go,                    apps/games/go/,                             ,         0,       0,      155   (H135: same row as games-apps.csv)
+Games,    Blockade,              apps/games/blockade/,                       ,         0,       0,      156   (H135: same row as games-apps.csv)
+Games,    Battleship,            apps/games/battleship/,                     ,         0,       0,      157   (H135: same row as games-apps.csv)
+Games,    Ludo,                  apps/games/ludo/,                           ,         0,       0,      158   (H135: same row as games-apps.csv)
+Games,    Orbito,                apps/games/orbito/,                         ,         0,       0,      176   (H135: same row as games-apps.csv)
+Games,    Star Pinball,          apps/games/pinball/,                        ,         0,       0,      177   (H135: same row as games-apps.csv)
 Media,    TV,                    tv/,                                        ,         0,       0,      210
 Media,    3D Viewer,             apps/media/3d-viewer/,                      ,         0,       0,      240
 Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
