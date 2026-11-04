@@ -5,6 +5,9 @@
   vs the browser's quota, "Keep my data", per-drive size on demand and clean-up (thumbnail cache,
   empty Local). Browsing stays in Files (apps/system/files/). Shared code: shared/fs/fs_drives.js,
   shared/google/* (gdrive_connect.js panel), shared/fs/thumbs_store.js, shared/dialog/.
+  H133: WebDAV drives (network drives) are added / edited / removed / tested here, with a status per drive
+  (shared/fs/webdav_accounts.js + webdav_fs.js; was Settings › Network drives). SFTP stays in Settings for now.
+  Deep links: #add-webdav (open the add form), #edit=webdav:<n> (edit that drive).
   Scripts: disk.js (all of it). Look: disk.css (same theme as Files / Settings).
 -->
 <html lang="en">
@@ -33,6 +36,9 @@
       <h2 id="h-drives">Drives</h2>
       <div id="drives" class="drives" role="list"></div>
       <button type="button" id="add" class="btn add">＋ Add folder</button>
+      <!-- H133: WebDAV drives are added, changed and removed here (was Settings › Network drives) -->
+      <button type="button" id="add-wd" class="btn add">＋ Add WebDAV drive</button>
+      <div id="wd-form" class="wd-form" hidden></div>
       <p id="add-note" class="muted small" hidden>Adding a folder needs Chrome or Edge on a computer.</p>
       <div id="gd-panel" class="gd-panel" hidden></div>
     </section>
@@ -53,6 +59,8 @@
   <script src="../../../shared/google/google_gis.js"></script>
   <script src="../../../shared/google/phonekey.js"></script>
   <script src="../../../shared/google/gdrive_connect.js"></script>
+  <script src="../../../shared/fs/webdav_fs.js"></script><!-- H133: WebDAV drives -->
+  <script src="../../../shared/fs/webdav_accounts.js"></script>
   <script src="../../../shared/fs/fs_drives.js"></script>
   <script src="../../../shared/fs/thumbs_store.js"></script>
   <script src="../../../shared/dialog/dialog.js"></script>
