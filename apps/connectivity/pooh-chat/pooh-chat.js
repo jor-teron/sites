@@ -3,7 +3,7 @@
   - Room code (FC5 order): #code= / ?hub= (5 digits only; 4-digit rejected) → the Hub's private mesh
     (parent.HubMeshLink.isPrivate()/privateCode()) → SharedLink.LOBBY (self/parent/top) → '00000'.
   - Transport (PoohCore.mode, checked once at boot, same-origin try/catch):
-    1) 'relay'  — parent.SharedChat.send exists (hub.html): release-4 relay unchanged ({sharedLink:'ready'},
+    1) 'relay'  — parent.SharedChat.send exists (desktop/desktop.html, was hub.html): release-4 relay unchanged ({sharedLink:'ready'},
        {sharedLink:'chat', text}, repaint from 'shared-chat-history'). The Hub (H84) carries it over HubMesh.
     2) 'parent' — parent.HubMesh.broadcast/onMsg exist but no relay (e.g. /phone.html): use the parent's HubMesh.
        Never start a second HubMesh (same device id would clash). The room is whatever the parent mesh is in.
@@ -39,7 +39,7 @@
   SharedChat.on(paint);
   PoohUI.name(myName());
 
-  /* ---------- 1) relay (inside hub.html) ---------- */
+  /* ---------- 1) relay (inside desktop/desktop.html, was hub.html) ---------- */
   function bootRelay() {
     window.addEventListener('message', function (e) {
       var d = e.data;

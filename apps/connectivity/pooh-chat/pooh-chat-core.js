@@ -64,7 +64,7 @@
     if (/offline|not connected|could not|fail|disconnected|^(error|gaveup|refused|duplicate|stopped)$/i.test(s)) return 'off';
     return 'wait';   // starting / joining / claiming / retry / retrying / takeover / Connecting…
   }
-  /* PC1 (H84): which transport? 'relay' = parent has SharedChat.send (hub.html, release-4 relay);
+  /* PC1 (H84): which transport? 'relay' = parent has SharedChat.send (desktop/desktop.html, was hub.html, release-4 relay);
      'parent' = parent has HubMesh.broadcast (e.g. /phone.html; never start a 2nd HubMesh, same device id);
      'old' = parent has a HubMesh from before H84 (no broadcast): do nothing (a 2nd HubMesh would clash);
      'own' = standalone, start our own HubMesh. */

@@ -12,7 +12,7 @@
  *     Host private (QR + Share / Copy of the Connect link), the connected devices list and a red Disconnect behind
  *     the launcher's in-app confirm dialog. No browser dialogs.
  *
- * Desktop-shell files are NOT loaded (hub.html, hub/controller/*, hub_remote.js, hub_panels.js, Game Bar: they move to
+ * Desktop-shell files are NOT loaded (desktop/desktop.html, hub/controller/*, hub_remote.js, hub_panels.js, Game Bar: they move to
  *   desktop/ later). Only hub/core/hub_core.js + shared/ scripts; the desktop host / join rules are re-implemented here.
  * Same keys and protocol as the desktop Hub (hub_role.js / hub_remote.js / hub-controller.js; none of them edited):
  *   - Join = SharedLink.join({ prefix:'jtsites-', code, meta:{ pad:1 } }) exactly like hub_remote.js; link_core saves
@@ -22,7 +22,7 @@
  *     borrow this page's link (link_core.js "borrowed link") instead of making their own peer. ?join=00000 = public.
  *   - Host private = SharedLink.host({ prefix:'jtsites-', code: SharedLinkDevices.code() }), the H92 rule (the link
  *     code IS the device's 5-digit number). No Gamepad pad alias (the phone is not a Gamepad host). Connect link =
- *     hub.html?join=CODE (hub-controller.js connectUrl). Hosting survives a reload through the phone-only key
+ *     desktop/desktop.html?join=CODE (hub-controller.js connectUrl; hub.html?join= before H129a/H129d). Hosting survives a reload through the phone-only key
  *     'sites-phone.host' = '1' (the desktop always hosts, so it has no such key). 'jtsites-hub-ctrl-code' is NOT
  *     written (H92: it only seeds the desktop's Gamepad pad code).
  *   - Disconnect: joined → SharedLink.stop() (bye + forget 'shared-link-join-code', as hub_remote.js); hosting →
@@ -35,7 +35,8 @@
  */
 (function () {
   'use strict';
-  var VERSION = 'PH14';
+  // var VERSION = 'PH14';   (PH14)
+  var VERSION = 'PH15';
   var L0 = window.PhoneLauncher;
   if (!L0) return;
   var $ = function (id) { return document.getElementById(id); };

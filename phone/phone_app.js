@@ -19,7 +19,12 @@
   // var RELEASE = 'PH11';   (PH11)
   // var RELEASE = 'PH12';   (PH12)
   // var RELEASE = 'PH13';   (PH13)
-  var RELEASE = 'PH14';   // PH14: Connect on the phone (phone_connect.js, hub/core/hub_core.js)
+  // var RELEASE = 'PH14';   (PH14: Connect on the phone)
+  var RELEASE = 'PH15';   // PH15: Phone mode (remember mode, Switch to Desktop, Choose mode)
+  // PH15: the root index.html (H129d) is the Desktop / Phone mode picker; opening this page means Phone mode.
+  var MODE_KEY = 'sites-hub.mode';
+  try { localStorage.setItem(MODE_KEY, 'phone'); } catch (_) {}
+  // PH14: Connect on the phone (phone_connect.js, hub/core/hub_core.js)
   var d = S.load();
   var root = document.documentElement;
 
@@ -390,7 +395,9 @@
       { id: 'settings', e: '⚙️', label: 'Settings' },
       { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' },   // H80
       { id: 'dnd', e: '🔕', label: 'Do Not Disturb', on: dndOn() },   // H82
-      { id: 'connect', e: '🔗', label: connectLabel(), on: !!(window.PhoneConnect && PhoneConnect.state() === 'private'), off: !window.PhoneConnect }   // PH14
+      { id: 'connect', e: '🔗', label: connectLabel(), on: !!(window.PhoneConnect && PhoneConnect.state() === 'private'), off: !window.PhoneConnect },   // PH14
+      { id: 'to-desktop', e: '🖥️', label: 'Switch to Desktop' },   // PH15
+      { id: 'choose-mode', e: '🔀', label: 'Choose mode…' }   // PH15
     ];
   }
   function connectLabel() { var C = window.PhoneConnect; if (!C) return 'Connect'; var st = C.state(); return st === 'private' ? 'Connected · ' + C.count() : st === 'public' ? 'Connect · 00000' : 'Connect'; }   // PH14
@@ -441,6 +448,14 @@
       HubDnd.set(!HubDnd.isOn()); renderPanel(); toast('Do Not Disturb ' + (HubDnd.isOn() ? 'on' : 'off'));
     } else if (id === 'connect' && window.PhoneConnect) {   // PH14: the Connect sheet replaces the panel
       PhoneConnect.open();
+    } else if (id === 'to-desktop') {   // PH15: in-app confirm, then the mode picker opens the desktop
+      ask('Switch this device to Desktop mode? The Hub will open as a desktop from now on.', [{ label: 'Cancel' }, { label: 'Switch', cls: 'primary' }]).then(function (i) {
+        if (i !== 1) return;
+        try { localStorage.setItem(MODE_KEY, 'desktop'); } catch (_) {}
+        location.href = 'index.html?os=desktop';
+      });
+    } else if (id === 'choose-mode') {   // PH15
+      location.href = 'index.html?choose';
     }
   }
   function toggleFullscreen() {

@@ -5,7 +5,7 @@
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
 Open `phone/` (or `/phone.html`; `phone/index.html` only redirects to it) on the Hub's site.
-H79: the page is `/phone.html` at the site root, next to `hub.html`; its own files stay in `phone/`.
+H79: the page is `/phone.html` at the site root, next to the root `index.html` mode picker (PH15: `hub.html` was removed in H129d; the desktop is `desktop/desktop.html`); its own files stay in `phone/`.
 
 ## Gestures
 
@@ -217,7 +217,7 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
   - join box (numeric, 5 digits) + **Join** (Enter works). 00000 = back to public; this phone's own number is refused;
   - **📷 Scan QR** (only when the camera API exists): `shared/link/link_scan.js` + `phone/vendor/jsQR.js` (only when
     `BarcodeDetector` is missing), both loaded on first use;
-  - **🔒 Host private**: hosts this phone's number, shows a QR (`shared/vendor/qrcode.js`, lazy) of `hub.html?join=CODE`
+  - **🔒 Host private**: hosts this phone's number, shows a QR (`shared/vendor/qrcode.js`, lazy) of `desktop/desktop.html?join=CODE` (PH14 first used `hub.html?join=`)
     with Share / Copy link (`JOIN_PAGE` in phone_connect.js, the one line to change when the desktop page moves);
   - ↻ Reconnect (joined, not connected), the **Devices** list and a red **Disconnect** behind the launcher's in-app
     confirm (Cancel / Disconnect). No browser dialogs.
@@ -229,8 +229,19 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
 - **Reconnect:** `visibilitychange` → visible and `online` re-join a dropped join (or re-host a dead host peer) with a
   fresh backoff; like `hub_remote.js` H25 a joined phone stops retrying after 5 min without the Hub
   (`SharedLink.pause()`, code kept) until the next wake / tap. `pagehide` = quiet `pause()`.
-- **Limits:** tested headless only (box Chrome blocks WebRTC; no real two-device link). A phone and `hub.html` open in
+- **Limits:** tested headless only (box Chrome blocks WebRTC; no real two-device link). A phone and `desktop/desktop.html` open in
   the same browser both host the same number → 'taken' (toast). `pad:1` (like hub_remote.js) means a desktop Hub may
   treat the phone as its Gamepad controller. `phone_connect.js` and `vendor/jsQR.js` are not in the service worker's
   SHELL list yet (cached at runtime after the first online load).
 - Release name `PH14` (`RELEASE`, `PhoneConnect.VERSION`).
+
+## PH15 — Phone mode (2026-11-04 IST)
+- **Remember mode:** opening `/phone.html` saves `localStorage['sites-hub.mode'] = 'phone'` (try/catch), so the root
+  `index.html` mode picker (H129d) opens the phone next time.
+- **Quick panel tiles:** 🖥️ **Switch to Desktop** → in-app confirm (Cancel / Switch); Switch saves
+  `sites-hub.mode = 'desktop'` and goes to `index.html?os=desktop` (→ `desktop/desktop.html`). 🔀 **Choose mode…** →
+  `index.html?choose` (shows the picker again).
+- **hub.html gone:** comments and docs now name `desktop/desktop.html` / `index.html`. The only functional use,
+  `JOIN_PAGE` in `phone_connect.js`, already pointed at `desktop/desktop.html` (PH14 update); `?join=CODE` still works.
+- `phone.html` stays at the site root (`MODE_TARGET.phone = 'phone.html'`).
+- Release name `PH15` (`RELEASE`, `PhoneConnect.VERSION`, `<title>`, `?v=PH15` on phone_app / phone_connect / phone_apps).

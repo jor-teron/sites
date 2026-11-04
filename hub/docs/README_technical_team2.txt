@@ -761,6 +761,12 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Tested headless (puppeteer-core, box Chrome, local static server): `/workspace/ph14-test/t.js` 54/54 — HubCore.ready (boot, link, mesh), globals, no duplicate or desktop-shell scripts, order, ?v=; dot position + grey / blue / green + count (faked mesh), real 00000 lobby turns it blue; tile, sheet open (replaces the panel) / Escape / shade / drag-down close, big number = device code, numeric box, 2 digits / own number refused, Join saves `shared-link-join-code` + __hubRemote and survives a reload, visible + online call join again, Disconnect in-app confirm (Cancel keeps, Disconnect forgets), host + QR + reload re-hosts + stop clears the flag, 00000, `?join=CODE`, light / dark sheet; no native dialogs; no page / console errors on phone.html and on hub.html (regression). Shots in `/workspace/ph14-shots`.
 - Caveats: no real two-device link (box Chrome blocks WebRTC). phone.html and hub.html on the same browser both host the same number ('taken' toast). `pad:1` lets a desktop Hub treat the phone as its controller (same as hub_remote.js). Follow-up for Hub Main: add `phone/phone_connect.js` (and optionally `phone/vendor/jsQR.js`) to the SW SHELL list in `hub/update/hub_sw.js` (not edited here); change `JOIN_PAGE` when hub.html moves to desktop/.
 
+### 1.46 Phone mode (remember mode, Switch to Desktop, Choose mode), release PH15
+- `phone.html` + `phone/` + comment-only edits in `apps/connectivity/` (intercom_dnd.js, telephone_dnd.js, pooh-chat). Branch `ph15-mode` from origin/main 059624e (H129d). index.html / hub/ code not edited.
+- `phone/phone_app.js`: on load `localStorage['sites-hub.mode'] = 'phone'` (try/catch) so the root index.html picker opens the phone next time. Quick panel tiles 🖥️ Switch to Desktop (launcher in-app `ask()` confirm Cancel / Switch → mode 'desktop' + `index.html?os=desktop`) and 🔀 Choose mode… (`index.html?choose`).
+- hub.html (removed in H129d) mentions replaced with `desktop/desktop.html` / `index.html` in comments and docs. Functional uses: none left; `JOIN_PAGE` in phone_connect.js already = `desktop/desktop.html` (?join= kept).
+- Release id: `RELEASE = 'PH15'`, `PhoneConnect.VERSION = 'PH15'`, `<title>Phone PH15</title>`, `?v=PH15` on phone_app.js / phone_connect.js / phone_apps.js (legacy comments keep PH14 / none). No build bumps. phone.html stays at the root (MODE_TARGET.phone).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
