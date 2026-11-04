@@ -797,6 +797,14 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Chat top row: ☆/★ #barFav next to #barModel (modelbar.js); setting chatFav_<provider> (same shape as the Image
   page's imageFav_<provider>); '⭐ Favourites' optgroup first, Recent skips starred models.
 
+### 1.50 Astrology app, release AS1
+
+- New apps/tools/astrology (Tools, section 'Fun', row added to apps/tools/tools-apps.csv). Offline, no libraries.
+- localStorage 'astrology-v1' {profiles[{id,name,dob}], current, theme auto/light/dark, tab}; Auto follows sites-hub.theme.
+- Tabs Sign / Today / Match / Settings. Tropical sun-sign table (symbol, element, quality, ruler, traditional meaning);
+  daily lucky number (sign numbers + date hash), colour, day from fixed tables; element-based match score.
+- In-app dialogs only (add/edit profile, delete confirm). Details: apps/tools/astrology/astrology_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
