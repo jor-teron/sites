@@ -788,6 +788,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   telephone, live-location; migrated once with settings.ph19.
 - Details: phone/README.md "PH19".
 
+### 1.49 Agent download names + chat model favourites, release AG21
+
+- apps/lab/agent only. Image page download name = '[model]_[prompt]' + real extension (imagepage.js base()):
+  model = part after ' · ' of the stored rec.model, / \ : -> '-'; / \ : * ? " < > | and control chars removed,
+  spaces collapsed, trailing dots/spaces trimmed, prompt capped at 80 (model 60); no prompt -> model only;
+  '-2', '-3' on clash in the gallery/session (AG17 logic kept).
+- Chat top row: ☆/★ #barFav next to #barModel (modelbar.js); setting chatFav_<provider> (same shape as the Image
+  page's imageFav_<provider>); '⭐ Favourites' optgroup first, Recent skips starred models.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

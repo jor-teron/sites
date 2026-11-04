@@ -15,6 +15,7 @@
   AG12: a tab per provider (app/models/presets.js), grouped model picker with search + Recent (app/gui/pickgroups.js).
   AG14: 🖼 Image page (app/gui/imagepage.js, gallery in IndexedDB via app/storage/imagestore.js); the composer Chat | Image toggle is gone.
   AG15: 🖼 is a link to image.html, the Image page's own page (provider tabs Pollinations / DeepInfra / Ollama).
+  AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
 -->
@@ -42,6 +43,7 @@
   <span class="mbar">   <!-- AG18: Provider + Model dropdowns (app/gui/modelbar.js); 🔍 opens the picker dialog -->
     <select id="barProv" class="mb-sel mb-prov" aria-label="Provider"></select>
     <select id="barModel" class="mb-sel mb-model" aria-label="Model"></select>
+    <button type="button" class="hb mb-find" id="barFav" title="Add to favourites" aria-label="Add to favourites" aria-pressed="false">☆</button>   <!-- AG21: favourite chat models -->
     <button type="button" class="hb mb-find" id="btnPick" title="Search models" aria-label="Search models" aria-haspopup="dialog">🔍</button>
   </span>
   <button type="button" class="chip mchip" id="modelChip" aria-haspopup="dialog" hidden>Loading…</button>

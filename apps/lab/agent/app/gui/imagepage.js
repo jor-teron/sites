@@ -14,7 +14,10 @@
    AG20: ☆/★ (#imgFav) stars the current model (`imageFav_<id>`); '⭐ Favourites' optgroup on top, then Recent (no repeats).
    Gallery tap -> HR.imgviewer (full screen, ← → / swipe, Esc).
    Model options show the API price (m.price). Recent group: last 5 models used per tab (`imageRecent_<id>`).
-   Download name = slugified prompt (+ '-2', '-3' for repeats in the gallery or this session) + real extension. */
+   Download name = slugified prompt (+ '-2', '-3' for repeats in the gallery or this session) + real extension.
+   AG21: download name = '[model]_[prompt]' + real extension (model = the one stored with the picture, provider label
+   dropped; / \\ : * ? " < > | and control chars removed, spaces collapsed, prompt capped at 80, no prompt -> model only;
+   '-2', '-3' on clash as before). */
 HR.imgpage = (function () {
   var $ = function (id) { return document.getElementById(id); }, ctrl = null, urls = [], cur = null, tick = null, prov = '';
   var ORDER = ['pollinations', 'gemini', 'deepinfra', 'openrouter', 'ollama'], PULL = 'ollama pull x/z-image-turbo';
@@ -149,12 +152,17 @@ HR.imgpage = (function () {
       });
     }).catch(function () { $('imgEmpty').hidden = false; });
   }
-  /* AG17: download name from the prompt */
+  /* AG17: download name from the prompt; AG21: '[model]_[prompt]' */
   var done = {}, gl = [];
   function slug(t) { var x = String(t || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, ''); return x || 'agent-image'; }
+  function clean(t, cap) { var x = String(t || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
+    if (cap && x.length > cap) x = x.slice(0, cap); return x.replace(/[. ]+$/, ''); }
+  function base(r) { var m = String(r.model || ''), k = m.lastIndexOf(' · '); if (k >= 0) m = m.slice(k + 3);
+    m = clean(m.replace(/[\/\\:]+/g, '-'), 60); var p = clean(r.prompt, 80);
+    return (m && p ? m + '_' + p : m || p) || 'agent-image'; }
   function ext(b) { var t = b && b.type || ''; return /png/.test(t) ? '.png' : /webp/.test(t) ? '.webp' : '.jpg'; }
   function fname(r) {
-    var s = slug(r.prompt), same = gl.filter(function (x) { return slug(x.prompt) === s; }).sort(function (a, b) { return a.time - b.time || a.id - b.id; });
+    var s = base(r), same = gl.filter(function (x) { return base(x) === s; }).sort(function (a, b) { return a.time - b.time || a.id - b.id; });
     var i = Math.max(0, same.findIndex(function (x) { return x.id === r.id; })), n = i ? s + '-' + (i + 1) : s, k = i + 1;
     while (done[n] && done[n] !== r.id) { k++; n = s + '-' + k; }
     return n + ext(r.blob);
