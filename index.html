@@ -90,6 +90,7 @@
     .card.guess .tag { display: block; }
     .hint { margin: 0; color: var(--muted); font-size: 12.5px; text-align: center; max-width: 460px; }
     @media (max-width: 520px) { .cards { flex-direction: column; } .card { width: min(300px, 86vw); } }
+    .about { margin: 0; font-size: 13px; } .about a { color: var(--muted); } .about a:hover { color: var(--accent); }   /* H129e */
     @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
   </style>
 </head>
@@ -111,6 +112,7 @@
         <!-- (before H129d) <small>One app at a time, full screen, with swipes. Best for phones and touch tablets.</small> -->
       </button>
     </div>
+    <p class="about"><a href="hub/index.html">About Hub</a></p><!-- H129e: the standalone Hub About page -->
     <!-- (before H129d) <p class="hint">Your choice is saved on this device. To choose again later: Settings › Desktop › Choose mode…, or open <code>index.html?choose</code>.</p> -->
   </main>
   <noscript><p style="text-align:center"><a href="desktop/desktop.html">Desktop</a> · <a href="phone.html">Phone | Touch</a></p></noscript>

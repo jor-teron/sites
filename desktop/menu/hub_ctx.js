@@ -20,7 +20,7 @@
 (function () {
   'use strict';
   if (!window.CtxMenu || !window.CtxInApp) return;
-  const V = '20261104k';
+  const V = '20261104l';
   const reg = [];
   const isDesk = () => !!(window.HubMode && window.HubMode.isDesktop());
 
@@ -86,7 +86,8 @@
     extra: () => [
       { sep: true },
       { label: 'Refresh Hub', icon: '\u21BB', action: () => location.reload() },
-      { label: 'About', icon: '\u2139', action: () => openApp(SETTINGS, { hash: 'about' }) }
+      { label: 'About', icon: '\u2139', action: () => openApp(SETTINGS, { hash: 'about' }) },
+      { label: 'About Hub', icon: '\uD83D\uDCD6', action: () => window.open(new URL('hub/index.html', document.baseURI).href, '_blank', 'noopener') }   // H129e
     ]
   });
 
