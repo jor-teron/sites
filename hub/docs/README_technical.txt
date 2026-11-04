@@ -191,3 +191,102 @@ SharedLinkUI, HubMesh and HubMeshLink. Limits for the phone: the core does not h
 number peer (that is hub-controller.js, desktop shell); on a bare page the core joins the public 00000
 mesh and keeps its number for Hub Line. Step 2 (desktop shell) / step 3 (phone shell) come later.
 In the SW shell list (hub/update/hub_sw.js) since H127.
+
+================================================================================
+Week wrap-up, 3-4 Nov 2026 (Team 2)
+================================================================================
+Written 2026-11-04 IST with H135 (build 20261104r / hub-shell-v150). Added at the end; nothing above was changed.
+
+Hub (Hub Main Builder 2), merged:
+  - H121 #390
+  - H123 #391
+  - H124 #393
+  - H125 #394
+  - H122 #395
+  - H127 #396
+  - H129a #397
+  - H129b #399
+  - H129c #400
+  - H129d #401
+  - H129d tidy #402
+  - H129e #404
+  - H132a+b #407
+  - H132c #408
+  - H126 #409
+  - H133 #410
+  - H135 (this PR)
+  - Earlier on 3 Nov: H65 #386, H104 #388
+
+Apps (Hub Apps Builder 2), merged:
+  - HPS5.4+HPS6 #373
+  - MD3 #374
+  - SS1 #376
+  - LL2 #379
+  - SL3 #384
+  - SL4 #389
+  - PH14 #398
+  - PH15 #403
+  - PH16 #405
+  - PH19 #406
+  - AG21 #411
+  - AS1 #412
+  - AS2 #413
+  - AS3 #414
+
+Games (Hub Games Builder 2), merged:
+  - G-FIX1 #371
+  - GO-1+BLKD-1 #372
+  - SHIP-1 #375
+  - LUDO-1a #377
+  - LUDO-1b #378
+  - LUDO-1c #380
+  - ORB-1 #383
+  - PIN-1a #385
+  - PIN-1b #387
+  - PIN-1c #392
+  - Team 1 also shipped: LRN-WK1, NIX-G1-G3, C4-1, LIFE-1
+
+Open PRs:
+  - none
+
+Parked / Team 3:
+  - Hub:
+    - H108 Files phone layout (Team 3)
+    - H134a/b API Keys app + HubAPI (Team 3)
+    - H128 Viewer formats
+    - WebDAV over Funnel / tunnel
+    - standalone / default apps idea
+  - Apps:
+    - PH17 Native Bridge (APK half: Team 1)
+    - PH18
+    - VNC2 / VNC3
+    - AG22
+    - PH2, PH3
+    - NU1
+    - BS3b
+    - Second Screen Keyboard
+  - Games:
+    - 7 more games to reach 50
+    - LandCraft
+    - AoE balance / Ages / fog
+    - shared-settings batch
+    - Learn theme
+    - LRN3a
+    - 26 MB GLB in the git history
+    - Hero Builder
+    - renames (Battleship -> Sea Battle, Orbito name)
+
+Next week (waiting for Jor):
+  - Hub:
+    - H130 core move
+    - H131 forwarder clean-up
+    - H119a/b/c SFTP relay (+ SFTP into Disk)
+    - Dezgo key row
+  - Apps:
+    - small fixes
+    - IV1 / IV2
+    - LL3
+    - phone.html -> phone/index.html
+  - Games:
+    - next new game
+  - Test private-code phone join on a real device
