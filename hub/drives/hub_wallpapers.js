@@ -15,6 +15,7 @@
  * H104: a theme can bring its own default wallpaper, used while sites-hub.wallpaper is empty:
  * window.HUB_THEME_WALLPAPER = { xp: 'pic:hub_hills.jpg' }; window.hubWallpaperDefault() → that id when the
  * XP theme is on (sites-hub.xp '1', not Dark / Auto; or a theme of 'xp'), else 'night'.
+ * H132b: XP in Dark / Auto too (sites-hub.xp '1' or a theme of 'xp'); hub_prefs.js dims Green hills in Dark.
  */
 window.HUB_WALLPAPERS = [
   { id: 'night', name: 'Night', slide: true,
@@ -105,6 +106,7 @@ window.HUB_THEME_WALLPAPER = { xp: 'pic:hub_hills.jpg' };
 window.hubWallpaperDefault = function () {
   const rd = (k) => { try { return localStorage.getItem('sites-hub.' + k) || ''; } catch (_) { return ''; } };
   const t = rd('theme');
-  const xp = rd('themeAuto') !== '1' && (t === 'xp' || (rd('xp') === '1' && t !== 'dark'));
+  // const xp = rd('themeAuto') !== '1' && (t === 'xp' || (rd('xp') === '1' && t !== 'dark'));   (before H132b)
+  const xp = t === 'xp' || rd('xp') === '1';   // H132b: XP in Light, Dark and Auto (hub_prefs.js dims it in Dark)
   return xp ? window.HUB_THEME_WALLPAPER.xp : 'night';
 };

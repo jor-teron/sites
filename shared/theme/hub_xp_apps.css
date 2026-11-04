@@ -5,6 +5,7 @@
  * side column, off-white (#ECE9D8) pop-ups with thin blue borders, the XP selection blue and Tahoma, then
  * Segoe UI, then system fonts. Apps keep their own layout; this only swaps the colour variables
  * (--bg / --side / --card / --line / --text / --uid-* / --ctx-* ...) that every system app already uses.
+ * H132b: a dark XP set at the end (html.hub-xp without html.light) for Mode Dark / Auto at night.
  */
 html.light.hub-xp {
   --xp-font: Tahoma, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
@@ -34,3 +35,29 @@ html.light.hub-xp .uid-btn { border: 1px solid #003c74; border-radius: 3px; back
 
 /* menus / dialogs set their own font (system-ui); use the XP font there too */
 html.light.hub-xp .ctx, html.light.hub-xp .ctx-item, html.light.hub-xp .uid, html.light.hub-xp .uid button, html.light.hub-xp .uid input, html.light.hub-xp .gb-tabmenu { font-family: var(--xp-font); }
+
+/* H132b: XP in Dark (html.hub-xp without html.light; hub_theme.js adds hub-xp in Dark / Auto at night too).
+ * Dark blue-grey content, a deeper XP task-pane side column, dark pop-ups with the XP blue borders, light text. */
+html.hub-xp:not(.light) {
+  --xp-font: Tahoma, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --bg: #1b2130; --side: #1d2a44; --card: #232a3a; --card2: #2a3243; --sheet: #262d3d;
+  --chip: #2e3649; --bar: #262d3d; --tb: #2a3243; --tb-hi: #343d52; --tb-line: #4a5569;
+  --line: #3b4558; --text: #e8ecf4; --muted: #a7b1c5; --desc: #c3cad8;
+  --soft: rgba(80, 140, 230, 0.12); --soft2: rgba(80, 140, 230, 0.22); --grid: rgba(255, 255, 255, 0.08);
+  --hi: rgba(80, 140, 230, 0.28);
+  --uid-bg: #262d3d; --uid-line: #4a5569; --uid-text: #e8ecf4; --uid-muted: #a7b1c5; --uid-bad: #ff7b7b;
+  --ctx-bg: #2e3649; --ctx-line: #4a5569; --ctx-text: #e8ecf4; --ctx-muted: #8f99ad; --ctx-bad: #ff7b7b;
+  color-scheme: dark;
+}
+html.hub-xp:not(.light) body { font-family: var(--xp-font); }
+html.hub-xp:not(.light) button, html.hub-xp:not(.light) input, html.hub-xp:not(.light) select, html.hub-xp:not(.light) textarea { font-family: inherit; }
+html.hub-xp:not(.light) .side { background: linear-gradient(180deg, #24467f 0%, #1c3266 100%); border-right-color: #0b2a6e; color: #fff; }
+html.hub-xp:not(.light) .side { --text: #ffffff; --muted: #c4d2ee; --line: rgba(255, 255, 255, 0.16); --hi: rgba(255, 255, 255, 0.18); }
+html.hub-xp:not(.light) .side .nav-item.on { box-shadow: inset 3px 0 0 #9cc0ff; }
+html.hub-xp:not(.light) .ctx { border: 1px solid #2f62c0; border-radius: 2px; padding: 2px; box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.6); }
+html.hub-xp:not(.light) .ctx-item { border-radius: 0; }
+html.hub-xp:not(.light) .ctx-item:hover, html.hub-xp:not(.light) .ctx-item:focus-visible, html.hub-xp:not(.light) .ctx-item:focus { background: #2f62c0; color: #fff; }
+html.hub-xp:not(.light) .uid { border: 1px solid #061f5c; border-top: 4px solid #0b3a96; border-radius: 8px 8px 0 0; }
+html.hub-xp:not(.light) .uid-in { background: #1b2130; color: #e8ecf4; border: 1px solid #4f6a96; border-radius: 0; }
+html.hub-xp:not(.light) .uid-btn { border: 1px solid #0b2a6e; border-radius: 3px; background: linear-gradient(180deg, #3b4459 0%, #323a4e 70%, #2a3142 100%); color: #e8ecf4; }
+html.hub-xp:not(.light) .ctx, html.hub-xp:not(.light) .ctx-item, html.hub-xp:not(.light) .uid, html.hub-xp:not(.light) .uid button, html.hub-xp:not(.light) .uid input, html.hub-xp:not(.light) .gb-tabmenu { font-family: var(--xp-font); }
