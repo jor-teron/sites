@@ -13,6 +13,7 @@
   (text view), files_thumbs.js (previews; cache shared/fs/thumbs_store.js), files_menu.js (menu + keys), files.js (start-up), files.css.
   Open with: shared/fs/filetypes.js (which app) + shared/fs/fs_ref.js (hand the file to the
   Viewer, apps/system/viewer/, in its own window); text → Notely.
+  H126: files_tabs.js (browser-style tabs above the path bar; saved in localStorage sites-hub.filesTabs).
   Deep link: index.html#drive=local&path=Docs/Sub (the Hub uses it; a window session keeps it).
 -->
 <html lang="en">
@@ -39,6 +40,8 @@
       </div>
     </aside>
     <main class="main">
+      <!-- H126: tabs (files_tabs.js): one tab per open folder, + = new tab -->
+      <div id="tabs" class="tabs"></div>
       <!-- H106: Explorer-style toolbar. Row 1: Back / Forward / Up, path (breadcrumbs), search.
            Row 2: commands (New folder, Upload, Sort, View, Refresh, More). Icons: inline SVG (currentColor). -->
       <div class="bar nav-bar">
@@ -103,6 +106,7 @@
   <script src="files_viewer.js"></script>
   <script src="files_thumbs.js"></script>
   <script src="files_menu.js"></script>
+  <script src="files_tabs.js"></script><!-- H126: tabs -->
   <script src="files.js"></script>
 </body>
 </html>

@@ -16,7 +16,8 @@
  * H119: SFTP servers (kind 'sftp', shared/fs/sftp_fs.js through hub/relay/sftp_relay.py) join the same group, 🔐 + name + ⚙,
  *   after the WebDAV drives; the same first-open check, with relay-specific messages (token, relay down, allowlist).
  * H109: quick links (Documents, Photos, ... on Local; made on first click) and the storage meter.
- * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash(), meter().
+ * H126: tabs (files_tabs.js): each tab has its own Back / Forward history (getHist / setHist); setHash() tells FX.tabs.
+ * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash(), meter(), getHist(), setHist(h), setHash(), gdPanel(on).
  */
 (function () {
   'use strict';
@@ -222,6 +223,7 @@
     const p = st.stack.slice(1).map((s) => s.name).join('/');
     const h = st.driveId ? '#drive=' + encodeURIComponent(st.driveId) + (p ? '&path=' + encodeURIComponent(p) : '') : '';
     if (location.hash !== h) { history.replaceState(null, '', location.pathname + location.search + h); FX.hubSave(); }
+    if (FX.tabs) FX.tabs.sync();   // H126: the open tab follows this folder (title, saved tabs)
   }
   function fromHash() {
     const q = new URLSearchParams(location.hash.slice(1));
@@ -323,7 +325,10 @@
 
   /* H106: navigation history (Back / Forward). Each place = { id, stack } (a copy of the folder path
      with its handles); go() records the place it leaves. Storage logic is unchanged. */
-  const hist = { back: [], fwd: [], here: null, busy: false };
+  // (before H126) const hist = { back: [], fwd: [], here: null, busy: false };
+  let hist = { back: [], fwd: [], here: null, busy: false };   // H126: each tab has its own (getHist / setHist)
+  const getHist = () => hist;
+  function setHist(h) { hist = h || { back: [], fwd: [], here: null, busy: false }; }
   const keyOf = (p) => p ? p.id + '/' + p.stack.map((s) => s.name).join('/') : '';
   function track() {
     const now = st.driveId && st.stack.length ? { id: st.driveId, stack: st.stack.slice() } : null;
@@ -370,5 +375,6 @@
       if (ok === !st.stack.length) openDrive('gdrive', false);
     }
   });
-  FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs, back, forward, meter };   // H106: + back, forward; H109: + meter
+  // (before H126) FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs, back, forward, meter };   // H106: + back, forward; H109: + meter
+  FX.drives = { draw, open: openDrive, go, up, into, fromHash, crumbs, back, forward, meter, getHist, setHist, setHash, gdPanel };   // H126: + getHist, setHist, setHash, gdPanel (tabs)
 })();

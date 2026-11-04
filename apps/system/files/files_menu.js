@@ -4,6 +4,7 @@
  *   Enter open · Delete delete · F2 rename · Ctrl/Cmd+C copy · +X cut · +V paste · +A select all
  *   Backspace or Alt+↑ up a folder · Alt+← back · Alt+→ forward (H106) · Esc clear selection · arrows move between items
  * The folder (blank space) menu has Terminal (H121): the Terminal app opened at this folder.
+ * H126: "Open in new tab" in both menus (a folder / this folder); tab keys live in files_tabs.js.
  * API FX.menu: forItems(x, y), forFolder(x, y).
  */
 (function () {
@@ -19,6 +20,7 @@
     const file = one && one.kind === 'file';
     CtxMenu.open(x, y, [
       { label: one && one.kind === 'directory' ? 'Open folder' : 'Open', icon: '\u2197', hint: 'Enter', disabled: !one, action: () => A().open(one) },
+      ...(one && one.kind === 'directory' ? [{ label: 'Open in new tab', icon: '\u29C9', action: () => FX.tabs.openFolder(one) }] : []),   // H126
       file ? { label: 'Open with', icon: '\u2726', sub: A().withItems(one) } : { label: 'Open with', icon: '\u2726', disabled: true },
       { sep: true },
       { label: 'Cut', icon: '\u2702', hint: MOD + 'X', action: () => A().clip('cut') },
@@ -39,6 +41,7 @@
     CtxMenu.open(x, y, [
       { label: 'New folder', icon: '\uFF0B', action: () => A().newFolder() },
       { label: 'Upload files\u2026', icon: '\u21EA', action: () => $('file-in').click() },
+      { label: 'Open in new tab', icon: '\u29C9', hint: MOD + 'T', action: () => FX.tabs.add({ driveId: st.driveId, driveName: st.driveName, stack: st.stack.slice(), path: st.stack.slice(1).map((s) => s.name).join('/'), view: st.view }) },   // H126: this folder in a new tab
       { label: 'Paste', icon: '\uD83D\uDCCB', hint: MOD + 'V', disabled: !st.clip, action: () => A().paste() },
       { label: 'Terminal', icon: '>_', disabled: !A().terminalOk(), action: () => A().terminal() },   // H121: Terminal at this folder (not on network drives)
       { sep: true },
