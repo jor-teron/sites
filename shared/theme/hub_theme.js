@@ -18,6 +18,7 @@
  * H104: system apps also get XP: when the Hub has XP on (sites-hub.xp '1', theme not 'dark', themeAuto not
  *   '1', or theme 'xp') → html.hub-xp on top of html.light, and shared/theme/hub_xp_apps.css is added once.
  *   XP wins over a stale Glass pick (no html.hub-glass with XP). Other app categories still see Light.
+ * H132b: XP also in Dark / Auto: html.hub-xp without html.light gets the dark XP colours (hub_xp_apps.css).
  * API: HubTheme.apply(), .hub(), .effective(), .own() / .setOwn(pref) (own-key apps only), .onChange(fn).
  */
 (function () {
@@ -53,10 +54,12 @@
   const xpCss = me && me.src ? me.src.replace(/hub_theme\.js(\?.*)?$/, 'hub_xp_apps.css') : '';
   function xpOn() {
     const t = read(P + 'theme');
-    return read(P + 'themeAuto') !== '1' && (t === 'xp' || (read(P + 'xp') === '1' && t !== 'dark'));
+    // return read(P + 'themeAuto') !== '1' && (t === 'xp' || (read(P + 'xp') === '1' && t !== 'dark'));   (before H132b)
+    return t === 'xp' || read(P + 'xp') === '1';   // H132b: XP in Light, Dark and Auto
   }
   function applyXp(eff) {
-    const x = GLASS_OK && own() === 'system' && eff === 'light' && xpOn();
+    // const x = GLASS_OK && own() === 'system' && eff === 'light' && xpOn();   (before H132b)
+    const x = GLASS_OK && own() === 'system' && xpOn();   // H132b: also in Dark (html.hub-xp without .light, hub_xp_apps.css)
     root.classList.toggle('hub-xp', x);
     if (x && xpCss && !document.getElementById('hub-xp-apps-css')) {
       const l = document.createElement('link');

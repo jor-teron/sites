@@ -2,7 +2,7 @@
  * H104 XP theme (hub/core/hub_xp.css), a Windows XP "Luna blue" look for the Hub chrome.
  * Settings › Look › XP: hub_prefs.js sets html.hub-xp on top of html.hub-light (keys: sites-hub.xp '1' +
  * sites-hub.theme 'light', like Glass; apps that read sites-hub.theme still see Light). Auto and Dark never
- * show XP; XP wins over a stale glass '1' (hub_prefs.js never sets hub-glass with hub-xp).
+ * show XP (before H132b; H132b: XP also in Dark / Auto, dark colours at the end of this file); XP wins over a stale glass '1' (hub_prefs.js never sets hub-glass with hub-xp).
  * XP surfaces: window frames + Luna title bars (rounded top, white bold title with a soft shadow),
  *   blue min / max / gear buttons and a red close button, the Desktop taskbar (blue gradient, green Start
  *   button on the left, tray + clock on a lighter blue band), the Start menu (blue header band + orange line,
@@ -239,3 +239,79 @@ html.hub-xp .hn-text, html.hub-xp .hn-meta, html.hub-xp .hn-close { color: #3c3c
 
 /* menus / dialogs set their own font (system-ui); use the XP font there too */
 html.hub-xp .ctx, html.hub-xp .ctx-item, html.hub-xp .uid, html.hub-xp .uid button, html.hub-xp .uid input, html.hub-xp .gb-tabmenu { font-family: var(--xp-font); }
+
+/* =====================================================================================================
+ * H132b: XP in Dark (Settings › Look › Mode Dark, or Auto at night): html.hub-xp without html.hub-light.
+ * A dark take on Luna: the same shapes, with deeper blue title bars / taskbar / Start, dark blue-grey
+ * window faces, menus and dialogs, and light text. Light XP above is unchanged.
+ * ===================================================================================================== */
+html.hub-xp:not(.hub-light) {
+  --xp-face: #262d3d;                       /* dialog / menu face */
+  --xp-face-hi: #2e3649;
+  --xp-edge: #061f5c;
+  --xp-frame: #0b3a96;
+  --xp-frame-off: #34446b;
+  --xp-sel: #2f62c0;
+  --xp-line: #4a5569;
+  --xp-text: #e8ecf4;
+  --xp-muted: #a7b1c5;
+  --xp-bar: linear-gradient(180deg, #0b3a96 0%, #2a6fd0 4%, #2065c8 6%, #1559c0 8%, #0c4fb6 10%, #0a47aa 14%,
+    #093f9e 20%, #093d9b 24%, #0a3fa2 56%, #0b45ac 66%, #0e50b8 76%, #0b47a8 86%, #093b92 92%, #072f78 94%, #052462 100%);
+  --xp-bar-off: linear-gradient(180deg, #4d5d86 0%, #46567e 6%, #3f4e75 14%, #3a486d 30%, #364469 60%, #3b4a70 82%, #3f4e75 92%, #364469 100%);
+  --xp-task: linear-gradient(180deg, #0c1640 0%, #1a3a7c 3%, #1e4a94 6%, #22519a 10%, #1e4a94 12%, #19418a 15%, #173b84 18%,
+    #15377f 20%, #15357d 23%, #14347d 38%, #163882 54%, #173b86 86%, #163983 89%, #15357d 92%, #122e70 95%, #0f275f 98%);
+  --xp-tray: linear-gradient(180deg, #08386f 1%, #0d5f92 6%, #106d9e 10%, #0d5e91 14%, #0c578c 19%, #0a558c 63%,
+    #0b5f94 81%, #0b5e91 88%, #0c5c8e 91%, #0d5888 94%, #0d4c82 97%, #073a7a 100%);
+  --xp-start: linear-gradient(180deg, #2a6b2a 0%, #3f8f3f 6%, #347f34 14%, #2a722a 40%, #246824 70%, #216021 88%, #164d16 100%);
+  --xp-btn: linear-gradient(180deg, #3d6fc9 0%, #2a5cbf 20%, #1d4cb0 55%, #1844a6 80%, #2153b8 100%);
+  --xp-close: linear-gradient(180deg, #c27a60 0%, #b9512f 22%, #ac3a16 55%, #9f3313 80%, #ad4721 100%);
+  --ctx-bg: var(--xp-face-hi); --ctx-text: var(--xp-text); --ctx-muted: var(--xp-muted); --ctx-line: var(--xp-line); --ctx-bad: #ff7b7b;
+  color-scheme: dark;
+}
+/* windows */
+html.hub-xp:not(.hub-light) .wm-win { box-shadow: 2px 4px 16px rgba(0, 0, 0, 0.6); }
+html.hub-xp:not(.hub-light) .wm-win:not(.wm-active) { border-color: #2a3756; }
+html.hub-xp:not(.hub-light) .wm-bar { color: #b9c4dc; text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.6); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18); }
+html.hub-xp:not(.hub-light) .wm-win.wm-active .wm-bar { color: #fff; text-shadow: 1px 1px 1px #020a3a; }
+html.hub-xp:not(.hub-light) .wm-body iframe { background: #1b2130; }
+html.hub-xp:not(.hub-light) .wm-btn { border-color: #c9d4ec; }
+/* taskbar */
+html.hub-xp:not(.hub-light) body.wm-desktop #wm-taskbar { border-top-color: #050f33; }
+html.hub-xp:not(.hub-light).hub-task-top body.wm-desktop #wm-taskbar { border-bottom-color: #050f33; }
+html.hub-xp:not(.hub-light) .wm-task { background: linear-gradient(180deg, #2f62b8 0%, #2756a9 12%, #2553a5 80%, #1d4791 100%); }
+html.hub-xp:not(.hub-light) .wm-task:hover { background: linear-gradient(180deg, #3a70c8 0%, #3164b8 50%, #2a58a6 100%); }
+html.hub-xp:not(.hub-light) .wm-task.active { background: linear-gradient(180deg, #0f2c6e 0%, #123276 50%, #11306f 100%); }
+html.hub-xp:not(.hub-light) .wm-tray { border-left-color: #062a63; box-shadow: inset 1px 0 1px #1a7fc0; }
+/* Phone mode top bar */
+html.hub-xp:not(.hub-light) body:not(.wm-desktop) #header { border-bottom-color: #050f33; }
+/* Start menu */
+html.hub-xp:not(.hub-light) .menu { --text: var(--xp-text); --muted: var(--xp-muted); background: var(--xp-face); border-color: #0b2a6e; box-shadow: 3px 4px 16px rgba(0, 0, 0, 0.6); }
+html.hub-xp:not(.hub-light) .menu::before {
+  background: linear-gradient(180deg, #0c3d8c 0%, #0a3986 12%, #0a3986 20%, #0c3c8a 32%, #0e3f8c 33%, #11448f 47%,
+    #134896 54%, #164c99 60%, #184e99 65%, #175299 77%, #19549c 79%, #1a5399 90%, #215c9f 98%);
+}
+html.hub-xp:not(.hub-light) .menu .menu-cat, html.hub-xp:not(.hub-light) .menu button.app { color: var(--xp-text); }
+html.hub-xp:not(.hub-light) .menu .menu-cat:hover, html.hub-xp:not(.hub-light) .menu button.app:hover,
+html.hub-xp:not(.hub-light) .menu .menu-cat.fly-on, html.hub-xp:not(.hub-light) .menu .menu-cat[aria-expanded="true"] { background: var(--xp-sel); color: #fff; }
+html.hub-xp:not(.hub-light) .menu input { background: #1b2130; color: var(--xp-text); border-color: #4f6a96; }
+html.hub-xp:not(.hub-light) .menu-fly { --text: #dce7fb; --muted: #9fb3d8; background: #1d2a44; border-color: #34507f; }
+html.hub-xp:not(.hub-light) .menu-fly .fly-head, html.hub-xp:not(.hub-light) .menu-fly .fly-app { color: #dce7fb; }
+html.hub-xp:not(.hub-light) .menu-fly .fly-sec { border-top-color: #34507f; }
+/* right-click menus + tab menu */
+html.hub-xp:not(.hub-light) .ctx { color: var(--xp-text); box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.6); }
+html.hub-xp:not(.hub-light) .ctx-item:disabled { color: #7b8497; }
+html.hub-xp:not(.hub-light) .gb-tabmenu { color: var(--xp-text); }
+/* dialogs */
+html.hub-xp:not(.hub-light) .uid { --uid-text: var(--xp-text); --uid-muted: var(--xp-muted); --uid-bad: #ff7b7b; box-shadow: 3px 5px 18px rgba(0, 0, 0, 0.6); }
+html.hub-xp:not(.hub-light) .uid-in { background: #1b2130; color: var(--xp-text); border-color: #4f6a96; }
+html.hub-xp:not(.hub-light) .uid-btn { border-color: #0b2a6e; background: linear-gradient(180deg, #3b4459 0%, #323a4e 70%, #2a3142 100%); color: var(--xp-text); }
+html.hub-xp:not(.hub-light) .uid-btn.primary { color: var(--xp-text); box-shadow: inset 0 0 0 2px #3f6fc4; }
+html.hub-xp:not(.hub-light) .uid-btn.danger { color: #ff8b8b; }
+/* side panels, camera pop-up */
+html.hub-xp:not(.hub-light) .hub-side-panel, html.hub-xp:not(.hub-light) #ctrl-popover, html.hub-xp:not(.hub-light) .hp-cam {
+  --hp-head: #1d2a44; --hp-card: #2e3649; --hp-field: #1b2130;
+  --hp-text: var(--xp-text); --hp-muted: var(--xp-muted); --text: var(--xp-text); --muted: var(--xp-muted);
+}
+/* received-file balloons: a dim balloon instead of XP yellow */
+html.hub-xp:not(.hub-light) #hub-notify .hn-card, html.hub-xp:not(.hub-light) .hn-more { background: #3a3726; color: #f3eccb; border-color: #6b6440; }
+html.hub-xp:not(.hub-light) .hn-text, html.hub-xp:not(.hub-light) .hn-meta, html.hub-xp:not(.hub-light) .hn-close { color: #d8d0ac; }

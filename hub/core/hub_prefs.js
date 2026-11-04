@@ -26,6 +26,11 @@
  *                        is read as XP too) → html.hub-xp (+ html.hub-light; CSS in hub/core/hub_xp.css). Ignored when
  *                        theme is 'dark' or Auto is on; XP wins over a stale glass '1'. While the wallpaper key is empty,
  *                        XP shows its own default (Green hills, window.hubWallpaperDefault() in hub_wallpapers.js).
+ *   H132a: Settings › Look shows these as two settings: Mode = theme 'light' | 'dark' + themeAuto (Light / Dark /
+ *                        Auto) and Theme = Hub (no key) | xp '1' | glass '1'. Only Hub has Light and Dark so far; Glass
+ *                        and XP stay Light only (H132b / H132c). H132b: XP has Light and Dark now (only Glass is Light only);
+ *                        migrateLook keeps xp '1' under Dark / Auto; XP's default Green hills is dimmed in Dark. apply() tidies old values (migrateLook): theme 'glass' /
+ *                        'xp' → that key '1' + theme 'light'; glass / xp '1' under Dark or Auto → cleared.
  *   sites-hub.homeBtn    '' = Home button goes to the Home screen (default) | 'apphub' = opens App Hub
  *                        (AH1-F1; hub.js __hubHome reads it per click)        → #home-btn title
  *   sites-hub.showFiles  '0' = no Files icons on the Desktop home (H7; default on) → html.hub-files-off, HubDrives.sync()
@@ -82,6 +87,15 @@
   ];
   const barOn = (key) => { const b = BAR.find((x) => x.key === key); if (!b) return true; const v = get(key); return b.def ? v !== '0' : v === '1'; };
 
+  /* H132a: old one-list theme values → Mode + Theme (writes only when something is off; same look as before) */
+  const put = (k, v) => { try { if (v) localStorage.setItem(P + k, v); else localStorage.removeItem(P + k); } catch (_) { /* blocked */ } };
+  function migrateLook() {
+    const t = get('theme');
+    if (t === 'glass' || t === 'xp') { put(t, '1'); put(t === 'xp' ? 'glass' : 'xp', ''); put('theme', 'light'); }
+    // if (get('themeAuto') === '1' || get('theme') === 'dark') { if (get('glass')) put('glass', ''); if (get('xp')) put('xp', ''); }   (before H132b)
+    if (get('themeAuto') === '1' || get('theme') === 'dark') { if (get('glass')) put('glass', ''); }   // H132b: XP keeps Dark / Auto; Glass is still Light only
+  }
+
   let lastBar = '', lastMine = '';
   function apply() {
     // H52: Hub bar switches (classes only; wm.css hides the items inside #wm-taskbar, so Phone mode is untouched)
@@ -101,13 +115,18 @@
     // theme + motion
     // H64: Auto theme first: keeps sites-hub.theme = the effective light / dark (writes only on a change)
     if (window.HubAutoTheme) window.HubAutoTheme.sync();
+    // H132a: Mode (theme light / dark + themeAuto) and Theme (Hub / glass '1' / xp '1') are two settings now.
+    // Tidy old one-list values once so Settings shows them right: a theme of 'glass' / 'xp' = that look + Light;
+    // a stale glass / xp '1' under Dark or Auto (it was ignored already) is cleared, so it reads Hub + Dark / Auto.
+    migrateLook();
     // root.classList.toggle('hub-light', get('theme') === 'light');   // legacy: unset = Dark
     root.classList.toggle('hub-light', get('theme') !== 'dark');   // H60a: unset = Light
     // H61: Glass = a light theme with frosted bars / menus / pop-ups (hub_glass.css)
     // const glass = get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark');   (before H64)
     const glass = get('themeAuto') !== '1' && (get('theme') === 'glass' || (get('glass') === '1' && get('theme') !== 'dark'));   // H64: Auto is never Glass
     // H104: XP = a light, opaque theme (hub_xp.css). Glass and XP do not mix: XP wins.
-    const xp = get('themeAuto') !== '1' && (get('theme') === 'xp' || (get('xp') === '1' && get('theme') !== 'dark'));
+    // const xp = get('themeAuto') !== '1' && (get('theme') === 'xp' || (get('xp') === '1' && get('theme') !== 'dark'));   (before H132b)
+    const xp = get('theme') === 'xp' || get('xp') === '1';   // H132b: XP in Light, Dark and Auto (dark colours: html.hub-xp:not(.hub-light), hub_xp.css)
     root.classList.toggle('hub-xp', xp);
     // root.classList.toggle('hub-glass', glass);   (before H104)
     // root.classList.toggle('hub-glass-solid', glass && get('glassSolid') === '1');   (before H104)
@@ -126,7 +145,10 @@
       const v = get('wallpaper') || (window.hubWallpaperDefault ? window.hubWallpaperDefault() : ''), w = window.hubWallpaper(v);   // H104: XP's own default
       const s = empty.style;
       s.backgroundColor = w.color || '#000';
-      s.backgroundImage = w.image || 'none';
+      // s.backgroundImage = w.image || 'none';   (before H132b)
+      // H132b: XP in Dark shows its own default (Green hills) dimmed, so the night desktop is not bright
+      const xpDim = xp && !get('wallpaper') && !root.classList.contains('hub-light') && !!w.image;
+      s.backgroundImage = xpDim ? 'linear-gradient(rgba(6, 14, 42, 0.5), rgba(6, 14, 42, 0.5)), ' + w.image : (w.image || 'none');
       if (w.mine && window.hubWallpaperMine) {   // Your picture: Local drive file → object URL
         window.hubWallpaperMine(v !== lastMine).then((u) => {
           if (get('wallpaper') === v && u) { s.backgroundImage = 'url("' + u + '")'; s.backgroundSize = 'cover'; }
