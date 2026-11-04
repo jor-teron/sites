@@ -16,6 +16,8 @@
  * H119: SFTP servers (kind 'sftp', shared/fs/sftp_fs.js through hub/relay/sftp_relay.py) join the same group, 🔐 + name + ⚙,
  *   after the WebDAV drives; the same first-open check, with relay-specific messages (token, relay down, allowlist).
  * H109: quick links (Documents, Photos, ... on Local; made on first click) and the storage meter.
+ * H133: WebDAV drives are managed in Disk: their ⚙, "+ Add network drive" and the "not connected" button open Disk
+ *   (#edit=webdav:<n> / #add-webdav); SFTP still goes to Settings › Network drives. Footer link "Manage drives…".
  * H126: tabs (files_tabs.js): each tab has its own Back / Forward history (getHist / setHist); setHash() tells FX.tabs.
  * API FX.drives: draw(), open(id, fromClick, path), go(depth), up(), fromHash(), meter(), getHist(), setHist(h), setHash(), gdPanel(on).
  */
@@ -28,10 +30,14 @@
    * Google Drive when signed in) plus a small "Manage drives" link to Disk (apps/system/disk/), which
    * now does Add folder / Allow access / Remove / Google sign-in and sign-out. Old draw(): LEGACY below. */
   const DISK = '../disk/';
-  function openDisk() {
+  // (before H133) function openDisk() {
+  // (before H133)   ...
+  // (before H133)   if (!(hub && hub.__hubOpenApp('apps/system/disk/') !== false)) location.href = DISK;
+  function openDisk(hash) {   // H133: + hash (#add-webdav, #edit=webdav:<n>)
     let hub = null;
     try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
-    if (!(hub && hub.__hubOpenApp('apps/system/disk/') !== false)) location.href = DISK;
+    const h = typeof hash === 'string' ? hash : '';
+    if (!(hub && hub.__hubOpenApp('apps/system/disk/', h ? { hash: h } : undefined) !== false)) location.href = DISK + (h ? '#' + h : '');
   }
   /* H118: Settings › Network drives (#drives), in the Hub when Files runs inside it, else this tab. */
   function openNetSettings() {
@@ -75,7 +81,9 @@
       open.append(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : d.kind === 'sftp' ? '\uD83D\uDD10' : '\uD83D\uDCC2'), el('span', 'drive-name', d.name));   // H119: 🔐 SFTP
       r.appendChild(open);
       // (before H119) if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
-      if (d.kind === 'webdav' || d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));   // H119: + SFTP
+      // (before H133) if (d.kind === 'webdav' || d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));   // H119: + SFTP
+      if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': change it in Disk', () => openDisk('edit=' + d.id)));   // H133: WebDAV → Disk
+      if (d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
       if (lock) r.appendChild(btn('drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)));
       else FX.view.dropTarget(open, () => D.handle(d.id), d.id);
       rows.push(r);
@@ -84,14 +92,17 @@
     if (!list.some((d) => d.kind === 'webdav' || d.kind === 'sftp') && (window.WebDavAccounts || window.SftpAccounts)) {   // H118, H119: + SFTP
       const a = el('a', 'drive-addnet', '\uFF0B Add network drive'); a.href = '../settings/#drives';
       // (before H119) a.title = 'Add a WebDAV server in Settings \u203A Network drives';
-      a.title = 'Add a WebDAV or SFTP server in Settings \u203A Network drives';
-      a.addEventListener('click', (e) => { e.preventDefault(); openNetSettings(); });
+      // (before H133) a.title = 'Add a WebDAV or SFTP server in Settings \u203A Network drives';
+      // (before H133) a.addEventListener('click', (e) => { e.preventDefault(); openNetSettings(); });
+      a.href = DISK + '#add-webdav'; a.title = 'Add a WebDAV drive in Disk (SFTP: Settings \u203A Network drives)';   // H133
+      a.addEventListener('click', (e) => { e.preventDefault(); openDisk('add-webdav'); });
       rows.push(a);
     }
     if (!list.length) rows.unshift(el('p', 'drive-none', 'This browser has no file storage for web pages.'));
     // H109: "Manage drives" is a small icon row in the sidebar footer (above the storage meter)
-    const m = el('a', 'drive-manage'); m.href = DISK; m.id = 'manage-drives'; m.title = 'Add or remove drives in Disk';
-    m.innerHTML = svg(GEAR); m.append(el('span', '', 'Manage drives'));
+    const m = el('a', 'drive-manage'); m.href = DISK; m.id = 'manage-drives'; m.title = 'Add, change or remove drives (also WebDAV) in Disk';   // H133: was 'Add or remove drives in Disk'
+    // (before H133) m.innerHTML = svg(GEAR); m.append(el('span', '', 'Manage drives'));
+    m.innerHTML = svg(GEAR); m.append(el('span', '', 'Manage drives\u2026'));
     m.addEventListener('click', (e) => { e.preventDefault(); openDisk(); });
     $('manage-slot').replaceChildren(m);
     $('drives').replaceChildren(...rows);
@@ -168,7 +179,10 @@
   function notConnected(text, d, net) {
     const p = $('gd-panel');
     $('list').hidden = true;
-    const b = net ? btn('tb drive-allow', 'Open Settings', 'Settings \u203A Network drives', openNetSettings)   // H118
+    // (before H133) const b = net ? btn('tb drive-allow', 'Open Settings', 'Settings \u203A Network drives', openNetSettings)   // H118
+    const wd = net && /^webdav:/.test(st.driveId);   // H133: WebDAV drives are fixed in Disk
+    const b = wd ? btn('tb drive-allow', 'Open Disk', 'Change this drive in Disk', () => openDisk('edit=' + st.driveId))
+      : net ? btn('tb drive-allow', 'Open Settings', 'Settings \u203A Network drives', openNetSettings)   // H118
       : btn('tb drive-allow', 'Open Disk', 'Manage drives in Disk', openDisk);
     const a = d ? btn('tb drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)) : null;
     p.replaceChildren(el('p', 'nc-text', text), ...(a ? [a, b] : [b]));
@@ -274,8 +288,9 @@
     if (d && (d.kind === 'webdav' || d.kind === 'sftp')) {   // H118: try the server once; a failure = note + red dot (H119: + SFTP)
       try { for await (const _ of h.keys()) break; netBad.delete(id); }
       catch (e) {
-        const m = d.kind === 'sftp' ? sftpMsg(e, d.name) : e && e.name === 'NotAllowedError' ? 'Wrong user or password for \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives.'
-          : 'Can\u2019t reach \u201c' + d.name + '\u201d. Check it in Settings \u203A Network drives (it must be on, https and allow CORS).';
+        // (before H133) ... 'Check it in Settings \u203A Network drives.' ... 'Check it in Settings \u203A Network drives (it must be on, https and allow CORS).'
+        const m = d.kind === 'sftp' ? sftpMsg(e, d.name) : e && e.name === 'NotAllowedError' ? 'Wrong user or password for \u201c' + d.name + '\u201d. Check it in Disk \u203A Drives.'
+          : 'Can\u2019t reach \u201c' + d.name + '\u201d. Check it in Disk \u203A Drives (it must be on, https and allow CORS).';   // H133
         netBad.set(id, m);
         st.driveId = id; st.driveName = d.name; st.stack = []; draw(); crumbs(); setHash(); FX.view.load();
         notConnected(m, null, true);
