@@ -1,6 +1,6 @@
-# Phone launcher (`phone/`), release PH14
+# Phone launcher (`phone/`), release PH16
 
-<!-- legacy header: "release PH10" (PH10 … PH13) -->
+<!-- legacy header: "release PH10" (PH10 … PH13); "release PH14" (PH14, PH15) -->
 
 A phone-style home screen for the Hub. Jor runs it as the **Android home screen inside a WebView**
 (PH3 will be the tiny APK). It works fully by gesture and behaves like a phone launcher.
@@ -31,7 +31,7 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
   a dock of up to 5 apps. Page 1 holds 16 apps, later pages 24; pinning fills the first page with room.
 - **Drawer:** search box (name first, then category / description), category tabs from the Hub catalog
   (`HUB_CAT_CSV` order; PH4: no All tab), icons in alphabetical order.
-- **Quick panel:** 8 tiles: Theme (Dark → Light → Hub), Full screen, Intercom, Telephone, Location
+- **Quick panel:** 8 tiles (PH16: Intercom, Telephone, Location removed; Theme is Dark ↔ Light): Theme (Dark → Light → Hub), Full screen, Intercom, Telephone, Location
   (placeholder dialog until Live Location LL1 exists), Settings, Hub Settings (H80), Do Not Disturb (H82);
   Notices list (Hub notices, kept across reloads since PH2).
 - **Settings** (sheet): Theme, 24 h / 12 h clock, Apps kept open (1 or 2), Test wallpaper, Reset home layout, About.
@@ -52,9 +52,9 @@ Desktop testing: mouse drags do the same; wheel down = drawer, wheel up = panel,
   reply sends only the private mesh code (none on 00000 = no reply); the saved Connect Code is used only without it.
 - **H80 Hub settings:** the phone reads the Hub's own keys, no copies. `sites-hub.theme` (light / dark, set by Hub
   Settings > Look, incl. Auto) and `sites-hub.accent` (`--acc`) apply at load (head script) and live (`storage`
-  event + `{type:'hub-prefs'}` from a Settings frame). Phone theme default is now `system`, shown as **Hub** (follow
+  event + `{type:'hub-prefs'}` from a Settings frame). **PH16: the phone no longer follows `sites-hub.theme`; only Light / Dark, the accent still follows the Hub.** ~~Phone theme default is now `system`, shown as **Hub** (follow
   the Hub, then the device); Light / Dark stay as a phone-only override. Saves without `th80` (pre-H80, always
-  'dark') move to Hub once. Mesh on/off stays `sites-hub.meshPublic` (H79). Quick panel tile **Hub Settings**
+  'dark') move to Hub once.~~ (H80 … PH15) Mesh on/off stays `sites-hub.meshPublic` (H79). Quick panel tile **Hub Settings**
   opens `apps/system/settings/index.html` in a phone app frame (not added to Recent).
 - **H81 Hub dialogs and notices:** `/phone.html` loads the Hub's dialog bridge (`shared/dialog/*`,
   `hub/core/hub_dialog_bridge.js`), so app dialogs (UiDialog) draw over the whole phone screen like on the Hub.
@@ -245,3 +245,25 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
   `JOIN_PAGE` in `phone_connect.js`, already pointed at `desktop/desktop.html` (PH14 update); `?join=CODE` still works.
 - `phone.html` stays at the site root (`MODE_TARGET.phone = 'phone.html'`).
 - Release name `PH15` (`RELEASE`, `PhoneConnect.VERSION`, `<title>`, `?v=PH15` on phone_app / phone_connect / phone_apps).
+
+## PH16 — Shade trims, Light / Dark only, wider lower dock with Messages (2026-11-04 IST)
+
+Jor: "In phone notification, remove Intercom, Telephone, Location; Phone will now only use Light/Dark theme, remove Hub;
+Homescreen Dock can be bit lower, and wider; put Message app in Dock too."
+
+- **Quick panel (pull-down shade):** the Intercom, Telephone and Location tiles are gone (8 tiles now: Theme, Full screen,
+  Settings, Hub Settings, Do Not Disturb, Connect, Switch to Desktop, Choose mode…). The apps stay in the drawer.
+  The Notices list is unchanged.
+- **Theme:** Light / Dark only. Settings shows Light · Dark; the Theme tile toggles Dark ↔ Light. The H80 "Hub"
+  (`system`) option is removed. Migration (`phone_save.js` repair + `phone.html` head script): a saved `system`, a
+  missing theme or a pre-H80 save resolves once to what it showed (`sites-hub.theme` light / dark, else the device
+  `prefers-color-scheme`) and is saved as `light` / `dark` with `settings.ph16`. The phone no longer listens to
+  `sites-hub.theme` (storage event, `hub-prefs` message) or the device scheme; `sites-hub.accent` still applies live.
+- **Dock:** lower (`#dock-wrap` bottom padding 12 → 6 px, safe-area still applied by `#home`) and wider (side padding
+  10 → 8 px, max-width 560 → 640 px, gap 6 → 4 px); icons spread evenly across the dock (columns = number of icons,
+  was at least 4). Gestures unchanged.
+- **Messages in the dock:** the PH5 default `message` never matched the catalog id `messages`, so it was hidden.
+  Default dock is now Messages, Telephone, Camera. Existing saves (no `ph16`) get `message` renamed to `messages`,
+  or `messages` added first if missing and the dock has room (max 5), once.
+- Release PH16: `RELEASE`, `PhoneConnect.VERSION`, `<title>`, `?v=PH16` on phone.css, phone_save.js, phone_app.js,
+  phone_connect.js.

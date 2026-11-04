@@ -20,7 +20,8 @@
   // var RELEASE = 'PH12';   (PH12)
   // var RELEASE = 'PH13';   (PH13)
   // var RELEASE = 'PH14';   (PH14: Connect on the phone)
-  var RELEASE = 'PH15';   // PH15: Phone mode (remember mode, Switch to Desktop, Choose mode)
+  // var RELEASE = 'PH15';   (PH15: Phone mode)
+  var RELEASE = 'PH16';   // PH16: shade trims, Light / Dark only, wider lower dock with Messages
   // PH15: the root index.html (H129d) is the Desktop / Phone mode picker; opening this page means Phone mode.
   var MODE_KEY = 'sites-hub.mode';
   try { localStorage.setItem(MODE_KEY, 'phone'); } catch (_) {}
@@ -130,17 +131,18 @@
   /* ---------- theme + wallpaper ---------- */
   function hubTheme() { try { return localStorage.getItem('sites-hub.theme'); } catch (_) { return null; } }
   function applyTheme() {
-    var m = d.settings.theme, t = hubTheme();
-    var dark = m === 'dark' || (m === 'system' && (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)));
+    // var m = d.settings.theme, t = hubTheme();   (H80 … PH15: 'system' followed the Hub)
+    var dark = d.settings.theme === 'dark';   // PH16: Light / Dark only
     root.classList.toggle('dark', dark);
     // H80: the Hub accent (sites-hub.accent, Settings > Look) colours the phone too; unset = phone's own blue
     var acc = ''; try { acc = localStorage.getItem('sites-hub.accent') || ''; } catch (_) { /* blocked */ }
     if (/^#[0-9a-f]{6}$/i.test(acc)) root.style.setProperty('--acc', acc); else root.style.removeProperty('--acc');
   }
-  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (_) { /* old */ }
+  // try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (_) { /* old */ }   (H80 … PH15)
   // addEventListener('storage', function (e) { if (e.key === 'sites-hub.theme') applyTheme(); });   (PH1)
-  addEventListener('storage', function (e) { if (!e.key || e.key === 'sites-hub.theme' || e.key === 'sites-hub.accent') applyTheme(); });   // H80
-  // H80: Hub Settings in a phone frame posts {type:'hub-prefs'} after each change (settings_store.js)
+  // addEventListener('storage', function (e) { if (!e.key || e.key === 'sites-hub.theme' || e.key === 'sites-hub.accent') applyTheme(); });   (H80 … PH15)
+  addEventListener('storage', function (e) { if (!e.key || e.key === 'sites-hub.accent') applyTheme(); });   // PH16: accent only
+  // H80: Hub Settings in a phone frame posts {type:'hub-prefs'} (PH16: only the accent follows it now) after each change (settings_store.js)
   addEventListener('message', function (e) { if (e.origin === location.origin && e.data && e.data.type === 'hub-prefs') applyTheme(); });
   var qs = new URLSearchParams(location.search);
   var isWebView = /; wv\)/.test(navigator.userAgent) || qs.get('webview') === '1';
@@ -237,7 +239,8 @@
     // var dk = d.dock.filter(A.has);   (PH9)
     var dk = d.dock.filter(function (id) { return A.has(id) && !isHidden(id); });   // PH5 + PH10
     dk.forEach(function (id) { dock.appendChild(iconBtn(A.get(id), 'dock')); });
-    dock.style.gridTemplateColumns = 'repeat(' + Math.max(4, dk.length) + ',1fr)';
+    // dock.style.gridTemplateColumns = 'repeat(' + Math.max(4, dk.length) + ',1fr)';   (before PH16)
+    dock.style.gridTemplateColumns = 'repeat(' + Math.max(1, dk.length) + ',1fr)';   // PH16: icons spread across the wider dock
     if (page >= d.pages.length) page = d.pages.length - 1;
     showPage(page, true);
     tick();
@@ -387,11 +390,9 @@
     // var fs = !!document.fullscreenElement;   (PH1)
     var fs = !!(document.fullscreenElement || document.webkitFullscreenElement);   // PH6
     return [
-      { id: 'theme', e: th === 'dark' ? '🌙' : th === 'light' ? '☀️' : '🌓', label: 'Theme: ' + (th === 'system' ? 'Hub' : th[0].toUpperCase() + th.slice(1)) },   // H80: system = follow Hub
+      { id: 'theme', e: th === 'dark' ? '🌙' : '☀️', label: 'Theme: ' + (th === 'dark' ? 'Dark' : 'Light') },   // PH16: Light / Dark only
       { id: 'fullscreen', e: '⛶', label: fs ? 'Exit full screen' : 'Full screen', on: fs, off: !(root.requestFullscreen || root.webkitRequestFullscreen) },
-      { id: 'intercom', e: '📢', label: 'Intercom', off: !A.has('intercom') },
-      { id: 'telephone', e: '📞', label: 'Telephone', off: !A.has('telephone') },
-      { id: 'location', e: '📍', label: 'Location', off: !locationApp() },
+      // PH16: Intercom, Telephone and Location tiles removed (the apps stay in the drawer)
       { id: 'settings', e: '⚙️', label: 'Settings' },
       { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' },   // H80
       { id: 'dnd', e: '🔕', label: 'Do Not Disturb', on: dndOn() },   // H82
@@ -402,6 +403,7 @@
   }
   function connectLabel() { var C = window.PhoneConnect; if (!C) return 'Connect'; var st = C.state(); return st === 'private' ? 'Connected · ' + C.count() : st === 'public' ? 'Connect · 00000' : 'Connect'; }   // PH14
   function dndOn() { return window.HubDnd ? HubDnd.isOn() : false; }   // H82
+  // PH16: no longer used (Location tile removed)
   function locationApp() { return ['live-location', 'location', 'live-location-share'].filter(A.has)[0] || ''; }
   function renderPanel() {
     var t = $('tiles'); t.textContent = '';
@@ -429,9 +431,9 @@
   function closePanelUI() { var b = $('panel-box'); b.style.transform = ''; b.classList.remove('drag'); $('panel').classList.remove('peek'); setOpen($('panel'), false); }
   function tileAction(id) {
     if (id === 'theme') {
-      var order = ['dark', 'light', 'system'];
-      d.settings.theme = order[(order.indexOf(d.settings.theme) + 1) % 3];
-      persist(); applyTheme(); renderPanel(); toast('Theme: ' + (d.settings.theme === 'system' ? 'follow Hub' : d.settings.theme));
+      // var order = ['dark', 'light', 'system'];   (H80 … PH15)
+      d.settings.theme = d.settings.theme === 'dark' ? 'light' : 'dark';   // PH16
+      persist(); applyTheme(); renderPanel(); toast('Theme: ' + d.settings.theme);
     } else if (id === 'fullscreen') {
       toggleFullscreen();
     } else if (id === 'intercom' || id === 'telephone') {
@@ -689,7 +691,8 @@
   function openSettings() {
     openSheet(function (box) {
       var h = document.createElement('div'); h.className = 'sh-head'; h.innerHTML = '<div><b>Phone settings</b><small>Release ' + RELEASE + '</small></div>'; box.appendChild(h);
-      row(box, 'Theme', seg('theme', ['system', 'light', 'dark'], ['Hub', 'Light', 'Dark']));
+      // row(box, 'Theme', seg('theme', ['system', 'light', 'dark'], ['Hub', 'Light', 'Dark']));   (H80 … PH15)
+      row(box, 'Theme', seg('theme', ['light', 'dark'], ['Light', 'Dark']));   // PH16
       row(box, 'Clock', seg('clock24', [true, false], ['24 h', '12 h']));
       row(box, 'Apps kept open', seg('keepAlive', [1, 2], ['1', '2']));
       var w = document.createElement('div'); w.className = 'sw-c';
