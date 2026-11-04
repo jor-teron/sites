@@ -1,8 +1,10 @@
+/* AS2 Astrology — adds birth time/place, full Western chart (astro_calc.js), Chart tab, Sun/Moon/Rising summary.
+   Legacy header (AS1): */
 /* AS1 Astrology — offline. Profiles (localStorage 'astrology-v1'), tropical sun sign, daily card, element match.
    Readings are traditional meanings, shown for fun; nothing here is a prediction. */
 (function () {
   'use strict';
-  var RELEASE = 'AS1';
+  var RELEASE = 'AS2'; // legacy: 'AS1'
   var KEY = 'astrology-v1';
   var $ = function (id) { return document.getElementById(id); };
 
@@ -33,6 +35,43 @@
     { n: 'Pisces', s: '♓', from: [2, 19], el: 'Water', q: 'Mutable', r: 'Jupiter (and Neptune)', nums: [3, 7], col: ['Sea green', '#26a69a'], day: 'Thursday',
       t: 'Traditionally described as gentle, imaginative and sympathetic. Pisces is associated with art, intuition and compassion, sometimes with dreaminess.' }
   ];
+  // AS2: short traditional Moon (emotional style) and Rising (outer manner) notes, index = sign 0 Aries..11 Pisces.
+  var MOON_T = ['Feelings run hot and fast; needs action and independence.', 'Calm, steady emotions; needs comfort and security.',
+    'Processes feelings by talking and thinking; needs variety.', 'Deeply sensitive and nurturing; needs home and belonging.',
+    'Warm, proud heart; needs to feel appreciated.', 'Calms down by being useful; needs order and routine.',
+    'Seeks harmony; needs partnership and fairness.', 'Intense, private feelings; needs trust and depth.',
+    'Optimistic and restless; needs freedom and meaning.', 'Reserved, self-controlled; needs purpose and structure.',
+    'Detached and friendly; needs space and ideas.', 'Dreamy and empathic; needs quiet and imagination.'];
+  var RISE_T = ['Comes across as bold, quick and direct.', 'Comes across as calm, grounded and pleasant.',
+    'Comes across as lively, chatty and curious.', 'Comes across as gentle, caring and a little guarded.',
+    'Comes across as warm, confident and noticeable.', 'Comes across as neat, modest and observant.',
+    'Comes across as charming, polite and easy-going.', 'Comes across as magnetic, watchful and private.',
+    'Comes across as cheerful, open and adventurous.', 'Comes across as serious, capable and composed.',
+    'Comes across as friendly, unusual and independent.', 'Comes across as soft, dreamy and kind.'];
+  var PL_GLYPH = { Sun: '☉', Moon: '☽', Mercury: '☿', Venus: '♀', Mars: '♂', Jupiter: '♃', Saturn: '♄', Uranus: '♅', Neptune: '♆', Pluto: '♇' };
+  function zIdx(lon) { return Math.floor(((lon % 360) + 360) % 360 / 30); }
+  function dm(lon) { var x = ((lon % 30) + 30) % 30, d = Math.floor(x), m = Math.floor((x - d) * 60); return d + '°' + ('0' + m).slice(-2) + "'"; }
+  // Offset (minutes) of IANA zone tz at UTC instant ms, using the browser's own zone data (offline).
+  function tzOff(tz, ms) {
+    try { var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+      var o = {}; f.formatToParts(new Date(ms)).forEach(function (x) { o[x.type] = +x.value; });
+      return (Date.UTC(o.year, o.month - 1, o.day, o.hour % 24, o.minute) - Math.floor(ms / 60000) * 60000) / 60000; } catch (e) { return 0; }
+  }
+  // Birth instant (UTC ms) + whether time/place are known.
+  function birth(p) {
+    var a = p.dob.split('-').map(Number), tm = p.time && /^\d\d:\d\d$/.test(p.time) ? p.time.split(':').map(Number) : null;
+    var local = Date.UTC(a[0], a[1] - 1, a[2], tm ? tm[0] : 12, tm ? tm[1] : 0), pl = p.place || null, off = 0;
+    if (pl) { if (pl.tz) { off = tzOff(pl.tz, local); off = tzOff(pl.tz, local - off * 60000); } else off = (+pl.off || 0) * 60; }
+    return { ms: local - off * 60000, timeKnown: !!(tm && pl), place: pl, off: off };
+  }
+  var chartCache = {};
+  function chartOf(p) {
+    var b = birth(p), k = p.id + '|' + b.ms + '|' + (b.place ? b.place.lat + ',' + b.place.lon : '');
+    if (!chartCache[k]) { var c = window.AstroCalc.chart(b.ms, b.timeKnown ? b.place.lat : null, b.timeKnown ? b.place.lon : null); c.b = b; chartCache[k] = c; }
+    return chartCache[k];
+  }
+  function houseStart(c) { return st.houses === 'equal' ? c.asc : Math.floor(c.asc / 30) * 30; }
+  function houseOf(c, lon) { return Math.floor((((lon - houseStart(c)) % 360) + 360) % 360 / 30) + 1; }
   var EL_NOTE = {
     same: 'Same element: traditionally an easy, natural understanding.',
     'Fire-Air': 'Fire and Air: traditionally lively together, air feeds fire.',
@@ -99,15 +138,37 @@
     dialog('<h2 style="margin-top:0">' + (p ? 'Edit profile' : 'Add profile') + '</h2>' +
       '<label for="fName">Name</label><input id="fName" maxlength="40" value="' + esc(p ? p.name : '') + '">' +
       '<label for="fDob">Birth date</label><input id="fDob" type="date" max="' + today + '" value="' + esc(p ? p.dob : '') + '">' +
+      '<label for="fTime">Birth time (local)</label><div class="row" style="margin:0"><input id="fTime" type="time" value="' + esc(p && p.time ? p.time : '') + '">' +
+      '<label class="chk"><input type="checkbox" id="fTU"' + (p && !p.time ? ' checked' : '') + '> Time unknown</label></div>' +
+      '<label for="fCity">Birth place</label><input id="fCity" list="cityList" placeholder="Search a city…" autocomplete="off" value="' + esc(p && p.place && p.place.tz ? cityLabel(p.place) : '') + '">' +
+      '<datalist id="cityList">' + cityOpts() + '</datalist>' +
+      '<details id="fMan"' + (p && p.place && !p.place.tz ? ' open' : '') + '><summary class="note">Or enter latitude / longitude</summary>' +
+      '<div class="grid3"><input id="fLat" inputmode="decimal" placeholder="Lat (N +)" value="' + esc(p && p.place && !p.place.tz ? p.place.lat : '') + '">' +
+      '<input id="fLon" inputmode="decimal" placeholder="Lon (E +)" value="' + esc(p && p.place && !p.place.tz ? p.place.lon : '') + '">' +
+      '<input id="fOff" inputmode="decimal" placeholder="UTC ± h" value="' + esc(p && p.place && !p.place.tz ? p.place.off : '') + '"></div></details>' +
+      '<p class="note small">Time and place are optional; they add the Moon\'s exact degree, Rising sign and houses.</p>' +
       '<div class="err" id="fErr"></div>',
       [{ label: 'Cancel', cls: 'ghost' }, { label: 'Save', fn: function () {
         var n = $('fName').value.trim(), d = $('fDob').value;
         if (!n) { $('fErr').textContent = 'Please enter a name.'; return false; }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !signOf(d)) { $('fErr').textContent = 'Please pick a birth date.'; return false; }
+        var tm = $('fTU').checked ? '' : $('fTime').value, pl = null, cv = $('fCity').value.trim();
+        if ($('fLat').value.trim() || $('fLon').value.trim()) {
+          var la = parseFloat($('fLat').value), lo = parseFloat($('fLon').value), of = parseFloat($('fOff').value);
+          if (!(Math.abs(la) <= 90) || !(Math.abs(lo) <= 180)) { $('fErr').textContent = 'Latitude -90…90, longitude -180…180.'; return false; }
+          if (!(Math.abs(of) <= 14)) { $('fErr').textContent = 'Please enter the UTC offset in hours, e.g. 5.5.'; return false; }
+          pl = { name: 'Custom', lat: la, lon: lo, off: of };
+        } else if (cv) { pl = findCity(cv); if (!pl) { $('fErr').textContent = 'City not in the list. Pick one from the search, or enter lat/lon.'; return false; } }
         if (p) { p.name = n; p.dob = d; } else { p = { id: 'p' + Date.now().toString(36), name: n, dob: d }; st.profiles.push(p); }
+        p.time = tm; p.place = pl; chartCache = {};
         st.current = p.id; save(); render();
       } }], function () { $('fName').focus(); });
   }
+  function cityLabel(c) { return c.name + ', ' + c.country; }
+  var CITIES = (window.ASTRO_CITIES || []).map(function (c) { return { name: c[0], country: c[1], lat: c[2], lon: c[3], tz: c[4] }; });
+  function cityOpts() { return CITIES.map(function (c) { return '<option value="' + esc(cityLabel(c)) + '">'; }).join(''); }
+  function findCity(v) { v = v.toLowerCase(); for (var i = 0; i < CITIES.length; i++) { if (cityLabel(CITIES[i]).toLowerCase() === v) return CITIES[i]; }
+    for (i = 0; i < CITIES.length; i++) { if (CITIES[i].name.toLowerCase() === v) return CITIES[i]; } return null; }
   function delProfile(p) {
     dialog('<h2 style="margin-top:0">Delete profile?</h2><p>Delete <b>' + esc(p.name) + '</b> from this device? This cannot be undone.</p>',
       [{ label: 'Cancel', cls: 'ghost' }, { label: 'Delete', cls: 'danger', fn: function () {
@@ -123,7 +184,46 @@
     return '<div class="card"><div class="big">' + z.s + '</div><div class="title">' + z.n + '</div><div class="sub">' + esc(p.name) + ' · ' + esc(fmtDate(p.dob)) + '</div></div>' +
       '<div class="grid"><div class="kv"><b>' + z.el + '</b><span>Element</span></div><div class="kv"><b>' + z.q + '</b><span>Quality</span></div>' +
       '<div class="kv" style="grid-column:1/-1"><b>' + z.r + '</b><span>Ruling planet</span></div></div>' +
-      '<div class="card" style="margin-top:12px"><div class="tag">Traditional meaning</div><p>' + z.t + '</p></div>';
+      '<div class="card" style="margin-top:12px"><div class="tag">Traditional meaning</div><p>' + z.t + '</p></div>' + renderBig3(p);
+  }
+  function renderBig3(p) {
+    var c = chartOf(p), sunI = zIdx(c.planets[0].lon), mI = zIdx(c.planets[1].lon), h = '<div class="card"><div class="tag">Sun · Moon · Rising</div><div class="grid g3">';
+    h += '<div class="kv"><b>' + SIGNS[sunI].s + ' ' + SIGNS[sunI].n + '</b><span>☉ Sun</span></div>';
+    h += '<div class="kv"><b>' + SIGNS[mI].s + ' ' + SIGNS[mI].n + '</b><span>☽ Moon' + (c.b.timeKnown ? '' : ' (approx.)') + '</span></div>';
+    h += c.b.timeKnown ? '<div class="kv"><b>' + SIGNS[zIdx(c.asc)].s + ' ' + SIGNS[zIdx(c.asc)].n + '</b><span>↑ Rising</span></div>' : '<div class="kv"><b>?</b><span>Rising needs time + place</span></div>';
+    h += '</div><p><b>Moon in ' + SIGNS[mI].n + ':</b> ' + MOON_T[mI] + '</p>';
+    if (c.b.timeKnown) h += '<p><b>' + SIGNS[zIdx(c.asc)].n + ' Rising:</b> ' + RISE_T[zIdx(c.asc)] + '</p>';
+    else h += '<p class="note">Without a birth time and place the Moon is worked out for midday and may be off by up to ~7°, so near a sign edge it can fall in the next sign.</p>';
+    return h + '<p class="note small">Traditional meanings, for fun.</p></div>';
+  }
+  function renderChart(p) {
+    if (!p) return empty(); var c = chartOf(p), tk = c.b.timeKnown, S = 320, C = S / 2, base = tk ? c.asc : 0, svg = [];
+    function pt(lon, r) { var a = (180 + lon - base) * Math.PI / 180; return [C + r * Math.cos(a), C - r * Math.sin(a)]; }
+    function ln(l, r1, r2, cls) { var a = pt(l, r1), b = pt(l, r2); return '<line class="' + cls + '" x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '"/>'; }
+    svg.push('<circle class="w-o" cx="' + C + '" cy="' + C + '" r="155"/><circle class="w-l" cx="' + C + '" cy="' + C + '" r="128"/><circle class="w-l" cx="' + C + '" cy="' + C + '" r="70"/>');
+    for (var i = 0; i < 12; i++) { svg.push(ln(i * 30, 128, 155, 'w-l')); var q = pt(i * 30 + 15, 141);
+      svg.push('<text class="w-z el-' + SIGNS[i].el.toLowerCase() + '" x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '">' + SIGNS[i].s + '</text>'); }
+    if (tk) { var hs = houseStart(c);
+      for (i = 0; i < 12; i++) { svg.push(ln(hs + i * 30, 70, 128, i % 3 === 0 ? 'w-h w-hx' : 'w-h')); var hq = pt(hs + i * 30 + 15, 78);
+        svg.push('<text class="w-n" x="' + hq[0].toFixed(1) + '" y="' + hq[1].toFixed(1) + '">' + (i + 1) + '</text>'); }
+      svg.push(ln(c.asc, 0, 160, 'w-a')); svg.push(ln(c.mc, 0, 160, 'w-a'));
+      var aq = pt(c.asc, 165), mq = pt(c.mc, 165);
+      svg.push('<text class="w-t" x="' + Math.max(12, aq[0]).toFixed(1) + '" y="' + aq[1].toFixed(1) + '">AC</text><text class="w-t" x="' + mq[0].toFixed(1) + '" y="' + Math.max(8, mq[1]).toFixed(1) + '">MC</text>'); }
+    // planets, nudged apart when closer than 7°
+    var ps = c.planets.slice().sort(function (a, b) { return a.lon - b.lon; }), last = -99, lvl = 0;
+    ps.forEach(function (pl) { lvl = (pl.lon - last < 7) ? lvl + 1 : 0; last = pl.lon; var r = 112 - (lvl % 3) * 16, q = pt(pl.lon, r);
+      svg.push(ln(pl.lon, 124, 128, 'w-l')); svg.push('<text class="w-p" x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '"><title>' + pl.name + ' ' + dm(pl.lon) + ' ' + SIGNS[zIdx(pl.lon)].n + '</title>' + PL_GLYPH[pl.name] + '</text>'); });
+    var rows = c.planets.map(function (pl) { var zi = zIdx(pl.lon);
+      return '<tr><td>' + PL_GLYPH[pl.name] + ' ' + pl.name + '</td><td>' + SIGNS[zi].s + ' ' + SIGNS[zi].n + '</td><td>' + dm(pl.lon) + '</td><td>' + (tk ? houseOf(c, pl.lon) : '–') + '</td><td>' + (pl.retro ? 'R' : '') + '</td></tr>'; });
+    if (tk) [['AC', 'Ascendant', c.asc], ['MC', 'Midheaven', c.mc]].forEach(function (a) { var zi = zIdx(a[2]);
+      rows.push('<tr class="ang"><td>' + a[0] + ' ' + a[1] + '</td><td>' + SIGNS[zi].s + ' ' + SIGNS[zi].n + '</td><td>' + dm(a[2]) + '</td><td>' + (a[0] === 'AC' ? 1 : houseOf(c, a[2])) + '</td><td></td></tr>'); });
+    var b = c.b, offTxt = 'UTC' + (b.off >= 0 ? '+' : '−') + Math.floor(Math.abs(b.off) / 60) + (Math.abs(b.off) % 60 ? ':' + ('0' + Math.abs(b.off) % 60).slice(-2) : '');
+    var sub = esc(p.name) + ' · ' + esc(fmtDate(p.dob)) + (p.time ? ' ' + esc(p.time) : '') + (b.place ? ' · ' + esc(b.place.name === 'Custom' ? b.place.lat + ', ' + b.place.lon : b.place.name) + ' (' + offTxt + ')' : '');
+    return '<div class="card"><div class="sub">' + sub + '</div><svg class="wheel" viewBox="0 0 ' + S + ' ' + S + '" role="img" aria-label="Chart wheel">' + svg.join('') + '</svg>' +
+      (tk ? '<div class="seg" id="houseSeg"><button type="button" data-h="whole"' + (st.houses !== 'equal' ? ' class="on"' : '') + '>Whole Sign houses</button><button type="button" data-h="equal"' + (st.houses === 'equal' ? ' class="on"' : '') + '>Equal houses</button></div>'
+        : '<p class="note">Birth time or place unknown: Rising sign, MC and houses are hidden, and the Moon (worked out for midday) may be off by a few degrees. <button type="button" class="mini" data-edit="' + p.id + '">Add time & place</button></p>') + '</div>' +
+      '<div class="card"><table class="ptab"><thead><tr><th>Planet</th><th>Sign</th><th>Degree</th><th>House</th><th>R</th></tr></thead><tbody>' + rows.join('') + '</tbody></table>' +
+      '<p class="note small">Tropical zodiac, geocentric. Positions from compact published formulas (about 1° or better). R = retrograde. Traditional chart, for fun.</p></div>';
   }
   function dayHash(iso, salt) { var h = 2166136261; var s = iso + '|' + salt; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function renderToday(p) {
@@ -163,6 +263,7 @@
     $('profileSel').disabled = !st.profiles.length;
     $('pane-sign').innerHTML = renderSign(p);
     $('pane-today').innerHTML = renderToday(p);
+    $('pane-chart').innerHTML = renderChart(p);
     renderMatch();
     $('profList').innerHTML = st.profiles.map(function (x) { var z = signOf(x.dob);
       return '<li><span>' + z.s + ' ' + esc(x.name) + ' <small class="note">' + esc(fmtDate(x.dob)) + '</small></span><button type="button" class="mini" data-edit="' + x.id + '">Edit</button><button type="button" class="mini" data-del="' + x.id + '">🗑</button></li>'; }).join('') || '<li><span class="note">No profiles yet.</span></li>';
@@ -177,6 +278,9 @@
   function show(tab) { st.tab = tab; save();
     [].forEach.call($('tabs').children, function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === tab); });
     [].forEach.call(document.querySelectorAll('.pane'), function (s) { s.classList.toggle('on', s.id === 'pane-' + tab); }); }
+  $('pane-chart').addEventListener('click', function (e) { var b = e.target.closest('[data-h]'); if (!b) return; st.houses = b.getAttribute('data-h'); save(); $('pane-chart').innerHTML = renderChart(cur()); });
+  document.addEventListener('change', function (e) { if (e.target && e.target.id === 'fTU' && e.target.checked) $('fTime').value = ''; if (e.target && e.target.id === 'fTime' && e.target.value) $('fTU').checked = false; });
+  document.addEventListener('input', function (e) { if (e.target && e.target.id === 'fTime' && e.target.value) $('fTU').checked = false; });
   $('themeSeg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; st.theme = b.getAttribute('data-v'); save(); applyTheme(); });
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-add],[data-edit],[data-del]'); if (!t) return;
@@ -187,5 +291,5 @@
 
   $('rel').textContent = RELEASE;
   render(); show(st.tab || 'sign');
-  window.Astrology = { RELEASE: RELEASE, signOf: signOf };
+  window.Astrology = { RELEASE: RELEASE, signOf: signOf, chartOf: chartOf, birth: birth }; // legacy AS1: { RELEASE, signOf }
 })();

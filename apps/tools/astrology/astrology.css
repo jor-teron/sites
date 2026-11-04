@@ -1,4 +1,4 @@
-/* AS1 Astrology — Stopwatch-style big cards, light/dark */
+/* AS2 Astrology — chart styles appended at the end. Legacy header: AS1 Astrology — Stopwatch-style big cards, light/dark */
 :root{--bg:#f6f5fb;--fg:#202124;--card:#fff;--mut:#6b6f76;--acc:#6a4cff;--line:#e3e0ef}
 html.dark{--bg:#121418;--fg:#e8eaed;--card:#1d2026;--mut:#9aa0a6;--acc:#a993ff;--line:#2c3038}
 *{box-sizing:border-box}
@@ -43,3 +43,16 @@ footer{text-align:center;margin-top:16px}
 .dlg label{display:block;margin:10px 0 4px;color:var(--mut);font-size:13px}.dlg input{width:100%}
 .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .err{color:#d93025;font-size:13px;min-height:1em;margin-top:6px}
+/* AS2 chart */
+.g3{grid-template-columns:1fr 1fr 1fr}.g3 .kv b{font-size:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}.grid3 input{width:100%;min-width:0}
+.chk{display:flex!important;align-items:center;gap:6px;margin:0!important;white-space:nowrap}.chk input{width:auto!important}
+.wheel{display:block;width:100%;max-width:360px;margin:8px auto}
+.wheel .w-o{fill:none;stroke:var(--fg);stroke-width:1.2}.wheel .w-l{fill:none;stroke:var(--line);stroke-width:1}
+.wheel line.w-l{stroke:var(--mut)}.wheel .w-h{stroke:var(--line)}.wheel .w-hx{stroke:var(--mut)}
+.wheel .w-a{stroke:var(--acc);stroke-width:1.6}
+.wheel text{text-anchor:middle;dominant-baseline:central;fill:var(--fg)}
+.wheel .w-z{font-size:15px}.wheel .w-n{font-size:9px;fill:var(--mut)}.wheel .w-p{font-size:16px}.wheel .w-t{font-size:10px;font-weight:700;fill:var(--acc)}
+.el-fire{fill:#d9534f!important}.el-earth{fill:#3d8b40!important}.el-air{fill:#c79a00!important}.el-water{fill:#2f7fd1!important}
+.ptab{width:100%;border-collapse:collapse;font-size:14px}.ptab th{text-align:left;color:var(--mut);font-weight:500;font-size:12px}
+.ptab td,.ptab th{padding:5px 4px;border-bottom:1px solid var(--line)}.ptab tr.ang td{color:var(--acc)}

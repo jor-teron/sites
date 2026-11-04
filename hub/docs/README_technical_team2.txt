@@ -805,6 +805,15 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   daily lucky number (sign numbers + date hash), colour, day from fixed tables; element-based match score.
 - In-app dialogs only (add/edit profile, delete confirm). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.51 Astrology full Western chart, release AS2
+
+- apps/tools/astrology only. New astro_calc.js (Schlyter planetary positions, Moon perturbations, Pluto series, Asc/MC)
+  and cities.js (190 cities incl. ~70 Indian, IANA tz). Profiles gain optional time ('' = unknown) and place (city or
+  manual lat/lon + UTC offset); AS1 profiles unchanged. Local -> UTC with Intl tz data (offline).
+- New Chart tab: SVG wheel (sign ring, houses, AC/MC, planet glyphs) + table (sign, deg°min, house, R). Whole Sign
+  default, Equal option (st.houses). No time/place: Asc/MC/houses hidden + Moon note. Sign tab adds Sun/Moon/Rising.
+- RELEASE/title/?v= AS2 (legacy AS1 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
