@@ -39,7 +39,8 @@
       } },
       { sep: true },
       window.HubOsMode && { label: 'Switch to Phone | Touch\u2026', icon: '\uD83D\uDCF1', action: () => window.HubOsMode.switchTo('phone') },   // H129d: confirm, then the phone page
-      { label: 'About', icon: '\u2139', action: () => C.openApp(C.SETTINGS, { hash: 'about' }) }
+      { label: 'About', icon: '\u2139', action: () => C.openApp(C.SETTINGS, { hash: 'about' }) },
+      { label: 'About Hub', icon: '\uD83D\uDCD6', action: () => window.open(new URL('hub/index.html', document.baseURI).href, '_blank', 'noopener') }   // H129e: the standalone Hub About page
     ];
   });
 

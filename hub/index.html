@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<!-- H129e: the Hub About page. A normal standalone webpage (no Hub core scripts, no desktop or phone shell).
+     It explains what the Hub is, how hub/, desktop/ and phone/ fit together, the modes, Connect codes,
+     the system apps, and the current build (read from hub/build.txt). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About the Hub</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #f3f5f9; --card: #ffffff; --text: #202124; --muted: #5f6368; --line: #dadce0; --accent: #1a73e8; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #121418; --card: #1a1e26; --text: #e8eaed; --muted: #9aa0a6; --line: #2a303a; --accent: #6ea8fe; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    header, main, footer { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+    header { padding-top: 40px; }
+    h1 { margin: 0 0 6px; font-size: 32px; }
+    .lead { margin: 0 0 18px; color: var(--muted); font-size: 18px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 26px; }
+    .btn { display: inline-block; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); text-decoration: none; font-weight: 600; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    @media (prefers-color-scheme: dark) { .btn.primary { color: #0b1033; } }
+    .btn:hover { border-color: var(--accent); }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 6px 22px 14px; margin-bottom: 16px; }
+    h2 { font-size: 20px; margin: 14px 0 6px; }
+    ul { padding-left: 22px; margin: 6px 0; }
+    li { margin: 4px 0; }
+    code { font: 14px ui-monospace, Menlo, Consolas, monospace; background: color-mix(in srgb, var(--line) 50%, transparent); padding: 1px 5px; border-radius: 5px; }
+    a { color: var(--accent); }
+    #build { color: var(--muted); }
+    footer { color: var(--muted); font-size: 13px; padding-bottom: 40px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>The Hub</h1>
+    <p class="lead">A small home screen in your browser: your apps, your files and your other devices, in one place.</p>
+    <div class="actions">
+      <a class="btn primary" href="../index.html">Open the Hub</a>
+      <a class="btn" href="../index.html?choose">Choose mode</a>
+    </div>
+  </header>
+  <main>
+    <section>
+      <h2>What the Hub is</h2>
+      <p>The Hub started as one page, <code>hub.html</code>, that opened the site's apps in windows. It grew into the base that everything else runs on: settings, themes, linking devices, sharing files and keeping things in sync. It is a website, so there is nothing to install, and it also works offline once it has been opened.</p>
+    </section>
+    <section>
+      <h2>How it is built</h2>
+      <ul>
+        <li><b><code>hub/</code> is the core.</b> It holds the parts every mode shares: your settings and profile, day and night themes, keys, device linking, the Mesh, sync, and updates.</li>
+        <li><b><code>desktop/</code> and <code>phone/</code> are the screens on top.</b> They are two different ways to look at the same Hub. Your apps, files and links stay the same whichever one you use.</li>
+        <li><b>This page</b> (<code>hub/index.html</code>) is just a normal webpage about the Hub.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Two modes</h2>
+      <ul>
+        <li><b>Desktop:</b> windows, a taskbar and right-click menus. Best with a mouse and keyboard.</li>
+        <li><b>Phone | Touch:</b> one app at a time, full screen, with swipes. Best for phones and touch tablets.</li>
+      </ul>
+      <p>The first page of the site shows the two cards and suggests one for your screen. Your pick is saved on this device (<code>localStorage</code> key <code>sites-hub.mode</code>), so next time you go straight there.</p>
+      <ul>
+        <li><code>index.html?os=desktop</code> or <code>?os=phone</code> opens that mode and saves it.</li>
+        <li><code>index.html?choose</code> clears the saved choice and shows the cards again.</li>
+        <li>You can also switch from inside each mode, after a confirm.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Connect codes and the Mesh</h2>
+      <ul>
+        <li>A Connect code is <b>5 digits</b>. Devices with the same code can find each other, chat and share files.</li>
+        <li><code>00000</code> is the public <b>Mesh lobby</b>: anyone on that code can see you.</li>
+        <li>Any other code is a <b>private mesh</b>: only devices that know the code join it.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>System apps</h2>
+      <p>The Hub comes with its own apps under <code>apps/system/</code>, such as Settings, Files (with network drives), the Viewer and the App Hub that lists every other app. Other apps and games live in their own folders and open inside the Hub.</p>
+    </section>
+    <section>
+      <h2>Version</h2>
+      <p id="build">Checking the build…</p>
+    </section>
+  </main>
+  <footer>
+    <p><a href="../index.html">Open the Hub</a> · <a href="../index.html?choose">Choose mode</a></p>
+  </footer>
+  <script>
+    (function () {
+      var out = document.getElementById('build');
+      fetch('build.txt', { cache: 'no-cache' }).then(function (r) {
+        if (!r.ok) throw new Error(r.status);
+        return r.text();
+      }).then(function (t) {
+        var l = t.split('\n').map(function (s) { return s.trim(); });
+        if (!l[0]) throw new Error('empty');
+        out.textContent = 'Release ' + (l[2] || '?') + ', build ' + l[0] + (l[3] ? ' (' + l[3] + ')' : '') + '.';
+      }).catch(function () {
+        out.textContent = 'The build number could not be read right now (offline or opened as a file).';
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -79,6 +79,17 @@
         try { w.location.assign(w === window ? new URL('../../../index.html?choose', location.href).href : new URL('index.html?choose', w.document.baseURI).href); }
         catch (_) { location.assign('../../../index.html?choose'); }
       });
+      // H129e: About Hub = the standalone hub/index.html page (a normal webpage), in a new tab
+      const osAbout = ui.el('button', 'tap', 'About Hub \u203A');
+      osAbout.type = 'button';
+      osAbout.id = 'os-about';
+      osAbout.appendChild(ui.el('small', '', 'What the Hub is: the core, Desktop and Phone | Touch, Connect codes, the build'));
+      osAbout.addEventListener('click', () => {
+        let u;
+        try { const w = window.top; u = w === window ? new URL('../../../hub/index.html', location.href).href : new URL('hub/index.html', w.document.baseURI).href; }
+        catch (_) { u = new URL('../../../hub/index.html', location.href).href; }
+        window.open(u, '_blank', 'noopener');
+      });
       // R51: new Desktop-mode windows open maximised (default on)
       // const openMax = ui.switch('Open windows maximised', 'New windows fill the screen; Restore gives the normal size',
       //   S.get('openMax') !== '0', (on) => S.set('openMax', on ? '1' : '0'));
@@ -220,7 +231,7 @@
       //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
       //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
       //   brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break   (before H129d)
-      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
         brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break; H129d: + Switch to Phone | Touch, Choose mode…

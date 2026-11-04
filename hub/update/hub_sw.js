@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261104k';
-const CACHE = 'hub-shell-v143';  // 2026-11-04k: Mode page: heading 'Open Hub as', card and hint text commented out
+const V = '20261104l';
+const CACHE = 'hub-shell-v144';  // 2026-11-04l: Hub About page at hub/index.html
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -39,6 +39,7 @@ const SHELL = [
   // 'hub.html',   // H129a: now the tiny redirect to desktop/desktop.html (kept, so an offline hub.html link still lands)   (before H129d: removed)
   'index.html',   // H129d: the mode entry (Desktop / Phone | Touch cards, saved-mode redirect); also answers / and old hub.html links
   'desktop/desktop.html',   // H129a: the desktop Hub page
+  'hub/index.html',   // H129e: the standalone Hub About page
   'desktop/index.html',   // H129a: desktop/ (folder index): tiny redirect to desktop.html
   'desktop/mode/hub_osmode.js',   // H129d: Switch to Phone | Touch / Choose mode… (HubOsMode)
   'manifest.webmanifest',
