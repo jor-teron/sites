@@ -1,13 +1,18 @@
-# Astrology (AS1)
+# Astrology (AS2)
 
-Offline Western sun-sign app. No libraries, no network.
+Offline Western astrology app. No libraries, no network. (AS1 = sun signs only; AS2 adds the full chart.)
 
-- Files: `astrology.html`, `astrology.css`, `astrology.js` (RELEASE = 'AS1', `?v=AS1`), `index.html` redirect, `astrology_icon.svg`.
-- Storage: localStorage `astrology-v1` = `{profiles:[{id,name,dob}], current, theme:'auto'|'light'|'dark', tab}`.
-- Theme Auto follows the Hub (`sites-hub.theme`, else device setting) and live-updates on the storage event.
-- Tabs: Sign (symbol, element, quality, ruler, traditional meaning), Today (lucky number from the sign's two
-  traditional numbers plus an FNV hash of the date, lucky colour and day from fixed tables), Match (element pairs:
-  same 85, Fire-Air / Earth-Water 80, Fire-Earth / Air-Water 55, Air-Earth 50, Fire-Water 45; same quality -5,
-  same sign 80), Settings (theme, profiles add/edit/delete with in-app confirm).
-- Sign dates are the usual tropical ranges (cusp days can differ by a day in some years).
-- Planned: AS2 full Western chart, AS3 Vedic.
+- Files: `astrology.html`, `astrology.css`, `astrology.js` (RELEASE = 'AS2', `?v=AS2`), `astro_calc.js` (astronomy),
+  `cities.js` (190 built-in cities: name, country, lat, lon, IANA tz), `index.html` redirect, `astrology_icon.svg`.
+- Storage: localStorage `astrology-v1` = `{profiles:[{id,name,dob,time?,place?}], current, theme, tab, houses:'whole'|'equal'}`.
+  `time` = 'HH:MM' local or '' (unknown); `place` = city `{name,country,lat,lon,tz}` or manual `{name:'Custom',lat,lon,off}` (UTC hours).
+  AS1 profiles (no time/place) keep working.
+- Local time -> UTC via the browser's own Intl time-zone data (handles historical DST/offsets offline).
+- astro_calc.js: Paul Schlyter "How to compute planetary positions" — Sun, Moon (12 main perturbation terms), Mercury–Neptune
+  from elements of date + Kepler, Jupiter/Saturn/Uranus perturbations, Pluto series (~1885–2099). Tropical geocentric
+  ecliptic longitude of date. Retrograde = longitude decreasing over the next day. Asc/MC from GMST + obliquity.
+  Check 2000-01-01 12:00 UTC: Sun 280.38, Moon 223.35, Mercury 271.91, Venus 241.58, Mars 327.98, Jupiter 25.27,
+  Saturn 40.38 R, Uranus 314.82, Neptune 303.19, Pluto 251.46 (reference ephemeris within ~0.05°).
+- Tabs: Sign (sun sign + Sun/Moon/Rising summary), Chart (SVG wheel + planet table; Whole Sign default, Equal option),
+  Today, Match, Settings. Without time+place: Asc/MC/houses hidden, Moon computed for local noon (may be off a few °).
+- Planned: AS3 Vedic.
