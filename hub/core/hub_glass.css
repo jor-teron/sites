@@ -11,7 +11,8 @@
  * --wm-hover / --hp-* / --ctx-* / --uid-*), so anything that is not glass (app contents, on-screen keyboard,
  * home tiles) keeps the Light theme.
  * Settings › Look › Glass: hub_prefs.js sets html.hub-glass (on top of html.hub-light; apps inside windows
- * still see Light). Keys: sites-hub.glass '1' (+ sites-hub.theme 'light'),
+ * still see Light). (before H132c) H132c: Glass also in Dark / Auto (html.hub-glass without html.hub-light):
+ * a deeper night smoke, dark window bodies, darker solid slate; the dark block is at the end of this file. Keys: sites-hub.glass '1' (+ sites-hub.theme 'light'),
  * sites-hub.glassSolid '1' = Reduce transparency (html.hub-glass-solid).
  * Glass surfaces: window title bars + frames, Start menu + flyout, Desktop taskbar, Phone top bar,
  * right-click menus, dialogs, 🎮 / Pooh side panels, camera pop-up, received-file cards.
@@ -253,3 +254,35 @@ html.hub-glass #notif-panel {
 html.hub-glass #notif-panel .np-ico { background: rgba(255, 255, 255, 0.10); }
 html.hub-glass #notif-panel .np-x { color: var(--gl-text); }
 html.hub-glass #notif-panel .np-del:hover { color: #fff; }
+
+/* =====================================================================================================
+ * H132c: Glass in Dark (Settings › Look › Mode Dark, or Auto at night): html.hub-glass without html.hub-light.
+ * Same glass shapes, a deeper and darker smoke, a softer shine, and dark window bodies while apps load.
+ * Reduce transparency (html.hub-glass-solid) gives a darker solid slate.
+ * ===================================================================================================== */
+html.hub-glass:not(.hub-light) {
+  --gl-tint: rgba(8, 10, 14, 0.44);
+  --gl-tint-dim: rgba(8, 10, 14, 0.36);
+  --gl-tint-menu: rgba(8, 10, 14, 0.56);
+  --gl-solid: rgba(18, 20, 27, 0.97);
+  --gl-line: rgba(255, 255, 255, 0.24);
+  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 50%,
+    rgba(255, 255, 255, 0) 52%, rgba(255, 255, 255, 0.04) 100%);
+  --gl-gloss-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 34%);
+  --gl-inset: inset 0 1px 0 rgba(255, 255, 255, 0.24), inset 0 -1px 0 rgba(0, 0, 0, 0.24);
+  --gl-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.30);
+}
+html.hub-glass:not(.hub-light).hub-glass-solid {
+  --gl-fx: none; --gl-tint: var(--gl-solid); --gl-tint-dim: var(--gl-solid); --gl-tint-menu: var(--gl-solid);
+  --gl-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 60%);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.hub-glass:not(.hub-light) { --gl-fx: none; --gl-tint: var(--gl-solid); --gl-tint-dim: var(--gl-solid); --gl-tint-menu: var(--gl-solid); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.hub-glass:not(.hub-light) { --gl-fx: none; --gl-tint: var(--gl-solid); --gl-tint-dim: var(--gl-solid); --gl-tint-menu: var(--gl-solid); }
+}
+html.hub-glass:not(.hub-light) .wm-body, html.hub-glass:not(.hub-light) .wm-body iframe { background: #1b1f28; }   /* while an app loads */
+html.hub-glass:not(.hub-light) .wm-body:has(> iframe[src*="apps/system/"]) { background: rgba(8, 10, 14, 0.22); }
+html.hub-glass:not(.hub-light) .wm-body > iframe[src*="apps/system/"] { background: transparent; }
+html.hub-glass:not(.hub-light).hub-glass-solid .wm-body:has(> iframe[src*="apps/system/"]) { background: rgb(18, 20, 27); }

@@ -18,6 +18,7 @@
  * clear them (Theme back to Hub). Old one-list picks read as: Light = Hub + Light, Dark = Hub + Dark, Auto = Hub + Auto,
  * Glass = Glass + Light, XP = XP + Light.
  * H132b: XP has Light and Dark: it keeps its pick in every Mode. Only Glass is Light only (H132c).
+ * H132c: Glass has Light and Dark too: Mode and Theme are fully separate (no pick changes the other).
  */
 (function () {
   'use strict';
@@ -137,11 +138,19 @@
         return (t === 'glass' || S.get('glass') === '1') ? 'glass' : 'hub';
       };
       */
+      /* (before H132c)
       // H132b: XP has Light and Dark, so it shows in every Mode; Glass is still Light only (ignored in Dark / Auto)
       const curLook = () => {
         const t = S.get('theme');
         if (t === 'xp' || S.get('xp') === '1') return 'xp';   // XP wins over a stale glass '1' (as in hub_prefs.js)
         if (curMode() !== 'light') return 'hub';
+        return (t === 'glass' || S.get('glass') === '1') ? 'glass' : 'hub';
+      };
+      */
+      // H132c: every theme has Light and Dark, so the Theme pick shows in every Mode
+      const curLook = () => {
+        const t = S.get('theme');
+        if (t === 'xp' || S.get('xp') === '1') return 'xp';   // XP wins over a stale glass '1' (as in hub_prefs.js)
         return (t === 'glass' || S.get('glass') === '1') ? 'glass' : 'hub';
       };
       const curTheme = () => { const m = curMode(); return m !== 'light' ? m : curLook() === 'hub' ? 'light' : curLook(); };   // the old one-list value (glass / xp / auto / light / dark)
@@ -152,7 +161,8 @@
       ], curMode(), (v) => {
         S.set('themeAuto', v === 'auto' ? '1' : '');   // first: while Auto is still on, the Hub would clear a new glass / xp '1'
         // if (v !== 'light') { S.set('glass', ''); S.set('xp', ''); }   // Glass and XP are Light only (until H132b / H132c)   (before H132b)
-        if (v !== 'light') S.set('glass', '');   // H132b: only Glass is Light only now (until H132c); XP keeps its pick
+        // if (v !== 'light') S.set('glass', '');   // H132b: only Glass is Light only now (until H132c); XP keeps its pick   (before H132c)
+        // H132c: Mode no longer touches the Theme pick (Hub, XP and Glass all have Light and Dark)
         if (v === 'auto') autoNow(); else S.set('theme', v);
         paintLook();
       });
@@ -160,10 +170,12 @@
       const theme = ui.choice([
         // { value: 'hub', label: 'Hub', hint: 'Light and Dark' }, { value: 'xp', label: 'XP', hint: 'Classic blue, Light only' },   (before H132b)
         { value: 'hub', label: 'Hub', hint: 'Light and Dark' }, { value: 'xp', label: 'XP', hint: 'Classic blue, Light and Dark' },
-        { value: 'glass', label: 'Glass', hint: 'Frosted, Light only' }
+        // { value: 'glass', label: 'Glass', hint: 'Frosted, Light only' }   (before H132c)
+        { value: 'glass', label: 'Glass', hint: 'Frosted, Light and Dark' }
       ], curLook(), (v) => {
         // if (v !== 'hub') { S.set('themeAuto', ''); S.set('theme', 'light'); }   // Glass / XP: Mode goes to Light   (before H132b)
-        if (v === 'glass') { S.set('themeAuto', ''); S.set('theme', 'light'); }   // H132b: only Glass sets Mode to Light
+        // if (v === 'glass') { S.set('themeAuto', ''); S.set('theme', 'light'); }   // H132b: only Glass sets Mode to Light   (before H132c)
+        // H132c: a Theme pick keeps the Mode (every theme has Light and Dark)
         S.set('glass', v === 'glass' ? '1' : '');
         S.set('xp', v === 'xp' ? '1' : '');
         paintLook();
@@ -171,7 +183,8 @@
       function paintLook() {
         mode.repaint(curMode()); theme.repaint(curLook());
         const c = curTheme();
-        solid.style.display = c === 'glass' ? '' : 'none';
+        // solid.style.display = c === 'glass' ? '' : 'none';   (before H132c)
+        solid.style.display = curLook() === 'glass' ? '' : 'none';   // H132c: Reduce transparency for Glass in any Mode
         autoBox.hidden = c !== 'auto';
         autoStatus();
       }
@@ -242,7 +255,8 @@
       const solid = ui.switch('Reduce transparency', 'Glass with solid colours and no blur: easier to read, faster on older devices',
         S.get('glassSolid') === '1', (on) => S.set('glassSolid', on ? '1' : ''));
       solid.id = 'look-glass-solid';
-      solid.style.display = curTheme() === 'glass' ? '' : 'none';   // .switch is display:flex, so not [hidden]
+      // solid.style.display = curTheme() === 'glass' ? '' : 'none';   // .switch is display:flex, so not [hidden]   (before H132c)
+      solid.style.display = curLook() === 'glass' ? '' : 'none';   // H132c: Glass in any Mode (.switch is display:flex, so not [hidden])
       const motion = ui.choice([
         { value: 'on', label: 'On', hint: 'Jelly + bouncy' },
         { value: 'reduced', label: 'Reduced', hint: 'No jelly' },
@@ -328,7 +342,8 @@
       // H132a: Mode (Light / Dark / Auto) and Theme (Hub / XP / Glass) as two settings
       pane.append(ui.title('Accent colour'), row, ui.title('Mode'), mode, autoBox, ui.title('Theme'), theme, solid,
         // ui.note('Mode makes the Hub Light or Dark. Auto is Light by day and Dark at night, from the Sunrise and Sunset times above (no location used). Theme sets the look of the Hub menu, taskbar and windows. Glass and XP are Light only for now, so picking Dark or Auto goes back to the Hub theme. Apps that follow the Hub switch with it (System apps follow Glass and XP too). XP brings its own Green hills wallpaper until you pick another one.'),   (before H132b)
-        ui.note('Mode makes the Hub Light or Dark. Auto is Light by day and Dark at night, from the Sunrise and Sunset times above (no location used). Theme sets the look of the Hub menu, taskbar and windows. Hub and XP work in Light and Dark. Glass is Light only for now, so picking Dark or Auto goes back to the Hub theme. Apps that follow the Hub switch with it (System apps follow Glass and XP too). XP brings its own Green hills wallpaper until you pick another one (dimmed in Dark).'),
+        // ui.note('Mode makes the Hub Light or Dark. Auto is Light by day and Dark at night, from the Sunrise and Sunset times above (no location used). Theme sets the look of the Hub menu, taskbar and windows. Hub and XP work in Light and Dark. Glass is Light only for now, so picking Dark or Auto goes back to the Hub theme. Apps that follow the Hub switch with it (System apps follow Glass and XP too). XP brings its own Green hills wallpaper until you pick another one (dimmed in Dark).'),   (before H132c)
+        ui.note('Mode makes the Hub Light or Dark. Auto is Light by day and Dark at night, from the Sunrise and Sunset times above (no location used). Theme sets the look of the Hub menu, taskbar and windows. Every theme (Hub, XP and Glass) works in Light and Dark. Apps that follow the Hub switch with it (System apps follow Glass and XP too). XP brings its own Green hills wallpaper until you pick another one (dimmed in Dark).'),
         ui.title('Animations'), motion,
         eyeTitle, wRow, when, times, st,
         ui.note('A warm, orange tint over the whole Hub and its apps, easier on the eyes at night (like Night Light). It fades in and out over a few seconds. The \uD83C\uDF19 button (Settings \u203A Hub bar) turns it on or off until the next scheduled change. A web page cannot change the real screen colour, so the phone status bar and other apps stay as they are.'));
