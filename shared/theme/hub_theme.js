@@ -19,6 +19,7 @@
  *   '1', or theme 'xp') → html.hub-xp on top of html.light, and shared/theme/hub_xp_apps.css is added once.
  *   XP wins over a stale Glass pick (no html.hub-glass with XP). Other app categories still see Light.
  * H132b: XP also in Dark / Auto: html.hub-xp without html.light gets the dark XP colours (hub_xp_apps.css).
+ * H132c: Glass also in Dark / Auto: html.hub-glass without html.light gets the dark Glass smoke (hub_glass_apps.css).
  * API: HubTheme.apply(), .hub(), .effective(), .own() / .setOwn(pref) (own-key apps only), .onChange(fn).
  */
 (function () {
@@ -48,7 +49,8 @@
   const glassCss = me && me.src ? me.src.replace(/hub_theme\.js(\?.*)?$/, 'hub_glass_apps.css') : '';
   function glassOn() {
     const t = read(P + 'theme');
-    return read(P + 'themeAuto') !== '1' && (t === 'glass' || (read(P + 'glass') === '1' && t !== 'dark'));
+    // return read(P + 'themeAuto') !== '1' && (t === 'glass' || (read(P + 'glass') === '1' && t !== 'dark'));   (before H132c)
+    return t === 'glass' || read(P + 'glass') === '1';   // H132c: Glass in Light, Dark and Auto
   }
   // H104: XP for the same opted-in apps (system category)
   const xpCss = me && me.src ? me.src.replace(/hub_theme\.js(\?.*)?$/, 'hub_xp_apps.css') : '';
@@ -70,7 +72,8 @@
   }
   function applyGlass(eff) {
     // const g = GLASS_OK && own() === 'system' && eff === 'light' && glassOn();   (before H104)
-    const g = GLASS_OK && own() === 'system' && eff === 'light' && glassOn() && !xpOn();   // an own-theme pick (Terminal) wins; H104: XP wins
+    // const g = GLASS_OK && own() === 'system' && eff === 'light' && glassOn() && !xpOn();   // an own-theme pick (Terminal) wins; H104: XP wins   (before H132c)
+    const g = GLASS_OK && own() === 'system' && glassOn() && !xpOn();   // H132c: also in Dark (html.hub-glass without .light, hub_glass_apps.css)
     root.classList.toggle('hub-glass', g);
     root.classList.toggle('hub-glass-solid', g && read(P + 'glassSolid') === '1');
     if (g && glassCss && !document.getElementById('hub-glass-apps-css')) {

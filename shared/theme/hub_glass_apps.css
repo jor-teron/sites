@@ -7,6 +7,7 @@
  * paints a clear smoke tint here. Same values as H102: tint 0.22-0.34 (dense text 0.50+), bright top
  * shine, crisp white edge, white text with a dark glow. Apps keep their own layout; this only swaps the
  * colour variables (--bg / --card / --side / --line / --text ...) that every system app already uses.
+ * H132c: a dark Glass copy at the end (html.hub-glass without html.light) for Mode Dark / Auto at night.
  */
 html.light.hub-glass {
   --ga-tint: rgba(20, 24, 32, 0.30);
@@ -66,3 +67,87 @@ html.light.hub-glass.hub-glass-solid {
   --panel: #10161a; --sheet: #2b303c;
 }
 html.light.hub-glass.hub-glass-solid:has(> body .term, > body #term, > body #out) { --ga-tint: #07120a; }
+
+/* =====================================================================================================
+ * H132c: Glass in Dark (Settings › Look › Mode Dark, or Auto at night): html.hub-glass without html.light
+ * (hub_theme.js now adds hub-glass in Dark too). The same rules as above (copied with the dark selector),
+ * then a deeper, darker smoke so it reads as night glass. Reduce transparency = a darker solid slate.
+ * ===================================================================================================== */
+html.hub-glass:not(.light) {
+  --ga-tint: rgba(20, 24, 32, 0.30);
+  --ga-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0) 100%);
+  --ga-glow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  --bg: transparent; --side: rgba(10, 12, 18, 0.22); --card: rgba(255, 255, 255, 0.10); --card2: rgba(255, 255, 255, 0.14);
+  --sheet: rgba(24, 28, 38, 0.86); --chip: rgba(255, 255, 255, 0.14); --bar: rgba(255, 255, 255, 0.08);
+  --tb: rgba(255, 255, 255, 0.12); --tb-hi: rgba(255, 255, 255, 0.22); --tb-line: rgba(255, 255, 255, 0.30);
+  --line: rgba(255, 255, 255, 0.20); --text: #ffffff; --muted: rgba(255, 255, 255, 0.76); --desc: rgba(255, 255, 255, 0.82);
+  --msg: rgba(255, 255, 255, 0.86); --soft: rgba(255, 255, 255, 0.10); --soft2: rgba(255, 255, 255, 0.18); --grid: rgba(255, 255, 255, 0.10);
+  --ok: #6ef0b8; --bad: #ff9c9c; --warn: #ffd166;
+  --hi: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.08));
+  --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30), 0 1px 3px rgba(0, 0, 0, 0.18);
+  /* pop-ups (dialogs / context menus) stay dense and readable */
+  --uid-bg: rgba(24, 28, 38, 0.92); --uid-line: rgba(255, 255, 255, 0.22); --uid-text: #fff; --uid-muted: rgba(255, 255, 255, 0.74); --uid-bad: #ff9c9c;
+  --ctx-bg: rgba(24, 28, 38, 0.92); --ctx-line: rgba(255, 255, 255, 0.22); --ctx-text: #fff; --ctx-muted: rgba(255, 255, 255, 0.74); --ctx-bad: #ff9c9c;
+  --toast: rgba(0, 0, 0, 0.75); --toast-text: #fff;
+  /* Terminal: dark glass + its green (dense text) */
+  --fg: #5dff8a; --dim: #3fd06a; --err: #c8ffb0; --glow: rgba(51, 255, 102, 0.30); --edge: rgba(120, 255, 160, 0.30);
+  --panel: rgba(0, 0, 0, 0.30); --askbg: rgba(60, 50, 10, 0.55);
+  color-scheme: light !important;   /* H132c: must match the Hub page (no color-scheme), or Chrome paints the iframe opaque; !important beats hub_theme.js's inline 'dark' */
+  background: var(--ga-shine), var(--ga-tint) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+html.hub-glass:not(.light) body { background: transparent !important; color: var(--text); text-shadow: var(--ga-glow); }
+/* the Terminal's output is dense text: darker glass */
+html.hub-glass:not(.light):has(> body .term, > body #term, > body #out) { --ga-tint: rgba(4, 8, 6, 0.55); }
+/* cards / rows: a crisp white edge */
+html.hub-glass:not(.light) input, html.hub-glass:not(.light) select, html.hub-glass:not(.light) textarea {
+  background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.28); color-scheme: dark;
+}
+html.hub-glass:not(.light) ::placeholder { color: rgba(255, 255, 255, 0.72); }   /* H105: was .60 */
+html.hub-glass:not(.light) option { background: #1e222c; color: #fff; }
+html.hub-glass:not(.light) a { color: color-mix(in srgb, var(--accent) 55%, #fff); }
+/* H109: Files — readable on a colourful wallpaper: denser sidebar + toolbar fields, bright icons and labels */
+html.hub-glass:not(.light) .side { background: rgba(10, 12, 18, 0.34); }
+html.hub-glass:not(.light) .quick-title, html.hub-glass:not(.light) .storage { color: rgba(255, 255, 255, 0.88); }
+html.hub-glass:not(.light) .quick-link svg { color: #cfe2ff; }
+html.hub-glass:not(.light) .drive-manage { color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32); }
+html.hub-glass:not(.light) .drive-manage svg { color: #fff; }
+html.hub-glass:not(.light) .storage b { background: rgba(0, 0, 0, 0.30); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+html.hub-glass:not(.light) .storage i { background: #8fc1ff; }
+html.hub-glass:not(.light) .path, html.hub-glass:not(.light) .seg { background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+html.hub-glass:not(.light) .search { background: rgba(0, 0, 0, 0.26); }
+html.hub-glass:not(.light) .search-box svg, html.hub-glass:not(.light) .path-ico, html.hub-glass:not(.light) .crumb-sep { color: rgba(255, 255, 255, 0.85); }
+html.hub-glass:not(.light) .tb:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
+html.hub-glass:not(.light) .selinfo { opacity: 1; }
+html.hub-glass:not(.light) .lhead { background: rgba(10, 12, 18, 0.55); }   /* H107 */
+html.hub-glass:not(.light) .status { background: rgba(10, 12, 18, 0.34); color: rgba(255, 255, 255, 0.85); }
+html.hub-glass:not(.light) .hcol { color: rgba(255, 255, 255, 0.8); }
+html.hub-glass:not(.light) .hcol.on, html.hub-glass:not(.light) .status-sel { color: #fff; }
+html.hub-glass:not(.light) .badge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0 1px 3px rgba(0, 0, 0, 0.5); }
+/* Reduce transparency: solid dark slate (same as the Hub's solid glass) */
+html.hub-glass:not(.light).hub-glass-solid {
+  --ga-tint: rgb(30, 34, 44); --ga-shine: none; --ga-glow: none;
+  --side: #262a35; --card: #343946; --card2: #3b404e; --line: rgba(255, 255, 255, 0.14);
+  --panel: #10161a; --sheet: #2b303c;
+}
+html.hub-glass:not(.light).hub-glass-solid:has(> body .term, > body #term, > body #out) { --ga-tint: #07120a; }
+
+/* H132c: deeper night smoke on top of the copied rules */
+html.hub-glass:not(.light) {
+  --ga-tint: rgba(8, 10, 14, 0.50);
+  --ga-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0) 100%);
+  --side: rgba(0, 0, 0, 0.30); --card: rgba(255, 255, 255, 0.07); --card2: rgba(255, 255, 255, 0.10);
+  --sheet: rgba(14, 16, 22, 0.90); --line: rgba(255, 255, 255, 0.16);
+  --uid-bg: rgba(14, 16, 22, 0.94); --ctx-bg: rgba(14, 16, 22, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+html.hub-glass:not(.light) .side { background: rgba(0, 0, 0, 0.40); }
+html.hub-glass:not(.light) .lhead { background: rgba(0, 0, 0, 0.60); }
+html.hub-glass:not(.light) .status { background: rgba(0, 0, 0, 0.40); }
+html.hub-glass:not(.light).hub-glass-solid {
+  --ga-tint: rgb(18, 20, 27); --ga-shine: none; --ga-glow: none;
+  --side: #1a1d26; --card: #262a35; --card2: #2c303c; --line: rgba(255, 255, 255, 0.12);
+  --panel: #0a0f12; --sheet: #1f232d; --uid-bg: #1f232d; --ctx-bg: #1f232d;
+}
+html.hub-glass:not(.light).hub-glass-solid .side { background: #1a1d26; }
+html.hub-glass:not(.light).hub-glass-solid .lhead, html.hub-glass:not(.light).hub-glass-solid .status { background: #15181f; }
