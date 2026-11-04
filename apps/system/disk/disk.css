@@ -35,3 +35,18 @@ a { color: var(--accent); text-decoration: none; }
 .drive-acts .btn { min-height: 36px; padding: 0 10px; font-size: .9rem; }
 .gd-panel { margin-top: 10px; }
 .msg { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line); padding: 8px 14px; border-radius: 10px; }
+/* H133: WebDAV drives (disk.js): status colours, the server line and the add / edit form */
+.drive-st.bad { color: var(--bad); }
+.drive-url { font-size: .8rem; color: var(--muted); overflow-wrap: anywhere; }
+.wd-form { display: grid; gap: 8px; margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.wd-form[hidden] { display: none; }
+.wd-form p { margin: 0; }
+.wd-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.wd-in { flex: 1 1 200px; min-width: 0; min-height: 40px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); font: inherit; }
+.wd-in:focus { outline: none; border-color: var(--accent); }
+.wd-out { min-height: 1.3em; font-size: .88rem; font-weight: 600; color: var(--muted); }
+.wd-out:empty { display: none; }
+.wd-out.ok { color: #4ade80; } .wd-out.bad { color: var(--bad); }
+html.light .drive-st.ok, html.light .wd-out.ok { color: #15803d; }
+html.light { --bad: #c62828; }

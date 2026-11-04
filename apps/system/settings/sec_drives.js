@@ -14,6 +14,10 @@
  *   (.key-line's display beats [hidden], see H96).
  * H122: a "Thumbnails" switch under the card (key 'sites-hub.netThumbs', '0' = off, default on): picture previews
  *   in Files for WebDAV / SFTP drives (apps/system/files/files_thumbs.js). Also needs Settings › Windows "Show thumbnails".
+ * H133: WebDAV drives moved to the Disk app (apps/system/disk/, Drives: add / edit / remove / Test connection + status).
+ *   Here: a short "WebDAV drives" card with "Open Disk" (the Hub opens Disk; standalone: a link to ../disk/), then the
+ *   card for SFTP only (the Type picker is gone, the list shows SFTP servers only; SFTP moves to Disk later) and the
+ *   Thumbnails switch as before. The old WebDAV lines are kept as comments marked (before H133).
  */
 (function () {
   'use strict';
@@ -60,19 +64,47 @@
   }
   const btn = (text, cls) => { const b = ui.el('button', 'key-btn ' + (cls || ''), text); b.type = 'button'; return b; };
 
+  /* H133: open the Disk app (Drives), in the Hub when Settings runs inside it, else this tab. */
+  function openDisk(hash) {
+    let hub = null;
+    try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
+    if (!(hub && hub.__hubOpenApp('apps/system/disk/', hash ? { hash } : undefined) !== false)) location.href = '../disk/' + (hash ? '#' + hash : '');
+  }
+  const WEBDAV_HERE = false;   // H133: WebDAV drives are managed in Disk now (true = the old Settings form)
+
   function render(pane) {
-    if (!A || !W) { pane.appendChild(ui.note('The Network drive files (shared/fs/webdav_*.js) did not load.')); return; }
+    // (before H133) if (!A || !W) { pane.appendChild(ui.note('The Network drive files (shared/fs/webdav_*.js) did not load.')); return; }
+    if (WEBDAV_HERE && (!A || !W)) { pane.appendChild(ui.note('The Network drive files (shared/fs/webdav_*.js) did not load.')); return; }
+    // H133: WebDAV → Disk
+    const wd = ui.el('section', 'card key-row nd-moved');
+    const wdHead = ui.el('div', 'key-head'); wdHead.append(ui.el('b', 'key-label', '\uD83C\uDF10 WebDAV drives'));
+    const wdLine = ui.el('div', 'key-line');
+    const go = btn('Open Disk', 'key-save nd-open-disk'); go.title = 'Add, change or remove WebDAV drives in Disk';
+    go.addEventListener('click', () => openDisk(''));
+    const link = ui.el('a', 'key-readme-link nd-disk-link', 'or open Disk in this tab'); link.href = '../disk/';
+    wdLine.append(go);
+    if (window.parent === window) wdLine.append(link);   // standalone Settings: a plain link too
+    wd.append(wdHead, ui.el('p', 'key-hint', 'WebDAV drives (e.g. Nextcloud) are now added, changed, tested and removed in the Disk app, under Drives. Your saved drives are still there.'), wdLine);
+    pane.appendChild(wd);
+    if (!WEBDAV_HERE && !hasS) { addThumbs(pane); return; }   // no SFTP files: just the Thumbnails switch
     const card = ui.el('section', 'card key-row nd-card');
     const head = ui.el('div', 'key-head');
-    head.append(ui.el('b', 'key-label', '\uD83C\uDF10 Network drives'));
+    // (before H133) head.append(ui.el('b', 'key-label', '\uD83C\uDF10 Network drives'));
+    head.append(ui.el('b', 'key-label', WEBDAV_HERE ? '\uD83C\uDF10 Network drives' : '\uD83D\uDD10 SFTP drives'));
     // (before H119) card.append(head, ui.el('p', 'key-hint', 'Works with WebDAV servers, e.g. Nextcloud or rclone serve webdav; must be https and allow CORS. Each one shows in Files as its own drive. Passwords stay only in this browser.'));
-    card.append(head, ui.el('p', 'key-hint', 'Works with WebDAV servers, e.g. Nextcloud or rclone serve webdav (must be https and allow CORS)' +
+    // (before H133) card.append(head, ui.el('p', 'key-hint', 'Works with WebDAV servers, e.g. Nextcloud or rclone serve webdav (must be https and allow CORS)' +
+    // (before H133)   (hasS ? ', and SFTP servers through the SFTP relay on your PC (python3 hub/relay/sftp_relay.py)' : '') +
+    // (before H133)   '. Each one shows in Files as its own drive. Passwords stay only in this browser.'));
+    card.append(head, ui.el('p', 'key-hint', WEBDAV_HERE ? 'Works with WebDAV servers, e.g. Nextcloud or rclone serve webdav (must be https and allow CORS)' +
       (hasS ? ', and SFTP servers through the SFTP relay on your PC (python3 hub/relay/sftp_relay.py)' : '') +
-      '. Each one shows in Files as its own drive. Passwords stay only in this browser.'));
+      '. Each one shows in Files as its own drive. Passwords stay only in this browser.'
+      : 'SFTP servers through the SFTP relay on your PC (python3 hub/relay/sftp_relay.py). Each one shows in Files as its own drive. Passwords stay only in this browser.'));
     const list = ui.el('div', 'nd-list');
     // form
     const form = ui.el('div', 'nd-form');
-    const ftitle = ui.el('b', 'key-label', 'Add network drive');
+    // (before H133) const ftitle = ui.el('b', 'key-label', 'Add network drive');
+    const ADD_TITLE = WEBDAV_HERE ? 'Add network drive' : 'Add SFTP drive';   // H133
+    const ftitle = ui.el('b', 'key-label', ADD_TITLE);
     const name = input('nd-name', 'text', 'Name, e.g. Home PC', 'Name');
     const url = input('nd-url', 'url', 'https://\u2026 (server folder URL)', 'URL');
     const user = input('nd-user', 'text', 'User', 'User');
@@ -88,7 +120,8 @@
     // H119: Type (WebDAV / SFTP) + the SFTP lines (relay + token, host + port + folder)
     const type = ui.el('select', 'key-input nd-type');
     type.setAttribute('aria-label', 'Type');
-    [['webdav', '\uD83C\uDF10 WebDAV'], ['sftp', '\uD83D\uDD10 SFTP (through the relay)']].forEach(([v, l]) => { const o = ui.el('option', '', l); o.value = v; type.appendChild(o); });
+    // (before H133) [['webdav', '\uD83C\uDF10 WebDAV'], ['sftp', '\uD83D\uDD10 SFTP (through the relay)']].forEach(
+    (WEBDAV_HERE ? [['webdav', '\uD83C\uDF10 WebDAV'], ['sftp', '\uD83D\uDD10 SFTP (through the relay)']] : [['sftp', '\uD83D\uDD10 SFTP (through the relay)']]).forEach(([v, l]) => { const o = ui.el('option', '', l); o.value = v; type.appendChild(o); });
     const relay = input('nd-relay', 'url', 'Relay, e.g. wss://pc.tailnet.ts.net:8023', 'Relay URL');
     const token = input('nd-token', 'password', 'Relay token', 'Relay token');
     const eye2 = btn('\uD83D\uDC41', 'key-eye');
@@ -101,7 +134,8 @@
     const l0 = ui.el('div', 'key-line'), ls1 = ui.el('div', 'key-line'), ls2 = ui.el('div', 'key-line');
     l0.append(type); ls1.append(relay, token, eye2); ls2.append(host, port, folder);
     l1.append(name, url); l2.append(user, pass, eye); l3.append(ftest, save, cancel);
-    if (!hasS) l0.style.display = 'none';
+    // (before H133) if (!hasS) l0.style.display = 'none';
+    if (!hasS || !WEBDAV_HERE) l0.style.display = 'none';   // H133: SFTP only here, no Type picker
     form.append(ftitle, l0, l1, ls1, ls2, l2, l3, fout);
     const kind = () => (hasS && type.value === 'sftp' ? 'sftp' : 'webdav');
     function showKind() {
@@ -112,14 +146,7 @@
     type.addEventListener('change', () => { showKind(); fsay(''); });
     card.append(list, form);
     pane.appendChild(card);
-    // H122: picture thumbnails on network drives (Files app, files_thumbs.js; key 'netThumbs', '0' = off, default on)
-    const St = window.SettingsStore;
-    if (St) {
-      const th = ui.switch('Thumbnails', 'Pictures on network drives show a small preview in Files (downloads each picture once, up to 15 MB). Turn off on slow connections.',
-        St.get('netThumbs') !== '0', (on) => St.set('netThumbs', on ? '' : '0'));
-      th.classList.add('nd-thumbs');
-      pane.appendChild(th);
-    }
+    addThumbs(pane);   // H133: moved into addThumbs() (same switch)
 
     let editing = null;
     const fsay = (t, c) => { fout.textContent = t || ''; fout.className = 'key-out' + (c ? ' ' + c : ''); };
@@ -153,7 +180,8 @@
       editing = null; name.value = url.value = user.value = pass.value = relay.value = token.value = host.value = folder.value = '';
       port.value = '22'; type.disabled = false;
       pass.type = token.type = 'password'; eye.classList.remove('on'); eye2.classList.remove('on');
-      ftitle.textContent = 'Add network drive'; save.textContent = 'Add'; cancel.hidden = true;
+      // (before H133) ftitle.textContent = 'Add network drive'; save.textContent = 'Add'; cancel.hidden = true;
+      ftitle.textContent = ADD_TITLE; save.textContent = 'Add'; cancel.hidden = true;
       showKind();
     }
     function edit(a) {
@@ -190,8 +218,10 @@
     function draw() {
       list.textContent = '';
       // (before H119) const all = A.list();
-      const all = A.list().concat(hasS ? SA.list() : []);   // H119: + SFTP servers
-      if (!all.length) list.appendChild(ui.el('p', 'key-hint nd-empty', 'No network drives yet.'));
+      // (before H133) const all = A.list().concat(hasS ? SA.list() : []);   // H119: + SFTP servers
+      const all = (WEBDAV_HERE ? A.list() : []).concat(hasS ? SA.list() : []);   // H133: WebDAV drives are listed in Disk
+      // (before H133) if (!all.length) list.appendChild(ui.el('p', 'key-hint nd-empty', 'No network drives yet.'));
+      if (!all.length) list.appendChild(ui.el('p', 'key-hint nd-empty', WEBDAV_HERE ? 'No network drives yet.' : 'No SFTP drives yet.'));
       all.forEach((a) => {
         const row = ui.el('div', 'nd-row');
         row.dataset.id = a.id;
@@ -224,6 +254,17 @@
     reset(); draw();
     // (before H119) window.addEventListener('storage', (e) => { if (e.key === 'hub-webdav-accounts' && pane.isConnected && !editing) draw(); });
     window.addEventListener('storage', (e) => { if ((e.key === 'hub-webdav-accounts' || e.key === 'hub-sftp-accounts') && pane.isConnected && !editing) draw(); });
+  }
+
+  /* H122: picture thumbnails on network drives (Files app, files_thumbs.js; key 'netThumbs', '0' = off, default on).
+     H133: its own function (also shown when only the WebDAV card is there). */
+  function addThumbs(pane) {
+    const St = window.SettingsStore;
+    if (!St) return;
+    const th = ui.switch('Thumbnails', 'Pictures on network drives show a small preview in Files (downloads each picture once, up to 15 MB). Turn off on slow connections.',
+      St.get('netThumbs') !== '0', (on) => St.set('netThumbs', on ? '' : '0'));
+    th.classList.add('nd-thumbs');
+    pane.appendChild(th);
   }
 
   Settings.add({ id: 'drives', title: 'Network drives', icon: '\uD83C\uDF10', render });

@@ -11,6 +11,12 @@
  *   clean-up   ThumbStore.stats() / clear() (shared/fs/thumbs_store.js, IndexedDB 'sites-thumbs');
  *              "Empty Local" removes every entry of the OPFS root after a danger confirm, then
  *              posts {type:'drives'} on 'sites-fs' so Files and the Hub redraw.
+ *   WebDAV     H133 (was Settings › Network drives): window.WebDavAccounts (shared/fs/webdav_accounts.js,
+ *              localStorage 'hub-webdav-accounts', same list as before, so Files / Viewer / phone are unchanged)
+ *              for Add / Edit / Remove; WebDavFs.test(account) for "Test connection" and the status on each row
+ *              (checked once when the page opens and after every change: Checking… / Connected / the error).
+ *              Form: Name, URL, User, Password (+ Show), Test connection, Add / Save, Cancel. Deep links:
+ *              #add-webdav, #edit=webdav:<n> (Files' ⚙ on a WebDAV drive opens that).
  * Theme: shared/theme/hub_theme.js: html.light / --accent follow the Hub theme (H22, no picker).
  */
 (function () {
@@ -95,10 +101,16 @@
     if (!rows.length) box.appendChild(el('p', 'muted', 'This browser has no drives the Hub can use.'));
     rows.forEach(([d, st]) => {
       const r = el('div', 'drive'); r.setAttribute('role', 'listitem'); r.dataset.drive = d.id;
-      r.appendChild(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'));
+      // (before H133) r.appendChild(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'));
+      r.appendChild(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : '\uD83D\uDCC2'));   // H133: 🌐 WebDAV
       const m = el('div', 'drive-main'); m.appendChild(el('div', 'drive-name', d.name));
-      let stText, ok = false;
-      if (d.kind === 'gdrive') {
+      let stText, ok = false, bad = false;
+      if (d.kind === 'webdav') {   // H133: status from the last connection check
+        const w = wdState.get(d.id);
+        if (!w) checkWd(d.id);
+        ok = !!(w && w.ok); bad = !!(w && w.state === 'done' && !w.ok);
+        stText = 'Network drive (WebDAV) \u00B7 ' + (!w || w.state === 'checking' ? 'Checking\u2026' : w.ok ? 'Connected' : 'Error: ' + w.text);
+      } else if (d.kind === 'gdrive') {
         ok = st === 'ok';
         const u = ok && window.GoogleAuth && window.GoogleAuth.user ? window.GoogleAuth.user() : null;
         stText = ok ? 'Connected' + (u && u.email ? ' as ' + u.email : '') : st === 'setup' ? 'Not set up' : st === 'renew' ? 'Sign-in ran out' : 'Not connected';
@@ -106,11 +118,22 @@
         ok = st === 'granted';
         stText = (d.kind === 'local' ? 'This browser\u2019s private storage' : 'Folder on this computer') + ' \u00B7 ' + (ok ? 'Ready' : st === 'denied' ? 'Access blocked' : 'Needs access');
       }
-      const s = el('div', 'drive-st' + (ok ? ' ok' : ''), stText);
+      // (before H133) const s = el('div', 'drive-st' + (ok ? ' ok' : ''), stText);
+      const s = el('div', 'drive-st' + (ok ? ' ok' : '') + (bad ? ' bad' : ''), stText);
+      if (d.kind === 'webdav') { const acc = WA && WA.get(d.id); if (acc) m.appendChild(el('div', 'drive-url', acc.url + (acc.user ? ' \u00B7 ' + acc.user : ''))); }
       if (d.kind !== 'gdrive' && sizes.has(d.id)) s.append(' \u00B7 ', el('b', 'drive-size', sizes.get(d.id)));
       m.appendChild(s); r.appendChild(m);
       const a = el('div', 'drive-acts');
-      if (d.kind === 'gdrive') {
+      if (d.kind === 'webdav') {   // H133
+        a.appendChild(btn('Test connection', '', () => checkWd(d.id, true)));
+        a.appendChild(btn('Edit', '', () => wdForm(d.id)));
+        a.appendChild(btn('Remove', 'danger', async () => {
+          if (!(await Dlg.confirm('Remove \u201C' + d.name + '\u201D?', 'Only the saved connection is removed. No files on the server are touched.', 'Remove', true))) return;
+          WA.remove(d.id); wdState.delete(d.id);
+          if (wdEditing === d.id) wdForm(null, true);
+          say('Removed \u201C' + d.name + '\u201D.'); draw();
+        }));
+      } else if (d.kind === 'gdrive') {
         if (ok) a.appendChild(btn('Sign out', 'danger', async () => {
           if (!(await Dlg.confirm('Sign out of Google Drive?', 'Disk forgets your Google sign-in and tells Google to cancel it. Your files stay in Google Drive.', 'Sign out', true))) return;
           if (window.GoogleAuth) await window.GoogleAuth.signOut();
@@ -129,6 +152,84 @@
       r.appendChild(a); box.appendChild(r);
     });
   }
+  /* ---- H133: WebDAV drives (was Settings › Network drives, sec_drives.js) ---- */
+  const WA = window.WebDavAccounts, WF = window.WebDavFs;
+  const wdState = new Map();   // id → { state: 'checking' | 'done', ok, text }
+  /** Plain words for a WebDavFs.test result (same as Settings had). */
+  function wdExplain(r) {
+    if (r.ok) return 'Connected';
+    if (r.name === 'NotAllowedError') return 'wrong user or password (the server refused it)';
+    if (r.name === 'NotFoundError') return 'folder not found at that URL';
+    if (/reach/.test(r.error || '')) return 'can\u2019t reach the server. Is it on, https, and does it allow CORS (browser requests from this site)?';
+    return (r.error || 'failed').replace(/^WebDAV: /, '');
+  }
+  async function checkWd(id, loud) {
+    const acc = WA && WA.get(id);
+    if (!acc || !WF) return;
+    const cur = wdState.get(id);
+    if (cur && cur.state === 'checking') return;
+    wdState.set(id, { state: 'checking' });
+    if (loud) draw();
+    const r = await WF.test(acc);
+    wdState.set(id, { state: 'done', ok: r.ok, text: wdExplain(r) });
+    if (loud) say(r.ok ? '\u201C' + acc.name + '\u201D is connected.' : '\u201C' + acc.name + '\u201D: ' + wdExplain(r));
+    draw();
+  }
+  let wdEditing = null;
+  /** The add / edit form under the list (id = edit that drive, null = add; close = hide it). */
+  function wdForm(id, close) {
+    const box = $('wd-form');
+    wdEditing = null;
+    if (close || !WA) { box.hidden = true; box.textContent = ''; $('add-wd').hidden = !WA; return; }
+    const acc = id ? WA.get(id) : null;
+    if (id && !acc) { say('That drive is not saved any more.'); return; }
+    wdEditing = acc ? acc.id : null;
+    box.textContent = '';
+    const inp = (ph, type, label, v) => { const i = el('input', 'wd-in'); Object.assign(i, { type, placeholder: ph, autocomplete: 'off', spellcheck: false, value: v || '' }); i.setAttribute('aria-label', label); i.setAttribute('autocapitalize', 'off'); return i; };
+    const title = el('b', 'wd-title', acc ? 'Edit \u201C' + acc.name + '\u201D' : 'Add WebDAV drive');
+    const hint = el('p', 'muted small', 'Works with WebDAV servers, e.g. Nextcloud or rclone serve webdav. The server must be https (or this computer) and allow CORS. The drive shows in Files. The password stays only in this browser.');
+    const name = inp('Name, e.g. Home PC', 'text', 'Name', acc && acc.name);
+    const url = inp('https://\u2026 (server folder URL)', 'url', 'URL', acc && acc.url);
+    const user = inp('User', 'text', 'User', acc && acc.user);
+    const pass = inp('Password', 'password', 'Password', acc && acc.pass);
+    const eye = btn('Show', 'wd-eye', () => { pass.type = pass.type === 'password' ? 'text' : 'password'; eye.textContent = pass.type === 'password' ? 'Show' : 'Hide'; }, 'Show or hide the password');
+    const out = el('p', 'wd-out', '');
+    const tell = (t, c) => { out.textContent = t || ''; out.className = 'wd-out' + (c ? ' ' + c : ''); };
+    const vals = () => ({ name: name.value.trim(), url: url.value.trim(), user: user.value.trim(), pass: pass.value });
+    const valid = (v) => { try { const u = new URL(v.url); if (!/^https?:$/.test(u.protocol)) throw 0; } catch (_) { tell('Enter the full URL, e.g. https://host/dav/', 'bad'); return false; } return true; };
+    const test = btn('Test connection', '', async () => {
+      const v = vals(); if (!valid(v)) return;
+      test.disabled = true; tell('Testing\u2026');
+      const r = await WF.test(v); tell(r.ok ? '\u2713 Connected' : wdExplain(r), r.ok ? 'ok' : 'bad');
+      test.disabled = false;
+    });
+    const save = btn(acc ? 'Save' : 'Add', 'primary', () => {
+      const v = vals(); if (!valid(v)) return;
+      let sid = wdEditing;
+      if (sid) WA.update(sid, v); else sid = WA.add(v);
+      wdState.delete(sid);
+      say(acc ? 'Saved.' : 'Added \u201C' + (WA.get(sid) || {}).name + '\u201D. It shows in Files.');
+      wdForm(null, true); draw();
+    });
+    const cancel = btn('Cancel', '', () => wdForm(null, true));
+    const l1 = el('div', 'wd-line'), l2 = el('div', 'wd-line'), l3 = el('div', 'wd-line');
+    l1.append(name, url); l2.append(user, pass, eye); l3.append(test, save, cancel);
+    [name, url, user, pass].forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save.click(); } }));
+    box.append(title, hint, l1, l2, l3, out);
+    box.hidden = false; $('add-wd').hidden = true;
+    name.focus();
+    box.scrollIntoView({ block: 'nearest' });
+  }
+  if (!WA || !WF) $('add-wd').hidden = true;
+  $('add-wd').addEventListener('click', () => wdForm(null));
+  function fromHash() {
+    const h = location.hash.slice(1);
+    if (h === 'add-webdav') wdForm(null);
+    else if (/^edit=webdav%3A\d+$|^edit=webdav:\d+$/.test(h)) wdForm(decodeURIComponent(h.slice(5)));
+  }
+  window.addEventListener('hashchange', fromHash);
+  window.addEventListener('storage', (e) => { if (e.key === 'hub-webdav-accounts') draw(); });
+
   if (!D.canAddFolder) { $('add').hidden = true; $('add-note').hidden = false; }
   $('add').addEventListener('click', async () => { const f = await D.addFolder().catch(() => null); if (f) { say('Added \u201C' + f.name + '\u201D.'); draw(); } });
 
@@ -157,4 +258,5 @@
   if (window.GoogleAuth && window.GoogleAuth.onChange) window.GoogleAuth.onChange(() => draw());
   if (TS && TS.onClear) TS.onClear(thumbs);
   draw(); space(); thumbs();
+  fromHash();   // H133
 })();
