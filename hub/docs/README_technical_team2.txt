@@ -777,6 +777,17 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   'message') is in the default dock and added once to existing saves when there is room.
 - Details: phone/README.md "PH16".
 
+### 1.48 Phone Recent apps, release PH19
+
+- phone/ + phone.html only. Open apps are iframes in #frames (frames[], newest first). New #recents layer: cards
+  (icon, name, 📌, ✕, tinted placeholder snapshot), tap = switch, swipe up / ✕ = close, Clear all (skips pinned).
+- Close = postMessage {type:'phone:willClose', app} then about:blank + iframe removed after 150 ms.
+- Open: home swipe up + hold 300 ms (plain swipe = drawer), in-app 10 px bottom strip (up = home, up+hold =
+  Recents), quick-panel tile, window.PhoneRecents.open().
+- Settings: auto-close Off/3/5/8 (default 5, settings.keepAlive, was 1/2); settings.pinned default intercom,
+  telephone, live-location; migrated once with settings.ph19.
+- Details: phone/README.md "PH19".
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

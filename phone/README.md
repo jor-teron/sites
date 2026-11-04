@@ -267,3 +267,25 @@ Homescreen Dock can be bit lower, and wider; put Message app in Dock too."
   or `messages` added first if missing and the dock has room (max 5), once.
 - Release PH16: `RELEASE`, `PhoneConnect.VERSION`, `<title>`, `?v=PH16` on phone.css, phone_save.js, phone_app.js,
   phone_connect.js.
+
+## PH19 — Recent apps (2026-11-04 IST)
+
+Jor: "We need Recent Apps List, like android do have." (background apps stayed open with no way to close them)
+
+- **How apps were held:** `phone_app.js` keeps one `<iframe>` per opened app in `#frames` (`frames[]`, most recent
+  first); switching only hides the others. Before PH19 the only limit was "Apps kept open" 1 / 2 (oldest dropped).
+- **Recents layer** (`#recents`, above `#apps`): one card per open app, newest first, scrolled sideways. Card = icon,
+  name, 📌 keep-alive, ✕ close, and a light tinted "snapshot" with the big icon (no iframe screenshots: too heavy).
+  Tap card = switch to it; swipe a card up (or ✕) = close; **Clear all** closes every non-pinned app; tap outside or
+  Back = home. Opening Recents from an app replaces the app layer (Back goes home, like Android).
+- **Open it:** swipe up from the home screen and hold still ~300 ms (after 60 px) before letting go (a normal swipe
+  still opens the drawer; the drawer dims when the hold is armed); in an app, the 10 px bottom strip `#rec-edge`:
+  swipe up = home, swipe up and hold = Recents; quick-panel tile 🗂️ Recent apps; `window.PhoneRecents.open()`.
+- **Closing** (`closeApp`): posts `{type:'phone:willClose', app:id}` into the frame (best effort), hides it, and after
+  150 ms sets `about:blank` and removes the iframe, so its memory is freed.
+- **Auto-close** (Settings "Auto-close apps over": Off · 3 · 5 · 8, default 5, `settings.keepAlive`): when more apps
+  are open, the oldest non-pinned (never the one on screen) is closed.
+- **Keep alive 📌** (`settings.pinned`): Intercom, Telephone and Live Location by default; Clear all and auto-close
+  skip pinned apps (✕ / swipe-up still close them). Old saves (no `settings.ph19`) move once to limit 5 + default pins.
+- API: `window.PhoneRecents = { open, close, list, closeApp(id), clearAll, pin(id, on), isPinned(id) }`.
+- Release PH19: `RELEASE`, `<title>`, `?v=PH19` on phone.css, phone_save.js, phone_app.js.

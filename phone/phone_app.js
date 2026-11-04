@@ -1,6 +1,6 @@
 /*
  * Phone launcher PH1 — UI. Needs PhoneSave, PhoneApps, PhoneGesture.
- * Layers (bottom → top): #home (pages + dots + dock) · #drawer · #panel · #apps (iframes) · #sheet · #dialog.
+ * Layers (bottom → top): #home (pages + dots + dock) · #drawer · #panel · #apps (iframes) · #recents (PH19) · #sheet · #dialog.
  * History: every layer that opens pushes {ph:depth}; Back (browser / Android WebView goBack) → popstate →
  *   close layers until the depth matches. Gestures that close a layer call history.back(), so the two agree.
  * Hub handshake for apps in the iframes: {sharedLink:'ready'} from OUR frame + OUR origin → {sharedLink:'hello',
@@ -21,7 +21,8 @@
   // var RELEASE = 'PH13';   (PH13)
   // var RELEASE = 'PH14';   (PH14: Connect on the phone)
   // var RELEASE = 'PH15';   (PH15: Phone mode)
-  var RELEASE = 'PH16';   // PH16: shade trims, Light / Dark only, wider lower dock with Messages
+  // var RELEASE = 'PH16';   (PH16: shade trims, Light / Dark only, wider lower dock with Messages)
+  var RELEASE = 'PH19';   // PH19: Recent apps
   // PH15: the root index.html (H129d) is the Desktop / Phone mode picker; opening this page means Phone mode.
   var MODE_KEY = 'sites-hub.mode';
   try { localStorage.setItem(MODE_KEY, 'phone'); } catch (_) {}
@@ -284,6 +285,7 @@
     else if (l === 'panel') closePanelUI();
     else if (l === 'app') closeAppUI();
     else if (l === 'sheet') closeSheetUI();
+    else if (l === 'recents') closeRecentsUI();   // PH19
   }
   function setOpen(el, on) { el.classList.toggle('open', on); el.setAttribute('aria-hidden', on ? 'false' : 'true'); }
   var top = function () { return stack[stack.length - 1] || ''; };
@@ -393,6 +395,7 @@
       { id: 'theme', e: th === 'dark' ? '🌙' : '☀️', label: 'Theme: ' + (th === 'dark' ? 'Dark' : 'Light') },   // PH16: Light / Dark only
       { id: 'fullscreen', e: '⛶', label: fs ? 'Exit full screen' : 'Full screen', on: fs, off: !(root.requestFullscreen || root.webkitRequestFullscreen) },
       // PH16: Intercom, Telephone and Location tiles removed (the apps stay in the drawer)
+      { id: 'recents', e: '🗂️', label: 'Recent apps' },   // PH19
       { id: 'settings', e: '⚙️', label: 'Settings' },
       { id: 'hub-settings', e: '🛠️', label: 'Hub Settings' },   // H80
       { id: 'dnd', e: '🔕', label: 'Do Not Disturb', on: dndOn() },   // H82
@@ -430,6 +433,7 @@
   }
   function closePanelUI() { var b = $('panel-box'); b.style.transform = ''; b.classList.remove('drag'); $('panel').classList.remove('peek'); setOpen($('panel'), false); }
   function tileAction(id) {
+    if (id === 'recents') { openRecents(); return; }   // PH19
     if (id === 'theme') {
       // var order = ['dark', 'light', 'system'];   (H80 … PH15)
       d.settings.theme = d.settings.theme === 'dark' ? 'light' : 'dark';   // PH16
@@ -507,7 +511,9 @@
     }
     frames = [f].concat(frames.filter(function (x) { return x !== f; }));
     // keep at most keepAlive frames (the open one included)
-    while (frames.length > d.settings.keepAlive) { var old = frames.pop(); old.el.src = 'about:blank'; old.el.remove(); }
+    // while (frames.length > d.settings.keepAlive) { var old = frames.pop(); old.el.src = 'about:blank'; old.el.remove(); }   (PH1 … PH16)
+    f.t = Date.now();   // PH19: last used (Recents)
+    autoClose(id);   // PH19: Off / 3 / 5 / 8, oldest non-pinned first
     frames.forEach(function (x) { x.el.hidden = x !== f; });
     cur = id;
     var ap = $('apps'); ap.style.transform = ''; ap.classList.remove('drag');
@@ -516,6 +522,7 @@
     if (top() === 'drawer') { closeDrawerUI(); replaceTop('app'); }
     else if (top() === 'panel') { closePanelUI(); replaceTop('app'); }
     else if (top() === 'sheet') { closeSheetUI(); replaceTop('app'); }   // over the drawer: Back returns to the drawer
+    else if (top() === 'recents') { closeRecentsUI(); replaceTop('app'); }   // PH19: a Recents card
     else if (top() === 'app') { /* already in an app: switch */ }
     else push('app');
     setTimeout(function () { try { f.el.focus(); } catch (_) { /* */ } }, 50);
@@ -679,7 +686,8 @@
         s.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
         if (key === 'theme') applyTheme();
         if (key === 'clock24') tick();
-        if (key === 'keepAlive') while (frames.length > v) { var old = frames.pop(); if (old.id === cur) { frames.unshift(old); break; } old.el.src = 'about:blank'; old.el.remove(); }
+        // if (key === 'keepAlive') while (frames.length > v) { var old = frames.pop(); if (old.id === cur) { frames.unshift(old); break; } old.el.src = 'about:blank'; old.el.remove(); }   (PH1 … PH16)
+        if (key === 'keepAlive') autoClose(cur);   // PH19
       });
       s.appendChild(b);
     });
@@ -694,7 +702,8 @@
       // row(box, 'Theme', seg('theme', ['system', 'light', 'dark'], ['Hub', 'Light', 'Dark']));   (H80 … PH15)
       row(box, 'Theme', seg('theme', ['light', 'dark'], ['Light', 'Dark']));   // PH16
       row(box, 'Clock', seg('clock24', [true, false], ['24 h', '12 h']));
-      row(box, 'Apps kept open', seg('keepAlive', [1, 2], ['1', '2']));
+      // row(box, 'Apps kept open', seg('keepAlive', [1, 2], ['1', '2']));   (PH1 … PH16)
+      row(box, 'Auto-close apps over', seg('keepAlive', [0, 3, 5, 8], ['Off', '3', '5', '8']));   // PH19: pinned 📌 apps never auto-close
       var w = document.createElement('div'); w.className = 'sw-c';
       WALLS.forEach(function (x) {
         var b = document.createElement('button'); b.type = 'button'; b.dataset.wall = x[0]; b.title = x[1] || x[0];
@@ -752,6 +761,92 @@
     });
   }
 
+  /* ---------- PH19: Recent apps (Android-style). frames[] (most recent first) are the open apps ---------- */
+  function isPinned(id) { return (d.settings.pinned || []).indexOf(id) >= 0; }
+  function setPin(id, on) {
+    var p = (d.settings.pinned || []).filter(function (x) { return x !== id; });
+    if (on) p.push(id);
+    d.settings.pinned = p; persist();
+    if (top() === 'recents') renderRecents();
+  }
+  function appOf(id) { return id === HUB_SETTINGS.id ? HUB_SETTINGS : A.get(id) || { id: id, name: id, icon: '' }; }
+  function recentList() { return frames.map(function (f) { return { id: f.id, name: appOf(f.id).name, pinned: isPinned(f.id), current: f.id === cur }; }); }
+  /** Fully unload one open app: tell it first ({type:'phone:willClose'}, best effort), then blank + remove its iframe. */
+  function closeApp(id) {
+    var f = frames.filter(function (x) { return x.id === id; })[0];
+    if (!f) return false;
+    frames = frames.filter(function (x) { return x !== f; });
+    if (cur === id) cur = '';
+    try { f.el.contentWindow.postMessage({ type: 'phone:willClose', app: id }, location.protocol === 'file:' ? '*' : location.origin); } catch (_) { /* gone */ }
+    f.el.hidden = true;
+    setTimeout(function () { try { f.el.src = 'about:blank'; } catch (_) { /* */ } f.el.remove(); }, 150);   // a moment to save
+    return true;
+  }
+  /** Auto-close limit (settings.keepAlive 0 = Off | 3 | 5 | 8): oldest non-pinned apps go first; keepId (the open one) never. */
+  function autoClose(keepId) {
+    var lim = d.settings.keepAlive;
+    if (!lim) return;
+    while (frames.length > lim) {
+      var v = frames.slice().reverse().filter(function (x) { return x.id !== keepId && !isPinned(x.id); })[0];
+      if (!v) break;
+      closeApp(v.id);
+    }
+  }
+  function clearAll() {
+    var n = 0;
+    frames.slice().forEach(function (f) { if (!isPinned(f.id)) { closeApp(f.id); n++; } });
+    var kept = frames.length;
+    if (top() === 'recents') { if (!kept) back(); else renderRecents(); }
+    if (kept) toast(kept + ' pinned app' + (kept > 1 ? 's' : '') + ' kept open');
+    return n;
+  }
+  function renderRecents() {
+    var list = $('rec-list'); list.textContent = '';
+    frames.forEach(function (f) {
+      var a = appOf(f.id), pin = isPinned(f.id);
+      var c = document.createElement('div'); c.className = 'rc'; c.dataset.app = f.id; c.setAttribute('role', 'listitem');
+      var hd = document.createElement('div'); hd.className = 'rc-hd';
+      hd.appendChild(iconBox(a));
+      var nm = document.createElement('span'); nm.className = 'rc-name'; nm.textContent = a.name; hd.appendChild(nm);
+      var pb = document.createElement('button'); pb.type = 'button'; pb.className = 'rc-pin' + (pin ? ' on' : ''); pb.textContent = '📌';
+      pb.setAttribute('aria-label', (pin ? 'Unpin ' : 'Keep alive: ') + a.name); pb.setAttribute('aria-pressed', pin); hd.appendChild(pb);
+      var xb = document.createElement('button'); xb.type = 'button'; xb.className = 'rc-x'; xb.textContent = '✕'; xb.setAttribute('aria-label', 'Close ' + a.name); hd.appendChild(xb);
+      c.appendChild(hd);
+      // light snapshot stand-in: tinted card with the big icon (no iframe screenshots: too heavy for the Celeron)
+      var sn = document.createElement('div'); sn.className = 'rc-snap'; sn.style.setProperty('--tint', letterColor(a.name));
+      sn.appendChild(iconBox(a));
+      if (pin) { var k = document.createElement('small'); k.textContent = 'Kept alive'; sn.appendChild(k); }
+      c.appendChild(sn);
+      list.appendChild(c);
+    });
+    $('rec-empty').hidden = frames.length > 0;
+    $('rec-clear').hidden = !frames.length;
+    list.scrollLeft = 0;
+  }
+  function openRecents() {
+    renderRecents();
+    if (top() === 'recents') return;
+    setOpen($('recents'), true);
+    var t = top();
+    if (t === 'app') { closeAppUI(); replaceTop('recents'); }   // Recents takes the app's place: Back = home
+    else if (t === 'panel') { closePanelUI(); replaceTop('recents'); }
+    else if (t === 'drawer') { closeDrawerUI(); replaceTop('recents'); }
+    else if (t === 'sheet') { closeSheetUI(); replaceTop('recents'); }
+    else push('recents');
+  }
+  function closeRecentsUI() { setOpen($('recents'), false); }
+  $('rec-clear').addEventListener('click', clearAll);
+  // up-and-hold (home bottom swipe and the in-app bottom strip): still for 300 ms after 60 px up
+  var hold = { t: 0, on: false, y: 0 };
+  function holdMove(dy) {
+    if (hold.on) return;
+    if (dy > -60) { clearTimeout(hold.t); hold.t = 0; return; }
+    if (hold.t && Math.abs(dy - hold.y) < 8) return;
+    clearTimeout(hold.t); hold.y = dy;
+    hold.t = setTimeout(function () { hold.on = true; vibrate(); document.body.classList.add('rec-hint'); }, 300);
+  }
+  function holdEnd() { var on = hold.on; clearTimeout(hold.t); hold = { t: 0, on: false, y: 0 }; document.body.classList.remove('rec-hint'); return on; }
+
   /* ---------- gestures ---------- */
   var H = function () { return innerHeight; }, W = function () { return innerWidth; };
   // HOME: x = pages, up = drawer, down = quick panel, tap = open, long = menu
@@ -768,6 +863,7 @@
         if (homeMode !== 'drawer') { if (!drawerBuilt) { renderTabs(); renderList(); drawerBuilt = true; } homeMode = 'drawer'; }
         var dr = $('drawer'); dr.classList.add('peek');
         dr.style.transform = 'translateY(' + Math.max(0, H() + Math.min(0, dy)) + 'px)';
+        holdMove(dy);   // PH19: up and hold still = Recents
       } else {
         if (homeMode !== 'panel') { renderPanel(); homeMode = 'panel'; }
         $('panel').classList.add('peek'); var b = $('panel-box'); b.classList.add('drag');
@@ -778,6 +874,8 @@
       if (homeMode === 'pages') {
         var pg = $('pages'); pg.classList.remove('drag');
         if (G.passed(dx, vx, -1)) showPage(page + 1); else if (G.passed(dx, vx, 1)) showPage(page - 1); else showPage(page);
+      } else if (homeMode === 'drawer' && holdEnd()) {   // PH19: held → Recents, not the drawer
+        var drh = $('drawer'); drh.style.transform = ''; drh.classList.remove('peek'); openRecents();
       } else if (homeMode === 'drawer') {
         var dr = $('drawer');
         if (G.passed(dy, vy, -1)) { dr.classList.remove('peek'); dr.style.transform = ''; openDrawer(); }
@@ -787,7 +885,7 @@
       }
       homeMode = '';
     },
-    cancel: function () { $('pages').classList.remove('drag'); showPage(page); closePanelUI(); var dr = $('drawer'); dr.style.transform = ''; dr.classList.remove('peek'); homeMode = ''; },
+    cancel: function () { holdEnd(); $('pages').classList.remove('drag'); showPage(page); closePanelUI(); var dr = $('drawer'); dr.style.transform = ''; dr.classList.remove('peek'); homeMode = ''; },
     tap: function (e) {
       var ic = e.target.closest('.ic'); if (ic) { press(ic); openApp(ic.dataset.app); return; }
       var dot = e.target.closest('.dot'); if (dot) showPage(+dot.dataset.page);
@@ -878,6 +976,53 @@
     cancel: function () { var ap = $('apps'); ap.classList.remove('drag'); ap.style.transform = ''; $('edge-arrow').style.cssText = ''; }
   });
 
+  // PH19 RECENTS: x = scroll the cards, swipe a card up = close it, tap card = open, 📌 = keep alive, ✕ = close, tap outside = back
+  var rc0 = null, rs0 = 0;
+  G.attach($('recents'), {
+    start: function (e) { if (top() !== 'recents' || e.target.closest('#rec-clear')) return false; rc0 = e.target.closest('.rc'); rs0 = $('rec-list').scrollLeft; },
+    move: function (dx, dy, axis) {
+      if (axis === 'x') { $('rec-list').scrollLeft = rs0 - dx; return; }
+      if (!rc0) return;
+      var y = Math.min(0, dy); rc0.classList.add('drag');
+      rc0.style.transform = 'translateY(' + y + 'px)'; rc0.style.opacity = String(Math.max(0.2, 1 + y / 300));
+    },
+    end: function (dx, dy, axis, vx, vy) {
+      var c = rc0; rc0 = null;
+      if (!c || axis !== 'y') return;
+      c.classList.remove('drag');
+      if (G.passed(dy, vy, -1)) {
+        c.style.transform = 'translateY(-110%)'; c.style.opacity = '0';
+        setTimeout(function () { closeApp(c.dataset.app); if (!frames.length) back(); else renderRecents(); }, 160);
+      } else { c.style.transform = ''; c.style.opacity = ''; }
+    },
+    cancel: function () { if (rc0) { rc0.classList.remove('drag'); rc0.style.transform = ''; rc0.style.opacity = ''; } rc0 = null; },
+    tap: function (e) {
+      var c = e.target.closest('.rc');
+      if (!c) { back(); return; }
+      var id = c.dataset.app;
+      if (e.target.closest('.rc-pin')) { setPin(id, !isPinned(id)); toast(isPinned(id) ? 'Kept alive: Clear all and auto-close skip it' : 'Unpinned'); return; }
+      if (e.target.closest('.rc-x')) { closeApp(id); if (!frames.length) back(); else renderRecents(); return; }
+      openApp(id);
+    }
+  });
+  // PH19 APP: bottom strip, swipe up = home, swipe up and hold = Recents
+  G.attach($('rec-edge'), {
+    captureOnDown: true,
+    start: function () { if (top() !== 'app') return false; },
+    move: function (dx, dy, axis) {
+      if (axis !== 'y') return;
+      var ap = $('apps'), y = Math.min(0, dy); ap.classList.add('drag');
+      ap.style.transform = 'translateY(' + y * 0.3 + 'px) scale(' + Math.max(0.85, 1 + y / 1500) + ')';
+      holdMove(dy);
+    },
+    end: function (dx, dy, axis, vx, vy) {
+      var ap = $('apps'); ap.classList.remove('drag'); ap.style.transform = '';
+      if (holdEnd()) openRecents();
+      else if (axis === 'y' && G.passed(dy, vy, -1)) back();
+    },
+    cancel: function () { holdEnd(); var ap = $('apps'); ap.classList.remove('drag'); ap.style.transform = ''; }
+  });
+
   // SHEET: tap the shade = close; drag down on the sheet = close
   G.attach($('sheet-shade'), { tap: function () { back(); } });
 
@@ -921,6 +1066,9 @@
     open: openApp, back: back, hide: hideApp, unhide: unhideApp, hidden: hiddenIds, openHidden: openHidden,   // PH10
     // PH14: for phone_connect.js (the Connect sheet uses the launcher's sheet, in-app dialog and toast)
     top: top, openSheet: openSheet, closeSheet: closeSheetUI, ask: ask, toast: toast, sheetBtn: sheetBtn,
-    renderPanel: renderPanel, panelOpen: function () { return top() === 'panel'; }
+    renderPanel: renderPanel, panelOpen: function () { return top() === 'panel'; },
+    recents: openRecents   // PH19
   };
+  // PH19: for future gesture mapping (PH18) and the APK
+  window.PhoneRecents = { open: openRecents, close: function () { if (top() === 'recents') back(); }, list: recentList, closeApp: closeApp, clearAll: clearAll, pin: setPin, isPinned: isPinned };
 })();
