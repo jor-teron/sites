@@ -2,6 +2,7 @@
  * Files app look (apps/system/files/files.css). Dark like the Hub; drives left, folder right
  * (grid of big icons or list, selection highlight (H123: no round checkboxes), drop highlights, progress bar, viewers);
  * under 640 px the drives become a row of chips on top. Big tap targets, jelly presses.
+ * H126: tab strip (.tabs, files_tabs.js) at the end of this file.
  * Dialogs + menu: shared/dialog/dialog.css, shared/ctxmenu/ctxmenu.css.
  */
 :root { --accent: #6ea8fe; --bg: #12151c; --side: #0d1016; --card: #1a1e27; --line: rgba(255,255,255,.08);
@@ -266,3 +267,24 @@ html.hub-xp .marquee { --marq: #316ac5; border-radius: 0; }   /* XP selection bl
 .drive-set { font-size: 1rem; }
 .drive-addnet { display: block; margin: 12px 10px 4px; font-size: .84rem; color: var(--accent); text-decoration: none; }
 .drive-addnet:hover { text-decoration: underline; }
+
+/* H126: tabs (files_tabs.js) above the path bar. Theme colours come from the variables, so Light / Dark,
+   XP and Glass all follow. The row scrolls sideways when the tabs don't fit (narrow windows too). */
+.tabs { flex: none; padding: 6px 8px 0; border-bottom: 1px solid var(--line); }
+.tabs-row { display: flex; align-items: flex-end; gap: 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.tab { flex: 0 1 200px; min-width: 110px; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 4px 0 10px;
+  border-radius: 9px 9px 0 0; color: var(--muted); font-size: .86rem; cursor: default; user-select: none; position: relative; }
+.tab:hover { background: var(--line); color: var(--text); }
+.tab.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: inset 0 2px 0 var(--accent), 0 1px 0 var(--card); }
+.tab.drop-on { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.tab-ico { font-size: .95rem; flex: none; }
+.tab-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-x { flex: none; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 1.05rem; line-height: 1; }
+.tab-x:hover { background: var(--line); color: var(--text); }
+.tabs.one .tab-x { display: none; }   /* the last tab can't be closed */
+.tab-new { flex: none; width: 30px; height: 30px; margin: 0 0 2px 2px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center; }
+.tab-new:hover { background: var(--line); color: var(--text); }
+.tab-new svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+@media (max-width: 640px) { .tab { flex: 0 0 auto; min-width: 96px; max-width: 160px; } }
