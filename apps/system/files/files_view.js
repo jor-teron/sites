@@ -130,11 +130,13 @@
     status();
   }
 
-  /* H107: status bar — item count (+ files' total size), selection count + size. */
+  /* H107: status bar — item count (+ files' total size), selection count + size.
+     H108a: on phone hide it unless something is selected (H108b will add a bottom selection bar). */
   function status() {
     const sb = $('status');
     if (!sb) return;
     if (!cur()) { sb.hidden = true; return; }
+    if (window.matchMedia('(max-width: 639px)').matches && !st.sel.size) { sb.hidden = true; return; }   // H108a
     sb.hidden = false;
     const all = st.shown, n = all.length;
     const sum = (arr) => arr.reduce((t, e) => t + (e.kind === 'file' ? (e.size || 0) : 0), 0);

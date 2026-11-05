@@ -1810,3 +1810,30 @@ Left for the next team
   apps/system/ pointing at os/index.html.
 
 -- End of Team 3 week wrap-up --
+
+------------------------------------------------------------------------------
+-- H108a: Files compact phone layout (5 Nov 2026) --
+------------------------------------------------------------------------------
+What
+- Under 640 px the Files app (apps/system/files/) no longer stacks path on its
+  own line plus a full command bar. One nav row: Back, Up, path (crumbs scroll
+  sideways, already scrolled to the end), a search icon that expands the search
+  box across the bar (Escape / empty blur / × closes), and More.
+- The cmd-bar is hidden on phone. Its commands (New folder, Upload, Sort with
+  the 6 options, Grid / List, Refresh) plus Forward live in the More menu
+  (FX.menu.forMore). Desktop More is unchanged (folder / selection menu).
+- The tab strip (.tabs) is hidden when there is only one tab (.tabs.one).
+- Drive chips are a bit shorter (~36 px). List rows stay at least 48 px; grid
+  tiles stay minmax(96px, 1fr). On phone the status bar hides unless something
+  is selected.
+- Desktop / wide (>= 640 px) look and behaviour are unchanged. No build bump.
+
+Files
+- apps/system/files/files.css (phone @media), index.html (#search-tog, #more-nav,
+  #search-x), files.js (More + search expand), files_menu.js (forMore),
+  files_view.js (status hide), files_tabs.js (comment). Docs: this file +
+  hub/docs/build_history_2026.txt.
+
+H108b (pending)
+- Bottom selection bar on phone (Cut / Copy / Delete / Rename / More) after a
+  long-press selects items. Not in H108a.

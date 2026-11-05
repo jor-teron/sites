@@ -115,7 +115,7 @@
     const row = el('div', 'tabs-row'); row.setAttribute('role', 'tablist'); row.setAttribute('aria-label', 'Tabs');
     row.append(...out, plus);
     strip.replaceChildren(row);
-    strip.classList.toggle('one', tabs.length < 2);
+    strip.classList.toggle('one', tabs.length < 2);   // H108a: files.css hides .tabs.one on phone
     const on = row.querySelector('.tab.on');
     if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }

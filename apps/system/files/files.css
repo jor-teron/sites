@@ -93,6 +93,11 @@ button:disabled { opacity: .4; cursor: default; }
 .search { width: 100%; min-height: 38px; padding: 0 10px 0 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: .92rem; }
 .search::placeholder { color: var(--muted); opacity: 1; }   /* H105: readable placeholder */
 .search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+/* H108a: phone-only search toggle / close / More in the nav-bar (hidden on desktop) */
+.search-tog, .more-nav, .search-x { display: none; }
+.search-x { flex: none; width: 32px; height: 32px; margin-right: 2px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--muted); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.search-x:hover { color: var(--text); background: var(--line); }
 /* sort: icon + select with its own chevron (SVG mask in currentColor, so it follows every theme) */
 .sort-box { position: relative; gap: 4px; padding: 0 0 0 10px; }
 .sort-box::after { content: ''; position: absolute; right: 10px; width: 10px; height: 10px; background: currentColor; pointer-events: none;
@@ -234,25 +239,44 @@ html.hub-xp .marquee { --marq: #316ac5; border-radius: 0; }   /* XP selection bl
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
 /* narrow (phone): drives as chips on top */
+/* H108a: compact phone layout — one nav row, cmd-bar hidden (commands in More), tabs.one hidden,
+   slimmer drive chips; H108b = bottom selection bar (not yet). */
 @media (max-width: 639px) {
   .app { flex-direction: column; }
-  .side { width: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px; overflow-x: auto; }
+  .side { width: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 4px 6px; overflow-x: auto; }   /* H108a: slimmer chips */
   .side-title { display: none; }
-  .drives { flex-direction: row; }
+  .drives { flex-direction: row; gap: 4px; }
   .drive { flex: none; flex-wrap: nowrap; }
   .drive.on { box-shadow: inset 0 -3px 0 var(--accent); }
-  .drive-allow { margin: 0 4px 0 0; }
-  .drive-add { flex: none; padding: 0 14px; }
-  .side { flex-direction: row; align-items: center; gap: 6px; }   /* H109: drives, quick links, Manage as one chip row */
+  .drive-open { min-height: 36px; padding: 4px 8px; gap: 6px; }   /* H108a */
+  .drive-ico { font-size: 1.15rem; }
+  .drive-x { width: 32px; height: 32px; }
+  .drive-allow { margin: 0 4px 0 0; min-height: 32px; }
+  .drive-add { flex: none; min-height: 36px; padding: 0 12px; }   /* H108a */
+  .side { flex-direction: row; align-items: center; gap: 4px; }   /* H109: drives, quick links, Manage as one chip row */
   .quick { flex-direction: row; margin: 0; flex: none; }
   .quick-title, .storage { display: none !important; }
-  .quick-link { flex: none; }
+  .quick-link { flex: none; min-height: 36px; padding: 0 10px; }   /* H108a */
   .side-foot { margin: 0; padding: 0; flex: none; }
+  .drive-manage { min-height: 36px; }
   .list.v-list .item-date { display: none; }
+  .list.v-list .item { min-height: 48px; }   /* H108a: bigger list rows (already 48 on desktop; keep explicit) */
   .list.v-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
-  .nav-bar { flex-wrap: wrap; }   /* H106: path on its own line; the full phone tidy-up is H108 */
-  .path { order: 1; flex-basis: 100%; }
-  .search-box { flex: 1 1 140px; }
+  /* H108a: one nav row — Back, Up, path (scrolls), search icon, More. Forward + cmd-bar hidden. */
+  .nav-bar { flex-wrap: nowrap; min-height: 48px; padding: 4px 6px; gap: 4px; }
+  .path { order: 0; flex: 1 1 auto; flex-basis: auto; min-width: 0; min-height: 36px; }
+  #fwd, .cmd-bar { display: none !important; }
+  .search-tog, .more-nav { display: inline-flex; }
+  .search-box { display: none; flex: 1 1 auto; min-width: 0; }
+  .nav-bar.searching .search-box { display: flex; }
+  .nav-bar.searching .search { padding-right: 36px; }
+  .nav-bar.searching .search-x { display: inline-flex; align-items: center; justify-content: center; position: absolute; right: 2px; }
+  .nav-bar.searching .path,
+  .nav-bar.searching #back,
+  .nav-bar.searching #up,
+  .nav-bar.searching .search-tog,
+  .nav-bar.searching .more-nav { display: none; }
+  .tabs.one { display: none; }   /* H108a: hide the tab strip when only one tab */
   .tb span, .seg span { display: none; }   /* icons only */
 }
 
@@ -288,3 +312,5 @@ html.hub-xp .marquee { --marq: #316ac5; border-radius: 0; }   /* XP selection bl
 .tab-new:hover { background: var(--line); color: var(--text); }
 .tab-new svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 @media (max-width: 640px) { .tab { flex: 0 0 auto; min-width: 96px; max-width: 160px; } }
+/* H108a: phone chip row - "Add network drive" stays on one line like the other chips */
+@media (max-width: 639px) { .drive-addnet { flex: none; margin: 0 4px; white-space: nowrap; } }
