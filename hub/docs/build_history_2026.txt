@@ -484,3 +484,4 @@
 2026-11-01 , 20261029s => H85: hub_sw.js SHELL precaches hub_dialog_bridge.js / hub_dnd.js / hub_attention.js and /phone.html + phone/ files (phone look opens offline); hub/build.txt line 2 fixed to hub-shell-v127; CACHE name and V not bumped (same cache filled by the new worker).
 2026-11-01 , 20261029s => H86: hub_chat.js accepts the Pooh Chat {sharedLink:'chat'} relay from any Hub iframe showing pooh-chat (desktop .wm-body windows too, not only #app-frame); poohOpen() also counts an on-screen desktop Pooh window; build number and hub-shell-v127 not bumped.
 2026-11-05 , 20261104r => H108a: Files compact phone layout (one nav row under 640 px, cmd-bar commands in More, tabs.one hidden, slimmer drive chips; no build bump)
+2026-11-06 , 20261104r => H108b: Files phone selection bar (under 640 px while items are selected: clear, count, Cut / Copy / Delete / Rename / More; list padded; status bar hidden on phone; no build bump)

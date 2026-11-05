@@ -1836,4 +1836,31 @@ Files
 
 H108b (pending)
 - Bottom selection bar on phone (Cut / Copy / Delete / Rename / More) after a
-  long-press selects items. Not in H108a.
+  long-press selects items. Not in H108a. -> done in H108b below.
+
+------------------------------------------------------------------------------
+-- H108b: Files phone selection bar (6 Nov 2026) --
+------------------------------------------------------------------------------
+What
+- Under 640 px, while items are selected (long-press selects; then a tap
+  adds / removes), a bar floats above the bottom edge of the Files app:
+  x (clear selection), "N selected", Cut, Copy, Delete (danger colour),
+  Rename (only enabled for one item, same rule as the menu) and More (opens
+  FX.menu.forItems, the usual selection menu: Open, Open with, Paste,
+  Download, Properties ...). It hides when the selection is empty.
+- Buttons are icon + label, at least 44-48 px; under 380 px icons only.
+  Colours come from --card / --text / --line / --hi / --bad, so Dark, Light,
+  XP and Glass all follow.
+- The list gets 80 px bottom padding (.list.has-selbar) while the bar shows,
+  so the last row is never hidden under it.
+- On phone the status bar is now always hidden (the bar shows the count);
+  H108a showed it during a selection.
+- Desktop / wide (>= 640 px): no bar, no change. H108a's phone More in the
+  nav row still works. No build bump, no new files.
+
+Files
+- apps/system/files/index.html (#selbar markup), files_menu.js (selBar() +
+  button wiring to FX.act clip / remove / rename and forItems; refresh on
+  crossing 640 px), files_view.js (paintSel calls FX.menu.selBar; status
+  hidden on phone), files.css (.selbar styles). Docs: this file +
+  hub/docs/build_history_2026.txt.

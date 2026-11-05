@@ -128,15 +128,17 @@
     list.classList.toggle('selecting', st.sel.size > 0);
     $('selinfo').textContent = '';   // H107: counts moved to the status bar
     status();
+    if (FX.menu && FX.menu.selBar) FX.menu.selBar();   // H108b: phone selection bar
   }
 
   /* H107: status bar — item count (+ files' total size), selection count + size.
-     H108a: on phone hide it unless something is selected (H108b will add a bottom selection bar). */
+     H108a: on phone hide it unless something is selected. H108b: on phone always hidden (the selection bar shows the count). */
   function status() {
     const sb = $('status');
     if (!sb) return;
     if (!cur()) { sb.hidden = true; return; }
-    if (window.matchMedia('(max-width: 639px)').matches && !st.sel.size) { sb.hidden = true; return; }   // H108a
+    // if (window.matchMedia('(max-width: 639px)').matches && !st.sel.size) { sb.hidden = true; return; }   (H108a)
+    if (window.matchMedia('(max-width: 639px)').matches) { sb.hidden = true; return; }   // H108b
     sb.hidden = false;
     const all = st.shown, n = all.length;
     const sum = (arr) => arr.reduce((t, e) => t + (e.kind === 'file' ? (e.size || 0) : 0), 0);

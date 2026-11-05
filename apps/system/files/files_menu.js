@@ -7,7 +7,9 @@
  * H126: "Open in new tab" in both menus (a folder / this folder); tab keys live in files_tabs.js.
  * H108a: forMore(x, y) — phone More menu: Forward + cmd-bar commands (New folder, Upload, Sort,
  *   Grid/List, Refresh) then the usual folder / selection actions (desktop More stays forItems/forFolder).
- * API FX.menu: forItems(x, y), forFolder(x, y), forMore(x, y).
+ * H108b: selBar() — phone (<640 px) bottom selection bar #selbar (count, Cut, Copy, Delete, Rename, More = forItems,
+ *   × = clear). Called from FX.view.paintSel; the buttons run the same FX.act actions as the menu.
+ * API FX.menu: forItems(x, y), forFolder(x, y), forMore(x, y), selBar().
  */
 (function () {
   'use strict';
@@ -173,5 +175,31 @@
     ]));
   }
 
-  FX.menu = { forItems, forFolder, forMore };
+  /* H108b: phone selection bar — visible under 640 px while something is selected. */
+  const bar = $('selbar');
+  function selBar() {
+    if (!bar) return;
+    const n = st.sel.size, on = n > 0 && phone();
+    bar.hidden = !on;
+    $('list').classList.toggle('has-selbar', on);
+    if (!on) return;
+    bar.querySelector('.sb-count').textContent = n + ' selected';
+    bar.querySelector('[data-a="rename"]').disabled = n !== 1;   // same rule as the menu (Rename needs one item)
+  }
+  if (bar) {
+    bar.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-a]');
+      if (!b || b.disabled) return;
+      const sel = FX.selected(), a = b.dataset.a;
+      if (a === 'clear') FX.view.clear();
+      else if (!sel.length) return;
+      else if (a === 'cut' || a === 'copy') A().clip(a);
+      else if (a === 'delete') A().remove(sel);
+      else if (a === 'rename') { if (sel.length === 1) A().rename(sel[0]); }
+      else if (a === 'more') { const r = b.getBoundingClientRect(); forItems(r.left, r.top - 4); }
+    });
+    window.matchMedia('(max-width: 639px)').addEventListener('change', () => FX.view.paintSel());   // crossing 640 px
+  }
+
+  FX.menu = { forItems, forFolder, forMore, selBar };
 })();
