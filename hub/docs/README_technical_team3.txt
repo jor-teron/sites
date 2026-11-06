@@ -2089,3 +2089,47 @@ Testing
 - Short offline mocked smoke: DeepInfra data URL, whitespace base64, remote
   URL with no key on the download, invalid data, plus Gemini, OpenRouter and
   DeepInfra fallback image responses. No live provider requests.
+
+------------------------------------------------------------------------------
+-- 6-7 Nov 2026: Osmos, HEX 3D engine, Valley Explorer, AoE HUD
+------------------------------------------------------------------------------
+All Games items in this entry are merged on main.
+
+Osmos (apps/games/osmos/): calm passive-cell absorption; no AI. OSM1a (#418)
+provides 20 deterministic levels (00-19), tiny mass-ejection movement and
+mouse/touch, saved osmos.osm1a.progress. OSM1b (#419) adds levels 20-39: wells
+20-27, currents 28-33, soft membrane/obstacle fields 34-39, preserving the first
+20. OSM1c (#420) registers it in Arcade with a local glowing SVG. OSM1d (#423)
+tunes zero passive drag, ~1% mass per ejection and recoil impulse 140 while
+preserving speed limits and environmental forces. Not human-play verified;
+only syntax and Node smoke checks claimed.
+
+HEX (apps/games/engine/): shared lightweight engine, not a runtime download
+system. WebGPU Three.js r170, entirely local vendor modules, no WebGL fallback;
+requires navigator.gpu and HTTP (not file://). HEX-1 (#425) creates a fixed-step
+foundation and Valley Explorer: 160-unit deterministic terrain shared by mesh
+and collision, WASD/mouse + touch, water/fog/collectibles. HEX-1a (#426)
+registers the demo with its local icon. HEX-2 (#428) adds local GLB loading
+(3d/core/assets.js, vendored GLTFLoader/BufferGeometryUtils), rock.glb proof,
+and terrain/lighting improvements. HEX-7 (#429) adds instancing, reduced
+allocation, capped device scaling, quality presets, hidden-tab pause and stuck
+input cleanup. HEX-7a (#431) adds Space/touch jump, gravity/landing, retaining
+existing movement and 30fps all qualities. No live performance figures claimed.
+HEX-8 (#439; main ead52a45) documents engine setup/API/assets in
+apps/games/engine/README.md, reusable example in engine/EXAMPLE.md.
+Docs intentionally separate three families: apps/games/standalone/README.md
+for standalone games, apps/games/learn/README.md for Learn, engine/ for HEX.
+(The formerly shared apps/games/README.md is now removed.)
+
+AoE RTS ARQ1e (#438; main 963eacb8): full on-screen labels Population,
+Villagers and Buildings consistently across devices, replacing abbreviations;
+no other UI change.
+
+Care, Teams 1 and 2: Osmos progress is localStorage osmos.osm1a.progress.
+HEX requires a WebGPU-capable browser and an HTTP server. Local vendor files
+are runtime dependencies; do not remove them assuming they are optional dev
+assets. Current documentation separates HEX, Standalone Games and Learn.
+
+Parked or future, NOT shipped: NIX-G3, LRN-WK1, AoE Ages/ARQ1f fog, HEX 2D,
+AI for Osmos. Do not describe these plans as completed. All merged Games work
+listed above has no outstanding Push.
