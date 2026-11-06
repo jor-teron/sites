@@ -16,6 +16,8 @@
  *   HubKeys.onChange(fn)       fn({name, present}) on every change (this page or another tab /
  *                              frame, via the 'storage' event); name '' = several changed. Returns unsubscribe().
  *   HubKeys.KNOWN              [{name, label, kind, url, hint}] the keys Settings shows a row for
+ *                              H134a: + usedBy ['Agent', …] the apps checked in code to read that key (Settings
+ *                              shows it as a "Used by" line; [] = none checked yet, no line). Names only, for people.
  * H29.3 Undo last sync (profile sync backup, Settings › Devices › Undo last sync). The key store has no protected or
  *   encrypted space (H28: plain localStorage), so the backup of the keys a sync is about to change is kept in its
  *   OWN entry next to it, localStorage 'sites-hub.keysUndo' = { v: 1, at, prev: { name: old value | null } }
@@ -38,14 +40,18 @@
   const STORE = 'sites-hub.keys';
   const NAME_RE = /^[a-z0-9][a-z0-9_.-]{0,39}$/;
   const KNOWN = [
-    { name: 'tavily', label: 'Tavily', kind: 'key', url: 'https://app.tavily.com', hint: 'Web search for Agent / News. Free: 1,000 credits a month.' },
+    // { name: 'tavily', label: 'Tavily', kind: 'key', url: 'https://app.tavily.com', hint: 'Web search for Agent / News. Free: 1,000 credits a month.' },   (before H134a: News does not read it yet)
+    { name: 'tavily', label: 'Tavily', kind: 'key', url: 'https://app.tavily.com', hint: 'Web search and page reading. Free: 1,000 credits a month, no card (a basic search is 1 credit).' },
     { name: 'gemini', label: 'Google Gemini', kind: 'key', url: 'https://aistudio.google.com/apikey', hint: 'Gemini models. Free tier with per-model limits.' },
     { name: 'openai_base', label: 'OpenAI-compatible base URL', kind: 'url', url: 'https://platform.openai.com/docs/api-reference', hint: 'e.g. https://api.openai.com/v1, https://api.groq.com/openai/v1, https://openrouter.ai/api/v1' },
-    { name: 'openai_key', label: 'OpenAI-compatible key', kind: 'key', url: 'https://platform.openai.com/api-keys', hint: 'The key for the base URL above.' },
-    { name: 'ollama_url', label: 'Ollama URL', kind: 'url', url: 'https://ollama.com/download', hint: 'Local models, e.g. http://localhost:11434 (no key).' },
+    // { name: 'openai_key', label: 'OpenAI-compatible key', kind: 'key', url: 'https://platform.openai.com/api-keys', hint: 'The key for the base URL above.' },   (before H134a)
+    { name: 'openai_key', label: 'OpenAI-compatible key', kind: 'key', url: 'https://platform.openai.com/api-keys', hint: 'The key for the base URL above. Free or paid depends on that service (OpenAI is paid).' },
+    // { name: 'ollama_url', label: 'Ollama URL', kind: 'url', url: 'https://ollama.com/download', hint: 'Local models, e.g. http://localhost:11434 (no key).' },   (before H134a)
+    { name: 'ollama_url', label: 'Ollama URL', kind: 'url', url: 'https://ollama.com/download', hint: 'Local models, e.g. http://localhost:11434 (no key). Free: runs on your own computer.' },
     // H28.1
     { name: 'groq', label: 'Groq', kind: 'key', url: 'https://console.groq.com/keys', hint: 'Fast open models (Llama, Qwen, gpt-oss). Free plan with per-model limits.' },
-    { name: 'openrouter', label: 'OpenRouter', kind: 'key', url: 'https://openrouter.ai/settings/keys', hint: 'Hundreds of models behind one key; some :free models.' },
+    // { name: 'openrouter', label: 'OpenRouter', kind: 'key', url: 'https://openrouter.ai/settings/keys', hint: 'Hundreds of models behind one key; some :free models.' },   (before H134a)
+    { name: 'openrouter', label: 'OpenRouter', kind: 'key', url: 'https://openrouter.ai/settings/keys', hint: 'Hundreds of models behind one key; some :free models with a daily request limit (Test shows what is left).' },
     { name: 'deepseek', label: 'DeepSeek', kind: 'key', url: 'https://platform.deepseek.com/api_keys', hint: 'DeepSeek models. Paid (prepaid balance).' },
     { name: 'xai', label: 'Grok API (xAI)', kind: 'key', url: 'https://console.x.ai', hint: 'Grok models from xAI. Paid per token.' },
     // H111
@@ -53,6 +59,16 @@
     // H28.2
     { name: 'gvision', label: 'Google Cloud Vision', kind: 'key', url: 'https://console.cloud.google.com/apis/credentials', hint: 'Image labels and text (OCR). Needs a billing account; first 1,000 units a month free.' },
   ];
+  // H134a: which apps read each key (checked in code, Nov 2026). Agent: apps/lab/agent/app/core/hubkeys.js NAMES;
+  // OCR: apps/office/ocr/ocr_hubkey.js; Vision: apps/lab/vision/vision_gcv.js. Caption for Nei and Transcribe keep
+  // their own Gemini field (not the Hub key) and News reads none yet, so they are not listed. Add an app here when it
+  // starts reading a key through HubKeys.
+  const USED_BY = {
+    tavily: ['Agent'], gemini: ['Agent'], openai_base: ['Agent'], openai_key: ['Agent'], ollama_url: ['Agent'],
+    groq: ['Agent'], openrouter: ['Agent'], deepseek: ['Agent'], xai: ['Agent'], deepinfra: ['Agent'],
+    gvision: ['OCR', 'Vision'],
+  };
+  KNOWN.forEach((d) => { d.usedBy = USED_BY[d.name] || []; });
   const listeners = new Set();
 
   function read() {

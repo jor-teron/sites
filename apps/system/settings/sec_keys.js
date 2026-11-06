@@ -17,6 +17,7 @@
  *   H28.2 gvision POST vision.googleapis.com/v1/images:annotate?key= with no images ({ requests: [] }: nothing to
  *   bill). 400 with reason API_KEY_INVALID = bad key; any other 400 / 200 = the key reached Vision; 403 tells apart
  *   API not enabled, billing off and key restrictions.
+ * H134a: a muted "Used by: Agent, …" line under the hint, from HubKeys.KNOWN[].usedBy (custom keys: none).
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
  */
 (function () {
@@ -143,6 +144,7 @@
     }
     card.appendChild(head);
     if (def.hint) card.appendChild(ui.el('p', 'key-hint', def.hint));
+    if (def.usedBy && def.usedBy.length) card.appendChild(ui.el('p', 'key-used', 'Used by: ' + def.usedBy.join(', ')));   // H134a
 
     const line = ui.el('div', 'key-line');
     const inp = ui.el('input', 'key-input');
