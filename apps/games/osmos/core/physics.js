@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        core/physics.js
- * Project:     Osmos OSM1b
+ * Project:     Osmos OSM1d
  * Purpose:     Mass↔radius, eject, bounce, absorb, field forces.
  *              Wells / currents / membranes are passive fields — no AI.
  * Depends on:  OSMOS_CONFIG
@@ -11,22 +11,38 @@ var OSMOS_PHYSICS = (function () {
 
   function radius(mass) { return Math.sqrt(Math.max(mass, 0.5)) * 2.15; }
 
+  function clampSpeed(c) {
+    var max = C.player.maxSpeed;
+    if (!max) return;
+    var sp = Math.sqrt(c.vx * c.vx + c.vy * c.vy);
+    if (sp > max) {
+      var s = max / sp;
+      c.vx *= s; c.vy *= s;
+    }
+  }
+
+  /* Momentum-conserving eject: blob leaves at player_v + relSpeed*aim;
+   * player recoils by -(m / remainingMass) * relSpeed * aim. No drag/braking. */
   function eject(player, tx, ty) {
-    if (!player || !player.alive || player.mass <= C.player.minMass + C.player.ejectMass) return null;
+    if (!player || !player.alive) return null;
+    var m = Math.max(C.player.ejectMassMin, player.mass * C.player.ejectMassFrac);
+    if (player.mass - m < C.player.minMass) return null;
     var dx = tx - player.x, dy = ty - player.y;
     var len = Math.sqrt(dx * dx + dy * dy) || 1;
     dx /= len; dy /= len;
-    var m = C.player.ejectMass;
-    player.mass -= m;
-    var impulse = C.player.ejectImpulse / Math.max(player.mass, 8);
-    player.vx -= dx * impulse;
-    player.vy -= dy * impulse;
+    var remain = player.mass - m;
+    var rel = C.player.ejectRelSpeed;
+    player.mass = remain;
+    player.vx -= dx * rel * (m / remain);
+    player.vy -= dy * rel * (m / remain);
+    clampSpeed(player);
     return {
-      id: -1, kind: 'eject', x: player.x + dx * radius(player.mass),
+      id: -1, kind: 'eject',
+      x: player.x + dx * radius(player.mass),
       y: player.y + dy * radius(player.mass),
-      vx: dx * impulse * 2.4 + player.vx * 0.2,
-      vy: dy * impulse * 2.4 + player.vy * 0.2,
-      mass: m * 0.85, alive: true, life: 2.4
+      vx: player.vx + dx * rel,
+      vy: player.vy + dy * rel,
+      mass: m * 0.85, alive: true, life: 2.8
     };
   }
 
@@ -34,8 +50,7 @@ var OSMOS_PHYSICS = (function () {
     if (!c.alive) return;
     c.x += c.vx * dt;
     c.y += c.vy * dt;
-    c.vx *= Math.pow(C.player.drag, dt * 60);
-    c.vy *= Math.pow(C.player.drag, dt * 60);
+    /* OSM1d: no passive drag — velocity unchanged unless fields / eject / walls. */
     if (c.kind === 'food' || c.kind === 'big' || c.kind === 'hazard') {
       c.vx += Math.sin(c.y * 0.01 + c.id) * 1.2 * dt;
       c.vy += Math.cos(c.x * 0.01 + c.id) * 1.2 * dt;
@@ -45,6 +60,7 @@ var OSMOS_PHYSICS = (function () {
     if (c.x > W - r) { c.x = W - r; c.vx = -Math.abs(c.vx) * C.player.bounce; }
     if (c.y < r) { c.y = r; c.vy = Math.abs(c.vy) * C.player.bounce; }
     if (c.y > H - r) { c.y = H - r; c.vy = -Math.abs(c.vy) * C.player.bounce; }
+    clampSpeed(c);
     if (c.life != null) {
       c.life -= dt;
       if (c.life <= 0) c.alive = false;
