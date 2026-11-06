@@ -1,7 +1,8 @@
 /* ============================================================
  * File:        core/physics.js
- * Project:     Osmos OSM1a
- * Purpose:     Mass↔radius, eject thrust, bounce, absorb rules.
+ * Project:     Osmos OSM1b
+ * Purpose:     Mass↔radius, eject, bounce, absorb, field forces.
+ *              Wells / currents / membranes are passive fields — no AI.
  * Depends on:  OSMOS_CONFIG
  * ============================================================ */
 var OSMOS_PHYSICS = (function () {
@@ -35,7 +36,7 @@ var OSMOS_PHYSICS = (function () {
     c.y += c.vy * dt;
     c.vx *= Math.pow(C.player.drag, dt * 60);
     c.vy *= Math.pow(C.player.drag, dt * 60);
-    if (c.kind === 'food' || c.kind === 'big') {
+    if (c.kind === 'food' || c.kind === 'big' || c.kind === 'hazard') {
       c.vx += Math.sin(c.y * 0.01 + c.id) * 1.2 * dt;
       c.vy += Math.cos(c.x * 0.01 + c.id) * 1.2 * dt;
     }
@@ -47,6 +48,74 @@ var OSMOS_PHYSICS = (function () {
     if (c.life != null) {
       c.life -= dt;
       if (c.life <= 0) c.alive = false;
+    }
+  }
+
+  function applyFields(cells, level, dt) {
+    if (!level) return;
+    var i, c, w, d, nx, ny, falloff, cur, dx, dy;
+    var wells = level.wells || [];
+    var currents = level.currents || [];
+    for (i = 0; i < cells.length; i++) {
+      c = cells[i];
+      if (!c.alive || c.kind === 'eject') continue;
+
+      for (var wi = 0; wi < wells.length; wi++) {
+        w = wells[wi];
+        dx = w.x - c.x; dy = w.y - c.y;
+        d = Math.sqrt(dx * dx + dy * dy) || 0.001;
+        if (d >= w.r) continue;
+        falloff = 1 - d / w.r;
+        nx = dx / d; ny = dy / d;
+        c.vx += nx * w.pull * falloff * dt;
+        c.vy += ny * w.pull * falloff * dt;
+        if (c.kind === 'player' && d < w.core) {
+          var loss = C.wells.coreMassPerSec * dt * (1 - d / w.core);
+          if (c.mass > C.wells.coreSafeMassFloor) {
+            c.mass = Math.max(C.wells.coreSafeMassFloor, c.mass - loss);
+          }
+        }
+      }
+
+      for (var ci = 0; ci < currents.length; ci++) {
+        cur = currents[ci];
+        if (Math.abs(c.x - cur.x) > cur.hw || Math.abs(c.y - cur.y) > cur.hh) continue;
+        c.vx += cur.vx * dt;
+        c.vy += cur.vy * dt;
+      }
+    }
+
+    applyMembranes(cells, level.membranes || [], dt);
+  }
+
+  function applyMembranes(cells, membranes, dt) {
+    if (!membranes.length) return;
+    var thick = C.membranes.thickness;
+    var i, c, m, ax, ay, bx, by, px, py, t, qx, qy, dx, dy, dist, nx, ny, push;
+    for (i = 0; i < cells.length; i++) {
+      c = cells[i];
+      if (!c.alive) continue;
+      for (var mi = 0; mi < membranes.length; mi++) {
+        m = membranes[mi];
+        ax = m.x1; ay = m.y1; bx = m.x2; by = m.y2;
+        px = bx - ax; py = by - ay;
+        var len2 = px * px + py * py || 1;
+        t = ((c.x - ax) * px + (c.y - ay) * py) / len2;
+        if (t < 0) t = 0; else if (t > 1) t = 1;
+        qx = ax + px * t; qy = ay + py * t;
+        dx = c.x - qx; dy = c.y - qy;
+        dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+        var need = radius(c.mass) + thick * 0.5;
+        if (dist >= need) continue;
+        nx = dx / dist; ny = dy / dist;
+        push = (need - dist);
+        c.x += nx * push; c.y += ny * push;
+        var vn = c.vx * nx + c.vy * ny;
+        if (vn < 0) {
+          c.vx -= (1 + C.membranes.bounce) * vn * nx;
+          c.vy -= (1 + C.membranes.bounce) * vn * ny;
+        }
+      }
     }
   }
 
@@ -65,6 +134,15 @@ var OSMOS_PHYSICS = (function () {
     }
 
     if (other.kind === 'eject') return;
+
+    if (other.kind === 'hazard') {
+      player.mass = Math.max(C.player.minMass * 0.9,
+        player.mass - C.absorb.largeLoss * 0.7);
+      softPush(player, other, other.x - player.x, other.y - player.y,
+        Math.sqrt(Math.pow(other.x - player.x, 2) + Math.pow(other.y - player.y, 2)) || 1,
+        radius(player.mass), radius(other.mass));
+      return;
+    }
 
     if (other.mass < player.mass * C.absorb.ratio) {
       player.mass += other.mass * 0.92;
@@ -96,5 +174,8 @@ var OSMOS_PHYSICS = (function () {
     b.vx += nx * bounce; b.vy += ny * bounce;
   }
 
-  return { radius: radius, eject: eject, stepCell: stepCell, collide: collide };
+  return {
+    radius: radius, eject: eject, stepCell: stepCell,
+    collide: collide, applyFields: applyFields
+  };
 })();

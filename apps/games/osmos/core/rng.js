@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        core/rng.js
- * Project:     Osmos OSM1a
+ * Project:     Osmos OSM1b
  * Purpose:     Tiny seeded PRNG (mulberry32) for deterministic levels.
  * ============================================================ */
 function OsmosRng(seed) {
