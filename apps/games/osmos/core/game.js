@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        core/game.js
- * Project:     Osmos OSM1a
+ * Project:     Osmos OSM1b
  * Purpose:     Level state, win/lose, progress, main step.
  * Depends on:  OSMOS_CONFIG, OSMOS_LEVELS, OSMOS_PHYSICS
  * ============================================================ */
@@ -36,7 +36,7 @@ var OSMOS_GAME = (function () {
       level: level,
       cells: cells,
       player: cells[0],
-      status: 'play', /* play | win | lose | pause */
+      status: 'play',
       progress: prog,
       ejectCd: 0,
       time: 0
@@ -70,7 +70,8 @@ var OSMOS_GAME = (function () {
     if (state.ejectCd > 0) state.ejectCd -= dt;
 
     var cells = state.cells;
-    var i, j;
+    var i;
+    P.applyFields(cells, state.level, dt);
     for (i = 0; i < cells.length; i++) P.stepCell(cells[i], dt);
 
     var player = state.player;
@@ -78,7 +79,6 @@ var OSMOS_GAME = (function () {
       if (cells[i] === player || !cells[i].alive) continue;
       P.collide(player, cells[i]);
     }
-    /* gentle food–food separation skipped for calm/cheap */
 
     if (player.mass < C.player.minMass) {
       state.status = 'lose';

@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        ui/hud.js
- * Project:     Osmos OSM1a
+ * Project:     Osmos OSM1b
  * Purpose:     Mass readout, pause/restart, level picker overlays.
  * Depends on:  OSMOS_GAME, OSMOS_CONFIG
  * ============================================================ */

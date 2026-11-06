@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        ui/input.js
- * Project:     Osmos OSM1a
+ * Project:     Osmos OSM1b
  * Purpose:     Mouse / touch aim → eject thrust.
  * Depends on:  OSMOS_GAME, OSMOS_RENDER
  * ============================================================ */
