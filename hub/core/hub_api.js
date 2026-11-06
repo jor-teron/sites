@@ -11,6 +11,7 @@
  *   endpoint + key). chat() keeps its contract ({text}); it also accepts a
  *   visible service id. The note above about tools/streaming is chat() only.
  * H134f: imageModels(), imageCapabilities(), generateImage() for visible Gemini/DeepInfra/OpenRouter providers.
+ * H134g: imageBlob also accepts data:image/...;base64 URLs (DeepInfra images[0]) and incidental base64 whitespace.
  */
 (function () {
   'use strict';
@@ -579,8 +580,19 @@
       if (!r.ok) throw fail('http', label + ' picture download failed (HTTP ' + r.status + ').', r.status);
       return r.blob();
     }
-    if (typeof src !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(src)) throw fail('noimage', label + ' returned an unreadable picture.');
-    const bytes = Uint8Array.from(atob(src), (c) => c.charCodeAt(0));
+    // H134g: DeepInfra images[0] may be data:image/...;base64,... . Bare base64 may contain incidental whitespace.
+    if (typeof src !== 'string') throw fail('noimage', label + ' returned an unreadable picture.');
+    let data = src;
+    const du = /^data:(image\/(?:png|jpeg|jpg|webp|gif));base64,([\s\S]*)$/i.exec(src);
+    if (du) {
+      mime = du[1].toLowerCase() === 'image/jpg' ? 'image/jpeg' : du[1].toLowerCase();
+      data = du[2];
+    } else if (/^data:/i.test(src)) throw fail('noimage', label + ' returned an unreadable picture.');
+    data = data.replace(/\s+/g, '');
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) throw fail('noimage', label + ' returned an unreadable picture.');
+    let bytes;
+    try { bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)); }
+    catch (_) { throw fail('noimage', label + ' returned an unreadable picture.'); }
     return new Blob([bytes], { type: /^image\/(png|jpeg|webp|gif)$/.test(mime) ? mime : 'image/png' });
   }
   function positiveInt(v, name) { if (v === undefined) return undefined; if (!Number.isInteger(v) || v < 1 || v > 4096) throw fail('input', name + ' must be an integer between 1 and 4096.'); return v; }
