@@ -1,20 +1,39 @@
-/** Keyboard / pointer / split-touch (left move, right look). */
+/** Keyboard / pointer / split-touch — HEX-7 clears stuck state on blur/visibility/cancel. */
 export function createInput(el) {
   const keys = Object.create(null);
-  const pointer = { dx: 0, dy: 0, locked: false };
+  const pointer = { dx: 0, dy: 0, locked: false, down: false };
   const touchMove = { active: false, id: null, x: 0, y: 0, ox: 0, oy: 0 };
   const touchLook = { active: false, id: null, dx: 0, dy: 0, lx: 0, ly: 0 };
+  const axes = { x: 0, y: 0 }; // reused
+  const lookOut = { dx: 0, dy: 0 };
   let half = window.innerWidth * 0.5;
+
+  function clearStuck() {
+    for (const k of Object.keys(keys)) keys[k] = false;
+    pointer.dx = pointer.dy = 0; pointer.down = false;
+    touchMove.active = false; touchMove.id = null; touchMove.x = touchMove.y = 0;
+    touchLook.active = false; touchLook.id = null; touchLook.dx = touchLook.dy = 0;
+  }
+
   const onResize = () => { half = (el.clientWidth || window.innerWidth) * 0.5; };
   window.addEventListener('resize', onResize); onResize();
   window.addEventListener('keydown', (e) => { keys[e.code] = true; });
   window.addEventListener('keyup', (e) => { keys[e.code] = false; });
   window.addEventListener('mousemove', (e) => {
-    if (pointer.locked || e.buttons === 1) { pointer.dx += e.movementX; pointer.dy += e.movementY; }
+    if (pointer.locked || pointer.down || e.buttons === 1) {
+      pointer.dx += e.movementX; pointer.dy += e.movementY;
+    }
   });
+  window.addEventListener('mousedown', () => { pointer.down = true; });
+  window.addEventListener('mouseup', () => { pointer.down = false; });
   document.addEventListener('pointerlockchange', () => {
     pointer.locked = document.pointerLockElement === el;
+    if (!pointer.locked) pointer.dx = pointer.dy = 0;
   });
+  window.addEventListener('blur', clearStuck);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearStuck(); });
+  window.addEventListener('pointercancel', clearStuck);
+
   el.addEventListener('touchstart', (e) => {
     for (const t of e.changedTouches) {
       if (t.clientX < half && !touchMove.active) {
@@ -38,15 +57,20 @@ export function createInput(el) {
   const end = (e) => {
     for (const t of e.changedTouches) {
       if (t.identifier === touchMove.id) { touchMove.active = false; touchMove.id = null; touchMove.x = touchMove.y = 0; }
-      if (t.identifier === touchLook.id) { touchLook.active = false; touchLook.id = null; }
+      if (t.identifier === touchLook.id) { touchLook.active = false; touchLook.id = null; touchLook.dx = touchLook.dy = 0; }
     }
   };
-  el.addEventListener('touchend', end); el.addEventListener('touchcancel', end);
+  el.addEventListener('touchend', end);
+  el.addEventListener('touchcancel', (e) => { end(e); clearStuck(); });
+
   return {
     key: (c) => !!keys[c],
+    clearStuck,
     consumeLook() {
-      const dx = pointer.dx + touchLook.dx, dy = pointer.dy + touchLook.dy;
-      pointer.dx = pointer.dy = 0; touchLook.dx = touchLook.dy = 0; return { dx, dy };
+      lookOut.dx = pointer.dx + touchLook.dx;
+      lookOut.dy = pointer.dy + touchLook.dy;
+      pointer.dx = pointer.dy = 0; touchLook.dx = touchLook.dy = 0;
+      return lookOut;
     },
     moveAxes() {
       let x = 0, y = 0;
@@ -54,8 +78,13 @@ export function createInput(el) {
       if (keys.KeyS || keys.ArrowDown) y += 1;
       if (keys.KeyA || keys.ArrowLeft) x -= 1;
       if (keys.KeyD || keys.ArrowRight) x += 1;
-      if (touchMove.active) { x += Math.max(-1, Math.min(1, touchMove.x)); y += Math.max(-1, Math.min(1, touchMove.y)); }
-      const l = Math.hypot(x, y) || 1; return { x: x / l, y: y / l };
+      if (touchMove.active) {
+        x += Math.max(-1, Math.min(1, touchMove.x));
+        y += Math.max(-1, Math.min(1, touchMove.y));
+      }
+      const l = Math.hypot(x, y) || 1;
+      axes.x = x / l; axes.y = y / l;
+      return axes;
     },
     requestLock() { try { el.requestPointerLock && el.requestPointerLock(); } catch (_) {} }
   };

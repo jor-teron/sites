@@ -73,14 +73,35 @@ export async function createHex3D(canvas, {
     } catch (_) { /* older */ }
   }
 
-  function setSize(w, h) {
-    const pr = Math.min(window.devicePixelRatio || 1, maxPixelRatio);
+  let lastW = -1, lastH = -1, lastPr = -1;
+  let pixelCap = maxPixelRatio;
+  let shadowsOn = true;
+
+  function setSize(w, h, force = false) {
+    const pr = Math.min(window.devicePixelRatio || 1, pixelCap);
+    w = Math.max(1, w | 0); h = Math.max(1, h | 0);
+    if (!force && w === lastW && h === lastH && pr === lastPr) return false;
+    lastW = w; lastH = h; lastPr = pr;
     renderer.setPixelRatio(pr);
     renderer.setSize(w, h, false);
     camera.aspect = w / Math.max(h, 1);
     camera.updateProjectionMatrix();
     canvas.style.width = w + 'px';
     canvas.style.height = h + 'px';
+    return true;
+  }
+
+  function setPixelRatioCap(cap) {
+    pixelCap = Math.min(1.5, Math.max(0.75, Number(cap) || 1.5));
+    if (lastW > 0) setSize(lastW, lastH, true);
+  }
+
+  function setShadowsEnabled(on) {
+    shadowsOn = !!on;
+    try {
+      if (renderer.shadowMap) renderer.shadowMap.enabled = shadowsOn;
+      sun.castShadow = shadowsOn;
+    } catch (_) {}
   }
 
   function render() {
@@ -95,7 +116,9 @@ export async function createHex3D(canvas, {
 
   return {
     renderer, scene, camera, root, ambient, sun, hemi,
-    setSize, render, dispose, get lost() { return lost; }
+    setSize, setPixelRatioCap, setShadowsEnabled,
+    render, dispose, get lost() { return lost; },
+    get pixelCap() { return pixelCap; }, get shadowsOn() { return shadowsOn; }
   };
 }
 

@@ -3,6 +3,13 @@ import { createInput } from '../../../engine/shared/input.js';
 import { createHex3D, showOverlay, supportsWebGPU } from '../../../engine/3d/core/hex3d.js';
 import { buildValley } from './terrain.js';
 import { createAssetManager } from '../../../engine/3d/core/assets.js';
+import { Vector3 } from '../../../engine/3d/core/three.js';
+
+const QUALITY = {
+  low:    { dpr: 0.85, shadows: false, fps: 24, label: 'Low' },
+  medium: { dpr: 1.25, shadows: true,  fps: 30, label: 'Med' },
+  high:   { dpr: 1.5,  shadows: true,  fps: 30, label: 'High' }
+};
 
 export async function bootValley(canvas, host, hud) {
   if (location.protocol === 'file:') {
@@ -18,7 +25,7 @@ export async function bootValley(canvas, host, hud) {
 
   let hex;
   try {
-    hex = await createHex3D(canvas, { clear: 0x87b5d9, fogNear: 70, fogFar: 150 });
+    hex = await createHex3D(canvas, { clear: 0x8ec6e6, fogNear: 55, fogFar: 155, maxPixelRatio: 1.5 });
   } catch (e) {
     showOverlay(host, 'WebGPU init failed', (e && e.message) || String(e));
     return null;
@@ -34,43 +41,58 @@ export async function bootValley(canvas, host, hud) {
     const rx = 8, rz = -6;
     rockRoot.position.set(rx, valley.sample(rx, rz), rz);
     hex.root.add(rockRoot);
-    console.info('[HEX-2] GLB rock ready', meta.height.toFixed(2));
   } catch (e) {
-    console.warn('[HEX-2] optional GLB skipped:', e && e.message ? e.message : e);
-    // Valley remains fully playable with procedural props + landmarks.
+    console.warn('[HEX-7] optional GLB skipped:', e && e.message ? e.message : e);
   }
-
 
   const input = createInput(canvas);
   canvas.addEventListener('click', () => input.requestLock());
 
   const player = { x: 0, y: 0, z: 6, yaw: Math.PI, pitch: 0, speed: 14, eye: 1.7 };
   player.y = valley.sample(player.x, player.z);
-  // face first landmark
   if (valley.landmarks[0]) {
     const L = valley.landmarks[0].position;
     player.yaw = Math.atan2(-(L.x - player.x), -(L.z - player.z));
   }
 
   let gathered = 0, paused = false, total = valley.landmarks.length;
+  let qualityKey = 'medium';
   const gatheredEl = hud.querySelector('#gathered');
+  const fpsEl = hud.querySelector('#fps');
+  const qualityEl = hud.querySelector('#btn-quality');
   const helpEl = host.querySelector('#help');
 
-  function resize() {
-    hex.setSize(window.innerWidth, window.innerHeight);
+  // reused Three temps
+  const _look = new Vector3();
+  const _eye = new Vector3();
+  let groundY = player.y; // smoothed height follow
+
+  function applyQuality(key) {
+    qualityKey = QUALITY[key] ? key : 'medium';
+    const q = QUALITY[qualityKey];
+    hex.setPixelRatioCap(q.dpr);
+    hex.setShadowsEnabled(q.shadows);
+    loop.setFps(q.fps);
+    if (qualityEl) qualityEl.textContent = 'Quality: ' + q.label;
+    resize(true);
   }
-  resize();
-  window.addEventListener('resize', resize);
+
+  function resize(force) {
+    hex.setSize(window.innerWidth, window.innerHeight, !!force);
+  }
+  resize(true);
+  window.addEventListener('resize', () => resize(false));
 
   function syncCamera() {
-    const cy = Math.cos(player.yaw), sy = Math.sin(player.yaw);
+    _eye.set(player.x, player.y + player.eye, player.z);
     const cp = Math.cos(player.pitch), sp = Math.sin(player.pitch);
-    hex.camera.position.set(player.x, player.y + player.eye, player.z);
-    hex.camera.lookAt(
-      player.x + sy * cp,
+    _look.set(
+      player.x - Math.sin(player.yaw) * cp,
       player.y + player.eye + sp,
-      player.z + cy * cp
+      player.z - Math.cos(player.yaw) * cp
     );
+    hex.camera.position.copy(_eye);
+    hex.camera.lookAt(_look);
   }
 
   function update(dt) {
@@ -79,19 +101,14 @@ export async function bootValley(canvas, host, hud) {
     player.yaw -= look.dx * 0.0025;
     player.pitch -= look.dy * 0.0022;
     player.pitch = Math.max(-1.2, Math.min(1.2, player.pitch));
-    // arrow keys also turn
     if (input.key('ArrowLeft')) player.yaw += 1.6 * dt;
     if (input.key('ArrowRight')) player.yaw -= 1.6 * dt;
 
     const mv = input.moveAxes();
-    const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw);
-    const fx = sy * mv.y + cy * mv.x; // forward is -z visually via lookAt; movement: yaw 0 looks -Z? 
-    // With lookAt using (sy, cy) as forward in XZ where yaw=PI faces +Z initially... keep consistent:
     const forwardX = -Math.sin(player.yaw);
     const forwardZ = -Math.cos(player.yaw);
     const rightX = Math.cos(player.yaw);
     const rightZ = -Math.sin(player.yaw);
-    // moveAxes y: W = -1 (forward)
     const wantX = forwardX * (-mv.y) + rightX * mv.x;
     const wantZ = forwardZ * (-mv.y) + rightZ * mv.x;
     player.x += wantX * player.speed * dt;
@@ -99,7 +116,10 @@ export async function bootValley(canvas, host, hud) {
     const half = valley.world * 0.48;
     player.x = Math.max(-half, Math.min(half, player.x));
     player.z = Math.max(-half, Math.min(half, player.z));
-    player.y = valley.sample(player.x, player.z);
+    const targetY = valley.sample(player.x, player.z);
+    // smooth ground follow (avoids jitter on steep verts)
+    groundY += (targetY - groundY) * Math.min(1, dt * 12);
+    player.y = groundY;
 
     for (const orb of valley.landmarks) {
       if (orb.userData.taken) continue;
@@ -116,7 +136,6 @@ export async function bootValley(canvas, host, hud) {
         }
       }
     }
-    // gentle bob for remaining orbs
     const t = performance.now() * 0.002;
     for (const orb of valley.landmarks) {
       if (orb.userData.taken) continue;
@@ -125,7 +144,8 @@ export async function bootValley(canvas, host, hud) {
     syncCamera();
   }
 
-  function render() {
+  function render(_alpha, shownFps) {
+    if (fpsEl && shownFps) fpsEl.textContent = shownFps.toFixed(0) + ' fps';
     const r = hex.render();
     if (r.lost) {
       loop.stop();
@@ -142,22 +162,30 @@ export async function bootValley(canvas, host, hud) {
     }
   });
 
+  applyQuality('medium');
   syncCamera();
   gatheredEl.textContent = `Landmarks 0 / ${total}`;
   if (helpEl) setTimeout(() => { helpEl.style.opacity = '0.25'; }, 6000);
 
+  const qOrder = ['low', 'medium', 'high'];
   return {
     start: () => loop.start(),
     pause() { paused = !paused; },
+    cycleQuality() {
+      const i = qOrder.indexOf(qualityKey);
+      applyQuality(qOrder[(i + 1) % qOrder.length]);
+    },
     restart() {
       gathered = 0; paused = false;
       player.x = 0; player.z = 6; player.pitch = 0; player.yaw = Math.PI;
-      player.y = valley.sample(player.x, player.z);
+      groundY = valley.sample(player.x, player.z);
+      player.y = groundY;
       for (const orb of valley.landmarks) { orb.userData.taken = false; orb.visible = true; }
       const ov = host.querySelector('.hex-overlay'); if (ov) ov.remove();
       gatheredEl.textContent = `Landmarks 0 / ${total}`;
+      input.clearStuck();
       syncCamera();
     },
-    loop
+    loop, valley
   };
 }

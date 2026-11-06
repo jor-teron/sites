@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>Valley Explorer HEX-2</title>
+  <title>Valley Explorer HEX-7</title>
   <link rel="stylesheet" href="ui/style.css">
   <link rel="stylesheet" href="../engine/3d/ui/overlay.css">
 </head>
@@ -13,8 +13,12 @@
     <div id="boot">Starting Valley Explorer…</div>
     <canvas id="view"></canvas>
     <div id="hud">
-      <span class="pill" id="gathered">Landmarks 0 / 0</span>
+      <div class="left">
+        <span class="pill" id="gathered">Landmarks 0 / 0</span>
+        <span class="pill" id="fps">— fps</span>
+      </div>
       <div class="right">
+        <button type="button" id="btn-quality">Quality: Med</button>
         <button type="button" id="btn-pause">Pause</button>
         <button type="button" id="btn-restart">Restart</button>
       </div>
