@@ -486,3 +486,4 @@
 2026-11-05 , 20261104r => H108a: Files compact phone layout (one nav row under 640 px, cmd-bar commands in More, tabs.one hidden, slimmer drive chips; no build bump)
 2026-11-06 , 20261104r => H108b: Files phone selection bar (under 640 px while items are selected: clear, count, Cut / Copy / Delete / Rename / More; list padded; status bar hidden on phone; no build bump)
 2026-11-06 , 20261104r => H134a: Settings > API Keys rows show "Used by" (HubKeys.KNOWN[].usedBy: Agent for the AI / search keys, OCR + Vision for gvision), clearer free-tier hints for tavily / openai_key / ollama_url / openrouter; keys stay in Settings (no separate app), H134b HubAPI not built; no build bump
+2026-11-06 , 20261104r => H134b: additive HubAPI chat (Gemini/OpenAI-compatible/Ollama), Tavily search and Cloud Vision label/text helper via HubKeys; shared core loader + SW precache, docs; no app adoption yet (Hub Apps Bot follow-up); no build bump
