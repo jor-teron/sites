@@ -43,13 +43,17 @@
       <!-- H126: tabs (files_tabs.js): one tab per open folder, + = new tab -->
       <div id="tabs" class="tabs"></div>
       <!-- H106: Explorer-style toolbar. Row 1: Back / Forward / Up, path (breadcrumbs), search.
-           Row 2: commands (New folder, Upload, Sort, View, Refresh, More). Icons: inline SVG (currentColor). -->
+           Row 2: commands (New folder, Upload, Sort, View, Refresh, More). Icons: inline SVG (currentColor).
+           H108a: on phone (<640 px) one nav row (no Forward, path stays on the row, search collapses to an icon,
+           More moves here as #more-nav); cmd-bar is hidden and its commands live in the More menu. -->
       <div class="bar nav-bar">
         <button type="button" id="back" class="tb ico" title="Back (Alt+Left)" aria-label="Back" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
         <button type="button" id="fwd" class="tb ico" title="Forward (Alt+Right)" aria-label="Forward" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         <button type="button" id="up" class="tb ico" title="Up one folder (Alt+Up or Backspace)" aria-label="Up one folder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
         <div class="path"><svg class="path-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><nav id="crumbs" class="crumbs" aria-label="Path"></nav></div>
-        <label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input type="search" id="search" class="search" placeholder="Search this folder" aria-label="Search this folder" /></label>
+        <button type="button" id="search-tog" class="tb ico search-tog" title="Search" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+        <div class="search-box" id="search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input type="search" id="search" class="search" placeholder="Search this folder" aria-label="Search this folder" /><button type="button" id="search-x" class="search-x" title="Close search" aria-label="Close search">&times;</button></div>
+        <button type="button" id="more-nav" class="tb ico more-nav" title="More actions" aria-label="More actions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg></button>
       </div>
       <div class="bar cmd-bar">
         <button type="button" id="mkdir" class="tb" title="New folder"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 10v6M9 13h6"/></svg><span>New folder</span></button>
@@ -76,6 +80,16 @@
       <div id="msg" class="msg" hidden role="status"></div>
       <div id="gd-panel" class="gd-panel" hidden></div>
       <div id="list" class="list v-grid" role="listbox" aria-multiselectable="true" aria-label="Files"></div>
+      <!-- H108b: phone selection bar (files_menu.js selBar); shown under 640 px while items are selected -->
+      <div id="selbar" class="selbar" hidden role="toolbar" aria-label="Selection">
+        <button type="button" class="sb-btn sb-x" data-a="clear" title="Clear selection" aria-label="Clear selection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <span class="sb-count" aria-live="polite"></span>
+        <button type="button" class="sb-btn" data-a="cut" title="Cut"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 16.5L18 4M16 16.5L6 4"/></svg><span>Cut</span></button>
+        <button type="button" class="sb-btn" data-a="copy" title="Copy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>Copy</span></button>
+        <button type="button" class="sb-btn sb-del" data-a="delete" title="Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span>Delete</span></button>
+        <button type="button" class="sb-btn" data-a="rename" title="Rename"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg><span>Rename</span></button>
+        <button type="button" class="sb-btn" data-a="more" title="More actions" aria-label="More actions"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span>More</span></button>
+      </div>
       <div id="status" class="status" hidden aria-live="polite"><span></span><span class="status-sel"></span></div>   <!-- H107 -->
       <div id="prog" class="prog" hidden><span></span><b><i></i></b><button type="button" class="tb">Stop</button></div>
     </main>

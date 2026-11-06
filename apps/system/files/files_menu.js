@@ -5,7 +5,11 @@
  *   Backspace or Alt+↑ up a folder · Alt+← back · Alt+→ forward (H106) · Esc clear selection · arrows move between items
  * The folder (blank space) menu has Terminal (H121): the Terminal app opened at this folder.
  * H126: "Open in new tab" in both menus (a folder / this folder); tab keys live in files_tabs.js.
- * API FX.menu: forItems(x, y), forFolder(x, y).
+ * H108a: forMore(x, y) — phone More menu: Forward + cmd-bar commands (New folder, Upload, Sort,
+ *   Grid/List, Refresh) then the usual folder / selection actions (desktop More stays forItems/forFolder).
+ * H108b: selBar() — phone (<640 px) bottom selection bar #selbar (count, Cut, Copy, Delete, Rename, More = forItems,
+ *   × = clear). Called from FX.view.paintSel; the buttons run the same FX.act actions as the menu.
+ * API FX.menu: forItems(x, y), forFolder(x, y), forMore(x, y), selBar().
  */
 (function () {
   'use strict';
@@ -100,5 +104,102 @@
     if (used) e.preventDefault();
   });
 
-  FX.menu = { forItems, forFolder };
+  /* H108a: phone More = toolbar commands (cmd-bar is hidden) + Forward, then folder / selection actions. */
+  const phone = () => window.matchMedia('(max-width: 639px)').matches;
+  const SORTS = [
+    ['name-asc', 'Name (A\u2013Z)'], ['name-desc', 'Name (Z\u2013A)'],
+    ['size-asc', 'Size (smallest)'], ['size-desc', 'Size (largest)'],
+    ['modified-desc', 'Date (newest)'], ['modified-asc', 'Date (oldest)']
+  ];
+  function sortSub() {
+    const cur = $('sort').value;
+    return SORTS.map(([v, label]) => ({
+      label: label, icon: v === cur ? '\u2713' : '',
+      action: () => { $('sort').value = v; $('sort').dispatchEvent(new Event('change', { bubbles: true })); }
+    }));
+  }
+  function toolItems() {
+    return [
+      { label: 'Forward', icon: '\u2192', hint: 'Alt+\u2192', disabled: !$('fwd') || $('fwd').disabled, action: () => FX.drives.forward() },
+      { sep: true },
+      { label: 'New folder', icon: '\uFF0B', action: () => A().newFolder() },
+      { label: 'Upload files\u2026', icon: '\u21EA', action: () => $('file-in').click() },
+      { label: 'Sort', icon: '\u2195', sub: sortSub() },
+      { label: 'Grid view', icon: st.view === 'grid' ? '\u2713' : '\u25A6',
+        action: () => { const b = $('view').querySelector('[data-v="grid"]'); if (b) b.click(); } },
+      { label: 'List view', icon: st.view === 'list' ? '\u2713' : '\u2630',
+        action: () => { const b = $('view').querySelector('[data-v="list"]'); if (b) b.click(); } },
+      { label: 'Refresh', icon: '\u21BB', action: () => FX.view.load() }
+    ];
+  }
+  function forMore(x, y) {
+    if (!phone()) { if (st.sel.size) forItems(x, y); else forFolder(x, y); return; }
+    const tools = toolItems();
+    const sel = FX.selected();
+    if (sel.length) {
+      const one = sel.length === 1 ? sel[0] : null;
+      const file = one && one.kind === 'file';
+      CtxMenu.open(x, y, tools.concat([
+        { sep: true },
+        { label: one && one.kind === 'directory' ? 'Open folder' : 'Open', icon: '\u2197', hint: 'Enter', disabled: !one, action: () => A().open(one) },
+        ...(one && one.kind === 'directory' ? [{ label: 'Open in new tab', icon: '\u29C9', action: () => FX.tabs.openFolder(one) }] : []),
+        file ? { label: 'Open with', icon: '\u2726', sub: A().withItems(one) } : { label: 'Open with', icon: '\u2726', disabled: true },
+        { sep: true },
+        { label: 'Cut', icon: '\u2702', hint: MOD + 'X', action: () => A().clip('cut') },
+        { label: 'Copy', icon: '\u2398', hint: MOD + 'C', action: () => A().clip('copy') },
+        { label: one && one.kind === 'directory' ? 'Paste into folder' : 'Paste', icon: '\uD83D\uDCCB', hint: MOD + 'V', disabled: !st.clip,
+          action: () => A().paste(one && one.kind === 'directory' ? one.handle : null) },
+        { sep: true },
+        { label: 'Rename', icon: '\u270E', hint: 'F2', disabled: !one, action: () => A().rename(one) },
+        { label: 'Download', icon: '\u2B07', disabled: !sel.some((e) => e.kind === 'file'), action: () => A().download(sel) },
+        { label: 'Delete', icon: '\uD83D\uDDD1', hint: 'Del', danger: true, action: () => A().remove(sel) },
+        { sep: true },
+        { label: 'Properties', icon: '\u2139', action: () => A().props(sel) }
+      ]));
+      return;
+    }
+    if (!FX.cur()) { CtxMenu.open(x, y, tools); return; }
+    CtxMenu.open(x, y, tools.concat([
+      { sep: true },
+      { label: 'Open in new tab', icon: '\u29C9', hint: MOD + 'T', action: () => FX.tabs.add({ driveId: st.driveId, driveName: st.driveName, stack: st.stack.slice(), path: st.stack.slice(1).map((s) => s.name).join('/'), view: st.view }) },
+      { label: 'Paste', icon: '\uD83D\uDCCB', hint: MOD + 'V', disabled: !st.clip, action: () => A().paste() },
+      { label: 'Terminal', icon: '>_', disabled: !A().terminalOk(), action: () => A().terminal() },
+      { sep: true },
+      { label: 'Select all', icon: '\u2611', hint: MOD + 'A', disabled: !st.shown.length, action: () => FX.view.selectAll() },
+      { label: FX.singleClick() ? 'Open with double click' : 'Open with single click', icon: '\uD83D\uDDB1',
+        action: () => { FX.setSingleClick(!FX.singleClick()); FX.say(FX.singleClick() ? 'A single click now opens items.' : 'A double click now opens items.'); } },
+      { label: FX.thumbs.on() ? 'Hide thumbnails' : 'Show thumbnails', icon: '\uD83D\uDDBC', action: () => FX.thumbs.set(!FX.thumbs.on()) },
+      { label: 'Clear thumbnail cache', icon: '\uD83E\uDDF9', action: () => FX.thumbs.clearCache() },
+      { sep: true },
+      { label: 'Properties', icon: '\u2139', action: () => A().props([]) }
+    ]));
+  }
+
+  /* H108b: phone selection bar — visible under 640 px while something is selected. */
+  const bar = $('selbar');
+  function selBar() {
+    if (!bar) return;
+    const n = st.sel.size, on = n > 0 && phone();
+    bar.hidden = !on;
+    $('list').classList.toggle('has-selbar', on);
+    if (!on) return;
+    bar.querySelector('.sb-count').textContent = n + ' selected';
+    bar.querySelector('[data-a="rename"]').disabled = n !== 1;   // same rule as the menu (Rename needs one item)
+  }
+  if (bar) {
+    bar.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-a]');
+      if (!b || b.disabled) return;
+      const sel = FX.selected(), a = b.dataset.a;
+      if (a === 'clear') FX.view.clear();
+      else if (!sel.length) return;
+      else if (a === 'cut' || a === 'copy') A().clip(a);
+      else if (a === 'delete') A().remove(sel);
+      else if (a === 'rename') { if (sel.length === 1) A().rename(sel[0]); }
+      else if (a === 'more') { const r = b.getBoundingClientRect(); forItems(r.left, r.top - 4); }
+    });
+    window.matchMedia('(max-width: 639px)').addEventListener('change', () => FX.view.paintSel());   // crossing 640 px
+  }
+
+  FX.menu = { forItems, forFolder, forMore, selBar };
 })();

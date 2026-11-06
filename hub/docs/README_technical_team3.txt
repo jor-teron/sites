@@ -1810,3 +1810,57 @@ Left for the next team
   apps/system/ pointing at os/index.html.
 
 -- End of Team 3 week wrap-up --
+
+------------------------------------------------------------------------------
+-- H108a: Files compact phone layout (5 Nov 2026) --
+------------------------------------------------------------------------------
+What
+- Under 640 px the Files app (apps/system/files/) no longer stacks path on its
+  own line plus a full command bar. One nav row: Back, Up, path (crumbs scroll
+  sideways, already scrolled to the end), a search icon that expands the search
+  box across the bar (Escape / empty blur / × closes), and More.
+- The cmd-bar is hidden on phone. Its commands (New folder, Upload, Sort with
+  the 6 options, Grid / List, Refresh) plus Forward live in the More menu
+  (FX.menu.forMore). Desktop More is unchanged (folder / selection menu).
+- The tab strip (.tabs) is hidden when there is only one tab (.tabs.one).
+- Drive chips are a bit shorter (~36 px). List rows stay at least 48 px; grid
+  tiles stay minmax(96px, 1fr). On phone the status bar hides unless something
+  is selected.
+- Desktop / wide (>= 640 px) look and behaviour are unchanged. No build bump.
+
+Files
+- apps/system/files/files.css (phone @media), index.html (#search-tog, #more-nav,
+  #search-x), files.js (More + search expand), files_menu.js (forMore),
+  files_view.js (status hide), files_tabs.js (comment). Docs: this file +
+  hub/docs/build_history_2026.txt.
+
+H108b (pending)
+- Bottom selection bar on phone (Cut / Copy / Delete / Rename / More) after a
+  long-press selects items. Not in H108a. -> done in H108b below.
+
+------------------------------------------------------------------------------
+-- H108b: Files phone selection bar (6 Nov 2026) --
+------------------------------------------------------------------------------
+What
+- Under 640 px, while items are selected (long-press selects; then a tap
+  adds / removes), a bar floats above the bottom edge of the Files app:
+  x (clear selection), "N selected", Cut, Copy, Delete (danger colour),
+  Rename (only enabled for one item, same rule as the menu) and More (opens
+  FX.menu.forItems, the usual selection menu: Open, Open with, Paste,
+  Download, Properties ...). It hides when the selection is empty.
+- Buttons are icon + label, at least 44-48 px; under 380 px icons only.
+  Colours come from --card / --text / --line / --hi / --bad, so Dark, Light,
+  XP and Glass all follow.
+- The list gets 80 px bottom padding (.list.has-selbar) while the bar shows,
+  so the last row is never hidden under it.
+- On phone the status bar is now always hidden (the bar shows the count);
+  H108a showed it during a selection.
+- Desktop / wide (>= 640 px): no bar, no change. H108a's phone More in the
+  nav row still works. No build bump, no new files.
+
+Files
+- apps/system/files/index.html (#selbar markup), files_menu.js (selBar() +
+  button wiring to FX.act clip / remove / rename and forItems; refresh on
+  crossing 640 px), files_view.js (paintSel calls FX.menu.selBar; status
+  hidden on phone), files.css (.selbar styles). Docs: this file +
+  hub/docs/build_history_2026.txt.
