@@ -1,5 +1,7 @@
-# HubAPI — H134b, H134c, H134e
+# HubAPI — H134b, H134c, H134e, H134f
 
+> H134f adds image generation (imageModels, imageCapabilities, generateImage) for
+> visible DeepInfra, OpenRouter and Gemini providers. No Settings changes.
 > H134e removes legacy named provider paths: only visible service entries and the four Services keys.
 > H134c adds visible services (Settings > API Keys > Providers),
 > `chatAdvanced()` (streaming, tools, images, Gemini thinking, usage), `models()`,
@@ -187,6 +189,36 @@ const r = await window.top.HubAPI.chatAdvanced({
 if (r.tool_calls.length) { /* run tools, append {role:'assistant', tool_calls} + {role:'tool', …}, call again */ }
 ```
 
+### imageModels({provider, signal?}) — H134f
+
+Lists image-output models for `gemini` or a saved `svc_…` whose exact endpoint is
+`https://api.deepinfra.com/v1/openai` or `https://openrouter.ai/api/v1`. Matching by endpoint,
+not label, keeps renamed service ids reliable. Gemini uses its visible Gemini entry, including
+Gemini-image and Imagen models. DeepInfra's public model catalogue needs no key and returns price
+and default step metadata where supplied. OpenRouter returns image-output models with price metadata.
+Returns an array of `{name, label, price?, steps?}`. Ordinary OpenAI-compatible providers are not
+queried with guessed image paths. Old provider names are not aliases.
+
+### imageCapabilities({provider, model, signal?}) — H134f
+
+Returns model capabilities for the image UI: `{ratio, width, height, steps}`. Width/height apply to
+DeepInfra; ratio applies to DeepInfra, OpenRouter and Gemini; steps applies to DeepInfra where the
+model supports them. Model-specific provider restrictions still apply. No provider request is needed
+for known model families; model metadata may be loaded when necessary.
+
+### generateImage({provider, model, prompt, width?, height?, ratio?, steps?, signal?}) — H134f
+
+Returns `{blob}` and does not return the saved key or raw provider response. `prompt`, `model` and
+`provider` are required. Data URLs, base64 and remote image URLs are normalized to a Blob. A remote
+image download receives no provider key. `signal` covers the generation and that download.
+
+DeepInfra uses `/v1/inference/<model>` with width/height/steps when supplied, falling back to
+OpenAI `/images/generations` on HTTP 400/404/422. OpenRouter uses `/chat/completions` with
+`modalities:['image','text']` and ratio. Gemini-image uses `:generateContent`; Imagen uses `:predict`.
+Errors use the same `kind` categories as chatAdvanced (`key`, `input`, `http`, `unreachable`, `abort`),
+redact sent credentials, and expose `openSettings()` for missing visible keys. Keys are sent only to
+the selected service. This doesn't make other custom OpenAI-compatible endpoints image providers.
+
 ### models({provider, endpoint?, key?, signal?}) — H134c
 
 Free model list: OpenAI-compatible `GET /models`, Gemini `GET /models?pageSize=200`
@@ -222,7 +254,7 @@ try {
 ```
 
 Model names above are examples, not availability guarantees. Offline smoke tests
-stub fetch; no live paid API calls are part of H134b or H134c testing.
+stub fetch; no live paid API calls are part of H134b, H134c or H134f testing.
 
 ## H134e: no legacy provider keys
 
