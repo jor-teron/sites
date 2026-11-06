@@ -122,3 +122,53 @@ Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: 
 - **AG18** — Chat top row gets two native dropdowns: **Provider** (only ready providers, same order and rules as the picker tabs) and **Model** (that provider's chat models: 🕘 Recent first, then the picker's groups; non-chat hidden). Changing Provider loads its list (Loading… option) and selects its remembered model; changing Model switches the chat model at once, same as a tap in the dialog (updates Recent). 🔍 next to them opens the old picker dialog with search; both stay in sync (HR.model.onChange / pickProvider / pickModel). The old model chip is hidden. Errors show as a disabled 'Can’t load models' / 'Add an API key ⚙' option plus the existing cards. Phone: the dropdowns wrap to their own row as compact side-by-side chips with ellipsis. Files: app/gui/modelbar.js, ui/modelbar.css (model.js, main.js, agent.html). agent_sw.js VER agent-ag18.
 - **AG19** — Image page layout: the top row is just ← Chat + **Provider** and **Model** dropdowns (same look as the chat top row, ui/modelbar.css; provider order Pollinations, Gemini, DeepInfra, OpenRouter, Ollama, ready ones only; Model = 🕘 Recent then the rest, price in the option text). The provider tabs and size chips are gone, which also fixes the top bar covering the provider list. Under the prompt, one compact line of dropdowns: **Ratio** (1:1, 3:4, 4:3, 9:16, 16:9, Custom → W / H boxes on the same line), **Size** (long side 512–2048 shown as the provider's rounded W × H; disabled 'set by provider' on Gemini / OpenRouter), **Steps** (Ollama, DeepInfra only; 1–50 clamped per model, default per model). New setting `imageLong` (long side px, default 1024). agent_sw.js VER agent-ag19.
 - **AG20** — Image page: **☆ / ★ favourite** button next to the Model dropdown stars the current model; starred models sit in a '⭐ Favourites' group at the very top, above '🕘 Recent' (no repeats). Setting `imageFav_<provider>` (array). **Full-screen viewer** (app/gui/imageviewer.js) replaces the small preview dialog: the picture fills the screen (object-fit contain, dark), ← / → browse in gallery order, Esc closes, swipe left / right on phones, big ‹ › side buttons (hidden at the first / last picture, no wrap), 'n / total', bottom bar with the prompt (2 lines), ⬇ Download (prompt filename) and 🗑 Delete. agent_sw.js VER agent-ag20.
+
+
+## AG23 — Agent on HubAPI (AG22 stays parked)
+
+Agent chat and model adapters now route through `window.top.HubAPI` (H134c)
+when available, with a local `window.HubAPI` check too. The bridge is loaded
+before the model registry; the Browser model and all image generators are
+unchanged. Streaming content/thinking, Stop signals, photos, tool ids/results,
+Gemini thought signatures, token counts and provider error kinds pass through.
+Web search/extract use HubAPI, keeping depth, limits, credit accounting and
+Agent's key/quota/rate-limit cards. Hub failures are never retried directly.
+
+Hub-backed built-ins use their provider id. OpenAI-compatible local keys or
+custom endpoints use HubAPI's `custom` mode with Agent's existing effective
+base/key; no config or key is written to the Hub. Gemini/Ollama require the
+matching Hub key/URL: H134c does not support their app-local overrides. Web
+requires a Hub Tavily key. Without these, or outside the Hub (including
+`file://`, cross-origin embedding and older Hubs), the original adapters remain
+active. Standalone deliberately keeps this fallback instead of loading the
+Hub key store and changing how local settings work.
+
+Ollama's Hub model list omits size/parameter metadata, so Agent additionally
+reads its existing free tags list to keep the labels; failure of that metadata
+read leaves the Hub list usable. The existing `/api/show` context lookup stays
+direct because HubAPI has no equivalent. Browser-local inference and image
+generation are outside the text HubAPI contract. No new custom-service picker
+is added. The offline cache stays `agent-files`; existing SW `VER` is bumped to
+`agent-ag23` so the bridge is discovered and precached. No URL version tags.
+
+Tests (no browser or paid requests): `node --test tests/hubapi.test.cjs`, plus
+`node --check` on Agent scripts and static HTML/link/id checks in that harness.
+Run from `apps/lab/agent`. Tests use stubs, including the actual read-only Hub
+implementation from this repository to check request/result compatibility.
+
+### Legacy code notes — AG23
+
+The original Gemini, OpenAI-compatible, Ollama and Tavily adapters are retained
+as executable standalone/config fallbacks, not deleted. The former registry
+assignment is kept as a comment beside the bridge registration. Provider wire
+conversions (`toG`, `toOA`) remain available to existing callers. The bridge
+wraps registration rather than duplicating these providers. Legacy extraction
+formatting is unchanged except that HubAPI's original page length supplies the
+trim notice. AG22 remains parked and is not implemented by AG23.
+
+### Static smoke finding (not introduced by AG23)
+
+`agent.html` on the starting main already has two `id="btnPick"` buttons
+(model search and Pick folder). The smoke harness explicitly records this one
+baseline duplicate and rejects any new duplicates. It is not changed as part
+of the HubAPI migration; folder/model-search button wiring needs a separate fix.

@@ -12,7 +12,8 @@
 HR.models = (function () {
   var reg = {}, KEYS = 'agent.keys', over = '', chat = { p: '', m: '' };
   var OPENAI = 'https://api.openai.com/v1', GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
-  function register(a) { reg[a.id] = a; }
+  /* AG23; legacy: reg[a.id] = a; standalone adapters remain the fallback. */
+  function register(a) { reg[a.id] = HR.hubAPI ? HR.hubAPI.wrap(a) : a; }
   function def() { var p = HR.set.get('provider'); return reg[p] ? p : 'ollama'; }
   function chosen() { return chat.p && reg[chat.p] ? chat.p : def(); }
   function setChat(p, m) { chat = { p: p || '', m: m || '' }; }

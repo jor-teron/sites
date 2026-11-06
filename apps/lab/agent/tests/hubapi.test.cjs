@@ -1,0 +1,326 @@
+/* AG23: syntax/static + isolated VM smoke tests; every HTTP call is stubbed. */
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const {execFileSync} = require('node:child_process');
+const base = path.resolve(__dirname, '..');
+const root = path.resolve(base, '../../..');
+const read = f => fs.readFileSync(path.join(base, f), 'utf8');
+const plain = v => JSON.parse(JSON.stringify(v));
+function env({hub = {}, api, real = false, crossOrigin = false, fetcher} = {}) {
+  const values = {provider: 'ollama', baseUrl: 'http://localhost:11434', allowWeb: 'on'};
+  const requests = [], cards = [], credits = [], adapters = {};
+  const fetch = async (url, options = {}) => {
+    requests.push({url, options, body: options.body && JSON.parse(options.body)});
+    if (!fetcher) throw new Error('Unexpected fetch: ' + url);
+    return fetcher(url, options);
+  };
+  const w = {};
+  if (crossOrigin) Object.defineProperty(w, 'top', {get() { throw new Error('cross origin'); }});
+  else w.top = {HubAPI: api};
+  const HR = {
+    set: {get: k => values[k]}, hubKeys: {val: k => hub[k] || '', inHub: () => !!Object.keys(hub).length, forProvider: () => ''},
+    tools: {register: () => {}}, usage: {credits: (p, n) => credits.push([p, n])},
+    view: {infoCard: (...a) => cards.push(a)}
+  };
+  const c = vm.createContext({window: w, HR, URL, performance, TextDecoder, DOMException, console,
+    localStorage: {getItem: () => null, setItem: () => {}}, fetch});
+  if (real) {
+    const hw = {HubKeys: {get: async k => hub[k] || '', open: () => {}}}; hw.top = hw;
+    const hc = vm.createContext({window: hw, URL, performance, TextDecoder, DOMException, fetch});
+    vm.runInContext(fs.readFileSync(path.join(root, 'hub/core/hub_api.js'), 'utf8'), hc);
+    w.top.HubAPI = hw.HubAPI;
+  }
+  for (const f of ['models/net', 'models/presets', 'core/hubapi', 'models/registry', 'models/ollama', 'models/openai', 'models/gemini', 'tools/web']) {
+    vm.runInContext(read('app/' + f + '.js'), c, {filename: f});
+  }
+  HR.models.all().forEach(a => { adapters[a.id] = a; });
+  return {HR, w, c, adapters, values, requests, cards, credits};
+}
+function cfg(provider, base, key = '') { return {provider, base, key}; }
+function options(c) {
+  return {cfg: c, model: 'model', messages: [{role: 'user', content: 'hello', images: ['aGVsbG8=']}],
+    tools: [{type: 'function', function: {name: 'clock', parameters: {type: 'object', properties: {}}}}],
+    think: false, signal: new AbortController().signal, onDelta: () => {}};
+}
+function json(j, status = 200) { return new Response(JSON.stringify(j), {status}); }
+function sse(j) { return new Response('data: ' + JSON.stringify(j) + '\n\ndata: [DONE]\n\n'); }
+
+test('all non-vendor Agent JS passes syntax checks', () => {
+  let n = 0;
+  function walk(dir) { for (const e of fs.readdirSync(dir, {withFileTypes: true})) {
+    if (e.name === 'vendor') continue;
+    const f = path.join(dir, e.name);
+    if (e.isDirectory()) walk(f);
+    else if (/\.(js|cjs)$/.test(e.name)) { execFileSync(process.execPath, ['--check', f]); n++; }
+  }}
+  walk(base); assert.ok(n > 50); console.log('Syntax checked ' + n + ' files');
+});
+test('HTML parses, local links/required ids exist, no new duplicate ids/version queries', () => {
+  // Python HTMLParser also checks inline script syntax with Node below.
+  execFileSync('python3', ['-c', `
+from html.parser import HTMLParser
+from pathlib import Path
+from urllib.parse import urlsplit, unquote
+import subprocess
+base=Path(${JSON.stringify(base)})
+class Check(HTMLParser):
+ def __init__(self):
+  super().__init__(convert_charrefs=True); self.ids={}; self.inline=False; self.script=[]
+ def handle_starttag(self, tag, attrs):
+  a=dict(attrs)
+  if 'id' in a:
+   self.ids[a['id']]=self.ids.get(a['id'],0)+1
+  for k in ('src','href'):
+   if k not in a: continue
+   u=urlsplit(a[k]); assert not ('v=' in u.query), a[k]
+   if u.scheme or u.netloc or not u.path or u.path.startswith('/'): continue
+   assert (base/unquote(u.path)).exists(), a[k]
+  if tag=='script': self.inline='src' not in a; self.script=[]
+ def handle_data(self, data):
+  if self.inline: self.script.append(data)
+ def handle_endtag(self, tag):
+  if tag=='script' and self.inline:
+   subprocess.run(['node','--check'],input=''.join(self.script),text=True,check=True)
+   self.inline=False
+for p in base.glob('*.html'):
+ c=Check(); c.feed(p.read_text()); c.close()
+ duplicates={k:v for k,v in c.ids.items() if v>1}
+ assert duplicates == ({'btnPick':2} if p.name=='agent.html' else {}), (p.name,duplicates)
+ print(p.name, len(c.ids), 'ids; links and inline syntax OK; known baseline duplicates:', duplicates)
+`], {stdio: 'pipe'});
+  const html = read('agent.html');
+  assert.ok(html.indexOf('app/core/hubapi.js') < html.indexOf('app/models/registry.js'));
+  for (const id of ['barFav', 'barModel', 'barProv']) assert.match(html, new RegExp('id="' + id + '"'));
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag23'/);
+  assert.match(read('agent_sw.js'), /agent-files/);
+});
+
+test('bridge passes every Agent-compatible field and keeps result identity', async () => {
+  let received;
+  const result = {text: 'ok', thinking: 'why', tool_calls: [{id: 'c1', function: {name: 'clock', arguments: {}}, thoughtSignature: 'sig'}],
+    usage: {prompt_tokens: 12}, eval_count: 3, prompt_eval_count: 12, eval_duration: 1e9, done_reason: 'stop'};
+  const e = env({hub: {gemini: 'key'}, api: {chatAdvanced: async o => { received = o; o.onDelta('ok', 'why'); return result; }}});
+  const o = options(cfg('gemini', 'https://generativelanguage.googleapis.com/v1beta', 'key'));
+  let delta; o.onDelta = (...x) => { delta = x; };
+  assert.equal(await e.adapters.gemini.chat(o), result);
+  for (const k of ['model', 'messages', 'tools', 'signal', 'onDelta']) assert.equal(received[k], o[k]);
+  assert.equal(received.thinking, false); assert.equal(received.provider, 'gemini');
+  assert.deepEqual(delta, ['ok', 'why']); assert.equal(e.requests.length, 0);
+});
+for (const id of ['openai', 'groq', 'openrouter', 'deepseek', 'deepinfra', 'xai']) {
+  test(id + ' uses built-in Hub provider, local key uses custom without losing config', async () => {
+    let got;
+    const keyName = id === 'openai' ? 'openai_key' : id;
+    const e = env({hub: {[keyName]: 'hub-key'}, api: {chatAdvanced: async o => { got = o; return {}; }, models: async o => { got = o; return [{name: 'm', label: 'M', ctx: 42}]; }}});
+    const c = cfg(id, e.HR.presets.get(id).base, 'hub-key');
+    await e.adapters[id].chat(options(c)); assert.equal(got.provider, id);
+    const list = await e.adapters[id].models(c); assert.equal(got.provider, id); assert.equal(list[0].ctx, 42);
+    c.key = 'local-key'; await e.adapters[id].chat(options(c));
+    assert.equal(got.provider, 'custom'); assert.equal(got.key, 'local-key'); assert.equal(got.endpoint, c.base);
+  });
+}
+test('OpenAI Hub base override never silently changes Agent preset endpoint', async () => {
+  let got;
+  const e = env({hub: {openai_key: 'k', openai_base: 'https://other.test/v1'}, api: {chatAdvanced: async o => {got = o; return {};}}});
+  await e.adapters.openai.chat(options(cfg('openai', 'https://api.openai.com/v1', 'k')));
+  assert.equal(got.provider, 'custom'); assert.equal(got.endpoint, 'https://api.openai.com/v1');
+});
+test('Custom endpoint permits no key and uses HubAPI models', async () => {
+  let got;
+  const e = env({api: {models: async o => {got = o; return [];}, chatAdvanced: async o => {got = o; return {};}}});
+  const c = cfg('custom', 'http://localhost:1234/v1');
+  await e.adapters.custom.models(c); assert.deepEqual(plain(got), {provider: 'custom', endpoint: c.base, key: ''});
+  await e.adapters.custom.chat(options(c)); assert.equal(got.provider, 'custom');
+});
+for (const kind of ['http', 'key', 'abort', 'unreachable', 'input']) {
+  test('Hub ' + kind + ' failure is preserved and never retried', async () => {
+    const error = Object.assign(new Error('model not found'), {kind, status: 404, keyName: 'gemini', openSettings: () => {}});
+    const e = env({hub: {gemini: 'k'}, api: {chatAdvanced: async () => {throw error;}, models: async () => {throw error;}}});
+    const c = cfg('gemini', 'https://generativelanguage.googleapis.com/v1beta', 'k');
+    await assert.rejects(e.adapters.gemini.chat(options(c)), x => x === error);
+    await assert.rejects(e.adapters.gemini.models(c), x => x === error);
+    assert.equal(e.requests.length, 0);
+  });
+}
+for (const context of ['standalone', 'old-hub', 'cross-origin']) {
+  test(context + ' keeps legacy chat and model lists', async () => {
+    const e = env({api: context === 'old-hub' ? {chat: () => {throw new Error('old API');}} : undefined,
+      crossOrigin: context === 'cross-origin', fetcher: url => url.endsWith('/models') ? json({data: [{id: 'a'}]}) : sse({choices: [{delta: {content: 'hi'}, finish_reason: 'stop'}]})});
+    const c = cfg('custom', 'http://local.test/v1', 'local');
+    assert.equal((await e.adapters.custom.models(c))[0].name, 'a');
+    assert.equal((await e.adapters.custom.chat(options(c))).done_reason, 'stop');
+    assert.equal(e.requests[1].options.headers.Authorization, 'Bearer local');
+  });
+}
+test('standalone window.HubAPI is detected and Browser adapter is unchanged', () => {
+  const e = env({crossOrigin: true}); e.w.HubAPI = {models: () => []};
+  assert.equal(e.HR.hubAPI.api('models'), e.w.HubAPI);
+  const browser = {id: 'browser', chat: () => {}};
+  e.HR.models.register(browser); assert.equal(e.HR.models.all().find(a => a.id === 'browser'), browser);
+});
+test('Gemini local key falls back rather than sending wrong Hub credentials', async () => {
+  const e = env({hub: {gemini: 'hub'}, api: {chatAdvanced: () => {throw new Error('must not use');}},
+    fetcher: () => sse({candidates: [{content: {parts: [{text: 'hi'}]}, finishReason: 'STOP'}]})});
+  await e.adapters.gemini.chat(options(cfg('gemini', 'https://generativelanguage.googleapis.com/v1beta', 'local')));
+  assert.equal(e.requests[0].options.headers['x-goog-api-key'], 'local');
+});
+test('Ollama Hub chat/model list keeps metadata and ctx; local URL fallback', async () => {
+  let calls = 0;
+  const e = env({hub: {ollama_url: 'http://hub.test:11434/'}, api: {
+    chatAdvanced: async o => {calls++; assert.equal(o.provider, 'ollama'); return {eval_count: 4};},
+    models: async () => [{name: 'm', label: 'm', ctx: 0}]
+  }, fetcher: url => url.endsWith('/api/show') ? json({model_info: {'llama.context_length': 4096}, parameters: 'num_ctx 2048'})
+    : url.endsWith('/api/tags') ? json({models: [{name: 'm', size: 2147483648, details: {parameter_size: '3B'}}]})
+    : new Response(JSON.stringify({done: true, eval_count: 2}) + '\n')});
+  const c = cfg('ollama', 'http://hub.test:11434');
+  assert.equal((await e.adapters.ollama.chat(options(c))).eval_count, 4);
+  assert.match((await e.adapters.ollama.models(c))[0].label, /3B.*2.0 GB/);
+  assert.equal(await e.HR.ollama.ctx(c.base, 'm'), 2048);
+  assert.equal((await e.adapters.ollama.chat(options(cfg('ollama', 'http://local.test')))).eval_count, 2);
+  assert.equal(calls, 1);
+});
+test('Ollama metadata failure leaves Hub model list usable', async () => {
+  const e = env({hub: {ollama_url: 'http://hub.test'}, api: {models: async () => [{name: 'm', label: 'm'}]}});
+  assert.equal((await e.adapters.ollama.models(cfg('ollama', 'http://hub.test')))[0].name, 'm');
+});
+
+test('web search/extract adapt depth, limits, snippets, credits, page length and Stop', async () => {
+  const seen = [];
+  const e = env({hub: {tavily: 'hub-key'}, api: {
+    search: async o => {seen.push(o); return {results: [{title: 'T', url: 'https://x', snippet: 'abc'}], credits: 0};},
+    fetchPage: async o => {seen.push(o); return {url: 'https://redirect', text: 'z'.repeat(8000), length: 9000, credits: 2};}
+  }});
+  e.values.webDepth = 'advanced'; const signal = new AbortController().signal;
+  const s = await e.HR.web.search({query: ' q ', max_results: 50}, {signal});
+  assert.equal(s.results[0].snippet, 'abc'); assert.equal(s.query, 'q');
+  assert.equal(seen[0].count, 10); assert.equal(seen[0].depth, 'advanced'); assert.equal(seen[0].signal, signal);
+  const text = await e.HR.web.extract({url: 'https://x'}, {signal});
+  assert.match(text, /^URL: https:\/\/redirect/); assert.match(text, /trimmed, 9000 chars total/);
+  assert.equal(seen[1].maxChars, 8000); assert.equal(seen[1].signal, signal);
+  assert.deepEqual(e.credits, [['tavily', 0], ['tavily', 2]]); assert.equal(e.requests.length, 0);
+});
+for (const status of [401, 403, 429, 432, 433, 500]) {
+  test('web keeps ' + status + ' error card, no fallback network call', async () => {
+    const fail = async () => {throw Object.assign(new Error('provider failed'), {status});};
+    const e = env({hub: {tavily: 'k'}, api: {search: fail, fetchPage: fail}});
+    await assert.rejects(e.HR.web.search({query: 'x'}, {}));
+    await assert.rejects(e.HR.web.extract({url: 'https://x'}, {}));
+    assert.equal(e.cards.length, 2); assert.equal(e.requests.length, 0);
+    assert.match(e.cards[0][0], new RegExp(String(status)));
+  });
+}
+test('web abort has no error card; input validation avoids calls; Allow web still gates tools', async () => {
+  const error = new DOMException('stopped', 'AbortError');
+  const e = env({hub: {tavily: 'k'}, api: {search: async () => {throw error;}}});
+  await assert.rejects(e.HR.web.search({query: 'x'}, {}), x => x === error);
+  await assert.rejects(e.HR.web.search({query: ' '}, {}), /query is required/);
+  await assert.rejects(e.HR.web.extract({url: 'file:///x'}, {}), /http/);
+  assert.equal(e.cards.length, 0); assert.equal(e.HR.web.ready(), true);
+  e.values.allowWeb = 'off'; assert.equal(e.HR.web.ready(), false);
+});
+test('web local key remains usable without a Hub key, even with HubAPI present', async () => {
+  const e = env({api: {search: () => {throw new Error('not expected');}}, fetcher: () => json({results: [{title: 'T', url: 'https://x', content: 'legacy'}], usage: {credits: 1}})});
+  e.values.tavilyKey = 'local';
+  assert.equal((await e.HR.web.search({query: 'x'}, {})).results[0].snippet, 'legacy');
+  assert.equal(e.requests[0].options.headers.Authorization, 'Bearer local');
+});
+
+// Real H134c + fake transport checks conversions, not just the bridge stubs.
+test('actual HubAPI OpenAI wire: images, tool ids/results, thinking, usage and split tools', async () => {
+  const e = env({real: true, hub: {groq: 'fake-key'}, fetcher: () => new Response([
+    {choices: [{delta: {content: 'answer', reasoning_content: 'reason', tool_calls: [{index: 0, id: 'new', function: {name: 'clock', arguments: '{"x":'}}]}}]},
+    {choices: [{delta: {tool_calls: [{index: 0, function: {arguments: '1}'}}]}, finish_reason: 'tool_calls'}], usage: {prompt_tokens: 7, completion_tokens: 3}}
+  ].map(j => 'data: ' + JSON.stringify(j) + '\n\n').join('') + 'data: [DONE]\n\n')});
+  const o = options(cfg('groq', 'https://api.groq.com/openai/v1', 'fake-key')); let delta;
+  o.onDelta = (...d) => {delta = d;};
+  o.messages.push({role: 'assistant', content: '', tool_calls: [{id: 'old', function: {name: 'clock', arguments: {}}}]}, {role: 'tool', tool_call_id: 'old', tool_name: 'clock', content: 'time'});
+  const r = await e.adapters.groq.chat(o), b = e.requests[0].body;
+  assert.equal(b.stream, true); assert.equal(b.stream_options.include_usage, true);
+  assert.equal(b.messages[0].content[1].image_url.url, 'data:image/jpeg;base64,aGVsbG8=');
+  assert.equal(b.messages[1].tool_calls[0].id, 'old'); assert.equal(b.messages[2].tool_call_id, 'old');
+  assert.deepEqual(delta, ['answer', 'reason']); assert.equal(r.eval_count, 3); assert.equal(r.prompt_eval_count, 7);
+  assert.equal(r.tool_calls[0].function.arguments.x, 1); assert.equal(r.done_reason, 'tool_calls');
+});
+test('actual HubAPI Gemini wire: photos, thinking=false, function signature/results and usage', async () => {
+  const e = env({real: true, hub: {gemini: 'fake-key'}, fetcher: () => sse({
+    candidates: [{content: {parts: [{text: 'thought', thought: true}, {functionCall: {id: 'new', name: 'clock', args: {x: 1}}, thoughtSignature: 'new-sig'}]}, finishReason: 'STOP'}],
+    usageMetadata: {promptTokenCount: 4, candidatesTokenCount: 2, thoughtsTokenCount: 1}
+  })});
+  const o = options(cfg('gemini', 'https://generativelanguage.googleapis.com/v1beta', 'fake-key'));
+  o.messages.unshift({role: 'system', content: 'system'});
+  o.messages.push({role: 'assistant', content: '', tool_calls: [{id: 'old', function: {name: 'clock', arguments: {}}, thoughtSignature: 'old-sig'}]}, {role: 'tool', tool_call_id: 'old', tool_name: 'clock', content: 'time'});
+  const r = await e.adapters.gemini.chat(o), b = e.requests[0].body;
+  assert.equal(b.systemInstruction.parts[0].text, 'system');
+  assert.equal(b.generationConfig.thinkingConfig.thinkingBudget, 0);
+  assert.equal(b.contents[0].parts[1].inlineData.data, 'aGVsbG8=');
+  assert.equal(b.contents[1].parts[0].thoughtSignature, 'old-sig');
+  assert.equal(b.contents[2].parts[0].functionResponse.id, 'old');
+  assert.equal(r.tool_calls[0].thoughtSignature, 'new-sig'); assert.equal(r.eval_count, 3); assert.equal(r.thinking, 'thought');
+});
+test('actual HubAPI Ollama stream keeps final performance stats and model lists', async () => {
+  const e = env({real: true, hub: {ollama_url: 'http://hub.test'}, fetcher: url => url.endsWith('/api/tags') ? json({models: [{name: 'm', size: 1, details: {parameter_size: '3B'}}]}) : new Response([
+    {message: {content: 'ok', thinking: 'why', tool_calls: [{function: {name: 'clock', arguments: {}}}]}},
+    {done: true, eval_count: 5, prompt_eval_count: 2, eval_duration: 1e9, total_duration: 2e9, done_reason: 'stop'}
+  ].map(JSON.stringify).join('\n') + '\n')});
+  const c = cfg('ollama', 'http://hub.test'), r = await e.adapters.ollama.chat(options(c));
+  assert.equal(e.requests[0].body.think, false); assert.equal(r.eval_count, 5); assert.equal(r.eval_duration, 1e9);
+  assert.equal(r.total_duration, 2e9); assert.equal(r.tool_calls[0].function.name, 'clock');
+  assert.match((await e.adapters.ollama.models(c))[0].label, /3B/);
+});
+test('actual HubAPI model conversions and HTTP error card compatibility', async () => {
+  const e = env({real: true, hub: {gemini: 'fake', tavily: 'fake'}, fetcher: url => url.includes('tavily') ? json({}, 432) : json({models: [
+    {name: 'models/g', displayName: 'Gem', inputTokenLimit: 8192, supportedGenerationMethods: ['generateContent']},
+    {name: 'models/embed', supportedGenerationMethods: ['embedContent']}
+  ]})});
+  const list = await e.adapters.gemini.models(cfg('gemini', 'https://generativelanguage.googleapis.com/v1beta', 'fake'));
+  assert.equal(list.length, 1); assert.equal(list[0].name, 'g'); assert.equal(list[0].ctx, 8192);
+  await assert.rejects(e.HR.web.search({query: 'x'}, {}), /credits used up/); assert.equal(e.cards.length, 1);
+});
+
+for (const think of [true, undefined]) {
+  test('actual HubAPI Gemini thinking=' + think + ' preserves On/Auto', async () => {
+    const e = env({real: true, hub: {gemini: 'fake'}, fetcher: () => sse({candidates: []})});
+    const o = options(cfg('gemini', 'https://generativelanguage.googleapis.com/v1beta', 'fake')); o.think = think;
+    await e.adapters.gemini.chat(o);
+    const b = e.requests[0].body;
+    if (think) assert.equal(b.generationConfig.thinkingConfig.includeThoughts, true);
+    else assert.equal(b.generationConfig, undefined);
+    assert.equal(typeof e.adapters.gemini.toG, 'function');
+  });
+}
+test('actual HubAPI custom model list keeps key, endpoint and context, sorted', async () => {
+  const e = env({real: true, fetcher: () => json({data: [{id: 'z', context_length: 123}, {id: 'a', context_window: 456}]})});
+  const list = await e.adapters.custom.models(cfg('custom', 'http://local.test/v1', 'local-key'));
+  assert.equal(e.requests[0].url, 'http://local.test/v1/models');
+  assert.equal(e.requests[0].options.headers.Authorization, 'Bearer local-key');
+  assert.deepEqual(plain(list).map(m => [m.name, m.ctx]), [['a', 456], ['z', 123]]);
+  assert.equal(typeof e.adapters.custom.toOA, 'function');
+});
+test('actual HubAPI web success preserves transport body, fallback credits and extract trimming', async () => {
+  const e = env({real: true, hub: {tavily: 'fake'}, fetcher: url => url.endsWith('/search')
+    ? json({results: [{title: 'T', url: 'https://x', content: 'snippet'}]})
+    : json({results: [{url: 'https://x', raw_content: 'a'.repeat(9001)}], usage: {credits: 0.5}})});
+  e.values.webDepth = 'advanced';
+  assert.equal((await e.HR.web.search({query: 'x', max_results: 2}, {})).results[0].snippet, 'snippet');
+  assert.equal(e.requests[0].body.search_depth, 'advanced'); assert.equal(e.requests[0].body.max_results, 2);
+  assert.match(await e.HR.web.extract({url: 'https://x'}, {}), /trimmed, 9001 chars total/);
+  assert.deepEqual(e.credits, [['tavily', 2], ['tavily', 0.5]]);
+});
+test('actual HubAPI provider HTTP errors preserve kind/status with secrets masked', async () => {
+  const e = env({real: true, fetcher: () => json({error: {message: 'bad model key private-test-key'}}, 404)});
+  await assert.rejects(e.adapters.custom.chat(options(cfg('custom', 'http://local.test/v1', 'private-test-key'))), x => {
+    assert.equal(x.kind, 'http'); assert.equal(x.status, 404);
+    assert.match(x.message, /bad model/); assert.doesNotMatch(x.message, /private-test-key/); return true;
+  });
+  assert.equal(e.requests.length, 1);
+});
+test('actual HubAPI cancellation propagates Stop without direct retry', async () => {
+  const e = env({real: true, fetcher: () => {throw new DOMException('stopped', 'AbortError');}});
+  const o = options(cfg('custom', 'http://local.test/v1'));
+  const controller = new AbortController(); controller.abort(); o.signal = controller.signal;
+  await assert.rejects(e.adapters.custom.chat(o), x => x.kind === 'abort');
+  assert.equal(e.requests.length, 1);
+});
