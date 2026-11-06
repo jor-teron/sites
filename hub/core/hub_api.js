@@ -37,7 +37,9 @@
     const e = new Error(message + ' Add it in Settings > API Keys.');
     e.keyName = name;
     // Call from a user click to avoid popup blocking; never opens Settings automatically.
-    e.openSettings = () => keys().open(name);
+    // H134d: removed built-in rows now have one generic Add provider form.
+    const removed = name === 'openai_base' || name === 'openai_key' || Object.prototype.hasOwnProperty.call(PRESETS, name);
+    e.openSettings = () => { try { if (removed && window.HubProviders) return window.HubProviders.open(''); } catch (_) { /* standalone */ } return keys().open(name); };
     return e;
   }
   async function value(name, required = true) {
