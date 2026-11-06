@@ -10,6 +10,7 @@
  *   search({depth}) + credits. provider may be gemini/ollama, a visible service id 'svc_…', or 'custom' (app's own
  *   endpoint + key). chat() keeps its contract ({text}); it also accepts a
  *   visible service id. The note above about tools/streaming is chat() only.
+ * H134f: imageModels(), imageCapabilities(), generateImage() for visible Gemini/DeepInfra/OpenRouter providers.
  */
 (function () {
   'use strict';
@@ -471,6 +472,154 @@
     return (j.data || j.models || []).map((m) => ({ name: m.id || m.name, label: m.id || m.name, ctx: +(m.context_length || m.context_window) || 0 }))
       .sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }
+  /* ---------------- H134f: image generation (not photo input / Cloud Vision) ----------------
+   * Visible providers only. No key or raw provider response is returned. Where the API gives one,
+   * the generated Blob is passed to the app directly; no gallery/storage belongs to the Hub. */
+  const IMG_SKIP = /edit|remove|erase|expand|gen_fill|enhance|background|redux|kontext|vector|layer/i;
+  const DI_MODELS = ['black-forest-labs/FLUX-1-schnell', 'black-forest-labs/FLUX-1-dev', 'stabilityai/sdxl-turbo'];
+  const DI_DEFAULT = { 'black-forest-labs/FLUX-1-schnell': 4, 'stabilityai/sdxl-turbo': 4, 'black-forest-labs/FLUX-1-dev': 25 };
+  const DI_MAX = { 'black-forest-labs/FLUX-1-schnell': 4, 'stabilityai/sdxl-turbo': 10 };
+  function imageStyle(p) {
+    if (p.kind === 'gemini') return 'gemini';
+    if (p.base === 'https://api.deepinfra.com/v1/openai') return 'deepinfra';
+    if (p.base === 'https://openrouter.ai/api/v1') return 'openrouter';
+    return '';
+  }
+  async function imageResolve(o) {
+    const p = await imageConfig(o), style = imageStyle(p);
+    if (!style) throw fail('input', 'Image generation is supported for Gemini, DeepInfra and OpenRouter providers.');
+    return Object.assign(p, { style, root: style === 'deepinfra' ? p.base.slice(0, -'/v1/openai'.length) : p.base, providerId: String(o.provider) });
+  }
+  function auth(p) {
+    return p.kind === 'gemini' ? (p.key ? { 'x-goog-api-key': p.key } : {}) : p.key ? { Authorization: 'Bearer ' + p.key } : {};
+  }
+  function diSteps(name, m) {
+    return { min: 1, max: DI_MAX[name] || 50, default: DI_DEFAULT[name] || (m && +m.default_iterations > 1 ? +m.default_iterations : 20) };
+  }
+  function diPrice(p) {
+    if (!p) return '';
+    if (p.short) return String(p.short);
+    if (p.cents_per_image_unit != null) return p.cents_per_image_unit + '¢ / image unit';
+    if (p.default_price_cents != null) return p.default_price_cents + '¢ / image';
+    return '';
+  }
+  async function imageConfig(o) {
+    const id = requiredText(o.provider, 'provider');
+    if (/^svc_/.test(id)) {
+      const store = providerStore(), s = store && await store.secret(id);
+      if (!s) { const e = fail('key', 'This provider is not saved in this browser. Add it in Settings > API Keys > Providers.'); e.keyName = id; e.openSettings = () => { try { store && store.open(''); } catch (_) {} }; throw e; }
+      const info = store.info(id) || {}; return { kind: s.type, base: baseURL(s.endpoint || (s.type === 'gemini' ? GEMINI : '')), key: s.key, label: info.label || 'Provider' };
+    }
+    if (id.toLowerCase() === 'gemini') return { kind: 'gemini', base: GEMINI, key: await keyed('gemini'), label: 'Gemini' };
+    throw fail('input', 'Unsupported image provider. Use Gemini or a visible Gemini, DeepInfra or OpenRouter service id.');
+  }
+  async function imageModels(o = {}) {
+    const p = await imageResolve(o);
+    if (p.style === 'deepinfra') {
+      // The catalogue is public; keep this GET unauthenticated like Agent's existing list.
+      const j = await getJSON(p.root + '/models/list', {}, o.signal, p.label, true, String(o.provider));
+      const all = (Array.isArray(j) ? j : []).filter((m) => m && m.type === 'text-to-image' && !IMG_SKIP.test(m.model_name));
+      let names = all.map((m) => m.model_name); if (!names.length) names = DI_MODELS.slice();
+      names.sort((a, b) => { const ia = DI_MODELS.indexOf(a), ib = DI_MODELS.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b); });
+      return names.map((name) => { const m = all.find((x) => x.model_name === name); return { name, label: name, price: diPrice(m && m.pricing), steps: diSteps(name, m), size: 'px', multiple: 64, max: 1536 }; });
+    }
+    const j = await getJSON(p.base + '/models' + (p.style === 'gemini' ? '?pageSize=1000' : ''), auth(p), o.signal, p.label, false, String(o.provider));
+    if (p.style === 'gemini') {
+      const names = (j.models || []).filter((m) => { const id = String(m.name || '').replace(/^models\//, ''), g = m.supportedGenerationMethods || [];
+        return /^imagen-/.test(id) ? g.includes('predict') : /^gemini-.*image/.test(id) && g.includes('generateContent'); })
+        .map((m) => String(m.name || '').replace(/^models\//, ''));
+      return (names.length ? names : ['gemini-2.5-flash-image']).sort().map((name) => ({ name, label: name, size: 'ratio', ratios: ['1:1', '3:4', '4:3', '9:16', '16:9'] }));
+    }
+    const list = (j.data || []).filter((m) => ((m.architecture || {}).output_modalities || []).includes('image') && !/^openrouter\/auto/.test(m.id));
+    if (!list.length) throw fail('nomodel', 'OpenRouter lists no image models right now.');
+    return list.sort((a, b) => a.id.localeCompare(b.id)).map((m) => {
+      const price = +(((m.pricing || {}).completion) || 0);
+      return { name: m.id, label: m.name || m.id, price: price > 0 ? '$' + (+(price * 1e6).toPrecision(3)) + '/M out' : 'paid',
+        size: 'ratio', ratios: ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'] };
+    });
+  }
+  async function imageCapabilities(o = {}) {
+    const model = requiredText(o.model, 'model'), list = await imageModels(o), m = list.find((x) => x.name === model);
+    if (!m) throw fail('nomodel', 'The selected model is not available for image generation.');
+    return { name: m.name, size: m.size, ratios: m.ratios || [], multiple: m.multiple || 0, max: m.max || 0, steps: m.steps || null };
+  }
+  async function getJSON(url, headers, signal, label, missingIsEmpty, providerId) {
+    let r;
+    try { r = await fetch(url, { headers, signal, credentials: 'omit', redirect: 'error' }); }
+    catch (_) { if (signal && signal.aborted) throw fail('abort', 'Stopped'); throw fail('unreachable', label + ' could not be reached. Check connection, CORS and the endpoint.'); }
+    if (!r.ok) {
+      if (missingIsEmpty) return [];
+      let text = ''; try { text = await r.text(); } catch (_) {}
+      throw imageError(label, r.status, text, headers, providerId);
+    }
+    try { return await r.json(); } catch (_) { throw fail('http', label + ' returned invalid JSON.'); }
+  }
+  async function imagePost(p, url, body, signal) {
+    let r;
+    try { r = await fetch(url, { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, auth(p)), body: JSON.stringify(body), signal, credentials: 'omit', redirect: 'error' }); }
+    catch (_) { if (signal && signal.aborted) throw fail('abort', 'Stopped'); throw fail('unreachable', p.label + ' could not be reached. Check connection, CORS and the endpoint.'); }
+    let text = ''; try { text = await r.text(); } catch (_) {}
+    if (!r.ok) throw imageError(p.label, r.status, text, auth(p), p.providerId);
+    try { return JSON.parse(text || '{}'); } catch (_) { throw fail('http', p.label + ' returned invalid JSON.'); }
+  }
+  function imageError(label, status, text, sentHeaders, providerId) {
+    let j; try { j = JSON.parse(text); } catch (_) { j = {}; }
+    const m = redact(msgOf(j) || (typeof text === 'string' ? text.slice(0, 300) : ''), Object.values(sentHeaders || {}));
+    if (status === 401 || status === 403) { const e = fail('key', label + ' did not accept the key. ' + m, status); e.keyName = providerId; e.openSettings = () => { try { if (providerId === 'gemini') keys().open('gemini'); else providerStore().open(providerId); } catch (_) {} }; throw e; }
+    if (status === 402) throw fail('nocredit', label + ' says the account needs credit. ' + m, status);
+    if (status === 429) throw fail('quota', label + ' image quota is used up or unavailable on this key.', status);
+    throw fail('http', label + ' image request failed (HTTP ' + status + ').' + (m ? ' ' + m : ''), status);
+  }
+  async function imageBlob(src, mime, signal, label) {
+    if (!src) throw fail('noimage', label + ' finished without a picture. Try another model or rephrase the prompt.');
+    if (/^(https?:)/.test(src)) {
+      let r;
+      try { r = await fetch(src, { signal, credentials: 'omit', redirect: 'error' }); }
+      catch (_) { if (signal && signal.aborted) throw fail('abort', 'Stopped'); throw fail('unreachable', label + ' returned a picture that could not be downloaded.'); }
+      if (!r.ok) throw fail('http', label + ' picture download failed (HTTP ' + r.status + ').', r.status);
+      return r.blob();
+    }
+    if (typeof src !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(src)) throw fail('noimage', label + ' returned an unreadable picture.');
+    const bytes = Uint8Array.from(atob(src), (c) => c.charCodeAt(0));
+    return new Blob([bytes], { type: /^image\/(png|jpeg|webp|gif)$/.test(mime) ? mime : 'image/png' });
+  }
+  function positiveInt(v, name) { if (v === undefined) return undefined; if (!Number.isInteger(v) || v < 1 || v > 4096) throw fail('input', name + ' must be an integer between 1 and 4096.'); return v; }
+  async function generateImage(o = {}) {
+    const p = await imageResolve(o), model = requiredText(o.model, 'model'), prompt = requiredText(o.prompt, 'prompt');
+    const width = positiveInt(o.width, 'width'), height = positiveInt(o.height, 'height'), steps = positiveInt(o.steps, 'steps');
+    const ratio = o.ratio === undefined ? '1:1' : requiredText(o.ratio, 'ratio');
+    if (!/^\d{1,3}:\d{1,3}$/.test(ratio)) throw fail('input', 'ratio must be width:height, for example 1:1 or 16:9.');
+    if (o.signal && o.signal.aborted) throw fail('abort', 'Stopped');
+    if (p.style === 'gemini') {
+      const im = /^imagen-/.test(model), url = p.base + '/models/' + encodeURIComponent(model.replace(/^models\//, '')) + (im ? ':predict' : ':generateContent');
+      const body = im ? { instances: [{ prompt }], parameters: { sampleCount: 1, aspectRatio: ratio } }
+        : { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: ratio } } };
+      const j = await imagePost(p, url, body, o.signal);
+      if (im) { const x = (j.predictions || [])[0] || {}; return { blob: await imageBlob(x.bytesBase64Encoded, x.mimeType, o.signal, p.label) }; }
+      const part = ((((j.candidates || [])[0] || {}).content || {}).parts || []).find((x) => { const d = x.inlineData || x.inline_data; return d && d.data; });
+      const d = part && (part.inlineData || part.inline_data);
+      return { blob: await imageBlob(d && d.data, d && (d.mimeType || d.mime_type), o.signal, p.label) };
+    }
+    if (p.style === 'openrouter') {
+      const j = await imagePost(p, p.base + '/chat/completions', { model, messages: [{ role: 'user', content: prompt }], modalities: ['image', 'text'], image_config: { aspect_ratio: ratio } }, o.signal);
+      const msg = ((j.choices || [])[0] || {}).message || {}, im = (msg.images || [])[0] || {}, url = (im.image_url || {}).url || '';
+      if (/^data:image\/[a-z0-9.+-]+;base64,/i.test(url)) {
+        const comma = url.indexOf(','); return { blob: await imageBlob(url.slice(comma + 1), url.slice(5, url.indexOf(';base64,')), o.signal, p.label) };
+      }
+      return { blob: await imageBlob(url, 'image/png', o.signal, p.label) };
+    }
+    const w = width || 1024, h = height || 1024;
+    const native = { prompt, width: w, height: h }; if (steps) native.num_inference_steps = steps;
+    let j;
+    try { j = await imagePost(p, p.root + '/v1/inference/' + model, native, o.signal); }
+    catch (e) {
+      if (e.kind !== 'http' || ![400, 404, 422].includes(e.status)) throw e;
+      if (o.signal && o.signal.aborted) throw fail('abort', 'Stopped');
+      j = await imagePost(p, p.base + '/images/generations', { model, prompt, size: w + 'x' + h, n: 1, response_format: 'b64_json' }, o.signal);
+    }
+    const first = ((j.data || [])[0] || {}), src = first.b64_json || first.url || (j.images || [])[0] || '';
+    return { blob: await imageBlob(src, 'image/png', o.signal, p.label) };
+  }
   // Tavily extract (Agent web_fetch): one URL -> readable text.
   async function fetchPage(o = {}) {
     const url = requiredText(o.url, 'url');
@@ -497,6 +646,6 @@
   // Credits Tavily reports (include_usage), else the published price: basic 1, advanced 2.
   function credits(j, depth) { const c = j && j.usage && +j.usage.credits; return c >= 0 && !Number.isNaN(c) ? c : depth === 'advanced' ? 2 : 1; }
   // window.HubAPI = Object.freeze({ chat, search, vision });   (before H134c)
-  window.HubAPI = Object.freeze({ chat, search, vision, chatAdvanced, models, fetchPage, services });   // H134c
+  window.HubAPI = Object.freeze({ chat, search, vision, chatAdvanced, models, imageModels, imageCapabilities, generateImage, fetchPage, services });   // H134c/H134f
 
 })();

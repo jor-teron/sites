@@ -2014,7 +2014,18 @@ Testing
   covering groq/openrouter/deepseek/xai/deepinfra built-in-key compatibility.
 
 ------------------------------------------------------------------------------
--- H134e: remove legacy provider-key paths (6 Nov 2026) --
+-- H134f: HubAPI image generation --
+Core hub_api.js adds imageModels(), imageCapabilities() and
+generateImage({provider,model,prompt,width,height,ratio,steps,signal}) -> {blob}; HubApps Agent can
+adopt them after its owner approves. Only Gemini plus visible DeepInfra/OpenRouter services (matched
+by exact endpoint, never label) support it; no guessed paths on generic OpenAI providers, no new
+Settings fields, no changes to Ollama/Pollinations, no legacy named keys. Covers model metadata,
+Gemini/Imagen separate request types, DeepInfra native/OpenAI fallback, OpenRouter image responses,
+base64/data/remote-URL to Blob normalization, remote downloads without keys, aborts and redacted
+errors. No live calls, bump or app adoption. 23 image + 43 H134e offline checks, all syntax pass.
+Store smoke harness /workspace/h134f_smoke.js (never in site). Awaiting Jor's Push before Agent adopt.
+
+H134e: remove legacy provider-key paths (6 Nov 2026) --
 ------------------------------------------------------------------------------
 Approved: Jor: "Can you simply remove the hidden legacy path, user can manually
 put them in again, it's not hard stuff. Please Cleanup, and Go".
