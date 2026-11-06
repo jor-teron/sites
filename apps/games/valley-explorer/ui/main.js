@@ -10,6 +10,7 @@ bootValley(canvas, wrap, hud).then((game) => {
   if (!game) return;
   document.getElementById('btn-pause').onclick = () => game.pause();
   document.getElementById('btn-restart').onclick = () => game.restart();
+  document.getElementById('btn-quality').onclick = () => game.cycleQuality();
   game.start();
 }).catch((e) => {
   boot.textContent = (e && e.message) || String(e);
