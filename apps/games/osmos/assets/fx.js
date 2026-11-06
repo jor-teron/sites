@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        assets/fx.js
- * Project:     Osmos OSM1a
+ * Project:     Osmos OSM1b
  * Purpose:     Soft background motes + short motion trails.
  * Depends on:  none (drawn by ui/render.js)
  * ============================================================ */
