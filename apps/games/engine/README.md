@@ -11,3 +11,7 @@ Lightweight Hub game foundation. Shared CPU helpers + a thin **Three.js WebGPU**
 Requires `navigator.gpu`. **No WebGL fallback.** Serve over HTTP (not `file://`) for ES modules.
 
 Demo: `apps/games/valley-explorer/`.
+
+## HEX-2
+- Local GLB pipeline: `3d/core/assets.js` + vendored `GLTFLoader` / `BufferGeometryUtils` (r170)
+- Valley lighting (hemi + sun shadows) and elevation/slope terrain tint

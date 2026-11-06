@@ -1,13 +1,13 @@
 /**
- * Thin HEX 3D helper over Three.js WebGPURenderer.
+ * Thin HEX 3D helper over Three.js WebGPURenderer (HEX-2 lighting).
  * Feature-detects navigator.gpu; no WebGL fallback.
  */
 import {
   WebGPURenderer, Scene, PerspectiveCamera, Color, Fog,
-  AmbientLight, DirectionalLight, Object3D, Group
+  AmbientLight, DirectionalLight, HemisphereLight, Object3D, Group
 } from './three.js';
 
-export { WebGPURenderer, Scene, PerspectiveCamera, Color, Fog, AmbientLight, DirectionalLight, Object3D, Group };
+export { WebGPURenderer, Scene, PerspectiveCamera, Color, Fog, AmbientLight, DirectionalLight, HemisphereLight, Object3D, Group };
 export * from './three.js';
 
 export function supportsWebGPU() {
@@ -18,12 +18,12 @@ export function supportsWebGPU() {
  * @returns {Promise<{ renderer, scene, camera, root, setSize, render, dispose, lost: boolean }>}
  */
 export async function createHex3D(canvas, {
-  clear = 0x87b5d9,
+  clear = 0x8ec6e6,
   fov = 70,
   near = 0.1,
   far = 400,
-  fogNear = 60,
-  fogFar = 160,
+  fogNear = 55,
+  fogFar = 155,
   maxPixelRatio = 1.5
 } = {}) {
   if (!supportsWebGPU()) {
@@ -34,10 +34,15 @@ export async function createHex3D(canvas, {
   const renderer = new WebGPURenderer({ canvas, antialias: true, alpha: false });
   renderer.setClearColor(new Color(clear), 1);
   await renderer.init();
+  try {
+    if (renderer.shadowMap) {
+      renderer.shadowMap.enabled = true;
+    }
+  } catch (_) { /* WebGPU shadow path optional */ }
 
   const scene = new Scene();
   scene.background = new Color(clear);
-  scene.fog = new Fog(clear, fogNear, fogFar);
+  scene.fog = new Fog(0x9fc9e8, fogNear, fogFar);
 
   const camera = new PerspectiveCamera(fov, 1, near, far);
   camera.position.set(0, 2, 8);
@@ -45,10 +50,21 @@ export async function createHex3D(canvas, {
   const root = new Group();
   scene.add(root);
 
-  const ambient = new AmbientLight(0xb8d4ff, 0.55);
-  const sun = new DirectionalLight(0xfff2d6, 1.15);
-  sun.position.set(40, 60, 20);
-  scene.add(ambient, sun);
+  const hemi = new HemisphereLight(0xd8ecff, 0x3a4a28, 0.55);
+  const ambient = new AmbientLight(0xb8d4ff, 0.28);
+  const sun = new DirectionalLight(0xfff1d0, 1.35);
+  sun.position.set(45, 70, 25);
+  sun.castShadow = true;
+  try {
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.near = 1;
+    sun.shadow.camera.far = 200;
+    sun.shadow.camera.left = -80;
+    sun.shadow.camera.right = 80;
+    sun.shadow.camera.top = 80;
+    sun.shadow.camera.bottom = -80;
+  } catch (_) {}
+  scene.add(hemi, ambient, sun);
 
   let lost = false;
   if (renderer.backend && renderer.backend.device) {
@@ -77,7 +93,10 @@ export async function createHex3D(canvas, {
     try { renderer.dispose(); } catch (_) {}
   }
 
-  return { renderer, scene, camera, root, ambient, sun, setSize, render, dispose, get lost() { return lost; } };
+  return {
+    renderer, scene, camera, root, ambient, sun, hemi,
+    setSize, render, dispose, get lost() { return lost; }
+  };
 }
 
 export function showOverlay(host, title, body) {
