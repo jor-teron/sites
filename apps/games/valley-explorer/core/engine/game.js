@@ -2,6 +2,7 @@ import { createLoop } from '../../../engine/shared/loop.js';
 import { createInput } from '../../../engine/shared/input.js';
 import { createHex3D, showOverlay, supportsWebGPU } from '../../../engine/3d/core/hex3d.js';
 import { buildValley } from './terrain.js';
+import { createAssetManager } from '../../../engine/3d/core/assets.js';
 
 export async function bootValley(canvas, host, hud) {
   if (location.protocol === 'file:') {
@@ -25,6 +26,20 @@ export async function bootValley(canvas, host, hud) {
 
   const valley = buildValley(0x4E501);
   hex.root.add(valley.root);
+
+  const assets = createAssetManager();
+  try {
+    const rockUrl = new URL('../../assets/models/rock.glb', import.meta.url).href;
+    const { root: rockRoot, meta } = await assets.loadModel(rockUrl, { normalize: true, targetSize: 2.4 });
+    const rx = 8, rz = -6;
+    rockRoot.position.set(rx, valley.sample(rx, rz), rz);
+    hex.root.add(rockRoot);
+    console.info('[HEX-2] GLB rock ready', meta.height.toFixed(2));
+  } catch (e) {
+    console.warn('[HEX-2] optional GLB skipped:', e && e.message ? e.message : e);
+    // Valley remains fully playable with procedural props + landmarks.
+  }
+
 
   const input = createInput(canvas);
   canvas.addEventListener('click', () => input.requestLock());

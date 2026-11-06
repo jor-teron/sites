@@ -3,25 +3,26 @@ import { makeHeightFn } from './height.js';
 import { heightfieldMesh, boxMesh, coneMesh, cylinderMesh, sphereMesh } from '../../../engine/3d/core/primitives.js';
 import { Group, Mesh, CircleGeometry, MeshStandardNodeMaterial, Color } from '../../../engine/3d/core/three.js';
 
+export { makeHeightFn };
+
 export function buildValley(seed = 0x4E501) {
   const world = 160;
   const heightFn = makeHeightFn(seed, world);
-  const ground = heightfieldMesh({ size: world, segments: 72, heightFn });
+  const ground = heightfieldMesh({ size: world, segments: 80, heightFn });
   const root = new Group();
   root.add(ground.mesh);
 
-  // water ring (flat disc under low edges)
   const waterMat = new MeshStandardNodeMaterial({
-    color: new Color(0x2a6ea8), metalness: 0.1, roughness: 0.25, transparent: true, opacity: 0.85
+    color: new Color(0x2a6ea8), metalness: 0.15, roughness: 0.22, transparent: true, opacity: 0.82
   });
   const water = new Mesh(new CircleGeometry(world * 0.52, 48), waterMat);
   water.rotation.x = -Math.PI / 2;
-  water.position.y = 0.15;
+  water.position.y = 0.12;
+  water.receiveShadow = true;
   root.add(water);
 
   const rng = createRng(seed ^ 0xABC);
   const props = new Group();
-  // rocks
   for (let i = 0; i < 28; i++) {
     const x = rng.range(-70, 70), z = rng.range(-70, 70);
     if (Math.hypot(x, z) < 12) continue;
@@ -31,7 +32,6 @@ export function buildValley(seed = 0x4E501) {
     rock.rotation.y = rng.range(0, Math.PI);
     props.add(rock);
   }
-  // trees
   for (let i = 0; i < 22; i++) {
     const x = rng.range(-65, 65), z = rng.range(-65, 65);
     if (Math.hypot(x, z) < 14) continue;
