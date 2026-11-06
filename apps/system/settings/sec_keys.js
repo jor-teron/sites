@@ -158,7 +158,7 @@
     inp.type = masked ? 'password' : 'url';
     inp.autocomplete = 'off'; inp.spellcheck = false;
     inp.setAttribute('autocapitalize', 'off');
-    inp.placeholder = def.kind === 'url' ? (name === 'ollama_url' ? 'http://localhost:11434' : 'https://\u2026/v1') : 'Paste the key';
+    inp.placeholder = def.kind === 'url' ? (name === 'ollama_url' ? 'http://localhost:11434' : 'https://…/v1') : 'Paste the key';
     inp.setAttribute('aria-label', (def.label || name) + (def.kind === 'url' ? '' : ' key'));
     line.appendChild(inp);
     if (masked) {
@@ -210,7 +210,7 @@
       if (!save.disabled) doSave();
       const v = name === 'openai_base' || name === 'openai_key' ? '' : await K.get(name);
       if (!v && name !== 'openai_base' && name !== 'openai_key') { say('Add the key first', 'bad'); return; }
-      tbtn.disabled = true; say('Testing\u2026');
+      tbtn.disabled = true; say('Testing…');
       try { const r = await test(v); say(r.text, r.ok ? 'ok' : 'bad'); }
       catch (e) { say(e && e.name === 'AbortError' ? 'Timed out' : (REACH[name] || 'Could not reach the server (offline, or it blocks browser requests)'), 'bad'); }
       tbtn.disabled = false;
@@ -325,7 +325,7 @@
     });
     tbtn.addEventListener('click', async () => {
       if (!save.disabled && !doSave()) return;
-      tbtn.disabled = true; say('Testing\u2026');
+      tbtn.disabled = true; say('Testing…');
       try { const r = await provTest(id); say(r.text, r.ok ? 'ok' : 'bad'); }
       catch (e) { say(e && e.name === 'AbortError' ? 'Timed out' : 'Could not reach the endpoint (offline, wrong URL, or it blocks browser requests)', 'bad'); }
       tbtn.disabled = false;
@@ -340,7 +340,7 @@
   function provAddCard(list, focusName) {
     const card = ui.el('section', 'card key-row key-add prov-add');
     card.appendChild(ui.el('b', 'key-label', 'Add provider'));
-    card.appendChild(ui.el('p', 'key-hint', 'For a service the Hub does not list above (LM Studio, vLLM, Together, a company proxy\u2026). Label, type, endpoint and key; apps choose the model.'));
+    card.appendChild(ui.el('p', 'key-hint', 'OpenAI, Groq, OpenRouter, LM Studio, vLLM or another service. Type chooses the request format; apps choose the model.'));
     const f = provFields(card, null);
     f.key.placeholder = 'API key (optional for a local server)';
     const line = ui.el('div', 'key-line');
@@ -384,7 +384,7 @@
     const d = ui.el('details', 'card howto key-guide');
     const s = ui.el('summary', '', 'Keys guide: where to get each key, free limits, how apps use them');
     const body = ui.el('div', 'howto-body');
-    const pre = ui.el('pre', 'key-readme', 'Loading\u2026');
+    const pre = ui.el('pre', 'key-readme', 'Loading…');
     const a = ui.el('a', 'tap', 'Open the keys guide on GitHub');
     a.href = README_GH; a.target = '_blank'; a.rel = 'noopener';
     a.appendChild(ui.el('small', '', 'hub/keys.readme.md'));
