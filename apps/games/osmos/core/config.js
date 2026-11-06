@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        core/config.js
- * Project:     Osmos OSM1c
+ * Project:     Osmos OSM1d
  * Purpose:     Tunables, save key, colours, level-band notes.
  * Depends on:  none
  *
@@ -12,15 +12,17 @@
  * No AI, chasing, targeting, or brain code anywhere.
  * ============================================================ */
 var OSMOS_CONFIG = {
-  title: 'Osmos OSM1c',
+  title: 'Osmos OSM1d',
   fps: 30,
   world: { w: 960, h: 640 },
   player: {
     startMass: 28,
     minMass: 6,
-    ejectMass: 0.55,
-    ejectImpulse: 52,
-    drag: 0.992,
+    /* OSM1d: no passive drag. Coast until eject / wall / field. */
+    ejectMassFrac: 0.01,   /* ~1% of current mass per shove */
+    ejectMassMin: 0.12,
+    ejectRelSpeed: 140,    /* relative speed of expelled blob (world units/s) */
+    maxSpeed: 160,         /* soft coast cap — no braking drag */
     bounce: 0.72
   },
   absorb: {
