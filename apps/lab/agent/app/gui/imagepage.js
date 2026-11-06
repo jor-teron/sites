@@ -29,7 +29,7 @@ HR.imgpage = (function () {
       case 'disabled': return ['🖼 Image generation is off in this Ollama', e.message + ' — Ollama 0.32.6 and later have it switched off for now. Use Ollama 0.32.5 on macOS, or try the Pollinations tab.'];
       case 'nomodel': return ['🖼 No image model yet', (e.message || 'No image model') + '. Install one (or x/flux2-klein), or try the Pollinations tab:'];
       case 'unreachable': return ['📡 Can\'t reach ' + who, e.message + (prov === 'ollama' ? ' Ollama must be running (OLLAMA_ORIGINS must allow this page).' : '')];
-      case 'nokey': return ['🔑 Key problem', e.message + (prov === 'gemini' ? ' Check the Gemini key in Hub API Keys (or Agent Settings when standalone).' : ' Check the Agent-local key in Chat → Settings → Model. Hub image generation is not available yet.')];
+      case 'nokey': return ['🔑 Key problem', e.message + (prov === 'gemini' ? ' Check the Gemini key in Hub API Keys (or Agent Settings when standalone).' : ' Check the matching provider in Hub API Keys, or the Agent-local key in Chat → Settings → Model.')];
       case 'quota': return ['🚫 Image generation blocked', e.message + ' Try the free Pollinations tab, or turn on billing for the Gemini key.'];
       case 'nocredit': return ['💳 No credit left', e.message + ' Add credit on the provider\'s site, or use the free Pollinations tab.'];
       case 'busy': return ['⏳ Busy right now', e.message];
@@ -48,6 +48,10 @@ HR.imgpage = (function () {
       var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'hb wide'; cp.textContent = '📋 Copy';
       cp.onclick = function () { (navigator.clipboard ? navigator.clipboard.writeText(PULL) : Promise.reject()).then(function () { cp.textContent = '✓ Copied'; }, function () { cp.textContent = 'Select & copy'; }); };
       row.appendChild(cp);
+    }
+    if (typeof e.openSettings === 'function') {
+      var settings = document.createElement('button'); settings.type = 'button'; settings.className = 'hb wide'; settings.textContent = 'Open provider settings';
+      settings.onclick = function () { e.openSettings(); }; row.appendChild(settings);
     }
     var rt = document.createElement('button'); rt.type = 'button'; rt.className = 'hb wide'; rt.textContent = '↻ Retry'; rt.onclick = function () { c.hidden = true; load(); };
     row.appendChild(rt); c.appendChild(row);

@@ -22,7 +22,7 @@ HR.provider = (function () {
     $('keyNote').textContent = '🔒 Your API key is stored only in this browser on this device (localStorage) and is sent only to ' + (HR.presets.host(b) || 'the base URL above') + '. Clear the field to remove it.';
     HR.hubRows.paint();
     if (p !== 'gemini' || !HR.models.hubName(p, b)) { $('setKey').hidden = false; $('keyNote').hidden = false; if (p === 'custom') $('setOABase').hidden = false; }   /* AG24: keep local image keys editable; svc credentials are never exposed. */
-    if ((p === 'deepinfra' || p === 'openrouter') && HR.models.service(p, b)) $('keyNote').textContent += ' Chat uses the matching Hub provider. Images still need this Agent-local key: HubAPI has no image-generation method yet.';
+    if ((p === 'deepinfra' || p === 'openrouter') && HR.models.service(p, b)) $('keyNote').textContent += ' Chat and images use the matching Hub provider when its API is available; this key is only the Agent-local fallback.';
   }
   function saveBase(v) { v = String(v || '').trim().replace(/\/+$/, ''); if (v && !/^https?:\/\//.test(v)) v = 'http://' + v; if (v !== HR.set.get('customBase')) { HR.set.put('customBase', v); dirty = true; } }
   function init() {

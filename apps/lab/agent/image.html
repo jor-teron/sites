@@ -2,6 +2,7 @@
 <!--
   Agent — image.html: the Image page (AG15; was the AG14 slide-over inside agent.html). Own URL, Back works; '← Chat' goes to agent.html.
   Provider tabs (only ready ones): Pollinations (free, no key, 50 s cooldown), Gemini, DeepInfra, OpenRouter (each when its key exists; AG16), Ollama.
+  AG25: visible Hub image providers via the shared bridge; local fallbacks retained.
   Same settings (localStorage 'agent.settings'), keys (Hub first, app/core/hubkeys.js) and gallery (IndexedDB 'agent-images').
   AG17: Steps on every tab, size chips (app/gui/imagesize.js), prices in the picker, prompt filenames, Recent models.
   AG19: top row = Provider + Model dropdowns (no tabs); Ratio / Size / Steps as one compact line of dropdowns.
@@ -59,6 +60,7 @@
 </dialog>
 <script>window.HR = window.HR || {};</script>
 <script src="app/core/hubkeys.js"></script>
+<script src="app/core/hubapi.js"></script>
 <script src="app/models/presets.js"></script>
 <script src="app/models/registry.js"></script>
 <script src="app/gui/settings.js"></script>

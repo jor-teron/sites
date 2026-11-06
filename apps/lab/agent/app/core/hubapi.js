@@ -50,6 +50,54 @@ HR.hubAPI = (function () {
     };
     return a;
   }
+  /* AG25: image adapters retain their original implementations below the
+     wrapper as explicit standalone / Agent-local fallbacks, never retries. */
+  function imageProvider(a) {
+    var oldModels = a.models, oldGenerate = a.generate, oldReady = a.ready;
+    var oldSteps = a.steps, metadata = {};
+    function route(method) {
+      var h = api(method), s = HR.models.service(a.id, HR.models.base(a.id));
+      var id = a.id === 'gemini' ? (val('gemini') ? 'gemini' : '') : s && s.id;
+      return h && id ? { api: h, provider: id } : null;
+    }
+    function error(e) {
+      var kind = e && e.kind, st = e && e.status;
+      if (kind === 'key' || st === 401 || st === 403) kind = 'nokey';
+      else if (st === 402) kind = 'nocredit';
+      else if (st === 429) kind = 'quota';
+      else if (e && e.name === 'AbortError') kind = 'abort';
+      var out = Object.assign(new Error(e && e.message || 'Image request failed'), e || {});
+      out.kind = kind || 'http'; return out; // includes status/keyName/openSettings
+    }
+    function cached(model) { var r = route('imageModels'); return r && metadata[r.provider + '|' + model]; }
+    function remember(id, m) { metadata[id + '|' + m.name] = m; return m; }
+    a.ready = function () { return !!route('generateImage') || oldReady(); };
+    a.models = function (o) {
+      var r = route('imageModels'); if (!r) return oldModels();
+      return Promise.resolve().then(function () { return r.api.imageModels({ provider: r.provider, signal: o && o.signal }); })
+        .then(function (list) { list.forEach(function (m) { remember(r.provider, m); }); return list; })
+        .catch(function (e) { throw error(e); });
+    };
+    a.capabilities = function (model, signal) {
+      var m = cached(model), r = route('imageCapabilities');
+      if (m) return Promise.resolve(m);
+      if (!r) return Promise.resolve(null);
+      return Promise.resolve().then(function () { return r.api.imageCapabilities({ provider: r.provider, model: model, signal: signal }); })
+        .then(function (m) { return remember(r.provider, m); }).catch(function (e) { throw error(e); });
+    };
+    if (oldSteps) a.steps = { min: oldSteps.min,
+      max: function (model) { var m = cached(model); return m && m.steps ? m.steps.max : typeof oldSteps.max === 'function' ? oldSteps.max(model) : oldSteps.max; },
+      def: function (model) { var m = cached(model); return m && m.steps ? m.steps.default : oldSteps.def(model); }
+    };
+    a.generate = function (o) {
+      var r = route('generateImage'); if (!r) return oldGenerate(o);
+      return Promise.resolve().then(function () { return r.api.generateImage({ provider: r.provider,
+        model: o.model, prompt: o.prompt, width: o.width, height: o.height,
+        ratio: o.ratio, steps: o.steps || undefined, signal: o.signal
+      }); }).catch(function (e) { throw error(e); });
+    };
+    return a;
+  }
   function web(method) { return val('tavily') ? api(method) : null; }
-  return { api: api, wrap: wrap, web: web };
+  return { api: api, wrap: wrap, web: web, imageProvider: imageProvider };
 })();

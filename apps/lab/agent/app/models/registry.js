@@ -8,7 +8,7 @@
    Settings default; chatModel() the chat's model for that provider ('' = default). Settings provider = default for new chats. API keys: localStorage 'agent.keys' {host|'gemini': key} — this device only.
    AG24: Gemini/Ollama use direct Hub settings; company tabs match visible svc_
    metadata. Custom uses only customBase. Secrets never leave HubAPI; image
-   adapters get only Agent-local keys until HubAPI offers image generation. */
+   adapters use the AG25 Hub bridge, with Agent-local keys as fallback. */
 HR.models = (function () {
   var reg = {}, KEYS = 'agent.keys', over = '', chat = { p: '', m: '' };
   var OPENAI = 'https://api.openai.com/v1', GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
