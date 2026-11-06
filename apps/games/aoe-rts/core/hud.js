@@ -216,7 +216,7 @@ function updateStats(force) {
     const ids = MODE === 'aivai' ? Object.keys(factions) : ['p', ...Object.keys(factions)];
     if (ids.join() !== statsIds) {   // build the table once; later updates only touch changed cells
         statsIds = ids.join(); const x = ' class="x"';
-        hudText.innerHTML = `<table><tr><th></th><td>Pop</td><td${x}>Vil</td><td>Army</td><td${x}>Bld</td><td${x}>Food</td><td${x}>Wood</td><td${x}>Gold</td><td${x}>Stone</td></tr>` +
+        hudText.innerHTML = `<table><tr><th></th><td>Population</td><td${x}>Villagers</td><td>Army</td><td${x}>Buildings</td><td${x}>Food</td><td${x}>Wood</td><td${x}>Gold</td><td${x}>Stone</td></tr>` +
             ids.map(id => `<tr><th><i style="background:${TEAM[id].mm}"></i>${TEAM[id].name}</th><td></td><td${x}></td><td></td>` + `<td${x}></td>`.repeat(5) + '</tr>').join('') + '</table>';
         statsCells = [...hudText.querySelectorAll('tr')].slice(1).map(r => [r, ...r.querySelectorAll('td')]); force = true;
     }
