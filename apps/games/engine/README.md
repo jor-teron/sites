@@ -3,6 +3,8 @@
 Guide for Hub games using this folder. No prior engine experience required.  
 Do **not** put HEX docs in `apps/games/common/` (reserved). Live demo: `../valley-explorer/`.
 
+Legacy standalone Games (classic canvas titles, CSV, settings): [../README.md](../README.md). Learn category is separate (`../../learn/README.md`) and does not use this engine.
+
 ## Requirements
 
 - **HTTP** — ES modules need a local/Hub server (`file://` fails).

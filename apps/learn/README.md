@@ -1,42 +1,59 @@
-# Learn (category)
+# Learn (category conventions)
 
-`apps/learn/` is the Learn category: study and reference apps. **LN1** added the category page and list; the apps themselves stay where they are (Learn only links to them).
+Study/reference apps under `apps/learn/`. **Independent of HEX** — no Three/WebGPU engine, no `apps/games/engine` dependency.
 
-- **Page:** `learn.html` is the tiles page (`index.html` only redirects to it and keeps `?query` and `#hash`). Logic and look are shared in `shared/tiles/` (`tiles.js`, `tiles.css`).
-- **List:** `learn-apps.csv` is the source of truth. Header `name, path, icon, newtab, section`; lines starting `#` are comments; `icon`, `newtab` and `section` are optional.
-  - `path` and `icon` are relative to this folder (for an app in another category use `../tools/<app>/`).
-  - Empty `icon` means `<folder>/<folder>_icon.png`; if that is missing the tile shows a letter.
-  - `newtab` 1 opens the app in its own tab on a desktop Hub.
-  - `section` groups tiles under a heading. Sections appear in order of first appearance; apps with no section go last under "Other".
-- **Add an app:** add one line to `learn-apps.csv`. For a new app inside Learn, put its folder here (like `first-aid/`) and use `first-aid/` style paths.
-- **Needs http:** the CSV is fetched, so open the page from the live site or a local server, not `file://` (same as every category page).
-- **Shared kit:** `common/` and `first-aid/` belong to the Games bot; don't edit them from here.
-- **Icon:** `learn_icon.png` (128 px, white graduation cap on a green rounded square, same size and style as the other category icons).
+Tiles page: `learn.html` (`index.html` redirects, keeps `?` / `#`). Shared tiles UI: `shared/tiles/` when present. Hub already maps Learn → `apps/learn/learn-apps.csv` / `learn.html` (do not edit `hub/` from a Learn docs PR).
 
-## Current list
+## List / icons
 
-- Health: First Aid, Human Body Explorer (HBE3: External tab by default with 38 outside parts (face, body, arms, hands, legs, feet, skin; Front/Back toggle) and an Inside tab with Simple mode with 15 main parts, Expert mode with about 50 parts incl. brain parts, senses, nerves, blood vessels, full skeleton, more muscles and skin; smooth code-drawn figure with shaded organs, bone-shaped bones and fibre-textured muscles; neutral body with no private parts; back parts drawn dashed; foldable card on phones; 8-question quiz per tab and mode)
-- Outdoors: Survival and Outdoors (SO1a: Fire and Water; more topics planned)
-- Language: NE-India Dictionary, Caption for NEI (still in Tools), English Basic, Typing Tutor (TT1: graded keyboard lessons, on-screen keyboard, 1/2/5 minute test), Morse Code (MC1: chart of A-Z, 0-9 and punctuation with optional tree view, text <-> Morse translator with sound and lamp at 5-25 WPM, tap key with live decoding, 10 graded listen/tap lessons, SOS button)
-- Language and Maths: Maths and Logic (ML1a: 6 topics: Everyday Numbers, Times Tables, Fractions/Percent, Money Maths, Shapes and Measuring, Patterns and Puzzles), Clock Reading (CR2: drag the clock hands, digital 12 h / 24 h with AM / PM, time in words, Now in GMT, red second hand on by default, 1 tick a second, Read / Set / Match quizzes in 5 levels)
-- Coding: Learning HTML (Basic) (still in Tools), Code Lab (still in Lab), Code School (CS4: coding playground with a Web | SQL picker. Web (CS1a): HTML/CSS/JavaScript with its own small syntax highlighter, line numbers, Tab = 2 spaces, auto-indent, optional tag auto-close and a key bar for phones; live preview in a sandboxed frame with Auto-run or Run and a Messages strip for console.log and errors. SQL (CS4): SQLite in the page via sql.js 1.15.2 vendored in `code-school/vendor/` (MIT, wasm over http, asm.js on file://, loaded only when SQL opens), sample school database (classes, students, marks), Run all statements or Run selection, one results table per SELECT with row counts, plain-words errors with the line, Tables list with columns, Reset DB, database kept in localStorage (about 1.5 MB cap, warns when too big), download .sql and .db. Side by side on desktop, Code/Preview or Code/Results tabs on a phone held upright; up to 12 named saves tagged Web or SQL, New, Reset to starter, Download; editor tips in Help)
-- Music: Piano Basics (PB2: on-screen piano with WebAudio sound in 4 voices (piano, soft organ, bell, harmonium), note names in letters or sargam, 16 play-along tunes incl. sargam practice and the Jana Gana Mana opening, step-by-step or falling-notes play (slow/normal, wait-for-me, score), optional easy left hand on 5 songs, record and play back in memory, plain-words help, name-the-note quiz), Guitar Chords (GC1: code-drawn neck in standard tuning, 20 chords with finger dots and O/X marks, plucked-string sound, strum by swipe or button, left-handed mode, chord-change practice with metronome, name-the-chord quiz), Tuner & Metronome (TM1: WebAudio metronome 30-240 BPM with lookahead timing, tap tempo, 2/3/4/6 beats with accented beat 1, pendulum and presets; microphone tuner with YIN pitch detection, note + octave, optional sargam, cents needle, guitar EADGBE mode with tighten/loosen hints, reference tones; plain-language help for beginners)
-- Science: Periodic Table (PT2: all 118 elements in the standard layout at the top, search row below it, colour by category or state with legend filter, search, element cards with mass, group, period, state, year and kid-friendly facts, symbol/name/find-it quizzes in 3 levels)
-- Life Skills: Road Safety (RS1: 31 Indian road signs in mandatory/cautionary/informatory groups, traffic light trainer with pedestrian signal, left-hand-traffic safe-crossing game with Look Right-Left-Right, rule cards incl. helmet, seatbelt and 112, sign and scenario quizzes in 3 levels)
+Source of truth: **`learn-apps.csv`** (`name, path, icon, newtab, section, description`). Paths relative to this folder (cross-category rows may use `../tools/…`). Empty icon → `<folder>/<folder>_icon.png` or letter tile; some apps use SVG paths in the CSV when listed that way. Category icon: `learn_icon.png`.
 
-## Not yet in the Hub menu
+Needs HTTP for CSV fetch (and most content `fetch`) — not `file://` for the tiles page.
 
-Learn is **not** in the Hub menu yet. Until the Hub owner makes these four edits, the page only opens by its address (`apps/learn/learn.html`):
+## App folder shape
 
-1. `hub/core/hub_config.js`: add `Learn: 'apps/learn/learn-apps.csv'` to `HUB_CAT_CSV` (this also gives the Start flyout and `hub_catalog.js`).
-2. `hub/core/hub_apps.js`: add a row `Learn, Learn Page, apps/learn/learn.html, , 0, 0, <order>` (choose the menu position).
-3. `hub/core/hub.js`: add `Learn: 'apps/learn/learn.html'` to `CAT_PAGES`.
-4. `hub/update/hub_sw.js`: add `apps/learn/learn_icon.png` and `apps/learn/learn-apps.csv` to the offline cache lists.
+```
+apps/learn/<name>/
+  index.html           # no-flash redirect → <name>.html (sites-hub.theme / prefers-color-scheme)
+  <name>.html          # shell + classic <script> tags
+  <name>_icon.png
+  core/                # app glue
+  ui/                  # CSS
+  assets/              # often plain .txt lesson cards (First Aid pattern)
+```
 
-After these, run `python3 hub/core/hub_appindex_gen.py --catalog-only` and commit `hub/core/hub_catalog.js`.
+Release id in **`<title>`** only (e.g. `First Aid LRN1c`, `Typing Tutor TT1`). No cache-buster query params on assets. No Hub Back chrome inside the page (Hub title bar / `shared/learn-hubbar.js` when in a Hub window).
 
-## Misc / todo
+Older one-off layouts remain; don’t force every app onto the card kit.
 
-- Hub Main Bot edits listed above (not done).
-- Decide: move the Language and Coding apps into `apps/learn/`, or keep them in Tools/Lab and only list them here. Tools still tags Learning HTML with section "Learn" and Favorite lists Caption for NEI; leave as is until decided.
-- More Learn apps and ideas: to be collected here.
+## Shared Learn kit (`common/`) — not for Games
+
+Classic scripts attach **`window.LRN`**. Load order used by First Aid:
+
+1. `common/core/parser.js` — `LRN.parseCard`, `LRN.parseIndex`, `LRN.load(base, ver, fallback)`
+2. `common/core/state.js` — `LRN.store`, `LRN.mode` (`basics`|`expert`, key `learn.mode`), `LRN.progress(prefix)`
+3. `common/core/quiz.js` — `LRN.quiz.build` / `shuffle`
+4. `common/ui/views.js` — `LRN.h`, `LRN.views` (home / card / quiz)
+5. `shared/learn-hubbar.js` — optional Hub title-bar attach
+6. `common/ui/app.js` — `LRN.app({ root, base, ver, prefix, title, fallback, disclaimer })`
+7. App `core/app.js` + `common/ui/learn.css`
+
+**Basics / Expert** is one shared preference (`learn.mode`) across kit apps. Content is text-first (`.txt` cards with `[basics]` / `[expert]` / `[quiz]` sections). Not a “game loop” engine.
+
+Apps that never adopted the kit (e.g. some tutors/tools-style pages) stay self-contained; inspect that folder.
+
+## Themes
+
+Many Learn pages use dark-friendly CSS (`learn.css` / app CSS). Redirect `index.html` still follows Hub theme for the brief load flash (light/dark class), same as Games.
+
+## Conventions
+
+- Self-contained folders; small procedural JS; **no build step** by default.
+- Vendor locally if needed (example: Code School keeps sql.js under its own `vendor/`).
+- Do **not** use Games `common/settings` or HEX here. Do **not** register Games tiles from Learn CSV.
+- Tests: syntax / small Node checks when touching JS; browser only if Jor asks.
+
+## Cross-links
+
+- Games standalone + settings: [`../games/README.md`](../games/README.md), [`../games/GUIDE.md`](../games/GUIDE.md)
+- HEX WebGPU (Games only): [`../games/engine/README.md`](../games/engine/README.md) — Learn does **not** link examples into Learn apps.
