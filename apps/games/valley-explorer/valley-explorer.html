@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Valley Explorer HEX-1</title>
+  <link rel="stylesheet" href="ui/style.css">
+  <link rel="stylesheet" href="../engine/3d/ui/overlay.css">
+</head>
+<body>
+  <div id="wrap">
+    <div id="boot">Starting Valley Explorer…</div>
+    <canvas id="view"></canvas>
+    <div id="hud">
+      <span class="pill" id="gathered">Landmarks 0 / 0</span>
+      <div class="right">
+        <button type="button" id="btn-pause">Pause</button>
+        <button type="button" id="btn-restart">Restart</button>
+      </div>
+    </div>
+    <div id="help">WASD / touch left to move · mouse / touch right to look · click canvas for pointer lock · collect glowing landmarks</div>
+  </div>
+  <script type="module" src="ui/main.js"></script>
+</body>
+</html>
