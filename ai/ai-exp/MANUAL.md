@@ -1,4 +1,4 @@
-# ai-exp manual: v5.9 (describes the planned v5 flags and presets; requires v5)
+# ai-exp manual: v6.0
 
 ## 1. Overview
 
@@ -110,21 +110,23 @@ only `log.md` -> v1 (cannot be continued).
 
 ## 6. Experiment folder and how to read it
 
-`$EXPERIMENTS_DIR/<name>/` (default `ai/ai-exp/experiments/`, gitignored):
+`$EXPERIMENTS_DIR/<name>/` (default `ai/ai-exp/experiments/`, gitignored).
+Since v6.0 every log file is in `<name>/logs/`. Folders made before v6.0
+keep their logs at the top level and keep writing there on `--continue`.
 
 Single companion (v1/v2):
 - `cage/` the machine; `cage/home/journal.md` is the companion's journal.
-- `log.md` (v1) or `log-N.md` (session N): prompt, each thought, command,
+- `logs/log.md` (v1) or `logs/log-N.md` (session N): prompt, each thought, command,
   output, nudges, and the end reason.
 - `.run/` internals: `flags`, `session`, `prompt.txt`, `messages-N.json`.
 
 Two companions:
 - `cage/` (shared machine) or `cages/<name>/` (one per companion);
   `shared/` is what appears at `/srv` with `--shared-folder`.
-- `timeline-N.md` merged, time-ordered view of both: thoughts, commands
+- `logs/timeline-N.md` merged, time-ordered view of both: thoughts, commands
   and outputs, labeled by name.
-- `log-<name>-N.md` one companion's own prompt and steps.
-- `summary-N.md` turns per companion, how each ended, and **Discovery**.
+- `logs/log-<name>-N.md` one companion's own prompt and steps.
+- `logs/summary-N.md` turns per companion, how each ended, and **Discovery**.
 - `.run/` `flags`, `names`, `events-N.tsv` (every command/output, base64),
   `created-<name>.tsv` (files each one made), `turns-N.tsv`, messages.
 

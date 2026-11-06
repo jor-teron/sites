@@ -64,3 +64,14 @@ one_line() {
   fi
   printf '%s' "$s"
 }
+
+# v6: logs live in <exp>/logs/. An older experiment (v5 or before) that already
+# has logs at the top of its folder keeps writing there, so its numbering and
+# readers stay the same. Sets LOG_DIR and creates it.
+pick_log_dir() {
+  LOG_DIR="$EXP_DIR/logs"
+  if [ ! -d "$LOG_DIR" ] && compgen -G "$EXP_DIR/log*.md" >/dev/null; then
+    LOG_DIR="$EXP_DIR"
+  fi
+  mkdir -p "$LOG_DIR" || fail "Can't create $LOG_DIR"
+}
