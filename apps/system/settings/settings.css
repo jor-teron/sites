@@ -219,6 +219,17 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
   .key-line .key-input { flex-basis: 100%; }
   .key-btn { flex: 1 1 0; }
 }
+/* H134c: Settings › API Keys › Custom providers (sec_keys.js) */
+.prov-row .key-line + .key-line, .prov-add .key-line + .key-line { margin-top: 8px; }
+.prov-type { flex: 0 1 210px; font-family: system-ui, sans-serif; }
+.prov-label { font-family: system-ui, sans-serif; }
+.prov-kind { margin-left: auto; }
+.prov-empty { margin: 6px 0 0; }
+@media (max-width: 699px) {
+  .key-line.prov-keyline { flex-wrap: nowrap; }
+  .key-line.prov-keyline .key-input { flex: 1 1 0; }
+  .key-line.prov-keyline .key-btn { flex: 0 0 48px; }
+}
 
 /* H30.5: Settings → About → Profile → 'Save profile to' (one row per place, multi-select) */
 .profile-places { display: flex; flex-direction: column; gap: 6px; }

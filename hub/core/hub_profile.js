@@ -105,7 +105,9 @@
     'syncUndo', 'keysUndo',   // H29.3: this device's Undo last sync backup (never in the profile, never synced)
     // 'lastBuild', 'lastUpdated']);   // H52: this device's running build + when it arrived (hub_update.js)   (before H66)
     'lastBuild', 'lastUpdated',   // H52: this device's running build + when it arrived (hub_update.js)
-    'notifs']);   // H66: this device's Notification Centre history (never saved, never synced)
+    // 'notifs']);   // H66: this device's Notification Centre history (never saved, never synced)   (before H134c)
+    'notifs',   // H66: this device's Notification Centre history (never saved, never synced)
+    'providers']);   // H134c: custom AI services hold API keys (hub_providers.js): never in the profile, never synced
   const K_UNDO = P + 'syncUndo';   // H29.3
   const K_KEYS = P + 'profileKeys', K_STORE = P + 'keys';   // H30.3
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
