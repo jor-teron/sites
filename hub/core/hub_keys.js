@@ -16,8 +16,8 @@
  *   HubKeys.definition(name)  → visible/hidden known definition, or a generic custom-key one (H134d)
  *   HubKeys.onChange(fn)       fn({name, present}) on every change (this page or another tab /
  *                              frame, via the 'storage' event); name '' = several changed. Returns unsubscribe().
- *   HubKeys.KNOWN              [{name, label, kind, url, hint, hidden?}] supported key definitions
- *                              H134a: + usedBy; H134d: four visible services, other saved names stay readable ['Agent', …] the apps checked in code to read that key (Settings
+ *   HubKeys.KNOWN              [{name, label, kind, url, hint}] the four visible key definitions
+ *                              H134a: + usedBy ['Agent', …] the apps checked in code to read that key (Settings
  *                              shows it as a "Used by" line; [] = none checked yet, no line). Names only, for people.
  * H29.3 Undo last sync (profile sync backup, Settings › Devices › Undo last sync). The key store has no protected or
  *   encrypted space (H28: plain localStorage), so the backup of the keys a sync is about to change is kept in its
