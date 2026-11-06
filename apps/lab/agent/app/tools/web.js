@@ -20,6 +20,23 @@ HR.web = (function () {
     return t + ': ' + b;
   }
   async function call(path, body, signal) {
+    // AG23: translate HubAPI into the legacy Tavily result shape below.
+    // The legacy fetch block stays active only outside Hub / with local keys.
+    var method = path === '/search' ? 'search' : 'fetchPage';
+    var h = HR.hubAPI && HR.hubAPI.web(method);
+    if (h) {
+      try {
+        var out = await h[method](path === '/search'
+          ? { query: body.query, count: body.max_results, depth: body.search_depth, signal: signal }
+          : { url: body.urls[0], depth: body.extract_depth, maxChars: LIMIT, signal: signal });
+        return { usage: { credits: out.credits }, results: path === '/search'
+          ? (out.results || []).map(function (x) { return { title: x.title, url: x.url, content: x.snippet }; })
+          : [{ url: out.url, raw_content: out.text, length: out.length }] };
+      } catch (e) {
+        if (e && (e.name === 'AbortError' || e.kind === 'abort')) throw e;
+        throw new Error(card(e && e.status || (e && e.keyName ? 401 : 0), e && e.message));
+      }
+    }
     var r;
     try { r = await fetch(API + path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key() }, body: JSON.stringify(body), signal: signal }); }
     catch (e) { if (e && e.name === 'AbortError') throw e; throw new Error('Can\'t reach api.tavily.com (' + (e && e.message || e) + ')'); }
@@ -46,7 +63,7 @@ HR.web = (function () {
     if (!r) { var f = (j.failed_results || [])[0]; throw new Error('Could not read ' + u + (f && f.error ? ' (' + f.error + ')' : '')); }
     spent(j, dp === 'advanced' ? 2 : 1);
     var t = String(r.raw_content || '').replace(/\n{3,}/g, '\n\n').trim();
-    return 'URL: ' + (r.url || u) + '\n' + (t.length > LIMIT ? t.slice(0, LIMIT) + '\n…[trimmed, ' + t.length + ' chars total]' : t || '(no readable text)');
+    return 'URL: ' + (r.url || u) + '\n' + ((r.length || t.length) > LIMIT ? t.slice(0, LIMIT) + '\n…[trimmed, ' + (r.length || t.length) + ' chars total]' : t || '(no readable text)');
   }
   return { ready: ready, key: key, depth: depth, search: search, extract: extract };
 })();

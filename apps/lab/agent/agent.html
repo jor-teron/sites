@@ -15,6 +15,7 @@
   AG12: a tab per provider (app/models/presets.js), grouped model picker with search + Recent (app/gui/pickgroups.js).
   AG14: 🖼 Image page (app/gui/imagepage.js, gallery in IndexedDB via app/storage/imagestore.js); the composer Chat | Image toggle is gone.
   AG15: 🖼 is a link to image.html, the Image page's own page (provider tabs Pollinations / DeepInfra / Ollama).
+  AG23: chat/model lists and web tools use HubAPI when its config fits; standalone fallback kept.
   AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
@@ -170,6 +171,7 @@
 <script src="app/core/helper.js"></script>
 <script src="app/core/hubkeys.js"></script>
 <script src="app/models/net.js"></script>
+<script src="app/core/hubapi.js"></script>
 <script src="app/models/registry.js"></script>
 <script src="app/models/ollama.js"></script>
 <script src="app/models/presets.js"></script>
