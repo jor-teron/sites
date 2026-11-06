@@ -1,6 +1,6 @@
 /* ============================================================
  * File:        core/config.js
- * Project:     Osmos OSM1b
+ * Project:     Osmos OSM1c
  * Purpose:     Tunables, save key, colours, level-band notes.
  * Depends on:  none
  *
@@ -12,7 +12,7 @@
  * No AI, chasing, targeting, or brain code anywhere.
  * ============================================================ */
 var OSMOS_CONFIG = {
-  title: 'Osmos OSM1b',
+  title: 'Osmos OSM1c',
   fps: 30,
   world: { w: 960, h: 640 },
   player: {
