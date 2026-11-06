@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Osmos OSM1a</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="game" width="960" height="640"></canvas>
+    <div id="hud">
+      <div class="left">
+        <span class="pill" id="level">Lv 00</span>
+        <span class="pill" id="mass">Mass 0</span>
+        <span class="pill" id="target">Goal 0</span>
+      </div>
+      <div class="right">
+        <button type="button" id="btn-pause">Pause</button>
+        <button type="button" id="btn-restart">Restart</button>
+        <button type="button" id="btn-levels">Levels</button>
+      </div>
+    </div>
+    <div id="hint">Tap or drag to drift · absorb smaller glows</div>
+    <div id="overlay">
+      <div id="panel">
+        <h1 id="panel-title">Osmos</h1>
+        <p id="panel-msg"></p>
+        <div id="end-actions" class="row">
+          <button type="button" class="primary" id="btn-resume">Resume</button>
+          <button type="button" class="primary" id="btn-next">Next</button>
+          <button type="button" id="btn-replay">Replay</button>
+        </div>
+        <div>
+          <div id="levels"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="core/config.js"></script>
+  <script src="core/rng.js"></script>
+  <script src="core/levels.js"></script>
+  <script src="core/physics.js"></script>
+  <script src="core/game.js"></script>
+  <script src="assets/fx.js"></script>
+  <script src="ui/render.js"></script>
+  <script src="ui/input.js"></script>
+  <script src="ui/hud.js"></script>
+  <script>
+    (function () {
+      var canvas = document.getElementById('game');
+      var ctx = canvas.getContext('2d');
+      var view = { w: canvas.width, h: canvas.height };
+      var last = 0, acc = 0;
+      var frameMs = 1000 / OSMOS_CONFIG.fps;
+
+      function resize() {
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        var w = window.innerWidth, h = window.innerHeight;
+        canvas.width = Math.max(320, Math.floor(w * dpr));
+        canvas.height = Math.max(240, Math.floor(h * dpr));
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        view.w = canvas.width; view.h = canvas.height;
+      }
+
+      OSMOS_HUD.bind(document.getElementById('wrap'));
+      OSMOS_INPUT.bind(canvas, view);
+      OSMOS_FX.init(OSMOS_CONFIG.world.w, OSMOS_CONFIG.world.h, 40);
+      OSMOS_GAME.start(0);
+      OSMOS_HUD.refresh();
+      OSMOS_HUD.hideHintSoon();
+      resize();
+      window.addEventListener('resize', resize);
+      window.addEventListener('blur', function () {
+        var s = OSMOS_GAME.get();
+        if (s && s.status === 'play') {
+          OSMOS_GAME.togglePause();
+          OSMOS_HUD.refresh();
+        }
+      });
+
+      function loop(ts) {
+        requestAnimationFrame(loop);
+        if (!last) last = ts;
+        var dt = Math.min(0.05, (ts - last) / 1000);
+        last = ts;
+        acc += dt * 1000;
+        if (acc < frameMs) return;
+        var stepDt = Math.min(0.05, acc / 1000);
+        acc = 0;
+
+        OSMOS_INPUT.tick(stepDt);
+        var st = OSMOS_GAME.step(stepDt);
+        if (st && st.status === 'play') {
+          OSMOS_FX.step(stepDt, OSMOS_CONFIG.world.w, OSMOS_CONFIG.world.h);
+          var p = st.player;
+          if (p && (Math.abs(p.vx) + Math.abs(p.vy) > 8)) {
+            OSMOS_FX.pushTrail(p.x, p.y, p.mass, 'rgba(60,224,200,ALP)');
+          }
+        }
+        OSMOS_RENDER.draw(ctx, OSMOS_GAME.get(), view);
+        OSMOS_HUD.refresh();
+      }
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
