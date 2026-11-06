@@ -17,11 +17,12 @@ Add a key once and every Hub app (Agent, News, …) can use it. No app asks agai
 1. Open **Settings → API Keys** (or tap a "Set key" link inside an app: it opens the right row).
 2. Paste the key into its row. It saves when you press Enter, tap **Save** or leave the field.
 3. Tap **Test** to check it works. **👁** shows or hides the key. **Delete** removes it.
-4. For a key that isn't listed, use **Add custom key**: type a name (lowercase letters, digits,
-   `_ - .`) and the value.
+4. For OpenAI, Groq, OpenRouter, DeepSeek, xAI, DeepInfra or another AI service, use
+   **Add provider**. Choose **OpenAI-compatible** or **Gemini** (the request format, not the company),
+   then give it a label, API endpoint and key. Apps choose the model.
 
-Each row shows a short hint (what it's for, the free tier) and, since H134a, a **Used by** line naming the
-apps that read that key from the Hub (Agent for the AI and search keys, OCR and Vision for `gvision`).
+Each row shows a short hint (what it's for, the free tier) and a **Used by** line naming the apps that read that
+key from the Hub (Agent for the AI and search keys, OCR and Vision for `gvision`).
 
 ## The keys
 
@@ -46,19 +47,25 @@ apps that read that key from the Hub (Agent for the AI and search keys, OCR and 
   Agent reads it from this row. Caption for Nei and Transcribe still keep their own key field for now, so paste
   the same key there too.
 
-### `openai_base` + `openai_key`: OpenAI-compatible server
+### AI services: Add provider (H134d)
 
-Any service that speaks the OpenAI API. Set the base URL and its key. Groq, OpenRouter, DeepSeek and xAI
-also have their own rows below (H28.1). Use those, and keep this pair for anything else (or a local server).
+Settings shows permanent rows only for Tavily, Gemini, Ollama and Google Cloud Vision. Other AI services use
+**Add provider**. Saved OpenAI-compatible and Gemini services appear below the Add provider card.
+
+| Service | Provider type | API endpoint | Get a key |
+|---|---|---|---|
 
 | Service | Base URL (`openai_base`) | Key (`openai_key`) |
 |---|---|---|
-| OpenAI | `https://api.openai.com/v1` | <https://platform.openai.com/api-keys> (paid, check the page) |
-| Groq | `https://api.groq.com/openai/v1` | <https://console.groq.com/keys> (free tier: limits at <https://console.groq.com/docs/rate-limits>) |
-| OpenRouter | `https://openrouter.ai/api/v1` | <https://openrouter.ai/keys> (some `:free` models: limits at <https://openrouter.ai/docs/api-reference/limits>) |
-| LM Studio / llama.cpp (local) | `http://localhost:1234/v1` or `http://localhost:8080/v1` | usually none |
+| OpenAI | OpenAI-compatible | `https://api.openai.com/v1` | <https://platform.openai.com/api-keys> (paid) |
+| Groq | OpenAI-compatible | `https://api.groq.com/openai/v1` | <https://console.groq.com/keys> (free tier available) |
+| OpenRouter | OpenAI-compatible | `https://openrouter.ai/api/v1` | <https://openrouter.ai/keys> (some `:free` models) |
+| DeepSeek | OpenAI-compatible | `https://api.deepseek.com/v1` | <https://platform.deepseek.com/api_keys> (paid) |
+| xAI | OpenAI-compatible | `https://api.x.ai/v1` | <https://console.x.ai> (paid) |
+| DeepInfra | OpenAI-compatible | `https://api.deepinfra.com/v1/openai` | <https://deepinfra.com/dash/api_keys> (paid) |
+| LM Studio / llama.cpp (local) | OpenAI-compatible | `http://localhost:1234/v1` or `http://localhost:8080/v1` | usually none |
 
-- **Test button** (on either row): calls `<base>/models` with the key.
+- **Test button:** calls `<endpoint>/models` with the key. Custom-provider keys are excluded from profile files and sync.
 - Some servers block requests from web pages (CORS). Then Test says "Could not reach the server",
   even when the key is right.
 
@@ -72,41 +79,6 @@ also have their own rows below (H28.1). Use those, and keep this pair for anythi
   `OLLAMA_ORIGINS="https://jor-teron.github.io"` (see <https://docs.ollama.com/faq>).
   A page served over https can't reach `http://` addresses other than localhost.
 - **Test button:** calls `<url>/api/tags` and counts your models.
-
-### `groq`: Groq (H28.1)
-
-- **For:** fast open models (for example gpt-oss, Qwen and Llama) through an OpenAI-style API. Base URL `https://api.groq.com/openai/v1`.
-- **Get it:** <https://console.groq.com/keys> (sign in, then **Create API Key**; keys start with `gsk_`).
-- **Free:** there is a free plan, and its limits are per model (requests and tokens per minute and per day).
-  They change often, so **check the page**: <https://console.groq.com/docs/rate-limits>, and your own limits are under
-  Settings → Limits in the console. The paid Developer plan has higher limits.
-- **Test button:** lists the models (`GET api.groq.com/openai/v1/models`), which is free.
-
-### `openrouter`: OpenRouter (H28.1)
-
-- **For:** hundreds of models from many providers behind one key and one OpenAI-style API. Base URL `https://openrouter.ai/api/v1`.
-- **Get it:** <https://openrouter.ai/settings/keys> (keys start with `sk-or-`).
-- **Free:** models whose id ends in `:free` cost nothing. They're limited to 20 requests a minute, and to 50 requests a day
-  until you've bought at least 10 credits, then 1,000 a day. Other models are paid from prepaid credits.
-  Details: <https://openrouter.ai/docs/api-reference/limits>
-- **Test button:** reads the key's info (`GET openrouter.ai/api/v1/key`): the credit left on the key and the free-model
-  requests left today. The model list (`/api/v1/models`) is public, so it can't prove a key works.
-
-### `deepseek`: DeepSeek (H28.1)
-
-- **For:** DeepSeek's models (chat and reasoning) through an OpenAI-style API. Base URL `https://api.deepseek.com`.
-- **Get it:** <https://platform.deepseek.com/api_keys> (sign up at <https://platform.deepseek.com>).
-- **Free:** no free tier is listed. It's pay as you go from a prepaid balance (top up in the platform). For prices,
-  **check the page**: <https://api-docs.deepseek.com/quick_start/pricing>
-- **Test button:** lists the models (`GET api.deepseek.com/models`), which is free.
-
-### `xai`: Grok API by xAI (H28.1)
-
-- **For:** xAI's Grok models (chat, code, images, voice) through an OpenAI-style API. Base URL `https://api.x.ai/v1`.
-- **Get it:** <https://console.x.ai> (sign in, then **API Keys** → **Create API key**; keys start with `xai-`).
-- **Free:** it's paid per token. For any free credits on your account, **check the page** (console.x.ai, Billing).
-  Prices per model are at <https://docs.x.ai/docs/models>.
-- **Test button:** lists the models (`GET api.x.ai/v1/models`), which is free. xAI answers a bad key with 400.
 
 ### `gvision`: Google Cloud Vision (H28.2)
 
@@ -123,10 +95,12 @@ also have their own rows below (H28.1). Use those, and keep this pair for anythi
   A bad key is reported as rejected. It also tells you when the key is fine but the Vision API isn't enabled,
   billing is off, or the key's restrictions block this site.
 
-### Custom keys
+### Legacy key names (H134d)
 
-Any other name (for example `groq`, `openweather`). An app asks for it by name, and
-`HubKeys.open('<name>')` opens a row for it, even before it's set.
+Existing saved keys under `openai_base`, `openai_key`, `groq`, `openrouter`, `deepseek`, `xai` and `deepinfra`
+are preserved; Agent and HubAPI can still read them. Their permanent Settings rows and the **Add custom key** form are gone.
+A missing-key link opens **Add provider**. An explicit `#keys/<legacy-name>` deep link can still show that saved key for
+maintenance. New services should use the provider store; apps choose models, while HubAPI reads the stable `svc_…` id.
 
 ## For app developers: the HubKeys API
 
@@ -145,9 +119,10 @@ HubKeys.onChange(fn)       // fn({name, present}); also fires for changes made i
 HubKeys.KNOWN              // [{name, label, kind: 'key' | 'url', url, hint, usedBy}]  usedBy (H134a): ['Agent', …]
 ```
 
-Known names: `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`, `groq`, `openrouter`,
-`deepseek`, `xai`, `deepinfra`, `gvision`. Names are lowercased. When your app starts reading a key, add it to
-`USED_BY` in `hub_keys.js` so its row's "Used by" line names it.
+Known names remain `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`, `groq`, `openrouter`,
+`deepseek`, `xai`, `deepinfra` and `gvision` for compatibility. Only Tavily, Gemini, Ollama and Cloud Vision are
+visible by default. `HubKeys.definition(name)` returns a known definition with its hidden flag, or a generic custom-key
+definition. For new AI services use `HubProviders` / `HubAPI` rather than adding another hard-coded key row.
 
 **Standalone fallback.** When the app is opened on its own (not in the Hub), `window.top.HubKeys`
 doesn't exist. Keep the app's own key field for that case:

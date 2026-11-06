@@ -1975,3 +1975,40 @@ and an OpenAI-compatible service, chat() unchanged and with svc id, redacted
 http error, missing-key error without secret, search advanced + fetchPage,
 deep link, no overflow). All provider hosts stubbed with page.route; zero
 requests left the machine, no live paid calls. Local commit only, awaiting Push.
+
+
+------------------------------------------------------------------------------
+-- H134d: simpler API Keys panel (6 Nov 2026) --
+------------------------------------------------------------------------------
+Approved: Jor: "Please code this", after agreeing to keep Tavily, Ollama,
+Gemini and Google Cloud Vision. Provider type remains the two-choice dropdown
+(OpenAI-compatible | Gemini); it means request format, not a company catalogue.
+
+What
+- Settings > API Keys shows exactly four Services rows: Tavily, Google Gemini,
+  Ollama URL and Google Cloud Vision.
+- Removed the permanent rows for the generic OpenAI base/key, Groq, OpenRouter,
+  DeepSeek, xAI and DeepInfra, and removed the "Add custom key" form.
+- The H134c four-field Add provider card is the single route for all those AI
+  services. Section title is simply "Providers"; no hard-coded provider picker.
+- Compatibility: old key values are NOT deleted, renamed or migrated. HubAPI and
+  Agent keep reading them. HubKeys.definition(name) retains hidden definitions;
+  #keys/<legacy-or-custom-name> still opens a maintenance row. Saved legacy or
+  miscellaneous keys do not create cards on the normal panel.
+- A missing removed-row key's HubAPI openSettings() opens the generic provider
+  area instead of linking to a now-hidden row. Tavily/Gemini/Ollama/gvision links
+  keep their rows. Custom-provider keys remain excluded from profile sync.
+- No app-owned files changed. No storage values cleared. No V/CACHE/build bump.
+
+Files
+- hub/core/hub_keys.js, hub/core/hub_api.js, apps/system/settings/sec_keys.js,
+  hub/keys.readme.md. Docs: this file + hub/docs/build_history_2026.txt.
+
+Testing
+- node --check on all three changed JS files.
+- Short offline Playwright smoke at 390 px: 15/15 checks (four visible rows,
+  saved/hidden Groq and custom values, two-option request-format dropdown,
+  provider add/Test, deep links, no overflow, no page errors, external hosts
+  intercepted and stubbed). No live provider calls.
+- Agent's existing offline tests (including actual HubAPI wire tests): 42/42,
+  covering groq/openrouter/deepseek/xai/deepinfra built-in-key compatibility.

@@ -4,21 +4,23 @@
  * (only this browser; every Hub app gets them, no per-app prompt). Uses the Hub's window.top.HubKeys
  * when Settings runs inside the Hub (so the Hub's onChange listeners fire at once), else its own copy.
  * One row per known key (HubKeys.KNOWN): masked input (URLs shown plain) + 👁 reveal, Save (also on
- * Enter / leaving the field), Test where cheap, Delete. Custom keys get the same row without Test;
- * "Add custom key" adds one. Deep link: #keys/<name> scrolls to and highlights that row.
+ * Enter / leaving the field), Test where cheap, Delete. Other saved/custom keys stay accessible through their deep link, not as permanent rows.
+ * Deep link: #keys/<name> scrolls to and highlights that row.
  * Tests (straight from this browser, nothing goes through the Hub):
  *   tavily      GET api.tavily.com/usage (free, no credit; a 1-result search only if /usage is missing)
  *   gemini      GET generativelanguage.googleapis.com/v1beta/models (model list, free)
  *   ollama_url  GET <url>/api/tags
  *   openai_*    GET <base>/models with the key (Bearer)
- *   H28.1, all Bearer: groq GET api.groq.com/openai/v1/models, openrouter GET openrouter.ai/api/v1/key
+ *   Hidden H28.1 rows, all Bearer: groq GET api.groq.com/openai/v1/models, openrouter GET openrouter.ai/api/v1/key
  *   (its /models list is public, so /key is what proves the key), deepseek GET api.deepseek.com/models,
  *   xai GET api.x.ai/v1/models. All four answer browser (CORS) requests.
  *   H28.2 gvision POST vision.googleapis.com/v1/images:annotate?key= with no images ({ requests: [] }: nothing to
  *   bill). 400 with reason API_KEY_INVALID = bad key; any other 400 / 200 = the key reached Vision; 403 tells apart
  *   API not enabled, billing off and key restrictions.
+ * H134d: four visible Services rows, then Providers. Saved legacy/custom keys aren't listed;
+ * their values remain readable and an explicit #keys/<name> link still opens a maintenance row.
  * H134a: a muted "Used by: Agent, …" line under the hint, from HubKeys.KNOWN[].usedBy (custom keys: none).
- * H134c: 'Custom providers' section (hub/core/hub_providers.js, localStorage 'sites-hub.providers'): Label, Provider type
+ * H134d: 'Providers' section (hub/core/hub_providers.js, localStorage 'sites-hub.providers'): Label, Provider type
  *   (OpenAI-compatible | Gemini), API endpoint, API key; stable id svc_… per service; Save / Test / Delete. The saved key
  *   is never written back into the page. Test = GET <endpoint>/models (free). Deep link #keys/svc_… scrolls to that row.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
@@ -133,6 +135,7 @@
   };
 
   function keyRow(def, focusName) {
+    def = K.definition ? K.definition(def.name) : def;   // H134d: known hidden rows keep their labels and tests
     const name = def.name;
     const card = ui.el('section', 'card key-row');
     card.id = 'key-' + name;
@@ -215,38 +218,6 @@
     card.reload = load;
     load();
     if (focusName === name) card.classList.add('key-focus');
-    return card;
-  }
-
-  function addCustomRow(list, focusName) {
-    const card = ui.el('section', 'card key-row key-add');
-    card.appendChild(ui.el('b', 'key-label', 'Add custom key'));
-    card.appendChild(ui.el('p', 'key-hint', 'Any other key an app asks for by name. Name: lowercase letters, digits, _ - . (up to 40).'));
-    const line = ui.el('div', 'key-line');
-    const nm = ui.el('input', 'key-input key-newname');
-    Object.assign(nm, { type: 'text', placeholder: 'name, e.g. groq', autocomplete: 'off', spellcheck: false });
-    nm.setAttribute('aria-label', 'Custom key name'); nm.setAttribute('autocapitalize', 'off');
-    const val = ui.el('input', 'key-input');
-    Object.assign(val, { type: 'password', placeholder: 'value', autocomplete: 'off', spellcheck: false });
-    val.setAttribute('aria-label', 'Custom key value');
-    const add = ui.el('button', 'key-btn key-save', 'Add'); add.type = 'button';
-    line.append(nm, val, add);
-    const out = ui.el('p', 'key-out', '');
-    card.append(line, out);
-    function go() {
-      const n = nm.value.trim().toLowerCase(), v = val.value.trim();
-      if (!NAME_RE.test(n)) { out.textContent = 'Use lowercase letters, digits, _ - . (1\u201340)'; out.className = 'key-out bad'; return; }
-      if (!v) { out.textContent = 'Add a value'; out.className = 'key-out bad'; return; }
-      const existed = K.has(n);
-      K.set(n, v);
-      nm.value = ''; val.value = '';
-      out.textContent = existed ? 'Updated "' + n + '"' : 'Added "' + n + '"'; out.className = 'key-out ok';
-      const row = list.querySelector('#key-' + CSS.escape(n));
-      if (row) row.reload();
-      else { const r = keyRow({ name: n, label: n, kind: 'key' }, focusName); r.dataset.custom = '1'; list.appendChild(r); }
-    }
-    add.addEventListener('click', go);
-    [nm, val].forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } }));
     return card;
   }
 
@@ -440,15 +411,15 @@
       note.textContent = '\uD83D\uDD12 Keys stay only in this browser on this device (localStorage). They are not synced to a joined phone and the Hub sends them nowhere; each app sends a key only to its own service. Every Hub app can read them. (If you turn on About \u2192 Profile \u2192 Include keys in profile, they are also saved in your profile file.)';
       const list = ui.el('div', 'key-list');
       K.KNOWN.forEach((def) => list.appendChild(keyRow(def, focusName)));
-      const known = new Set(K.KNOWN.map((d) => d.name));
-      const customs = K.list().filter((n) => !known.has(n));
-      customs.forEach((n) => { const r = keyRow({ name: n, label: n, kind: 'key' }, focusName); r.dataset.custom = '1'; list.appendChild(r); });
+      // H134d: no miscellaneous saved-key cards. A legacy/custom key remains in
+      // storage for its app, and is shown only when its explicit deep link asks.
+      if (focusName) list.appendChild(keyRow({ name: focusName, label: focusName, kind: 'key' }, focusName));
       const readme = ui.el('a', 'key-readme-link', 'Keys guide (readme) \u2197');
       readme.href = README_GH; readme.target = '_blank'; readme.rel = 'noopener';
       note.append(' ', readme);
-      // pane.append(note, ui.title('Services'), list, ui.title('Custom'), addCustomRow(list, focusName), ui.title('Help'), guide());   (before H134c)
-      pane.append(note, ui.title('Services'), list, ui.title('Custom'), addCustomRow(list, focusName));
-      if (P) pane.append(ui.title('Custom providers'), providersSection(focusName));   // H134c
+      // H134d: no generic key editor; Add provider covers OpenAI-compatible and Gemini services.
+      pane.append(note, ui.title('Services'), list);
+      if (P) pane.append(ui.title('Providers'), providersSection(focusName));
       pane.append(ui.title('Help'), guide());
       // another tab / app changed a key → refresh that row (or all)
       const off = K.onChange((e) => {
@@ -462,7 +433,8 @@
         let row = list.querySelector('#key-' + CSS.escape(focusName));
         if (!row && NAME_RE.test(focusName)) {   // an app asked for a custom key that is not set yet
           row = keyRow({ name: focusName, label: focusName, kind: 'key' }, focusName);
-          row.dataset.custom = '1'; list.appendChild(row);
+          if (!K.definition || !K.definition(focusName).hidden) row.dataset.custom = '1';
+          list.appendChild(row);
         }
         if (row) requestAnimationFrame(() => { row.scrollIntoView({ block: 'center' }); const i = row.querySelector('.key-input'); if (i) i.focus({ preventScroll: true }); });
       }
