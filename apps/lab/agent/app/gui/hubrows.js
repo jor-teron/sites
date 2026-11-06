@@ -8,20 +8,20 @@ HR.hubRows = (function () {
     var p = HR.models.def(), b = HR.models.base(p);
     return p === 'browser' ? '' : p === 'ollama' ? 'ollama_url' : HR.models.hubName(p, b);   /* AG12: '' = no Hub slot (DeepInfra) */
   }
-  function line(id, n, what) {
+  function line(id, n, what, add) {
     var el = document.getElementById(id); if (!el) return;
-    el.hidden = !n; el.innerHTML = ''; if (!n) return;
+    el.hidden = !n && !add; el.innerHTML = ''; if (!n && !add) return;
     var t = document.createElement('span'), b = document.createElement('button');
-    t.textContent = 'Keys come from Hub › API Keys · ' + n + (HR.hubKeys.has(n) ? ' ✓' : ' not set' + (what ? ' (' + what + ')' : ''));
+    t.textContent = !n ? 'No matching Hub provider · add a provider, or use an Agent-local key.' : 'Keys come from Hub › API Keys · ' + n + (HR.hubKeys.has(n) ? ' ✓' : ' not set' + (what ? ' (' + what + ')' : ''));
     t.className = HR.hubKeys.has(n) ? 'hub-ok' : 'hub-no';
-    b.type = 'button'; b.className = 'hb wide hub-open'; b.textContent = 'Open'; b.onclick = function () { HR.hubKeys.open(n); };
+    b.type = 'button'; b.className = 'hb wide hub-open'; b.textContent = n ? 'Open' : 'Add provider'; b.onclick = function () { HR.hubKeys.open(n); };
     el.append(t, b);
   }
   function paint() {
     var inHub = HR.hubKeys.inHub();
     [].forEach.call(document.querySelectorAll('#settings .hub-hide'), function (e) { e.hidden = inHub; });
     var p = HR.models.def();
-    line('hubModelLine', inHub ? modelKey() : '', p === 'ollama' ? 'default http://localhost:11434' : 'needed for ' + p);
+    line('hubModelLine', inHub ? modelKey() : '', p === 'ollama' ? 'default http://localhost:11434' : 'needed for ' + p, inHub && p !== 'browser' && p !== 'gemini' && p !== 'ollama');
     line('hubWebLine', inHub ? 'tavily' : '', 'web tools stay hidden');
   }
   function init() {

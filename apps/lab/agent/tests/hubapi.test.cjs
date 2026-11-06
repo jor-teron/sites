@@ -9,9 +9,19 @@ const base = path.resolve(__dirname, '..');
 const root = path.resolve(base, '../../..');
 const read = f => fs.readFileSync(path.join(base, f), 'utf8');
 const plain = v => JSON.parse(JSON.stringify(v));
-function env({hub = {}, api, real = false, crossOrigin = false, fetcher} = {}) {
+function env({hub = {}, api, real = false, crossOrigin = false, fetcher, services = []} = {}) {
   const values = {provider: 'ollama', baseUrl: 'http://localhost:11434', allowWeb: 'on'};
-  const requests = [], cards = [], credits = [], adapters = {};
+  const requests = [], cards = [], credits = [], adapters = {}, keyReads = [], opened = [], listeners = [];
+  const storage = {};
+  const allowed = ['gemini', 'tavily', 'ollama_url'];
+  const get = async k => { keyReads.push(k); assert.ok(allowed.includes(k), 'forbidden Hub slot: ' + k); return hub[k] || ''; };
+  const providers = {
+    list: () => services.map(({id, label, type}) => ({id, label, type})),
+    info: id => {const s = services.find(s => s.id === id); return s && {id, label: s.label, type: s.type, endpoint: s.endpoint, hasKey: !!s.key};},
+    has: id => services.some(s => s.id === id),
+    open: id => opened.push(id), onChange: f => listeners.push(f),
+    secret: () => {throw new Error('Agent must not read provider secrets');}
+  };
   const fetch = async (url, options = {}) => {
     requests.push({url, options, body: options.body && JSON.parse(options.body)});
     if (!fetcher) throw new Error('Unexpected fetch: ' + url);
@@ -19,25 +29,27 @@ function env({hub = {}, api, real = false, crossOrigin = false, fetcher} = {}) {
   };
   const w = {};
   if (crossOrigin) Object.defineProperty(w, 'top', {get() { throw new Error('cross origin'); }});
-  else w.top = {HubAPI: api};
+  else w.top = {HubAPI: api, HubProviders: services.length ? providers : undefined,
+    HubKeys: Object.keys(hub).length ? {get, open: id => opened.push(id), onChange: () => {}} : undefined};
   const HR = {
-    set: {get: k => values[k]}, hubKeys: {val: k => hub[k] || '', inHub: () => !!Object.keys(hub).length, forProvider: () => ''},
+    set: {get: k => values[k]},
     tools: {register: () => {}}, usage: {credits: (p, n) => credits.push([p, n])},
     view: {infoCard: (...a) => cards.push(a)}
   };
   const c = vm.createContext({window: w, HR, URL, performance, TextDecoder, DOMException, console,
-    localStorage: {getItem: () => null, setItem: () => {}}, fetch});
+    localStorage: {getItem: k => storage[k] || null, setItem: (k,v) => {storage[k] = v;}}, fetch});
   if (real) {
-    const hw = {HubKeys: {get: async k => hub[k] || '', open: () => {}}}; hw.top = hw;
+    const hw = {HubKeys: {get, open: () => {}}, HubProviders: Object.assign({}, providers, {secret: async id => services.find(s => s.id === id) || null})}; hw.top = hw;
     const hc = vm.createContext({window: hw, URL, performance, TextDecoder, DOMException, fetch});
     vm.runInContext(fs.readFileSync(path.join(root, 'hub/core/hub_api.js'), 'utf8'), hc);
     w.top.HubAPI = hw.HubAPI;
   }
-  for (const f of ['models/net', 'models/presets', 'core/hubapi', 'models/registry', 'models/ollama', 'models/openai', 'models/gemini', 'tools/web']) {
+  for (const f of ['models/net', 'models/presets', 'core/hubkeys', 'core/hubapi', 'models/registry', 'models/ollama', 'models/openai', 'models/gemini', 'tools/web']) {
     vm.runInContext(read('app/' + f + '.js'), c, {filename: f});
   }
+  HR.hubKeys.val = k => {assert.ok(allowed.includes(k), 'forbidden Hub slot: ' + k); return hub[k] || '';};
   HR.models.all().forEach(a => { adapters[a.id] = a; });
-  return {HR, w, c, adapters, values, requests, cards, credits};
+  return {HR, w, c, adapters, values, requests, cards, credits, services, providers, keyReads, opened, listeners, storage};
 }
 function cfg(provider, base, key = '') { return {provider, base, key}; }
 function options(c) {
@@ -94,7 +106,7 @@ for p in base.glob('*.html'):
   const html = read('agent.html');
   assert.ok(html.indexOf('app/core/hubapi.js') < html.indexOf('app/models/registry.js'));
   for (const id of ['barFav', 'barModel', 'barProv']) assert.match(html, new RegExp('id="' + id + '"'));
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag23'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag24'/);
   assert.match(read('agent_sw.js'), /agent-files/);
 });
 
@@ -111,22 +123,30 @@ test('bridge passes every Agent-compatible field and keeps result identity', asy
   assert.deepEqual(delta, ['ok', 'why']); assert.equal(e.requests.length, 0);
 });
 for (const id of ['openai', 'groq', 'openrouter', 'deepseek', 'deepinfra', 'xai']) {
-  test(id + ' uses built-in Hub provider, local key uses custom without losing config', async () => {
+  test(id + ' uses visible matching svc id; no secret or hidden key lookup', async () => {
     let got;
-    const keyName = id === 'openai' ? 'openai_key' : id;
-    const e = env({hub: {[keyName]: 'hub-key'}, api: {chatAdvanced: async o => { got = o; return {}; }, models: async o => { got = o; return [{name: 'm', label: 'M', ctx: 42}]; }}});
-    const c = cfg(id, e.HR.presets.get(id).base, 'hub-key');
-    await e.adapters[id].chat(options(c)); assert.equal(got.provider, id);
-    const list = await e.adapters[id].models(c); assert.equal(got.provider, id); assert.equal(list[0].ctx, 42);
-    c.key = 'local-key'; await e.adapters[id].chat(options(c));
+    const e = env({services: [], api: {chatAdvanced: async o => {got = o; return {};}, models: async o => {got = o; return [{name: 'm', ctx: 42}];}}});
+    const pr = e.HR.presets.get(id);
+    e.services.push({id: 'svc_company123', label: pr.label.toUpperCase(), type: 'openai', endpoint: pr.base + '///', key: 'fake'});
+    e.w.top.HubProviders = e.providers;
+    const c = cfg(id, pr.base, 'local-key');
+    await e.adapters[id].chat(options(c)); assert.equal(got.provider, 'svc_company123'); assert.equal(got.key, undefined);
+    assert.equal((await e.adapters[id].models(c))[0].ctx, 42); assert.equal(got.provider, 'svc_company123');
+    assert.equal(e.HR.models.getKey(id, pr.base), ''); // never return a Hub service secret
+    assert.equal(e.HR.models.ready(id), true);
+    e.services.length = 0; await e.adapters[id].chat(options(c));
     assert.equal(got.provider, 'custom'); assert.equal(got.key, 'local-key'); assert.equal(got.endpoint, c.base);
   });
 }
-test('OpenAI Hub base override never silently changes Agent preset endpoint', async () => {
-  let got;
-  const e = env({hub: {openai_key: 'k', openai_base: 'https://other.test/v1'}, api: {chatAdvanced: async o => {got = o; return {};}}});
-  await e.adapters.openai.chat(options(cfg('openai', 'https://api.openai.com/v1', 'k')));
-  assert.equal(got.provider, 'custom'); assert.equal(got.endpoint, 'https://api.openai.com/v1');
+test('nonmatching endpoint/label/type and duplicate services do not select an account', () => {
+  const e = env({services: [{id: 'svc_wrong123', label: 'OpenAI', type: 'openai', endpoint: 'https://wrong.test'}]});
+  assert.equal(e.HR.models.service('openai', e.HR.models.base('openai')), null);
+  e.services[0].endpoint = e.HR.models.base('openai'); e.services[0].label = 'Wrong';
+  assert.equal(e.HR.models.service('openai', e.HR.models.base('openai')), null);
+  e.services[0].label = 'OpenAI'; e.services[0].type = 'gemini';
+  assert.equal(e.HR.models.service('openai', e.HR.models.base('openai')), null);
+  e.services[0].type = 'openai'; e.services.push({...e.services[0], id: 'svc_other123'});
+  assert.equal(e.HR.models.service('openai', e.HR.models.base('openai')), null);
 });
 test('Custom endpoint permits no key and uses HubAPI models', async () => {
   let got;
@@ -230,7 +250,7 @@ test('web local key remains usable without a Hub key, even with HubAPI present',
 
 // Real H134c + fake transport checks conversions, not just the bridge stubs.
 test('actual HubAPI OpenAI wire: images, tool ids/results, thinking, usage and split tools', async () => {
-  const e = env({real: true, hub: {groq: 'fake-key'}, fetcher: () => new Response([
+  const e = env({real: true, services: [{id: 'svc_groq123', label: 'Groq', type: 'openai', endpoint: 'https://api.groq.com/openai/v1', key: 'fake-key'}], fetcher: () => new Response([
     {choices: [{delta: {content: 'answer', reasoning_content: 'reason', tool_calls: [{index: 0, id: 'new', function: {name: 'clock', arguments: '{"x":'}}]}}]},
     {choices: [{delta: {tool_calls: [{index: 0, function: {arguments: '1}'}}]}, finish_reason: 'tool_calls'}], usage: {prompt_tokens: 7, completion_tokens: 3}}
   ].map(j => 'data: ' + JSON.stringify(j) + '\n\n').join('') + 'data: [DONE]\n\n')});
@@ -323,4 +343,64 @@ test('actual HubAPI cancellation propagates Stop without direct retry', async ()
   const controller = new AbortController(); controller.abort(); o.signal = controller.signal;
   await assert.rejects(e.adapters.custom.chat(o), x => x.kind === 'abort');
   assert.equal(e.requests.length, 1);
+});
+
+test('actual key loader reads only three permitted slots; services events refresh subscribers', async () => {
+  const e = env({hub: {gemini: 'fake', tavily: 'fake', ollama_url: 'http://local.test'},
+    services: [{id: 'svc_groq123', label: 'Groq', type: 'openai', endpoint: 'https://api.groq.com/openai/v1'}]});
+  let changed = 0; e.HR.hubKeys.onChange(() => changed++);
+  await e.HR.hubKeys.load(); await e.HR.hubKeys.load();
+  assert.deepEqual([...new Set(e.keyReads)].sort(), ['gemini', 'ollama_url', 'tavily']);
+  assert.equal(e.listeners.length, 1); e.listeners[0]({id: 'svc_groq123'}); assert.equal(changed, 1);
+  e.HR.hubKeys.open('company-that-is-not-a-slot'); assert.deepEqual(e.opened, ['']);
+  e.HR.hubKeys.open('svc_groq123'); e.HR.hubKeys.open('gemini');
+  assert.deepEqual(e.opened, ['', 'svc_groq123', 'gemini']);
+});
+test('Custom never inherits Hub base; matches visible services by normalized explicit endpoint', () => {
+  const e = env({services: [{id: 'svc_local123', label: 'My inference server', type: 'openai', endpoint: 'http://local.test/v1///'}]});
+  assert.equal(e.HR.models.base('custom'), ''); assert.equal(e.HR.models.service('custom', ''), null);
+  e.values.customBase = 'http://local.test/v1/'; e.values.provider = 'custom';
+  assert.equal(e.HR.models.cfg().service, 'svc_local123'); assert.equal(e.HR.models.cfg().key, '');
+  assert.equal(e.HR.models.hubName('custom', e.values.customBase), 'svc_local123');
+});
+test('generic Add provider row opens provider root; matching service opens visible row', () => {
+  const e = env({hub: {gemini: 'fake'}}); e.values.provider = 'groq';
+  const nodes = {};
+  function el() {return {children: [], append(...x) {this.children.push(...x);}, set innerHTML(x) {this.children = [];}};}
+  e.c.document = {getElementById: id => nodes[id] || (nodes[id] = el()), createElement: el, querySelectorAll: () => []};
+  vm.runInContext(read('app/gui/hubrows.js'), e.c);
+  e.HR.hubRows.paint(); let row = nodes.hubModelLine;
+  assert.equal(row.hidden, false); assert.equal(row.children[1].textContent, 'Add provider');
+  row.children[1].onclick(); assert.equal(e.opened.pop(), '');
+  e.services.push({id: 'svc_groq123', label: 'gRoQ', type: 'openai', endpoint: e.HR.models.base('groq')});
+  e.w.top.HubProviders = e.providers; e.HR.hubRows.paint();
+  row.children[1].onclick(); assert.equal(e.opened.pop(), 'svc_groq123');
+});
+for (const id of ['openrouter', 'deepinfra']) {
+  test(id + ' images never access service secrets; own local image key still works', async () => {
+    const endpoint = id === 'openrouter' ? 'https://openrouter.ai/api/v1' : 'https://api.deepinfra.com/v1/openai';
+    const e = env({services: [{id: 'svc_image123', label: id, type: 'openai', endpoint, key: 'service-secret'}], fetcher: url => {
+      if (url.startsWith('data:')) return new Response('image bytes', {headers: {'Content-Type': 'image/png'}});
+      return json(id === 'openrouter' ? {choices: [{message: {images: [{image_url: {url: 'data:image/png;base64,aGVsbG8='}}]}}]}
+        : {images: ['aGVsbG8=']});
+    }});
+    e.w.HR = e.HR;
+    vm.runInContext(read('app/models/img_' + id + '.js'), e.c);
+    const image = e.HR.imgProviders[id];
+    assert.equal(image.ready(), false); // HubAPI has no generated-image contract.
+    await assert.rejects(image.generate({model: 'image', prompt: 'x'}), x => x.kind === 'nokey');
+    assert.equal(e.requests.length, 0);
+    e.HR.models.setKey(id, endpoint, 'local-image-key'); assert.equal(image.ready(), true);
+    const out = await image.generate({model: 'image', prompt: 'x', width: 512, height: 768, steps: 4, ratio: '2:3'});
+    assert.ok(out.blob); assert.equal(e.requests[0].options.headers.Authorization, 'Bearer local-image-key');
+    if (id === 'deepinfra') assert.equal(e.requests[0].body.num_inference_steps, 4);
+    else assert.equal(e.requests[0].body.image_config.aspect_ratio, '2:3');
+  });
+}
+test('runtime source has no retired base/key slots or provider secret/storage reads', () => {
+  const walk = d => fs.readdirSync(d, {withFileTypes: true}).flatMap(e => e.isDirectory() ? walk(path.join(d,e.name)) : [path.join(d,e.name)]);
+  const code = walk(path.join(base, 'app')).filter(f => f.endsWith('.js')).map(f => fs.readFileSync(f,'utf8')).join('\n');
+  assert.doesNotMatch(code, /openai_(?:base|key)|\.secret\s*\(|sites-hub\.providers|forProvider|pr\.hub/);
+  assert.deepEqual(plain(env().HR.hubKeys.NAMES), ['tavily', 'gemini', 'ollama_url']);
+  assert.match(read('app/gui/model.js'), /!c\.key && !c\.service/);
 });
