@@ -1,4 +1,4 @@
-/** Keyboard / pointer / split-touch — HEX-7 clears stuck state on blur/visibility/cancel. */
+/** Keyboard / pointer / split-touch — HEX-7a adds Space/touch jump pulse; WASD/arrows unchanged. */
 export function createInput(el) {
   const keys = Object.create(null);
   const pointer = { dx: 0, dy: 0, locked: false, down: false };
@@ -7,17 +7,25 @@ export function createInput(el) {
   const axes = { x: 0, y: 0 }; // reused
   const lookOut = { dx: 0, dy: 0 };
   let half = window.innerWidth * 0.5;
+  let jumpPulse = false; // edge: Space keydown (!repeat) or Jump button press
 
   function clearStuck() {
     for (const k of Object.keys(keys)) keys[k] = false;
     pointer.dx = pointer.dy = 0; pointer.down = false;
     touchMove.active = false; touchMove.id = null; touchMove.x = touchMove.y = 0;
     touchLook.active = false; touchLook.id = null; touchLook.dx = touchLook.dy = 0;
+    jumpPulse = false;
   }
 
   const onResize = () => { half = (el.clientWidth || window.innerWidth) * 0.5; };
   window.addEventListener('resize', onResize); onResize();
-  window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+  window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (!e.repeat) jumpPulse = true; // press only, ignore key-repeat mid-air
+    }
+  }, { passive: false });
   window.addEventListener('keyup', (e) => { keys[e.code] = false; });
   window.addEventListener('mousemove', (e) => {
     if (pointer.locked || pointer.down || e.buttons === 1) {
@@ -66,6 +74,9 @@ export function createInput(el) {
   return {
     key: (c) => !!keys[c],
     clearStuck,
+    /** One-shot jump request (Space edge or Jump button). */
+    requestJump() { jumpPulse = true; },
+    consumeJump() { const v = jumpPulse; jumpPulse = false; return v; },
     consumeLook() {
       lookOut.dx = pointer.dx + touchLook.dx;
       lookOut.dy = pointer.dy + touchLook.dy;
