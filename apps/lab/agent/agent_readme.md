@@ -232,3 +232,26 @@ supersedes earlier AG23/AG24 statements excluding images from the Hub bridge.
 The Hub owns transport and secrets; Agent owns UI, saved settings and gallery.
 Tests are syntax/static/HTML-link checks and offline VM transport stubs only;
 no browser tests or paid API calls.
+
+
+## AG26 — Gemini local-key override and Hub plain-error mapping
+
+Image Gemini routing now mirrors Chat: when an Agent-local Gemini key differs
+from the visible Hub Gemini key, models() and generate() keep the local
+adapter and send that local key (img_gemini key() no longer lets getKey hide
+it behind Hub). Matching or Hub-only keys still use HubAPI H134f.
+DeepInfra/OpenRouter svc matching is unchanged. Paid Hub failures still never
+retry with another credential.
+
+Hub plain Errors that look like settingsError (keyName / openSettings, no kind)
+map to nokey; requiredText-style "must be" Errors map to input. Existing
+key/http/quota/abort mapping and click-only openSettings remain. Pollinations,
+Ollama and browser inference stay untouched. Offline cache remains agent-files;
+SW VER is agent-ag26, without URL version tags.
+
+### Legacy code notes — AG26
+
+AG25 routed Gemini images on any Hub Gemini key. AG26 restores Chat's active-key
+check for images only. Original img_* adapters remain the local path under the
+same wrapper comments. Tests stay syntax/static/HTML-link and offline VM stubs;
+no browser or paid API calls.

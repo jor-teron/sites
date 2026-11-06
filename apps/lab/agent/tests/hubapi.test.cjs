@@ -106,7 +106,7 @@ for p in base.glob('*.html'):
   const html = read('agent.html');
   assert.ok(html.indexOf('app/core/hubapi.js') < html.indexOf('app/models/registry.js'));
   for (const id of ['barFav', 'barModel', 'barProv']) assert.match(html, new RegExp('id="' + id + '"'));
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag25'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag26'/);
   assert.match(read('agent_sw.js'), /agent-files/);
 });
 
@@ -512,6 +512,58 @@ for (const status of [401,402,429,500]) {
     assert.equal(e.requests.length,1);
   });
 }
+test('AG26 Gemini differing Agent-local key overrides Hub for models and generate', async () => {
+  let hubCalls = 0;
+  const e = imageEnv('gemini', {hub: {gemini: 'hub-key'}, api: {
+    generateImage: async () => {hubCalls++; throw new Error('must not use Hub');},
+    imageModels: async () => {hubCalls++; throw new Error('must not use Hub');}
+  }, fetcher: url => url.includes('pageSize') ? json({models:[{name:'models/imagen-3',supportedGenerationMethods:['predict']}]})
+    : url.startsWith('data:') ? new Response('image')
+    : json({predictions:[{bytesBase64Encoded:'aGVsbG8=',mimeType:'image/png'}]})});
+  e.HR.models.setKey('gemini', e.HR.models.base('gemini'), 'local-key');
+  assert.equal(e.image.ready(), true);
+  assert.equal((await e.image.models())[0].name, 'imagen-3');
+  assert.match(e.requests[0].url, /key=local-key/);
+  const out = await e.image.generate({model:'imagen-3',prompt:'draw',ratio:'1:1'});
+  assert.ok(out.blob);
+  assert.equal(e.requests[1].options.headers['x-goog-api-key'], 'local-key');
+  assert.equal(hubCalls, 0);
+});
+test('AG26 matching Agent-local Gemini key still uses Hub image bridge', async () => {
+  let got;
+  const e = imageEnv('gemini', {hub: {gemini: 'same-key'}, api: {
+    generateImage: async o => {got = o; return {blob: new Blob(['x'])};},
+    imageModels: async () => [{name:'image',label:'image'}]
+  }});
+  e.HR.models.setKey('gemini', e.HR.models.base('gemini'), 'same-key');
+  assert.equal((await e.image.models())[0].name, 'image');
+  await e.image.generate({model:'image',prompt:'draw',ratio:'1:1'});
+  assert.equal(got.provider, 'gemini'); assert.equal(e.requests.length, 0);
+});
+test('AG26 Hub settingsError shape (no kind, keyName, openSettings) maps to nokey without retry', async () => {
+  let calls = 0; const openSettings = () => {};
+  // Mirrors hub_api.js settingsError: plain Error + keyName + openSettings, no kind.
+  const fail = async () => {calls++; const e = new Error('No Gemini key saved. Add it in Settings > API Keys.'); e.keyName = 'gemini'; e.openSettings = openSettings; throw e;};
+  const e = imageEnv('gemini', {api: {generateImage: fail, imageModels: fail}});
+  await assert.rejects(e.image.generate({model:'image',prompt:'draw'}), x => x.kind === 'nokey' && x.openSettings === openSettings && x.keyName === 'gemini');
+  await assert.rejects(e.image.models(), x => x.kind === 'nokey' && x.openSettings === openSettings);
+  assert.equal(calls, 2); assert.equal(e.requests.length, 0);
+});
+test('AG26 Hub requiredText plain Error maps to input without retry', async () => {
+  let calls = 0;
+  // Mirrors hub_api.js requiredText: plain Error, message contains "must be", no kind.
+  const fail = async () => {calls++; throw new Error('model must be a non-empty string.');};
+  const e = imageEnv('deepinfra', {api: {generateImage: fail, imageModels: fail}});
+  await assert.rejects(e.image.generate({model:'image',prompt:'draw'}), x => x.kind === 'input' && /must be/.test(x.message));
+  await assert.rejects(e.image.models(), x => x.kind === 'input');
+  assert.equal(calls, 2); assert.equal(e.requests.length, 0);
+});
+test('AG26 static SW VER and readme note', () => {
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag26'/);
+  assert.match(read('agent_readme.md'), /## AG26/);
+  assert.match(read('app/core/hubapi.js'), /differing Agent-local key/);
+});
+
 test('AG25 static bridge load order, click-only settings action and no stale limitation UI', () => {
   const html=read('image.html'); assert.ok(html.indexOf('app/core/hubapi.js')<html.indexOf('app/models/img_gemini.js'));
   assert.match(read('app/gui/imagepage.js'),/settings.onclick = function \(\) \{ e.openSettings\(\); \}/);

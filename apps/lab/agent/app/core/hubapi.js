@@ -50,23 +50,28 @@ HR.hubAPI = (function () {
     };
     return a;
   }
-  /* AG25: image adapters retain their original implementations below the
-     wrapper as explicit standalone / Agent-local fallbacks, never retries. */
+  /* AG25/AG26: image adapters retain original implementations below the
+     wrapper as standalone / Agent-local fallbacks, never paid Hub retries.
+     AG26: Gemini route mirrors Chat — a differing Agent-local key wins. */
   function imageProvider(a) {
     var oldModels = a.models, oldGenerate = a.generate, oldReady = a.ready;
     var oldSteps = a.steps, metadata = {};
     function route(method) {
-      var h = api(method), s = HR.models.service(a.id, HR.models.base(a.id));
-      var id = a.id === 'gemini' ? (val('gemini') ? 'gemini' : '') : s && s.id;
+      var h = api(method), base = HR.models.base(a.id), s = HR.models.service(a.id, base);
+      var hub = val('gemini'), local = a.id === 'gemini' && HR.models.localKey ? HR.models.localKey('gemini', base) : '';
+      // AG26 Legacy: AG25 routed on any Hub Gemini key; Chat already required key === Hub.
+      var id = a.id === 'gemini' ? (hub && (!local || local === hub) ? 'gemini' : '') : s && s.id;
       return h && id ? { api: h, provider: id } : null;
     }
     function error(e) {
-      var kind = e && e.kind, st = e && e.status;
+      var kind = e && e.kind, st = e && e.status, msg = e && e.message || '';
       if (kind === 'key' || st === 401 || st === 403) kind = 'nokey';
       else if (st === 402) kind = 'nocredit';
       else if (st === 429) kind = 'quota';
       else if (e && e.name === 'AbortError') kind = 'abort';
-      var out = Object.assign(new Error(e && e.message || 'Image request failed'), e || {});
+      else if (!kind && e && (e.keyName || typeof e.openSettings === 'function')) kind = 'nokey';
+      else if (!kind && /\bmust be\b/i.test(msg)) kind = 'input';
+      var out = Object.assign(new Error(msg || 'Image request failed'), e || {});
       out.kind = kind || 'http'; return out; // includes status/keyName/openSettings
     }
     function cached(model) { var r = route('imageModels'); return r && metadata[r.provider + '|' + model]; }
