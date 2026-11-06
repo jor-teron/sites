@@ -35,6 +35,7 @@ Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fi
 Game of Life,      game-of-life/,  , , Simulator, Conway's cellular automaton: paint cells or drop gliders and guns and watch them evolve
 Browser FPS,       browser-fps/,   , , 3D, 3D first-person shooter: explore or fight on camp - island - snow and forest maps
 LandCraft,         landcraft/,     , , 3D, Voxel block world in Minecraft style: explore - break and place blocks - swim
+Valley Explorer HEX-1a, valley-explorer/, valley-explorer/assets/valley-icon.svg, , 3D, First-person WebGPU valley: walk the hills and collect glowing landmarks
 Island Conquest,   island-conquest/, , , Beta, Strategy: send ships to capture islands from the AI before it takes yours
 Tennis Ball Blitz, tennis-throw/,  , , Beta, Aim and throw tennis balls at targets against the clock - win medals
 AR Game,           ar-game/,       , , Beta, Phone camera AR game: catch pets or chase ghosts and zombies in your room
