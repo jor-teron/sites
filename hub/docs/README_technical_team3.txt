@@ -1921,3 +1921,57 @@ offline Playwright smoke (21 assertions: all chat providers, shapes, search,
 vision, missing-key Settings path, safe HTTP/network/abort errors, missing
 HubKeys), fake localStorage keys and stubbed fetch only; zero external requests
 and no live paid API calls. Local commit only, awaiting Push.
+
+
+-- H134c: custom providers + advanced HubAPI (6 Nov 2026) --
+Approved: Code H134c (Jor: keep providers in the Hub, four fields only, stable id).
+Custom providers (new Settings feature, no code edit per provider):
+- New hub/core/hub_providers.js = window.HubProviders. localStorage
+  'sites-hub.providers' = JSON list [{id, label, type, key, endpoint, created}].
+  Four user fields: Label, Provider type ('openai' = OpenAI-compatible |
+  'gemini'), API key, API endpoint. No model, header editor or mapping UI.
+- id = 'svc_' + base36 time + random, made once at add(); apps call the id,
+  label is display only (rename keeps id). Built-ins keep gemini, groq, ...
+- list() -> [{id, label, type}] (never key or endpoint); info(id) adds
+  endpoint + hasKey (no key); add / update (key '' keeps) / remove / secret(id)
+  (HubAPI + Settings Test only) / onChange / open(id) / TYPES.
+- Gemini endpoint may be empty = https://generativelanguage.googleapis.com/v1beta.
+  Endpoint must be http(s) without login, query or fragment.
+- hub_profile.js EXCLUDE + 'providers': never in the profile file or sync
+  (the store holds keys).
+- Settings > API Keys > "Custom providers" (sec_keys.js, settings.css .prov-*):
+  one card per service (label, id tag, type tag, the four fields, Save / Test /
+  Delete) + "Add provider" card. Saved key never written back into the page
+  (field empty, "Key saved · type to replace"). Test = GET <endpoint>/models
+  (free list; Bearer or x-goog-api-key) -> "Works · N models" / key rejected /
+  404 hint / could not reach. #keys/svc_... deep link scrolls to the row (no
+  bogus custom-key row). Phone: key + eye stay on one line under 700 px.
+- Settings index.html loads hub_providers.js after hub_keys.js; Hub loads it in
+  hub_core.js 'link' part before hub_api.js; added to hub_sw.js SHELL.
+HubAPI additions (hub_api.js, chat() contract unchanged):
+- chatAdvanced({provider, model, messages, tools?, onDelta?, signal?, thinking?,
+  temperature?, maxTokens?, reasoningEffort?, endpoint?, key?}) -> {text,
+  thinking?, tool_calls, usage?, eval_count, prompt_eval_count, eval_duration,
+  done_reason, provider}. Always streams: Gemini streamGenerateContent?alt=sse,
+  OpenAI-compatible /chat/completions SSE + stream_options.include_usage,
+  Ollama /api/chat NDJSON. Message translation copied from Agent's gemini.js
+  toG / openai.js toOA (images, tool_calls ids, tool results, thoughtSignature
+  passthrough, functionDeclarations). provider = built-in name, svc_ id, or
+  'custom' + app's own endpoint/key (Agent Custom tab).
+- Errors: kind key/input/http/unreachable/abort, status on http; provider
+  error text included but redacted (sent key, key=, Bearer, key prefixes).
+- models({provider}) -> [{name,label,ctx}] (free list).
+- services() -> [{id,label,type}]. chat() also accepts a svc_ id.
+- search({depth:'advanced'}) + credits field (shape otherwise same);
+  fetchPage({url, depth?, maxChars?}) = Tavily extract -> {url, depth, text,
+  length, trimmed, credits}. httpError now sets e.status.
+Agent adoption (thin adapter over chatAdvanced / search / fetchPage) is Hub Apps
+Bot's follow-up; apps/lab/agent untouched. No V, CACHE or build.txt bump.
+Guide: hub/hubapi.readme.md.
+Testing: node --check on every changed JS; offline Playwright smoke at 390 px
+(33 assertions: UI add/list/rename/Test/delete, stable id, no key in DOM or
+list, chatAdvanced streaming + tool_call + usage for gemini, a Gemini service
+and an OpenAI-compatible service, chat() unchanged and with svc id, redacted
+http error, missing-key error without secret, search advanced + fetchPage,
+deep link, no overflow). All provider hosts stubbed with page.route; zero
+requests left the machine, no live paid calls. Local commit only, awaiting Push.

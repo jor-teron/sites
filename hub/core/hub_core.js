@@ -12,6 +12,7 @@
  *         hub/core/hub_autotheme.js   window.HubAutoTheme (Auto theme, H64)
  *         hub/core/hub_prefs.js       window.HubPrefs (theme, accent and every Look setting, applied live)
  *   link  hub/core/hub_keys.js        window.HubKeys (API key store, H28)
+ *         hub/core/hub_providers.js   window.HubProviders (custom AI services, H134c)
  *         hub/core/hub_api.js         window.HubAPI (shared AI requests, H134b)
  *         hub/core/hub_profile.js     window.HubProfile (settings saved to the connected folder, H30.1)
  *         shared/link/link_core.js    window.SharedLink (one PeerJS connection layer)
@@ -60,7 +61,8 @@
 
   const PARTS = {
     boot: ['hub/core/hub_role.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_prefs.js'],
-    link: ['hub/core/hub_keys.js', 'hub/core/hub_api.js', 'hub/core/hub_profile.js',
+    // link: ['hub/core/hub_keys.js', 'hub/core/hub_api.js', 'hub/core/hub_profile.js',   (before H134c)
+    link: ['hub/core/hub_keys.js', 'hub/core/hub_providers.js', 'hub/core/hub_api.js', 'hub/core/hub_profile.js',   // H134c: + hub_providers.js
       'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link_chat.js'],
     mesh: ['hub/link/hub_link.js', 'hub/link/hub_sync.js', 'shared/link/hub_mesh.js', 'hub/link/hub_meshlog.js',
       'hub/link/hub_meshlink.js', 'hub/link/hub_line.js', 'hub/link/hub_trust.js', 'hub/link/hub_linkstate.js'],

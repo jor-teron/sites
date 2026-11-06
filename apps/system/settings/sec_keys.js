@@ -18,6 +18,9 @@
  *   bill). 400 with reason API_KEY_INVALID = bad key; any other 400 / 200 = the key reached Vision; 403 tells apart
  *   API not enabled, billing off and key restrictions.
  * H134a: a muted "Used by: Agent, …" line under the hint, from HubKeys.KNOWN[].usedBy (custom keys: none).
+ * H134c: 'Custom providers' section (hub/core/hub_providers.js, localStorage 'sites-hub.providers'): Label, Provider type
+ *   (OpenAI-compatible | Gemini), API endpoint, API key; stable id svc_… per service; Save / Test / Delete. The saved key
+ *   is never written back into the page. Test = GET <endpoint>/models (free). Deep link #keys/svc_… scrolls to that row.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
  */
 (function () {
@@ -247,6 +250,165 @@
     return card;
   }
 
+  /* ---------------- H134c: Custom providers (hub/core/hub_providers.js) ----------------
+   * Four fields per saved service: Label, Provider type, API key, API endpoint. No model (apps pick models).
+   * Each service gets a stable id (svc_…) when added; apps call HubAPI with that id, so renaming the label is safe.
+   * The saved key is never put back into the page: the key field stays empty ("Key saved") and only a newly typed key
+   * replaces it. Test = GET <endpoint>/models (free model list; Gemini: x-goog-api-key header, OpenAI-compatible: Bearer). */
+  const P = (() => { try { if (window.top !== window && window.top.HubProviders) return window.top.HubProviders; } catch (_) { /* cross-origin */ } return window.HubProviders; })();
+  const PROV_PH = { openai: 'https://api.example.com/v1', gemini: 'https://generativelanguage.googleapis.com/v1beta (empty = this)' };
+
+  async function provTest(id) {
+    const s = await P.secret(id);
+    if (!s) return { ok: false, text: 'Not saved' };
+    if (!s.endpoint) return { ok: false, text: 'Add the API endpoint first' };
+    const gem = s.type === 'gemini';
+    const h = s.key ? (gem ? { 'x-goog-api-key': s.key } : { Authorization: 'Bearer ' + s.key }) : {};
+    const r = await fetchT(trimSlash(s.endpoint) + (gem ? '/models?pageSize=1000' : '/models'), { headers: h, credentials: 'omit' });
+    if (r.status === 400 || r.status === 401 || r.status === 403) return { ok: false, text: (s.key ? 'Key rejected' : 'Needs an API key') + ' (' + r.status + ')' };
+    if (r.status === 404) return { ok: false, text: 'No model list at this endpoint (404). Check the URL (it usually ends in /v1)' };
+    if (!r.ok) return { ok: false, text: 'Server answered ' + r.status };
+    const j = await r.json().catch(() => ({}));
+    const n = (j.data || j.models || []).length;
+    return { ok: true, text: 'Works' + (n ? ' \u00b7 ' + n + ' models' : '') };
+  }
+
+  /** the four inputs, shared by a saved row and the Add card */
+  function provFields(card, v) {
+    const lab = ui.el('input', 'key-input prov-label');
+    Object.assign(lab, { type: 'text', placeholder: 'Label, e.g. My LM Studio', autocomplete: 'off', spellcheck: false, maxLength: 60 });
+    lab.setAttribute('aria-label', 'Label');
+    const typ = ui.el('select', 'key-input prov-type');
+    typ.setAttribute('aria-label', 'Provider type');
+    P.TYPES.forEach((t) => { const o = ui.el('option', '', t.label); o.value = t.type; typ.appendChild(o); });
+    const end = ui.el('input', 'key-input prov-endpoint');
+    Object.assign(end, { type: 'url', autocomplete: 'off', spellcheck: false });
+    end.setAttribute('aria-label', 'API endpoint'); end.setAttribute('autocapitalize', 'off');
+    const key = ui.el('input', 'key-input prov-key');
+    Object.assign(key, { type: 'password', autocomplete: 'new-password', spellcheck: false });
+    key.setAttribute('aria-label', 'API key'); key.setAttribute('autocapitalize', 'off');
+    const eye = ui.el('button', 'key-btn key-eye', '\uD83D\uDC41');
+    eye.type = 'button'; eye.title = 'Show / hide what you typed'; eye.setAttribute('aria-label', 'Show or hide the typed key');
+    eye.addEventListener('click', () => { key.type = key.type === 'password' ? 'text' : 'password'; eye.classList.toggle('on', key.type === 'text'); });
+    const l1 = ui.el('div', 'key-line'), l2 = ui.el('div', 'key-line'), l3 = ui.el('div', 'key-line prov-keyline');
+    l1.append(lab, typ); l2.append(end); l3.append(key, eye);
+    card.append(l1, l2, l3);
+    const ph = () => { end.placeholder = PROV_PH[typ.value] || ''; };
+    typ.addEventListener('change', ph);
+    if (v) { lab.value = v.label; typ.value = v.type; end.value = v.endpoint || ''; }
+    ph();
+    return { lab, typ, end, key };
+  }
+
+  function provRow(id, focusName, list) {
+    const card = ui.el('section', 'card key-row prov-row');
+    card.id = 'prov-' + id;
+    const head = ui.el('div', 'key-head');
+    const title = ui.el('b', 'key-label', '');
+    const tag = ui.el('code', 'key-name', id);
+    const kind = ui.el('code', 'key-name prov-kind', '');
+    head.append(title, tag, kind);
+    card.append(head, ui.el('p', 'key-hint', 'Apps call it by its id and choose the model. The label is only for you, so renaming is safe.'));
+    const f = provFields(card, null);
+    const line = ui.el('div', 'key-line');
+    const save = ui.el('button', 'key-btn key-save', 'Save'); save.type = 'button';
+    const tbtn = ui.el('button', 'key-btn', 'Test'); tbtn.type = 'button';
+    const del = ui.el('button', 'key-btn key-del', 'Delete'); del.type = 'button';
+    line.append(save, tbtn, del);
+    const out = ui.el('p', 'key-out', ''); out.setAttribute('aria-live', 'polite');
+    card.append(line, out);
+    const say = (text, cls) => { out.textContent = text; out.className = 'key-out' + (cls ? ' ' + cls : ''); };
+    function load() {
+      const v = P.info(id);
+      if (!v) { card.remove(); return; }
+      title.textContent = v.label;
+      kind.textContent = (P.TYPES.find((t) => t.type === v.type) || {}).label || v.type;
+      f.lab.value = v.label; f.typ.value = v.type; f.end.value = v.endpoint || '';
+      f.typ.dispatchEvent(new Event('change'));
+      f.key.value = '';   // never show the saved key
+      f.key.placeholder = v.hasKey ? 'Key saved \u00b7 type to replace' : 'API key (optional for a local server)';
+      save.disabled = true;
+    }
+    function doSave() {
+      try {
+        P.update(id, { label: f.lab.value, type: f.typ.value, endpoint: f.end.value, key: f.key.value });
+        say('Saved', 'ok');
+      } catch (e) { say(String((e && e.message) || 'Could not save'), 'bad'); return false; }
+      load();
+      return true;
+    }
+    [f.lab, f.end, f.key].forEach((i) => {
+      i.addEventListener('input', () => { save.disabled = false; say(''); });
+      i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+    });
+    f.typ.addEventListener('change', () => { if (P.info(id) && f.typ.value !== P.info(id).type) { save.disabled = false; say(''); } });
+    save.addEventListener('click', doSave);
+    del.addEventListener('click', async () => {
+      const D = window.UiDialog, name = (P.info(id) || {}).label || id;
+      const ok = D ? await D.confirm('Delete this provider?', 'Removes "' + name + '" (' + id + ') and its key from this browser. Apps that use it stop working until you add it again.', 'Delete', true)
+        : window.confirm('Delete "' + name + '"?');
+      if (!ok) return;
+      P.remove(id);
+      card.remove();
+      if (list && !list.querySelector('.prov-row')) list.appendChild(provEmpty());
+    });
+    tbtn.addEventListener('click', async () => {
+      if (!save.disabled && !doSave()) return;
+      tbtn.disabled = true; say('Testing\u2026');
+      try { const r = await provTest(id); say(r.text, r.ok ? 'ok' : 'bad'); }
+      catch (e) { say(e && e.name === 'AbortError' ? 'Timed out' : 'Could not reach the endpoint (offline, wrong URL, or it blocks browser requests)', 'bad'); }
+      tbtn.disabled = false;
+    });
+    card.reload = load;
+    load();
+    if (focusName === id) card.classList.add('key-focus');
+    return card;
+  }
+  function provEmpty() { return ui.el('p', 'opt-note prov-empty', 'No custom providers yet. Add one below.'); }
+
+  function provAddCard(list, focusName) {
+    const card = ui.el('section', 'card key-row key-add prov-add');
+    card.appendChild(ui.el('b', 'key-label', 'Add provider'));
+    card.appendChild(ui.el('p', 'key-hint', 'For a service the Hub does not list above (LM Studio, vLLM, Together, a company proxy\u2026). Label, type, endpoint and key; apps choose the model.'));
+    const f = provFields(card, null);
+    f.key.placeholder = 'API key (optional for a local server)';
+    const line = ui.el('div', 'key-line');
+    const add = ui.el('button', 'key-btn key-save', 'Add provider'); add.type = 'button';
+    line.append(add);
+    const out = ui.el('p', 'key-out', ''); out.setAttribute('aria-live', 'polite');
+    card.append(line, out);
+    function go() {
+      let id;
+      try { id = P.add({ label: f.lab.value, type: f.typ.value, endpoint: f.end.value, key: f.key.value }); }
+      catch (e) { out.textContent = String((e && e.message) || 'Could not add'); out.className = 'key-out bad'; return; }
+      f.lab.value = ''; f.end.value = ''; f.key.value = '';
+      out.textContent = 'Added \u00b7 id ' + id; out.className = 'key-out ok';
+      const empty = list.querySelector('.prov-empty'); if (empty) empty.remove();
+      if (!list.querySelector('#prov-' + CSS.escape(id))) list.appendChild(provRow(id, focusName, list));   // onChange may have added it
+    }
+    add.addEventListener('click', go);
+    [f.lab, f.end, f.key].forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); go(); } }));
+    return card;
+  }
+
+  function providersSection(focusName) {
+    const wrap = ui.el('div', 'prov-section');
+    const list = ui.el('div', 'key-list prov-list');
+    const ids = P.list().map((s) => s.id);
+    if (!ids.length) list.appendChild(provEmpty());
+    ids.forEach((id) => list.appendChild(provRow(id, focusName, list)));
+    wrap.append(list, provAddCard(list, focusName));
+    // another tab / app changed the list → add missing rows, drop gone ones, repaint the rest
+    const off = P.onChange(() => {
+      if (!wrap.isConnected) { off(); return; }
+      const now = P.list().map((s) => s.id);
+      list.querySelectorAll('.prov-row').forEach((r) => { if (now.indexOf(r.id.slice(5)) < 0) r.remove(); else if (r.reload) r.reload(); });
+      now.forEach((id) => { if (!list.querySelector('#prov-' + CSS.escape(id))) { const e = list.querySelector('.prov-empty'); if (e) e.remove(); list.appendChild(provRow(id, focusName, list)); } });
+      if (!list.querySelector('.prov-row') && !list.querySelector('.prov-empty')) list.appendChild(provEmpty());
+    });
+    return wrap;
+  }
+
   function guide() {
     const d = ui.el('details', 'card howto key-guide');
     const s = ui.el('summary', '', 'Keys guide: where to get each key, free limits, how apps use them');
@@ -284,13 +446,19 @@
       const readme = ui.el('a', 'key-readme-link', 'Keys guide (readme) \u2197');
       readme.href = README_GH; readme.target = '_blank'; readme.rel = 'noopener';
       note.append(' ', readme);
-      pane.append(note, ui.title('Services'), list, ui.title('Custom'), addCustomRow(list, focusName), ui.title('Help'), guide());
+      // pane.append(note, ui.title('Services'), list, ui.title('Custom'), addCustomRow(list, focusName), ui.title('Help'), guide());   (before H134c)
+      pane.append(note, ui.title('Services'), list, ui.title('Custom'), addCustomRow(list, focusName));
+      if (P) pane.append(ui.title('Custom providers'), providersSection(focusName));   // H134c
+      pane.append(ui.title('Help'), guide());
       // another tab / app changed a key → refresh that row (or all)
       const off = K.onChange((e) => {
         if (!pane.isConnected) { off(); return; }
         list.querySelectorAll('.key-row').forEach((r) => { if (!e.name || r.id === 'key-' + e.name) { if (r.reload) r.reload(); } });
       });
-      if (focusName) {
+      if (focusName && /^svc_/.test(focusName)) {   // H134c: a custom provider row (never a new custom key)
+        const row = pane.querySelector('#prov-' + CSS.escape(focusName)) || pane.querySelector('.prov-add');
+        if (row) requestAnimationFrame(() => { row.scrollIntoView({ block: 'center' }); const i = row.querySelector('.key-input'); if (i) i.focus({ preventScroll: true }); });
+      } else if (focusName) {
         let row = list.querySelector('#key-' + CSS.escape(focusName));
         if (!row && NAME_RE.test(focusName)) {   // an app asked for a custom key that is not set yet
           row = keyRow({ name: focusName, label: focusName, kind: 'key' }, focusName);
