@@ -192,19 +192,6 @@ matching services open their visible row. Local fields remain editable for
 standalone and image use. Browser inference and all existing image generators
 remain available with their supported local/direct credentials.
 
-### AG24 implementation concern — Hub image API is still missing
-
-At starting main `08c66f3e`, HubAPI exports chat, search, vision, chatAdvanced,
-models, fetchPage and services, but no image-generation method. Its image
-support means input photos for chat, not generated output. Therefore Agent
-cannot generate DeepInfra/OpenRouter images from a svc credential without a
-Hub-side API extension. It does not call HubProviders.secret or revive hidden
-keys to work around this. Their existing local-key generation, model metadata,
-steps/ratio/price controls and error handling are retained. Gemini images
-still use its permitted direct key; Ollama and Pollinations stay unchanged.
-The local-key settings explain this limitation; svc-only image generation is
-left for the Hub owner to enable through a documented image API.
-
 ### Legacy code notes — AG24
 
 Retired the old direct company-key names, host-to-key mapping, preset hub-slot
@@ -214,3 +201,34 @@ remain history only; AG24 supersedes their company credential behaviour.
 Direct adapters remain as Agent-local fallbacks, never a retry after a failed
 Hub call. Offline cache stays agent-files; SW VER is agent-ag24, with no URL
 version tags. Existing duplicate btnPick ids remain an unrelated known issue.
+
+
+## AG25 — image generation through HubAPI H134f
+
+Gemini's direct Hub key and uniquely matching visible DeepInfra/OpenRouter
+svc_ entries now use HubAPI.imageModels/generateImage. Agent never reads service
+secrets. Model labels/prices and per-model DeepInfra step defaults/maximums
+come from Hub metadata; ratio/size controls, gallery and {blob} results stay
+unchanged. The bridge caches returned capabilities and exposes a capabilities
+lookup through imageCapabilities when metadata is not already loaded.
+
+Key errors become nokey; 402 becomes nocredit; 429 becomes quota. Other HTTP,
+noimage, unreachable and abort errors retain the existing friendly cards.
+Provider openSettings callbacks are retained and offered as a click-only
+button. No failed Hub request is retried with a different/local credential.
+Pollinations/Ollama and browser-local inference are untouched.
+
+Standalone, unmatched providers, Agent-local Gemini keys and older Hubs without
+image APIs keep the original adapters. The AG24 image limitation is resolved;
+matching visible services no longer need duplicate local image keys. Existing
+local-key controls remain available for fallback use. Offline cache remains
+agent-files; the existing SW VER becomes agent-ag25, without URL version tags.
+
+### Legacy code notes — AG25
+
+Original img_gemini/img_deepinfra/img_openrouter adapters are retained explicitly
+as standalone/local fallbacks, with comments at each wrapper boundary. AG25
+supersedes earlier AG23/AG24 statements excluding images from the Hub bridge.
+The Hub owns transport and secrets; Agent owns UI, saved settings and gallery.
+Tests are syntax/static/HTML-link checks and offline VM transport stubs only;
+no browser tests or paid API calls.

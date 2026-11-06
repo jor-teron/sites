@@ -46,3 +46,7 @@ HR.imgProviders.gemini = (function () {
   return { id: 'gemini', label: 'Gemini', note: 'Your Gemini key · Flash Image / Imagen (free tier often blocks images)', steps: false, size: 'ratio', ratios: ['1:1', '3:4', '4:3', '9:16', '16:9'], cooldown: 0,
     ready: function () { return !!key(); }, models: models, generate: generate };
 })();
+/* AG25 Legacy: original adapter above is retained only for standalone/local
+   configuration or an older Hub without the image API. Hub failures do not
+   fall back to another credential or repeat the generation request. */
+if (HR.hubAPI) HR.imgProviders.gemini = HR.hubAPI.imageProvider(HR.imgProviders.gemini);

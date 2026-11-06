@@ -39,3 +39,7 @@ HR.imgProviders.openrouter = (function () {
   return { id: 'openrouter', label: 'OpenRouter', note: 'Your OpenRouter key · paid image models', steps: false, size: 'ratio', ratios: ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'], cooldown: 0,
     ready: function () { return !!key(); }, models: models, generate: generate };
 })();
+/* AG25 Legacy: original adapter above is retained only for standalone/local
+   configuration or an older Hub without the image API. Hub failures do not
+   fall back to another credential or repeat the generation request. */
+if (HR.hubAPI) HR.imgProviders.openrouter = HR.hubAPI.imageProvider(HR.imgProviders.openrouter);

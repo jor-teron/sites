@@ -40,7 +40,7 @@ function env({hub = {}, api, real = false, crossOrigin = false, fetcher, service
     localStorage: {getItem: k => storage[k] || null, setItem: (k,v) => {storage[k] = v;}}, fetch});
   if (real) {
     const hw = {HubKeys: {get, open: () => {}}, HubProviders: Object.assign({}, providers, {secret: async id => services.find(s => s.id === id) || null})}; hw.top = hw;
-    const hc = vm.createContext({window: hw, URL, performance, TextDecoder, DOMException, fetch});
+    const hc = vm.createContext({window: hw, URL, performance, TextDecoder, DOMException, Blob, atob, fetch});
     vm.runInContext(fs.readFileSync(path.join(root, 'hub/core/hub_api.js'), 'utf8'), hc);
     w.top.HubAPI = hw.HubAPI;
   }
@@ -106,7 +106,7 @@ for p in base.glob('*.html'):
   const html = read('agent.html');
   assert.ok(html.indexOf('app/core/hubapi.js') < html.indexOf('app/models/registry.js'));
   for (const id of ['barFav', 'barModel', 'barProv']) assert.match(html, new RegExp('id="' + id + '"'));
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag24'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag25'/);
   assert.match(read('agent_sw.js'), /agent-files/);
 });
 
@@ -387,7 +387,7 @@ for (const id of ['openrouter', 'deepinfra']) {
     e.w.HR = e.HR;
     vm.runInContext(read('app/models/img_' + id + '.js'), e.c);
     const image = e.HR.imgProviders[id];
-    assert.equal(image.ready(), false); // HubAPI has no generated-image contract.
+    assert.equal(image.ready(), false); // No image API in this older-Hub fixture.
     await assert.rejects(image.generate({model: 'image', prompt: 'x'}), x => x.kind === 'nokey');
     assert.equal(e.requests.length, 0);
     e.HR.models.setKey(id, endpoint, 'local-image-key'); assert.equal(image.ready(), true);
@@ -403,4 +403,137 @@ test('runtime source has no retired base/key slots or provider secret/storage re
   assert.doesNotMatch(code, /openai_(?:base|key)|\.secret\s*\(|sites-hub\.providers|forProvider|pr\.hub/);
   assert.deepEqual(plain(env().HR.hubKeys.NAMES), ['tavily', 'gemini', 'ollama_url']);
   assert.match(read('app/gui/model.js'), /!c\.key && !c\.service/);
+});
+
+function imageEnv(id, extra = {}) {
+  const endpoint = id === 'deepinfra' ? 'https://api.deepinfra.com/v1/openai' : 'https://openrouter.ai/api/v1';
+  const e = env(Object.assign(id === 'gemini' ? {hub: {gemini: 'fake-image-key'}}
+    : {services: [{id: 'svc_image123', label: id.toUpperCase(), type: 'openai', endpoint: endpoint + '/', key: 'fake-image-key'}]}, extra));
+  e.w.HR = e.HR;
+  vm.runInContext(read('app/models/img_' + id + '.js'), e.c);
+  e.image = e.HR.imgProviders[id]; return e;
+}
+for (const id of ['gemini', 'deepinfra', 'openrouter']) {
+  test(id + ' image bridge uses correct id, passes every input, preserves Blob result and metadata', async () => {
+    const calls = [], result = {blob: new Blob(['hello'], {type: 'image/png'})};
+    const list = [{name: 'image', label: 'Friendly image', price: '1¢', steps: {min: 1, max: 30, default: 12}, size: 'px', multiple: 64, max: 1536}];
+    const e = imageEnv(id, {api: {generateImage: async o => {calls.push(o); return result;},
+      imageModels: async o => {calls.push(o); return list;}, imageCapabilities: () => {throw new Error('must use cached metadata');}}});
+    assert.equal(e.image.ready(), true);
+    const o = {model: 'image', prompt: 'draw', width: 512, height: 768, ratio: '2:3', steps: 12, signal: new AbortController().signal};
+    assert.equal(await e.image.models({signal:o.signal}), list);
+    assert.equal(calls[0].signal, o.signal);
+    assert.equal((await e.image.capabilities('image')).label, 'Friendly image');
+    if (id === 'deepinfra') {assert.equal(e.image.steps.max('image'), 30); assert.equal(e.image.steps.def('image'), 12);}
+    assert.equal(await e.image.generate(o), result);
+    const sent = calls[1]; assert.equal(sent.provider, id === 'gemini' ? 'gemini' : 'svc_image123');
+    for (const k of Object.keys(o)) assert.equal(sent[k], o[k]);
+    assert.equal(sent.key, undefined); assert.equal(e.requests.length, 0);
+    if (id === 'gemini' || id === 'openrouter') assert.equal(e.image.size, 'ratio');
+  });
+}
+test('uncached imageCapabilities uses svc id and feeds DeepInfra default/max controls', async () => {
+  let sent;
+  const e = imageEnv('deepinfra', {api: {imageModels: async () => [], imageCapabilities: async o => {
+    sent = o; return {name: o.model, steps: {min: 1, max: 10, default: 4}, size: 'px', multiple: 64, max: 1536};
+  }}});
+  const signal = new AbortController().signal;
+  await e.image.capabilities('custom-image', signal);
+  assert.equal(sent.provider, 'svc_image123'); assert.equal(sent.signal, signal);
+  assert.equal(e.image.steps.def('custom-image'), 4); assert.equal(e.image.steps.max('custom-image'), 10);
+});
+for (const [kind, status, expected] of [['key', 401, 'nokey'], ['key', 403, 'nokey'], ['http',402,'nocredit'],
+  ['http',429,'quota'], ['http',500,'http'], ['noimage',undefined,'noimage'], ['unreachable',undefined,'unreachable'], ['abort',undefined,'abort']]) {
+  test('image errors ' + kind + '/' + status + ' map to ' + expected + ', keep settings callback, never retry', async () => {
+    let calls = 0; const openSettings = () => {};
+    const error = Object.assign(new Error('friendly provider message'), {kind, status, openSettings, keyName:'svc_image123'});
+    const fail = async () => {calls++; throw error;};
+    const e = imageEnv('deepinfra', {api: {generateImage: fail, imageModels: fail, imageCapabilities: fail}});
+    for (const fn of [() => e.image.generate({model:'image',prompt:'draw'}), () => e.image.models(), () => e.image.capabilities('image')]) {
+      await assert.rejects(fn(), x => x.kind === expected && x.status === status && x.openSettings === openSettings && x.message === error.message);
+    }
+    assert.equal(calls, 3); assert.equal(e.requests.length, 0);
+  });
+}
+test('image AbortError name maps even when provider omits kind', async () => {
+  const e = imageEnv('gemini', {api: {generateImage: async () => {throw new DOMException('Stopped','AbortError');}}});
+  await assert.rejects(e.image.generate({model:'image',prompt:'draw'}), x => x.kind === 'abort');
+});
+for (const mode of ['standalone', 'unmatched']) {
+  test('Gemini ' + mode + ' retains local-key image adapter', async () => {
+    const e = imageEnv('gemini', {hub:{}, services:[], api: mode === 'unmatched' ? {generateImage: () => {throw new Error('must not route');}} : undefined,
+      fetcher: url => url.startsWith('data:') ? new Response('image') : json({predictions:[{bytesBase64Encoded:'aGVsbG8=',mimeType:'image/png'}]})});
+    e.HR.models.setKey('gemini', e.HR.models.base('gemini'), 'local');
+    const out = await e.image.generate({model:'imagen-3',prompt:'draw',ratio:'16:9'});
+    assert.ok(out.blob); assert.equal(e.requests[0].options.headers['x-goog-api-key'], 'local');
+    assert.equal(e.requests[0].body.parameters.aspectRatio,'16:9');
+  });
+}
+
+test('real H134f DeepInfra list preserves prices/defaults and generation size/steps/Blob', async () => {
+  const e = imageEnv('deepinfra', {real:true, fetcher: url => url.endsWith('/models/list')
+    ? json([{model_name:'custom-model',type:'text-to-image',default_iterations:17,pricing:{short:'$0.01'}}])
+    : json({images:['aGVsbG8=']})});
+  const list = await e.image.models(); assert.equal(list[0].price,'$0.01');
+  assert.equal(e.image.steps.def('custom-model'),17); assert.equal(e.image.steps.max('custom-model'),50);
+  const out = await e.image.generate({model:'custom-model',prompt:'draw',width:512,height:768,steps:17,ratio:'2:3'});
+  assert.equal(await out.blob.text(),'hello'); assert.equal(out.blob.type,'image/png');
+  assert.equal(e.requests[1].body.num_inference_steps,17); assert.equal(e.requests[1].body.height,768);
+});
+test('real H134f DeepInfra native unsupported fallback stays inside Hub only', async () => {
+  const e = imageEnv('deepinfra', {real:true, fetcher: url => url.includes('/inference/') ? json({error:'unsupported'},404) : json({data:[{b64_json:'aGVsbG8='}]})});
+  assert.equal(await (await e.image.generate({model:'image',prompt:'draw',width:512,height:768})).blob.text(),'hello');
+  assert.equal(e.requests.length,2); assert.equal(e.requests[1].body.size,'512x768');
+});
+test('real H134f OpenRouter labels/prices/filtering/ratio and data URL Blob', async () => {
+  const e = imageEnv('openrouter', {real:true, fetcher: url => url.endsWith('/models')
+    ? json({data:[{id:'image',name:'Pretty',architecture:{output_modalities:['image']},pricing:{completion:'0.000001'}},{id:'text',architecture:{output_modalities:['text']}}]})
+    : json({choices:[{message:{images:[{image_url:{url:'data:image/webp;base64,aGVsbG8='}}]}}]})});
+  const list = await e.image.models(); assert.equal(list.length,1); assert.equal(list[0].label,'Pretty'); assert.equal(list[0].price,'$1/M out');
+  const out = await e.image.generate({model:'image',prompt:'draw',ratio:'16:9',steps:0});
+  assert.equal(out.blob.type,'image/webp'); assert.equal(await out.blob.text(),'hello');
+  assert.equal(e.requests[1].body.image_config.aspect_ratio,'16:9');
+});
+for (const model of ['gemini-2.5-flash-image', 'imagen-3']) {
+  test('real H134f Gemini ' + model + ' list and ratio/generation', async () => {
+    const e = imageEnv('gemini', {real:true, fetcher: url => url.includes('pageSize') ? json({models:[{name:'models/'+model,supportedGenerationMethods:[model.startsWith('imagen')?'predict':'generateContent']}]})
+      : json(model.startsWith('imagen') ? {predictions:[{bytesBase64Encoded:'aGVsbG8=',mimeType:'image/png'}]}
+        : {candidates:[{content:{parts:[{inlineData:{data:'aGVsbG8=',mimeType:'image/jpeg'}}]}}]})});
+    assert.equal((await e.image.models())[0].name,model);
+    const out = await e.image.generate({model,prompt:'draw',ratio:'9:16'});
+    assert.equal(await out.blob.text(),'hello');
+    const b=e.requests[1].body; assert.equal(model.startsWith('imagen')?b.parameters.aspectRatio:b.generationConfig.imageConfig.aspectRatio,'9:16');
+  });
+}
+for (const status of [401,402,429,500]) {
+  test('real H134f HTTP '+status+' reaches Agent friendly image kind without retry', async () => {
+    const e=imageEnv('openrouter',{real:true,fetcher:()=>json({error:{message:'provider failed'}},status)});
+    await assert.rejects(e.image.generate({model:'image',prompt:'draw'}), x=>x.kind===({401:'nokey',402:'nocredit',429:'quota',500:'http'})[status]);
+    assert.equal(e.requests.length,1);
+  });
+}
+test('AG25 static bridge load order, click-only settings action and no stale limitation UI', () => {
+  const html=read('image.html'); assert.ok(html.indexOf('app/core/hubapi.js')<html.indexOf('app/models/img_gemini.js'));
+  assert.match(read('app/gui/imagepage.js'),/settings.onclick = function \(\) \{ e.openSettings\(\); \}/);
+  for (const f of ['app/gui/imagepage.js','app/gui/provider.js','agent_readme.md']) assert.doesNotMatch(read(f),/HubAPI has no image-generation|Hub image generation is not available yet|AG24 implementation concern/);
+});
+
+test('real H134f remote image download uses Stop signal and never forwards provider credentials', async () => {
+  const signal=new AbortController().signal;
+  const e=imageEnv('openrouter',{real:true,fetcher:url=>url==='https://images.test/result.png'
+    ? new Response('image bytes',{headers:{'Content-Type':'image/png'}})
+    : json({choices:[{message:{images:[{image_url:{url:'https://images.test/result.png'}}]}}]})});
+  const out=await e.image.generate({model:'image',prompt:'draw',signal});
+  assert.equal(await out.blob.text(),'image bytes');
+  assert.equal(e.requests[1].options.signal,signal); assert.equal(e.requests[1].options.headers,undefined);
+});
+test('real H134f already-cancelled generation stops before paid transport', async () => {
+  const e=imageEnv('deepinfra',{real:true}); const c=new AbortController(); c.abort();
+  await assert.rejects(e.image.generate({model:'image',prompt:'draw',signal:c.signal}),x=>x.kind==='abort');
+  assert.equal(e.requests.length,0);
+});
+test('real H134f text-only output retains friendly noimage error', async () => {
+  const e=imageEnv('gemini',{real:true,fetcher:()=>json({candidates:[{content:{parts:[{text:'no picture'}]}}]})});
+  await assert.rejects(e.image.generate({model:'gemini-image',prompt:'draw'}),x=>x.kind==='noimage');
+  assert.equal(e.requests.length,1);
 });

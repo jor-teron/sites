@@ -59,3 +59,7 @@ HR.imgProviders.deepinfra = (function () {
   return { id: 'deepinfra', label: 'DeepInfra', note: 'Your DeepInfra key · FLUX, SDXL and more', steps: { min: 1, max: function (m) { return MAX[m] || 50; }, def: sdef }, size: 'px', mult: 64, max: 1536, cooldown: 0,
     ready: function () { return !!key(); }, models: models, generate: generate };
 })();
+/* AG25 Legacy: original adapter above is retained only for standalone/local
+   configuration or an older Hub without the image API. Hub failures do not
+   fall back to another credential or repeat the generation request. */
+if (HR.hubAPI) HR.imgProviders.deepinfra = HR.hubAPI.imageProvider(HR.imgProviders.deepinfra);
