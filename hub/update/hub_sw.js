@@ -84,6 +84,7 @@ const SHELL = [
   // (before H129c) 'hub/link/hub_panels.css', 'hub/link/hub_panels.js',
   'desktop/panels/hub_panels.css', 'desktop/panels/hub_panels.js',   // H27   (H129c: → desktop/)
   'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
+  'hub/core/hub_api.js',   // H134b: shared AI request helper
   'hub/core/hub_profile.js',   // H30.1
   'hub/link/hub_sync.js',   // H29.1
   'shared/link/hub_mesh.js', 'hub/link/hub_meshlink.js',   // H50
