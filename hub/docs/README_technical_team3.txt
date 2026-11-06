@@ -2058,3 +2058,34 @@ add/Test/rename/chat, Gemini provider, chatAdvanced streams/tools/usage/redactio
 simple Gemini chat, search/fetchPage, missing provider handling, deletion, svc
 deep link, profile exclusion, no overflow or page errors. All remote hosts stubbed;
 zero live API calls. Local commit only, awaiting Jor's Push.
+
+------------------------------------------------------------------------------
+-- H134g: HubAPI data-URL images (6 Nov 2026) --
+------------------------------------------------------------------------------
+Approved: Jor: Go for H134g in Hub Main Bot.
+
+What
+- imageBlob now accepts data:image/(png|jpeg|jpg|webp|gif);base64 (DeepInfra
+  images[0] can be one) and strips incidental whitespace from base64. jpg is
+  stored as image/jpeg. A non-image or broken data URL still rejects as
+  noimage. Remote http(s) downloads are unchanged (no key, response Blob kept).
+  Blob MIME is the data-URL type when it is png, jpeg, webp or gif; otherwise
+  the caller MIME when that is one of those, else image/png.
+- hub/hubapi.readme.md imageCapabilities shape corrected to
+  {name,size,ratios,multiple,max,steps} (H134f text said {ratio,width,height,steps}).
+- Build 20261104r / hub-shell-v150 -> 20261106a / hub-shell-v151 via hub_bump.py
+  (V, CACHE, hub/build.txt, root sw.js ?v=, and the other stamp places).
+  SHELL already lists hub/core/hub_api.js; no new shell file.
+- No provider, Settings or Agent-owned file changes.
+
+Files
+- hub/core/hub_api.js, hub/hubapi.readme.md, hub/update/hub_sw.js, sw.js,
+  desktop/desktop.html, desktop/menu/hub_ctx.js, hub/core/hub_loader.js,
+  hub/build.txt. Docs: this file, hub/docs/build_history_2026.txt and
+  hub/docs/hub_readme.md.
+
+Testing
+- node --check on hub/core/hub_api.js.
+- Short offline mocked smoke: DeepInfra data URL, whitespace base64, remote
+  URL with no key on the download, invalid data, plus Gemini, OpenRouter and
+  DeepInfra fallback image responses. No live provider requests.

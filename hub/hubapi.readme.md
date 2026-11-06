@@ -1,5 +1,9 @@
-# HubAPI — H134b, H134c, H134e, H134f
+# HubAPI — H134b, H134c, H134e, H134f, H134g
 
+> H134g: `generateImage` accepts a `data:image/...;base64` picture (DeepInfra `images[0]`)
+> and incidental whitespace in base64. Invalid data is still rejected. A remote download
+> still returns the response Blob and sends no key. `imageCapabilities` returns
+> `{name,size,ratios,multiple,max,steps}`.
 > H134f adds image generation (imageModels, imageCapabilities, generateImage) for
 > visible DeepInfra, OpenRouter and Gemini providers. No Settings changes.
 > H134e removes legacy named provider paths: only visible service entries and the four Services keys.
@@ -201,16 +205,20 @@ queried with guessed image paths. Old provider names are not aliases.
 
 ### imageCapabilities({provider, model, signal?}) — H134f
 
-Returns model capabilities for the image UI: `{ratio, width, height, steps}`. Width/height apply to
-DeepInfra; ratio applies to DeepInfra, OpenRouter and Gemini; steps applies to DeepInfra where the
-model supports them. Model-specific provider restrictions still apply. No provider request is needed
-for known model families; model metadata may be loaded when necessary.
+Returns `{name, size, ratios, multiple, max, steps}`. `size` is `px` for DeepInfra and `ratio` for
+Gemini and OpenRouter. `ratios` lists aspect ratios when that provider uses them (empty for DeepInfra).
+`multiple` and `max` are DeepInfra's pixel step and limit (64 and 1536), otherwise 0. `steps` is
+DeepInfra's `{min, max, default}` or null. Model metadata may be loaded when the catalogue is needed.
 
 ### generateImage({provider, model, prompt, width?, height?, ratio?, steps?, signal?}) — H134f
 
 Returns `{blob}` and does not return the saved key or raw provider response. `prompt`, `model` and
-`provider` are required. Data URLs, base64 and remote image URLs are normalized to a Blob. A remote
-image download receives no provider key. `signal` covers the generation and that download.
+`provider` are required. Data URLs (`data:image/png|jpeg|jpg|webp|gif;base64`, H134g), bare base64
+and remote image URLs are normalized to a Blob. Incidental whitespace in base64 is ignored. A data
+URL's image type is the Blob type (`jpg` stored as `image/jpeg`); other base64 uses the provider
+MIME when it is png, jpeg, webp or gif, otherwise `image/png`. Anything else, including a non-image
+data URL, is rejected. A remote image download receives no provider key and keeps the response Blob.
+`signal` covers the generation and that download.
 
 DeepInfra uses `/v1/inference/<model>` with width/height/steps when supplied, falling back to
 OpenAI `/images/generations` on HTTP 400/404/422. OpenRouter uses `/chat/completions` with
@@ -254,7 +262,7 @@ try {
 ```
 
 Model names above are examples, not availability guarantees. Offline smoke tests
-stub fetch; no live paid API calls are part of H134b, H134c or H134f testing.
+stub fetch; no live paid API calls are part of H134b, H134c, H134f or H134g testing.
 
 ## H134e: no legacy provider keys
 
