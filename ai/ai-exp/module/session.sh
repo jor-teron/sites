@@ -61,7 +61,7 @@ prepare_experiment() {
     if [ -z "$last" ]; then
       # Experiments created by the older single-file script have logs but
       # no session counter. Count the log files. There is no upper limit.
-      last="$(ls "$EXP_DIR"/log*.md 2>/dev/null | wc -l)"
+      last="$(ls "$EXP_DIR"/log*.md "$EXP_DIR"/logs/log*.md 2>/dev/null | wc -l)"
       last="${last//[[:space:]]/}"
     fi
     case "$last" in
@@ -69,9 +69,10 @@ prepare_experiment() {
     esac
     SESSION=$(( 10#$last + 1 ))
   fi
+  pick_log_dir
   echo "$SESSION" > "$RUN_DIR/session"
   printf '%s' "$PROMPT" > "$RUN_DIR/prompt.txt"
-  if [ "$ENABLE_CONTINUE" = 1 ]; then LOG="$EXP_DIR/log-$SESSION.md"; else LOG="$EXP_DIR/log.md"; fi
+  if [ "$ENABLE_CONTINUE" = 1 ]; then LOG="$LOG_DIR/log-$SESSION.md"; else LOG="$LOG_DIR/log.md"; fi
   MSGS="$RUN_DIR/messages-$SESSION.json"
 }
 

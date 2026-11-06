@@ -21,7 +21,7 @@ Usage:
 Env: TIME_LIMIT (default 300), REQUEST_GAP (5), NAMES="maya leo",
      SOLO=1 (control: one person, same prompt and pace), MAX_PROCS (40),
      ENABLE_END_SESSION / ENABLE_TEXT_END / ENABLE_SEARCH (opt-in), AI_MODEL, API_URL, BUSYBOX.
-Output: $EXPERIMENTS_DIR/<name>/  timeline-N.md, log-<user>-N.md, summary-N.md
+Output: $EXPERIMENTS_DIR/<name>/logs/  timeline-N.md, log-<user>-N.md, summary-N.md
 Version: $AGENT_LABEL
 EOF2
   exit "${1:-1}"
@@ -94,8 +94,9 @@ prepare_multi() {
   setup_users
   echo "$SESSION" > "$RUN_DIR/session"
   printf '%s' "$PROMPT" > "$RUN_DIR/prompt.txt"
-  TIMELINE="$EXP_DIR/timeline-$SESSION.md"
-  SUMMARY="$EXP_DIR/summary-$SESSION.md"
+  pick_log_dir
+  TIMELINE="$LOG_DIR/timeline-$SESSION.md"
+  SUMMARY="$LOG_DIR/summary-$SESSION.md"
   EVENTS="$RUN_DIR/events-$SESSION.tsv"
   : > "$EVENTS"
   local n; for n in "${USERS[@]}"; do touch "$RUN_DIR/created-$n.tsv"; done
@@ -144,7 +145,7 @@ write_tools_file_multi() {
 select_person() {
   CUR="$1"; WHO="${USERS[$CUR]}"
   MSGS="$RUN_DIR/messages-$WHO-$SESSION.json"
-  LOG="$EXP_DIR/log-$WHO-$SESSION.md"
+  LOG="$LOG_DIR/log-$WHO-$SESSION.md"
   TURN="${P_TURN[$CUR]}"
 }
 

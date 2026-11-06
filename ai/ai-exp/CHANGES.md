@@ -1,5 +1,12 @@
 # Changes
 
+## v6.0 (logs/ folder)
+- Each experiment keeps its logs in `<exp>/logs/`: `log.md` / `log-N.md`
+  (one companion), `timeline-N.md`, `log-<name>-N.md`, `summary-N.md`.
+- Backward compatible: a folder from v5 or earlier that has logs at its top
+  level keeps using them on `--continue` (same numbering); preset inference
+  looks in both places. Prompts, timing and log contents are unchanged.
+
 ## v5 (flags and presets)
 - One launcher, flags instead of versions: `agent.sh <name> ["prompt"] [flags]`,
   flags before or after the name. New `module/flags.sh` parses, validates
