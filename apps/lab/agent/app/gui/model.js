@@ -67,7 +67,7 @@ HR.model = (function () {
     var a = HR.models.current(), c = HR.models.cfg(), want = HR.models.chatModel() || c.typed || HR.set.get(HR.models.modelKey());
     var my = ++tok; models = []; cur = ''; state = 'loading'; paintChip(); drawList();   /* AG12: newest load() wins */
     if (a.id !== 'browser' && HR.bcard) HR.bcard.hide();
-    if (a.needsKey && !c.key) { if (fall({ kind: 'nokey' })) return Promise.resolve(); fill([]); state = 'nokey'; paintChip(); HR.chat.errorCard({ kind: 'nokey' }); return Promise.resolve(); }
+    if (a.needsKey && !c.key && !c.service) { if (fall({ kind: 'nokey' })) return Promise.resolve(); fill([]); state = 'nokey'; paintChip(); HR.chat.errorCard({ kind: 'nokey' }); return Promise.resolve(); }
     function typed(l) { return c.typed && !l.some(function (m) { return m.name === c.typed; }) ? [{ name: c.typed, label: c.typed + ' (typed)' }].concat(l) : l; }
     return a.models(c).then(function (l) {
       if (my !== tok) return;

@@ -1,5 +1,5 @@
-/* Agent — app/models/img_deepinfra.js: AG15 DeepInfra image provider (your DeepInfra key: Hub slot 'deepinfra', else the
-   Agent's own key via HR.models.getKey). HR.imgProviders.deepinfra (same shape as img_pollinations.js).
+/* Agent — app/models/img_deepinfra.js: AG15 DeepInfra image provider (Agent-local DeepInfra key via HR.models.getKey;
+   no legacy Hub credential lookups (AG24)). HR.imgProviders.deepinfra (same shape as img_pollinations.js).
    models(): GET api.deepinfra.com/models/list, keep type 'text-to-image' minus edit / background / erase tools; fallback
    FLUX-1-schnell, FLUX-1-dev, sdxl-turbo. generate(): POST /v1/openai/images/generations {model,prompt,size,n:1,
    response_format:'b64_json'}; on 404/400 falls back to /v1/inference/<model> {prompt,width,height,num_inference_steps}.

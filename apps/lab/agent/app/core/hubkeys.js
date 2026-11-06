@@ -1,36 +1,61 @@
-/* Agent — app/core/hubkeys.js: keys from the Hub (AG9, Hub H28 / H28.1, hub/keys.readme.md). HR.hubKeys.
-   Inside the Hub, window.top.HubKeys (same-origin; try/catch so a cross-origin or standalone page just gets null) holds
-   the user's keys. load() reads the known names into memory (never into localStorage); val(name) is that copy, '' when
-   unset. Hub values win; Agent's own fields are the fallback (standalone, or the Hub has none). onChange from the Hub
-   re-reads the key, then calls our listeners (Settings rows repaint, models reload, web tools follow at once).
-   forProvider(p, base) -> the Hub key name for a provider + base URL: gemini -> gemini; OpenAI-compatible base host
-   api.groq.com -> groq, openrouter.ai -> openrouter, api.deepseek.com -> deepseek, api.x.ai -> xai, api.deepinfra.com -> deepinfra (AG12.1), the Hub's
-   openai_base host (or api.openai.com when the Hub has no base) -> openai_key. named(base): base is one of those 4 presets
-   (then Agent keeps that base even when the Hub has an openai_base; HR.models.base). */
+/* AG24: only Gemini, Tavily and Ollama use direct Hub keys. Company tabs
+   discover visible HubProviders metadata; credentials stay inside HubAPI.
+   Legacy host-to-hidden-slot mapping is retired; local Agent keys stay local. */
 HR.hubKeys = (function () {
-  var NAMES = ['tavily', 'gemini', 'openai_base', 'openai_key', 'ollama_url', 'groq', 'openrouter', 'deepseek', 'xai', 'deepinfra'];  /* AG12.1: + deepinfra (Hub H111) */
-  var HOSTS = { 'api.groq.com': 'groq', 'openrouter.ai': 'openrouter', 'api.deepseek.com': 'deepseek', 'api.x.ai': 'xai', 'api.deepinfra.com': 'deepinfra' };
-  var cache = {}, subs = [], api = null, hooked = false;
-  function hub() { if (api) return api; try { var h = window.top && window.top !== window ? window.top.HubKeys : null; api = h && typeof h.get === 'function' ? h : null; } catch (e) { api = null; } return api; }
-  function host(u) { try { return new URL(u).host; } catch (e) { return ''; } }
-  async function read(n) { var h = hub(); if (!h) return; try { var v = await h.get(n); if (v) cache[n] = String(v).trim(); else delete cache[n]; } catch (e) { delete cache[n]; } }
+  var NAMES = ['tavily', 'gemini', 'ollama_url'];
+  var cache = {}, subs = [], hooked = null, servicesHooked = null;
+  function top(name) { try { return (window.top && window.top[name]) || window[name] || null; } catch (e) { return window[name] || null; } }
+  function hub() { var h = top('HubKeys'); return h && typeof h.get === 'function' ? h : null; }
+  function providers() { var h = top('HubProviders'); return h && typeof h.list === 'function' && typeof h.info === 'function' ? h : null; }
+  function norm(s) { return String(s || '').trim().replace(/\/+$/, ''); }
+  function service(p, base) {
+    var h = providers(), pr = HR.presets && HR.presets.get(p);
+    if (!h || !pr) return null;
+    var label = String(pr.label || '').trim().toLowerCase(), endpoint = norm(base || pr.base);
+    if (!endpoint) return null;
+    try {
+      var matches = h.list().filter(function (s) {
+        if (!/^svc_/.test(s.id) || s.type !== 'openai') return false;
+        var info = h.info(s.id);
+        return info && norm(info.endpoint) === endpoint &&
+          (p === 'custom' || String(s.label || '').trim().toLowerCase() === label);
+      });
+      // Ambiguous duplicates must not silently select someone else's account.
+      return matches.length === 1 ? h.info(matches[0].id) : null;
+    } catch (e) { return null; }
+  }
+  function emit(n) { subs.forEach(function (f) { try { f(n); } catch (e) {} }); }
+  async function read(n) {
+    var h = hub(); if (!h) return;
+    try { var v = await h.get(n); if (v) cache[n] = String(v).trim(); else delete cache[n]; } catch (e) { delete cache[n]; }
+  }
   async function load() {
-    var h = hub(); if (!h) return false;
-    await Promise.all(NAMES.map(read));
-    if (!hooked && typeof h.onChange === 'function') { hooked = true;
-      try { h.onChange(function (e) { var n = e && e.name; (n && NAMES.indexOf(n) >= 0 ? read(n) : !n ? Promise.all(NAMES.map(read)) : Promise.resolve()).then(function () {
-        subs.forEach(function (f) { try { f(n || ''); } catch (x) {} }); }); }); } catch (e) {}
+    var h = hub(), s = providers();
+    if (h) {
+      await Promise.all(NAMES.map(read));
+      if (hooked !== h && typeof h.onChange === 'function') {
+        hooked = h; h.onChange(function (e) {
+          var n = e && e.name;
+          if (n && NAMES.indexOf(n) < 0) return;
+          (n ? read(n) : Promise.all(NAMES.map(read))).then(function () { emit(n || ''); });
+        });
+      }
     }
-    return true;
+    if (s && servicesHooked !== s && typeof s.onChange === 'function') {
+      servicesHooked = s; s.onChange(function () { emit(''); });
+    }
+    return !!(h || s);
   }
-  function val(n) { return cache[n] || ''; }
-  function forProvider(p, base) {
-    if (p === 'gemini') return 'gemini';
-    var hs = host(base); if (HOSTS[hs]) return HOSTS[hs];
-    var hb = val('openai_base'); return (hb ? host(hb) === hs : hs === 'api.openai.com') ? 'openai_key' : '';
+  function val(n) { return NAMES.indexOf(n) >= 0 ? cache[n] || '' : ''; }
+  function has(n) { var h = providers(); return /^svc_/.test(n) ? !!(h && h.has(n)) : !!val(n); }
+  function open(n) {
+    var h = hub(), s = providers();
+    try {
+      if (NAMES.indexOf(n) >= 0) { if (h && h.open) h.open(n); }
+      else if (s && s.open) s.open(/^svc_/.test(n) && s.has(n) ? n : '');
+      else if (h && h.open) h.open('');
+    } catch (e) {}
   }
-  function named(base) { return !!HOSTS[host(base)]; }
-  function open(n) { var h = hub(); try { if (h && h.open) h.open(n); } catch (e) {} }
-  return { load: load, inHub: function () { return !!hub(); }, val: val, has: function (n) { return !!val(n); }, forProvider: forProvider, named: named, open: open,
-    onChange: function (f) { subs.push(f); }, NAMES: NAMES };
+  return { load: load, inHub: function () { return !!(hub() || providers()); }, val: val, has: has, open: open,
+    service: service, onChange: function (f) { subs.push(f); }, NAMES: NAMES };
 })();

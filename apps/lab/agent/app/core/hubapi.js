@@ -20,8 +20,8 @@ HR.hubAPI = (function () {
     if (id === 'ollama') return b && b === trim(val('ollama_url')) ? { provider: id } : null;
     var pr = HR.presets.get(id);
     if (!pr) return null; // Browser and image generation stay untouched.
-    var hb = id === 'openai' ? trim(val('openai_base')) || pr.base : pr.base;
-    return id !== 'custom' && k && k === val(pr.hub) && b === trim(hb) ? { provider: id }
+    var service = HR.models.service(id, c.base);
+    return service ? { provider: service.id }
       : { provider: 'custom', endpoint: c.base, key: k };
   }
   function wrap(a) {

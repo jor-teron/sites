@@ -8,7 +8,7 @@
    AG20: restored (AG19 shipped this file empty by mistake).
    AG15: the shell list also reads image.html (the Image page); VER only changes this file so browsers re-install.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag23', PAGES = ['agent.html', 'image.html'];   /* AG15: VER bump re-installs; image.html's files precached too */
+var FILES = 'agent-files', VER = 'agent-ag24', PAGES = ['agent.html', 'image.html'];   /* AG15: VER bump re-installs; image.html's files precached too */
 var BASE = new URL('./', self.location.href).href;
 function bare(u) { var x = new URL(u); x.search = ''; x.hash = ''; return x.href; }
 function shellList() {

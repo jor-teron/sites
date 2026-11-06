@@ -1,4 +1,4 @@
-/* Agent — app/models/img_openrouter.js: AG16 OpenRouter image provider (OpenRouter key, Hub first via HR.models.getKey).
+/* Agent — app/models/img_openrouter.js: AG16 OpenRouter image provider (Agent-local key via HR.models.getKey; no legacy Hub lookups (AG24)).
    HR.imgProviders.openrouter (same shape as img_pollinations.js). models(): public /api/v1/models filtered to
    architecture.output_modalities incl. 'image', minus openrouter/auto*; label carries a price hint (all paid).
    generate(): POST /chat/completions {model, messages, modalities:['image','text']}, reads

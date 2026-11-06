@@ -172,3 +172,45 @@ trim notice. AG22 remains parked and is not implemented by AG23.
 (model search and Pick folder). The smoke harness explicitly records this one
 baseline duplicate and rejects any new duplicates. It is not changed as part
 of the HubAPI migration; folder/model-search button wiring needs a separate fix.
+
+
+## AG24 — visible Hub providers, no hidden company key slots
+
+Company tabs/endpoints remain Agent UI choices, not Hub credential names.
+Only Gemini, Tavily and Ollama still read direct HubKeys. All other chat/model
+calls prefer a unique visible HubProviders `svc_` entry of type `openai`, with
+its label matched case-insensitively and endpoint matched after trimming
+trailing slashes. Custom matches by its explicitly configured endpoint alone.
+No match, wrong type, renamed label or ambiguous duplicate falls back to
+Agent's own local endpoint/key. Custom no longer inherits a Hub endpoint.
+Matching services use their stable id in HubAPI; Agent never reads service
+secrets or Hub provider storage. Streaming/tools/photos/usage remain AG23's
+passthrough. Provider changes refresh the picker/settings through onChange.
+
+Inside the Hub, missing service matches show a generic Add provider action;
+matching services open their visible row. Local fields remain editable for
+standalone and image use. Browser inference and all existing image generators
+remain available with their supported local/direct credentials.
+
+### AG24 implementation concern — Hub image API is still missing
+
+At starting main `08c66f3e`, HubAPI exports chat, search, vision, chatAdvanced,
+models, fetchPage and services, but no image-generation method. Its image
+support means input photos for chat, not generated output. Therefore Agent
+cannot generate DeepInfra/OpenRouter images from a svc credential without a
+Hub-side API extension. It does not call HubProviders.secret or revive hidden
+keys to work around this. Their existing local-key generation, model metadata,
+steps/ratio/price controls and error handling are retained. Gemini images
+still use its permitted direct key; Ollama and Pollinations stay unchanged.
+The local-key settings explain this limitation; svc-only image generation is
+left for the Hub owner to enable through a documented image API.
+
+### Legacy code notes — AG24
+
+Retired the old direct company-key names, host-to-key mapping, preset hub-slot
+fields and Custom's Hub-base fallback. These paths are documented here instead
+of leaving executable hidden lookups. Historical AG9/AG12/AG23 notes above
+remain history only; AG24 supersedes their company credential behaviour.
+Direct adapters remain as Agent-local fallbacks, never a retry after a failed
+Hub call. Offline cache stays agent-files; SW VER is agent-ag24, with no URL
+version tags. Existing duplicate btnPick ids remain an unrelated known issue.
