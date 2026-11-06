@@ -102,6 +102,7 @@ Continue:
                       --solo --names --memory --no-memory --journal --no-journal
   Old experiments without .run/flags: preset inferred (cages/ -> v4, cage/ + .run/names -> v3,
   log-N.md -> v2, log.md -> v1, which cannot be continued).
+  Logs are in <exp>/logs/; pre-v6 folders keep top-level logs.
 EOF
     ;;
     env) cat <<'EOF'
@@ -123,8 +124,9 @@ infer_preset() {
   local d="$1"
   if [ -d "$d/cages" ]; then echo v4
   elif [ -d "$d/cage" ] && [ -s "$d/.run/names" ]; then echo v3
-  elif compgen -G "$d/log-[0-9]*.md" >/dev/null || [ -s "$d/.run/session" ]; then echo v2
-  elif [ -f "$d/log.md" ]; then echo v1
+  elif compgen -G "$d/log-[0-9]*.md" >/dev/null || compgen -G "$d/logs/log-[0-9]*.md" >/dev/null; then echo v2
+  elif [ -f "$d/log.md" ] || [ -f "$d/logs/log.md" ]; then echo v1
+  elif [ -s "$d/.run/session" ]; then echo v2
   fi
 }
 

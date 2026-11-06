@@ -18,6 +18,7 @@ Presets: `v1` (no memory), `v2` (default), `v3` (2 in one cage), `v4`
 (exact old v4), `ai2ai` (v4 setup, "no internet access" wording). Flags
 after a preset override it. Settings are saved in `<exp>/.run/flags` and
 reused by `--continue`; experiments made before v5 are recognized.
+Logs (log, timeline, summary) go in `<exp>/logs/` (v6.0+).
 
 Layout: `agent.sh` (launcher), `module/flags.sh` (flags, presets, help),
 `module/*.sh` (cage, API, sessions, companions, turns, discovery),

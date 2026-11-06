@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ai-exp launcher (v5). Flags and presets choose the setup:
+# ai-exp launcher (v6.0). Flags and presets choose the setup; logs go in <exp>/logs/.
 #   ./agent.sh <name> ["prompt"] [flags]      ./agent.sh --help [all]
 # See MANUAL.md. (versions/ and AGENT_VERSION were replaced by --preset.)
 set -u
