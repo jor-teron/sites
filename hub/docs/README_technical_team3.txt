@@ -1899,3 +1899,25 @@ Files
 - hub/core/hub_keys.js, apps/system/settings/sec_keys.js, settings.css
   (.key-used), hub/keys.readme.md. Docs: this file +
   hub/docs/build_history_2026.txt.
+
+
+-- H134b: HubAPI shared AI helper (6 Nov 2026) --
+Approved: Code H134b. Additive infrastructure only; no app uses it yet.
+New hub/core/hub_api.js exposes window.HubAPI.chat/search/vision. Text chat:
+Gemini generateContent, OpenAI-compatible (openai, groq, openrouter, deepseek,
+xai, deepinfra), native Ollama. Keys read fresh from HubKeys; Tavily basic
+search normalizes title/url/snippet; Cloud Vision supports labels/text/all
+(base64 image, not arbitrary natural-language prompts). Missing-key errors
+point to Settings > API Keys with keyName/openSettings(); generic errors never
+relay provider diagnostics or URLs. No raw payloads returned or keys logged.
+Loaded after hub_keys.js through hub_core.js link part (current desktop shell
+is desktop/desktop.html, not the retired hub.html); also available on phone.
+Standalone: load hub_keys.js then hub_api.js. New helper in SW SHELL; no V,
+CACHE or hub/build.txt bump. Full public API and examples: hub/hubapi.readme.md.
+Existing Agent/OCR/Vision unchanged. Adoption belongs to a follow-up with Hub
+Apps Bot. No tools, streaming, retries, model selection or usage ledger here.
+Testing passed: node --check on hub_api.js, hub_core.js and hub_sw.js; short
+offline Playwright smoke (21 assertions: all chat providers, shapes, search,
+vision, missing-key Settings path, safe HTTP/network/abort errors, missing
+HubKeys), fake localStorage keys and stubbed fetch only; zero external requests
+and no live paid API calls. Local commit only, awaiting Push.
