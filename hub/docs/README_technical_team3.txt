@@ -2012,3 +2012,38 @@ Testing
   intercepted and stubbed). No live provider calls.
 - Agent's existing offline tests (including actual HubAPI wire tests): 42/42,
   covering groq/openrouter/deepseek/xai/deepinfra built-in-key compatibility.
+
+------------------------------------------------------------------------------
+-- H134e: remove legacy provider-key paths (6 Nov 2026) --
+------------------------------------------------------------------------------
+Approved: Jor: "Can you simply remove the hidden legacy path, user can manually
+put them in again, it's not hard stuff. Please Cleanup, and Go".
+
+What changed
+- Settings > API Keys retains only four Services rows: Tavily, Google Gemini,
+  Ollama URL and Google Cloud Vision. Other AI services are added visibly under
+  Providers; the type dropdown remains OpenAI-compatible | Gemini (request
+  format, not a company catalogue). Four fields only; stable svc_ id.
+- Removed hidden HubKeys provider definitions/lookup, legacy maintenance deep
+  links and old provider-specific Settings tests. #keys/svc_... remains valid.
+- HubAPI accepts Gemini, Ollama, visible svc_ providers and app-owned 'custom'
+  endpoint/key. Removed named OpenAI/Groq/OpenRouter/DeepSeek/xAI/DeepInfra
+  routes, fixed endpoints and openai_base/openai_key fallbacks.
+- No migration. Old localStorage values remain only as unused data; they create
+  no visible row and HubAPI never reads or sends them. Users manually re-enter
+  a provider through Add provider. sites-hub.providers remains excluded from
+  profile export/sync. No V, CACHE or build.txt bump.
+- Agent companion cleanup is being done locally by Hub Apps Bot under the same
+  instruction; it must use visible svc_ providers instead of the removed slots.
+
+Files: hub/core/hub_keys.js, hub/core/hub_api.js,
+apps/system/settings/sec_keys.js, hub/keys.readme.md, hub/hubapi.readme.md,
+this file and hub/docs/build_history_2026.txt.
+
+Testing: node --check on changed JS; offline Playwright at 390 px, 43/43:
+four rows, no hidden lookup, two request types, every old provider name rejected
+without a request despite saved old Groq/OpenAI values, visible OpenAI provider
+add/Test/rename/chat, Gemini provider, chatAdvanced streams/tools/usage/redaction,
+simple Gemini chat, search/fetchPage, missing provider handling, deletion, svc
+deep link, profile exclusion, no overflow or page errors. All remote hosts stubbed;
+zero live API calls. Local commit only, awaiting Jor's Push.

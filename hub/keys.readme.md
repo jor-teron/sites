@@ -47,15 +47,12 @@ key from the Hub (Agent for the AI and search keys, OCR and Vision for `gvision`
   Agent reads it from this row. Caption for Nei and Transcribe still keep their own key field for now, so paste
   the same key there too.
 
-### AI services: Add provider (H134d)
+### AI services: Add provider (H134c/H134e)
 
 Settings shows permanent rows only for Tavily, Gemini, Ollama and Google Cloud Vision. Other AI services use
 **Add provider**. Saved OpenAI-compatible and Gemini services appear below the Add provider card.
 
 | Service | Provider type | API endpoint | Get a key |
-|---|---|---|---|
-
-| Service | Base URL (`openai_base`) | Key (`openai_key`) |
 |---|---|---|
 | OpenAI | OpenAI-compatible | `https://api.openai.com/v1` | <https://platform.openai.com/api-keys> (paid) |
 | Groq | OpenAI-compatible | `https://api.groq.com/openai/v1` | <https://console.groq.com/keys> (free tier available) |
@@ -65,7 +62,7 @@ Settings shows permanent rows only for Tavily, Gemini, Ollama and Google Cloud V
 | DeepInfra | OpenAI-compatible | `https://api.deepinfra.com/v1/openai` | <https://deepinfra.com/dash/api_keys> (paid) |
 | LM Studio / llama.cpp (local) | OpenAI-compatible | `http://localhost:1234/v1` or `http://localhost:8080/v1` | usually none |
 
-- **Test button:** calls `<endpoint>/models` with the key. Custom-provider keys are excluded from profile files and sync.
+- **Test button:** calls `<endpoint>/models` with the key. Provider keys are excluded from profile files and sync.
 - Some servers block requests from web pages (CORS). Then Test says "Could not reach the server",
   even when the key is right.
 
@@ -95,16 +92,9 @@ Settings shows permanent rows only for Tavily, Gemini, Ollama and Google Cloud V
   A bad key is reported as rejected. It also tells you when the key is fine but the Vision API isn't enabled,
   billing is off, or the key's restrictions block this site.
 
-### Legacy key names (H134d)
-
-Existing saved keys under `openai_base`, `openai_key`, `groq`, `openrouter`, `deepseek`, `xai` and `deepinfra`
-are preserved; Agent and HubAPI can still read them. Their permanent Settings rows and the **Add custom key** form are gone.
-A missing-key link opens **Add provider**. An explicit `#keys/<legacy-name>` deep link can still show that saved key for
-maintenance. New services should use the provider store; apps choose models, while HubAPI reads the stable `svc_…` id.
-
 ## For app developers: the HubKeys API
 
-`hub/core/hub_keys.js` is loaded by `hub.html` as `window.HubKeys`. Apps run in same-origin
+`hub/core/hub_keys.js` is loaded by the Hub shell as `window.HubKeys`. Apps run in same-origin
 iframes, so they call **`window.top.HubKeys`**. There's no permission prompt.
 
 ```js
@@ -119,10 +109,9 @@ HubKeys.onChange(fn)       // fn({name, present}); also fires for changes made i
 HubKeys.KNOWN              // [{name, label, kind: 'key' | 'url', url, hint, usedBy}]  usedBy (H134a): ['Agent', …]
 ```
 
-Known names remain `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`, `groq`, `openrouter`,
-`deepseek`, `xai`, `deepinfra` and `gvision` for compatibility. Only Tavily, Gemini, Ollama and Cloud Vision are
-visible by default. `HubKeys.definition(name)` returns a known definition with its hidden flag, or a generic custom-key
-definition. For new AI services use `HubProviders` / `HubAPI` rather than adding another hard-coded key row.
+Only `tavily`, `gemini`, `ollama_url` and `gvision` are named HubKeys. Old provider names have no hidden
+read path. Users re-enter them through **Add provider**, producing a visible `svc_…` record used by `HubAPI`.
+Other apps should use `HubProviders` / `HubAPI` rather than adding a provider-specific key row.
 
 **Standalone fallback.** When the app is opened on its own (not in the Hub), `window.top.HubKeys`
 doesn't exist. Keep the app's own key field for that case:
