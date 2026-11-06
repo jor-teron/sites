@@ -1864,3 +1864,38 @@ Files
   crossing 640 px), files_view.js (paintSel calls FX.menu.selBar; status
   hidden on phone), files.css (.selbar styles). Docs: this file +
   hub/docs/build_history_2026.txt.
+
+------------------------------------------------------------------------------
+-- H134a: API Keys rows in Settings (6 Nov 2026) --
+------------------------------------------------------------------------------
+Decision
+- Keys stay inside the Hub, in Settings > API Keys (hub/core/hub_keys.js
+  window.HubKeys + apps/system/settings/sec_keys.js). No separate API Keys
+  app: no new folder, catalog entry, icon or phone dock entry.
+- H134b (HubAPI, the Hub making model calls for apps) is NOT built. It is
+  still a discussion (transparency: today each app makes its own call).
+
+What
+- Each known key row shows a muted "Used by: ..." line under its hint, from
+  the new HubKeys.KNOWN[].usedBy (USED_BY map in hub_keys.js). Only apps
+  checked in code are listed:
+    tavily, gemini, openai_base, openai_key, ollama_url, groq, openrouter,
+    deepseek, xai, deepinfra -> Agent (apps/lab/agent/app/core/hubkeys.js)
+    gvision -> OCR (apps/office/ocr/ocr_hubkey.js), Vision
+               (apps/lab/vision/vision_gcv.js)
+  Caption for Nei and Transcribe keep their own Gemini field and News reads
+  no Hub key yet, so they are not listed. Custom keys get no line.
+- Hints: tavily (no longer says News; adds "no card, basic search 1
+  credit"), openai_key (free or paid depends on the service), ollama_url
+  (free, runs on your computer), openrouter (:free models have a daily limit,
+  Test shows what is left). Old hints kept as comments.
+- HubKeys.open(name) outside the Hub: checked, no change. In the Hub it uses
+  __hubOpenApp; in Settings itself it moves the hash; anywhere else it opens
+  Settings #keys/<name> in a new tab. Apps opened on their own have no
+  window.top.HubKeys, so they never reach it and use their own key field.
+- No storage format change, no apps/* edits, no build bump.
+
+Files
+- hub/core/hub_keys.js, apps/system/settings/sec_keys.js, settings.css
+  (.key-used), hub/keys.readme.md. Docs: this file +
+  hub/docs/build_history_2026.txt.

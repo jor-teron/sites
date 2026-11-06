@@ -20,6 +20,9 @@ Add a key once and every Hub app (Agent, News, …) can use it. No app asks agai
 4. For a key that isn't listed, use **Add custom key**: type a name (lowercase letters, digits,
    `_ - .`) and the value.
 
+Each row shows a short hint (what it's for, the free tier) and, since H134a, a **Used by** line naming the
+apps that read that key from the Hub (Agent for the AI and search keys, OCR and Vision for `gvision`).
+
 ## The keys
 
 ### `tavily`: Tavily (web search)
@@ -32,7 +35,7 @@ Add a key once and every Hub app (Agent, News, …) can use it. No app asks agai
 
 ### `gemini`: Google Gemini
 
-- **For:** Gemini models (chat, summaries) in Agent and News.
+- **For:** Gemini models (chat, summaries) in Agent. (News doesn't read it yet.)
 - **Get it:** <https://aistudio.google.com/apikey> (sign in with a Google account, then **Create API key**).
 - **Free:** there is a free tier with no billing account needed. Its limits (requests per minute and per day)
   differ by model and change often, so **check the page**: your live limits are at
@@ -139,11 +142,12 @@ HubKeys.list()             // → ['gemini', 'tavily', …]  names only, never v
 HubKeys.open(name)         // opens Settings → API Keys at that row (#keys/<name>)
 HubKeys.onChange(fn)       // fn({name, present}); also fires for changes made in other tabs.
                            // name '' = several keys changed. Returns unsubscribe().
-HubKeys.KNOWN              // [{name, label, kind: 'key' | 'url', url, hint}]
+HubKeys.KNOWN              // [{name, label, kind: 'key' | 'url', url, hint, usedBy}]  usedBy (H134a): ['Agent', …]
 ```
 
 Known names: `tavily`, `gemini`, `openai_base`, `openai_key`, `ollama_url`, `groq`, `openrouter`,
-`deepseek`, `xai`, `gvision`. Names are lowercased.
+`deepseek`, `xai`, `deepinfra`, `gvision`. Names are lowercased. When your app starts reading a key, add it to
+`USED_BY` in `hub_keys.js` so its row's "Used by" line names it.
 
 **Standalone fallback.** When the app is opened on its own (not in the Hub), `window.top.HubKeys`
 doesn't exist. Keep the app's own key field for that case:

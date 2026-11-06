@@ -193,6 +193,8 @@ html.motion-off *, html.motion-off *::before { animation: none !important; trans
 .key-get { margin-left: auto; color: var(--accent); font-size: .88rem; text-decoration: none; }
 .key-get:hover { text-decoration: underline; }
 .card p.key-hint { color: var(--muted); font-size: .84rem; margin: 4px 0 8px; }
+/* H134a: which apps read the key; sits between the hint and the input line */
+.card p.key-used { color: var(--muted); font-size: .78rem; margin: -4px 0 8px; opacity: .85; overflow-wrap: anywhere; }
 .key-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .number-change [hidden] { display: none; }   /* H96: .key-line / .key-btn display beat [hidden]; the number form showed next to Change number */
 .key-input { flex: 1 1 220px; min-width: 0; min-height: 44px; padding: 8px 12px; border-radius: 12px;
