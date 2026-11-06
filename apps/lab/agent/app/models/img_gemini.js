@@ -1,4 +1,4 @@
-/* Agent — app/models/img_gemini.js: AG16 Gemini image provider (Gemini key, Hub first via HR.models.getKey('gemini')).
+/* Agent — app/models/img_gemini.js: AG16 Gemini image provider (AG26: differing Agent-local key overrides Hub; else Hub via getKey).
    HR.imgProviders.gemini (same shape as img_pollinations.js). models(): v1beta/models filtered to image output —
    gemini-*image* (generateContent) and imagen-* with 'predict'; fallback gemini-2.5-flash-image.
    generate(): gemini -> :generateContent with responseModalities ['TEXT','IMAGE'], reads inlineData; imagen -> :predict
@@ -8,7 +8,12 @@
 window.HR = window.HR || {}; HR.imgProviders = HR.imgProviders || {};
 HR.imgProviders.gemini = (function () {
   var API = 'https://generativelanguage.googleapis.com/v1beta', FALL = ['gemini-2.5-flash-image'];
-  function key() { return HR.models ? HR.models.getKey('gemini', HR.models.base('gemini')) : ''; }
+  function key() {
+    if (!HR.models) return '';
+    var b = HR.models.base('gemini'), local = HR.models.localKey('gemini', b), hub = HR.hubKeys ? HR.hubKeys.val('gemini') : '';
+    // AG26 Legacy: getKey prefers Hub; a differing Agent-local key must win for image calls.
+    return local && local !== hub ? local : HR.models.getKey('gemini', b);
+  }
   function err(kind, msg, st) { var e = new Error(msg); e.kind = kind; e.status = st; return e; }
   function models() {
     return fetch(API + '/models?pageSize=1000&key=' + encodeURIComponent(key())).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(function (j) {
