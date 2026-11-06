@@ -4,23 +4,20 @@
  * (only this browser; every Hub app gets them, no per-app prompt). Uses the Hub's window.top.HubKeys
  * when Settings runs inside the Hub (so the Hub's onChange listeners fire at once), else its own copy.
  * One row per known key (HubKeys.KNOWN): masked input (URLs shown plain) + 👁 reveal, Save (also on
- * Enter / leaving the field), Test where cheap, Delete. Other saved/custom keys stay accessible through their deep link, not as permanent rows.
+ * Enter / leaving the field), Test where cheap, Delete. Old provider slots are not read (H134e).
  * Deep link: #keys/<name> scrolls to and highlights that row.
+ * The only remaining general key tests are Tavily, Gemini, Ollama and Cloud Vision.
  * Tests (straight from this browser, nothing goes through the Hub):
  *   tavily      GET api.tavily.com/usage (free, no credit; a 1-result search only if /usage is missing)
  *   gemini      GET generativelanguage.googleapis.com/v1beta/models (model list, free)
  *   ollama_url  GET <url>/api/tags
- *   openai_*    GET <base>/models with the key (Bearer)
- *   Hidden H28.1 rows, all Bearer: groq GET api.groq.com/openai/v1/models, openrouter GET openrouter.ai/api/v1/key
- *   (its /models list is public, so /key is what proves the key), deepseek GET api.deepseek.com/models,
- *   xai GET api.x.ai/v1/models. All four answer browser (CORS) requests.
  *   H28.2 gvision POST vision.googleapis.com/v1/images:annotate?key= with no images ({ requests: [] }: nothing to
  *   bill). 400 with reason API_KEY_INVALID = bad key; any other 400 / 200 = the key reached Vision; 403 tells apart
  *   API not enabled, billing off and key restrictions.
- * H134d: four visible Services rows, then Providers. Saved legacy/custom keys aren't listed;
- * their values remain readable and an explicit #keys/<name> link still opens a maintenance row.
- * H134a: a muted "Used by: Agent, …" line under the hint, from HubKeys.KNOWN[].usedBy (custom keys: none).
- * H134d: 'Providers' section (hub/core/hub_providers.js, localStorage 'sites-hub.providers'): Label, Provider type
+ * H134e: four visible Services rows, then Providers. There are no hidden legacy/provider-key
+ * definitions or deep-link maintenance rows; users re-enter those keys through Add provider.
+ * H134a: "Used by" comes from the four visible HubKeys definitions.
+ * H134c/H134e: 'Providers' section (hub/core/hub_providers.js, localStorage 'sites-hub.providers'): Label, Provider type
  *   (OpenAI-compatible | Gemini), API endpoint, API key; stable id svc_… per service; Save / Test / Delete. The saved key
  *   is never written back into the page. Test = GET <endpoint>/models (free). Deep link #keys/svc_… scrolls to that row.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
@@ -76,33 +73,6 @@
       const n = (j.models || []).length;
       return { ok: true, text: 'Ollama is running \u00b7 ' + n + ' model' + (n === 1 ? '' : 's') };
     },
-    async openai() {
-      const base = trimSlash(await K.get('openai_base'));
-      const key = await K.get('openai_key');
-      if (!base) return { ok: false, text: 'Add the base URL first' };
-      const r = await fetchT(base + '/models', { headers: key ? { Authorization: 'Bearer ' + key } : {} });
-      if (r.status === 401 || r.status === 403) return { ok: false, text: 'Key rejected (' + r.status + ')' };
-      if (!r.ok) return { ok: false, text: 'Server answered ' + r.status };
-      const j = await r.json().catch(() => ({}));
-      const n = (j.data || j.models || []).length;
-      return { ok: true, text: 'Works' + (n ? ' \u00b7 ' + n + ' models' : '') };
-    },
-    // H28.1: OpenAI-style model lists (Bearer key)
-    groq: (v) => modelsTest('https://api.groq.com/openai/v1/models', v),
-    deepseek: (v) => modelsTest('https://api.deepseek.com/models', v),
-    xai: (v) => modelsTest('https://api.x.ai/v1/models', v),
-    deepinfra: (v) => modelsTest('https://api.deepinfra.com/v1/openai/models', v),   // H111: 401 on a bad key
-    async openrouter(v) {
-      const r = await fetchT('https://openrouter.ai/api/v1/key', { headers: { Authorization: 'Bearer ' + v } });
-      if (r.status === 401 || r.status === 403) return { ok: false, text: 'Key rejected (' + r.status + ')' };
-      if (!r.ok) return { ok: false, text: 'OpenRouter answered ' + r.status };
-      const d = ((await r.json().catch(() => ({}))).data) || {};
-      const f = d.free_model_daily_requests;
-      const bits = [];
-      if (d.limit_remaining != null) bits.push('$' + (+d.limit_remaining).toFixed(2) + ' left on this key');
-      if (f && f.limit != null) bits.push(f.remaining + ' / ' + f.limit + ' free-model requests left today');
-      return { ok: true, text: 'Key works' + (bits.length ? ' \u00b7 ' + bits.join(' \u00b7 ') : '') };
-    },
     async gvision(v) {   // H28.2
       const r = await fetchT('https://vision.googleapis.com/v1/images:annotate?key=' + encodeURIComponent(v),
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ requests: [] }) });
@@ -120,22 +90,12 @@
       return { ok: false, text: 'Vision answered ' + r.status };
     },
   };
-  /** GET <url> with a Bearer key; 400 / 401 / 403 = key rejected (xAI answers 400 to a bad key). */
-  async function modelsTest(url, v) {
-    const r = await fetchT(url, { headers: { Authorization: 'Bearer ' + v } });
-    if (r.status === 400 || r.status === 401 || r.status === 403) return { ok: false, text: 'Key rejected (' + r.status + ')' };
-    if (!r.ok) return { ok: false, text: 'Server answered ' + r.status };
-    const j = await r.json().catch(() => ({}));
-    const n = (j.data || j.models || []).length;
-    return { ok: true, text: 'Key works' + (n ? ' \u00b7 ' + n + ' models' : '') };
-  }
-  const testFor = (name) => (name === 'openai_base' || name === 'openai_key' ? TESTS.openai : TESTS[name]);
+  const testFor = (name) => TESTS[name];
   const REACH = {
     ollama_url: 'Could not reach Ollama. Is it running, and started with OLLAMA_ORIGINS set to allow this site?',
   };
 
   function keyRow(def, focusName) {
-    def = K.definition ? K.definition(def.name) : def;   // H134d: known hidden rows keep their labels and tests
     const name = def.name;
     const card = ui.el('section', 'card key-row');
     card.id = 'key-' + name;
@@ -184,7 +144,7 @@
       const v = await K.get(name);
       inp.value = v || '';
       del.disabled = !v;
-      if (tbtn) tbtn.disabled = !v && name !== 'openai_base';
+      if (tbtn) tbtn.disabled = !v;
       save.disabled = true;
     }
     function doSave() {
@@ -208,8 +168,8 @@
     });
     if (tbtn) tbtn.addEventListener('click', async () => {
       if (!save.disabled) doSave();
-      const v = name === 'openai_base' || name === 'openai_key' ? '' : await K.get(name);
-      if (!v && name !== 'openai_base' && name !== 'openai_key') { say('Add the key first', 'bad'); return; }
+      const v = await K.get(name);
+      if (!v) { say('Add the key first', 'bad'); return; }
       tbtn.disabled = true; say('Testing…');
       try { const r = await test(v); say(r.text, r.ok ? 'ok' : 'bad'); }
       catch (e) { say(e && e.name === 'AbortError' ? 'Timed out' : (REACH[name] || 'Could not reach the server (offline, or it blocks browser requests)'), 'bad'); }
@@ -221,7 +181,7 @@
     return card;
   }
 
-  /* ---------------- H134c: Custom providers (hub/core/hub_providers.js) ----------------
+  /* ---------------- H134c/H134e: Visible providers (hub/core/hub_providers.js) ----------------
    * Four fields per saved service: Label, Provider type, API key, API endpoint. No model (apps pick models).
    * Each service gets a stable id (svc_…) when added; apps call HubAPI with that id, so renaming the label is safe.
    * The saved key is never put back into the page: the key field stays empty ("Key saved") and only a newly typed key
@@ -411,13 +371,10 @@
       note.textContent = '\uD83D\uDD12 Keys stay only in this browser on this device (localStorage). They are not synced to a joined phone and the Hub sends them nowhere; each app sends a key only to its own service. Every Hub app can read them. (If you turn on About \u2192 Profile \u2192 Include keys in profile, they are also saved in your profile file.)';
       const list = ui.el('div', 'key-list');
       K.KNOWN.forEach((def) => list.appendChild(keyRow(def, focusName)));
-      // H134d: no miscellaneous saved-key cards. A legacy/custom key remains in
-      // storage for its app, and is shown only when its explicit deep link asks.
-      if (focusName) list.appendChild(keyRow({ name: focusName, label: focusName, kind: 'key' }, focusName));
       const readme = ui.el('a', 'key-readme-link', 'Keys guide (readme) \u2197');
       readme.href = README_GH; readme.target = '_blank'; readme.rel = 'noopener';
       note.append(' ', readme);
-      // H134d: no generic key editor; Add provider covers OpenAI-compatible and Gemini services.
+      // H134e: Add provider is the only route for OpenAI-compatible and other AI services.
       pane.append(note, ui.title('Services'), list);
       if (P) pane.append(ui.title('Providers'), providersSection(focusName));
       pane.append(ui.title('Help'), guide());
@@ -429,15 +386,8 @@
       if (focusName && /^svc_/.test(focusName)) {   // H134c: a custom provider row (never a new custom key)
         const row = pane.querySelector('#prov-' + CSS.escape(focusName)) || pane.querySelector('.prov-add');
         if (row) requestAnimationFrame(() => { row.scrollIntoView({ block: 'center' }); const i = row.querySelector('.key-input'); if (i) i.focus({ preventScroll: true }); });
-      } else if (focusName) {
-        let row = list.querySelector('#key-' + CSS.escape(focusName));
-        if (!row && NAME_RE.test(focusName)) {   // an app asked for a custom key that is not set yet
-          row = keyRow({ name: focusName, label: focusName, kind: 'key' }, focusName);
-          if (!K.definition || !K.definition(focusName).hidden) row.dataset.custom = '1';
-          list.appendChild(row);
-        }
-        if (row) requestAnimationFrame(() => { row.scrollIntoView({ block: 'center' }); const i = row.querySelector('.key-input'); if (i) i.focus({ preventScroll: true }); });
       }
+
     }
   });
 })();

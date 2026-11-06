@@ -1,28 +1,21 @@
 /**
- * H134b: shared, non-streaming AI requests; no apps migrated yet.
+ * Shared AI requests. H134e removed legacy provider names, endpoints and key reads.
  * Same-origin Hub apps: await window.top.HubAPI.chat({...}).
  * Standalone: load hub_keys.js then hub_api.js (paths relative to your page).
  * Requires HubKeys at call time; never copies keys into another store.
- * Text chat only: no tools, images, streaming, retries or usage accounting.
+ * Simple chat() only: no tools, images, streaming, retries or usage accounting.
  * See hub/hubapi.readme.md. Calls can spend provider credits.
  * H134c: + chatAdvanced() (streaming onDelta, tools / tool_calls, images, Gemini thinking + thoughtSignature, usage),
- *   models(), fetchPage() (Tavily extract), services() (custom services from hub_providers.js as {id, label, type}),
- *   search({depth}) + credits. provider may be a built-in name, a custom service id 'svc_…', or 'custom' (app's own
+ *   models(), fetchPage() (Tavily extract), services() (visible providers from hub_providers.js as {id, label, type}),
+ *   search({depth}) + credits. provider may be gemini/ollama, a visible service id 'svc_…', or 'custom' (app's own
  *   endpoint + key). chat() keeps its contract ({text}); it also accepts a
- *   custom service id. The note above about tools/streaming is chat() only.
+ *   visible service id. The note above about tools/streaming is chat() only.
  */
 (function () {
   'use strict';
   if (window.HubAPI) return;
 
-  const PRESETS = {
-    groq: ['Groq', 'https://api.groq.com/openai/v1'],
-    openrouter: ['OpenRouter', 'https://openrouter.ai/api/v1'],
-    deepseek: ['DeepSeek', 'https://api.deepseek.com/v1'],
-    xai: ['xAI', 'https://api.x.ai/v1'],
-    deepinfra: ['DeepInfra', 'https://api.deepinfra.com/v1/openai'],
-  };
-  const LABELS = { gemini: 'Gemini', openai_key: 'OpenAI-compatible',
+  const LABELS = { gemini: 'Gemini',
     tavily: 'Tavily', gvision: 'Google Cloud Vision', ollama_url: 'Ollama URL' };
 
   function keys() {
@@ -36,10 +29,8 @@
   function settingsError(name, message) {
     const e = new Error(message + ' Add it in Settings > API Keys.');
     e.keyName = name;
-    // Call from a user click to avoid popup blocking; never opens Settings automatically.
-    // H134d: removed built-in rows now have one generic Add provider form.
-    const removed = name === 'openai_base' || name === 'openai_key' || Object.prototype.hasOwnProperty.call(PRESETS, name);
-    e.openSettings = () => { try { if (removed && window.HubProviders) return window.HubProviders.open(''); } catch (_) { /* standalone */ } return keys().open(name); };
+    // No hidden legacy provider store: direct users to the visible services/form.
+    e.openSettings = () => keys().open('');
     return e;
   }
   async function value(name, required = true) {
@@ -52,7 +43,7 @@
     }
     if (typeof v === 'string' && v.trim()) return v.trim();
     if (!required) return '';
-    const label = LABELS[name] || (PRESETS[name] && PRESETS[name][0]) || 'Provider';
+    const label = LABELS[name] || 'Provider';
     throw settingsError(name, 'No ' + label + (name === 'ollama_url' ? ' saved.' : ' key saved.'));
   }
   function requiredText(v, label) {
@@ -123,7 +114,7 @@
     options(o);
     let j, text;
     if (/^svc_/.test(provider)) {
-      // H134c: a custom service id (Settings > API Keys > Custom providers): same {text} result, via the streaming path.
+      // H134c: a visible service id (Settings > API Keys > Providers): same {text} result, via the streaming path.
       text = (await chatAdvanced({ provider, model, messages: list, temperature: o.temperature, maxTokens: o.maxTokens, signal: o.signal })).text;
     } else if (provider === 'gemini') {
       const key = await value('gemini'), contents = [], sys = [];
@@ -158,17 +149,7 @@
       j = await post(base + '/api/chat', body, {}, o.signal, 'Ollama');
       text = j.message && j.message.content;
     } else {
-      if (provider !== 'openai' && !Object.prototype.hasOwnProperty.call(PRESETS, provider)) {
-        throw new Error('Unsupported HubAPI provider. See hub/hubapi.readme.md.');
-      }
-      const preset = PRESETS[provider], label = preset ? preset[0] : 'OpenAI-compatible';
-      const key = await value(preset ? provider : 'openai_key');
-      const base = baseURL(preset ? preset[1] : (await value('openai_base', false)) || 'https://api.openai.com/v1');
-      const body = { model, messages: list, stream: false };
-      if (o.temperature !== undefined) body.temperature = o.temperature;
-      if (o.maxTokens !== undefined) body.max_tokens = o.maxTokens;
-      j = await post(base + '/chat/completions', body, { Authorization: 'Bearer ' + key }, o.signal, label);
-      text = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      throw new Error('Unsupported HubAPI provider. Use gemini, ollama, or a visible provider id (svc_…).');
     }
     if (typeof text !== 'string' || !text.trim()) throw new Error('Provider returned no text (possibly blocked or a non-text response).');
     return { text }; // No raw payload: avoids forwarding provider diagnostics that might echo a key.
@@ -205,7 +186,7 @@
     return { text: (r.fullTextAnnotation && r.fullTextAnnotation.text) || ((r.textAnnotations || [])[0] || {}).description || '',
       labels: (r.labelAnnotations || []).map((l) => ({ description: l.description || '', score: l.score || 0 })) };
   }
-  /* ---------------- H134c: custom services + advanced (streaming) calls ---------------- */
+  /* ---------------- H134c: visible providers + advanced (streaming) calls ---------------- */
   // The advanced path mirrors Agent's adapters (apps/lab/agent/app/models/gemini.js, openai.js, ollama.js, net.js)
   // so Agent can become a thin adapter: same request bodies, same internal (Ollama-style) message format, same result
   // fields (tool_calls, eval_count, prompt_eval_count, eval_duration, done_reason) plus a plain text / thinking / usage.
@@ -245,12 +226,12 @@
       const store = providerStore();
       const s = store && await store.secret(provider);
       if (!s) {
-        const e = fail('key', 'This custom service is not saved in this browser. Add it in Settings > API Keys > Custom providers.');
+        const e = fail('key', 'This provider is not saved in this browser. Add it in Settings > API Keys > Providers.');
         e.keyName = provider; e.openSettings = () => { try { store && store.open(''); } catch (_) { /* no Hub */ } };
         throw e;
       }
       const info = store.info ? store.info(provider) : null;
-      const label = (info && info.label) || 'Custom service';
+      const label = (info && info.label) || 'Provider';
       return { kind: s.type, base: baseURL(s.endpoint || (s.type === 'gemini' ? GEMINI : '')), key: s.key, label };
     }
     if (lower === 'custom') {
@@ -259,12 +240,7 @@
     }
     if (lower === 'gemini') return { kind: 'gemini', base: GEMINI, key: await keyed('gemini'), label: 'Gemini' };
     if (lower === 'ollama') return { kind: 'ollama', base: baseURL(await keyed('ollama_url')), key: '', label: 'Ollama' };
-    if (lower !== 'openai' && !Object.prototype.hasOwnProperty.call(PRESETS, lower)) {
-      throw fail('input', 'Unsupported HubAPI provider. Use a built-in name, a custom service id (svc_…) or "custom". See hub/hubapi.readme.md.');
-    }
-    const preset = PRESETS[lower];
-    return { kind: 'openai', key: await keyed(preset ? lower : 'openai_key'), label: preset ? preset[0] : 'OpenAI-compatible',
-      base: baseURL(preset ? preset[1] : (await value('openai_base', false)) || 'https://api.openai.com/v1') };
+    throw fail('input', 'Unsupported HubAPI provider. Add a visible provider in Settings > API Keys > Providers and use its svc_ id.');
   }
   async function keyed(name) {
     try { return await value(name); }

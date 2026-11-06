@@ -13,7 +13,6 @@
  *   HubKeys.has(name)          → boolean
  *   HubKeys.list()             → ['gemini', 'tavily', …] names only, never values
  *   HubKeys.open(name)         opens Settings → API Keys at that row (#keys/<name>)
- *   HubKeys.definition(name)  → visible/hidden known definition, or a generic custom-key one (H134d)
  *   HubKeys.onChange(fn)       fn({name, present}) on every change (this page or another tab /
  *                              frame, via the 'storage' event); name '' = several changed. Returns unsubscribe().
  *   HubKeys.KNOWN              [{name, label, kind, url, hint}] the four visible key definitions
@@ -30,8 +29,8 @@
  *   HubKeys.restoreBackup()    → count   puts the exact old values back (removes the ones that were new), clears
  *                                        the backup, fires onChange('', null) so Settings › API Keys repaints
  *   HubKeys.clearBackup()
- * Names: lowercase letters, digits, '_', '-', '.' (1–40). Known: tavily, gemini, openai_base,
- * openai_key, ollama_url, groq, openrouter, deepseek, xai (H28.1), gvision (H28.2), deepinfra (H111); anything else is a custom key. Standalone app fallback:
+ * H134e: only Tavily, Gemini, Ollama URL and Cloud Vision name a visible service.
+ * AI providers use HubProviders; old named slots are not read anywhere. Standalone app fallback:
  *   const k = window.top?.HubKeys ? await window.top.HubKeys.get('tavily') : localKey;
  * Readme: hub/keys.readme.md.
  */
@@ -46,29 +45,10 @@
     { name: 'ollama_url', label: 'Ollama URL', kind: 'url', url: 'https://ollama.com/download', hint: 'Local models, e.g. http://localhost:11434 (no key). Free: runs on your own computer.' },
     { name: 'gvision', label: 'Google Cloud Vision', kind: 'key', url: 'https://console.cloud.google.com/apis/credentials', hint: 'Image labels and text (OCR). Needs a billing account; first 1,000 units a month free.' },
   ];
-  // H134d: only the four supported stores above are visible. Keep definitions
-  // for old saved names: Agent can still read them and #keys/<name> can maintain
-  // them, but the generic Add provider form is now the normal route.
-  const HIDDEN = [
-    { name: 'openai_base', label: 'OpenAI-compatible base URL', kind: 'url', url: 'https://platform.openai.com/docs/api-reference', hint: 'Legacy saved value. Add provider is now the normal route.' },
-    { name: 'openai_key', label: 'OpenAI-compatible key', kind: 'key', url: 'https://platform.openai.com/api-keys', hint: 'Legacy saved value. Add provider is now the normal route.' },
-    { name: 'groq', label: 'Groq', kind: 'key', url: 'https://console.groq.com/keys', hint: 'Legacy saved value. Add provider is now the normal route.' },
-    { name: 'openrouter', label: 'OpenRouter', kind: 'key', url: 'https://openrouter.ai/settings/keys', hint: 'Legacy saved value. Add provider is now the normal route.' },
-    { name: 'deepseek', label: 'DeepSeek', kind: 'key', url: 'https://platform.deepseek.com/api_keys', hint: 'Legacy saved value. Add provider is now the normal route.' },
-    { name: 'xai', label: 'Grok API (xAI)', kind: 'key', url: 'https://console.x.ai', hint: 'Legacy saved value. Add provider is now the normal route.' },
-    { name: 'deepinfra', label: 'DeepInfra', kind: 'key', url: 'https://deepinfra.com/dash/api_keys', hint: 'Legacy saved value. Add provider is now the normal route.' },
-  ];
-  HIDDEN.forEach((d) => { d.usedBy = ['Agent']; d.hidden = true; });
-  // H134a: visible services read by Agent (tavily/gemini/ollama) and OCR/Vision
-  // (gvision). Caption for Nei and Transcribe keep their own Gemini field.
+  // H134e: no hidden provider-key definitions or fallbacks. Old provider keys
+  // are ignored: users re-enter them as visible HubProviders records.
   const USED_BY = { tavily: ['Agent'], gemini: ['Agent'], ollama_url: ['Agent'], gvision: ['OCR', 'Vision'] };
   KNOWN.forEach((d) => { d.usedBy = USED_BY[d.name] || []; });
-  const DEFINITIONS = {};
-  KNOWN.concat(HIDDEN).forEach((d) => { DEFINITIONS[d.name] = d; });
-  function definition(name) {
-    const n = norm(name);
-    return DEFINITIONS[n] || { name: n, label: n, kind: 'key', usedBy: [] };
-  }
   const listeners = new Set();
 
   function read() {
@@ -191,6 +171,6 @@
   listeners.add(() => { last = JSON.stringify(read()); });   // keep the diff base fresh after our own writes
 
   // window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL };   // (before H29.3)
-  window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, definition, STORE, SETTINGS_URL,
+  window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL,
     backupKeys, backupInfo, restoreBackup, clearBackup, UNDO };   // H29.3
 })();
