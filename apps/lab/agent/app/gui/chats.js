@@ -3,6 +3,7 @@
    (tap = switch; ⋯ / long-press / right-click = small menu: Pin / Unpin, Rename, Delete; pinned:true lives in the index). Phone: slide-over with a
    backdrop (💬 opens, tap outside / pick closes). >=960px: docked left pane, 💬 shows / hides it (agent.chatsPane).
    The open chat id is kept in localStorage 'agent.chat' so a reload resumes it. Title = first user message (until renamed).
+   AG27: Rename uses window.UiDialog.ask (Hub dialog when this page is framed; the same dialog standalone / file://).
    Each chat stores its provider + model; opening a chat switches to them (AG5: HR.models.setChat, the Settings default is
    untouched; picked() records a pick from the model chip; a new chat starts on the Settings default). Saves are debounced (HR.msgs.save -> dirty()). */
 HR.chats = (function () {
@@ -71,8 +72,31 @@ HR.chats = (function () {
     var c = rows.filter(function (r) { return r.id === id; })[0] || { id: id };
     meta = Object.assign({}, c); HR.msgs.set(l); setBase(id, c.updated, l.length); show(); useModel(c); close();   /* AG-F3 base */
   }
+  /* AG27: shared Hub dialog. Framed pages post hub-dialog and wait for hub-dialog-result.
+     Standalone / file:// draw that same dialog. Missing script → small in-app box. Never window.prompt. */
+  function askTitle(value) {
+    var D = window.UiDialog;
+    if (D && typeof D.ask === 'function') return D.ask('Rename chat', value || '', 'Rename');
+    return new Promise(function (done) {
+      var back = document.createElement('div'), box = document.createElement('div'), input = document.createElement('input'), ended = false;
+      var cancel = document.createElement('button'), ok = document.createElement('button');
+      back.className = 'ch-ask'; back.setAttribute('role', 'dialog'); back.setAttribute('aria-modal', 'true'); back.setAttribute('aria-label', 'Rename chat');
+      box.className = 'ch-ask-box'; input.className = 'inp'; input.type = 'text'; input.value = value || ''; input.setAttribute('aria-label', 'Chat name');
+      cancel.type = ok.type = 'button'; cancel.className = ok.className = 'hb'; cancel.textContent = 'Cancel'; ok.textContent = 'Rename';
+      function end(v) { if (ended) return; ended = true; document.removeEventListener('keydown', key, true); back.remove(); done(v); }
+      function key(e) {
+        if (e.key === 'Escape') { e.preventDefault(); end(null); }
+        else if (e.key === 'Enter' && !(e.target && e.target.tagName === 'BUTTON')) { e.preventDefault(); end(input.value); }
+      }
+      ok.onclick = function () { end(input.value); }; cancel.onclick = function () { end(null); };
+      back.addEventListener('pointerdown', function (e) { if (e.target === back) end(null); });
+      document.addEventListener('keydown', key, true);
+      box.append(input, cancel, ok); back.appendChild(box); document.body.appendChild(back); input.focus();
+    });
+  }
   async function rename(c) {
-    var t = prompt('Rename chat', c.title || ''); if (t == null) return; t = t.replace(/\s+/g, ' ').trim().slice(0, 80); if (!t) return;
+    // AG27 Legacy: var t = prompt('Rename chat', c.title || ''); if (t == null) return; t = t.replace(/\s+/g, ' ').trim().slice(0, 80); if (!t) return;
+    var t = await askTitle(c.title || ''); if (t == null) return; t = t.replace(/\s+/g, ' ').trim().slice(0, 80); if (!t) return;
     if (meta && meta.id === c.id) { meta.title = t; if (HR.msgs.all().length) { await flush(); return; } }
     var l = await HR.threads.load(c.id); if (!l) return;
     await HR.threads.save(Object.assign({}, c, { title: t }), l); refresh();
@@ -170,5 +194,5 @@ HR.chats = (function () {
     if (pick) { var l = await HR.threads.load(pick.id); if (l) { meta = Object.assign({}, pick); HR.msgs.set(l); setBase(pick.id, pick.updated, l.length); show(); useModel(pick); return; } }   /* AG-F3 base */
     meta = fresh(); HR.msgs.set([]); show();
   }
-  return { init: init, redraw: draw, rows: function () { return rows; }, id: function () { return meta ? meta.id : ''; }, dirty: dirty, flush: flush, newChat: newChat, open: open, picked: picked };
+  return { init: init, redraw: draw, rows: function () { return rows; }, id: function () { return meta ? meta.id : ''; }, dirty: dirty, flush: flush, newChat: newChat, open: open, picked: picked, rename: rename };
 })();

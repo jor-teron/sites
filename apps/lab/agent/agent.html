@@ -17,6 +17,7 @@
   AG15: 🖼 is a link to image.html, the Image page's own page (provider tabs Pollinations / DeepInfra / Ollama).
   AG24: visible Hub service matching; hidden company key slots removed.
   AG23: chat/model lists and web tools use HubAPI when its config fits; standalone fallback kept.
+  AG27: ✎ Rename uses UiDialog.ask (shared/dialog). The Hub draws it when framed; standalone and file:// use the same dialog.
   AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
@@ -33,6 +34,7 @@
   <link rel="stylesheet" href="ui/components.css">
   <link rel="stylesheet" href="ui/steps.css">
   <link rel="stylesheet" href="ui/chats.css">
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css">   <!-- AG27: Hub / standalone rename dialog -->
   <link rel="stylesheet" href="ui/settings.css">
   <link rel="stylesheet" href="ui/modelbar.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
@@ -204,6 +206,7 @@
 <script src="app/gui/browsercard.js"></script>
 <script src="app/gui/attach.js"></script>
 <script src="app/gui/chat.js"></script>
+<script src="../../../shared/dialog/dialog.js"></script>   <!-- AG27: window.UiDialog.ask; Hub bridge when framed -->
 <script src="app/gui/chats.js"></script>
 <script src="app/gui/chatsearch.js"></script>
 <script src="app/gui/meter.js"></script>
