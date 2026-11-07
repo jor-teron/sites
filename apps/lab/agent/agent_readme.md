@@ -57,7 +57,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/edit.js` — AG5 `HR.edit`: ✎ Edit / ↻ Retry / ⧉ Copy on bubbles (hover or tap)
 - `app/gui/meter.js` — AG5 `HR.meter`: token / context meter above the composer
 - `app/gui/usageview.js` — AG7 `HR.usageView`: Settings → Usage (today, this month, price fields for online models)
-- `app/gui/chats.js` — AG4 `HR.chats`: Chats drawer (new, switch, rename, delete), resume last chat, per-chat provider + model
+- `app/gui/chats.js` — AG4 `HR.chats`: Chats drawer (new, switch, rename, delete), resume last chat, per-chat provider + model. AG27 rename uses `UiDialog.ask` (the Hub dialog), not `window.prompt`
 - `app/gui/chatsearch.js` — AG8 `HR.chatSearch`: search box in the 💬 drawer (title + message text), snippet results, jump to the hit
 - `app/main.js` — `HR.notify` (Hub cards, local fallback) + boot
 - `helper/agent-helper.sh` — local bash helper (HR5), bash + socat or ncat, no Python
@@ -255,3 +255,25 @@ AG25 routed Gemini images on any Hub Gemini key. AG26 restores Chat's active-key
 check for images only. Original img_* adapters remain the local path under the
 same wrapper comments. Tests stay syntax/static/HTML-link and offline VM stubs;
 no browser or paid API calls.
+
+
+## AG27 — Hub dialog for chat rename
+
+✎ Rename in the Chats drawer calls `window.UiDialog.ask('Rename chat', current title, 'Rename')`
+(`shared/dialog/dialog.js`, H75). Inside the Hub that posts `{type:'hub-dialog', method:'ask'}`
+and waits for `hub-dialog-result`. Standalone and file:// draw that same dialog in the page
+(`UiDialog` local mode: parent is not a Hub dialog host). Cancel, Esc, or a backdrop click
+returns null and leaves the chat unchanged. An empty or whitespace-only name is still dropped.
+A confirmed name is still collapsed, trimmed, and cut to 80 characters, then saved on the open
+chat or via `HR.threads.save`, and the chat list refreshes. Delete still uses its own confirm.
+If the shared dialog script did not load, a small in-app box (Cancel / Rename) is used.
+`window.prompt` is not called. Offline cache remains agent-files; SW VER is agent-ag27,
+without URL version tags. Hub, `shared/`, system, phone, games and Learn are unchanged.
+
+### Legacy code notes — AG27
+
+AG4–AG26 used `prompt('Rename chat', title)` and then the same whitespace collapse, trim,
+80-character cut, empty-name skip, and save. That line is kept as a comment in
+`app/gui/chats.js`. AG27 only replaces the browser prompt with the async Hub dialog API.
+Tests are syntax/static checks plus an offline VM smoke of confirm, cancel, empty name,
+and the Hub `hub-dialog` ask/result exchange. No browser tests or paid API calls.

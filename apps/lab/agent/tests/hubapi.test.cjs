@@ -106,7 +106,7 @@ for p in base.glob('*.html'):
   const html = read('agent.html');
   assert.ok(html.indexOf('app/core/hubapi.js') < html.indexOf('app/models/registry.js'));
   for (const id of ['barFav', 'barModel', 'barProv']) assert.match(html, new RegExp('id="' + id + '"'));
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag26'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag27'/);
   assert.match(read('agent_sw.js'), /agent-files/);
 });
 
@@ -559,7 +559,7 @@ test('AG26 Hub requiredText plain Error maps to input without retry', async () =
   assert.equal(calls, 2); assert.equal(e.requests.length, 0);
 });
 test('AG26 static SW VER and readme note', () => {
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag26'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag27'/);
   assert.match(read('agent_readme.md'), /## AG26/);
   assert.match(read('app/core/hubapi.js'), /differing Agent-local key/);
 });
