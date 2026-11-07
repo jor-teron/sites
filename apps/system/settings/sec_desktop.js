@@ -188,6 +188,7 @@
         const b = brHub(), st = b && b.state();
         if (S.get('breakOn') !== '1') brStatus.textContent = 'Off. When on, the Hub locks for a short break after each work period. There is no Skip; it unlocks by itself.';
         else if (!st) brStatus.textContent = 'On. Open Settings from the Hub to see the time to the next break.';
+        else if (st.delayEndsIn > 0) brStatus.textContent = 'Save or close your work. The full break starts in ' + Math.ceil(st.delayEndsIn / 1000) + ' seconds.';
         else if (st.locked) brStatus.textContent = 'On a break now.';
         else if (st.nextBreakIn != null) brStatus.textContent = 'On. Next break in ' + Math.max(1, Math.ceil(st.nextBreakIn / 60000)) + ' min.';
         else brStatus.textContent = 'On.';
@@ -195,7 +196,7 @@
       const brSwitch = ui.switch('Computer break', 'Work, then the whole Hub locks for a break with a countdown. Other tabs and apps are not locked',
         S.get('breakOn') === '1', (v) => {
           const b = brHub();
-          if (!v && b && b.locked && b.locked()) { Settings.open('desktop/break'); return; }   // no turning off mid-break
+          if (!v && b && (b.canTurnOff ? !b.canTurnOff() : b.locked && b.locked())) { Settings.open('desktop/break'); return; }   // no turning off mid-break
           S.set('breakOn', v ? '1' : '');
           setTimeout(brPaint, 50);
         });
