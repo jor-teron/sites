@@ -2133,3 +2133,119 @@ assets. Current documentation separates HEX, Standalone Games and Learn.
 Parked or future, NOT shipped: NIX-G3, LRN-WK1, AoE Ages/ARQ1f fog, HEX 2D,
 AI for Osmos. Do not describe these plans as completed. All merged Games work
 listed above has no outstanding Push.
+
+==============================================================================
+== TEAM 3 WEEK CLOSE (Sun 1 Nov - Sat 7 Nov 2026, IST)
+==============================================================================
+Adds only what the earlier entries leave out. Already covered, not repeated
+here: the 1 Nov wrap-up (Hub H79-H86, Apps #262-#363, Phone PH2/PH4/PH5,
+Games NIX-G1/NIX-G2, ai-exp, OS.js), H108a and H108b (merge PR #416, 6 Nov),
+H134a-g, and the 6-7 Nov Games entry (Osmos, HEX, AoE ARQ1e). Entries marked
+(owner-reported) were reported by the people who own that area; nobody
+re-checked them on main for this note.
+Nov 2-5 IST: see README_technical_team2.txt. Its 3-4 Nov wrap-up was written
+with H135 and lists the merges it records, including H65 (#386), H104 (#388),
+H121 (#390), H122 (#395), H123 (#391), H124 (#393), H125 (#394), H126 (#409),
+H127 (#396), H129a-e, H132a+b (#407), H132c (#408), H133 (#410) and H135,
+plus other Apps and Games items in that note (PH14 #398, PH15 #403, PH16
+#405, PH19 #406 among them). Those listed entries are not copied here. The
+wrap-up does not print a PR number on its H135 line; the #415 merge (4 Nov)
+is titled h135-week-handover. This is a reference to that file, not proof
+that every PR from #371 through #415 is written up there. Two merges in the
+span are outside those merged lists: #381 (3 Nov; merge message "H120: shell
+cache bump 20261103b / hub-shell-v129") does not appear in the Team 2 file,
+and #382 (3 Nov; merge message "H119: SFTP network drives in Files
+(20261103c / hub-shell-v130)") is merged while that file still lists
+H119a/b/c under next week waiting. The waiting line is not treated as
+current coverage, and neither change is restated here. The wrap-up also says
+Team 1 shipped LRN-WK1, NIX-G1-G3, C4-1 and LIFE-1; that line was not
+re-checked.
+Testing: later in the week the default was syntax checks plus offline/mocked
+smoke tests. Browser checks happened only where the earlier entries record
+them (for example the 1 Nov Games load checks).
+
+-- Merged --
+H136  PR #440  7 Nov  merge 3731a6c3, build 20261107a, cache hub-shell-v152.
+      unavailable-id no longer leads to the false "another Hub" conclusion
+      on startup; the Hub keeps the saved 5-digit number and keeps retrying.
+      It still cannot tell who actually holds the number. Retries keep the
+      backoff at its last delay until the number registers or the user
+      pauses/stops, and the saved number is kept. A localStorage lease,
+      shared-link-host-lease (device, tab, number, time; refreshed every
+      5 s; cleared on pause/stop/destroy), makes a second page on the same
+      device wait while the lease is under 3 min old. New SharedLink 'busy'
+      event (same-device | unknown). Mesh ids and the public lobby 00000 are
+      unchanged. Test: shared/link/link_host_busy.test.js (mocked). Not run
+      on the live broker.
+H137  PR #441  7 Nov  merge 1bac85ba, build 20261107b, cache v153
+      (owner-reported). One "Give me 15 seconds" delay per break; break
+      deadlines are stored as absolute times and synced across tabs. Settings
+      cannot switch off a break that is already pending. It only blocks the
+      page; it does not lock the OS. Checks were mocked only. 0 GitHub check
+      runs on the PR, which is not a CI pass.
+H134g PR #437  6 Nov  merge 5eab0fd8 (detail in the H134g entry above).
+AG23  PR #427  84ef69d7  HubAPI chat/models/search adoption (42 smoke).
+AG24  PR #433  8ee68fe1  visible svc_ providers; hidden legacy keys removed
+      (48).
+AG25  PR #435  99511001  H134f image generation adopted (76).
+AG26  PR #436  5f1da1e0  Gemini local-key override + Hub error mapping (81).
+ZP1   PR #442  7 Nov  f83762de (commit 6d11094c). apps/tools/zip/zip.html plus
+      redirect; JSZip 3.10.1 vendored locally; creates, reads and extracts
+      zips in the browser (35 smoke). Limits: 200 files, 32 MiB per file,
+      64 MiB uncompressed, 48 MiB archive. No encrypted, split or other
+      archive formats. No catalog tile yet; adding it needs a Go.
+AG27  PR #443  7 Nov  922a1fe7 (commit 28266c26). Chat rename uses the Hub
+      prompt, with a standalone fallback (90 smoke).
+ai-exp v6  PR #417  6 Nov  b588ad51. Each new experiment writes to its own
+      logs/ folder; the old top-level logs are left alone. Includes the
+      flagless-v1 inference fix 8d63d9b. Mock help, run presets and
+      continue-legacy checks passed; no live providers.
+(AG23-AG26 merged 6 Nov. Apps and ai-exp items above are owner-reported.)
+
+-- Pending --
+No pending pushes were reported by the owners who contributed to this note.
+This is not a repository-wide audit. ai-exp v6.1 is planned and needs a fresh
+Go; it has not started.
+
+-- Parked / cancelled / not shipped --
+- DeepInfra "unreadable image": still reported after H134g. No end-to-end
+  fix verified.
+- Apps: PE1 cancelled (superseded). PH18, VNC2/3, AG22, NU1 and BS3b parked.
+  Little Worlds was discussed only; it is not a release.
+- Phone: PH3 APK id is reserved, nothing built. Message vs messages dock id
+  is unresolved and needs the catalog owner, a Go and a migration. Dock
+  centering is optional (no Go). Mesh group chat on the phone was discussed
+  only. The PH2 smoke run left 2 resource 404s; favicon is a guess, not
+  confirmed. The Phone history available for this note is limited and is not
+  a claim that no later Phone releases exist. PH14, PH15, PH16 and PH19 are
+  recorded as merged in the Team 2 file's 3-4 Nov wrap-up (PRs #398, #403,
+  #405 and #406).
+- ai-exp: browser/v86/Hub-terminal variant parked.
+- Games (closure status; Osmos, HEX and AoE ARQ1e feature notes are above):
+  NIX-G3 waiting on Code. NIX-G4 (Island Alpha / Hero Builder; keep, move or
+  remove not decided) parked. LRN-WK1 (Water Kingdom done button and icons),
+  AoE Ages and then ARQ1f fog are waiting on Code. No in-between HEX games
+  are planned. Parked: HEX 2D, Sound, Universe Sandbox lite, First Aid
+  visuals, 10-paddle Ping Pong. Osmos AI deferred (maybe last).
+- OS.js: no new status verified this week; see 1 Nov open questions (OS6
+  v86 Go, listAll, local build fix unconfirmed, OS5 launcher link).
+
+-- Care, Teams 1 and 2 --
+- Hub number: unavailable-id cannot tell who holds a number. A crashed
+  page's lease only stops counting after 3 min. Reload to get cache v152 or
+  later before judging the fix.
+- Breaks (H137): the 15 s delay can be used once per break and deadlines
+  survive a reload. It is a web page, not an OS lock. Checks were mocked
+  only; 0 GitHub check runs is not a CI pass.
+- ZIP: everything runs in the browser and the JSZip file is local; keep
+  the vendor file.
+- Phone: keep html/body transparent (Android WebView); /phone.html redirect
+  carries no ?v=; clearing app data erases prefs and notices.
+- ai-exp pacing (owner-reported): shared Gemini key ~15 RPM; v4/ai2ai 4.35 s,
+  others 5 s; at most 2 companions; uid0 authorship is inferred; solo gaps
+  are whole seconds.
+- Games: named entry pages and their index redirects use relative paths with
+  no ?v=. Standalone, Learn and HEX are separate. Vendor files are local
+  runtime dependencies. ARQ1f fog must stay fair to the AI.
+
+-- End of Team 3 week close --
