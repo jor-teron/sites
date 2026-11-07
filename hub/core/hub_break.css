@@ -39,3 +39,22 @@ html.hub-glass-solid #hub-break { background: rgba(20, 28, 48, 0.94); -webkit-ba
 }
 html.hub-motion-off #hub-break { animation: none; }
 @keyframes hub-break-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* H137: a non-modal save/close countdown; only this compact banner takes input. */
+#hub-break button, #hub-break-grace button {
+  font: inherit; color: inherit; background: transparent; border: 1px solid currentColor;
+  border-radius: 8px; padding: 10px 16px; cursor: pointer; touch-action: manipulation;
+}
+#hub-break button { margin-top: 18px; }
+#hub-break button[hidden], #hub-break-grace[hidden] { display: none; }
+#hub-break button:focus-visible, #hub-break-grace button:focus-visible {
+  outline: 3px solid #70b8ff; outline-offset: 3px;
+}
+#hub-break-grace {
+  position: fixed; bottom: 16px; right: 16px; z-index: 2147483647;
+  max-width: calc(100vw - 32px); box-sizing: border-box;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px;
+  border: 1px solid currentColor; border-radius: 12px;
+  background: #101827; color: #eef2f8; font: 16px system-ui, sans-serif;
+}
+html.hub-light #hub-break-grace { background: #eef2f8; color: #1b2333; }

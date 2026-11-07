@@ -2,7 +2,7 @@
  * Computer break (hub/core/hub_break.js), H65. A basic 25 / 5 timer: after Work length minutes of Hub
  * time a full-screen lock #hub-break covers the whole Hub (every window, app frame, the Hub bar, menus,
  * pop-ups) for Break length minutes, with a calm message, a big mm:ss countdown and a tip. There is no
- * Skip and no Snooze: it unlocks by itself when the countdown ends, and the next work period starts.
+ * Skip. H137 allows one 15-second save/close delay per break; the full break follows it.
  * A webpage can only lock itself: other tabs and other apps on the computer stay usable.
  *
  * While locked: the overlay sits at the top z-index and takes every pointer / touch / wheel / right-click;
@@ -20,7 +20,9 @@
  *   hub-break.breakStart ms when the current work period began               this device only (never synced)
  *   hub-break.breakEnd   ms when the running break ends ('' = no break)     this device only (never synced)
  *   hub-break.breakSeen  ms of the last 'Hub open' mark, every ~10 s (gap check after a close / sleep)
- * (the three hub-break.* keys sit outside 'sites-hub.' on purpose: no profile, no sync, no HubPrefs wake-ups)
+ *   hub-break.breakDuration full duration of the current break, in ms
+ *   hub-break.delay     JSON {id: original breakEnd, until: grace deadline, duration: full break ms}
+ * (the hub-break.* keys sit outside 'sites-hub.' on purpose: no profile, no sync, no HubPrefs wake-ups)
  * A reload during a break restores the lock with the time left (breakEnd); the work timer survives
  * reloads (breakStart). Turning the setting off is refused while a break runs; if it arrives anyway
  * (another tab / a synced profile), the running break still finishes, then the timer stops.
@@ -55,7 +57,54 @@
   ];
 
   /* ---------- overlay ---------- */
-  let el = null, timeEl = null, tipEl = null, isLocked = false, mo = null;
+  let el = null, timeEl = null, tipEl = null, delayButton = null, banner = null, graceTime = null;
+  let isLocked = false, mo = null, priorFocus = null;
+  const GRACE = 15000;
+  function delayState() {
+    try {
+      const d = JSON.parse(get('delay'));
+      return d && d.id === num('breakEnd') && Number.isFinite(d.until) && d.until > 0 &&
+        Number.isFinite(d.duration) && d.duration > 0 ? d : null;
+    } catch (_) { return null; }
+  }
+  function timing() {
+    const d = delayState(), end = num('breakEnd');
+    return { delay: d, end: d ? d.until + d.duration : end,
+      grace: !!d && Date.now() < d.until };
+  }
+  function requestDelay() {
+    const end = num('breakEnd'), now = Date.now();
+    if (!end || end <= now || delayState()) return;
+    put('delay', JSON.stringify({ id: end, until: now + GRACE,
+      duration: num('breakDuration') || len() * MIN }));
+    if (!delayState()) return; // blocked storage: do not grant an unpersisted allowance
+    tick();
+  }
+  function lockNow() {
+    const d = delayState();
+    if (!d || Date.now() >= d.until) { tick(); return; }
+    d.until = Date.now();
+    put('delay', JSON.stringify(d));
+    tick();
+  }
+  function showGrace(t) {
+    unlock();
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'hub-break-grace';
+      banner.setAttribute('role', 'region');
+      banner.setAttribute('aria-label', 'Save or close your work before the break');
+      graceTime = document.createElement('span');
+      graceTime.setAttribute('role', 'timer');
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = 'Lock now';
+      button.addEventListener('click', lockNow);
+      banner.append(graceTime, button);
+      (document.body || root).appendChild(banner);
+    }
+    banner.hidden = false;
+    graceTime.textContent = 'Save or close your work. Break in ' + Math.ceil((t.delay.until - Date.now()) / 1000) + ' seconds.';
+  }
   const inerted = new Set();
   function build() {
     if (el) return el;
@@ -83,12 +132,16 @@
     const sub = document.createElement('p');
     sub.className = 'hub-break-sub';
     sub.textContent = 'The Hub unlocks by itself when the timer ends.';
-    box.append(ico, h, timeEl, tipEl, sub);
+    delayButton = document.createElement('button');
+    delayButton.type = 'button';
+    delayButton.textContent = 'Give me 15 seconds';
+    delayButton.addEventListener('click', requestDelay);
+    box.append(ico, h, timeEl, tipEl, sub, delayButton);
     el.appendChild(box);
     // every pointer / touch / wheel / menu event that lands on the lock stops here
     ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'dblclick', 'auxclick', 'contextmenu',
       'touchstart', 'touchmove', 'touchend', 'wheel', 'dragstart', 'selectstart'].forEach((t) =>
-      el.addEventListener(t, (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false }));
+      el.addEventListener(t, (e) => { if (e.target === delayButton) return; if (e.cancelable) e.preventDefault(); e.stopPropagation(); }, { capture: true, passive: false }));
     return el;
   }
   function mount() {
@@ -111,6 +164,10 @@
   /* keys: window capture runs before every other listener (document / element ones and the loader's) */
   function stopKey(e) {
     if (!isLocked) return;
+    if (e.target === delayButton && !delayButton.hidden && ['Tab', 'Enter', ' '].includes(e.key)) {
+      if (e.key === 'Tab') e.preventDefault(); // single focusable control
+      e.stopImmediatePropagation(); return;
+    }
     e.preventDefault();
     e.stopImmediatePropagation();
   }
@@ -118,7 +175,7 @@
   function grab() {
     if (!isLocked || !el) return;
     const a = document.activeElement;
-    if (a !== el) { try { if (a && a.blur) a.blur(); } catch (_) { /* ignore */ } try { el.focus({ preventScroll: true }); } catch (_) { el.focus(); } }
+    if (a !== el && (a !== delayButton || delayButton.hidden)) { try { if (a && a.blur) a.blur(); } catch (_) { /* ignore */ } try { (delayButton.hidden ? el : delayButton).focus({ preventScroll: true }); } catch (_) { el.focus(); } }
   }
   document.addEventListener('focusin', (e) => { if (isLocked && e.target !== el) grab(); }, true);
   window.addEventListener('blur', () => { if (isLocked) setTimeout(grab, 0); });   // focus went into an app iframe
@@ -131,7 +188,10 @@
   };
   function lock(end) {
     build();
+    if (banner) banner.hidden = true;
+    delayButton.hidden = !!delayState();
     if (!isLocked) {
+      priorFocus = document.activeElement;
       isLocked = true;
       tipEl.textContent = TIPS[Math.floor(Math.random() * TIPS.length)];
       el.hidden = false;
@@ -155,13 +215,17 @@
     setInert(false);
     if (el) { el.hidden = true; if (document.activeElement === el) el.blur(); }
     root.classList.remove('hub-break-on');
+    if (priorFocus && priorFocus.isConnected && priorFocus.focus) priorFocus.focus({ preventScroll: true });
+    priorFocus = null;
   }
 
   /* ---------- timer ---------- */
   let timer = 0;
   function tick() {
     const now = Date.now();
-    const end = num('breakEnd');
+    const t = timing(), end = t.end;
+    if (t.grace) { showGrace(t); seenMark(now); return; }
+    if (banner) banner.hidden = true;
     if (end && now < end) { lock(end); seenMark(now); return; }
     if (end) {   // the break is over: next work period
       put('breakEnd', '');
@@ -179,6 +243,8 @@
   function seenMark(now) { if (now - num('breakSeen') >= SEEN_EVERY) put('breakSeen', now); }
   function startBreak(ms) {
     const now = Date.now();
+    if (num('breakEnd') && Date.now() < timing().end) { tick(); return; }
+    put('breakDuration', ms);
     put('breakEnd', now + ms);
     put('breakStart', '');
     put('breakSeen', now);
@@ -190,19 +256,20 @@
   function apply() {
     if (on() || num('breakEnd')) { ensureTimer(); tick(); } else { stopTimer(); unlock(); put('breakStart', ''); put('breakSeen', ''); }
   }
-  function locked() { const e = num('breakEnd'); return !!e && Date.now() < e; }
+  function locked() { const t = timing(); return !t.grace && !!t.end && Date.now() < t.end; }
   function state() {
-    const now = Date.now(), s = num('breakStart'), e = num('breakEnd');
+    const now = Date.now(), s = num('breakStart'), t = timing(), e = t.end;
     return { on: on(), work: work(), len: len(), locked: locked(),
       breakEndsIn: e && now < e ? e - now : 0,
+      delayEndsIn: t.grace ? t.delay.until - now : 0, delayUsed: !!t.delay,
       nextBreakIn: on() && !locked() && s ? Math.max(0, s + work() * MIN - now) : null };
   }
 
-  window.HubBreak = { apply, state, locked, canTurnOff: () => !locked(), work, len,
+  window.HubBreak = { apply, state, locked, canTurnOff: () => !(num('breakEnd') && Date.now() < timing().end), work, len,
     start: (sec) => startBreak(sec > 0 ? sec * 1000 : len() * MIN) };
   apply();   // at load: a reload during a break locks again at once
   // settings from Settings / another tab / a synced profile, or a break started / ended by another Hub tab
   // (not breakStart / breakSeen: every open tab works those out itself, so tabs never ping-pong)
-  window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf(P + 'break') === 0 || e.key === S + 'breakEnd') apply(); });
+  window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf(P + 'break') === 0 || e.key === S + 'breakEnd' || e.key === S + 'delay') apply(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) apply(); });
 })();
