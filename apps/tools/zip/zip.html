@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<!-- ZIP ZP1. First release: no earlier page in this folder. Local create/open only. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>ZIP ZP1</title>
+  <link rel="stylesheet" href="zip.css">
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('sites-hub.theme') || '';
+        var dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) { /* private mode */ }
+    })();
+  </script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>ZIP <span>ZP1</span></h1>
+    <p>Create or open a ZIP on this device. Files stay in the browser.</p>
+  </header>
+  <div class="tabs" role="tablist">
+    <button type="button" id="tab-new" role="tab" aria-selected="true">New ZIP</button>
+    <button type="button" id="tab-open" role="tab" aria-selected="false">Open ZIP</button>
+  </div>
+  <section id="pane-new" class="pane">
+    <div id="drop-new" class="drop">
+      <p>Drop files here, or choose them.</p>
+      <button type="button" id="pick">Add files</button>
+      <input id="pick-in" type="file" multiple hidden>
+    </div>
+    <ul id="new-list" class="list"></ul>
+    <div class="bar">
+      <label>Name <input id="zip-name" value="archive.zip" maxlength="80" autocomplete="off"></label>
+      <button type="button" id="clear-new">Clear</button>
+      <button type="button" id="make" class="pri">Download ZIP</button>
+    </div>
+  </section>
+  <section id="pane-open" class="pane" hidden>
+    <div id="drop-open" class="drop">
+      <p>Drop a .zip here, or choose one.</p>
+      <button type="button" id="open-btn">Open ZIP</button>
+      <input id="open-in" type="file" accept=".zip,application/zip" hidden>
+    </div>
+    <ul id="open-list" class="list"></ul>
+    <div class="bar">
+      <button type="button" id="close-zip">Close</button>
+      <button type="button" id="extract-all" class="pri">Extract all</button>
+    </div>
+  </section>
+  <p id="status" role="status"></p>
+</div>
+<div id="dialog" hidden>
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+    <h2 id="dlg-title"></h2>
+    <p id="dlg-body"></p>
+    <div class="row">
+      <button type="button" id="dlg-no">Cancel</button>
+      <button type="button" id="dlg-yes" class="pri">OK</button>
+    </div>
+  </div>
+</div>
+<script src="vendor/jszip.min.js"></script>
+<script src="zip_core.js"></script>
+<script src="zip_ui.js"></script>
+</body>
+</html>
