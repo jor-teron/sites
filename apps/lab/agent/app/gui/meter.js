@@ -3,7 +3,8 @@
    kept on the assistant message as usage {p, o}) plus ~chars/4 of anything added after it; with no real counts the whole
    history (+ system prompt) is estimated as chars/4 and shown with "≈". Max = the model's context from the provider
    (Ollama /api/show context_length, Gemini inputTokenLimit, OpenRouter / Groq context_length / context_window), else
-   Settings → Context size (default 8192). Amber from 75 %, red from 90 % with a "start a new chat" hint (tap = ＋ New chat).
+   Settings → Context size (AG28 default 128000 when none is saved; a saved size is kept). Provider-reported context still wins.
+   Amber from 75 %, red from 90 % with a "start a new chat" hint (tap = ＋ New chat).
    Settings → Display → Token meter (default On). */
 HR.meter = (function () {
   var box, fill, text, ctx = {}, asking = {};

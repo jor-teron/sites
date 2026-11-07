@@ -1,11 +1,13 @@
 /* Agent — app/core/loop.js: the ONE agent loop (HR2).
    run(o): send history (+ tool schemas) to the model -> if it returns tool_calls, run each through HR.tools,
-   append role 'tool' results -> repeat until a reply without tool calls, the step limit (o.maxSteps model calls), or Stop.
+   append role 'tool' results -> repeat until a reply without tool calls, the step limit (o.maxSteps model calls; 0 = no limit), or Stop.
    o = {adapter (HR.models, HR6), cfg {provider, base, key}, model, think, signal, maxSteps, useTools, system() -> Promise<string|''>, ui}
    ui.modelStart(req) -> {delta(c,th), done(res) -> assistant msg, stopped() -> partial msg|null, fail(e, retrying)}
    ui.toolStart({name,args}) -> {done(ok, text, ms, toolMsg), live?(text)} (AG7: ctx.live streams shell output; ctx.undo(info) from
    write_file lands on the tool message as .undo); ui.note(text); ui.approve(info) -> Promise<boolean>.
-   'does not support tools' -> one retry without tools (noted). Resolves {status:'ok'|'stop'|'limit'}; other errors reject. */
+   'does not support tools' -> one retry without tools (noted). Resolves {status:'ok'|'stop'|'limit'}; other errors reject.
+   AG28: a positive maxSteps stops after that many model calls (31, 99, 999, …). 0 does not stop the loop and is not
+   treated as 30. Stop, abort and provider errors still halt. No extra automatic retry was added. */
 HR.loop = (function () {
   var CAP = 20000;
   function parseArgs(a) { if (typeof a !== 'string') return a || {}; try { return JSON.parse(a); } catch (e) { return { _raw: a }; } }
@@ -13,7 +15,8 @@ HR.loop = (function () {
     var noTools = !o.useTools, calls = 0, retried = false;
     for (;;) {
       if (o.signal.aborted) return { status: 'stop' };
-      if (calls >= o.maxSteps) { o.ui.note('Step limit reached (' + o.maxSteps + ' model calls). Raise it in Settings ⚙.'); return { status: 'limit' }; }
+      /* AG28 Legacy: if (calls >= o.maxSteps) { o.ui.note('Step limit reached (' + o.maxSteps + ' model calls). Raise it in Settings ⚙.'); return { status: 'limit' }; } */
+      if (o.maxSteps > 0 && calls >= o.maxSteps) { o.ui.note('Step limit reached (' + o.maxSteps + ' model calls). Raise it in Settings ⚙.'); return { status: 'limit' }; }
       calls++;
       var schemas = noTools ? [] : HR.tools.schemas();
       var sys = o.system ? await o.system() : '';
