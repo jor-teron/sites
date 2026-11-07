@@ -13,7 +13,7 @@ One PeerJS connection layer for every app. Plain JS, script tags, no build.
 ## Behaviour rules
 - PeerJS default config only. Never set `iceServers`: the default list carries the PeerJS TURN relay (needed behind CGNAT / mobile data).
 - Host peer id = `prefix + code` (Hub: `jtsites-`, same as the Gamepad). New codes are 5 digits (H83: `SharedLink.CODE_LEN`, lobby `SharedLink.LOBBY` = 00000, `SharedLinkDevices.code()` = this device's 5-digit number); saved 4-digit host codes are regenerated; saved older 6-letter codes keep working.
-- Code survives reload (host: caller's key, Hub uses `jtsites-hub-ctrl-code`; join: `shared-link-join-code`). `unavailable-id` after a reload → same code retried with backoff; network trouble → backoff, never a silent new code.
+- Code survives reload (host: caller's key, Hub uses its saved device number since H92, `shared-link-device-code`; join: `shared-link-join-code`). `unavailable-id` retries the same code with backoff and, since H136, does not stop or emit `taken`: the broker does not say who holds the id. A same-browser page that already opened this number publishes `shared-link-host-lease` (refreshed while its peer exists, removed on `pause` / `stop` / `destroy`, ignored after `SharedLink.HOST_LEASE_MS` = 3 minutes without a refresh). Other pages on this device wait (`busy` `{kind:'same-device'}`) and do not open another peer. With no fresh same-device lease, retries continue and, after the old 10-try budget, one `busy` `{kind:'unknown'}` fires. The saved number is not changed. Network trouble → backoff, never a silent new code. Number-only retries keep a live Gamepad alias peer.
 - Only a manual Disconnect (`stop()`) sends `bye` and ends the link. `pause()` (page hide) drops the peer quietly so devices reconnect.
 - Connections with `metadata.kind === 'link'` speak SharedLink; others (old Gamepad, `kind:'files'`) go to `onLegacy(conn)` and are still listed as devices.
 
@@ -23,7 +23,8 @@ SharedLink.loadPeer()                         // Promise<Peer>
 SharedLink.host({prefix, code, codeKey, onLegacy})
 SharedLink.join({prefix, code})
 SharedLink.newCode(); SharedLink.stop(); SharedLink.pause()
-SharedLink.on('status'|'devices'|'message'|'file'|'progress'|'open'|'close'|'bye', fn)
+SharedLink.on('status'|'devices'|'message'|'file'|'progress'|'open'|'close'|'bye'|'busy', fn)
+  // H136 busy: {code, kind:'same-device'|'unknown'} — unavailable-id, holder not claimed
 SharedLink.send({type:'chat', text}, to?)     // host relays `to`
 SharedLink.sendFile(file, {app, to, onProgress})
 SharedLink.code / role / devices / connected / live

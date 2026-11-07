@@ -313,7 +313,13 @@
   function boot() {
     var S = L();
     if (S) ['status', 'open', 'close', 'devices', 'taken', 'notfound'].forEach(function (ev) { S.on(ev, paint); });
-    if (S) S.on('taken', function (c) { if (mode() === 'host') toast('Number ' + c + ' is in use (is the Hub open on this device?)'); });
+    // H136: do not say another device owns the number. Registration keeps going, or waits on this device.
+    // (before H136) a 'taken' toast treated a busy id as maybe another Hub on this device.
+    if (S) S.on('busy', function (info) {
+      if (!info || mode() !== 'host') return;
+      if (info.kind === 'same-device') toast('Number ' + info.code + ' is open in another window on this device. This phone will use it when that window closes.');
+      else toast('Number ' + info.code + ' is still registered. That does not show who has it. This phone keeps the same number and keeps trying.');
+    });
     var H = M();
     if (H) ['status', 'roster', 'lobby', 'peers'].forEach(function (ev) { try { H.on(ev, paint); } catch (_) { /* older */ } });
     addEventListener('hub-mesh-invites', paint);

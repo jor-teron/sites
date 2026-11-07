@@ -488,7 +488,7 @@
   /* H46: Device name (was the editable box in the Hub's 🎮 Devices pop-up) */
   const NAME_KEY = 'shared-link-device-name';
   /* H93: choose your own number (only in Settings > Devices). 5 digits, not starting with 0 (lobby 00000), a confirm
-     first; a number taken by another Hub (SharedLink 'taken') shows here and is never swapped for another. */
+     first; H136: a busy number (SharedLink 'busy') is explained here and is never swapped for another. */
   const NUM_RE = /^[1-9]\d{4}$/;
   function checkNumber(v) { return NUM_RE.test(String(v || '')) ? '' : 'Use exactly 5 digits, not starting with 0'; }
   function numberForm(D, num, hub) {
@@ -520,9 +520,14 @@
     });
     const L = hub && hub.SharedLink;
     if (L && L.on) {
-      const onTaken = (c) => { if (String(c) === D.code()) { say('Number ' + c + ' is in use by another Hub. Pick another one.'); show(true); } };
-      L.on('taken', onTaken);
-      if (L.off) window.addEventListener('pagehide', () => L.off('taken', onTaken));
+      // (before H136) onTaken claimed another Hub had the number and opened this form.
+      const onBusy = (info) => {
+        if (!info || String(info.code) !== D.code()) return;
+        if (info.kind === 'same-device') say('Number ' + info.code + ' is open in another window on this device. The saved number is not changed.');
+        else say('Number ' + info.code + ' is still registered. That does not show who has it. The Hub keeps this number and keeps trying.');
+      };
+      L.on('busy', onBusy);
+      if (L.off) window.addEventListener('pagehide', () => L.off('busy', onBusy));
     }
     return wrap;
   }

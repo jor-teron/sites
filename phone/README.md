@@ -230,7 +230,7 @@ PH5 on (older saves get the PH5 home and dock once). PH6: page 1 keeps at most 1
   fresh backoff; like `hub_remote.js` H25 a joined phone stops retrying after 5 min without the Hub
   (`SharedLink.pause()`, code kept) until the next wake / tap. `pagehide` = quiet `pause()`.
 - **Limits:** tested headless only (box Chrome blocks WebRTC; no real two-device link). A phone and `desktop/desktop.html` open in
-  the same browser both host the same number → 'taken' (toast). `pad:1` (like hub_remote.js) means a desktop Hub may
+  the same browser both use the same number. Before H136 the second host showed a 'taken' toast. H136: that page waits on this device's lease and does not say another device owns the number (`shared/link/link_core.js`). `pad:1` (like hub_remote.js) means a desktop Hub may
   treat the phone as its Gamepad controller. `phone_connect.js` and `vendor/jsQR.js` are not in the service worker's
   SHELL list yet (cached at runtime after the first online load).
 - Release name `PH14` (`RELEASE`, `PhoneConnect.VERSION`).

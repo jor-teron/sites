@@ -31,8 +31,9 @@
  * is joined. On a phone remote Hub (window.__hubRemote, hub_role.js) this file does not host:
  * hub_remote.js joins instead; this file still announces Connect QR and opens the Devices
  * popover (name + connected list) from the 🎮 icon. The Gamepad itself is the home tile.
- * If the broker still holds the id from the previous page ('unavailable-id'), registration
- * is retried with backoff (the code is never switched silently).
+ * If the broker still holds the id ('unavailable-id'), registration keeps retrying with the
+ * same number (H136). That error does not say who holds it. Another window on this device
+ * is waited out instead. The number is never switched silently.
  */
 (function () {
   'use strict';
@@ -43,7 +44,8 @@
   const CODE_RE = /^\d{5}$/;                            // H83: 5 digits only; older letter / 4-digit codes are replaced
   /* H92: the Hub's link code IS its 5-digit number (SharedLinkDevices.code(), HubLine's number). The Gamepad pairs on a
      separate private pad code ('hub-pad-code', a 2nd peer id via SharedLink.host alias) with its own "New pad code".
-     First run: the old pairing code (CODE_KEY) becomes the pad code. Number taken → HubAttention card, never silent. */
+     First run: the old pairing code (CODE_KEY) becomes the pad code. H136: a busy number tells the truth
+     (still registered, or already open on this device) and does not change the saved number. */
   const PAD_KEY = 'hub-pad-code';
   let padCode = '';
   // Retry / backoff lives in shared/link/link_core.js now.
@@ -603,16 +605,22 @@
       // A pad that just (re)joined is the controller even before its first key.
       SharedLink._targets(id).forEach((c) => { if (c.metadata && c.metadata.pad && c.peer === id) attachConn(c, true); });
     });
-    // H92: the number is taken by another Hub (after link_core's retries): ask, never change it silently
-    SharedLink.on('taken', (c) => {
-      if (c !== code) return;
-      const D = window.SharedLinkDevices;
-      const again = () => (SharedLink.rehost ? SharedLink.rehost() : startPairing());
-      if (!window.HubAttention || !HubAttention.ask) { setStatus('Number ' + c + ' is in use by another Hub'); return; }
-      HubAttention.ask({ id: 'hub-number-taken', title: 'Number ' + c + ' is in use', text: 'Another Hub is using this number, so phones and Messages cannot reach this Hub. Pick a new number (people must use the new one), or retry.', ok: 'Pick a new number', no: 'Retry' }, (v) => {
-        // if (v === true && D && D.setCode) { let n = c; while (n === c) n = String(10000 + Math.floor(Math.random() * 90000)); D.setCode(n); }   (H92)
-        if (v === true) { if (window.HubCtx && HubCtx.openApp) HubCtx.openApp(HubCtx.SETTINGS, { hash: 'devices' }); else setStatus('Change your number in Settings > Devices'); }   // H93: only in Settings, never random
-        else if (v === false) again();
+    // H136: unavailable-id names no owner. 'busy' is once per situation; registration already continues
+    // or is waiting on another window of this device. The saved number is not changed here.
+    // (before H136) the 'taken' card treated a busy id as another Hub and offered a new number.
+    SharedLink.on('busy', (info) => {
+      if (!info || info.code !== code) return;
+      const same = info.kind === 'same-device';
+      const title = same ? 'Number ' + info.code + ' is open on this device' : 'Number ' + info.code + ' is still registered';
+      const text = same
+        ? 'Another window of this Hub already has this number. This window will use it when that one closes. The saved number is not changed.'
+        : 'The network still has this number. That does not show who has it — often a previous session of this Hub. This Hub keeps trying with the same number. Change it only in Settings if you want a different one.';
+      if (!window.HubAttention || !HubAttention.ask) { setStatus(title); return; }
+      HubAttention.ask({ id: 'hub-number-busy', title: title, text: text, ok: same ? 'OK' : 'Keep trying', no: same ? 'Close' : 'Change number' }, (v) => {
+        if (!same && v === false) {
+          if (window.HubCtx && HubCtx.openApp) HubCtx.openApp(HubCtx.SETTINGS, { hash: 'devices' });
+          else setStatus('Change your number in Settings > Devices');
+        }
       });
     });
     SharedLink.on('status', (text, state) => {
