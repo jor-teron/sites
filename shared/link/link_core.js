@@ -5,10 +5,11 @@
   - PEERJS_URL is the ONE place PeerJS is pinned; loadPeer() injects it when
     window.Peer is missing. PeerJS default config only (no iceServers): the
     default list includes the PeerJS TURN relay, needed behind CGNAT.
-  - host({prefix, code, codeKey, onLegacy, alias}): alias (H92) = private Gamepad pad code on a 2nd peer id;
-    a code still taken after the retries emits 'taken'(code). Registers prefix + code and keeps
-    it across reloads (code in localStorage), with unavailable-id / network
-    backoff. Connections with metadata.kind 'link' speak the SharedLink
+  - host({prefix, code, codeKey, onLegacy, alias}): alias (H92) = private Gamepad pad code on a 2nd peer id.
+    H136: unavailable-id does not mean another device owns the number. The saved code is kept and registration
+    keeps retrying (the old 10-try stop is gone). A same-browser page that holds this number (local lease)
+    makes this page wait, with no further broker registrations, until that page lets go. Connections with
+    metadata.kind 'link' speak the SharedLink
     protocol; anything else (old Gamepad, kind 'files') goes to onLegacy(conn).
   - join({prefix, code, meta}): phone side (meta = extra connection metadata), reconnects with backoff until leave().
   Wire protocol (JSON objects, key t): see README.md. Files: link_files.js.
@@ -120,20 +121,111 @@
     hostConn: null,        // join role: the conn to the host
     acked: false,          // join role: host answered 'ready' on the current conn
     devices: [],           // last known list [{id,name,online}]
-    opts: {}
+    opts: {},
+    hold: '', noted: '', beat: 0, aliasCode: ''   // H136
   };
 
   function status(text, state) { S.status = text; emit('status', text, state || ''); }
 
-  function destroy() {
+  /* H136: same-browser lease for the host number. Not a sites-hub.* key (profile / H29 sync never copy it).
+     The holding page refreshes it while its peer exists and removes it on pause / stop / destroy.
+     Other pages on this device wait instead of opening another peer. A lease with no refresh for
+     LEASE_MS is ignored (the page died without clearing it); this is our own heartbeat, not a broker timeout. */
+  var LEASE_KEY = 'shared-link-host-lease';
+  var LEASE_MS = 3 * 60 * 1000, LEASE_BEAT_MS = 5000, HOLD_POLL_MS = 2000;
+  var TAB_KEY = 'shared-link-host-tab';
+  var tabId = '';
+  function myTab() {
+    if (tabId) return tabId;
+    try { tabId = sessionStorage.getItem(TAB_KEY) || ''; } catch (_) { tabId = ''; }
+    if (!tabId) {
+      tabId = 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      try { sessionStorage.setItem(TAB_KEY, tabId); } catch (_) { /* private */ }
+    }
+    return tabId;
+  }
+  function myDev() {
+    try { return window.SharedLinkDevices && SharedLinkDevices.id ? SharedLinkDevices.id() : ''; } catch (_) { return ''; }
+  }
+  function isOwnDev(id) {
+    try {
+      var D = window.SharedLinkDevices;
+      if (D && D.isMe) return !!D.isMe(id);
+      if (D && D.id) return id === D.id();
+    } catch (_) { /* no devices */ }
+    return false;
+  }
+  function readLease() {
+    try {
+      var o = JSON.parse(localStorage.getItem(LEASE_KEY) || 'null');
+      if (!o || typeof o !== 'object') return null;
+      if (typeof o.code !== 'string' || typeof o.tab !== 'string' || typeof o.id !== 'string' || typeof o.at !== 'number') return null;
+      return o;
+    } catch (_) { return null; }
+  }
+  function foreignLease() {
+    var o = readLease();
+    if (!o || o.tab === myTab() || o.code !== String(S.code || '')) return null;
+    var now = Date.now();
+    if (!(o.at <= now + 5000 && now - o.at < LEASE_MS)) return null;
+    if (!isOwnDev(o.id)) return null;
+    return o;
+  }
+  function writeLease() {
+    if (S.role !== 'host' || !S.code) return;
+    var dev = myDev();
+    if (!dev) return;
+    try { localStorage.setItem(LEASE_KEY, JSON.stringify({ v: 1, id: dev, tab: myTab(), code: String(S.code), at: Date.now() })); } catch (_) { /* blocked */ }
+  }
+  function stopBeat() { if (S.beat) { clearInterval(S.beat); S.beat = 0; } }
+  function clearLease() {
+    stopBeat();
+    var o = readLease();
+    if (o && o.tab === myTab()) { try { localStorage.removeItem(LEASE_KEY); } catch (_) { /* blocked */ } }
+  }
+  function startBeat() {
+    stopBeat();
+    writeLease();
+    S.beat = setInterval(function () {
+      if (S.role !== 'host' || !S.peer || S.peer.destroyed) { stopBeat(); return; }
+      writeLease();
+    }, LEASE_BEAT_MS);
+  }
+  function noteBusy(kind) {
+    var code = S.code;
+    var text = kind === 'same-device'
+      ? 'Number ' + code + ' is open in another window on this device'
+      : 'Number ' + code + ' is still registered — still trying';
+    status(text, kind === 'same-device' ? 'same-device' : 'retry');
+    if (S.noted === kind) return;
+    S.noted = kind;
+    emit('busy', { code: code, kind: kind });   // H136: not 'taken' — unavailable-id names no owner
+  }
+  function watchHold() {
+    if (S.hold !== 'same-device' || S.role !== 'host') return;
+    if (foreignLease()) { S.timer = setTimeout(watchHold, HOLD_POLL_MS); return; }
+    S.hold = '';
+    if (S.noted === 'same-device') S.noted = '';
+    startHost(true);
+  }
+  function beginHold() {
+    destroy();
+    S.hold = 'same-device';
+    noteBusy('same-device');
+    S.timer = setTimeout(watchHold, HOLD_POLL_MS);
+  }
+
+  function destroy(keepAlias) {
     S.acked = false;
     S.hostConn = null;   // its close event must not schedule a rejoin after pause()
+    S.hold = '';
     clearTimeout(S.timer);
     S.timer = 0;
+    clearLease();   // H136
     var p = S.peer;
     S.peer = null;
     try { if (p) p.destroy(); } catch (_) { /* gone */ }
-    killAlias();   // H92
+    if (!keepAlias) killAlias();   // H92; H136: a number-only retry keeps a live pad alias
   }
 
   /* ---------- host ---------- */
@@ -217,15 +309,22 @@
   }
 
   function host(opts) {
-    S.role = 'host';
-    S.opts = opts || {};
-    S.prefix = S.opts.prefix || 'jtsites-';
-    var key = S.opts.codeKey;
-    // S.code = S.opts.code || (key && load(key)) || randomCode('');   (before H55)
-    // S.code = S.opts.code || (key && load(key) !== PUBLIC_CODE && load(key)) || randomCode('');   // H55: a saved 0000 is never hosted   (before H83)
+    opts = opts || {};
+    var prefix = opts.prefix || 'jtsites-';
+    var key = opts.codeKey;
+    // var code = opts.code || (key && load(key)) || randomCode('');   (before H55)
+    // var code = opts.code || (key && load(key) !== PUBLIC_CODE && load(key)) || randomCode('');   // H55   (before H83)
     var sv = key ? load(key) : '';
     if (sv === PUBLIC_CODE || sv === '0000' || /^\d{4}$/.test(sv)) sv = '';   // H83: a saved old 4-digit code (or a lobby) is regenerated
-    S.code = S.opts.code || sv || randomCode('');
+    var code = String(opts.code || sv || randomCode(''));
+    // H136: already waiting because another window of this device holds this number — do not open another peer
+    if (S.hold === 'same-device' && S.role === 'host' && S.code === code && S.prefix === prefix && foreignLease()) {
+      return Promise.resolve(S.code);
+    }
+    S.role = 'host';
+    S.opts = opts;
+    S.prefix = prefix;
+    S.code = code;
     if (key) save(key, S.code);
     S.idRetry = 0; S.netRetry = 0;
     return loadPeer().then(function () { startHost(false); return S.code; },
@@ -233,14 +332,18 @@
   }
 
   function startHost(isRetry) {
-    destroy();
-    if (!isRetry) { S.idRetry = 0; S.netRetry = 0; }
+    destroy(!!isRetry);   // H136: retry keeps the pad alias
+    if (!isRetry) { S.idRetry = 0; S.netRetry = 0; S.noted = ''; }
+    if (foreignLease()) { beginHold(); return; }   // H136: same device, no broker churn
     var code = S.code;
     status(isRetry ? 'Re-registering code…' : 'Starting…', 'starting');
     var p = S.peer = new window.Peer(S.prefix + code, { debug: 0 });
     p.on('open', function () {
       if (S.peer !== p) return;
       S.idRetry = 0; S.netRetry = 0;
+      S.hold = '';
+      S.noted = '';
+      startBeat();   // H136
       status('Waiting for devices…', 'listening');
     });
     startAlias();   // H92: the private pad code (gamepad only) on a second peer id
@@ -274,15 +377,16 @@
   function hostError(err, code) {
     var type = err && err.type;
     if (type === 'unavailable-id') {
-      if (S.idRetry < ID_RETRY_MS.length) {
-        var d = ID_RETRY_MS[S.idRetry++];
-        status('Code still in use (previous session) — retrying ' + S.idRetry + '/' + ID_RETRY_MS.length + '…', 'retry');
-        retry(d);
-      } else {
-        destroy();
-        status('Code ' + code + ' is still in use', 'error');
-        emit('taken', code);   // H92: the Hub asks "Pick a new number" / "Retry" (never a silent change)
-      }
+      // H136: the broker does not say who holds prefix+code. Keep the saved code and keep trying.
+      // A live lease from this device waits (beginHold) instead of opening more peers.
+      // (before H136) after ID_RETRY_MS.length failures: destroy(); emit('taken', code);
+      if (foreignLease()) { beginHold(); return; }
+      var past = S.idRetry >= ID_RETRY_MS.length;
+      var d = ID_RETRY_MS[Math.min(S.idRetry, ID_RETRY_MS.length - 1)];
+      S.idRetry++;
+      if (past) noteBusy('unknown');
+      else status('Number still registered — retrying ' + S.idRetry + '/' + ID_RETRY_MS.length + '…', 'retry');
+      retry(d);
     } else if (/^(network|server-error|socket-error|socket-closed)$/.test(type)) {
       status('Network problem — retrying…', 'retry');
       retry(NET_RETRY_MS[Math.min(S.netRetry++, NET_RETRY_MS.length - 1)]);
@@ -295,8 +399,12 @@
      the main code (the Hub's 5-digit number). Errors here never touch the main peer; a busy id retries quietly. */
   function startAlias() {
     var a = S.opts.alias;
+    if (!a || a === S.code) { killAlias(); return; }
+    // H136: keep the pad peer across number-only retries (in flight or already open). A failed pad id still retries.
+    if (S.apeer && !S.apeer.destroyed && S.aliasCode === a && !S.aliasFailed) return;
     killAlias();
-    if (!a || a === S.code) return;
+    S.aliasFailed = false;
+    S.aliasCode = a;
     var ap = S.apeer = new window.Peer(S.prefix + a, { debug: 0 });
     ap.on('connection', function (conn) {
       if (S.apeer !== ap) return;
@@ -306,13 +414,14 @@
     });
     ap.on('error', function (err) {
       if (S.apeer !== ap || (err && err.type) === 'peer-unavailable') return;
+      S.aliasFailed = true;
       clearTimeout(S.atimer);
       S.atimer = setTimeout(function () { if (S.apeer === ap && S.role === 'host') startAlias(); }, 5000);
     });
   }
   function killAlias() {
     clearTimeout(S.atimer);
-    var ap = S.apeer; S.apeer = null;
+    var ap = S.apeer; S.apeer = null; S.aliasCode = ''; S.aliasFailed = false;
     try { if (ap) ap.destroy(); } catch (_) { /* gone */ }
   }
   /* H92: change the pad code (alias) without touching the main code / joined devices. */
@@ -320,7 +429,7 @@
     S.opts.alias = String(a || '');
     if (S.role === 'host' && S.peer) startAlias();
   }
-  /* H92: host again on a given code (a new number), or retry the same one after 'taken'. */
+  /* H92: host again on a given code (a new number). H136: does not change the number by itself. */
   function rehost(c) {
     if (S.role !== 'host') return Promise.resolve(S.code);
     if (c && c !== S.code) { stop(true); S.code = String(c); if (S.opts.codeKey) save(S.opts.codeKey, S.code); }
@@ -329,10 +438,12 @@
 
   function retry(ms) {
     var keep = S.code;
-    destroy();
+    var role = S.role;
+    destroy(role === 'host');   // H136: host number retries keep the pad alias
     S.timer = setTimeout(function () {
       if (S.code !== keep) return;
-      if (S.role === 'host') startHost(true); else startJoin();
+      if (role === 'host') { if (S.role === 'host') startHost(true); }
+      else startJoin();
     }, ms);
   }
 
@@ -511,6 +622,7 @@
     deviceCode: function () { return window.SharedLinkDevices && window.SharedLinkDevices.code ? window.SharedLinkDevices.code() : ''; },   // H83
     on: on, off: off, emit: emit,
     host: host, join: join, newCode: newCode, stop: stop, setAlias: setAlias, rehost: rehost,   // H92: + setAlias, rehost
+    HOST_LEASE_KEY: LEASE_KEY, HOST_LEASE_MS: LEASE_MS,   // H136
    
     pause: destroy,   // drop the peer quietly (page hide): no bye, devices reconnect
     restart: function () { if (S.role === 'host') startHost(false); else if (S.code) startJoin(); },

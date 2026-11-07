@@ -276,6 +276,40 @@ Parked / Team 3:
     - Hero Builder
     - renames (Battleship -> Sea Battle, Orbito name)
 
+================================================================================
+H136 — saved number registration (2026-11-07 IST)
+================================================================================
+H135 is already the Games-menu release (20261104r / hub-shell-v150). This fix is H136.
+Build 20261107a / hub-shell-v152.
+
+What changed
+  - shared/link/link_core.js host path. Peer id stays prefix + the saved code (Hub: jtsites- + the
+    5-digit shared-link-device-code). unavailable-id does not emit 'taken' and does not stop.
+    The old 10 delays still pace the retries; after the last one the same delay repeats.
+  - A page that has opened the id writes localStorage shared-link-host-lease
+    {v, id: device id, tab, code, at} and refreshes it every 5s while that peer exists.
+    Not a sites-hub.* key, so profile sync does not copy it. pause / stop / destroy remove it
+    when the tab id matches. Another page whose device id is SharedLinkDevices.isMe, with the
+    same code and a lease younger than 3 minutes (HOST_LEASE_MS), waits and does not construct
+    another peer. A second host() while waiting is a no-op. When the lease is cleared or older
+    than 3 minutes, that page tries again.
+  - One 'busy' event per situation: kind 'same-device' or 'unknown'. unknown is only after the
+    old budget is passed, while retries continue. Neither kind names another owner.
+  - Number-only retries keep the Gamepad alias peer (startAlias no-ops while that peer is alive).
+    Waiting for another window does not register the alias here; the holding desktop window has it.
+  - desktop/controller/hub-controller.js, phone/phone_connect.js, and Settings sec_devices.js
+    show that copy. Change number still only happens if the user saves one in Settings.
+  - Mesh peer ids (jtsites-<room>-mesh-<deviceId>, lobby -mesh-0, public 00000) are unchanged.
+
+Limits
+  - unavailable-id still does not identify the holder. A different browser that saved the same
+    number looks like 'unknown', and this Hub keeps trying the same number.
+  - The 3-minute lease is this page's heartbeat, not a measured broker timeout. A crashed page
+    that does not run pause() leaves the lease until it ages out; then the other page retries.
+  - A hidden tab whose timers stop for longer than 3 minutes looks idle, and the other page
+    starts paced broker retries.
+  - Offline checks: node shared/link/link_host_busy.test.js (mocked Peer, fake clock). No live broker.
+
 Next week (waiting for Jor):
   - Hub:
     - H130 core move
