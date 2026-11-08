@@ -351,3 +351,13 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 - `app/core/assist.js` gives `HR.assist.ask({prompt|messages, system, json, maxChars, signal})` and `HR.assist.classify(text, labels)`: one call, no tools, through the same HubAPI/provider adapters, usage logged. Off, no model, not set up or a failed call is an error: there is no fallback to the main model and no retry. The main chat's provider and model are never changed.
 - Nothing uses the Assist model yet. It is groundwork for rolling summaries (AG32, not built).
 - Tests: `tests/ag31.test.cjs` (mocked adapters, no network).
+
+## AG32 — rolling summaries of older turns
+
+- Needs the AG31 **Assist model** (Settings › Model). Off (the default) = no summaries, no extra calls; the AG31 trimmed note is used as before.
+- After a reply, if the older part of the chat (before the recent ~6000-char window, which always starts at a user turn and includes the last user turn) has ≥ 3000 chars not yet summarised, Agent makes **one** Assist call: previous summary + the next chunk of old turns (≤ 12000 chars, ending before a user turn so tool calls and results stay together). Result ≤ 2000 chars. No loop; later replies pick up the rest.
+- `toApi()` then sends the summary instead of only the turns it covers, then a trimmed note for any older turns after it, then the recent turns in full. The summary is labelled as context, not instructions; newer messages and corrections win. It is never copied to memory.
+- The saved chat is never changed. Summaries live in localStorage `agent.sum.<chatId>` = `{v:1, text, n, hash, edited, at}` (one per chat, on this device; dropped when the chat is deleted). `n` and `hash` record the covered messages: an edit, retry or merge that changes them makes the summary *stale*, and it is ignored until updated or reset.
+- **🧾 Summary** chip above the composer (shown when the Assist model is on or the chat has a summary) opens **Earlier summary**: status, editable text, Save, Update now, Reset (clears the summary only), Close.
+- Stop and chat switch cancel a running summary. A result is saved only for the chat that started it, and only if its covered turns still match. Errors show as status and leave the old summary in place.
+- Tests: `tests/ag32.test.cjs`.

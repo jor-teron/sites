@@ -107,3 +107,9 @@
 .pk-grp>summary:hover{background:var(--card)}.pk-grp[open]>summary{color:var(--acc)}.pk-grp .pk-row{margin-left:10px}
 .pick .pk-list{gap:4px}
 a.hb{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:inherit;box-sizing:border-box}   /* AG15: 🖼 and ← Chat are links */
+
+/* AG32: Earlier summary chip + dialog */
+.sum-chip{align-self:flex-start;margin:2px 10px;padding:4px 10px;font-size:12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--mut);cursor:pointer}
+.sum-chip[hidden]{display:none}
+.sum-text{width:100%;min-height:9em;resize:vertical;font:inherit}
+#sumDlg{max-width:560px;width:calc(100% - 24px)}

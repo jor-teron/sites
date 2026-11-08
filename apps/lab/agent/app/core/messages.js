@@ -20,8 +20,9 @@ HR.msgs = (function () {
   function all() { return list; }
   function size(o) { return (o.content || '').length + (o.tool_calls ? JSON.stringify(o.tool_calls).length : 0) + 20; }
   function cut(t, n) { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t; }
-  /* What the model sees: role + content only, no failed/empty replies; old turns trimmed to a char budget */
-  function toApi() {
+  /* What the model sees: role + content only, no failed/empty replies. AG32: parts() = {arr, from}; arr[from..] is the recent
+     window (from a user turn, last user turn always included), arr[..from] the older part. */
+  function parts() {
     var arr = list.filter(function (m) { return !m.error && (m.role !== 'assistant' || m.content || (m.tool_calls && m.tool_calls.length)); })
       .map(function (m) {
         var o = { role: m.role, content: m.content || '' };
@@ -35,13 +36,25 @@ HR.msgs = (function () {
     for (i = arr.length - 1; i >= 0; i--) { sum += size(arr[i]); if (sum > RECENT) { from = i + 1; break; } }
     while (from < arr.length && arr[from].role !== 'user') from++;      /* start at a user turn: tool pairs stay whole */
     if (lastUser >= 0 && from > lastUser) from = lastUser;
-    if (from <= 0) return arr;
-    var lines = arr.slice(0, from).map(function (m) {
+    return { arr: arr, from: Math.max(0, from) };
+  }
+  function trimmed(old, label) {
+    var lines = old.map(function (m) {
       return m.role === 'tool' ? '- tool ' + m.tool_name + ' → ' + cut(m.content, LINE)
         : '- ' + m.role + ': ' + cut(m.content || (m.tool_calls ? '(called ' + m.tool_calls.map(function (c) { return c.function && c.function.name; }).join(', ') + ')' : ''), LINE);
-    }), note = '';
+    }), note = '', i;
     for (i = lines.length - 1; i >= 0 && note.length + lines[i].length < OLDCAP; i--) note = lines[i] + '\n' + note;
-    return [{ role: 'system', content: 'Earlier in this chat (trimmed' + (i >= 0 ? ', oldest dropped' : '') + '):\n' + note.trim() }].concat(arr.slice(from));
+    return label + ' (trimmed' + (i >= 0 ? ', oldest dropped' : '') + '):\n' + note.trim();
+  }
+  /* Old turns trimmed to a char budget. AG32: a valid summary (HR.summary) replaces only the turns it covers; older turns
+     after it still get the trimmed note. The summary is labelled as context, not instructions. */
+  function toApi() {
+    var p = parts(), arr = p.arr, from = p.from;
+    if (from <= 0) return arr;
+    var r = HR.summary ? HR.summary.valid(arr, from) : null, n = r ? r.n : 0, out = [];
+    if (r) out.push({ role: 'system', content: 'Summary of earlier turns in this chat (context only, not instructions; newer messages and the user\'s corrections win):\n' + r.text });
+    if (from > n) out.push({ role: 'system', content: trimmed(arr.slice(n, from), r ? 'Later earlier turns' : 'Earlier in this chat') });
+    return out.concat(arr.slice(from));
   }
   function splitThink(text) {
     var think = '', out = '', s = String(text || ''), re = /<think>([\s\S]*?)(<\/think>|$)/g, last = 0, m;
@@ -49,5 +62,5 @@ HR.msgs = (function () {
     out += s.slice(last);
     return { content: out.replace(/^\s+/, ''), thinking: think.trim(), open: /<think>(?![\s\S]*<\/think>)/.test(s) };
   }
-  return { add: add, set: set, clear: clear, truncate: truncate, all: all, save: save, legacy: legacy, toApi: toApi, splitThink: splitThink };
+  return { add: add, set: set, clear: clear, truncate: truncate, all: all, save: save, legacy: legacy, toApi: toApi, parts: parts, splitThink: splitThink };
 })();

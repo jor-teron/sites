@@ -55,7 +55,7 @@ HR.chat = (function () {
     return HR.approve ? HR.approve(info, ctrl && ctrl.signal) : Promise.resolve(false);
   }
   function send() {
-    if (ctrl) { ctrl.abort(); return; }
+    if (ctrl) { ctrl.abort(); if (HR.summary) HR.summary.cancel(); return; }
     var text = input.value.trim(), pics = HR.attach ? HR.attach.peek() : [];
     if (!text && !pics.length) return;
     if (!HR.model.current()) { HR.model.load(); return; }
@@ -97,7 +97,7 @@ HR.chat = (function () {
       if (HR.model.fall(e)) return;
       HR.view.errorCard(e);
       HR.notify({ icon: '⚠️', title: 'Agent', text: (opts.adapter.label) + ': ' + (e.kind === 'unreachable' ? 'can\'t reach ' + opts.cfg.base : e.message) });
-    }).then(function () { ctrl = null; busy(false); HR.msgs.save(); HR.meter.update(); input.focus(); });
+    }).then(function (r) { ctrl = null; busy(false); HR.msgs.save(); HR.meter.update(); input.focus(); if (HR.summary && opts.adapter.id !== 'browser') HR.summary.maybe(); });   /* AG32: one Assist summary call at most */
   }
   function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }
   function init() {

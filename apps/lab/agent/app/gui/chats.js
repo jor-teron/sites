@@ -58,7 +58,7 @@ HR.chats = (function () {
     HR.models.setChat(p, m); HR.model.load();
   }
   function picked() { if (!meta) return; meta.provider = HR.models.chosen(); meta.model = HR.models.chatModel(); if (HR.msgs.all().length) dirty(); draw(); }
-  function show() { HR.steps.clear(); HR.chat.render(); remember(); draw(); }
+  function show() { if (HR.summary) HR.summary.cancel(); HR.steps.clear(); HR.chat.render(); remember(); draw(); }
   function busy() { if (HR.chat.busy()) { HR.chat.note('Stop the current reply first.'); return true; } return false; }
   async function newChat() {
     if (busy()) return; await flush();
@@ -104,7 +104,7 @@ HR.chats = (function () {
   async function del(c) {
     if (!confirm('Delete chat “' + (c.title || 'New chat') + '”? Its file and session notes are removed (the daily log stays).')) return;
     if (meta && meta.id === c.id) { if (busy()) return; clearTimeout(timer); meta = fresh(); HR.msgs.set([]); show(); }
-    await saving; await HR.threads.remove(c.id).catch(function () {}); if (HR.mem) await HR.mem.dropSession(c.id);
+    await saving; await HR.threads.remove(c.id).catch(function () {}); if (HR.mem) await HR.mem.dropSession(c.id); if (HR.summary) HR.summary.drop(c.id);   /* AG32 */
     refresh();
   }
   function when(s) { var d = new Date(s); if (isNaN(d)) return ''; var t = new Date(); return d.toDateString() === t.toDateString() ? d.toTimeString().slice(0, 5) : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }

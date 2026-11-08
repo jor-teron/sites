@@ -75,6 +75,7 @@
   <section class="chat" aria-label="Chat">
     <div id="log" class="log" aria-live="polite"></div>
     <div id="meter" class="meter" hidden><span class="mt-bar"><i id="meterFill"></i></span><span id="meterText" class="mt-t"></span></div>
+    <button type="button" id="sumChip" class="sum-chip" hidden title="Earlier summary">🧾 Summary</button>
     <div id="photoRow" class="photo-row" hidden></div>
     <div class="composer">
       <button type="button" class="hb pic" id="btnPhoto" title="Attach a photo" aria-label="Attach a photo">📷</button>
@@ -88,6 +89,13 @@
     <div id="stepList" class="st-list"></div>
   </aside>
 </div>
+<dialog id="sumDlg" class="dlg" aria-labelledby="sumTitle">
+  <h2 id="sumTitle">Earlier summary</h2>
+  <p class="hint" id="sumStat"></p>
+  <textarea id="sumText" class="inp sum-text" rows="8" spellcheck="true" aria-label="Earlier summary text"></textarea>
+  <p class="hint">Sent instead of the older turns it covers. Your saved chat is never changed.</p>
+  <div class="ec-row start"><button type="button" class="hb wide" id="sumSave">Save</button><button type="button" class="hb wide" id="sumNow">Update now</button><button type="button" class="hb wide" id="sumReset">Reset</button><button type="button" class="hb wide" id="sumClose">Close</button></div>
+</dialog>
 <dialog id="settings" class="dlg setdlg" aria-labelledby="setTitle">
   <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="hb" id="setClose" aria-label="Close">✕</button></div>
   <div class="set-grid">
@@ -187,6 +195,7 @@
 <script src="app/core/helper.js"></script>
 <script src="app/core/length.js"></script>
 <script src="app/core/assist.js"></script>
+<script src="app/core/summary.js"></script>
 <script src="app/core/hubkeys.js"></script>
 <script src="app/models/net.js"></script>
 <script src="app/core/hubapi.js"></script>
@@ -217,6 +226,7 @@
 <script src="app/gui/folder.js"></script>
 <script src="app/gui/helperset.js"></script>
 <script src="app/gui/assistset.js"></script>
+<script src="app/gui/summaryview.js"></script>
 <script src="app/gui/provider.js"></script>
 <script src="app/gui/hubrows.js"></script>
 <script src="app/gui/browsercard.js"></script>

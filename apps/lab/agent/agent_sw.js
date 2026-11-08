@@ -12,7 +12,8 @@
    AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
    AG30: VER agent-ag30 so install precaches usage.html (the Usage page) and the files it links.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag31', PAGES = ['agent.html', 'image.html', 'usage.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+var FILES = 'agent-files', VER = 'agent-ag32', PAGES = ['agent.html', 'image.html', 'usage.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+/* AG32 Legacy: VER = 'agent-ag31'. AG32 bumps it for core/summary.js and gui/summaryview.js. */
 /* AG31 Legacy: VER = 'agent-ag30'. AG31 bumps it so install precaches core/length.js, core/assist.js, gui/assistset.js. */
 /* AG30 Legacy: VER = 'agent-ag29' so the previous install could precache prompts/prompt_*.txt and prompts/prompt_fallback.js. */
 /* AG29 Legacy: VER = 'agent-ag28' so the previous install could pick up the step limit and the 128000 context default. */

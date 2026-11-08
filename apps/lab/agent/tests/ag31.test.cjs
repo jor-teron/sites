@@ -80,5 +80,5 @@ test('loop path: chat.js system() runs addTo, so every loop step (tool follow-up
   assert.match(read('app/core/loop.js'), /var sys = o\.system \? await o\.system\(\) : ''/);
   const html = read('agent.html');
   for (const f of ['app/core/length.js', 'app/core/assist.js', 'app/gui/assistset.js']) assert.ok(html.includes('src="' + f + '"'));
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag31'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag3[12]'/);
 });
