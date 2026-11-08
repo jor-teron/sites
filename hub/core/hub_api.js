@@ -342,6 +342,18 @@
     });
   }
   function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  // H141: cache reads are a reported subset of the SAME raw prompt usage snapshot, never
+  // an extra total or a zero inferred from legacy fallbacks. No cache-write/cost inference.
+  function cacheField(owner, key, source) {
+    return { present: !!owner && Object.prototype.hasOwnProperty.call(owner, key), value: owner && owner[key], source };
+  }
+  function reportedCache(prompt, fields) {
+    const count = (n) => Number.isSafeInteger(n) && n >= 0;
+    const present = fields.filter((f) => f.present);
+    // An invalid alternate is ambiguous too: do not hide it by picking a valid candidate.
+    if (!count(prompt) || !present.length || present.some((f) => !count(f.value) || f.value > prompt || f.value !== present[0].value)) return;
+    return { cached_input_tokens: present[0].value, source: present[0].source };
+  }
   async function chatAdvanced(o = {}) {
     const model = requiredText(o.model, 'model').replace(/^models\//, '');
     const list = advMessages(o.messages);
@@ -382,6 +394,8 @@
           out.eval_count = (u.candidatesTokenCount || 0) + (u.thoughtsTokenCount || 0); out.prompt_eval_count = u.promptTokenCount;
           out.usage = { prompt_tokens: u.promptTokenCount || 0, completion_tokens: u.candidatesTokenCount || 0,
             thoughts_tokens: u.thoughtsTokenCount || 0, total_tokens: u.totalTokenCount || 0 };
+          const cache = reportedCache(u.promptTokenCount, [cacheField(u, 'cachedContentTokenCount', 'usageMetadata.cachedContentTokenCount')]);
+          if (cache) out.usage.cache = cache;
         }
         const c = (j.candidates || [])[0]; if (!c) return;
         ((c.content || {}).parts || []).forEach((part) => {
@@ -432,6 +446,10 @@
           out.eval_count = u.completion_tokens; out.prompt_eval_count = u.prompt_tokens;
           out.usage = { prompt_tokens: u.prompt_tokens || 0, completion_tokens: u.completion_tokens || 0,
             total_tokens: u.total_tokens || ((u.prompt_tokens || 0) + (u.completion_tokens || 0)) };
+          const fields = [cacheField(u.prompt_tokens_details, 'cached_tokens', j.usage ? 'usage.prompt_tokens_details.cached_tokens' : 'x_groq.usage.prompt_tokens_details.cached_tokens')];
+          if (j.usage) fields.push(cacheField(u, 'prompt_cache_hit_tokens', 'usage.prompt_cache_hit_tokens'));
+          const cache = reportedCache(u.prompt_tokens, fields);
+          if (cache) out.usage.cache = cache;
           const r = u.completion_tokens_details && u.completion_tokens_details.reasoning_tokens;
           if (r) out.usage.thoughts_tokens = r;
         }
