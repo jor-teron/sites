@@ -1,4 +1,5 @@
-/* AG32: offline VM tests for rolling summaries (core/summary.js + messages.toApi). Mocked Assist adapter, no network. */
+/* AG32: offline VM tests for rolling summaries (core/summary.js, messages.toApi, threads.js sidecar).
+   Real storage/threads.js over a mocked folder (HR.fs); mocked Assist adapter; no network, no paid calls. */
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -6,9 +7,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 const base = path.resolve(__dirname, '..');
 const read = f => fs.readFileSync(path.join(base, f), 'utf8');
+const tick = () => new Promise(r => setImmediate(r));
 
 function env(opts = {}) {
-  const store = {}, calls = [];
+  const store = {}, calls = [], folder = opts.folder || {};
   const localStorage = { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } };
   const ctx = { localStorage, console, AbortController, document: { querySelector: () => null }, setTimeout, clearTimeout };
   ctx.window = ctx; vm.createContext(ctx);
@@ -22,91 +24,123 @@ function env(opts = {}) {
       o.onDelta('SUMMARY#' + calls.length, ''); return { prompt_eval_count: 5, eval_count: 2 }; } };
   ctx.HR.models = { all: () => [ad], ready: () => true, base: () => 'http://x', service: () => null, getKey: () => '' };
   ctx.HR.usage = { record: () => {} };
+  ctx.HR.fs = { ready: () => true, state: () => 'ready', read: async p => { if (!(p in folder)) { const e = new Error('nf'); e.name = 'NotFoundError'; throw e; } return { text: folder[p] }; },
+    write: async (p, t) => { if (opts.writeFail) throw new Error('permission denied'); folder[p] = t; },
+    remove: async p => { if (!(p in folder)) { const e = new Error('nf'); e.name = 'NotFoundError'; throw e; } delete folder[p]; } };
   const chat = { id: 'c1' }; ctx.HR.chats = { id: () => chat.id, dirty: () => {} };
-  for (const f of ['app/core/length.js', 'app/core/assist.js', 'app/core/messages.js', 'app/core/summary.js']) vm.runInContext(read(f), ctx);
+  for (const f of ['app/storage/threads.js', 'app/core/length.js', 'app/core/assist.js', 'app/core/messages.js', 'app/core/summary.js']) vm.runInContext(read(f), ctx);
   if (!opts.off) { ctx.HR.set.put('assistProvider', 'ollama'); ctx.HR.set.put('assistModel', 'helper-m'); }
-  return { HR: ctx.HR, store, calls, chat, release: () => gate && gate() };
+  return { HR: ctx.HR, store, calls, chat, folder, release: () => gate && gate() };
 }
-function longChat(HR, turns = 12) {
+async function ready(e, id = 'c1') { e.chat.id = id; await e.HR.summary.open(id); }
+function longChat(HR, turns = 12, extra) {
   const l = [];
   for (let i = 0; i < turns; i++) {
-    l.push({ role: 'user', content: 'question ' + i + ' ' + 'u'.repeat(800) });
-    if (i % 3 === 0) { l.push({ role: 'assistant', content: '', tool_calls: [{ function: { name: 'read_file', arguments: {} } }] }); l.push({ role: 'tool', tool_name: 'read_file', content: 'file ' + i }); }
-    l.push({ role: 'assistant', content: 'answer ' + i + ' ' + 'a'.repeat(800) });
+    l.push({ role: 'user', content: 'question ' + i + ' ' + 'u'.repeat(800) + ' TAILU' + i });
+    if (i % 3 === 0) { l.push({ role: 'assistant', content: '', tool_calls: [{ function: { name: 'read_file', arguments: { path: 'f' + i + '.txt' } } }] }); l.push({ role: 'tool', tool_name: 'read_file', content: 'file ' + i + ' ' + 'r'.repeat(700) + ' TAILR' + i }); }
+    l.push({ role: 'assistant', content: 'answer ' + i + ' ' + 'a'.repeat(800) + ' TAILA' + i });
   }
+  if (extra) extra(l);
   HR.msgs.set(l); return l;
 }
 const json = x => JSON.stringify(x);
+const SUM = 'agent/chats/threads/c1.sum.json';
 
-test('syntax', () => { for (const f of ['app/core/summary.js', 'app/gui/summaryview.js', 'app/core/messages.js', 'app/gui/chat.js', 'app/gui/chats.js', 'app/main.js', 'agent_sw.js']) require('node:child_process').execFileSync(process.execPath, ['--check', path.join(base, f)]); });
+test('syntax', () => { for (const f of ['app/core/summary.js', 'app/gui/summaryview.js', 'app/storage/threads.js', 'app/core/messages.js', 'app/gui/chat.js', 'app/gui/chats.js', 'app/gui/assistset.js', 'app/main.js', 'agent_sw.js']) require('node:child_process').execFileSync(process.execPath, ['--check', path.join(base, f)]); });
 
-test('no summary: toApi is the AG31 trimmed note', () => {
-  const { HR } = env({ off: true }); longChat(HR);
-  const a = HR.msgs.toApi(); assert.match(a[0].content, /^Earlier in this chat \(trimmed/); assert.equal(a.filter(m => m.role === 'system').length, 1);
+test('no summary: toApi is the AG31 trimmed note', async () => {
+  const e = env({ off: true }); await ready(e); longChat(e.HR);
+  const a = e.HR.msgs.toApi(); assert.match(a[0].content, /^Earlier in this chat \(trimmed/); assert.equal(a.filter(m => m.role === 'system').length, 1);
 });
 
-test('long chat: one bounded Assist call, summary replaces covered turns, originals intact, recent window kept', async () => {
-  const { HR, calls, store } = env(); const l = longChat(HR); const before = json(l);
-  assert.equal(await HR.summary.maybe(), true); assert.equal(calls.length, 1);
-  assert.equal(calls[0].tools.length, 0); assert.ok(calls[0].messages[1].content.length < 14000);
-  assert.equal(json(HR.msgs.all()), before);
-  const rec = JSON.parse(store['agent.sum.c1']); const p = HR.msgs.parts();
-  assert.ok(rec.n > 0 && rec.n <= p.from); assert.equal(p.arr[rec.n] ? p.arr[rec.n].role : 'user', 'user');
-  const a = HR.msgs.toApi();
-  assert.match(a[0].content, /^Summary of earlier turns[\s\S]*context only[\s\S]*SUMMARY#1/);
+test('one bounded call; every covered message is sent in full (tail sentinels, tool args); saved in the chat folder; originals intact', async () => {
+  const e = env(); await ready(e); const l = longChat(e.HR); const before = json(l);
+  assert.equal(await e.HR.summary.maybe(), true); assert.equal(e.calls.length, 1); assert.equal(e.calls[0].tools.length, 0);
+  const sent = e.calls[0].messages[1].content; assert.ok(sent.length <= e.HR.summary.CHUNK + 400);
+  const rec = JSON.parse(e.folder[SUM]); const p = e.HR.msgs.parts();
+  assert.ok(rec.n > 0 && rec.n <= p.from); assert.equal(p.arr[rec.n].role, 'user');
+  for (let i = 0; i < rec.n; i++) { const m = p.arr[i]; const tail = (m.content.match(/TAIL[URA]\d+/) || [])[0]; if (tail) assert.ok(sent.includes(tail), 'covered tail ' + tail + ' missing'); }
+  assert.match(sent, /\[called read_file \{"path":"f0\.txt"\}\]/);
+  assert.equal(json(e.HR.msgs.all()), before);
+  const a = e.HR.msgs.toApi(); assert.match(a[0].content, /^Summary of earlier turns[\s\S]*context only[\s\S]*SUMMARY#1/);
   assert.equal(json(a.slice(-(p.arr.length - p.from))), json(p.arr.slice(p.from)));
-  assert.ok(!a.some(m => m.role !== 'system' && /question 0 /.test(m.content)));
-  // reuse: nothing new old enough -> no second call
-  assert.equal(await HR.summary.maybe(), false); assert.equal(calls.length, 1);
+  let n = 1; while (await e.HR.summary.maybe()) assert.ok(++n < 10);   /* rest of the older part, one call each */
+  assert.equal(await e.HR.summary.maybe(), false); assert.equal(e.calls.length, n);   /* reuse: nothing new, no call */
 });
 
-test('tool call/result pairs never split at the coverage boundary', async () => {
-  const { HR, store } = env(); longChat(HR, 20); await HR.summary.maybe();
-  const rec = JSON.parse(store['agent.sum.c1']), p = HR.msgs.parts();
-  assert.notEqual(p.arr[rec.n].role, 'tool'); assert.equal(p.arr[rec.n].role, 'user');
+test('oversized single group: sent in parts, coverage only after the last part, tail present', async () => {
+  const e = env(); await ready(e);
+  longChat(e.HR, 10, l => { l[0].content = 'huge ' + 'h'.repeat(30000) + ' HUGETAIL'; });
+  const total = e.HR.summary.ser(e.HR.msgs.parts().arr[0]).length; let steps = 0;
+  while (true) { assert.equal(await e.HR.summary.maybe(), true); steps++; const r = JSON.parse(e.folder[SUM]); if (!r.part) break; assert.equal(r.n, 0); assert.equal(e.HR.summary.state().ok, false); }
+  assert.ok(total > 2 * e.HR.summary.CHUNK && steps >= 3);
+  assert.ok(e.calls.some(c => c.messages[1].content.includes('HUGETAIL')));
+  const r = JSON.parse(e.folder[SUM]); assert.ok(r.n >= 1); assert.match(e.calls[1].messages[1].content, /Previous summary:\nSUMMARY#1/);
 });
 
-test('incremental: second call gets previous summary + only new old turns', async () => {
-  const { HR, calls, store } = env(); const l = longChat(HR, 20); await HR.summary.maybe();
-  const n1 = JSON.parse(store['agent.sum.c1']).n;
+test('incremental: previous summary + only new old turns', async () => {
+  const e = env(); await ready(e); const l = longChat(e.HR, 20); await e.HR.summary.maybe();
+  const n1 = JSON.parse(e.folder[SUM]).n;
   for (let i = 0; i < 8; i++) { l.push({ role: 'user', content: 'more ' + i + 'x'.repeat(900) }); l.push({ role: 'assistant', content: 'ok ' + 'y'.repeat(900) }); }
-  assert.equal(await HR.summary.maybe(), true);
-  assert.match(calls[1].messages[1].content, /Previous summary:\nSUMMARY#1/);
-  assert.ok(JSON.parse(store['agent.sum.c1']).n > n1);
+  assert.equal(await e.HR.summary.maybe(), true);
+  assert.match(e.calls[1].messages[1].content, /Previous summary:\nSUMMARY#1/);
+  assert.ok(!e.calls[1].messages[1].content.includes('TAILU0'));
+  assert.ok(JSON.parse(e.folder[SUM]).n > n1);
 });
 
-test('edit of an early turn makes the summary stale (ignored), reset clears it, chat kept', async () => {
-  const { HR, store } = env(); const l = longChat(HR); await HR.summary.maybe();
-  l[0].content = 'changed'; assert.equal(HR.summary.state().ok, false);
-  assert.match(HR.msgs.toApi()[0].content, /^Earlier in this chat/);
-  HR.summary.reset(); assert.equal(store['agent.sum.c1'], undefined); assert.equal(HR.msgs.all().length, l.length);
+test('reload from the folder, edit + reset persist, delete removes the sidecar', async () => {
+  const e1 = env(); await ready(e1); longChat(e1.HR); await e1.HR.summary.edit('My own summary');
+  assert.equal(JSON.parse(e1.folder[SUM]).edited, true);
+  const e2 = env({ folder: e1.folder }); longChat(e2.HR); await ready(e2);
+  assert.match(e2.HR.msgs.toApi()[0].content, /My own summary/); assert.equal(e2.HR.summary.state().where, 'folder');
+  await e2.HR.summary.reset(); assert.equal(e1.folder[SUM], undefined); assert.equal(e2.HR.msgs.all().length > 0, true);
+  await e2.HR.summary.edit('again'); assert.ok(e1.folder[SUM]);
+  e2.folder['agent/chats/threads/index.json'] = JSON.stringify({ v: 1, chats: [{ id: 'c1' }] });
+  await e2.HR.threads.remove('c1'); assert.equal(e1.folder[SUM], undefined);
 });
 
-test('manual edit saves and persists across reload', async () => {
-  const e1 = env(); longChat(e1.HR); e1.HR.summary.edit('My own summary');
-  const rec = JSON.parse(e1.store['agent.sum.c1']); assert.equal(rec.edited, true); assert.equal(rec.text, 'My own summary');
-  const e2 = env(); Object.assign(e2.store, e1.store); longChat(e2.HR);
-  assert.match(e2.HR.msgs.toApi()[0].content, /My own summary/);
+test('edit of an early turn makes it stale (ignored)', async () => {
+  const e = env(); await ready(e); const l = longChat(e.HR); await e.HR.summary.maybe();
+  l[0].content = 'changed'; assert.equal(e.HR.summary.state().ok, false); assert.match(e.HR.msgs.toApi()[0].content, /^Earlier in this chat/);
 });
 
-test('chat isolation and stale-result discard on switch; abort keeps the old summary', async () => {
-  const e = env({ hold: true }); longChat(e.HR); e.HR.summary.edit('old one');
-  const p = e.HR.summary.now(); await new Promise(r => setImmediate(r));
-  e.chat.id = 'c2'; e.HR.summary.cancel(); e.release(); assert.equal(await p, false);
-  assert.equal(e.store['agent.sum.c2'], undefined); assert.equal(JSON.parse(e.store['agent.sum.c1']).text, 'old one');
-  e.chat.id = 'c1'; assert.equal(e.HR.summary.state().ok, true);
+test('switch during a run: result discarded, no cross-chat record, old summary kept; late load ignored', async () => {
+  const e = env({ hold: true }); await ready(e); longChat(e.HR); await e.HR.summary.edit('old one');
+  const p = e.HR.summary.now(); await tick();
+  e.chat.id = 'c2'; e.HR.summary.cancel(); await e.HR.summary.open('c2'); e.release(); assert.equal(await p, false);
+  assert.equal(e.folder['agent/chats/threads/c2.sum.json'], undefined); assert.equal(JSON.parse(e.folder[SUM]).text, 'old one');
+  await ready(e, 'c1'); assert.equal(e.HR.summary.state().ok, true);
+  const slow = e.HR.summary.open('c1'); e.chat.id = 'c2'; const fast = e.HR.summary.open('c2'); await Promise.all([slow, fast]);
+  assert.equal(e.HR.summary.load('c1'), null); assert.equal(e.HR.summary.state().id, 'c2');
 });
 
-test('Off and failure: no save, trimmed history still used, status explains', async () => {
-  const off = env({ off: true }); longChat(off.HR); assert.equal(await off.HR.summary.maybe(), false); assert.equal(off.calls.length, 0);
+test('edit/reset while a run is pending wins over the late result', async () => {
+  const e = env({ hold: true }); await ready(e); longChat(e.HR);
+  const p = e.HR.summary.now(); await tick(); await e.HR.summary.edit('user text'); e.release(); await p;
+  assert.equal(JSON.parse(e.folder[SUM]).text, 'user text');
+});
+
+test('Off, provider failure and save failure', async () => {
+  const off = env({ off: true }); await ready(off); longChat(off.HR); assert.equal(await off.HR.summary.maybe(), false); assert.equal(off.calls.length, 0);
   await off.HR.summary.now(); assert.match(off.HR.summary.state().status, /Off/);
-  const bad = env({ fail: true }); longChat(bad.HR); assert.equal(await bad.HR.summary.maybe(), false);
-  assert.equal(bad.calls.length, 1); assert.equal(bad.store['agent.sum.c1'], undefined);
-  assert.match(bad.HR.summary.state().status, /failed/); assert.match(bad.HR.msgs.toApi()[0].content, /^Earlier in this chat/);
+  const bad = env({ fail: true }); await ready(bad); const l = longChat(bad.HR); const b4 = json(l);
+  assert.equal(await bad.HR.summary.maybe(), false); assert.equal(bad.calls.length, 1); assert.equal(bad.folder[SUM], undefined);
+  assert.match(bad.HR.summary.state().status, /failed/); assert.match(bad.HR.msgs.toApi()[0].content, /^Earlier in this chat/); assert.equal(json(bad.HR.msgs.all()), b4);
+  const wf = env({ writeFail: true }); await ready(wf); longChat(wf.HR); await wf.HR.summary.maybe();
+  assert.match(wf.HR.summary.state().status, /not saved \(permission denied\); kept for this session only/); assert.equal(wf.HR.summary.state().ok, true);
 });
 
-test('wiring: chat.js calls maybe once after a run, Stop and chat switch cancel, delete drops', () => {
-  assert.match(read('app/gui/chat.js'), /HR\.summary\.maybe\(\)/); assert.match(read('app/gui/chat.js'), /ctrl\.abort\(\); if \(HR\.summary\) HR\.summary\.cancel\(\)/);
-  assert.match(read('app/gui/chats.js'), /function show\(\) \{ if \(HR\.summary\) HR\.summary\.cancel\(\)/); assert.match(read('app/gui/chats.js'), /HR\.summary\.drop\(c\.id\)/);
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag32'/);
+test('old AG32 localStorage record is moved into the folder once', async () => {
+  const e = env(); longChat(e.HR); const p = e.HR.msgs.parts();
+  e.store['agent.sum.c1'] = JSON.stringify({ v: 1, text: 'legacy', n: 3, hash: e.HR.summary.hashOf(p.arr, 3), edited: true });
+  await ready(e); await e.HR.summary.idle(); assert.equal(JSON.parse(e.folder[SUM]).text, 'legacy'); assert.equal(e.store['agent.sum.c1'], undefined);
+});
+
+test('wiring', () => {
+  const chat = read('app/gui/chat.js'), chats = read('app/gui/chats.js');
+  assert.match(chat, /HR\.summary\.maybe\(\)/); assert.match(chat, /ctrl\.abort\(\); if \(HR\.summary\) HR\.summary\.cancel\(\)/);
+  assert.match(chats, /HR\.summary\.cancel\(\); HR\.summary\.open\(meta \? meta\.id : ''\)/); assert.match(chats, /HR\.summary\.drop\(c\.id\)/);
+  assert.match(read('app/gui/assistset.js'), /HR\.summary\.cancel\(\); HR\.set\.put\('assistProvider'/);
+  assert.match(read('app/storage/threads.js'), /\.sum\.json/); assert.match(read('agent_sw.js'), /VER = 'agent-ag32'/);
+  assert.doesNotMatch(read('app/core/summary.js'), /LINE = 600/);
 });

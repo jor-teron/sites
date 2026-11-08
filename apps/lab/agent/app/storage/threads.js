@@ -3,6 +3,7 @@
    ({v:1, chats:[{id,title,provider,model,created,updated}]}). No folder: the same text in IndexedDB 'agent-chats'/'kv'
    ('index', 't:<id>'); Settings → Save chats Off also keeps them there. When a folder becomes ready, chats only in IndexedDB are copied into it (IndexedDB copy kept).
    AG8: index rows may carry pinned:true (pin()); every() = rows for chat search (folder + IndexedDB-only).
+   AG32: <id>.sum.json sidecar (loadSum / saveSum, IndexedDB 'sum:<id>' without a folder); remove() deletes it too.
    The daily diary agent/chats/YYYY_MM/YYYY_MM_DD.md (HR.logs) is separate and unchanged. */
 HR.threads = (function () {
   var DIR = 'agent/chats/threads/', IDX = DIR + 'index.json';
@@ -52,7 +53,28 @@ HR.threads = (function () {
     var arr = (await readIdx(disk)).filter(function (c) { return c.id !== id; }); await writeIdx(disk, arr);
     if (disk) await HR.fs.remove(DIR + id + '.md').catch(function () {});
     await idb.del('t:' + id).catch(function () {});
+    if (disk) await HR.fs.remove(DIR + id + '.sum.json').catch(function () {});   /* AG32: the chat's summary sidecar */
+    await idb.del('sum:' + id).catch(function () {});
     var ia = (await readIdx(false)).filter(function (c) { return c.id !== id; }); await writeIdx(false, ia).catch(function () {});
+  }
+  /* AG32: rolling summary sidecar beside the chat: folder agent/chats/threads/<id>.sum.json, or IndexedDB 'sum:<id>' when the
+     chat lives in the browser (no folder, permission pending, Save chats Off). The chat .md file is never touched.
+     loadSum -> {rec, where:'folder'|'browser'} (folder first, then the browser copy). saveSum(id, null) deletes. Errors reject. */
+  function sumWhere() { return onDisk() ? 'folder' : 'browser'; }
+  async function loadSum(id) {
+    id = safe(id); var t = null, where = sumWhere();
+    if (where === 'folder') { try { t = (await HR.fs.read(DIR + id + '.sum.json')).text; } catch (e) { t = null; } }
+    if (t == null) { t = await idb.get('sum:' + id); if (t != null) where = 'browser'; }
+    var rec = null; try { rec = t ? JSON.parse(t) : null; } catch (e) { rec = null; }
+    return { rec: rec, where: where };
+  }
+  async function saveSum(id, rec) {
+    id = safe(id); var where = sumWhere(), t = rec ? JSON.stringify(rec, null, 1) : null;
+    if (where === 'folder') {
+      if (t) await HR.fs.write(DIR + id + '.sum.json', t); else await HR.fs.remove(DIR + id + '.sum.json').catch(function (e) { if (!e || e.name !== 'NotFoundError') throw e; });
+      await idb.del('sum:' + id).catch(function () {});   /* folder copy wins; no stale browser copy left */
+    } else if (t) await idb.put('sum:' + id, t); else await idb.del('sum:' + id);
+    return where;
   }
   /* AG-F6: message key = role + time + tool call id + content, plus its occurrence number (two equal messages stay two) */
   function keys(l) { var seen = {}; return l.map(function (m) {
@@ -120,5 +142,5 @@ HR.threads = (function () {
   function newId() { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '-' + Math.random().toString(36).slice(2, 6); }
   async function pendingCount() { return waiting() ? (await readIdx(false)).filter(function (c) { return c.pending; }).length : 0; }   /* AG-F2 */
-  return { waiting: waiting, pendingCount: pendingCount, list: list, every: every, pin: pin, load: load, save: save, remove: remove, merge: merge, newId: newId, DIR: DIR };
+  return { waiting: waiting, pendingCount: pendingCount, list: list, every: every, pin: pin, load: load, save: save, remove: remove, merge: merge, newId: newId, DIR: DIR, loadSum: loadSum, saveSum: saveSum, sumWhere: sumWhere };
 })();

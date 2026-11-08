@@ -2,7 +2,7 @@
    Answer length: Short | Normal | Detailed (agent.settings.answerLength, used by core/length.js).
    Assist model: a provider dropdown (Off + set-up providers from HR.assist.choices()) and a model dropdown filled from that
    provider's model list (typed name kept if the list can't load). Saves assistProvider / assistModel only; never changes the
-   main provider or model. Off clears nothing else. Separate from the ⌨️ Helper card (bash on your computer). */
+   main provider or model. Off clears nothing else. AG32: a change cancels a running summary. Separate from the ⌨️ Helper card (bash on your computer). */
 HR.assistSet = (function () {
   var loadId = 0;
   function $(id) { return document.getElementById(id); }
@@ -41,8 +41,8 @@ HR.assistSet = (function () {
   }
   function init() {
     var ps = $('setAsProv'), ms = $('setAsModel'); if (!ps) return;
-    ps.onchange = function () { HR.set.put('assistProvider', ps.value); HR.set.put('assistModel', ''); fillModels(); };
-    ms.onchange = function () { HR.set.put('assistModel', ms.value); };
+    ps.onchange = function () { if (HR.summary) HR.summary.cancel(); HR.set.put('assistProvider', ps.value); HR.set.put('assistModel', ''); fillModels(); };
+    ms.onchange = function () { if (HR.summary) HR.summary.cancel(); HR.set.put('assistModel', ms.value); };
     $('btnSet').addEventListener('click', draw);
   }
   return { init: init, draw: draw };
