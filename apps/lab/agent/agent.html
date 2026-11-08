@@ -126,6 +126,14 @@
     <div class="sw"><span>Save chats to folder<small>Off keeps them in this browser</small></span><div id="setSave"></div></div>
     <div class="sw"><span>Memory<small>Notes the agent keeps and reads back</small></span><div id="set_memory"></div></div>
     <p class="hint">Everything lives under <code>agent/</code> in the folder: chats, diary, memory, prompt, usage, trash.</p>
+    <h3>Knowledge <small>(.txt / .md the agent can keyword-search)</small></h3>
+    <p class="hint" id="knowStat"></p>
+    <div class="ec-row start"><button type="button" class="hb wide" id="btnKnowImp">Import files…</button></div>
+    <input type="file" id="knowFile" accept=".txt,.md,text/plain,text/markdown" multiple hidden>
+    <div id="knowList" class="know-list"></div>
+    <div class="ec-row start"><input id="knowQ" class="inp" type="search" placeholder="Test a search…" aria-label="Search memory and knowledge"><button type="button" class="hb" id="btnKnowFind">Search</button></div>
+    <div id="knowRes"></div>
+    <p class="hint">Imports are copies in <code>agent/knowledge/raw/</code>; ✕ removes the copy only. Search covers this chat's session notes, your and the agent's notes, topics and these documents, never other chats.</p>
   </div></details>
   <details class="scard" id="sc_perms"><summary><span class="sc-i">🛡️</span>Permissions</summary><div class="sc-b">
     <div class="sw"><span>Allow file writes<small>Off = read-only folder</small></span><div id="set_allowWrite"></div></div>
@@ -196,6 +204,7 @@
 <script src="app/core/length.js"></script>
 <script src="app/core/assist.js"></script>
 <script src="app/core/summary.js"></script>
+<script src="app/core/ksearch.js"></script>
 <script src="app/core/hubkeys.js"></script>
 <script src="app/models/net.js"></script>
 <script src="app/core/hubapi.js"></script>
@@ -211,9 +220,11 @@
 <script src="app/storage/threads.js"></script>
 <script src="app/storage/usage.js"></script>
 <script src="app/storage/trash.js"></script>
+<script src="app/storage/knowledge.js"></script>
 <script src="app/tools/time.js"></script>
 <script src="app/tools/files.js"></script>
 <script src="app/tools/memory.js"></script>
+<script src="app/tools/search_memory.js"></script>
 <script src="app/tools/shell.js"></script>
 <script src="app/tools/web.js"></script>
 <script src="app/gui/settings.js"></script>
@@ -227,6 +238,7 @@
 <script src="app/gui/helperset.js"></script>
 <script src="app/gui/assistset.js"></script>
 <script src="app/gui/summaryview.js"></script>
+<script src="app/gui/knowview.js"></script>
 <script src="app/gui/provider.js"></script>
 <script src="app/gui/hubrows.js"></script>
 <script src="app/gui/browsercard.js"></script>

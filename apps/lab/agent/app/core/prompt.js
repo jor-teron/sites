@@ -131,6 +131,7 @@ HR.prompt = (function () {
     if (have.run_shell) L.push(await part('prompt_shell.txt', HR.perms.auto('shell') ? 'auto' : 'ask'));
     if (have.web_search) L.push(await part('prompt_web.txt'));
     L.push(await part('prompt_memory.txt', have.memory_read ? 'on' : 'off'));
+    if (have.memory_search) L.push(await part('prompt_memory.txt', 'search'));   /* AG33 */
     return L.join('\n');
   }
   async function system() {

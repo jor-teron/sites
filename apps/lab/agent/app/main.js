@@ -41,6 +41,7 @@ Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) 
   HR.helperSet.init();
   HR.assistSet.init();   /* AG31 */
   HR.sumView.init();   /* AG32 */
+  HR.knowView.init();   /* AG33 */
   HR.provider.init();
   HR.bcard.init();
   if (HR.modelbar) HR.modelbar.init();   /* AG18: top-row dropdowns, before the first load */

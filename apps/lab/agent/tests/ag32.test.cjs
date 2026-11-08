@@ -141,6 +141,6 @@ test('wiring', () => {
   assert.match(chat, /HR\.summary\.maybe\(\)/); assert.match(chat, /ctrl\.abort\(\); if \(HR\.summary\) HR\.summary\.cancel\(\)/);
   assert.match(chats, /HR\.summary\.cancel\(\); HR\.summary\.open\(meta \? meta\.id : ''\)/); assert.match(chats, /HR\.summary\.drop\(c\.id\)/);
   assert.match(read('app/gui/assistset.js'), /HR\.summary\.cancel\(\); HR\.set\.put\('assistProvider'/);
-  assert.match(read('app/storage/threads.js'), /\.sum\.json/); assert.match(read('agent_sw.js'), /VER = 'agent-ag32'/);
+  assert.match(read('app/storage/threads.js'), /\.sum\.json/); assert.match(read('agent_sw.js'), /VER = 'agent-ag3[2-9]'/);
   assert.doesNotMatch(read('app/core/summary.js'), /LINE = 600/);
 });

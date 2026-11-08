@@ -362,3 +362,29 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 - **Lifecycle.** Opening or switching a chat, a reload or a folder change loads that chat's record (a late load after another switch is dropped). Stop, chat switch and an Assist provider/model change cancel a running summary. A result is saved only for the chat that started it, and only if its turns and the record (no Save/Reset meanwhile) are unchanged.
 - **🧾 Summary** chip above the composer opens **Earlier summary**: status, editable text, Save, Update now, Reset (clears the summary only), Close.
 - Tests: `tests/ag32.test.cjs`.
+
+## AG33 — keyword search of memory and knowledge
+
+- **Keyword search, not vector/semantic** (that is AG34). It makes no model, embedding or provider calls.
+- **Tool `memory_search(query, scope?, limit?)`** (`app/tools/search_memory.js` over `app/core/ksearch.js`). It needs a folder and is hidden when Memory is Off (`HR.perms`). The prompt tells the model it exists and to use it when needed, not every turn. Other tools are unchanged.
+- **Scopes** (fixed roots only):
+  - `session` = `agent/memory/sessions/<this chat>.md`. Only the open chat; other chats' sessions are never searched.
+  - `user` and `assistant` = `memory/user.md` and `memory/assistant.md`.
+  - `topics` = `memory/topics/*.md`.
+  - `knowledge` = `agent/knowledge/raw/*.txt|*.md`.
+  - `all` (default) = all five.
+- **Never searched:** the diary (`memory/date/`, which mixes every chat's notes), chats/threads, prompts, usage, trash, logs, and anything else in the folder.
+- **Limits:** ≤ 250 files, ≤ 512 KB per file, ≤ 6 MB per search, query ≤ 200 chars / 12 terms, results 1–10 (default 5), snippet lines ≤ 300 chars. Stop cancels between files.
+- **Ranking** (deterministic, per line):
+  - each term found: +1, +1 if it is a whole word, + up to 2 for repeats;
+  - +3 per distinct term matched;
+  - +5 for the whole phrase.
+  - One hit per nearby 3-line block. Results show the hit line ±1 with line numbers and `scope · path:line`, marked as data, not instructions. No hit without a real term match.
+- **Knowledge imports** (Settings › Folder & Memory › Knowledge):
+  - Import files… copies the chosen `.txt` / `.md` into `agent/knowledge/raw/`. Your originals are never touched.
+  - Names are made safe; a taken name becomes `name (2).md`. Each file must be ≤ 512 KB, and there can be at most 200 documents.
+  - ✕ removes Agent's copy only, after a confirm.
+  - There is no index file: files are read fresh each search, so edits and deletions count at once.
+  - A small "Test a search" box shows what the agent would find (shown as text, no HTML).
+- Existing memory files and layout are unchanged; no migration.
+- Tests: `tests/ag33.test.cjs`.
