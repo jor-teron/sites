@@ -21,13 +21,19 @@ function env(files = {}, o = {}) {
   ctx.window = ctx; vm.createContext(ctx); vm.runInContext('window.HR = {};', ctx);
   const nf = () => Object.assign(new Error('nf'), { name: 'NotFoundError' });
   const writes = [];
-  ctx.HR.fs = { ready: () => true, state: () => 'ready', name: () => 'mock', onChange: () => {},
+  const folder = { name: 'mock' };
+  ctx.HR.fs = { ready: () => true, state: () => 'ready', name: () => folder.name, onChange: () => {},
     stat: async p => p in F ? { exists: true, size: F[p].length } : { exists: false, size: 0 },
     read: async p => { if (!(p in F)) throw nf(); return { text: F[p], size: F[p].length }; },
     write: async (p, t) => { writes.push(p); F[p] = t; }, append: async (p, t) => { F[p] = (F[p] || '') + t; },
     remove: async p => { if (!(p in F)) throw nf(); delete F[p]; },
     list: async d => { d = d.replace(/\/?$/, '/'); const seen = {}, out = []; Object.keys(F).filter(k => k.startsWith(d)).forEach(k => { const r = k.slice(d.length), n = r.split('/')[0]; if (!seen[n]) { seen[n] = 1; out.push({ name: n, kind: r.includes('/') ? 'directory' : 'file' }); } }); if (!out.length) throw nf(); return out; } };
   ctx.HR.chats = { id: () => 'c1' };
+  const pubs = [];
+  const provs = { svc_abcdef1: { id: 'svc_abcdef1', label: 'MyOA', type: 'openai', endpoint: 'https://a.example/v1', hasKey: true }, svc_gem0001: { id: 'svc_gem0001', type: 'gemini', endpoint: '', hasKey: true } };
+  const psubs = [];
+  ctx.HubProviders = { info: id => provs[id] ? Object.assign({}, provs[id]) : null, list: () => Object.values(provs), onChange: f => { pubs.push(f); } };
+  const changeProv = (id, patch) => { if (patch === null) delete provs[id]; else Object.assign(provs[id], patch); pubs.forEach(f => f({ id })); };
   ctx.HubAPI = {
     services: () => [{ id: 'svc_abcdef1', label: 'MyOA', type: 'openai' }, { id: 'svc_gem0001', label: 'G', type: 'gemini' }],
     embeddingModels: async ({ provider }) => provider === 'ollama' ? [{ name: 'emb-a', label: 'emb-a', dims: 4 }] : [],
@@ -37,7 +43,7 @@ function env(files = {}, o = {}) {
   for (const f of ['app/gui/settings.js', 'app/core/perms.js', 'app/core/tools.js', 'app/core/hubapi.js', 'app/core/memory.js', 'app/storage/knowledge.js', 'app/core/ksearch.js', 'app/core/semantic.js', 'app/tools/memory.js', 'app/tools/search_memory.js', 'app/tools/search_semantic.js', 'prompts/prompt_fallback.js', 'app/core/prompt.js']) vm.runInContext(read(f), ctx);
   ctx.localStorage.setItem('agent.memMigrated.mock', '1');
   if (!o.off) { ctx.HR.set.put('semProvider', 'ollama'); ctx.HR.set.put('semModel', 'emb-a'); }
-  return { HR: ctx.HR, F, calls, writes, ctx };
+  return { HR: ctx.HR, F, calls, writes, ctx, folder, changeProv, hold: o.hold };
 }
 const M = 'agent/memory/', IDX = 'agent/knowledge/index/semantic.json';
 const fx = () => ({
@@ -123,6 +129,47 @@ test('batches respect 32 inputs and the byte cap', () => {
 });
 
 test('damaged index file is ignored', async () => {
-  const { HR } = env(Object.assign(fx(), { [IDX]: '{"v":1,"fp":{"dims":4},"chunks":[{"vec":[1],"scope":"user"}]}' }));
+  const { HR } = env(Object.assign(fx(), { [IDX]: '{"v":2,"fp":{"dims":4},"chunks":[{"vec":[1],"scope":"user"}]}' }));
   await HR.sem.load(); assert.equal(HR.sem.state().idx, null); assert.match(HR.sem.state().err, /damaged/);
+});
+
+const tick = () => new Promise(r => setImmediate(r));
+test('AG34.1 long line: tail beyond 1500 chars gets its own chunk, exact spans, honest refs', async () => {
+  const long = 'intro ' + 'x'.repeat(1600) + ' mango TAILEND';
+  const { HR, F, calls } = env({ 'agent/knowledge/raw/long.md': 'first line\n' + long + '\nlast car line' });
+  await HR.sem.build(); const idx = JSON.parse(F[IDX]); const text = F['agent/knowledge/raw/long.md'];
+  assert.equal(idx.chunks.map(c => text.slice(c.s, c.e)).join(''), text);   /* every char covered once */
+  assert.ok(idx.chunks.every(c => c.e - c.s <= 1500));
+  const sent = calls.flatMap(c => c.input); assert.ok(sent.some(t => t.includes('TAILEND')));
+  const r = await HR.sem.search('fruit'); assert.match(r.results[0].text, /TAILEND/); assert.equal(r.results[0].a, 2); assert.ok(r.results[0].b >= 2);
+});
+test('AG34.1 chunk cap: partial index is recorded and reported', async () => {
+  const f = {}; for (let i = 0; i < 90; i++) f['agent/knowledge/raw/n' + i + '.md'] = Array.from({ length: 500 }, (_, k) => 'apple ' + k).join('\n');
+  for (let i = 0; i < 170; i++) f['agent/knowledge/raw/z' + i + '.md'] = 'pear';
+  const { HR, F } = env(f); await HR.sem.build(); const idx = JSON.parse(F[IDX]);
+  assert.equal(idx.chunks.length, 2000); assert.ok(idx.partial && idx.partial.chunks > 0 && idx.partial.files >= 10); assert.match(HR.sem.state().status, /PARTIAL/);
+  assert.match(HR.sem.format(await HR.sem.search('fruit')), /index is partial/);
+});
+test('AG34.1 provider identity: endpoint change (same id) invalidates, also after reload; removed provider sends nothing', async () => {
+  const e = env(fx()); e.HR.set.put('semProvider', 'svc_abcdef1'); await e.HR.sem.build(); assert.equal(e.HR.sem.usable(), true);
+  const raw = e.F[IDX]; assert.ok(!raw.includes('a.example'));   /* only a hash */
+  e.changeProv('svc_abcdef1', { endpoint: 'https://b.example/v1' }); assert.equal(e.HR.sem.usable(), false);
+  await assert.rejects(e.HR.sem.search('car'), err => err.kind === 'stale');
+  const e2 = env(Object.assign(fx(), { [IDX]: raw })); e2.HR.set.put('semProvider', 'svc_abcdef1'); e2.changeProv('svc_abcdef1', { endpoint: 'https://b.example/v1' });
+  await e2.HR.sem.load(); assert.equal(e2.HR.sem.usable(), false);
+  const n = e.calls.length; e.changeProv('svc_abcdef1', null);
+  await assert.rejects(e.HR.sem.search('car'), err => err.kind === 'noprov'); await assert.rejects(e.HR.sem.build(), err => err.kind === 'noprov'); assert.equal(e.calls.length, n);
+  assert.ok(!e.HR.sem.providers().some(p => p.id === 'svc_abcdef1'));
+});
+for (const [name, act] of [['provider change', e => e.HR.set.put('semModel', 'other')], ['Memory Off', e => e.HR.set.put('memory', 'off')], ['folder switch', e => { e.folder.name = 'other'; }], ['provider switch', e => { e.HR.set.put('semProvider', 'svc_abcdef1'); }]]) {
+  test('AG34.1 search pending + ' + name + ': results discarded, no snippets', async () => {
+    const hold = []; const e = env(fx(), { hold }); const go = setInterval(() => { while (hold.length) hold.shift()(); }, 1);
+    await e.HR.sem.build(); clearInterval(go);
+    const p = e.HR.sem.search('car'); await tick(); act(e); while (hold.length) hold.shift()();
+    await assert.rejects(p, err => err.kind === 'changed' || err.kind === 'noprov');
+  });
+}
+test('AG34.1 folder switch during build: nothing written', async () => {
+  const hold = []; const e = env(fx(), { hold }); const p = e.HR.sem.build(); await tick(); e.folder.name = 'other';
+  const go = setInterval(() => { while (hold.length) hold.shift()(); }, 1); await assert.rejects(p, err => err.kind === 'changed'); clearInterval(go); assert.equal(e.F[IDX], undefined);
 });

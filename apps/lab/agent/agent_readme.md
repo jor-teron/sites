@@ -399,11 +399,14 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
   - **Build / Rebuild:** a confirm says how many pieces and characters go to which provider and model, and that it may cost.
   - **Stop**, and **Delete index** (deletes the derived file only).
 - Keys in `agent.settings`: `semProvider`, `semModel`, `semDocPrefix`, `semQueryPrefix`.
-- **What is indexed:** `memory/user.md`, `memory/assistant.md`, `memory/topics/*.md` and `knowledge/raw/*.txt|*.md`. **Session notes are not indexed**, so a shared index never holds a chat's private notes; keyword `memory_search` still covers this chat's session. Never the diary, chats, prompts or configs.
+- **What is indexed** (session notes deliberately excluded; keyword `memory_search` covers this chat's session): `memory/user.md`, `memory/assistant.md`, `memory/topics/*.md` and `knowledge/raw/*.txt|*.md`. **Session notes are not indexed**, so a shared index never holds a chat's private notes; keyword `memory_search` still covers this chat's session. Never the diary, chats, prompts or configs.
 - **Index file:** `agent/knowledge/index/semantic.json` (folder only):
-  - `{v:1, fp:{provider, model, dims, docPrefix, queryPrefix}, built, chunks:[{path, scope, a, b, hash, vec}]}`.
+  - `{v:2, fp:{provider, model, dims, docPrefix, queryPrefix, ident}, partial, built, chunks:[{path, scope, s, e, a, b, hash, vec}]}`. A v1 index from the first AG34 build asks for Rebuild.
   - Vectors are unit-normalised to 5 decimals. No document text and no credentials are stored.
-- **Chunks:** ≤ 20 lines and ≤ 1500 chars. A single longer line is embedded from its first 1500 chars.
+- **Chunks (AG34.1):** exact character spans `[s, e)` of the file, ≤ 20 lines and ≤ 1500 chars. A longer line is split into 1500-char spans, so every character is in exactly one chunk. `a`–`b` are the lines cited. `hash` covers exactly the embedded text (before any prefix), and search re-reads that exact span.
+- **Partial index:** pieces over the 2000-chunk cap and files over 250 / 512 KB are left out. This is recorded in `partial` and shown in the status and in tool results.
+- **Provider identity (AG34.1):** `fp.ident` is a hash of the provider's public Hub metadata: `HubProviders.info(id)` type and endpoint for `svc_…` (never `secret()`), or the Hub Ollama URL. Only the hash is stored. An endpoint edit under the same id makes the index unusable, also after reload, until Rebuild. A removed provider, a non-OpenAI type or one with no key is "not available": nothing is sent, and it disappears from the list. A Hub provider change event stops a running build for it.
+- **Async safety:** a search re-checks the index, settings, provider identity, folder and Memory after the query embedding and before re-reading any file, and again before returning. A change in between discards the results. A build writes nothing if the folder, settings or provider changed meanwhile, and a folder switch stops it.
 - **Build limits:** ≤ 250 files, ≤ 512 KB each, ≤ 2000 chunks, ≤ 1.5 M stored numbers, dims ≤ 4096. Batches are ≤ 32 inputs and ≤ 60 000 UTF-8 bytes, within the Hub caps.
 - **Build safety:** every reply is checked (one finite, nonzero vector per input, all the same size). The file is written once, only after all batches succeed and the settings are unchanged. Stop, an error or a settings change keeps the previous index.
 - **Tool `memory_semantic_search(query, limit?)`:**
