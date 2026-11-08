@@ -75,8 +75,8 @@ test('answer length: Normal adds nothing, Short/Detailed reach the system prompt
   HR.set.put('answerLength', 'weird'); assert.equal(HR.length.get(), 'normal');
 });
 
-test('loop path: chat.js system() runs addTo, so every loop step (tool follow-ups too) carries it', () => {
-  assert.match(read('app/gui/chat.js'), /system: function \(\) \{ return HR\.prompt\.system\(\)\.then\(HR\.length\.addTo\)/);
+test('loop path: prompt.system (called by the loop every step, tool follow-ups too) carries the length line', () => {
+  assert.match(read('app/core/prompt.js'), /\[s, st, len, block\]/);   /* AG35 moved the length line into prompt.system */
   assert.match(read('app/core/loop.js'), /var sys = o\.system \? await o\.system\(\) : ''/);
   const html = read('agent.html');
   for (const f of ['app/core/length.js', 'app/core/assist.js', 'app/gui/assistset.js']) assert.ok(html.includes('src="' + f + '"'));

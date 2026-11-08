@@ -135,15 +135,18 @@ HR.prompt = (function () {
     if (have.memory_semantic_search) L.push(await part('prompt_memory.txt', 'semantic'));   /* AG34 */
     return L.join('\n');
   }
+  /* AG35: stable-first order for provider prefix caching. Static parts first (system.md, settings/tool lines, the AG31
+     answer-length line), the memory block (changes when a note is saved) last. No time, ids or retrieved text here.
+     Built fresh on every call (no memoised copy), so edits to memory or settings show at once. */
   async function system() {
-    var st = await settings();
-    if (!HR.fs.ready()) return st;
+    var st = await settings(), len = HR.length ? HR.length.text() : '';
+    if (!HR.fs.ready()) return [st, len].filter(Boolean).join('\n\n');
     var s = '', block = '';
     try { s = await base(); } catch (e) { if (e && e.promptAsset) throw e; s = ''; }
     var memText = '';
     try { memText = HR.perms.memory() ? await HR.mem.block(HR.chats && HR.chats.id()) : ''; } catch (e) { memText = ''; }
     if (memText) block = (await part('prompt_memory.txt', 'block')) + '\n' + memText;
-    return [s, st, block].filter(Boolean).join('\n\n');
+    return [s, st, len, block].filter(Boolean).join('\n\n');   /* AG35 Legacy: [s, st, block] + chat.js appended the length line after memory */
   }
   return { system: system, settings: settings, SYS: SYS };
 })();

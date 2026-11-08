@@ -12,7 +12,8 @@
    AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
    AG30: VER agent-ag30 so install precaches usage.html (the Usage page) and the files it links.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag34', PAGES = ['agent.html', 'image.html', 'usage.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+var FILES = 'agent-files', VER = 'agent-ag35', PAGES = ['agent.html', 'image.html', 'usage.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+/* AG35 Legacy: VER = 'agent-ag34'. AG35 bumps it for the prompt order change. */
 /* AG34 Legacy: VER = 'agent-ag33'. AG34 bumps it for semantic.js, search_semantic.js, semview.js. */
 /* AG33 Legacy: VER = 'agent-ag32'. AG33 bumps it for knowledge.js, ksearch.js, search_memory.js, knowview.js. */
 /* AG32 Legacy: VER = 'agent-ag31'. AG32 bumps it for core/summary.js and gui/summaryview.js. */

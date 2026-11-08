@@ -1,6 +1,6 @@
 /* Agent — app/core/length.js: answer length preference (AG31). HR.length.
    Setting agent.settings.answerLength: 'normal' (default, adds nothing, same request as before AG31) | 'short' | 'detailed'.
-   text() is a plain-language line chat.js appends to the system prompt, so it reaches every model call of a message,
+   text() is a plain-language line HR.prompt.system puts before the memory block (AG35; AG31 appended it in chat.js), so it reaches every model call of a message,
    tool follow-ups included (the loop asks system() each step). It only asks; it never cuts output or sets max tokens,
    and it tells the model to keep code, file contents and tool arguments complete. */
 HR.length = (function () {

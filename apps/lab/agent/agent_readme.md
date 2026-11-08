@@ -417,3 +417,11 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
   - Results are quoted data with `path:lines`, not instructions.
 - Keyword `memory_search` stays the default and works without any index.
 - Tests: `tests/ag34.test.cjs` (mocked HubAPI).
+
+## AG35 (first stage) — stable prompt prefix
+
+- **Prefix preparation only.** The system prompt is now built stable-first: `system.md`, then the settings/tool lines, then the AG31 answer-length line, then the memory block last (it changes when a note is saved). Before, the length line came after memory.
+- There is no time, chat id or retrieved text in the system prompt. Tool schemas keep their fixed registration order. The prompt is rebuilt on every call (nothing cached in Agent), so memory and settings edits apply at once. Normal answer length still adds nothing.
+- Providers that cache long repeated prompt prefixes on their side (automatic) may now reuse more of it. Agent does not turn anything on, cannot see whether it happened, and makes no savings claims. Caching does not enlarge the context or cut what is sent.
+- **Cache reporting is pending the central HubAPI:** `chatAdvanced` usage currently has no cached-token fields. Explicit caches (e.g. Gemini cachedContent) are not supported. Nothing about cache is shown yet.
+- Tests: `tests/ag35.test.cjs` (captured mocked requests through the real loop).
