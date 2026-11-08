@@ -1,5 +1,6 @@
 /* Agent — app/storage/usage.js: token usage log (AG7). HR.usage: record(provider, model, inTok, outTok, est), month(ym), ym(), day().
-   Per day, per "provider|model": {p (prompt / input tokens), o (output tokens), n (calls), e (calls with estimated counts)}.
+   Per day, per "provider|model": {p (prompt / input tokens), o (output tokens), n (calls), e (calls with estimated counts),
+   AG35: c / k / kp only when a provider reported cache reads (see record)}.
    Folder connected: agent/usage/YYYY_MM.json ({v:1, days:{'YYYY-MM-DD':{'provider|model':{p,o,n,e}}}}); no folder:
    the same JSON in IndexedDB 'agent-chats'/'kv' under 'usage:YYYY_MM'. Writes are queued one after another.
    AG6: credits(service, n) adds API credits (Tavily) to the month: j.credits {service: n} and j.days[d]._credits {service: n}.
@@ -26,12 +27,16 @@ HR.usage = (function () {
     try { var o = JSON.parse(t || '{}'); return o && o.days ? o : { v: 1, days: {} }; } catch (e) { return { v: 1, days: {} }; }
   }
   function save(m, o) { var t = JSON.stringify(o, null, 1); return HR.fs.ready() ? HR.fs.write(path(m), t) : db('readwrite', function (s) { return s.put(t, 'usage:' + m); }); }
-  function record(prov, model, p, o, est) {
+  /* AG35: optional cache = HR.cacheMeta.read(res) ({cached, prompt}) or null/undefined (unknown). Stored beside the totals:
+     c (reported cached input tokens), k (calls that reported), kp (those calls' input tokens). p / o / n / e are unchanged. */
+  function record(prov, model, p, o, est, cache) {
     p = Math.max(0, Math.round(+p || 0)); o = Math.max(0, Math.round(+o || 0)); if (!p && !o) return q;
+    var ck = cache && Number.isSafeInteger(cache.cached) && cache.cached >= 0 && cache.prompt === p && cache.cached <= p ? cache : null;
     var m = ym(), d = day(), key = prov + '|' + model;
     q = q.then(async function () {
       var j = await month(m), dd = j.days[d] = j.days[d] || {}, r = dd[key] = dd[key] || { p: 0, o: 0, n: 0, e: 0 };
       r.p += p; r.o += o; r.n += 1; if (est) r.e += 1;
+      if (ck) { r.c = (r.c || 0) + ck.cached; r.k = (r.k || 0) + 1; r.kp = (r.kp || 0) + p; }
       await save(m, j); subs.forEach(function (f) { try { f(); } catch (e) {} });
     }).catch(function () { /* usage is best effort */ });
     return q;

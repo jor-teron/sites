@@ -425,3 +425,9 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 - Providers that cache long repeated prompt prefixes on their side (automatic) may now reuse more of it. Agent does not turn anything on, cannot see whether it happened, and makes no savings claims. Caching does not enlarge the context or cut what is sent.
 - **Cache reporting is pending the central HubAPI:** `chatAdvanced` usage currently has no cached-token fields. Explicit caches (e.g. Gemini cachedContent) are not supported. Nothing about cache is shown yet.
 - Tests: `tests/ag35.test.cjs` (captured mocked requests through the real loop).
+
+## AG35 stage 2 — provider-reported cached input (needs Hub H141)
+- `app/core/cachemeta.js` reads the optional Hub `res.usage.cache = {cached_input_tokens, source}`. It accepts a value only when it is a nonnegative safe integer from a known source, the reply has a real `prompt_eval_count`, and the cached count is ≤ that prompt count. An explicit 0 is kept as 0. Anything else counts as unknown. Nothing is inferred from latency or prefix matching, and there is no caching toggle.
+- The value is stored per assistant message (`usage.c`) and per call in the monthly usage rows: `c` = cached tokens, `k` = calls that reported, `kp` = input tokens of those calls. `p`/`o`/`n`/`e` are unchanged, so the cached tokens are not added to the totals a second time. Estimated or mismatched counts never record cache. Legacy rows stay unknown.
+- The step panel shows "cached input (provider)" only when a value was reported. The Usage page column shows "c of kp input (x%) · k of n calls reported", "unknown" or "unreadable". There are no money estimates. Assist calls are tracked the same way.
+- Caveats: Gemini explicit caches and cache-write accounting are deferred. Ollama always shows unknown. Without H141 the Agent behaves exactly as before.

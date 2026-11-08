@@ -120,5 +120,5 @@ test('no folder: empty results, import refuses, nothing thrown for search', asyn
 
 test('UI uses textContent for file text', () => {
   const v = read('app/gui/knowview.js'); assert.doesNotMatch(v, /innerHTML\s*=\s*(?![\s']*'')/); assert.match(read('agent.html'), /id="btnKnowImp"/);
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag3[3-9]'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag3[3-9][a-z]?'/);
 });

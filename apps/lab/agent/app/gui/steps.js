@@ -33,7 +33,7 @@ HR.steps = (function () {
       kv(a, 'last user', cut(req.last || '', 160)); kv(a, 'think', req.think);
       kv(b, 'status', s.status); kv(b, 'time', s.ms ? (s.ms / 1000).toFixed(2) + ' s' : '');
       kv(b, 'reply chars', r.chars); kv(b, 'thinking chars', r.thinkChars || ''); kv(b, 'tool calls', r.tool_calls);
-      kv(b, 'tokens', r.eval_count); kv(b, 'prompt tokens', r.prompt_eval_count); kv(b, 'tok/s', r.tps ? r.tps.toFixed(1) : '');
+      kv(b, 'tokens', r.eval_count); kv(b, 'prompt tokens', r.prompt_eval_count); kv(b, 'cached input (provider)', r.cached_input === '' || r.cached_input == null ? '' : String(r.cached_input));   /* AG35: only when reported */ kv(b, 'tok/s', r.tps ? r.tps.toFixed(1) : '');
       kv(b, 'done reason', r.done_reason); kv(b, 'error', r.error);
       body.append(el('div', 'st-sub', 'Request'), a, el('div', 'st-sub', 'Response'), b);
     });

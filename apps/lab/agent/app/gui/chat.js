@@ -32,10 +32,11 @@ HR.chat = (function () {
       done: function (s) {
         var tps = HR.ollama.tps(s); a.tool_calls = (s.tool_calls || []).length ? s.tool_calls : undefined;
         a.stats = { tokens: s.eval_count || chunks, tps: tps || (first ? chunks / Math.max(.001, (performance.now() - first) / 1000) : 0), sec: (performance.now() - t0) / 1000 };
-        if (s.prompt_eval_count) a.usage = { p: s.prompt_eval_count, o: s.eval_count || 0 };
-        try { HR.usage.record(HR.models.id(), req.model, s.prompt_eval_count || HR.meter.est(), s.eval_count || chunks, !s.prompt_eval_count || !s.eval_count); } catch (e) { /* AG7 usage is best-effort */ }
+        var cm = HR.cacheMeta ? HR.cacheMeta.read(s) : null;   /* AG35: provider-reported cache reads, else unknown */
+        if (s.prompt_eval_count) { a.usage = { p: s.prompt_eval_count, o: s.eval_count || 0 }; if (cm) a.usage.c = cm.cached; }
+        try { HR.usage.record(HR.models.id(), req.model, s.prompt_eval_count || HR.meter.est(), s.eval_count || chunks, !s.prompt_eval_count || !s.eval_count, cm); } catch (e) { /* AG7 usage is best-effort */ }
         HR.logs.assistant(a); setTimeout(HR.meter.update, 0);
-        close('ok', { eval_count: s.eval_count, prompt_eval_count: s.prompt_eval_count, done_reason: s.done_reason, tps: a.stats.tps, tool_calls: a.tool_calls ? a.tool_calls.length : '' });
+        close('ok', { eval_count: s.eval_count, prompt_eval_count: s.prompt_eval_count, cached_input: cm ? cm.cached : '', done_reason: s.done_reason, tps: a.stats.tps, tool_calls: a.tool_calls ? a.tool_calls.length : '' });
         return a;
       },
       stopped: function () { a.stats = { tokens: chunks, sec: (performance.now() - t0) / 1000, note: 'stopped' }; close('stop', {}); HR.logs.assistant(a, 'stopped'); if (a.content || a.thinking) return a; view.el.remove(); return null; },

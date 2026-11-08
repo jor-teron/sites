@@ -42,7 +42,8 @@ HR.assist = (function () {
     var text = String(res.content != null && !out ? res.content : out).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     var cap = o.maxChars > 0 ? o.maxChars : 4000; if (text.length > cap) text = text.slice(0, cap);
     var usage = { p: res.prompt_eval_count || 0, o: res.eval_count || 0 };
-    try { HR.usage.record(s.provider, s.model, usage.p || Math.ceil(JSON.stringify(msgs).length / 4), usage.o || Math.ceil(text.length / 4), !usage.p || !usage.o); } catch (e) { /* best-effort, like chat */ }
+    var cm = HR.cacheMeta ? HR.cacheMeta.read(res) : null; if (cm) usage.c = cm.cached;   /* AG35 */
+    try { HR.usage.record(s.provider, s.model, usage.p || Math.ceil(JSON.stringify(msgs).length / 4), usage.o || Math.ceil(text.length / 4), !usage.p || !usage.o, cm); } catch (e) { /* best-effort, like chat */ }
     var r = { text: text, provider: s.provider, model: s.model, usage: usage };
     if (o.json) { var m = text.match(/[\[{][\s\S]*[\]}]/); try { r.data = JSON.parse(m ? m[0] : text); } catch (e) { r.data = null; } }
     return r;

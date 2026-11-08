@@ -38,12 +38,16 @@ HR.usageView = (function () {
         var dd = days[d] || {};
         Object.keys(dd).forEach(function (key) {
           if (key === '_credits') return;
-          var r = dd[key] || {}, t = rows[key] || (rows[key] = { p: 0, o: 0, n: 0, e: 0, badP: false, badO: false, badN: false, badE: false });
+          var r = dd[key] || {}, t = rows[key] || (rows[key] = { p: 0, o: 0, n: 0, e: 0, c: 0, k: 0, kp: 0, badP: false, badO: false, badN: false, badE: false, badC: false });
           var p = take(r.p), o = take(r.o), n = take(r.n), e = take(r.e, true);
           if (p.bad) t.badP = bad = true; else t.p += p.n;
           if (o.bad) t.badO = bad = true; else t.o += o.n;
           if (n.bad) t.badN = bad = true; else t.n += n.n;
           if (e.bad) t.badE = bad = true; else t.e += e.n;
+          if (r.k != null || r.c != null || r.kp != null) {   /* AG35: reported cache reads (absent = unknown, not 0) */
+            var c = take(r.c), k = take(r.k), kp = take(r.kp);
+            if (c.bad || k.bad || kp.bad || c.n > kp.n) t.badC = true; else { t.c += c.n; t.k += k.n; t.kp += kp.n; }
+          }
         });
       });
       if (mode === 'today') {
@@ -73,6 +77,13 @@ HR.usageView = (function () {
     if (!r || typeof r !== 'object') r = {};
     function side(v) { return v != null && Number.isFinite(Number(v)) ? Number(v) : null; }
     return { in: side(r.in), out: side(r.out) };
+  }
+  /* AG35: plain text only. Ratio uses only the calls that reported, against their own input tokens. */
+  function cacheText(r) {
+    if (r.badC) return 'unreadable';
+    if (!r.k) return 'unknown';
+    var s = r.c.toLocaleString() + ' of ' + r.kp.toLocaleString() + ' input' + (r.kp ? ' (' + Math.round(r.c / r.kp * 100) + '%)' : '');
+    return s + (r.k < r.n ? ' · ' + r.k + ' of ' + r.n + ' calls reported' : '');
   }
   function th(text) { var h = el('th', null, text); h.setAttribute('scope', 'col'); return h; }
   function tokCell(n, approx, bad) { return bad ? el('td', 'us-na', 'Unreadable') : el('td', null, (approx ? '≈' : '') + int(n)); }
@@ -138,7 +149,7 @@ HR.usageView = (function () {
     groups.forEach(function (g) {
       host.appendChild(el('h3', 'us-prov', g.provider));
       var wrap = el('div', 'us-scroll'), t = el('table', 'us-t'), hr = el('tr');
-      ['Model', 'Calls', 'Input tokens', 'Output tokens', 'Estimated spend'].forEach(function (h) { hr.appendChild(th(h)); });
+      ['Model', 'Calls', 'Input tokens', 'Output tokens', 'Cached input (reported)', 'Estimated spend'].forEach(function (h) { hr.appendChild(th(h)); });
       t.appendChild(hr);
       g.models.forEach(function (m) {
         var r = m.row, tr = el('tr');
@@ -147,6 +158,7 @@ HR.usageView = (function () {
         tr.appendChild(tokCell(r.n, false, r.badN));
         tr.appendChild(tokCell(r.p, r.e > 0 && !r.badE && !r.badP, r.badP));
         tr.appendChild(tokCell(r.o, r.e > 0 && !r.badE && !r.badO, r.badO));
+        tr.appendChild(el('td', 'us-n', cacheText(r)));
         tr.appendChild(spendCell(m.key, r));
         t.appendChild(tr);
         if (!r.badN) tot.n += r.n; else tot.badN = true;
@@ -178,6 +190,7 @@ HR.usageView = (function () {
     host.appendChild(el('p', 'hint us-image', 'Image generation: no image-cost records are stored with each picture, so image spend is not listed here and is not mixed into the token totals.'));
     host.appendChild(el('p', 'hint us-credits', view.creditsSeen ? 'Tavily credits recorded for this period: ' + view.credits + '. Search credits are not token spend and not a provider bill.' : 'No Tavily credits recorded for this period. Search credits are not token spend.'));
     if (view.bad) host.appendChild(el('p', 'hint', 'A stored count was not a number and is marked Unreadable. It is not counted as zero.'));
+    host.appendChild(el('p', 'hint', 'Cached input is what the provider said it read from its own prompt cache, as part of the input tokens (not extra, not a saving). unknown = not reported. Only some providers report it.'));
     if (approx) host.appendChild(el('p', 'hint', 'A mark of ≈ means at least one call in that row was estimated as characters / 4 because the provider did not send a token count.'));
   }
   function renderRates(host, rateRows, listedOk) {
@@ -243,7 +256,7 @@ HR.usageView = (function () {
     if (document.getElementById('usagePage')) return boot();
     return Promise.resolve();
   }
-  return { init: init, draw: draw, rollup: rollup, groupsOf: groupsOf };
+  return { init: init, draw: draw, rollup: rollup, groupsOf: groupsOf, cacheText: cacheText };   /* AG35: + cacheText */
 })();
 
 /* AG30 Legacy: Settings → Usage (AG7–AG29) rendered two tables into #usageBox and edited prices there.
