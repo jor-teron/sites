@@ -79,3 +79,10 @@ html.motion-off * { transition: none !important; }
   .key-line.prov-keyline .key-btn { flex: 0 0 48px; }
 }
 
+
+/* H138c: compact, keyboard-accessible NVIDIA setup guidance. */
+.prov-nvidia { margin: 2px 0 8px; }
+.prov-setup { margin: 0 0 12px; }
+.prov-setup summary { cursor: pointer; color: var(--accent); padding: 4px 0; }
+.prov-setup .key-hint { overflow-wrap: anywhere; }
+.prov-test-note { margin-top: 8px !important; }

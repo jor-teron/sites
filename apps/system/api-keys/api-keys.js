@@ -19,7 +19,7 @@
  * H134a: "Used by" comes from the four visible HubKeys definitions.
  * H134c/H134e: 'Providers' section (hub/core/hub_providers.js, HubCredentials providers section): Label, Provider type
  *   (OpenAI-compatible | Gemini), API endpoint, API key; stable id svc_… per service; Save / Test / Delete. The saved key
- *   is never written back into the page. Test = GET <endpoint>/models (free). Deep link #keys/svc_… scrolls to that row.
+ *   is never written back into the page. Test = GET <endpoint>/models (model listing only, not inference verification). Deep link #keys/svc_… scrolls to that row.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
  */
 (function () {
@@ -198,19 +198,62 @@
   const P = (() => { try { if (window.top !== window && window.top.HubProviders) return window.top.HubProviders; } catch (_) { /* cross-origin */ } return window.HubProviders; })();
   const PROV_PH = { openai: 'https://api.example.com/v1', gemini: 'https://generativelanguage.googleapis.com/v1beta (empty = this)' };
 
+  const NVIDIA_BASE = 'https://integrate.api.nvidia.com/v1';
+  const NOT_INFERENCE = ' Inference was not tested.';
+
+  // Validate base URLs, never silently rewrite full request paths or arbitrary compatible bases.
+  // Shared provider storage still owns general validation; this editor prevents accidental suffix duplication.
+  function providerBase(value, type) {
+    const raw = String(value || '').trim();
+    if (!raw) return raw; // Gemini's default / required OpenAI base are handled by HubProviders
+    let url;
+    try { url = new URL(raw); } catch (_) { throw new Error('API endpoint must be a valid base URL.'); }
+    if (!/^https?:$/.test(url.protocol) || url.username || url.password || url.search || url.hash) {
+      throw new Error('Use an HTTP(S) base URL without login, query or fragment. Put the key only in the API key field.');
+    }
+    const path = url.pathname.replace(/\/+$/, '');
+    if (type === 'openai' && /\/chat\/completions$/i.test(path)) {
+      throw new Error('Use the API base URL, not the full /chat/completions request URL. NVIDIA base: ' + NVIDIA_BASE);
+    }
+    if (/\/models$/i.test(path)) {
+      throw new Error('Use the API base URL, not the /models test URL; the app adds /models itself.');
+    }
+    return url.href.replace(/\/+$/, '');
+  }
+
   async function provTest(id) {
     const s = await P.secret(id);
-    if (!s) return { ok: false, text: 'Not saved' };
-    if (!s.endpoint) return { ok: false, text: 'Add the API endpoint first' };
+    if (!s) return { ok: false, text: 'Provider is not saved.' + NOT_INFERENCE };
+    if (!s.endpoint) return { ok: false, text: 'Add the API base endpoint first.' + NOT_INFERENCE };
+    let base;
+    try { base = providerBase(s.endpoint, s.type); }
+    catch (e) { return { ok: false, text: e.message + NOT_INFERENCE }; } // only our fixed validation text
     const gem = s.type === 'gemini';
     const h = s.key ? (gem ? { 'x-goog-api-key': s.key } : { Authorization: 'Bearer ' + s.key }) : {};
-    const r = await fetchT(trimSlash(s.endpoint) + (gem ? '/models?pageSize=1000' : '/models'), { headers: h, credentials: 'omit' });
-    if (r.status === 400 || r.status === 401 || r.status === 403) return { ok: false, text: (s.key ? 'Key rejected' : 'Needs an API key') + ' (' + r.status + ')' };
-    if (r.status === 404) return { ok: false, text: 'No model list at this endpoint (404). Check the URL (it usually ends in /v1)' };
-    if (!r.ok) return { ok: false, text: 'Server answered ' + r.status };
-    const j = await r.json().catch(() => ({}));
-    const n = (j.data || j.models || []).length;
-    return { ok: true, text: 'Works' + (n ? ' \u00b7 ' + n + ' models' : '') };
+    const r = await fetchT(base + (gem ? '/models?pageSize=1000' : '/models'), { headers: h, credentials: 'omit' });
+    const messages = {
+      400: 'Model-list request refused (400). Check the base URL and model-list support; this does not prove the key is invalid.',
+      401: 'Authentication failed (401). Check the API key and provider account.',
+      403: 'Access denied (403). Check API permissions or model-list access; this does not prove the key is invalid.',
+      404: 'Model list not found (404). Check the base URL; this provider may not support model listing.',
+      429: 'Rate limit or quota reached (429). Try later or check provider usage.',
+    };
+    if (!r.ok) {
+      const status = Number(r.status);
+      const text = messages[status] || (status >= 500 && status <= 599
+        ? 'Provider server error (' + status + '). Try later.'
+        : 'The provider did not return a successful model list.');
+      return { ok: false, text: text + NOT_INFERENCE };
+    }
+    let j;
+    try { j = await r.json(); }
+    catch (_) { return { ok: false, text: 'Model-list response was not valid JSON.' + NOT_INFERENCE }; }
+    const models = j && typeof j === 'object' && !Array.isArray(j) && !j.error ? (gem ? j.models : j.data) : null;
+    if (!Array.isArray(models) || !models.every((m) => m && typeof m === 'object' &&
+      typeof (gem ? m.name : m.id) === 'string' && (gem ? m.name : m.id).trim())) {
+      return { ok: false, text: 'Model-list response had an unexpected format.' + NOT_INFERENCE };
+    }
+    return { ok: true, text: 'Model list received \u00b7 ' + models.length + ' model' + (models.length === 1 ? '' : 's') + '.' + NOT_INFERENCE };
   }
 
   /** the four inputs, shared by a saved row and the Add card */
@@ -252,11 +295,11 @@
     const f = provFields(card, null);
     const line = ui.el('div', 'key-line');
     const save = ui.el('button', 'key-btn key-save', 'Save'); save.type = 'button';
-    const tbtn = ui.el('button', 'key-btn', 'Test'); tbtn.type = 'button';
+    const tbtn = ui.el('button', 'key-btn', 'Test model list'); tbtn.type = 'button';
     const del = ui.el('button', 'key-btn key-del', 'Delete'); del.type = 'button';
     line.append(save, tbtn, del);
     const out = ui.el('p', 'key-out', ''); out.setAttribute('aria-live', 'polite');
-    card.append(line, out);
+    card.append(line, ui.el('p', 'key-hint prov-test-note', 'Test only lists models; it does not verify inference, model access or available credits.'), out);
     const say = (text, cls) => { out.textContent = text; out.className = 'key-out' + (cls ? ' ' + cls : ''); };
     function load() {
       const v = P.info(id);
@@ -271,7 +314,7 @@
     }
     function doSave() {
       try {
-        P.update(id, { label: f.lab.value, type: f.typ.value, endpoint: f.end.value, key: f.key.value });
+        P.update(id, { label: f.lab.value, type: f.typ.value, endpoint: providerBase(f.end.value, f.typ.value), key: f.key.value });
         say('Saved', 'ok');
       } catch (e) { say(String((e && e.message) || 'Could not save'), 'bad'); return false; }
       load();
@@ -294,9 +337,9 @@
     });
     tbtn.addEventListener('click', async () => {
       if (!save.disabled && !doSave()) return;
-      tbtn.disabled = true; say('Testing…');
+      tbtn.disabled = true; say('Testing model list…');
       try { const r = await provTest(id); say(r.text, r.ok ? 'ok' : 'bad'); }
-      catch (e) { say(e && e.name === 'AbortError' ? 'Timed out' : 'Could not reach the endpoint (offline, wrong URL, or it blocks browser requests)', 'bad'); }
+      catch (e) { say((e && e.name === 'AbortError' ? 'Model-list request timed out.' : 'Model list could not be reached. Network, endpoint or browser restrictions (possibly CORS) may be responsible; the key has not been verified.') + NOT_INFERENCE, 'bad'); }
       tbtn.disabled = false;
     });
     card.reload = load;
@@ -310,6 +353,14 @@
     const card = ui.el('section', 'card key-row key-add prov-add');
     card.appendChild(ui.el('b', 'key-label', 'Add provider'));
     card.appendChild(ui.el('p', 'key-hint', 'OpenAI, Groq, OpenRouter, LM Studio, vLLM or another service. Type chooses the request format; apps choose the model.'));
+    const setup = ui.el('details', 'prov-setup');
+    const summary = ui.el('summary', '', 'NVIDIA setup');
+    const guide = ui.el('p', 'key-hint'); guide.id = 'nvidia-guide';
+    guide.textContent = 'Use OpenAI-compatible with base ' + NVIDIA_BASE + ', not the full /chat/completions URL. Paste only the key in the key field. Apps choose the model. A preset cannot bypass browser restrictions; a trusted relay/proxy may be required and is not supplied here.';
+    const preset = ui.el('button', 'key-btn prov-nvidia', 'Use NVIDIA preset');
+    preset.type = 'button'; preset.setAttribute('aria-describedby', 'nvidia-guide');
+    setup.append(summary, guide);
+    card.append(preset, setup);
     const f = provFields(card, null);
     f.key.placeholder = 'API key (optional for a local server)';
     const line = ui.el('div', 'key-line');
@@ -317,9 +368,17 @@
     line.append(add);
     const out = ui.el('p', 'key-out', ''); out.setAttribute('aria-live', 'polite');
     card.append(line, out);
+    preset.addEventListener('click', () => {
+      f.lab.value = 'NVIDIA'; f.typ.value = 'openai'; f.end.value = NVIDIA_BASE;
+      f.typ.dispatchEvent(new Event('change'));
+      // Never alter the typed key, save or fetch automatically.
+      out.textContent = 'NVIDIA fields filled. Add provider to save; Test model list is a separate optional action.';
+      out.className = 'key-out';
+      f.key.focus();
+    });
     function go() {
       let id;
-      try { id = P.add({ label: f.lab.value, type: f.typ.value, endpoint: f.end.value, key: f.key.value }); }
+      try { id = P.add({ label: f.lab.value, type: f.typ.value, endpoint: providerBase(f.end.value, f.typ.value), key: f.key.value }); }
       catch (e) { out.textContent = String((e && e.message) || 'Could not add'); out.className = 'key-out bad'; return; }
       f.lab.value = ''; f.end.value = ''; f.key.value = '';
       out.textContent = 'Added \u00b7 id ' + id; out.className = 'key-out ok';
