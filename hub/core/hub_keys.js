@@ -101,17 +101,25 @@
     return ok ? n : 0;
   }
 
-  // Settings app url, relative to this script (hub/core/hub_keys.js → apps/system/settings/)
+  // H138b: preserve the public opener and legacy SETTINGS_URL constant, but target the new app.
   const SELF = (document.currentScript && document.currentScript.src) || location.href;
   const SETTINGS_URL = new URL('../../apps/system/settings/', SELF).href;
+  const API_KEYS_URL = new URL('../../apps/system/api-keys/', SELF).href;
   function open(name) {
     const n = norm(name);
     const hash = 'keys' + (n ? '/' + encodeURIComponent(n) : '');
-    // Inside the Hub: the normal Hub way (window in Desktop mode, the frame in Phone mode)
-    if (window.__hubOpenApp && window.__hubOpenApp('apps/system/settings/', { hash })) return true;
-    // This page is Settings itself (opened on its own): just move to the row
-    if (location.href.split('#')[0].indexOf(SETTINGS_URL) === 0) { location.hash = hash; return true; }
-    window.open(SETTINGS_URL + '#' + hash, '_blank', 'noopener');
+    // Already in the editor: update its row, never open another copy or route to Settings.
+    const here = new URL(location.href);
+    const app = new URL(API_KEYS_URL);
+    if (here.origin === app.origin && (here.pathname === app.pathname || here.pathname === app.pathname + 'index.html')) {
+      location.hash = hash;
+      return true;
+    }
+    try {
+      const host = window.top || window;
+      if (host.__hubOpenApp && host.__hubOpenApp('apps/system/api-keys/', { hash })) return true;
+    } catch (_) { /* cross-origin host: keep standalone behavior */ }
+    window.open(API_KEYS_URL + '#' + hash, '_blank', 'noopener');
     return true;
   }
 
@@ -129,6 +137,6 @@
   listeners.add(() => { last = JSON.stringify(read()); });   // keep the diff base fresh after our own writes
 
   // window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL };   // (before H29.3)
-  window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL,
+  window.HubKeys = { get, set, remove, has, list, open, onChange, KNOWN, STORE, SETTINGS_URL, API_KEYS_URL,
     backupKeys, backupInfo, restoreBackup, clearBackup, UNDO };   // H29.3
 })();

@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261108a';
-const CACHE = 'hub-shell-v154';  // H138a: centralized credential store
+const V = '20261108b';
+const CACHE = 'hub-shell-v155';  // H138b: standalone API Keys app
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -83,6 +83,8 @@ const SHELL = [
   'apps/system/terminal/terminal_worker.js', 'apps/system/terminal/terminal_rc.js',   // T7: the BusyBox worker (+ T6 settings file) work offline
   // (before H129c) 'hub/link/hub_panels.css', 'hub/link/hub_panels.js',
   'desktop/panels/hub_panels.css', 'desktop/panels/hub_panels.js',   // H27   (H129c: → desktop/)
+  'apps/system/api-keys/index.html', 'apps/system/api-keys/api-keys.js',
+  'apps/system/api-keys/api-keys.css', 'apps/system/api-keys/api-keys_icon.png', // H138b
   'hub/core/hub_credentials.js', 'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
   'hub/core/hub_api.js',   // H134b: shared AI request helper
   'hub/core/hub_providers.js',   // H134c: custom AI services store
