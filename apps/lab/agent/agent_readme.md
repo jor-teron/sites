@@ -442,3 +442,25 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 - Saving uses `HR.mem.append`, so the diary line is written as usual. **Undo last save** puts both files back exactly as they were, but only if neither has changed since; otherwise it refuses. The current text goes to the trash first.
 - Gates: Off · Assist model Off · reply running · summary busy · hidden tab · still loading. Memory Off or no folder pauses notes, but summaries still run. Stop, switching chats, changing Assist, Consolidation or Memory settings, or changing folders cancels the pass, and a late reply is discarded. Edits you make in Review always win over a late reply.
 - State is kept per chat beside it: `agent/chats/threads/<id>.con.json` (or IndexedDB `con:<id>` when there's no folder). It holds `{v:1, ck:{hash, at, users, fail?}, last, queue:[{id, text, at, edited?, src:{chat, users, ctx}}], gone:[keys ≤300], undo:[{at, target, text, files:[{path, before, after}]} ≤10]}` and is deleted with the chat. The chat itself is never changed. The summary only trims what is sent to the model.
+
+## AG37 — Agent's own API & Providers (independent of the Hub's API Keys)
+- **Page:** `providers.html` ("API & Providers"; Settings › Model › 🔑 link; ← Chat goes back). There is no catalog tile. Error cards and the "Open" buttons open it at `#keys/<name or svc_id>`.
+- **Runtime:** `app/api/hub/` holds app-local copies of Hub Builder 1's code: `hub_credentials.js`, `hub_keys.js`, `hub_providers.js`, `hub_embeddings.js`, `hub_api.js` (H141) and the API Keys editor `api-keys.js` / `api-keys.css`.
+  - Each file has a provenance header (upstream path, commit, sha256) and two wrapper lines; everything else is the upstream file byte for byte.
+  - Regenerate them with `python3 apps/lab/agent/app/api/vendor.py`. `tests/ag37` fails if a copy drifts from the Hub file.
+- **Namespace:** the wrapper rebinds only `window` and `localStorage`, to `HR.apiHost` (`app/api/host.js`).
+  - Inside the copies, `window.top === window` is Agent's own object, so Agent never reads, writes or calls `window.top.HubAPI` / `HubKeys` / `HubProviders`, standalone or inside the Hub iframe.
+  - Storage keys get the prefix `agent.api:`, so the store is `agent.api:sites-hub.credentials` (same format as the Hub: `{v:1, keys, providers, undo}`).
+  - Only `agent.api:` storage events from other Agent tabs are passed through.
+- **Consumers:** `HR.hubAPI` / `HR.hubKeys` (same bridge code as AG23–AG36) now point at this runtime. That covers chat, tools, model lists, Assist, summaries and consolidation, web (Tavily), images (Gemini, OpenRouter, DeepInfra), embeddings and the AG35 cache metrics. Pollinations and the Browser model are unchanged and keyless.
+- **One store:** Settings no longer has key fields.
+  - On first load, Agent's *own* old keys are moved into the new store: `agent.keys` (Gemini and preset hosts become provider rows), `tavilyKey`, and a saved Ollama `baseUrl`. They are then removed from the old places (`app/api/legacy.js`, flag `agent.api.legacyMoved`).
+  - Unknown hosts stay in `agent.keys`, unused.
+  - The Hub's keys are never read, copied or migrated. If you used the Hub's keys before, add them again here.
+- **Semantic index:** provider identity now carries the `a` prefix (`ao…` / `as…`). An index built from the Hub's config never matches and shows as needing a rebuild. An old Hub `svc_` id selected in Agent stays unresolved ("not set up in API & Providers"); nothing is sent and nothing is silently changed.
+- **Security:** this is browser storage on this site, not a security boundary, and it is not encrypted. Key fields are password fields; Agent hides the upstream 👁 reveal button. Keys don't appear in metadata, logs, usage or chats.
+- **CORS:** providers must allow browser requests. "Test" only lists models.
+- **Limits:**
+  - If no Ollama URL is saved, Agent's built-in Ollama adapter talks to `http://localhost:11434` directly.
+  - The copied editor still shows the Hub's own rows and texts (Cloud Vision, NVIDIA, the Hub keys guide).
+  - Hub profile sync never includes `agent.api:` keys.

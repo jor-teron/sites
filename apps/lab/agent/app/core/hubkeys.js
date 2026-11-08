@@ -1,10 +1,13 @@
-/* AG24: only Gemini, Tavily and Ollama use direct Hub keys. Company tabs
+/* AG24: only Gemini, Tavily and Ollama use direct named keys. Company tabs
    discover visible HubProviders metadata; credentials stay inside HubAPI.
-   Legacy host-to-hidden-slot mapping is retired; local Agent keys stay local. */
+   AG37: every lookup goes to Agent's OWN namespace (HR.apiHost.window: app/api/hub/ copies of the Hub code, store
+   'agent.api:sites-hub.credentials'), never window.top. Legacy: top(name) read window.top[name] || window[name].
+   load() also moves Agent's own old keys (localStorage 'agent.keys', settings tavilyKey, baseUrl) into that store once
+   (app/api/legacy.js). Hub keys are never read. inHub() now means "Agent's API runtime is loaded" (always, in the app). */
 HR.hubKeys = (function () {
   var NAMES = ['tavily', 'gemini', 'ollama_url'];
   var cache = {}, subs = [], hooked = null, servicesHooked = null;
-  function top(name) { try { return (window.top && window.top[name]) || window[name] || null; } catch (e) { return window[name] || null; } }
+  function top(name) { var w = HR.apiHost && HR.apiHost.window; return (w && w[name]) || null; }   /* AG37: own namespace only */
   function hub() { var h = top('HubKeys'); return h && typeof h.get === 'function' ? h : null; }
   function providers() { var h = top('HubProviders'); return h && typeof h.list === 'function' && typeof h.info === 'function' ? h : null; }
   function norm(s) { return String(s || '').trim().replace(/\/+$/, ''); }
@@ -30,6 +33,7 @@ HR.hubKeys = (function () {
     try { var v = await h.get(n); if (v) cache[n] = String(v).trim(); else delete cache[n]; } catch (e) { delete cache[n]; }
   }
   async function load() {
+    if (HR.apiLegacy) { try { HR.apiLegacy.run(); } catch (e) {} }   /* AG37: Agent's own old keys, once */
     var h = hub(), s = providers();
     if (h) {
       await Promise.all(NAMES.map(read));

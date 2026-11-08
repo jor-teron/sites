@@ -8,7 +8,8 @@
    Settings default; chatModel() the chat's model for that provider ('' = default). Settings provider = default for new chats. API keys: localStorage 'agent.keys' {host|'gemini': key} — this device only.
    AG24: Gemini/Ollama use direct Hub settings; company tabs match visible svc_
    metadata. Custom uses only customBase. Secrets never leave HubAPI; image
-   adapters use the AG25/AG26 Hub bridge; Gemini local keys override when they differ. */
+   adapters use the AG25/AG26 Hub bridge; Gemini local keys override when they differ.
+   AG37: "Hub" here = Agent's own API runtime (app/api/), never the central Hub. */
 HR.models = (function () {
   var reg = {}, KEYS = 'agent.keys', over = '', chat = { p: '', m: '' };
   var OPENAI = 'https://api.openai.com/v1', GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
@@ -26,9 +27,12 @@ HR.models = (function () {
   function service(p, base) { return HR.hubKeys && HR.hubKeys.service ? HR.hubKeys.service(p, base) : null; }
   function hubName(p, base) { var s = service(p, base); return p === 'gemini' ? 'gemini' : s ? s.id : ''; }
   function hubKey(p) { return p === 'gemini' && HR.hubKeys ? HR.hubKeys.val('gemini') : ''; }
-  function getKey(p, base) { return hubKey(p, base) || keys()[keySlot(p, base)] || ''; }
-  function localKey(p, base) { return keys()[keySlot(p, base)] || ''; }
-  function setKey(p, base, v) { var k = keys(), s = keySlot(p, base); if (v) k[s] = v; else delete k[s]; try { localStorage.setItem(KEYS, JSON.stringify(k)); } catch (e) {} }
+  /* AG37: one store. Keys live only in Agent's API store (API & Providers page); the old Agent-local 'agent.keys'
+     values were moved there once (app/api/legacy.js) and are no longer read. Legacy:
+     getKey = hubKey || keys()[slot]; localKey = keys()[slot]; setKey wrote 'agent.keys'. */
+  function getKey(p, base) { return hubKey(p, base); }
+  function localKey() { return ''; }
+  function setKey() { /* AG37: keys are set on the API & Providers page */ }
   function hv(n) { return HR.hubKeys ? HR.hubKeys.val(n).replace(/\/+$/, '') : ''; }
   function base(p) { p = p || id(); return p === 'ollama' ? hv('ollama_url') || HR.set.get('baseUrl') : p === 'browser' ? 'this browser' : p === 'gemini' ? GEMINI : oaBase(p); }
   /* AG24: no Hub fallback for Agent's Custom endpoint. */

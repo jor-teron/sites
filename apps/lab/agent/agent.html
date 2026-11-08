@@ -17,6 +17,8 @@
   AG15: 🖼 is a link to image.html, the Image page's own page (provider tabs Pollinations / DeepInfra / Ollama).
   AG24: visible Hub service matching; hidden company key slots removed.
   AG23: chat/model lists and web tools use HubAPI when its config fits; standalone fallback kept.
+  AG37: every provider path uses Agent's OWN runtime (app/api/: Hub Builder 1 code in Agent's namespace, store
+  agent.api:sites-hub.credentials), managed on providers.html. The Hub's HubAPI / HubKeys / HubProviders are never used.
   AG27: ✎ Rename uses UiDialog.ask (shared/dialog). The Hub draws it when framed; standalone and file:// use the same dialog.
   AG28: Step limit is any safe whole number (0 = unlimited; 99 and 999 are allowed). Context size default is 128000 when none is saved.
   AG29: Prompt wording is prompts/prompt_*.txt. prompts/prompt_fallback.js (generated from those files) loads before app/core/prompt.js.
@@ -107,6 +109,7 @@
   <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="hb" id="setClose" aria-label="Close">✕</button></div>
   <div class="set-grid">
   <details class="scard" id="sc_model" open><summary><span class="sc-i">🧠</span>Model</summary><div class="sc-b">
+    <p class="hint api-link">🔑 <a href="providers.html" id="lnkProviders">API &amp; Providers</a> — Agent's own keys and providers, separate from the Hub's API Keys (set them up here again).</p>   <!-- AG37 -->
     <h3>Provider <small>(default for new chats)</small></h3><div class="seg" id="setProv" role="radiogroup" aria-label="Provider"></div>
     <div class="sc-row"><span>Model <small id="modelNow"></small></span><button type="button" class="hb wide" id="btnModelPick">Choose…</button></div>
     <p class="hubline" id="hubModelLine" hidden></p>
@@ -230,6 +233,13 @@
 <script src="app/core/consolidate.js"></script>
 <script src="app/core/ksearch.js"></script>
 <script src="app/core/semantic.js"></script>
+<script src="app/api/host.js"></script>   <!-- AG37: Agent's own provider runtime (Hub Builder 1 code, app namespace) -->
+<script src="app/api/hub/hub_credentials.js"></script>
+<script src="app/api/hub/hub_keys.js"></script>
+<script src="app/api/hub/hub_providers.js"></script>
+<script src="app/api/hub/hub_embeddings.js"></script>
+<script src="app/api/hub/hub_api.js"></script>
+<script src="app/api/legacy.js"></script>
 <script src="app/core/hubkeys.js"></script>
 <script src="app/models/net.js"></script>
 <script src="app/core/hubapi.js"></script>

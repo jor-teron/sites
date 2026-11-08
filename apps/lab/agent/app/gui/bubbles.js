@@ -100,9 +100,9 @@ HR.view = (function () {
   function code(t) { return el('code', null, t); }
   /* AG10: inside the Hub, key / base errors point to Hub › API Keys with an Open button */
   function inHub() { return !!(HR.hubKeys && HR.hubKeys.inHub()); }
-  function where(local) { return inHub() ? 'Hub › API Keys' : local; }
+  function where(local) { return inHub() ? 'Agent › API & Providers' : local; }   /* AG37: Agent's own page */
   function hubBtn(row, name) {
-    if (!inHub() || !name) return; var b = el('button', 'hb wide hub-open', name === 'add-provider' ? 'Add provider' : 'Open Hub › API Keys'); b.type = 'button';
+    if (!inHub() || !name) return; var b = el('button', 'hb wide hub-open', name === 'add-provider' ? 'Add provider' : 'Open API & Providers'); b.type = 'button';
     b.onclick = function () { HR.hubKeys.open(name); }; row.appendChild(b);
   }
   function infoCard(title, text, hubName) {   /* AG6: tool-side error card (e.g. Tavily 401 / 429 / out of credits) */
@@ -118,7 +118,7 @@ HR.view = (function () {
     if (prov !== 'ollama' && e.kind !== 'abort') {
       var cb = HR.models.base(), kn = HR.hubKeys ? HR.models.hubName(prov, cb) : '';
       if (inHub() && !kn) kn = 'add-provider';
-      if (e.kind === 'nokey' || e.kind === 'key') { hubName = kn; t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = inHub() && kn ? kn === 'add-provider' ? 'Add a provider in Hub › API Keys, or use an Agent-local key.' : 'Check the provider in Hub › API Keys.' : 'Add it in Settings ⚙ → Model. It is stored only in this browser on this device.'; }
+      if (e.kind === 'nokey' || e.kind === 'key') { hubName = kn; t.textContent = '🔑 ' + lab + ' needs an API key'; p.textContent = inHub() && kn ? kn === 'add-provider' ? 'Add a provider in Agent › API & Providers.' : 'Check the provider in Agent › API & Providers.' : 'Add it in Settings ⚙ → Model. It is stored only in this browser on this device.'; }
       else if (e.kind === 'unreachable') { t.textContent = '🔌 Can\'t reach ' + cb; p.textContent = 'Check the base URL (' + where('Settings ⚙ → Model') + ') and your connection. The provider must allow browser (CORS) requests; OpenAI, Groq, OpenRouter and Gemini do. ' + (e.message || ''); }
       else if (e.kind === 'empty') { t.textContent = '📦 No models listed'; p.textContent = 'Type a model name in Settings ⚙ → Model.'; }
       else {

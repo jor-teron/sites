@@ -1,0 +1,16 @@
+/* Agent — ui/providers.css: providers.html frame around the copied Hub API Keys editor (AG37).
+   Hides only the upstream intro note (.key-note: it describes the Hub's shared store); Agent's own note is above. */
+.prov-body{max-width:920px;margin:0 auto;padding:0 12px 40px}
+.prov-top{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:2}
+.prov-top .brand{font-size:18px;margin:0}
+.prov-intro{font-size:14px;line-height:1.45;margin:10px 0 6px;opacity:.95}
+.prov-intro p{margin:6px 0}.prov-hint{opacity:.8}
+#keys-pane .key-note{display:none}
+.prov-top{padding:12px 0 4px;background:transparent}
+.prov-top .brand{color:inherit}
+.prov-intro code{background:rgba(127,127,127,.18);color:inherit;padding:0 4px;border-radius:4px}
+.prov-top a.hb{display:inline-block;padding:6px 12px;border:1px solid rgba(127,127,127,.4);border-radius:8px;text-decoration:none;color:inherit}
+body.prov-body{font-family:system-ui,sans-serif}
+/* AG37: no raw key display. The upstream named-key rows (Tavily, Gemini) keep the saved value in a masked field with a
+   👁 reveal button; Agent hides that button so keys stay masked (the value never leaves the password field). */
+#keys-pane .key-eye{display:none}

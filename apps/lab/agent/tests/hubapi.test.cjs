@@ -27,11 +27,15 @@ function env({hub = {}, api, real = false, crossOrigin = false, fetcher, service
     if (!fetcher) throw new Error('Unexpected fetch: ' + url);
     return fetcher(url, options);
   };
+  /* AG37: the provider runtime is Agent's own namespace (HR.apiHost.window), never window.top. The same mocks that
+     used to sit on window.top now sit there; window.top is hostile and throws if any provider global is touched.
+     crossOrigin = no runtime loaded at all (the old "top unreadable" case). */
   const w = {};
-  if (crossOrigin) Object.defineProperty(w, 'top', {get() { throw new Error('cross origin'); }});
-  else w.top = {HubAPI: api, HubProviders: services.length ? providers : undefined,
+  const ns = crossOrigin ? {} : {HubAPI: api, HubProviders: services.length ? providers : undefined,
     HubKeys: Object.keys(hub).length ? {get, open: id => opened.push(id), onChange: () => {}} : undefined};
+  w.top = new Proxy({}, {get(t, k) { if (/^Hub(API|Keys|Providers)$/.test(String(k))) throw new Error('central ' + String(k) + ' touched'); return undefined; }});
   const HR = {
+    apiHost: {window: ns},
     set: {get: k => values[k]},
     tools: {register: () => {}}, usage: {credits: (p, n) => credits.push([p, n])},
     view: {infoCard: (...a) => cards.push(a)}
@@ -40,16 +44,17 @@ function env({hub = {}, api, real = false, crossOrigin = false, fetcher, service
     localStorage: {getItem: k => storage[k] || null, setItem: (k,v) => {storage[k] = v;}}, fetch});
   if (real) {
     const hw = {HubKeys: {get, open: () => {}}, HubProviders: Object.assign({}, providers, {secret: async id => services.find(s => s.id === id) || null})}; hw.top = hw;
-    const hc = vm.createContext({window: hw, URL, performance, TextDecoder, DOMException, Blob, atob, fetch});
-    vm.runInContext(fs.readFileSync(path.join(root, 'hub/core/hub_api.js'), 'utf8'), hc);
-    w.top.HubAPI = hw.HubAPI;
+    /* AG37: the real runtime under test is Agent's app copy (app/api/hub/hub_api.js), run in its namespace wrapper */
+    const hc = vm.createContext({window: {}, HR: {apiHost: {window: hw, storage: {getItem: () => null, setItem() {}, removeItem() {}}}}, URL, performance, TextDecoder, DOMException, Blob, atob, fetch});
+    vm.runInContext(read('app/api/hub/hub_api.js'), hc);
+    ns.HubAPI = hw.HubAPI;
   }
   for (const f of ['models/net', 'models/presets', 'core/hubkeys', 'core/hubapi', 'models/registry', 'models/ollama', 'models/openai', 'models/gemini', 'tools/web']) {
     vm.runInContext(read('app/' + f + '.js'), c, {filename: f});
   }
   HR.hubKeys.val = k => {assert.ok(allowed.includes(k), 'forbidden Hub slot: ' + k); return hub[k] || '';};
   HR.models.all().forEach(a => { adapters[a.id] = a; });
-  return {HR, w, c, adapters, values, requests, cards, credits, services, providers, keyReads, opened, listeners, storage};
+  return {HR, w, ns, c, adapters, values, requests, cards, credits, services, providers, keyReads, opened, listeners, storage};
 }
 function cfg(provider, base, key = '') { return {provider, base, key}; }
 function options(c) {
@@ -128,7 +133,7 @@ for (const id of ['openai', 'groq', 'openrouter', 'deepseek', 'deepinfra', 'xai'
     const e = env({services: [], api: {chatAdvanced: async o => {got = o; return {};}, models: async o => {got = o; return [{name: 'm', ctx: 42}];}}});
     const pr = e.HR.presets.get(id);
     e.services.push({id: 'svc_company123', label: pr.label.toUpperCase(), type: 'openai', endpoint: pr.base + '///', key: 'fake'});
-    e.w.top.HubProviders = e.providers;
+    e.ns.HubProviders = e.providers;
     const c = cfg(id, pr.base, 'local-key');
     await e.adapters[id].chat(options(c)); assert.equal(got.provider, 'svc_company123'); assert.equal(got.key, undefined);
     assert.equal((await e.adapters[id].models(c))[0].ctx, 42); assert.equal(got.provider, 'svc_company123');
@@ -175,9 +180,10 @@ for (const context of ['standalone', 'old-hub', 'cross-origin']) {
     assert.equal(e.requests[1].options.headers.Authorization, 'Bearer local');
   });
 }
-test('standalone window.HubAPI is detected and Browser adapter is unchanged', () => {
+test('AG37 (was: standalone window.HubAPI detected): page/top HubAPI ignored; only Agent namespace; Browser unchanged', () => {
   const e = env({crossOrigin: true}); e.w.HubAPI = {models: () => []};
-  assert.equal(e.HR.hubAPI.api('models'), e.w.HubAPI);
+  assert.equal(e.HR.hubAPI.api('models'), null, 'a page-level window.HubAPI is not Agent\'s runtime');
+  e.ns.HubAPI = {models: () => []}; assert.equal(e.HR.hubAPI.api('models'), e.ns.HubAPI);
   const browser = {id: 'browser', chat: () => {}};
   e.HR.models.register(browser); assert.equal(e.HR.models.all().find(a => a.id === 'browser'), browser);
 });
@@ -241,11 +247,12 @@ test('web abort has no error card; input validation avoids calls; Allow web stil
   assert.equal(e.cards.length, 0); assert.equal(e.HR.web.ready(), true);
   e.values.allowWeb = 'off'; assert.equal(e.HR.web.ready(), false);
 });
-test('web local key remains usable without a Hub key, even with HubAPI present', async () => {
-  const e = env({api: {search: () => {throw new Error('not expected');}}, fetcher: () => json({results: [{title: 'T', url: 'https://x', content: 'legacy'}], usage: {credits: 1}})});
-  e.values.tavilyKey = 'local';
-  assert.equal((await e.HR.web.search({query: 'x'}, {})).results[0].snippet, 'legacy');
-  assert.equal(e.requests[0].options.headers.Authorization, 'Bearer local');
+test('AG37 (was: web local key): settings tavilyKey is no longer a second store; Tavily key only from Agent store', async () => {
+  const e = env({api: {search: async o => ({results: [{title: 'T', url: 'https://x', snippet: 'own'}], credits: 1})}});
+  e.values.tavilyKey = 'old-local';
+  assert.equal(e.HR.web.ready(), false); assert.equal(e.HR.web.key(), '');
+  const f = env({hub: {tavily: 'dummy-own'}, api: {search: async o => ({results: [{title: 'T', url: 'https://x', snippet: 'own'}], credits: 1})}});
+  assert.equal((await f.HR.web.search({query: 'x'}, {})).results[0].snippet, 'own'); assert.equal(f.requests.length, 0);
 });
 
 // Real H134c + fake transport checks conversions, not just the bridge stubs.
@@ -373,33 +380,25 @@ test('generic Add provider row opens provider root; matching service opens visib
   assert.equal(row.hidden, false); assert.equal(row.children[1].textContent, 'Add provider');
   row.children[1].onclick(); assert.equal(e.opened.pop(), '');
   e.services.push({id: 'svc_groq123', label: 'gRoQ', type: 'openai', endpoint: e.HR.models.base('groq')});
-  e.w.top.HubProviders = e.providers; e.HR.hubRows.paint();
+  e.ns.HubProviders = e.providers; e.HR.hubRows.paint();
   row.children[1].onclick(); assert.equal(e.opened.pop(), 'svc_groq123');
 });
 for (const id of ['openrouter', 'deepinfra']) {
-  test(id + ' images never access service secrets; own local image key still works', async () => {
+  test(id + ' images never access service secrets; AG37: no Agent-local image key path any more', async () => {
     const endpoint = id === 'openrouter' ? 'https://openrouter.ai/api/v1' : 'https://api.deepinfra.com/v1/openai';
-    const e = env({services: [{id: 'svc_image123', label: id, type: 'openai', endpoint, key: 'service-secret'}], fetcher: url => {
-      if (url.startsWith('data:')) return new Response('image bytes', {headers: {'Content-Type': 'image/png'}});
-      return json(id === 'openrouter' ? {choices: [{message: {images: [{image_url: {url: 'data:image/png;base64,aGVsbG8='}}]}}]}
-        : {images: ['aGVsbG8=']});
-    }});
+    const e = env({services: [{id: 'svc_image123', label: id, type: 'openai', endpoint, key: 'service-secret'}], fetcher: () => { throw new Error('no direct call'); }});
     e.w.HR = e.HR;
     vm.runInContext(read('app/models/img_' + id + '.js'), e.c);
     const image = e.HR.imgProviders[id];
-    assert.equal(image.ready(), false); // No image API in this older-Hub fixture.
+    assert.equal(image.ready(), false); // runtime fixture without the image API
     await assert.rejects(image.generate({model: 'image', prompt: 'x'}), x => x.kind === 'nokey');
+    e.HR.models.setKey(id, endpoint, 'local-image-key'); assert.equal(image.ready(), false, 'setKey is a no-op (one store)');
     assert.equal(e.requests.length, 0);
-    e.HR.models.setKey(id, endpoint, 'local-image-key'); assert.equal(image.ready(), true);
-    const out = await image.generate({model: 'image', prompt: 'x', width: 512, height: 768, steps: 4, ratio: '2:3'});
-    assert.ok(out.blob); assert.equal(e.requests[0].options.headers.Authorization, 'Bearer local-image-key');
-    if (id === 'deepinfra') assert.equal(e.requests[0].body.num_inference_steps, 4);
-    else assert.equal(e.requests[0].body.image_config.aspect_ratio, '2:3');
   });
 }
 test('runtime source has no retired base/key slots or provider secret/storage reads', () => {
   const walk = d => fs.readdirSync(d, {withFileTypes: true}).flatMap(e => e.isDirectory() ? walk(path.join(d,e.name)) : [path.join(d,e.name)]);
-  const code = walk(path.join(base, 'app')).filter(f => f.endsWith('.js')).map(f => fs.readFileSync(f,'utf8')).join('\n');
+  const code = walk(path.join(base, 'app')).filter(f => f.endsWith('.js') && !f.includes(path.join('app', 'api', 'hub')))   /* AG37: upstream copies checked by hash in ag37 */.map(f => fs.readFileSync(f,'utf8')).join('\n');
   assert.doesNotMatch(code, /openai_(?:base|key)|\.secret\s*\(|sites-hub\.providers|forProvider|pr\.hub/);
   assert.deepEqual(plain(env().HR.hubKeys.NAMES), ['tavily', 'gemini', 'ollama_url']);
   assert.match(read('app/gui/model.js'), /!c\.key && !c\.service/);
@@ -459,14 +458,15 @@ test('image AbortError name maps even when provider omits kind', async () => {
   const e = imageEnv('gemini', {api: {generateImage: async () => {throw new DOMException('Stopped','AbortError');}}});
   await assert.rejects(e.image.generate({model:'image',prompt:'draw'}), x => x.kind === 'abort');
 });
-for (const mode of ['standalone', 'unmatched']) {
-  test('Gemini ' + mode + ' retains local-key image adapter', async () => {
-    const e = imageEnv('gemini', {hub:{}, services:[], api: mode === 'unmatched' ? {generateImage: () => {throw new Error('must not route');}} : undefined,
+for (const mode of ['no runtime image API', 'own key only']) {
+  test('AG37 Gemini image: ' + mode + ' uses only Agent\'s own key', async () => {
+    const own = mode === 'own key only';
+    const e = imageEnv('gemini', {hub: own ? {gemini: 'dummy-own'} : {}, services: [], api: own ? {chatAdvanced: () => {}} : undefined,
       fetcher: url => url.startsWith('data:') ? new Response('image') : json({predictions:[{bytesBase64Encoded:'aGVsbG8=',mimeType:'image/png'}]})});
     e.HR.models.setKey('gemini', e.HR.models.base('gemini'), 'local');
+    if (!own) { await assert.rejects(e.image.generate({model:'imagen-3',prompt:'draw'})); assert.equal(e.requests.length, 0); return; }
     const out = await e.image.generate({model:'imagen-3',prompt:'draw',ratio:'16:9'});
-    assert.ok(out.blob); assert.equal(e.requests[0].options.headers['x-goog-api-key'], 'local');
-    assert.equal(e.requests[0].body.parameters.aspectRatio,'16:9');
+    assert.ok(out.blob); assert.equal(e.requests[0].options.headers['x-goog-api-key'], 'dummy-own');
   });
 }
 
@@ -512,22 +512,12 @@ for (const status of [401,402,429,500]) {
     assert.equal(e.requests.length,1);
   });
 }
-test('AG26 Gemini differing Agent-local key overrides Hub for models and generate', async () => {
-  let hubCalls = 0;
-  const e = imageEnv('gemini', {hub: {gemini: 'hub-key'}, api: {
-    generateImage: async () => {hubCalls++; throw new Error('must not use Hub');},
-    imageModels: async () => {hubCalls++; throw new Error('must not use Hub');}
-  }, fetcher: url => url.includes('pageSize') ? json({models:[{name:'models/imagen-3',supportedGenerationMethods:['predict']}]})
-    : url.startsWith('data:') ? new Response('image')
-    : json({predictions:[{bytesBase64Encoded:'aGVsbG8=',mimeType:'image/png'}]})});
+test('AG37 (was AG26 local override): an old Agent-local Gemini key is ignored; images use Agent\'s runtime', async () => {
+  let got;
+  const e = imageEnv('gemini', {hub: {gemini: 'dummy-own'}, api: {generateImage: async o => {got = o; return {blob: new Blob(['x'])};}, imageModels: async () => [{name: 'imagen-3', label: 'imagen-3'}]}});
   e.HR.models.setKey('gemini', e.HR.models.base('gemini'), 'local-key');
-  assert.equal(e.image.ready(), true);
   assert.equal((await e.image.models())[0].name, 'imagen-3');
-  assert.match(e.requests[0].url, /key=local-key/);
-  const out = await e.image.generate({model:'imagen-3',prompt:'draw',ratio:'1:1'});
-  assert.ok(out.blob);
-  assert.equal(e.requests[1].options.headers['x-goog-api-key'], 'local-key');
-  assert.equal(hubCalls, 0);
+  await e.image.generate({model:'imagen-3',prompt:'draw',ratio:'1:1'}); assert.equal(got.provider, 'gemini'); assert.equal(e.requests.length, 0);
 });
 test('AG26 matching Agent-local Gemini key still uses Hub image bridge', async () => {
   let got;

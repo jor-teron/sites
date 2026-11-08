@@ -7,14 +7,14 @@ const path = require('node:path');
 const vm = require('node:vm');
 const base = path.resolve(__dirname, '..');
 const read = f => fs.readFileSync(path.join(base, f), 'utf8');
-const H141 = ['/workspace/sites-h138a-hub-builder-b/hub/core/hub_api.js', path.resolve(base, '../../../hub/core/hub_api.js')].find(f => fs.existsSync(f) && /H141/.test(fs.readFileSync(f, 'utf8')));
+const H141 = path.join(base, 'app/api/hub/hub_api.js');   /* AG37: Agent's app copy of the Hub H141 runtime */
 
 function hub(fetcher) {
   const services = [{ id: 'svc_oa12345', label: 'OA', type: 'openai', endpoint: 'https://api.example/v1', key: 'k' }];
   const providers = { list: () => services.map(({ id, label, type }) => ({ id, label, type })), info: id => { const s = services.find(x => x.id === id); return s && { id, label: s.label, type: s.type, endpoint: s.endpoint, hasKey: true }; },
     has: id => services.some(s => s.id === id), onChange: () => {}, secret: async id => services.find(s => s.id === id) };
   const hw = { HubKeys: { get: async k => k === 'gemini' ? 'gk' : '', open: () => {} }, HubProviders: providers }; hw.top = hw;
-  const hc = vm.createContext({ window: hw, URL, performance, TextDecoder, TextEncoder, DOMException, Blob, atob, AbortController, setTimeout, clearTimeout, fetch: async (u, o) => fetcher(u, o) });
+  const hc = vm.createContext({ window: {}, HR: { apiHost: { window: hw, storage: { getItem: () => null, setItem() {}, removeItem() {} } } }, URL, performance, TextDecoder, TextEncoder, DOMException, Blob, atob, AbortController, setTimeout, clearTimeout, fetch: async (u, o) => fetcher(u, o) });
   vm.runInContext(fs.readFileSync(H141, 'utf8'), hc); return hw.HubAPI;
 }
 const sse = (...js) => new Response(js.map(j => 'data: ' + JSON.stringify(j) + '\n\n').join('') + 'data: [DONE]\n\n');

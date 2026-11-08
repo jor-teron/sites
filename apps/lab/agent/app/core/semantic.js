@@ -30,12 +30,14 @@ HR.sem = (function () {
   /* AG34.1: provider identity from PUBLIC metadata only — HubProviders.info(id) {type, endpoint, hasKey} (never secret()),
      or the Hub's Ollama URL (HR.hubKeys.val('ollama_url'), already used by Agent). Only a hash is kept. 'missing' = removed,
      not OpenAI-compatible, or no key: not usable, nothing is sent. */
-  function hubProviders() { var h = null; try { h = window.top && window.top.HubProviders; } catch (e) {} h = h || window.HubProviders; return h && typeof h.info === 'function' ? h : null; }
+  function hubProviders() { var w = HR.apiHost && HR.apiHost.window, h = w && w.HubProviders; return h && typeof h.info === 'function' ? h : null; }   /* AG37: Agent's own store; legacy read window.top.HubProviders */
   function ident(p) {
-    if (p === 'ollama') return 'o' + fnv(HR.hubKeys ? String(HR.hubKeys.val('ollama_url') || '') : '');
+    /* AG37: 'a' prefix = Agent's own API store. Indexes built with the Hub's config (idents 'o…' / 's…') never match, so
+       old vectors are not reused under a svc_ id that might now name a different service; they show as needing a rebuild. */
+    if (p === 'ollama') return 'ao' + fnv(HR.hubKeys ? String(HR.hubKeys.val('ollama_url') || '') : '');
     var h = hubProviders(), i = null; try { i = h ? h.info(p) : null; } catch (e) { i = null; }
     if (!i || i.type !== 'openai' || !i.hasKey) return 'missing';
-    return 's' + fnv(i.type + '\u0001' + String(i.endpoint || ''));
+    return 'as' + fnv(i.type + '\u0001' + String(i.endpoint || ''));
   }
   function same(fp, c) { return !!fp && fp.provider === c.provider && fp.model === c.model && fp.docPrefix === c.docPrefix && fp.queryPrefix === c.queryPrefix && fp.ident === c.ident; }
   function usable() { var c = full(); return !!(idx && on() && c.ident !== 'missing' && same(idx.fp, c) && HR.perms.memory() && HR.fs.ready() && api('embed')); }
@@ -46,7 +48,7 @@ HR.sem = (function () {
     try { (h ? h.services() : []).forEach(function (s) { if (s.type === 'openai' && /^svc_/.test(s.id) && ident(s.id) !== 'missing') list.push({ id: s.id, label: s.label || s.id }); }); } catch (e) {}
     return list;
   }
-  function models(p, signal) { var h = api('embeddingModels'); if (!h) return Promise.reject(err('nohub', 'Embeddings need the Hub (open Agent inside the Hub).')); return Promise.resolve(h.embeddingModels({ provider: p, signal: signal })); }
+  function models(p, signal) { var h = api('embeddingModels'); if (!h) return Promise.reject(err('nohub', 'Embeddings need the Agent API runtime (app/api/).')); return Promise.resolve(h.embeddingModels({ provider: p, signal: signal })); }
   /* Strict response check: one finite, nonzero vector per input, all the same length ≤ MAXD */
   function check(res, n, dims) {
     var v = res && res.vectors; if (!Array.isArray(v) || v.length !== n) throw err('vector', 'Embedding reply had ' + (v ? v.length : 0) + ' vectors for ' + n + ' inputs.');
@@ -110,7 +112,7 @@ HR.sem = (function () {
     if (cur.length) out.push(cur); return out;
   }
   async function embedAll(c, texts, signal, onStep) {
-    var h = api('embed'); if (!h) throw err('nohub', 'Embeddings need the Hub (open Agent inside the Hub).');
+    var h = api('embed'); if (!h) throw err('nohub', 'Embeddings need the Agent API runtime (app/api/).');
     var vecs = new Array(texts.length), dims = 0, bs = batches(texts);
     for (var i = 0; i < bs.length; i++) {
       if (signal.aborted) throw err('abort', 'Stopped');
@@ -126,7 +128,7 @@ HR.sem = (function () {
     if (job) throw err('busy', 'A build is already running.');
     if (!HR.perms.memory()) throw err('off', 'Memory is Off.');
     var c = full(); if (!c.provider || !c.model) throw err('nomodel', 'Pick an embedding provider and model first.');
-    if (c.ident === 'missing') throw err('noprov', 'That provider is not available in the Hub (removed, wrong type or no key).');
+    if (c.ident === 'missing') throw err('noprov', 'That provider is not set up in API & Providers (removed, wrong type or no key).');
     var folder = HR.fs.name();
     p = p || await plan(); if (!p.chunks.length) throw err('empty', 'Nothing to index yet.');
     var ctrl = new AbortController(); job = { ctrl: ctrl }; setStatus('Building: 0 of ' + p.chunks.length + ' pieces…');
@@ -162,7 +164,7 @@ HR.sem = (function () {
     if (!HR.perms.memory()) throw err('off', 'Memory is Off.');
     if (!idx) throw err('noindex', 'No semantic index yet: build it in Settings › Folder & Memory.');
     var c = full(); if (!on()) throw err('nomodel', 'Semantic search is Off (no embedding model chosen).');
-    if (c.ident === 'missing') throw err('noprov', 'The embedding provider is not available in the Hub; nothing was sent.');
+    if (c.ident === 'missing') throw err('noprov', 'The embedding provider is not set up in API & Providers; nothing was sent.');
     if (!same(idx.fp, c)) throw err('stale', 'The index was built for a different provider setup, model or prefixes; Rebuild.');
     var my = idx, folder = HR.fs.name();
     function still() { if (!(idx === my && HR.perms.memory() && HR.fs.ready() && HR.fs.name() === folder && same(my.fp, full()))) throw err('changed', 'Settings, provider, folder or Memory changed during the search; results discarded.'); }

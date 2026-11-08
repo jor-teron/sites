@@ -29,7 +29,7 @@ HR.imgpage = (function () {
       case 'disabled': return ['🖼 Image generation is off in this Ollama', e.message + ' — Ollama 0.32.6 and later have it switched off for now. Use Ollama 0.32.5 on macOS, or try the Pollinations tab.'];
       case 'nomodel': return ['🖼 No image model yet', (e.message || 'No image model') + '. Install one (or x/flux2-klein), or try the Pollinations tab:'];
       case 'unreachable': return ['📡 Can\'t reach ' + who, e.message + (prov === 'ollama' ? ' Ollama must be running (OLLAMA_ORIGINS must allow this page).' : '')];
-      case 'nokey': return ['🔑 Key problem', e.message + (prov === 'gemini' ? ' Check the Gemini key in Hub API Keys (or Agent Settings when standalone).' : ' Check the matching provider in Hub API Keys, or the Agent-local key in Chat → Settings → Model.')];
+      case 'nokey': return ['🔑 Key problem', e.message + (prov === 'gemini' ? ' Check the Gemini key in Agent › API & Providers.' : ' Check the matching provider in Agent › API & Providers, or the Agent-local key in Chat → Settings → Model.')];
       case 'quota': return ['🚫 Image generation blocked', e.message + ' Try the free Pollinations tab, or turn on billing for the Gemini key.'];
       case 'nocredit': return ['💳 No credit left', e.message + ' Add credit on the provider\'s site, or use the free Pollinations tab.'];
       case 'busy': return ['⏳ Busy right now', e.message];

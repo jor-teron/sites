@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- Agent — providers.html: "API & Providers", Agent's OWN keys and AI providers (AG37).
+  The editor is Hub Builder 1's API Keys editor (apps/system/api-keys/api-keys.js, copied unchanged into app/api/hub/)
+  running in Agent's namespace (app/api/host.js): it saves to Agent's store 'agent.api:sites-hub.credentials', never the
+  Hub's 'sites-hub.credentials', and never reads window.top.HubKeys / HubProviders. The Hub and its API Keys app are
+  unchanged. Deep link: providers.html#keys/<name or svc_id>. Back goes to agent.html. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <title>Agent · API &amp; Providers</title>
+  <link rel="icon" href="agent_icon.png">
+  <link rel="stylesheet" href="app/api/hub/api-keys.css">
+  <link rel="stylesheet" href="../../../shared/dialog/dialog.css">
+  <link rel="stylesheet" href="ui/providers.css">
+  <script src="../../../shared/theme/hub_theme.js"></script>
+  <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
+</head>
+<body class="prov-body">
+<header class="prov-top">
+  <a class="hb" id="provBack" href="agent.html" aria-label="Back to chat" title="Back to chat">← <span>Chat</span></a>
+  <h1 class="brand">API &amp; Providers</h1>
+</header>
+<section class="prov-intro" aria-label="About these keys">
+  <p><b>These are Agent's own settings.</b> Agent no longer uses the Hub's API Keys: add the keys and providers Agent should use here, even if you already saved them in the Hub. Changing them here does not change the Hub, and the Hub's changes do not reach Agent. Nothing is copied between them.</p>
+  <p>🔒 Saved only in this browser on this device (localStorage, not encrypted). That is not a security boundary: other pages on this same site can read it. Key fields stay masked; a saved key is never shown again (type a new one to replace it, or Clear / Delete to remove it). Agent sends a key only to that provider.</p>
+  <p>Browsers can only call APIs that allow it (CORS). Ollama needs <code>OLLAMA_ORIGINS</code>; some providers need a proxy, which Agent does not supply. "Test" only lists models; it does not prove chat works or that you have credits.</p>
+  <p class="prov-hint">Agent uses: Tavily (web tools), Ollama URL, Gemini, the provider rows (OpenRouter, Groq, DeepSeek, OpenAI, xAI, DeepInfra) and any custom OpenAI-compatible provider. Cloud Vision is not used by Agent. Pollinations and the Browser model need no key.</p>
+</section>
+<main id="keys-pane" aria-label="Agent keys and providers"></main>
+<script src="../../../shared/dialog/dialog.js"></script>
+<script src="app/api/host.js"></script>
+<script src="app/api/hub/hub_credentials.js"></script>
+<script src="app/api/hub/hub_keys.js"></script>
+<script src="app/api/hub/hub_providers.js"></script>
+<script src="app/api/hub/api-keys.js"></script>
+</body>
+</html>

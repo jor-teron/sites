@@ -6,7 +6,8 @@
    changing it here also moves the open chat to it. AG9: rows using a Hub key show "From Hub ✓" (app/gui/hubrows.js).
    AG10: lives in the Settings → Model card; inside the Hub its key / base fields are hidden (one "Keys come from Hub" line).
    AG12: one tab per provider (app/models/presets.js); the base URL field only shows for Custom (setting customBase); the
-   key field shows for every online tab, and inside the Hub too when that tab has no Hub key slot (DeepInfra). */
+   key field shows for every online tab, and inside the Hub too when that tab has no Hub key slot (DeepInfra).
+   AG37: no key fields here any more: keys and providers are on Agent's own page providers.html (app/api/). */
 HR.provider = (function () {
   var dirty = false, $ = function (id) { return document.getElementById(id); };
   function draw() {
@@ -21,8 +22,9 @@ HR.provider = (function () {
     $('setModelName').placeholder = 'Model (optional, else pick from the list) e.g. ' + (p === 'gemini' ? 'gemini-2.5-flash' : pr.eg);
     $('keyNote').textContent = '🔒 Your API key is stored only in this browser on this device (localStorage) and is sent only to ' + (HR.presets.host(b) || 'the base URL above') + '. Clear the field to remove it.';
     HR.hubRows.paint();
-    if (p !== 'gemini' || !HR.models.hubName(p, b)) { $('setKey').hidden = false; $('keyNote').hidden = false; if (p === 'custom') $('setOABase').hidden = false; }   /* AG24: keep local image keys editable; svc credentials are never exposed. */
-    if ((p === 'deepinfra' || p === 'openrouter') && HR.models.service(p, b)) $('keyNote').textContent += ' Chat and images use the matching Hub provider when its API is available; this key is only the Agent-local fallback.';
+    /* AG37: keys are only on the API & Providers page (one store); the key field stays hidden. Custom keeps its base URL field.
+       Legacy (AG24): if (p !== 'gemini' || !hubName) unhid setKey + keyNote for Agent-local keys. */
+    if (p === 'custom') $('setOABase').hidden = false;
   }
   function saveBase(v) { v = String(v || '').trim().replace(/\/+$/, ''); if (v && !/^https?:\/\//.test(v)) v = 'http://' + v; if (v !== HR.set.get('customBase')) { HR.set.put('customBase', v); dirty = true; } }
   function init() {

@@ -2,7 +2,8 @@
    AG10: inside the Hub (window.top.HubKeys) every key / base field (.hub-hide: Ollama URL, OpenAI-compatible base,
    API key + note, Tavily key + note) is hidden and the Model / Web cards show one line "Keys come from Hub › API Keys"
    with ✓ / "not set" for the key in use and an Open button (HubKeys.open(name)). Standalone: the fields show as before.
-   Hub values are never shown or copied. Hub key changes repaint open Settings and reload models. */
+   Hub values are never shown or copied. Hub key changes repaint open Settings and reload models.
+   AG37: the store is Agent's own (app/api/), so the fields stay hidden everywhere and the line points to providers.html. */
 HR.hubRows = (function () {
   function modelKey() {
     var p = HR.models.def(), b = HR.models.base(p);
@@ -12,7 +13,7 @@ HR.hubRows = (function () {
     var el = document.getElementById(id); if (!el) return;
     el.hidden = !n && !add; el.innerHTML = ''; if (!n && !add) return;
     var t = document.createElement('span'), b = document.createElement('button');
-    t.textContent = !n ? 'No matching Hub provider · add a provider, or use an Agent-local key.' : 'Keys come from Hub › API Keys · ' + n + (HR.hubKeys.has(n) ? ' ✓' : ' not set' + (what ? ' (' + what + ')' : ''));
+    t.textContent = !n ? 'No matching provider · add one in API & Providers.' : 'Keys: Agent › API & Providers · ' + n + (HR.hubKeys.has(n) ? ' ✓' : ' not set' + (what ? ' (' + what + ')' : ''));
     t.className = HR.hubKeys.has(n) ? 'hub-ok' : 'hub-no';
     b.type = 'button'; b.className = 'hb wide hub-open'; b.textContent = n ? 'Open' : 'Add provider'; b.onclick = function () { HR.hubKeys.open(n); };
     el.append(t, b);

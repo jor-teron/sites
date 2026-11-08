@@ -10,7 +10,7 @@ HR.semView = (function () {
   function paint() {
     var s = HR.sem.state(), st = $('semStat'); if (!st) return;
     var t = !HR.fs.ready() ? 'Pick a folder first.' : !s.on ? 'Off: pick an embedding provider and model.' :
-      !s.provOk ? 'This provider is not available in the Hub (removed, wrong type or no key); nothing will be sent.' : s.idx ? 'Index: ' + s.idx.n + ' pieces · ' + s.idx.fp.model + ' · ' + s.idx.fp.dims + ' dims · ' + s.idx.built + (s.idx.partial ? ' · PARTIAL (' + s.idx.partial.chunks + ' pieces, ' + s.idx.partial.files + ' files left out)' : '') + (s.usable ? ' · ready' : ' · needs Rebuild (provider setup, model or prefixes changed)') + ' (saved in the folder: ' + HR.sem.FILE + ')'
+      !s.provOk ? 'This provider is not set up in API & Providers (removed, wrong type or no key); nothing will be sent.' : s.idx ? 'Index: ' + s.idx.n + ' pieces · ' + s.idx.fp.model + ' · ' + s.idx.fp.dims + ' dims · ' + s.idx.built + (s.idx.partial ? ' · PARTIAL (' + s.idx.partial.chunks + ' pieces, ' + s.idx.partial.files + ' files left out)' : '') + (s.usable ? ' · ready' : ' · needs Rebuild (provider setup, model or prefixes changed)') + ' (saved in the folder: ' + HR.sem.FILE + ')'
         : (s.err || 'No index yet.');
     st.textContent = (s.status ? s.status + ' ' : '') + t;
     $('btnSemBuild').textContent = s.idx ? 'Rebuild' : 'Build'; $('btnSemBuild').disabled = s.busy || !s.on || !HR.fs.ready();

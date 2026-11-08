@@ -3,13 +3,15 @@
    means the existing standalone adapter is used, including its local keys.
    Legacy code: registry.register previously stored the adapter unchanged;
    reg[a.id] = a; is preserved here as the no-bridge behaviour. */
+/* AG37: api() is Agent's OWN runtime (HR.apiHost.window.HubAPI = app/api/hub/hub_api.js, Hub Builder 1 code run in
+   Agent's namespace with Agent's store). window.top / the Hub's HubAPI are never consulted. Legacy (AG23–AG36):
+   h = window.top.HubAPI || window.HubAPI. The upstream error text "Settings > API Keys" is shown as Agent's page name. */
 HR.hubAPI = (function () {
   function api(method) {
-    var h = null;
-    try { h = window.top && window.top.HubAPI; } catch (e) { /* cross-origin */ }
-    h = h || window.HubAPI;
+    var w = HR.apiHost && HR.apiHost.window, h = w && w.HubAPI;
     return h && typeof h[method] === 'function' ? h : null;
   }
+  function here(e) { if (e && typeof e.message === 'string') { try { e.message = e.message.replace(/Settings > API Keys/g, 'Agent › API & Providers'); } catch (x) {} } return e; }
   function val(n) { return HR.hubKeys ? HR.hubKeys.val(n) : ''; }
   function trim(s) { return String(s || '').replace(/\/+$/, ''); }
   function config(id, c) {
@@ -38,7 +40,7 @@ HR.hubAPI = (function () {
           var found = old.find(function (x) { return x.name === m.name; });
           return Object.assign({}, m, found || {});
         }); }, function () { return list; });
-      }).catch(function (e) { throw HR.net.wrap(e); });
+      }).catch(function (e) { throw HR.net.wrap(here(e)); });
     };
     a.chat = function (o) {
       var h = api('chatAdvanced'), cfg = config(a.id, o.cfg);
@@ -46,7 +48,7 @@ HR.hubAPI = (function () {
       return Promise.resolve().then(function () { return h.chatAdvanced(Object.assign({}, cfg, {
         model: o.model, messages: o.messages, tools: o.tools, thinking: o.think,
         signal: o.signal, onDelta: o.onDelta
-      })); }).catch(function (e) { throw HR.net.wrap(e); });
+      })); }).catch(function (e) { throw HR.net.wrap(here(e)); });
     };
     return a;
   }
@@ -71,7 +73,7 @@ HR.hubAPI = (function () {
       else if (e && e.name === 'AbortError') kind = 'abort';
       else if (!kind && e && (e.keyName || typeof e.openSettings === 'function')) kind = 'nokey';
       else if (!kind && /\bmust be\b/i.test(msg)) kind = 'input';
-      var out = Object.assign(new Error(msg || 'Image request failed'), e || {});
+      var out = Object.assign(new Error(String(msg || 'Image request failed').replace(/Settings > API Keys/g, 'Agent › API & Providers')), e || {}); out.message = String(msg || 'Image request failed').replace(/Settings > API Keys/g, 'Agent › API & Providers');
       out.kind = kind || 'http'; return out; // includes status/keyName/openSettings
     }
     function cached(model) { var r = route('imageModels'); return r && metadata[r.provider + '|' + model]; }
@@ -104,5 +106,5 @@ HR.hubAPI = (function () {
     return a;
   }
   function web(method) { return val('tavily') ? api(method) : null; }
-  return { api: api, wrap: wrap, web: web, imageProvider: imageProvider };
+  return { api: api, wrap: wrap, web: web, imageProvider: imageProvider, here: here };
 })();

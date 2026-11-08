@@ -40,6 +40,9 @@ function env(files = {}, o = {}) {
     embed: async ({ provider, model, input, signal }) => { calls.push({ provider, model, input }); if (o.fail && calls.length >= o.fail) throw Object.assign(new Error('HTTP 500'), { kind: 'http' });
       if (o.hold) await new Promise(r => o.hold.push(r)); if (signal && signal.aborted) throw Object.assign(new Error('cancelled'), { kind: 'abort', name: 'AbortError' });
       return { vectors: o.bad ? o.bad(input) : input.map(t => vec(t, o.dims || 4)), dims: o.dims || 4, model }; } };
+  /* AG37: these mocks are Agent's own runtime namespace (HR.apiHost.window); the page's window.HubAPI / top are not used */
+  ctx.HR.apiHost = { window: { HubProviders: ctx.HubProviders, HubAPI: ctx.HubAPI } }; delete ctx.HubProviders; delete ctx.HubAPI;
+  ctx.top = new Proxy({}, { get(t, k) { if (/^Hub/.test(String(k))) throw new Error('central ' + String(k) + ' touched'); } });
   for (const f of ['app/gui/settings.js', 'app/core/perms.js', 'app/core/tools.js', 'app/core/hubapi.js', 'app/core/memory.js', 'app/storage/knowledge.js', 'app/core/ksearch.js', 'app/core/semantic.js', 'app/tools/memory.js', 'app/tools/search_memory.js', 'app/tools/search_semantic.js', 'prompts/prompt_fallback.js', 'app/core/prompt.js']) vm.runInContext(read(f), ctx);
   ctx.localStorage.setItem('agent.memMigrated.mock', '1');
   if (!o.off) { ctx.HR.set.put('semProvider', 'ollama'); ctx.HR.set.put('semModel', 'emb-a'); }
