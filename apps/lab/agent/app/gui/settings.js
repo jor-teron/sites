@@ -29,7 +29,7 @@ HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', customBase: '', browserModel: '',
     autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'off', thinkLive: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 128000, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic',
     answerLength: 'normal', assistProvider: '', assistModel: '',
-    semProvider: '', semModel: '', semDocPrefix: '', semQueryPrefix: '' };   /* AG34: core/semantic.js */   /* AG31: core/length.js, core/assist.js */
+    semProvider: '', semModel: '', semDocPrefix: '', semQueryPrefix: '', consolidate: 'off' };   /* AG36: core/consolidate.js, opt-in */   /* AG34: core/semantic.js */   /* AG31: core/length.js, core/assist.js */
   /* AG28 Legacy: ctxMax default was 8192. maxSteps default stays 8. A stored ctxMax (including an older 8192) still wins. */
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }
@@ -78,10 +78,12 @@ HR.set = (function () {
     seg('setTheme', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], applyTheme);
     seg('setThink', 'think', [['auto', 'Auto'], ['on', 'On'], ['off', 'Off']]);
     sw('setTools', 'tools');
-    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'memory', 'showThink', 'thinkLive', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell', 'allowWeb'].forEach(function (k) {
+    ['autoWrite', 'autoShell', 'allowWrite', 'allowShell', 'showThink', 'thinkLive', 'showSteps', 'notifyLong', 'tokenMeter', 'liveShell', 'allowWeb'].forEach(function (k) {
       sw('set_' + k, k, applyDisplay);
     });
     applyDisplay();
+    sw('set_consolidate', 'consolidate', function () { if (HR.consol) { HR.consol.cancel(); if (HR.conView) HR.conView.paint(); } });   /* AG36 */
+    sw('set_memory', 'memory', function () { applyDisplay(); if (HR.consol) HR.consol.cancel(); });
     seg('setWebDepth', 'webDepth', [['basic', 'Basic (1 credit)'], ['advanced', 'Advanced (2 credits)']]);
     document.getElementById('setTavKey').value = get('tavilyKey') || '';
     sw('setSave', 'saveChats');

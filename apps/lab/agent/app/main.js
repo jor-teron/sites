@@ -41,6 +41,7 @@ Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) 
   HR.helperSet.init();
   HR.assistSet.init();   /* AG31 */
   HR.sumView.init();   /* AG32 */
+HR.consol.init(); HR.conView.init();   /* AG36: opt-in consolidation, Off by default */
   HR.knowView.init();   /* AG33 */
   HR.semView.init();   /* AG34 */
   HR.provider.init();

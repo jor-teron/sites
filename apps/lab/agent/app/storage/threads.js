@@ -55,25 +55,33 @@ HR.threads = (function () {
     await idb.del('t:' + id).catch(function () {});
     if (disk) await HR.fs.remove(DIR + id + '.sum.json').catch(function () {});   /* AG32: the chat's summary sidecar */
     await idb.del('sum:' + id).catch(function () {});
+    if (disk) await HR.fs.remove(DIR + id + '.con.json').catch(function () {});   /* AG36: consolidation sidecar */
+    await idb.del('con:' + id).catch(function () {});
     var ia = (await readIdx(false)).filter(function (c) { return c.id !== id; }); await writeIdx(false, ia).catch(function () {});
   }
   /* AG32: rolling summary sidecar beside the chat: folder agent/chats/threads/<id>.sum.json, or IndexedDB 'sum:<id>' when the
      chat lives in the browser (no folder, permission pending, Save chats Off). The chat .md file is never touched.
-     loadSum -> {rec, where:'folder'|'browser'} (folder first, then the browser copy). saveSum(id, null) deletes. Errors reject. */
+     loadSum -> {rec, where:'folder'|'browser'} (folder first, then the browser copy). saveSum(id, null) deletes. Errors reject.
+     AG36: loadCon / saveCon use the same pattern for <id>.con.json (consolidation checkpoint + review queue). */
   function sumWhere() { return onDisk() ? 'folder' : 'browser'; }
-  async function loadSum(id) {
+  async function loadSum(id) { return side(id, 'sum'); }
+  function saveSum(id, rec) { return putSide(id, 'sum', rec); }
+  /* AG36: the same sidecar pattern for consolidation state: <id>.con.json or IndexedDB 'con:<id>' */
+  function loadCon(id) { return side(id, 'con'); }
+  function saveCon(id, rec) { return putSide(id, 'con', rec); }
+  async function side(id, k) {
     id = safe(id); var t = null, where = sumWhere();
-    if (where === 'folder') { try { t = (await HR.fs.read(DIR + id + '.sum.json')).text; } catch (e) { t = null; } }
-    if (t == null) { t = await idb.get('sum:' + id); if (t != null) where = 'browser'; }
+    if (where === 'folder') { try { t = (await HR.fs.read(DIR + id + '.' + k + '.json')).text; } catch (e) { t = null; } }
+    if (t == null) { t = await idb.get(k + ':' + id); if (t != null) where = 'browser'; }
     var rec = null; try { rec = t ? JSON.parse(t) : null; } catch (e) { rec = null; }
     return { rec: rec, where: where };
   }
-  async function saveSum(id, rec) {
-    id = safe(id); var where = sumWhere(), t = rec ? JSON.stringify(rec, null, 1) : null;
+  async function putSide(id, k, rec) {
+    id = safe(id); var where = sumWhere(), t = rec ? JSON.stringify(rec, null, 1) : null, f = DIR + id + '.' + k + '.json';
     if (where === 'folder') {
-      if (t) await HR.fs.write(DIR + id + '.sum.json', t); else await HR.fs.remove(DIR + id + '.sum.json').catch(function (e) { if (!e || e.name !== 'NotFoundError') throw e; });
-      await idb.del('sum:' + id).catch(function () {});   /* folder copy wins; no stale browser copy left */
-    } else if (t) await idb.put('sum:' + id, t); else await idb.del('sum:' + id);
+      if (t) await HR.fs.write(f, t); else await HR.fs.remove(f).catch(function (e) { if (!e || e.name !== 'NotFoundError') throw e; });
+      await idb.del(k + ':' + id).catch(function () {});   /* folder copy wins; no stale browser copy left */
+    } else if (t) await idb.put(k + ':' + id, t); else await idb.del(k + ':' + id);
     return where;
   }
   /* AG-F6: message key = role + time + tool call id + content, plus its occurrence number (two equal messages stay two) */
@@ -142,5 +150,5 @@ HR.threads = (function () {
   function newId() { var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '-' + Math.random().toString(36).slice(2, 6); }
   async function pendingCount() { return waiting() ? (await readIdx(false)).filter(function (c) { return c.pending; }).length : 0; }   /* AG-F2 */
-  return { waiting: waiting, pendingCount: pendingCount, list: list, every: every, pin: pin, load: load, save: save, remove: remove, merge: merge, newId: newId, DIR: DIR, loadSum: loadSum, saveSum: saveSum, sumWhere: sumWhere };
+  return { waiting: waiting, pendingCount: pendingCount, list: list, every: every, pin: pin, load: load, save: save, remove: remove, merge: merge, newId: newId, DIR: DIR, loadSum: loadSum, saveSum: saveSum, sumWhere: sumWhere, loadCon: loadCon, saveCon: saveCon };
 })();

@@ -96,6 +96,13 @@
   <p class="hint">Sent instead of the older turns it covers. Your saved chat is never changed.</p>
   <div class="ec-row start"><button type="button" class="hb wide" id="sumSave">Save</button><button type="button" class="hb wide" id="sumNow">Update now</button><button type="button" class="hb wide" id="sumReset">Reset</button><button type="button" class="hb wide" id="sumClose">Close</button></div>
 </dialog>
+<dialog id="conDlg" class="dlg" aria-labelledby="conTitle">
+  <h2 id="conTitle">Proposed notes</h2>
+  <p class="hint">Recent turns are sent as-is · the summary is context only · these notes are saved only when you approve one. Source: this chat's own messages.</p>
+  <p class="hint" id="conDlgStat"></p>
+  <div id="conList" class="know-list"></div>
+  <div class="ec-row start"><button type="button" class="hb wide" id="conUndo">Undo last save</button><button type="button" class="hb wide" id="conClose">Close</button></div>
+</dialog>
 <dialog id="settings" class="dlg setdlg" aria-labelledby="setTitle">
   <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="hb" id="setClose" aria-label="Close">✕</button></div>
   <div class="set-grid">
@@ -125,6 +132,9 @@
     <div class="ec-row start"><button type="button" class="hb wide" id="btnPick">Pick folder</button><button type="button" class="hb wide" id="btnReconnect" hidden>Reconnect folder</button></div>
     <div class="sw"><span>Save chats to folder<small>Off keeps them in this browser</small></span><div id="setSave"></div></div>
     <div class="sw"><span>Memory<small>Notes the agent keeps and reads back</small></span><div id="set_memory"></div></div>
+    <div class="sw"><span>Consolidation<small>Off by default. While this tab is open and idle (checks ≥10 min apart), uses your Assist model — one call per pass, billed like chat — to update the summary and propose notes for you to review</small></span><div id="set_consolidate"></div></div>
+    <p class="hint" id="conStat"></p>
+    <div class="ec-row start"><button type="button" class="hb wide" id="btnConRun">Run now</button><button type="button" class="hb wide" id="btnConReview">Review</button></div>
     <p class="hint">Everything lives under <code>agent/</code> in the folder: chats, diary, memory, prompt, usage, trash.</p>
     <h3>Knowledge <small>(.txt / .md the agent can keyword-search)</small></h3>
     <p class="hint" id="knowStat"></p>
@@ -217,6 +227,7 @@
 <script src="app/core/cachemeta.js"></script>
 <script src="app/core/assist.js"></script>
 <script src="app/core/summary.js"></script>
+<script src="app/core/consolidate.js"></script>
 <script src="app/core/ksearch.js"></script>
 <script src="app/core/semantic.js"></script>
 <script src="app/core/hubkeys.js"></script>
@@ -253,6 +264,7 @@
 <script src="app/gui/helperset.js"></script>
 <script src="app/gui/assistset.js"></script>
 <script src="app/gui/summaryview.js"></script>
+<script src="app/gui/conview.js"></script>
 <script src="app/gui/knowview.js"></script>
 <script src="app/gui/semview.js"></script>
 <script src="app/gui/provider.js"></script>

@@ -41,8 +41,8 @@ HR.assistSet = (function () {
   }
   function init() {
     var ps = $('setAsProv'), ms = $('setAsModel'); if (!ps) return;
-    ps.onchange = function () { if (HR.summary) HR.summary.cancel(); HR.set.put('assistProvider', ps.value); HR.set.put('assistModel', ''); fillModels(); };
-    ms.onchange = function () { if (HR.summary) HR.summary.cancel(); HR.set.put('assistModel', ms.value); };
+    ps.onchange = function () { if (HR.consol) HR.consol.cancel(); if (HR.summary) HR.summary.cancel(); HR.set.put('assistProvider', ps.value); HR.set.put('assistModel', ''); fillModels(); };
+    ms.onchange = function () { if (HR.consol) HR.consol.cancel(); if (HR.summary) HR.summary.cancel(); HR.set.put('assistModel', ms.value); };
     $('btnSet').addEventListener('click', draw);
   }
   return { init: init, draw: draw };

@@ -56,7 +56,7 @@ HR.chat = (function () {
     return HR.approve ? HR.approve(info, ctrl && ctrl.signal) : Promise.resolve(false);
   }
   function send() {
-    if (ctrl) { ctrl.abort(); if (HR.summary) HR.summary.cancel(); return; }
+    if (ctrl) { ctrl.abort(); if (HR.summary) HR.summary.cancel(); if (HR.consol) HR.consol.cancel(); return; }   /* AG36 */
     var text = input.value.trim(), pics = HR.attach ? HR.attach.peek() : [];
     if (!text && !pics.length) return;
     if (!HR.model.current()) { HR.model.load(); return; }

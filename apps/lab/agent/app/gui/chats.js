@@ -58,7 +58,7 @@ HR.chats = (function () {
     HR.models.setChat(p, m); HR.model.load();
   }
   function picked() { if (!meta) return; meta.provider = HR.models.chosen(); meta.model = HR.models.chatModel(); if (HR.msgs.all().length) dirty(); draw(); }
-  function show() { if (HR.summary) { HR.summary.cancel(); HR.summary.open(meta ? meta.id : ''); } HR.steps.clear(); HR.chat.render(); remember(); draw(); }   /* AG32 */
+  function show() { if (HR.summary) { HR.summary.cancel(); HR.summary.open(meta ? meta.id : ''); } if (HR.consol) HR.consol.open(meta ? meta.id : ''); HR.steps.clear(); HR.chat.render(); remember(); draw(); }   /* AG32 */
   function busy() { if (HR.chat.busy()) { HR.chat.note('Stop the current reply first.'); return true; } return false; }
   async function newChat() {
     if (busy()) return; await flush();
