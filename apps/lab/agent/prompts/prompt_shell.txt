@@ -1,0 +1,4 @@
+@@auto
+- Shell: run_shell is available. Commands are auto-approved and run at once — only run safe commands.
+@@ask
+- Shell: run_shell is available. Every command asks the user first.

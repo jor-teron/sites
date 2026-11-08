@@ -15,7 +15,8 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/core/tools.js` — `HR.tools`: registry of `{name, description, parameters (JSON schema), where:'browser', run(args, ctx), available?}`, `schemas()` for Ollama
 - `app/core/perms.js` — AG3 `HR.perms`: Settings → Permissions (`allowed(tool)`, `auto(kind)`, `memory()`)
 - `app/core/loop.js` — `HR.loop.run()`: the one agent loop (model + tools → run tool calls → append `tool` results → repeat; step limit, Stop, no-tools retry)
-- `app/core/prompt.js` — `HR.prompt.system()`: `agent/prompts/system.md` (default created on first use) + a live "Current settings" section + memory from `HR.mem.block()`, read on every call
+- `app/core/prompt.js` — `HR.prompt.system()`: the user's `agent/prompts/system.md` (created from the shipped default on first use) + a live "Current settings" section + memory from `HR.mem.block()`, read on every call
+- `prompts/prompt_*.txt` — AG29 shipped prompt wording (system default, files, shell, web, memory, settings). Not the user's folder. `prompts/prompt_fallback.js` is generated from those files (`node prompts/gen_fallback.cjs`) for file:// and failed loads. `prompts/gen_fallback.cjs` rebuilds it.
 - `app/core/memory.js` — AG4 `HR.mem`: `agent/memory/` layout (user, assistant, sessions/<chat>, date/YYYY_MM, topics/<name>), prompt block, one-time `memory.md` → `memory/user.md`
 - `app/core/helper.js` — `HR.helper`: client for the bash helper (`/health` test, `/run`, AG7 `/run_stream` live output), status
 - `app/core/hubkeys.js` — AG9 `HR.hubKeys`: keys from the Hub (`window.top.HubKeys`), in memory only, Hub first
@@ -292,3 +293,31 @@ Offline cache remains `agent-files`. SW VER is `agent-ag28`, without URL version
 ### Legacy code notes — AG28
 
 The 1–30 clamp lived in `HR.set.maxSteps`, the step field (`min="1" max="30"`) and `if (calls >= o.maxSteps)` in `app/core/loop.js` (0 used to hit that check immediately, and `parseInt(...) || 8` used to drop an explicit 0). Those lines are comments next to the new checks. The context fallback number was 8192 in `DEF`, `ctxMax()` and the field's change handler; that number is commented beside the 128000 default. Tests are syntax/static checks plus an offline VM smoke of the settings store, the loop, and the meter fallback. No browser tests and no paid API calls.
+
+
+## AG29 — prompt text in files
+
+The words the model sees are unchanged. What changed is where those words live. `app/core/prompt.js` no longer holds the prompt paragraphs. It loads them and still decides, on every model call, which lines apply.
+
+Shipped app files, next to the page (not inside the user's folder):
+
+- `prompts/prompt_system.txt` — the default text written to `agent/prompts/system.md` the first time that file is missing
+- `prompts/prompt_settings.txt` — the "Current settings" header
+- `prompts/prompt_files.txt` — `@@write_auto`, `@@write_ask`, `@@read_only`, `@@no_folder`
+- `prompts/prompt_shell.txt` — `@@auto`, `@@ask` (included only when `run_shell` is available)
+- `prompts/prompt_web.txt` — the web line (included only when `web_search` is available)
+- `prompts/prompt_memory.txt` — `@@on`, `@@off`, and `@@block` (the header above `HR.mem.block()`)
+
+`@@key` lines are markers. They are not sent to the model. A file with no `@@` line is one literal. Sections are joined the same way as before: settings lines with a single newline, and the system text, the settings block, and the memory block with a blank line between them.
+
+The user's file stays `agent/prompts/system.md`. An existing file is not renamed and not overwritten, including a file the user has edited. `prompt_system.txt` is used only when that file is missing, and it is what gets created. The two paths are different: one is an app asset, the other is in the connected folder.
+
+Tools off, or no tool listed, still adds no settings section. No folder still sends only the settings section (or nothing, when no tool is available). Memory off still leaves out the memory block and says memory is off. Auto-approve still switches the files and shell lines. AG28 step limit and context size are unchanged.
+
+Loading, in order, for each asset: `fetch` of `prompts/<file>` (the service worker serves the cached copy when the network fails), then a direct read of the `agent-files` cache, then `HR.promptFiles` from `prompts/prompt_fallback.js`. That script is generated from the `.txt` files (`node prompts/gen_fallback.cjs`) and loaded before `prompt.js`, which is what makes `file://` work when `fetch` of a local text file is blocked. Hosted pages prefer a successful fetch, so the `.txt` files stay the source of truth. The fallback is not a second hand-written copy. If a fetched file is missing a required section, the generated copy supplies that section. If the asset, the cache, and the generated copy all fail, the call throws `Agent prompt asset missing` instead of sending an empty prompt or dropping a safety line. Template text is cached in the page after the first successful load. The settings lines are still chosen again on every model call.
+
+Offline cache remains `agent-files`. SW VER is `agent-ag29`, without URL version tags. Install precaches the six `.txt` files and `prompt_fallback.js`. Hub, `shared/`, system, phone, games and Learn are unchanged.
+
+### Legacy code notes — AG29
+
+HR4–AG28 kept the default system prompt and the settings sentences as string literals in `app/core/prompt.js`. The branch structure (which line, which order, tools off, no folder) is commented there and is still the live control flow; the paragraphs themselves are only in `prompts/prompt_*.txt`. `prompts/prompt_fallback.js` is produced by `prompts/gen_fallback.cjs` and is checked against those files. Tests are syntax/static checks plus an offline VM smoke of template loading, assembly parity, the user's `system.md`, first-use creation, failed assets, and hosted / cache / file:// loads. No browser tests and no paid API calls.

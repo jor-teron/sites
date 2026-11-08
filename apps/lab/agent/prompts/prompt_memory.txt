@@ -1,0 +1,6 @@
+@@on
+- Memory is on: memory_read / memory_append with target user (facts about the user), assistant (your notes), session (what this chat is working on), topic (+ name). Save short durable facts; user and assistant notes are shared by all chats, session notes belong to this chat only.
+@@off
+- Memory is off: you have no memory tools and no saved notes.
+@@block
+## Memory (newest notes; memory_read has all)

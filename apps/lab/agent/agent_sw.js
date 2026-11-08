@@ -9,14 +9,18 @@
    AG15: the shell list also reads image.html (the Image page); VER only changes this file so browsers re-install.
    AG27: VER agent-ag27 so install picks up the shared Hub dialog linked from agent.html (chat rename).
    AG28: VER agent-ag28 so install picks up the step limit (0 = unlimited, no 30 cap) and the 128000 context default.
+   AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag28', PAGES = ['agent.html', 'image.html'];   /* AG15: VER bump re-installs; image.html's files precached too */
+var FILES = 'agent-files', VER = 'agent-ag29', PAGES = ['agent.html', 'image.html'];   /* AG15: VER bump re-installs; image.html's files precached too */
+/* AG29 Legacy: VER = 'agent-ag28' so the previous install could pick up the step limit and the 128000 context default. */
+var PROMPTS = ['prompts/prompt_fallback.js', 'prompts/prompt_system.txt', 'prompts/prompt_files.txt', 'prompts/prompt_shell.txt', 'prompts/prompt_web.txt', 'prompts/prompt_memory.txt', 'prompts/prompt_settings.txt'];
 var BASE = new URL('./', self.location.href).href;
 function bare(u) { var x = new URL(u); x.search = ''; x.hash = ''; return x.href; }
 function shellList() {
   return Promise.all(PAGES.map(function (p) { return fetch(BASE + p, { cache: 'no-store' }).then(function (r) { return r.text(); }).catch(function () { return ''; }); })).then(function (hs) {
     var urls = PAGES.concat(['index.html', 'agent_icon.png']), re = /\s(?:src|href)="([^"#:]+)"/g, m, h = hs.join('\n');
     while ((m = re.exec(h))) if (!/^(\/\/|data:|mailto:)/.test(m[1])) urls.push(m[1]);
+    urls = urls.concat(PROMPTS);
     return urls.map(function (u) { return bare(new URL(u, BASE).href); }).filter(function (u, i, a) { return a.indexOf(u) === i; });
   });
 }
