@@ -657,7 +657,19 @@
   }
   // Credits Tavily reports (include_usage), else the published price: basic 1, advanced 2.
   function credits(j, depth) { const c = j && j.usage && +j.usage.credits; return c >= 0 && !Number.isNaN(c) ? c : depth === 'advanced' ? 2 : 1; }
+  // H139a: helper receives the private central resolver, never exposes resolved credentials to apps.
+  let embeddings;
+  function embeddingAPI() {
+    if (!window.HubEmbeddings || typeof window.HubEmbeddings.create !== 'function') throw fail('unreachable', 'Embedding helper unavailable. Reload the Hub to update.');
+    if (!embeddings) {
+      try { embeddings = window.HubEmbeddings.create({ resolve, fail }); }
+      catch (_) { throw fail('unreachable', 'Embedding helper unavailable in this environment.'); }
+    }
+    return embeddings;
+  }
+  async function embeddingModels(o) { return embeddingAPI().embeddingModels(o); }
+  async function embed(o) { return embeddingAPI().embed(o); }
   // window.HubAPI = Object.freeze({ chat, search, vision });   (before H134c)
-  window.HubAPI = Object.freeze({ chat, search, vision, chatAdvanced, models, imageModels, imageCapabilities, generateImage, fetchPage, services });   // H134c/H134f
+  window.HubAPI = Object.freeze({ chat, search, vision, chatAdvanced, models, imageModels, imageCapabilities, generateImage, fetchPage, services, embeddingModels, embed });   // H134c/H134f
 
 })();
