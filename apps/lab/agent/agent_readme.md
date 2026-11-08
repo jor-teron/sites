@@ -6,7 +6,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 
 ## Files
 - `index.html` — redirect to `agent.html`
-- `agent.html` — page shell (top bar, chat, steps pane, settings dialog)
+- `agent.html` — page shell (top bar, chat, steps pane, settings dialog). AG30: 📊 links to `usage.html`
 - `agent_sw.js` — AG8 Agent's own service worker (scope `apps/lab/agent/`): offline app shell + vendor engine on demand
 - `ui/settings.css` — AG10 Settings cards (1 column on phones, 2 from 760px), switches, Hub key line
 - `ui/main.css` — theme variables (`html[data-ht]`), layout; `ui/components.css` — buttons, bubbles, Thinking box, error cards, dialog, notice cards; `ui/steps.css` — steps pane; `ui/chats.css` — Chats drawer
@@ -35,14 +35,14 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/storage/logs.js` — `HR.logs`: daily Markdown chat log `agent/chats/YYYY_MM/YYYY_MM_DD.md` (the diary)
 - `app/storage/threadfmt.js` — AG4 `HR.threadfmt`: one chat ⇄ Markdown
 - `app/storage/threads.js` — AG4 `HR.threads`: chat files + index in the folder, or IndexedDB `agent-chats` without one
-- `app/storage/usage.js` — AG7 `HR.usage`: per-day token counts per provider · model (`agent/usage/YYYY_MM.json`, or IndexedDB without a folder), prices, cost
+- `app/storage/usage.js` — AG7 `HR.usage`: per-day token counts per provider · model (`agent/usage/YYYY_MM.json`, or IndexedDB without a folder), prices, cost. AG30 `listMonths()` only lists those month files
 - `app/storage/trash.js` — AG7 `HR.trash`: backup before `write_file` overwrites (`agent/trash/YYYY_MM_DD/<path>~HHMMSS`) and Undo
 - `app/tools/time.js` — `get_time` test tool (local ISO, 12h text, timezone, UTC offset)
 - `app/tools/files.js` — `list_dir`, `read_file` (~20k cap), `write_file` (approval), `search` (names + text, capped); only offered when a folder is connected
 - `app/tools/web.js` — AG6 `HR.web`: `web_search` / `web_fetch` through Tavily (only with a key and Allow web on)
 - `app/tools/shell.js` — `run_shell` (approval card per command; only while the helper test passed)
 - `app/tools/memory.js` — `memory_read`, `memory_append` with `target` user / assistant / session / topic (+ `name`) / date (read); no approval, shows in steps
-- `app/gui/settings.js` — `HR.set`: AG10 Settings cards + big switches (`sw()`), phone accordion; `agent.settings` {theme, baseUrl, model, think, tools, maxSteps, saveChats}, theme apply, Settings dialog
+- `app/gui/settings.js` — `HR.set`: AG10 Settings cards + big switches (`sw()`), phone accordion; `agent.settings` {theme, baseUrl, model, think, tools, maxSteps, saveChats}, theme apply, Settings dialog. AG30: no Usage card; `prices` stays in `agent.settings`
 - `app/gui/model.js` — `HR.model`: AG5 top-bar model chip + picker dialog, per chat (typed model name as fallback)
 - `app/gui/provider.js` — Settings → Model card (Ollama / OpenAI-compatible / Gemini, base URL presets, API key, model name)
 - `app/gui/hubrows.js` — AG9/AG10 `HR.hubRows`: inside the Hub hides every key / base field and shows "Keys come from Hub › API Keys" + Open
@@ -57,7 +57,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/chat.js` — `HR.chat`: input, send / Stop, UI hooks for the loop, `render()`
 - `app/gui/edit.js` — AG5 `HR.edit`: ✎ Edit / ↻ Retry / ⧉ Copy on bubbles (hover or tap)
 - `app/gui/meter.js` — AG5 `HR.meter`: token / context meter above the composer
-- `app/gui/usageview.js` — AG7 `HR.usageView`: Settings → Usage (today, this month, price fields for online models)
+- `usage.html`, `ui/usage.css`, `app/gui/usageview.js` — AG30 Usage page (`HR.usageView`): Token usage & spending, and Rates. AG7–AG29 this view was Settings → Usage
 - `app/gui/chats.js` — AG4 `HR.chats`: Chats drawer (new, switch, rename, delete), resume last chat, per-chat provider + model. AG27 rename uses `UiDialog.ask` (the Hub dialog), not `window.prompt`
 - `app/gui/chatsearch.js` — AG8 `HR.chatSearch`: search box in the 💬 drawer (title + message text), snippet results, jump to the hit
 - `app/main.js` — `HR.notify` (Hub cards, local fallback) + boot
@@ -321,3 +321,25 @@ Offline cache remains `agent-files`. SW VER is `agent-ag29`, without URL version
 ### Legacy code notes — AG29
 
 HR4–AG28 kept the default system prompt and the settings sentences as string literals in `app/core/prompt.js`. The branch structure (which line, which order, tools off, no folder) is commented there and is still the live control flow; the paragraphs themselves are only in `prompts/prompt_*.txt`. `prompts/prompt_fallback.js` is produced by `prompts/gen_fallback.cjs` and is checked against those files. Tests are syntax/static checks plus an offline VM smoke of template loading, assembly parity, the user's `system.md`, first-use creation, failed assets, and hosted / cache / file:// loads. No browser tests and no paid API calls.
+
+
+## AG30 — Usage page
+
+Usage is no longer a card in Settings. 📊 in the chat top bar opens `usage.html` (its own URL, same pattern as `image.html`). **← Chat** goes back. This is a page inside the Agent app, not a new Hub app. Settings keeps every other card, in the same order. `agent.setCard`, step limit, context size, and the AG29 prompt files are unchanged. If the remembered card was `sc_usage`, that id is gone, so Settings stays on the card the page marks open.
+
+The page has two sections.
+
+**Token usage & spending.** Today, This month, and All time. Today and This month read the current month file, the same file as before (`agent/usage/YYYY_MM.json`, or IndexedDB `usage:YYYY_MM`). The date is the `YYYY-MM-DD` key already stored there, in the browser's local date, which is also how new rows are written. All time adds every stored month file. `listMonths()` only lists those files. It does not record usage. Rows are grouped by the provider stored in the `provider|model` key, then by model. Input tokens, output tokens, and call counts are the stored numbers. A `≈` still means at least one call in that row was estimated as characters / 4. Spend is labeled **estimated**. It uses the existing `cost()` helper and the saved rates. It is not a provider bill, and no billing total is stored. A row with no rate says **Rate unavailable** and is left out of the estimated total. It is not counted as zero. A count that is not a number says **Unreadable** and is not counted as zero.
+
+**Rates.** Every model in the saved usage files, plus any rate already saved, including a rate whose model has no calls in the selected period. The period filter does not hide a saved rate. Each side is the saved number per million tokens, or **Rate unavailable**. A saved number, including 0, is marked **Manually entered**. 0 is the number that was typed. It is not a provider free tier. There is no separate currency field and no rate-update time, so none is shown. The boxes are still the `$ / 1M` fields, stored as `agent.settings` → `prices` → `{in, out}`. Online models can still be edited there. Ollama and Browser get boxes only when a rate was already saved, so an existing value is not stuck. Nothing on this page is fetched from a provider.
+
+Tavily credits stay a credit count on the usage file. The page shows the stored count for the selected period and says they are not token spend and not a provider bill. Settings → Web still shows `N/1000` for this month. Image generation does not write a cost onto the gallery record (image, prompt, model, time), so the page says image spend is not stored and does not add it to the token totals.
+
+A usage file that does not parse is still read as empty. All time is withheld when the month files cannot be listed, instead of calling the current month "all time". A saved folder without permission shows the browser copy and says so. Reconnect stays on the chat page. No `window.prompt`.
+
+`record()`, `credits()`, `setPrice()`, and `cost()` are unchanged. Offline cache remains `agent-files`. SW VER is `agent-ag30`, without URL version tags. Install precaches `usage.html`. Hub, `shared/`, system, phone, games and Learn are unchanged.
+
+### Legacy code notes — AG30
+
+AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without price boxes, This month with `$ / 1M` boxes for online models, an em dash when an online price was missing, and the word `local` for Ollama and Browser. The estimated total was blank when nothing had a price. That markup is an HTML comment in `agent.html`. The old table builder is a comment at the bottom of `app/gui/usageview.js`. The chat page still loads `usageview.js` so the Web card's Tavily line keeps updating. Tests are syntax/static checks plus an offline VM smoke of navigation, the two sections, Settings without the Usage card, stored totals, filters, grouping, manual / zero / missing rates, estimated-versus-bill wording, and safe text. No browser tests and no paid API calls.
+

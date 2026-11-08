@@ -4,7 +4,7 @@
    Depth: Settings → Web → basic (1 credit) | advanced (2 credits); extract = 1 / 2 credits per call (up to 5 URLs, we send 1).
    Read-only: no approval card, but every call shows in Steps / the diary like other tools.
    Offered only when a Tavily key is set and Allow web is on (HR.web.ready(); also HR.perms). Tavily allows browser
-   CORS (Access-Control-Allow-Origin: *, checked AG6). Credits used go to HR.usage.credits('tavily', n) (Settings → Usage).
+   CORS (Access-Control-Allow-Origin: *, checked AG6). Credits used go to HR.usage.credits('tavily', n) (Usage page; Settings → Web still shows N/1000).
    401 / 429 / 432 / 433 -> a clear error card in the chat (HR.view.infoCard) and an error result for the model. AG10: in the Hub the key card points to Hub › API Keys (Open). */
 HR.web = (function () {
   var API = 'https://api.tavily.com', LIMIT = 8000;

@@ -10,8 +10,10 @@
    AG27: VER agent-ag27 so install picks up the shared Hub dialog linked from agent.html (chat rename).
    AG28: VER agent-ag28 so install picks up the step limit (0 = unlimited, no 30 cap) and the 128000 context default.
    AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
+   AG30: VER agent-ag30 so install precaches usage.html (the Usage page) and the files it links.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag29', PAGES = ['agent.html', 'image.html'];   /* AG15: VER bump re-installs; image.html's files precached too */
+var FILES = 'agent-files', VER = 'agent-ag30', PAGES = ['agent.html', 'image.html', 'usage.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+/* AG30 Legacy: VER = 'agent-ag29' so the previous install could precache prompts/prompt_*.txt and prompts/prompt_fallback.js. */
 /* AG29 Legacy: VER = 'agent-ag28' so the previous install could pick up the step limit and the 128000 context default. */
 var PROMPTS = ['prompts/prompt_fallback.js', 'prompts/prompt_system.txt', 'prompts/prompt_files.txt', 'prompts/prompt_shell.txt', 'prompts/prompt_web.txt', 'prompts/prompt_memory.txt', 'prompts/prompt_settings.txt'];
 var BASE = new URL('./', self.location.href).href;

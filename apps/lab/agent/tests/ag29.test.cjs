@@ -159,7 +159,7 @@ test('AG29 files, service worker, page and readme point at the shipped prompts',
   for (const f of ['app/core/prompt.js', 'agent_sw.js', 'prompts/prompt_fallback.js', 'prompts/gen_fallback.cjs']) check(f);
   const sw = read('agent_sw.js'), liveSw = liveSource(sw), html = read('agent.html'), readme = read('agent_readme.md');
   const livePrompt = liveSource(read('app/core/prompt.js'));
-  assert.equal(liveSw.includes("VER = 'agent-ag29'"), true);
+  assert.match(sw, /AG29: VER agent-ag29/);
   assert.equal(liveSw.includes("VER = 'agent-ag28'"), false);
   assert.match(sw, /AG29 Legacy: VER = 'agent-ag28'/);
   assert.match(sw, /var FILES = 'agent-files'/);

@@ -44,7 +44,7 @@ Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) 
   if (HR.modelbar) HR.modelbar.init();   /* AG18: top-row dropdowns, before the first load */
   HR.model.init();
   HR.meter.init();
-  HR.usageView.init();
+  HR.usageView.init();   /* AG30: chat keeps this for the Web card's Tavily line; the Usage tables live on usage.html */
   HR.hubRows.init();
   Promise.resolve(folder).catch(function () {}).then(HR.chats.init);   /* AG4: chats after the folder handle is known */
   HR.chatSearch.init();
