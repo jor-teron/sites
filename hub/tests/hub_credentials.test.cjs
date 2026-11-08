@@ -130,9 +130,9 @@ test('listener failures never leak synthetic secrets to logs', () => {
   assert.equal(b.logs.length, 0);
 });
 
-test('Settings opener retains deep-link contract', () => {
+test('API Keys opener retains row deep-link contract', () => {
   const b = browser(); b.init();
-  b.c.HubKeys.open('gemini'); assert.match(b.opened[0][0], /settings\/#keys\/gemini$/);
+  b.c.HubKeys.open('gemini'); assert.match(b.opened[0][0], /api-keys\/#keys\/gemini$/);
   const id = provider(b); b.c.HubProviders.open(id);
   assert.ok(b.opened[1][0].endsWith('#keys/' + id));
 });

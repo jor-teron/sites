@@ -31,6 +31,7 @@ Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buil
 Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
 Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
 Star Pinball,      pinball/,       , , Arcade, Original space pinball: ramp - spinner - drop targets and missions from Cadet to Admiral
+Osmos OSM1c,      osmos/,        osmos/assets/cell-icon.svg, , Arcade, Calm glow cell survival: absorb smaller cells and grow through seeded levels
 Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
 Car Run,           car-run/,       , , Runners, Endless driving: change lanes - jump and use nitro to dodge traffic and potholes
 Desert Road,       desert-road/,   , , Runners, Drive a desert highway and dodge cacti - animals and rocks on the road
@@ -49,6 +50,7 @@ Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fi
 Game of Life,      game-of-life/,  , , Simulator, Conway's cellular automaton: paint cells or drop gliders and guns and watch them evolve
 Browser FPS,       browser-fps/,   , , 3D, 3D first-person shooter: explore or fight on camp - island - snow and forest maps
 LandCraft,         landcraft/,     , , 3D, Voxel block world in Minecraft style: explore - break and place blocks - swim
+Valley Explorer HEX-7a, valley-explorer/, valley-explorer/assets/valley-icon.svg, , 3D, First-person WebGPU valley: walk the hills and collect glowing landmarks
 Island Conquest,   island-conquest/, , , Beta, Strategy: send ships to capture islands from the AI before it takes yours
 Tennis Ball Blitz, tennis-throw/,  , , Beta, Aim and throw tennis balls at targets against the clock - win medals
 AR Game,           ar-game/,       , , Beta, Phone camera AR game: catch pets or chase ghosts and zombies in your room
@@ -119,6 +121,7 @@ Contacts,  contacts/,  contacts/contacts_icon.svg, , Chat, One contact list for 
 Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
 Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
+VNC,        vnc/,        vnc/vnc_icon.svg, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -141,6 +144,7 @@ Device Benchmark,      devbench/,        , , Device, Quick speed tests for phone
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
+Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
@@ -220,6 +224,7 @@ Viewer,                viewer/,          , , Files, View pictures and videos fro
 # H72a: link fixed in hub.js loadApp (new-tab apps opened from the App Hub resolved against the App Hub's folder); row restored
 D-Pad Controller,      ../../hub/controller/, ../../hub/controller/controller_icon.png, 1, Hub tools
 Settings,              settings/,        , , System, Wallpaper theme taskbar device name and other Hub preferences
+API Keys,              api-keys/,         api-keys/api-keys_icon.png, , System, Manage Hub service keys and custom AI providers in this browser
 System Monitor,        sysmon/,          , , System, Live device info with CPU memory storage network and battery graphs
 Mesh Viewer,           mesh-viewer/,     , , System, See this Hub's mesh network: devices online join stats and a live connection log
 Notification Centre,   notifications/,   , , System, Past Hub notifications on this device: filter by app - clear - Do Not Disturb
