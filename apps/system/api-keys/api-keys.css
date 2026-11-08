@@ -86,3 +86,13 @@ html.motion-off * { transition: none !important; }
 .prov-setup summary { cursor: pointer; color: var(--accent); padding: 4px 0; }
 .prov-setup .key-hint { overflow-wrap: anywhere; }
 .prov-test-note { margin-top: 8px !important; }
+
+/* H140: simple named key rows, with advanced provider editors explicitly expandable. */
+.named-provider-row .key-label { display: block; margin-bottom: 8px; }
+.fixed-state:empty { display: none; }
+.providers-advanced { margin: 12px 0; }
+.providers-advanced > summary { cursor: pointer; padding: 10px 0; font-weight: 600; color: var(--accent); }
+.fixed-nvidia-guide { margin-top: 12px; }
+.fixed-actions { margin-top: 6px; }
+.fixed-actions > summary { cursor: pointer; color: var(--accent); padding: 4px 0; }
+.fixed-actions .key-btn { margin: 4px 6px 0 0; }
