@@ -464,3 +464,18 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
   - If no Ollama URL is saved, Agent's built-in Ollama adapter talks to `http://localhost:11434` directly.
   - The copied editor still shows the Hub's own rows and texts (Cloud Vision, NVIDIA, the Hub keys guide).
   - Hub profile sync never includes `agent.api:` keys.
+
+## AG38 — Settings as a full page with categories
+- Settings (⚙) opens full-page, like Hub Settings: a category list on the left and the chosen section on the right.
+  `app/gui/setnav.js` (HR.setNav) builds the list from the existing cards, so every control id and storage key stays the same.
+  The last category is remembered in `agent.setCard`, the key AG10 already used.
+- Categories: Model · Folder · Knowledge & Search (Knowledge, plus expandable **Semantic search** and **Consolidation**) ·
+  Permissions · Web · Helper · Display · **Usage** · Advanced, plus a link to **🔑 API & Providers** (`providers.html`, AG37).
+- Usage is back in Settings › Usage. It uses the same `usageview.js` tables and draws when the section is shown.
+  📊 and `agent.html#settings/usage` open it there. `usage.html` now only forwards to it, so old links keep working.
+- Narrow screens show the category list first. Picking one shows that section with a ‹ Categories back button.
+- UI only: no runtime, key or storage changes. Service worker VER is `agent-ag38`.
+
+### Legacy code notes — AG38
+- `settings.js` `cards()` still has the AG10 collapsing code, but it only runs when HR.setNav is missing.
+- `usage.html` used to render the tables itself (AG30), and `usageview.init()` still boots there if it's ever standalone.

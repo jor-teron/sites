@@ -179,23 +179,20 @@ test('AG30 page, navigation, service worker and readme', () => {
   execFileSync(process.execPath, ['--check'], { input: read('usage.html').match(/<script>([\s\S]*?)<\/script>/g).map(s => s.replace(/<\/?script>/g, '')).join('\n') });
   const html = read('agent.html'), page = read('usage.html'), sw = read('agent_sw.js'), liveSw = liveSource(sw);
   const live = liveHtml(html), livePage = liveHtml(page);
-  assert.match(live, /id="btnUsage" href="usage.html"/);
+  assert.match(live, /id="btnUsage" href="#settings\/usage"/);   // AG38: opens Settings › Usage
   assert.match(live, /aria-label="Usage"/);
-  assert.equal(live.includes('id="sc_usage"'), false);
+  assert.equal(live.includes('id="sc_usage"'), true);   // AG38: Usage is a Settings category again
   assert.equal(live.includes('id="usageBox"'), false);
   assert.match(html, /AG30 Legacy:/);
   assert.match(html, /id="sc_usage"/); /* kept only in the legacy comment */
-  for (const id of ['sc_model', 'sc_folder', 'sc_perms', 'sc_web', 'sc_helper', 'sc_display', 'sc_adv']) assert.match(live, new RegExp('id="' + id + '"'));
-  assert.equal(live.match(/class="scard"/g).length, 7);
+  for (const id of ['sc_model', 'sc_folder', 'sc_know', 'sc_perms', 'sc_web', 'sc_helper', 'sc_display', 'sc_usage', 'sc_adv']) assert.match(live, new RegExp('id="' + id + '"'));
+  assert.equal(live.match(/class="scard"/g).length, 9);   // AG38: + sc_know, sc_usage
   assert.match(live, /id="webCredits"/);
   assert.match(live, /id="setSteps"/);
   assert.ok(live.indexOf('id="setSteps"') < live.indexOf('id="setCtx"'));
-  assert.match(livePage, /Token usage &amp; spending|Token usage & spending/);
-  assert.match(page, /id="usageSpendTitle">Token usage &amp; spending</);
-  assert.match(page, /id="usageRatesTitle">Rates</);
-  assert.match(page, /href="agent.html"/);
-  assert.match(page, /history\.back/);
-  assert.match(page, /location\.protocol !== 'file:'/);
+  assert.match(live, /id="usageSpendTitle">Token usage &amp; spending</);   // AG38: tables moved into Settings
+  assert.match(live, /id="usageRatesTitle">Rates</);
+  assert.match(livePage, /agent\.html#settings\/usage/);   // AG38: usage.html forwards there
   assert.equal(page.includes('window.prompt'), false);
   assert.equal(liveSource(read('app/gui/usageview.js')).includes('fetch('), false);
   assert.equal(liveSource(read('app/gui/usageview.js')).includes('window.prompt'), false);

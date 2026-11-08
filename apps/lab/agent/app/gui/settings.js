@@ -53,8 +53,10 @@ HR.set = (function () {
     b.onclick = function () { put(key, on ? 'off' : 'on'); sw(id, key, after); if (after) after(); };
     box.appendChild(b);
   }
-  /* AG10: collapsible cards; phone (<760px) keeps one open at a time */
+  /* AG38: Settings is a full page with a category list (app/gui/setnav.js); cards no longer collapse.
+     AG10 Legacy below: collapsible cards, phone keeps one open at a time. */
   function cards() {
+    if (HR.setNav) { HR.setNav.init(); return; }
     var all = [].slice.call(document.querySelectorAll('#settings .scard'));
     all.forEach(function (d) { d.addEventListener('toggle', function () {
       if (d.open && !matchMedia('(min-width:760px)').matches) all.forEach(function (o) { if (o !== d) o.open = false; });

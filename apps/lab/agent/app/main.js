@@ -49,10 +49,11 @@ HR.consol.init(); HR.conView.init();   /* AG36: opt-in consolidation, Off by def
   if (HR.modelbar) HR.modelbar.init();   /* AG18: top-row dropdowns, before the first load */
   HR.model.init();
   HR.meter.init();
-  HR.usageView.init();   /* AG30: chat keeps this for the Web card's Tavily line; the Usage tables live on usage.html */
+  HR.usageView.init();   /* AG30: Web card's Tavily line; AG38: the Usage tables are in Settings › Usage */
   HR.hubRows.init();
   Promise.resolve(folder).catch(function () {}).then(HR.chats.init);   /* AG4: chats after the folder handle is known */
   HR.chatSearch.init();
+  Promise.resolve(folder).catch(function () {}).then(function () { if (HR.setNav) HR.setNav.fromHash(); });   /* AG38: #settings/<name> (usage.html redirect) */
   /* AG8: Agent's own offline service worker, scope apps/lab/agent/ (agent_sw.js); AG-F7: plain link, plain 'agent-files' cache
     navigator.serviceWorker.register('agent_sw.js?v=' + AGENT_VER, { scope: './', updateViaCache: 'none' }).catch(function () {}); */
   if ('serviceWorker' in navigator && location.protocol !== 'file:')

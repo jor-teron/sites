@@ -1,4 +1,4 @@
-/* Agent — app/gui/usageview.js: Usage page (AG30). Was Settings → Usage (AG7).
+/* Agent — app/gui/usageview.js: Usage page (AG30). Was Settings → Usage (AG7). AG38: back in Settings › Usage (same tables, ids).
    Two sections on usage.html: Token usage & spending, and Rates.
    Spending reads the stored usage files only (today / this month / all time). Rates are the saved 'prices' setting.
    Chat still calls init() so Settings → Web can refresh the Tavily N/1000 line. Nothing here records tokens.
@@ -251,9 +251,9 @@ HR.usageView = (function () {
     if (btn) btn.addEventListener('click', function () { return paintCredits(); });
     if (HR.usage && HR.usage.onChange) HR.usage.onChange(function () {
       var d = document.getElementById('settings'); if (d && d.open) paintCredits();
-      if (document.getElementById('usagePage')) draw();
+      var pg = document.getElementById('usagePage'); if (pg && !(d && pg.closest && pg.closest('[hidden]'))) draw();
     });
-    if (document.getElementById('usagePage')) return boot();
+    if (document.getElementById('usagePage') && !document.getElementById('settings')) return boot();   /* AG38: in Settings it draws when the Usage section is shown */
     return Promise.resolve();
   }
   return { init: init, draw: draw, rollup: rollup, groupsOf: groupsOf, cacheText: cacheText };   /* AG35: + cacheText */

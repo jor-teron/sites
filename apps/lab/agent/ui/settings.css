@@ -17,3 +17,29 @@
 .tg:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .hubline{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 0;font-size:13px}.hubline[hidden],#helperBox[hidden]{display:none}
 #settings [hidden]{display:none!important}
+/* AG38: full-page Settings (like Hub Settings): category list left, chosen section right. Narrow: list, then section
+   with ‹ Categories (dialog.set-sec). Cards keep their markup; summaries are titles, not toggles. */
+.setdlg.setpage{width:100vw;height:100vh;max-width:none;max-height:none;margin:0;border:0;border-radius:0;padding:0;display:flex;flex-direction:column;overflow:hidden}
+.setpage:not([open]){display:none}
+.setpage>.dlg-head{gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);flex:none}.setpage>.dlg-head h2{flex:1}
+.setpage .hb{min-height:44px}
+.set-wrap{flex:1;min-height:0;display:grid;grid-template-columns:240px 1fr}
+.set-nav{overflow:auto;padding:12px 10px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.set-cat{display:block;text-align:left;min-height:46px;padding:10px 14px;border:0;border-radius:10px;background:transparent;color:var(--fg);font:inherit;font-size:15px;cursor:pointer;text-decoration:none;box-sizing:border-box}
+.set-cat:hover{background:var(--card)}.set-cat.on{background:var(--card);color:var(--acc);font-weight:600}
+.set-cat:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}.set-ext{margin-top:10px;border-top:1px solid var(--line);border-radius:0 0 10px 10px}
+.setpage .set-grid{display:block;overflow:auto;margin:0;padding:16px 20px 40px}
+.setpage .scard{max-width:760px;border:0;background:transparent}
+.setpage .scard>summary{pointer-events:none;cursor:default;font-size:20px;padding:4px 0 10px}.setpage .scard>summary::after{content:none}
+.setpage .sc-b{border-top:1px solid var(--line);padding:0 0 14px}
+.set-more{margin-top:14px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px}
+.set-more>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:6px;font-weight:600}.set-more>summary small{font-weight:400;color:var(--mut)}
+.set-more[open]{padding-bottom:12px}
+.usage-in{padding:0;max-width:none;overflow:visible}
+.set-back{display:none}
+@media (max-width:759px){
+  .set-wrap{grid-template-columns:1fr}.set-nav{border-right:0}
+  .setpage .set-grid{display:none}
+  .setpage.set-sec .set-nav{display:none}.setpage.set-sec .set-grid{display:block}.setpage.set-sec .set-back{display:inline-flex}
+  .setpage .set-grid{padding:12px}
+}
