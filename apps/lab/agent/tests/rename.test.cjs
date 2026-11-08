@@ -31,7 +31,8 @@ test('AG27 rename source keeps the old prompt as a comment and does not call it'
   assert.ok(html.indexOf('shared/dialog/dialog.js') < html.indexOf('app/gui/chats.js'));
   assert.match(html, /shared\/dialog\/dialog\.css/);
   assert.doesNotMatch(html, /dialog\.(js|css)\?[^"]*v=/);
-  assert.match(read('agent_sw.js'), /VER = 'agent-ag27'/);
+  assert.match(read('agent_sw.js'), /VER = 'agent-ag28'/);
+  assert.match(read('agent_sw.js'), /AG27: VER agent-ag27/);
   assert.match(read('agent_readme.md'), /## AG27 — Hub dialog for chat rename/);
   assert.match(read('agent_readme.md'), /### Legacy code notes — AG27/);
   assert.ok(fs.existsSync(path.join(root, 'shared/dialog/dialog.js')));

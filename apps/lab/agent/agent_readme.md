@@ -277,3 +277,18 @@ AG4–AG26 used `prompt('Rename chat', title)` and then the same whitespace coll
 `app/gui/chats.js`. AG27 only replaces the browser prompt with the async Hub dialog API.
 Tests are syntax/static checks plus an offline VM smoke of confirm, cancel, empty name,
 and the Hub `hub-dialog` ask/result exchange. No browser tests or paid API calls.
+
+
+## AG28 — step limit and context default
+
+Settings → Advanced keeps the same two fields, in the same place: **Step limit** then **Context size if the provider doesn't say**. Nothing else in that card moved.
+
+**Step limit** is a nonnegative safe whole number stored in `agent.settings` as `maxSteps` (default still 8). The old product cap of 30 is gone, so 31, 99 and 999 are saved and used as typed. **0 means unlimited**: the agent loop does not stop for a step count, and 0 is not turned into 8 or 30. Negative numbers, fractions, `NaN`, infinities and integers above `Number.MAX_SAFE_INTEGER` are rejected; the field snaps back to the last saved value (or 8 when nothing valid is saved). Stop, an aborted model call, and provider errors still halt the turn. The one existing "does not support tools" retry is unchanged. No new automatic retry was added. The Browser model still forces a single model call.
+
+**Context size** is the same `ctxMax` fallback the token meter already uses when the provider does not report a window (`HR.meter` → `HR.set.ctxMax()`). The default is **128000** only when `agent.settings` has no `ctxMax`. A saved value, including an older 8192, is kept. The number field shows `128000` (this input does not group digits; the meter still uses its existing short form, so 128000 reads as 128k). Provider and model context (Ollama `/api/show`, Gemini `inputTokenLimit`, OpenAI-compatible `context_length` / `context_window`) still wins over this fallback. The 512–2,000,000 range is unchanged. History trimming in `messages.js` is unchanged.
+
+Offline cache remains `agent-files`. SW VER is `agent-ag28`, without URL version tags. Hub, `shared/`, system, phone, games and Learn are unchanged.
+
+### Legacy code notes — AG28
+
+The 1–30 clamp lived in `HR.set.maxSteps`, the step field (`min="1" max="30"`) and `if (calls >= o.maxSteps)` in `app/core/loop.js` (0 used to hit that check immediately, and `parseInt(...) || 8` used to drop an explicit 0). Those lines are comments next to the new checks. The context fallback number was 8192 in `DEF`, `ctxMax()` and the field's change handler; that number is commented beside the 128000 default. Tests are syntax/static checks plus an offline VM smoke of the settings store, the loop, and the meter fallback. No browser tests and no paid API calls.
