@@ -58,7 +58,7 @@ const input = (e, value) => { e.value = value; return e.dispatchEvent({ type: 'i
 
 test('standalone render does not fetch/test; named services save and delete through central API', async () => {
   const b = fixture(); b.load('apps/system/api-keys/api-keys.js'); await settle();
-  assert.equal(b.calls.length, 0); assert.equal(b.pane.querySelectorAll('.key-row').length, 5);
+  assert.equal(b.calls.length, 0); assert.equal(b.pane.querySelectorAll('.key-row').length, 12);
   const row = b.pane.querySelector('#key-gemini'), field = row.querySelector('.key-input');
   assert.equal(field.type, 'password');
   await input(field, 'placeholder-service'); await click(row.querySelector('.key-save')); await settle();
@@ -297,4 +297,165 @@ test('Gemini custom provider defaults and model-list format remain supported', a
   const row=b.pane.querySelector('#prov-'+id); await click(row.querySelectorAll('.key-btn').find((n)=>n.textContent==='Test model list'));
   assert.equal(b.calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000');
   assert.match(row.querySelector('.key-out').textContent,/Model list received/);
+});
+
+// H140: all credentials below are synthetic; fetch remains a fixture stub.
+const fixed = [
+  ['openrouter', 'OpenRouter', 'https://openrouter.ai/api/v1'],
+  ['groq', 'Groq', 'https://api.groq.com/openai/v1'],
+  ['deepseek', 'DeepSeek', 'https://api.deepseek.com/v1'],
+  ['openai', 'OpenAI', 'https://api.openai.com/v1'],
+  ['xai', 'xAI', 'https://api.x.ai/v1'],
+  ['deepinfra', 'DeepInfra', 'https://api.deepinfra.com/v1/openai'],
+  ['nvidia', 'NVIDIA', 'https://integrate.api.nvidia.com/v1'],
+];
+const namedButton = (row, label) => row.querySelectorAll('button').find((n) => n.textContent === label);
+const uiText = (node) => node.textContent + node.children.map(uiText).join(' ');
+
+test('H140 has exactly eleven ordered named fields, a visible Add Provider Row and folded advanced editors', async () => {
+  const b = fixture(); b.load('apps/system/api-keys/api-keys.js'); await settle();
+  const rows = b.pane.querySelectorAll('.named-key-row');
+  assert.deepEqual(rows.map((r) => r.querySelector('.key-label').textContent),
+    ['Tavily', 'Ollama URL', 'Google Gemini', 'Google Cloud Vision', ...fixed.map((d) => d[1])]);
+  assert.equal(rows.length, 11);
+  for (const row of rows) { assert.ok(row.querySelector('.key-input')); assert.equal(row.querySelector('.key-save').textContent, 'Save'); }
+  assert.equal(b.pane.querySelector('.prov-add').querySelector('.key-label').textContent, 'Add Provider Row');
+  assert.equal(b.pane.querySelector('.providers-advanced').open, false);
+  assert.equal(b.data.size, 0); assert.equal(b.calls.length, 0);
+});
+
+for (const name of ['tavily', 'ollama_url', 'gemini', 'gvision']) {
+  test('H140 built-in retains its storage contract and explicit deletion: ' + name, async () => {
+    const b = fixture(); b.load('apps/system/api-keys/api-keys.js'); await settle();
+    const row = b.pane.querySelector('#key-' + name), field = row.querySelector('.key-input');
+    assert.equal(field.type, name === 'ollama_url' ? 'url' : 'password');
+    const value = name === 'ollama_url' ? 'http://localhost:11434' : 'synthetic-key';
+    await input(field, value); await click(row.querySelector('.key-save')); await settle();
+    assert.equal(await b.ctx.HubKeys.get(name), value);
+    assert.deepEqual(Object.keys(JSON.parse(b.data.get('sites-hub.credentials')).keys), [name]);
+    await input(field, ''); await click(row.querySelector('.key-save')); await settle();
+    assert.equal(await b.ctx.HubKeys.get(name), value);
+    assert.equal(b.ctx.HubProviders.list().length, 0); assert.equal(b.calls.length, 0);
+  });
+}
+
+for (const [name, label, endpoint] of fixed) {
+  test('H140 ' + label + ' saves ordinary svc record with verified internal defaults and no requests', async () => {
+    const b = fixture(); b.load('apps/system/api-keys/api-keys.js');
+    const row = b.pane.querySelector('#key-' + name), field = row.querySelector('.key-input');
+    assert.equal(field.type, 'password'); assert.equal(field.autocomplete, 'new-password');
+    await click(row.querySelector('.key-save')); assert.equal(b.ctx.HubProviders.list().length, 0);
+    await input(field, 'synthetic-fixed-key'); await click(row.querySelector('.key-save'));
+    const [record] = b.ctx.HubProviders.list(), info = b.ctx.HubProviders.info(record.id);
+    assert.match(record.id, /^svc_/); assert.equal(info.label, label); assert.equal(info.type, 'openai'); assert.equal(info.endpoint, endpoint);
+    // Exercise the unchanged Agent matcher against actual newly saved records, not a parallel mock.
+    b.ctx.HR = {}; b.load('apps/lab/agent/app/models/presets.js'); b.load('apps/lab/agent/app/core/hubkeys.js');
+    if (name !== 'nvidia') assert.equal(b.ctx.HR.presets.get(name).base, endpoint);
+    assert.equal(b.ctx.HR.hubKeys.service(name === 'nvidia' ? 'custom' : name, endpoint).id, record.id);
+    assert.equal((await b.ctx.HubProviders.secret(record.id)).key, 'synthetic-fixed-key');
+    assert.equal(field.value, ''); assert.equal(field.type, 'password');
+    assert.ok(!uiText(b.pane).includes('synthetic-fixed-key'));
+    await click(row.querySelector('.key-save')); assert.equal((await b.ctx.HubProviders.secret(record.id)).key, 'synthetic-fixed-key');
+    await input(field, 'synthetic-replacement'); await click(row.querySelector('.key-save'));
+    assert.equal(b.ctx.HubProviders.list().length, 1); assert.equal(b.ctx.HubProviders.list()[0].id, record.id);
+    assert.equal((await b.ctx.HubProviders.secret(record.id)).key, 'synthetic-replacement');
+    assert.deepEqual(Object.keys(JSON.parse(b.data.get('sites-hub.credentials')).keys), []); assert.equal(b.calls.length, 0);
+  });
+  test('H140 ' + label + ' reuses canonical ID without rewriting label, endpoint or saved key on load/blank save', async () => {
+    const b = fixture({ hash: '#keys/' + name });
+    const id = b.ctx.HubProviders.add({ label: label.toLowerCase(), type: 'openai', endpoint: endpoint + '/', key: 'synthetic-existing' });
+    const before = b.data.get('sites-hub.credentials'); b.load('apps/system/api-keys/api-keys.js'); await settle();
+    const row = b.pane.querySelector('#key-' + name), field = row.querySelector('.key-input');
+    assert.ok(field.focused); assert.equal(field.value, ''); assert.equal(row.querySelector('.key-save').disabled, false);
+    await click(row.querySelector('.key-save')); assert.equal(b.data.get('sites-hub.credentials'), before);
+    await click(namedButton(row, 'Manage'));
+    assert.equal(b.pane.querySelector('.providers-advanced').open, true); assert.ok(b.pane.querySelector('#prov-' + id).querySelector('.key-input').focused);
+    await input(field, 'synthetic-new'); await click(row.querySelector('.key-save'));
+    assert.equal(b.ctx.HubProviders.list()[0].id, id); assert.equal(b.ctx.HubProviders.info(id).label, label.toLowerCase());
+    assert.equal(b.calls.length, 0);
+  });
+}
+
+for (const variant of ['custom label', 'different type', 'duplicates']) {
+  test('H140 blocks ambiguous canonical endpoint without overwriting custom entries: ' + variant, async () => {
+    const b = fixture(), endpoint = fixed[0][2];
+    const id = b.ctx.HubProviders.add({ label: variant === 'custom label' ? 'Keep my custom label' : 'OpenRouter', type: variant === 'different type' ? 'gemini' : 'openai', endpoint, key: 'synthetic-original' });
+    if (variant === 'duplicates') b.ctx.HubProviders.add({ label: 'Other account', type: 'openai', endpoint, key: 'synthetic-other' });
+    const before = b.data.get('sites-hub.credentials'); b.load('apps/system/api-keys/api-keys.js'); await settle();
+    const row = b.pane.querySelector('#key-openrouter');
+    assert.match(row.querySelector('.fixed-state').textContent, /Use Manage/); assert.equal(row.querySelector('.fixed-actions').open, true);
+    assert.equal(row.querySelector('.key-save').disabled, true); assert.equal(row.querySelector('.key-del').disabled, true);
+    await input(row.querySelector('.key-input'), 'synthetic-rejected'); await click(row.querySelector('.key-save'));
+    assert.equal(b.data.get('sites-hub.credentials'), before);
+    await click(namedButton(row, 'Manage')); assert.equal(b.pane.querySelector('.providers-advanced').open, true);
+    assert.ok(b.pane.querySelector('#prov-' + id).querySelector('.key-input').focused); assert.equal(b.calls.length, 0);
+    if (variant === 'duplicates') { const second = b.ctx.HubProviders.list()[1].id; b.ctx.HubProviders.remove(second); assert.equal(row.querySelector('.key-save').disabled, false); }
+  });
+}
+
+test('H140 same label at a noncanonical endpoint is preserved and never silently adopted', async () => {
+  const b = fixture(), P = b.ctx.HubProviders;
+  const custom = P.add({ label: 'OpenRouter', type: 'openai', endpoint: 'https://custom.invalid/v1', key: 'synthetic-custom' });
+  b.load('apps/system/api-keys/api-keys.js'); const row = b.pane.querySelector('#key-openrouter');
+  await input(row.querySelector('.key-input'), 'synthetic-fixed'); await click(row.querySelector('.key-save'));
+  assert.equal(P.list().length, 2); assert.equal(P.info(custom).endpoint, 'https://custom.invalid/v1');
+  assert.equal((await P.secret(custom)).key, 'synthetic-custom'); assert.ok(b.pane.querySelector('#prov-' + custom));
+});
+
+test('H140 Clear needs confirmation, keeps svc ID, preserves on cancellation and rechecks conflicts', async () => {
+  const b = providerTestFixture(), row = b.pane.querySelector('#key-nvidia'), clear = row.querySelector('.key-del');
+  b.ctx.UiDialog.confirm = async () => false; await click(clear);
+  assert.equal((await b.ctx.HubProviders.secret(b.id)).key, 'placeholder-private-key');
+  b.ctx.UiDialog.confirm = async () => true; await click(clear);
+  assert.equal((await b.ctx.HubProviders.secret(b.id)).key, ''); assert.equal(b.ctx.HubProviders.list()[0].id, b.id);
+  assert.equal(b.ctx.HubProviders.info(b.id).hasKey, false); assert.equal(b.calls.length, 0);
+  b.ctx.HubProviders.update(b.id, { key: 'synthetic-restored' });
+  b.ctx.UiDialog.confirm = async () => { b.ctx.HubProviders.add({ label: 'Other account', type: 'openai', endpoint: fixed[6][2] }); return true; };
+  await click(clear); assert.equal((await b.ctx.HubProviders.secret(b.id)).key, 'synthetic-restored');
+  assert.match(row.querySelector('.key-out').textContent, /Provider changed/);
+});
+
+test('H140 storage failures never claim save/clear/delete succeeded', async () => {
+  const b = providerTestFixture(), row = b.pane.querySelector('#key-nvidia'), field = row.querySelector('.key-input');
+  b.ctx.HubKeys.set('gemini', 'synthetic-gemini'); await settle(); const service = b.pane.querySelector('#key-gemini');
+  const before = b.data.get('sites-hub.credentials'); b.ctx.localStorage.setItem = () => { throw Error('synthetic-private-storage-error'); };
+  await input(field, 'synthetic-failed'); await click(row.querySelector('.key-save'));
+  assert.match(row.querySelector('.key-out').textContent, /Could not save/); assert.equal(field.value, 'synthetic-failed');
+  await click(row.querySelector('.key-del')); assert.match(row.querySelector('.key-out').textContent, /Could not clear/);
+  await input(service.querySelector('.key-input'), 'synthetic-new'); await click(service.querySelector('.key-save')); await settle();
+  assert.match(service.querySelector('.key-out').textContent, /Could not save/);
+  await click(service.querySelector('.key-del')); assert.match(service.querySelector('.key-out').textContent, /Could not remove/);
+  assert.equal(b.data.get('sites-hub.credentials'), before); assert.ok(!uiText(b.pane).includes('synthetic-private-storage-error'));
+  assert.equal(b.calls.length, 0);
+});
+
+test('H140 Add Provider Row and advanced edit cannot introduce competing default-endpoint records', async () => {
+  const b = providerTestFixture(), P = b.ctx.HubProviders;
+  const custom = P.add({ label: 'Custom', type: 'openai', endpoint: 'https://custom.invalid/v1' });
+  const add = b.pane.querySelector('.prov-add'); await click(add.querySelector('.prov-nvidia')); await click(add.querySelector('.key-save'));
+  assert.match(add.querySelector('.key-out').textContent, /already uses/); assert.equal(P.list().length, 2);
+  const row = b.pane.querySelector('#prov-' + custom); await input(row.querySelector('.prov-endpoint'), fixed[6][2]); await click(row.querySelector('.key-save'));
+  assert.match(row.querySelector('.key-out').textContent, /already uses/); assert.equal(P.info(custom).endpoint, 'https://custom.invalid/v1');
+  assert.equal(b.calls.length, 0);
+});
+
+test('H140 named click-only diagnostics retain H138c sanitization; save/load/blur do not fetch', async () => {
+  const b = providerTestFixture(), row = b.pane.querySelector('#key-nvidia');
+  assert.equal(b.calls.length, 0); await row.querySelector('.key-input').dispatchEvent({ type: 'change' }); assert.equal(b.calls.length, 0);
+  b.ctx.fetch = async () => { b.calls.push('mock'); return { ok: false, status: 429, json: async () => ({ error: 'placeholder-private-key' }) }; };
+  await click(namedButton(row, 'Test model list'));
+  assert.equal(b.calls.length, 1); assert.match(row.querySelector('.key-out').textContent, /429/);
+  assert.match(row.querySelector('.key-out').textContent, /Inference was not tested/); assert.ok(!uiText(b.pane).includes('placeholder-private-key'));
+});
+
+test('H140 hash rerender and pagehide clean up every editor subscription, including named rows', async () => {
+  const b = fixture(); let active = 0;
+  for (const name of ['HubKeys', 'HubProviders']) {
+    const api = b.ctx[name]; b.ctx[name] = { ...api, onChange(fn) { active++; const off = api.onChange(fn); return () => { active--; off(); }; } };
+  }
+  b.load('apps/system/api-keys/api-keys.js'); await settle(); const initial = active; assert.ok(initial >= 3);
+  for (let i = 0; i < 5; i++) b.hash('#keys/openai'); await settle(); assert.equal(active, initial);
+  (b.events.pagehide || []).forEach((fn) => fn()); assert.equal(active, 0);
+  (b.events.pageshow || []).forEach((fn) => fn({ persisted: true })); await settle(); assert.equal(active, initial);
+  assert.equal(b.calls.length, 0);
 });

@@ -14,8 +14,8 @@
  *   H28.2 gvision POST vision.googleapis.com/v1/images:annotate?key= with no images ({ requests: [] }: nothing to
  *   bill). 400 with reason API_KEY_INVALID = bad key; any other 400 / 200 = the key reached Vision; 403 tells apart
  *   API not enabled, billing off and key restrictions.
- * H134e: four visible Services rows, then Providers. There are no hidden legacy/provider-key
- * definitions or deep-link maintenance rows; users re-enter those keys through Add provider.
+ * H140: four built-in service rows plus seven named provider rows backed by ordinary svc_ records.
+ * No hidden legacy slots or migration; Add Provider Row and advanced editors remain available.
  * H134a: "Used by" comes from the four visible HubKeys definitions.
  * H134c/H134e: 'Providers' section (hub/core/hub_providers.js, HubCredentials providers section): Label, Provider type
  *   (OpenAI-compatible | Gemini), API endpoint, API key; stable id svc_… per service; Save / Test / Delete. The saved key
@@ -158,7 +158,7 @@
     }
     function doSave() {
       const v = inp.value.trim();
-      if (v === '' && !K.has(name)) { save.disabled = true; return; }
+      if (!v) { say(K.has(name) ? 'Saved value unchanged. Use Delete to remove it.' : 'Paste a value first.', K.has(name) ? 'ok' : 'bad'); load(); return; }
       try { if (K.set(name, v) === false) throw new Error('Could not save (browser storage full or blocked).'); say(v ? 'Saved' : 'Removed', 'ok'); } catch (e) { say(String(e.message || e), 'bad'); }
       load();
     }
@@ -171,7 +171,7 @@
       const ok = D ? await D.confirm('Delete this key?', 'Removes "' + name + '" from this browser. Apps that use it stop working until you add it again.', 'Delete', true)
         : window.confirm('Delete "' + name + '"?');
       if (!ok) return;
-      K.remove(name);
+      if (!K.remove(name) && K.has(name)) { say('Could not remove the key (browser storage may be blocked).', 'bad'); return; }
       say('Deleted', 'ok');
       if (card.dataset.custom) card.remove(); else load();
     });
@@ -199,6 +199,91 @@
   const PROV_PH = { openai: 'https://api.example.com/v1', gemini: 'https://generativelanguage.googleapis.com/v1beta (empty = this)' };
 
   const NVIDIA_BASE = 'https://integrate.api.nvidia.com/v1';
+  // H140: canonical labels/endpoints match Agent presets; these are visible svc_ records,
+  // not hidden named keys or a second credential store. NVIDIA retains the H138c base.
+  const FIXED_PROVIDERS = [
+    { name: 'openrouter', label: 'OpenRouter', endpoint: 'https://openrouter.ai/api/v1' },
+    { name: 'groq', label: 'Groq', endpoint: 'https://api.groq.com/openai/v1' },
+    { name: 'deepseek', label: 'DeepSeek', endpoint: 'https://api.deepseek.com/v1' },
+    { name: 'openai', label: 'OpenAI', endpoint: 'https://api.openai.com/v1' },
+    { name: 'xai', label: 'xAI', endpoint: 'https://api.x.ai/v1' },
+    { name: 'deepinfra', label: 'DeepInfra', endpoint: 'https://api.deepinfra.com/v1/openai' },
+    { name: 'nvidia', label: 'NVIDIA', endpoint: NVIDIA_BASE },
+  ];
+  function fixedMatch(def) {
+    const matches = P.list().map((s) => P.info(s.id)).filter((s) => s && trimSlash(s.endpoint) === def.endpoint);
+    const saved = matches.length === 1 && matches[0].type === 'openai' &&
+      matches[0].label.trim().toLowerCase() === def.label.toLowerCase() ? matches[0] : null;
+    return { saved, conflict: matches.length > 0 && !saved, matches };
+  }
+  function manageProvider(id) {
+    const advanced = pane.querySelector('.providers-advanced');
+    if (advanced) advanced.open = true;
+    const row = id && pane.querySelector('#prov-' + CSS.escape(id));
+    const target = row || advanced;
+    if (target) { target.scrollIntoView({ block: 'center' }); const field = target.querySelector('.key-input'); if (field) field.focus(); }
+  }
+  function namedProviderRow(def) {
+    const card = ui.el('section', 'card key-row named-key-row named-provider-row'); card.id = 'key-' + def.name;
+    const title = ui.el('b', 'key-label', def.label);
+    const input = ui.el('input', 'key-input');
+    Object.assign(input, { type: 'password', autocomplete: 'new-password', spellcheck: false });
+    input.setAttribute('aria-label', def.label + ' key'); input.setAttribute('autocapitalize', 'off');
+    const save = ui.el('button', 'key-btn key-save', 'Save'); save.type = 'button';
+    const clear = ui.el('button', 'key-btn key-del', 'Clear'); clear.type = 'button';
+    const manage = ui.el('button', 'key-btn fixed-manage', 'Manage'); manage.type = 'button';
+    const test = ui.el('button', 'key-btn', 'Test model list'); test.type = 'button';
+    const line = ui.el('div', 'key-line'); line.append(input, save);
+    const options = ui.el('details', 'fixed-actions');
+    options.append(ui.el('summary', '', 'Options'), clear, test, manage);
+    const state = ui.el('p', 'key-hint fixed-state'); state.id = 'state-' + def.name; state.setAttribute('aria-live', 'polite');
+    input.setAttribute('aria-describedby', state.id);
+    const out = ui.el('p', 'key-out'); out.setAttribute('aria-live', 'polite');
+    card.append(title, state, line, options, out);
+    const say = (text, cls) => { out.textContent = text; out.className = 'key-out' + (cls ? ' ' + cls : ''); };
+    function load() {
+      const m = fixedMatch(def);
+      input.placeholder = m.saved && m.saved.hasKey ? 'Key saved · type to replace' : 'Paste the key';
+      if (m.conflict) options.open = true;
+      save.disabled = m.conflict; clear.disabled = !m.saved || !m.saved.hasKey; test.disabled = !m.saved;
+      state.textContent = m.conflict ? 'Existing custom or duplicate providers use this default endpoint. Use Manage to resolve; nothing will be overwritten.'
+        : m.saved ? (m.saved.hasKey ? 'Key saved' : 'Provider saved · no key') : '';
+      manage.disabled = !m.matches.length;
+    }
+    function doSave() {
+      const m = fixedMatch(def), key = input.value.trim();
+      if (m.conflict) { say('Resolve the existing providers with Manage first.', 'bad'); return false; }
+      if (!key) { say(m.saved ? 'Saved key unchanged. Use Clear to remove it.' : 'Paste a key first.', m.saved ? 'ok' : 'bad'); return !!m.saved; }
+      try {
+        if (m.saved) P.update(m.saved.id, { key });
+        else P.add({ label: def.label, type: 'openai', endpoint: def.endpoint, key });
+        input.value = ''; load(); say('Saved', 'ok'); return true;
+      } catch (_) { say('Could not save. Check the key format and browser storage.', 'bad'); return false; }
+    }
+    save.addEventListener('click', doSave);
+    input.addEventListener('input', () => say(''));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+    clear.addEventListener('click', async () => {
+      const m = fixedMatch(def); if (!m.saved || !m.saved.hasKey) return;
+      const D = window.UiDialog;
+      const ok = D ? await D.confirm('Clear saved key?', 'Removes the ' + def.label + ' key but keeps its provider id.', 'Clear', true) : window.confirm('Clear saved key?');
+      if (!ok) return;
+      // Recheck after the asynchronous confirmation; never act on a changed/ambiguous record.
+      const now = fixedMatch(def); if (!now.saved || now.saved.id !== m.saved.id) { say('Provider changed. Review it with Manage first.', 'bad'); return; }
+      try { P.update(m.saved.id, { key: null }); input.value = ''; load(); say('Key cleared', 'ok'); }
+      catch (_) { say('Could not clear the key. Browser storage may be blocked.', 'bad'); }
+    });
+    manage.addEventListener('click', () => { const m = fixedMatch(def); manageProvider(m.matches[0] && m.matches[0].id); });
+    test.addEventListener('click', async () => {
+      if (input.value.trim() && !doSave()) return;
+      const m = fixedMatch(def); if (!m.saved) { say('Save this provider first, or resolve its conflict with Manage.', 'bad'); return; }
+      test.disabled = true; say('Testing model list…');
+      try { const result = await provTest(m.saved.id); say(result.text, result.ok ? 'ok' : 'bad'); }
+      catch (e) { say(modelListFailure(e), 'bad'); }
+      load();
+    });
+    card.reload = load; load(); return card;
+  }
   const NOT_INFERENCE = ' Inference was not tested.';
 
   // Validate base URLs, never silently rewrite full request paths or arbitrary compatible bases.
@@ -219,6 +304,10 @@
       throw new Error('Use the API base URL, not the /models test URL; the app adds /models itself.');
     }
     return url.href.replace(/\/+$/, '');
+  }
+
+  function modelListFailure(e) {
+    return (e && e.name === 'AbortError' ? 'Model-list request timed out.' : 'Model list could not be reached. Network, endpoint or browser restrictions (possibly CORS) may be responsible; the key has not been verified.') + NOT_INFERENCE;
   }
 
   async function provTest(id) {
@@ -314,7 +403,12 @@
     }
     function doSave() {
       try {
-        P.update(id, { label: f.lab.value, type: f.typ.value, endpoint: providerBase(f.end.value, f.typ.value), key: f.key.value });
+        const endpoint = providerBase(f.end.value, f.typ.value);
+        const previous = P.info(id);
+        if (previous && trimSlash(previous.endpoint) !== endpoint && FIXED_PROVIDERS.some((d) => d.endpoint === endpoint) && P.list().some((s) => {
+          const info = P.info(s.id); return s.id !== id && info && trimSlash(info.endpoint) === endpoint;
+        })) { say('A saved provider already uses this default endpoint. Manage the existing record instead.', 'bad'); return false; }
+        P.update(id, { label: f.lab.value, type: f.typ.value, endpoint, key: f.key.value });
         say('Saved', 'ok');
       } catch (e) { say(String((e && e.message) || 'Could not save'), 'bad'); return false; }
       load();
@@ -339,7 +433,7 @@
       if (!save.disabled && !doSave()) return;
       tbtn.disabled = true; say('Testing model list…');
       try { const r = await provTest(id); say(r.text, r.ok ? 'ok' : 'bad'); }
-      catch (e) { say((e && e.name === 'AbortError' ? 'Model-list request timed out.' : 'Model list could not be reached. Network, endpoint or browser restrictions (possibly CORS) may be responsible; the key has not been verified.') + NOT_INFERENCE, 'bad'); }
+      catch (e) { say(modelListFailure(e), 'bad'); }
       tbtn.disabled = false;
     });
     card.reload = load;
@@ -351,7 +445,7 @@
 
   function provAddCard(list, focusName) {
     const card = ui.el('section', 'card key-row key-add prov-add');
-    card.appendChild(ui.el('b', 'key-label', 'Add provider'));
+    card.appendChild(ui.el('b', 'key-label', 'Add Provider Row'));
     card.appendChild(ui.el('p', 'key-hint', 'OpenAI, Groq, OpenRouter, LM Studio, vLLM or another service. Type chooses the request format; apps choose the model.'));
     const setup = ui.el('details', 'prov-setup');
     const summary = ui.el('summary', '', 'NVIDIA setup');
@@ -378,7 +472,13 @@
     });
     function go() {
       let id;
-      try { id = P.add({ label: f.lab.value, type: f.typ.value, endpoint: providerBase(f.end.value, f.typ.value), key: f.key.value }); }
+      try {
+        const endpoint = providerBase(f.end.value, f.typ.value);
+        if (FIXED_PROVIDERS.some((d) => d.endpoint === endpoint) && P.list().some((s) => { const info = P.info(s.id); return info && trimSlash(info.endpoint) === endpoint; })) {
+          out.textContent = 'A saved provider already uses this default endpoint. Use Manage or advanced settings instead of adding a duplicate.'; out.className = 'key-out bad'; return;
+        }
+        id = P.add({ label: f.lab.value, type: f.typ.value, endpoint, key: f.key.value });
+      }
       catch (e) { out.textContent = String((e && e.message) || 'Could not add'); out.className = 'key-out bad'; return; }
       f.lab.value = ''; f.end.value = ''; f.key.value = '';
       out.textContent = 'Added \u00b7 id ' + id; out.className = 'key-out ok';
@@ -396,7 +496,10 @@
     const ids = P.list().map((s) => s.id);
     if (!ids.length) list.appendChild(provEmpty());
     ids.forEach((id) => list.appendChild(provRow(id, focusName, list)));
-    wrap.append(list, provAddCard(list, focusName));
+    const advanced = ui.el('details', 'providers-advanced');
+    advanced.append(ui.el('summary', '', 'Manage saved providers / advanced settings'), list);
+    advanced.open = !!focusName && /^svc_/.test(focusName);
+    wrap.append(advanced, provAddCard(list, focusName));
     // another tab / app changed the list → add missing rows, drop gone ones, repaint the rest
     const off = P.onChange(() => {
       if (!wrap.isConnected) { off(); return; }
@@ -439,12 +542,21 @@
       const note = ui.el('p', 'opt-note key-note');
       note.textContent = '\uD83D\uDD12 Keys stay only in this browser on this device (localStorage). They are not automatically synced and the Hub sends them nowhere; each app sends a key only to its own service. Every Hub app can read them. (If you turn on Settings \u2192 Devices \u2192 Profile \u2192 Include keys in profile, they are also saved in your profile file.)';
       const list = ui.el('div', 'key-list');
-      K.KNOWN.forEach((def) => list.appendChild(keyRow(def, focusName)));
+      ['tavily', 'ollama_url', 'gemini', 'gvision'].forEach((name) => {
+        const row = keyRow(K.KNOWN.find((d) => d.name === name), focusName);
+        row.classList.add('named-key-row'); list.appendChild(row);
+      });
+      if (P) FIXED_PROVIDERS.forEach((def) => list.appendChild(namedProviderRow(def)));
+      if (P) dispose.push(P.onChange(() => list.querySelectorAll('.named-provider-row').forEach((row) => row.reload())));
       const readme = ui.el('a', 'key-readme-link', 'Keys guide (readme) \u2197');
       readme.href = README_GH; readme.target = '_blank'; readme.rel = 'noopener';
       note.append(' ', readme);
-      // H134e: Add provider is the only route for OpenAI-compatible and other AI services.
-      pane.append(note, ui.title('Services'), list);
+      // H140: simple named rows first; advanced/custom provider controls remain below.
+      pane.append(note, ui.title('API keys'), list,
+        ui.note('Named provider rows use built-in defaults. Test model list never verifies inference or available credits. Use Options → Manage for endpoints and advanced settings.'));
+      const nvidia = ui.el('details', 'prov-setup fixed-nvidia-guide');
+      nvidia.append(ui.el('summary', '', 'NVIDIA setup and browser limits'), ui.note('NVIDIA uses the OpenAI-compatible base ' + NVIDIA_BASE + ', not /chat/completions. A saved key or model list does not prove inference works. Browser restrictions may require a trusted proxy; none is supplied here.'));
+      pane.append(nvidia);
       if (P) pane.append(ui.title('Providers'), providersSection(focusName));
       pane.append(ui.title('Help'), guide());
       // another tab / app changed a key → refresh that row (or all)
@@ -475,6 +587,8 @@
     editor.render(pane, sub);
   }
   window.addEventListener('hashchange', render);
+  window.addEventListener('pagehide', () => { dispose.forEach((off) => off()); dispose = []; });
+  window.addEventListener('pageshow', (e) => { if (e.persisted) render(); });
   render();
 
 })();
