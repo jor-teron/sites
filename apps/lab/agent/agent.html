@@ -61,17 +61,18 @@
   </span>
   <button type="button" class="chip mchip" id="modelChip" aria-haspopup="dialog" hidden>Loading…</button>
   <span class="grow"></span>
-  <button type="button" class="chip" id="btnFolder" hidden>📁 Pick folder</button>
-  <a class="hb" id="btnImage" href="image.html" title="Image" aria-label="Make a picture">🖼</a>
-  <a class="hb" id="btnUsage" href="#settings/usage" title="Usage" aria-label="Usage">📊</a>   <!-- AG38: opens Settings › Usage (was usage.html) -->
   <button type="button" class="hb" id="btnSteps" title="Steps" aria-label="Show steps">☰<span id="stepCount" class="badge"></span></button>
+  <!-- AG39: right side is exactly ＋ · 🖼 Images · 📁 <folder> · ⚙. The chats-panel "＋ New chat" and the 📊 Usage shortcut were removed
+    (Usage stays in Settings › Usage). AG39 Legacy: 📁 chip, 🖼, 📊 (href #settings/usage), ☰, ＋, ⚙ in that order. -->
   <button type="button" class="hb" id="btnClear" title="New chat" aria-label="New chat">＋</button>
+  <a class="hb tb-img" id="btnImage" href="image.html" title="Make a picture" aria-label="Images: make a picture"><span class="tb-ic" aria-hidden="true">🖼</span><span class="tb-lbl">Images</span></a>
+  <button type="button" class="chip tb-folder" id="btnFolder" hidden>📁 Folder</button>
   <button type="button" class="hb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
 </header>
 <div class="main">
   <div id="chatsBack" class="ch-back"></div>
   <aside class="chats" id="chats" aria-label="Chats">
-    <div class="ch-top"><button type="button" class="hb wide ch-new" id="btnNewChat">＋ New chat</button><button type="button" class="hb ch-x" id="chatsClose" title="Close" aria-label="Close chats">✕</button></div>
+    <div class="ch-top"><span class="ch-ttl">Chats</span><button type="button" class="hb ch-x" id="chatsClose" title="Close" aria-label="Close chats">✕</button></div>
     <div class="ch-find"><input id="chatSearch" class="inp" type="search" spellcheck="false" autocomplete="off" placeholder="🔍 Search chats" aria-label="Search chats"><button type="button" class="hb ch-fx" id="chatSearchX" title="Clear search" aria-label="Clear search" hidden>✕</button></div>
     <div id="chatList" class="ch-list"></div>
     <button type="button" class="hb wide ch-recon" id="chatsReconnect" hidden>📁 Reconnect folder</button>   <!-- AG-F2 -->

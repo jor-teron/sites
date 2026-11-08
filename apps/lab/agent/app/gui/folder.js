@@ -6,8 +6,12 @@ HR.folder = (function () {
   function paint() {
     var s = HR.fs.state(), n = HR.fs.name();
     chip.hidden = s === 'unsupported';
-    chip.textContent = s === 'ready' ? '📁 ' + n : s === 'need' ? '📁 Reconnect' : '📁 Pick folder';
-    chip.className = 'chip ' + s; chip.title = s === 'ready' ? 'Folder: ' + n + ' (tap to pick another)' : s === 'need' ? 'Reconnect folder ' + n : 'Pick a folder for the agent';
+    /* AG39: the chip shows the real folder name from the granted handle (HR.fs.name()), 'Folder' when there is none.
+       Long names are cut with … in CSS; the full name is in title and aria-label. AG39 Legacy: '📁 Reconnect' / '📁 Pick folder'. */
+    var has = (s === 'ready' || s === 'need') && n;
+    chip.textContent = '📁 ' + (has ? n : 'Folder');
+    chip.className = 'chip tb-folder ' + s; chip.title = s === 'ready' ? 'Folder: ' + n + ' (tap to pick another)' : s === 'need' ? 'Folder ' + (n || '') + ' needs permission again: tap to reconnect' : 'No folder connected: tap to pick one';
+    chip.setAttribute('aria-label', chip.title);
     stat.textContent = s === 'unsupported' ? 'Folder access is not supported in this browser (Android browsers, Firefox, Safari). Use desktop Chrome or Edge. Chat still works without a folder.'
       : s === 'ready' ? 'Connected: ' + n + ' — tools list_dir, read_file, write_file (asks first), search.'
       : s === 'need' ? 'Folder “' + n + '” remembered — tap Reconnect folder to allow access again.' : 'No folder. Pick one to let the agent list, read, search and (with your approval) write files.';

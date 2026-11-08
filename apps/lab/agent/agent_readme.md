@@ -479,3 +479,23 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 ### Legacy code notes — AG38
 - `settings.js` `cards()` still has the AG10 collapsing code, but it only runs when HR.setNav is missing.
 - `usage.html` used to render the tables itself (AG30), and `usageview.init()` still boots there if it's ever standalone.
+
+## AG39 — Top bar, folder name, rates, image usage
+- **Top bar:** slimmer (3px padding, one row), but buttons are still big (40px tall, at least 44px wide). The right side
+  is ＋ (new chat) · 🖼 **Images** (bigger icon and a visible label) · 📁 folder · ⚙.
+  The chats panel's "＋ New chat" duplicate and the 📊 Usage shortcut are gone; Usage stays in Settings › Usage.
+- **Folder chip:** shows the real connected folder name from the granted directory handle (`HR.fs.name()`), or "Folder"
+  when there is none. It updates on connect, reconnect and disconnect (HR.fs.onChange). Long names are cut with …;
+  the full name is in title and aria-label.
+- **Rates:** each Input/Output cell is a single number field (no second value or "Rate unavailable" label beside it),
+  with accessible labels "… US dollars per million tokens". Browser and Ollama rows can now be priced. With no rate they
+  count as $0 (local); online rows with no rate still say Rate unavailable and are left out of the total.
+- **Image usage:** `HR.usage.image(provider, model, 'ok'|'fail'|'abort', tokens)` adds to `j.img[day]['provider|model']`
+  `{n, f, x, k, p, o}` in the same month file. It's logged once per generation on image.html.
+  Tokens are stored only when OpenRouter (`usage`) or Gemini (`usageMetadata`) report them; otherwise they show as "unknown".
+  Settings › Usage has an Image generation table with an optional manual $ per image (`prices['img:provider|model'].each`),
+  shown as your estimate. No prompts, pictures or keys are logged; image counts are never in the token totals.
+
+### Legacy code notes — AG39
+- The top-bar order before AG39 is in the agent.html comment. folder.js keeps the old chip words in a comment.
+- `j.img` is new and older code ignores it. Text rows (`days`), cache fields and credits are unchanged.

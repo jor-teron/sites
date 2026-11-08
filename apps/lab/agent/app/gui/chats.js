@@ -167,7 +167,7 @@ HR.chats = (function () {
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
     $('btnChats').onclick = toggle; $('chatsClose').onclick = function () { document.body.classList.remove('chats-open'); };
     if ($('chatsReconnect')) $('chatsReconnect').onclick = function () { HR.fs.reconnect().catch(function (e) { if (!e || e.name !== 'AbortError') HR.chat.note('Folder: ' + (e && e.message || e)); }); };   /* AG-F2: tap = user gesture */
-    $('chatsBack').onclick = close; $('btnNewChat').onclick = newChat; $('btnClear').onclick = newChat;
+    $('chatsBack').onclick = close; if ($('btnNewChat')) $('btnNewChat').onclick = newChat; $('btnClear').onclick = newChat;   /* AG39: top-bar ＋ only */
     if (localStorage.getItem('agent.chatsPane') === 'off') document.body.classList.add('chats-off');
     /* AG-F3: another tab saved -> refresh the list; the open chat reloads when this tab has nothing unsaved */
     if (bc) bc.onmessage = function (ev) { var d = ev.data || {};

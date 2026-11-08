@@ -71,6 +71,8 @@
 <script src="app/models/presets.js"></script>
 <script src="app/models/registry.js"></script>
 <script src="app/gui/settings.js"></script>
+<script src="app/storage/fs.js"></script>   <!-- AG39: image usage goes to the same agent/usage/ file as chat -->
+<script src="app/storage/usage.js"></script>
 <script src="app/models/imagegen.js"></script>
 <script src="app/models/img_pollinations.js"></script>
 <script src="app/models/img_gemini.js"></script>
@@ -86,7 +88,7 @@
   document.getElementById('imgBack').onclick = function (e) {   /* came from chat: real Back keeps its state */
     try { if (document.referrer && new URL(document.referrer).pathname.slice(-10) === 'agent.html' && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {}
   };
-  Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () { HR.imgpage.init(); });
+  Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () { return HR.fs.init().catch(function () {}); }).then(function () { HR.imgpage.init(); });   /* AG39: folder known before usage writes */
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('agent_sw.js', { scope: './', updateViaCache: 'none' }).catch(function () {});
 </script>
 </body>

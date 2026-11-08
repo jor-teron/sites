@@ -179,8 +179,8 @@ test('AG30 page, navigation, service worker and readme', () => {
   execFileSync(process.execPath, ['--check'], { input: read('usage.html').match(/<script>([\s\S]*?)<\/script>/g).map(s => s.replace(/<\/?script>/g, '')).join('\n') });
   const html = read('agent.html'), page = read('usage.html'), sw = read('agent_sw.js'), liveSw = liveSource(sw);
   const live = liveHtml(html), livePage = liveHtml(page);
-  assert.match(live, /id="btnUsage" href="#settings\/usage"/);   // AG38: opens Settings › Usage
-  assert.match(live, /aria-label="Usage"/);
+  assert.equal(live.includes('id="btnUsage"'), false);   // AG39: Usage only in Settings (AG38 had 📊 → #settings/usage)
+  /* AG39: the 📊 aria-label="Usage" shortcut was removed from the top bar */
   assert.equal(live.includes('id="sc_usage"'), true);   // AG38: Usage is a Settings category again
   assert.equal(live.includes('id="usageBox"'), false);
   assert.match(html, /AG30 Legacy:/);
@@ -266,7 +266,7 @@ test('stored totals, filters, grouping, rates and safe text', async () => {
   assert.deepEqual(Array.from(months.ids), ['2026_09', '2026_10', YM]);
   await app.HR.usageView.init();
   const spend = app.ids.usageSpend, rates = app.ids.usageRates, period = app.ids.usagePeriod;
-  assert.deepEqual(headings(spend), ['gemini', 'openai', 'ollama', 'browser']);
+  assert.deepEqual(headings(spend), ['gemini', 'openai', 'ollama', 'browser', 'Image generation']);   // AG39: + image table
   assert.match(text(spend), /Showing: This month \(2026-11\)/);
   assert.equal(text(spend).includes('OCTOBERONLY'), false);
   assert.equal(text(spend).includes('__proto__'), false);
@@ -283,7 +283,7 @@ test('stored totals, filters, grouping, rates and safe text', async () => {
   assert.equal(text(story).includes('Rate unavailable'), false);
   const llama = rowWith(spend, 'llama');
   assert.match(text(llama), /≈40/);
-  assert.match(text(llama), /Rate unavailable/);
+  assert.match(text(llama), /\$0\.0000 estimated/);   // AG39: local rows default to a 0 rate
   const bad = rowWith(spend, 'bad');
   assert.match(text(bad), /Unreadable/);
   assert.match(text(bad), /5/);
@@ -292,7 +292,7 @@ test('stored totals, filters, grouping, rates and safe text', async () => {
   assert.match(text(spend), /Rate unavailable is not counted as zero/);
   assert.match(text(spend), /not a provider bill/);
   assert.match(text(spend), /No provider billing total is stored/);
-  assert.match(text(spend), /no image-cost records are stored/);
+  assert.match(text(spend), /No image generations recorded for this period/);   // AG39
   assert.match(text(spend), /Tavily credits recorded for this period: 5/);
   assert.match(text(spend), /Search credits are not token spend/);
   assert.equal(/\bfree\b/i.test(text(spend) + text(rates)), false);
@@ -305,18 +305,16 @@ test('stored totals, filters, grouping, rates and safe text', async () => {
   assert.equal(rowWith(rates, 'saved-only') != null, true);
   const saved = rowWith(rates, 'saved-only');
   assert.match(text(saved), /Manually entered/);
-  assert.match(text(saved), /9/);
-  assert.match(text(saved), /8/);
+  assert.deepEqual(byTag(saved, 'INPUT').map(i => String(i.value)), ['9', '8']);   // AG39: the value is in the field
   const storyRate = rowWith(rates, 'story');
   assert.match(text(storyRate), /Manually entered/);
   assert.equal(text(storyRate).includes('Rate unavailable'), false);
   const llamaRate = rowWith(rates, 'llama');
-  assert.match(text(llamaRate), /Rate unavailable/);
-  assert.match(text(llamaRate), /Not recorded/);
-  assert.equal(byTag(llamaRate, 'INPUT').length, 0);
+  assert.match(text(llamaRate), /Not set \(counts as \$0, local\)/);   // AG39: local rows can be priced
+  assert.equal(byTag(llamaRate, 'INPUT').length, 2);
   const gemRate = rowWith(rates, 'gem');
   assert.match(text(gemRate), /Manually entered/);
-  assert.match(text(gemRate), /Rate unavailable/);
+  assert.equal(byTag(gemRate, 'INPUT').length, 2);   // AG39: fields only, no duplicate label
   assert.match(text(rates), /No rate-update time is stored/);
   assert.match(text(rates), /Currency is not stored/);
   assert.match(text(rates), /Rates are not filtered by the period/);
@@ -332,7 +330,7 @@ test('stored totals, filters, grouping, rates and safe text', async () => {
   assert.equal(todayBtn.attrs['aria-checked'], 'false');
   assert.equal(byTag(period, 'BUTTON').find(b => b.textContent === 'This month').attrs['aria-checked'], 'true');
   await todayBtn.listeners.click[0]();
-  assert.deepEqual(headings(spend), ['openai', 'ollama', 'browser']);
+  assert.deepEqual(headings(spend), ['openai', 'ollama', 'browser', 'Image generation']);
   assert.match(text(spend), /Showing: Today \(2026-11-08\)/);
   assert.equal(text(spend).includes('gem'), false);
   assert.equal(rowWith(spend, 'gpt') != null, true);
@@ -349,11 +347,11 @@ test('stored totals, filters, grouping, rates and safe text', async () => {
   assert.equal(app.writes(), 0);
   assert.equal(app.inits() > 0, true);
 
-  const outBox = byTag(rowWith(rates, 'saved-only'), 'INPUT').find(i => i.attrs['aria-label'] === '$ / 1M out for custom|saved-only');
+  const outBox = byTag(rowWith(rates, 'saved-only'), 'INPUT').find(i => i.attrs['aria-label'] === 'Output price, US dollars per million tokens for custom|saved-only'   /* AG39 label */);
   outBox.value = '';
   await outBox.listeners.change[0]();
   const after = rowWith(rates, 'saved-only');
-  assert.match(text(after), /Rate unavailable/);
+  assert.equal(byTag(after, 'INPUT')[1].value, '');   // AG39: empty field = no rate
   assert.match(text(after), /Manually entered/);
   const savedPrices = JSON.parse(app.store['agent.settings']);
   assert.equal(savedPrices.maxSteps, 99);

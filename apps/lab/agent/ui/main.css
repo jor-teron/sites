@@ -23,3 +23,10 @@ code{font-family:var(--mono);font-size:.9em;background:var(--think);border:1px s
 @media(min-width:960px){.log,.composer{padding-left:max(24px,calc((100% - 860px)/2));padding-right:max(24px,calc((100% - 860px)/2))}}
 @media(min-width:1600px){html,body{font-size:17px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* AG39: slimmer top bar (less padding, one row) with big tap targets (≥40px tall, 44px wide), right side ＋ · 🖼 Images · 📁 folder · ⚙. */
+.top{padding-top:3px;padding-bottom:3px;gap:4px;min-height:46px;box-sizing:border-box}
+.top>.hb{min-width:44px;height:40px;font-size:19px}
+.top .tb-img{gap:6px;padding:0 12px;font-size:15px;font-weight:600}.top .tb-img .tb-ic{font-size:23px;line-height:1}
+.top .tb-folder{height:40px;max-width:22vw;min-width:44px;font-size:14px;border-radius:20px}
+@media (max-width:560px){.top .tb-img{padding:0 8px}.top .tb-folder{max-width:24vw}}   /* narrow: Images label stays visible; long folder names ellipsis */
+.ch-ttl{flex:1;display:flex;align-items:center;font-weight:600;font-size:15px;padding-left:4px}

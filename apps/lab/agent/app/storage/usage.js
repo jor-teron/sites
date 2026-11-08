@@ -5,7 +5,12 @@
    the same JSON in IndexedDB 'agent-chats'/'kv' under 'usage:YYYY_MM'. Writes are queued one after another.
    AG6: credits(service, n) adds API credits (Tavily) to the month: j.credits {service: n} and j.days[d]._credits {service: n}.
    Prices (AG30: Usage page; AG7–AG29: Settings → Usage): setting 'prices' {'provider|model': {in, out}} in $ per 1M tokens; cost(key, p, o).
-   AG30: listMonths() only reads which month files exist. record, credits, month, prices, setPrice and cost are unchanged. */
+   AG30: listMonths() only reads which month files exist. record, credits, month, prices, setPrice and cost are unchanged.
+   AG39: image(prov, model, outcome, tok) logs image generation apart from chat tokens, in the same month file under
+   j.img {'YYYY-MM-DD': {'provider|model': {n ok images, f failed, x stopped, k calls that reported tokens, p, o}}}.
+   Only what the provider reported: tok {p, o} when it sent token counts, else nothing (unknown, never guessed).
+   No prompts, pictures or keys are stored. Older readers ignore j.img, so text totals are unchanged.
+   AG39 prices: a manual $ per image lives under 'img:provider|model' {each}; imgCost(key, n) is that estimate or null. */
 HR.usage = (function () {
   var q = Promise.resolve(), subs = [];
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -50,8 +55,21 @@ HR.usage = (function () {
     }).catch(function () {});
     return q;
   }
+  function image(prov, model, outcome, tok) {
+    var f = outcome === 'ok' ? 'n' : outcome === 'abort' ? 'x' : 'f', m = ym(), d = day(), key = String(prov) + '|' + String(model);
+    var tk = tok && Number.isSafeInteger(tok.p) && Number.isSafeInteger(tok.o) && tok.p >= 0 && tok.o >= 0 ? tok : null;
+    q = q.then(async function () {
+      var j = await month(m), img = j.img = j.img && typeof j.img === 'object' ? j.img : {}, dd = img[d] = img[d] || {};
+      var r = dd[key] = dd[key] || { n: 0, f: 0, x: 0 };
+      r[f] = (r[f] || 0) + 1;
+      if (tk && f === 'n') { r.k = (r.k || 0) + 1; r.p = (r.p || 0) + tk.p; r.o = (r.o || 0) + tk.o; }
+      await save(m, j); subs.forEach(function (fn) { try { fn(); } catch (e) {} });
+    }).catch(function () {});
+    return q;
+  }
+  function imgCost(key, n) { var r = prices()['img:' + key]; return r && r.each != null && Number.isFinite(+r.each) ? n * r.each : null; }
   function prices() { var v = HR.set.get('prices'); return v && typeof v === 'object' ? v : {}; }
-  function setPrice(key, kind, val) { var p = prices(), r = p[key] = p[key] || {}; var n = parseFloat(val); if (isNaN(n) || n < 0) delete r[kind]; else r[kind] = n; if (!Object.keys(r).length) delete p[key]; HR.set.put('prices', p); }
+  function setPrice(key, kind, val) { var p = Object.assign({}, prices()), r = p[key] = p[key] || {}; var n = parseFloat(val); if (isNaN(n) || n < 0) delete r[kind]; else r[kind] = n; if (!Object.keys(r).length) delete p[key]; HR.set.put('prices', p); }
   function cost(key, p, o) { var r = prices()[key]; if (!r || (r.in == null && r.out == null)) return null; return (p * (r.in || 0) + o * (r.out || 0)) / 1e6; }
   /* AG30: read-only list of stored month ids. Does not write a usage file and does not invent months.
      Folder: agent/usage/YYYY_MM.json. No folder: IndexedDB keys usage:YYYY_MM. A missing usage folder is an empty list.
@@ -98,5 +116,5 @@ HR.usage = (function () {
     return { ids: ids, listed: listed };
   }
   /* AG30 Legacy: return { record, credits, month, ym, day, prices, setPrice, cost, onChange } — listMonths is only added beside those. */
-  return { record: record, credits: credits, month: month, ym: ym, day: day, prices: prices, setPrice: setPrice, cost: cost, listMonths: listMonths, onChange: function (f) { subs.push(f); } };
+  return { record: record, image: image, imgCost: imgCost, credits: credits, month: month, ym: ym, day: day, prices: prices, setPrice: setPrice, cost: cost, listMonths: listMonths, onChange: function (f) { subs.push(f); } };
 })();

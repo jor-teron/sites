@@ -2,6 +2,9 @@
    Two sections on usage.html: Token usage & spending, and Rates.
    Spending reads the stored usage files only (today / this month / all time). Rates are the saved 'prices' setting.
    Chat still calls init() so Settings → Web can refresh the Tavily N/1000 line. Nothing here records tokens.
+   AG39: rate cells are one editable number each (no second value/label beside it); Browser and Ollama rows can be
+   priced too and count as $0 until a rate is entered. Image generation has its own table from j.img (HR.usage.image):
+   images, failed, stopped, reported tokens (unknown when not sent) and an optional manual $ per image estimate.
    AG30 Legacy: the old Settings tables are commented at the bottom of this file. */
 HR.usageView = (function () {
   var period = 'month', ticket = 0;
@@ -30,7 +33,7 @@ HR.usageView = (function () {
   /* Sum stored rows. mode 'today' keeps one day key. 'month' and 'all' keep every day in the files they are given.
      Credits: today uses that day's _credits; month and all use each file's credits field (not both, so they are not doubled). */
   function rollup(files, mode, today) {
-    var rows = Object.create(null), credits = 0, creditsSeen = false, bad = false;
+    var rows = Object.create(null), img = Object.create(null), credits = 0, creditsSeen = false, bad = false;
     (files || []).forEach(function (file) {
       var doc = (file && file.doc) || {}, days = doc.days || {};
       Object.keys(days).forEach(function (d) {
@@ -50,6 +53,14 @@ HR.usageView = (function () {
           }
         });
       });
+      var im = doc.img && typeof doc.img === 'object' ? doc.img : {};   /* AG39 */
+      Object.keys(im).forEach(function (d) {
+        if (mode === 'today' && d !== today) return;
+        Object.keys(im[d] || {}).forEach(function (key) {
+          var r = im[d][key] || {}, t = img[key] || (img[key] = { n: 0, f: 0, x: 0, k: 0, p: 0, o: 0 });
+          ['n', 'f', 'x', 'k', 'p', 'o'].forEach(function (f) { var v = Number(r[f]); if (Number.isFinite(v)) t[f] += v; });
+        });
+      });
       if (mode === 'today') {
         var dc = (days[today] && days[today]._credits) || {};
         if (dc.tavily != null) { var c = Number(dc.tavily); if (Number.isFinite(c)) { credits += c; creditsSeen = true; } else bad = true; }
@@ -57,7 +68,7 @@ HR.usageView = (function () {
         var c2 = Number(doc.credits.tavily); if (Number.isFinite(c2)) { credits += c2; creditsSeen = true; } else bad = true;
       }
     });
-    return { rows: rows, credits: credits, creditsSeen: creditsSeen, bad: bad };
+    return { rows: rows, img: img, credits: credits, creditsSeen: creditsSeen, bad: bad };
   }
   function groupsOf(rows) {
     var g = Object.create(null);
@@ -78,6 +89,8 @@ HR.usageView = (function () {
     function side(v) { return v != null && Number.isFinite(Number(v)) ? Number(v) : null; }
     return { in: side(r.in), out: side(r.out) };
   }
+  /* AG39: local rows (browser, ollama) default to a 0 rate, so their estimate is $0 instead of Rate unavailable. */
+  function costOf(key, p, o) { var c = HR.usage.cost(key, p, o); return c == null && !online(key) ? 0 : c; }
   /* AG35: plain text only. Ratio uses only the calls that reported, against their own input tokens. */
   function cacheText(r) {
     if (r.badC) return 'unreadable';
@@ -96,7 +109,7 @@ HR.usageView = (function () {
     var td = el('td'), rate = rateOf(key);
     /* An unreadable token count is not a zero, so it is not priced. */
     if (row.badP || row.badO) { td.className = 'us-na'; td.textContent = 'Unreadable'; return td; }
-    var c = HR.usage.cost(key, row.p, row.o);
+    var c = costOf(key, row.p, row.o);
     if (c == null) { td.className = 'us-na'; td.textContent = 'Rate unavailable'; return td; }
     var bits = [money(c) + ' estimated'];
     if (rate.in != null && rate.out == null) bits.push('output rate unavailable; the existing estimate counts that side as 0');
@@ -106,17 +119,13 @@ HR.usageView = (function () {
   }
   function priceInput(key, kind, label) {
     var cur = HR.usage.prices()[key] || {}, i = el('input', 'inp num us-in');
-    i.type = 'number'; i.min = '0'; i.step = '0.01'; i.placeholder = label; i.setAttribute('aria-label', label + ' for ' + key); i.setAttribute('inputmode', 'decimal');
+    i.type = 'number'; i.min = '0'; i.step = 'any'; i.placeholder = online(key) || /^img:/.test(key) ? 'not set' : '0'; i.setAttribute('aria-label', label + ' for ' + key.replace(/^img:/, '')); i.setAttribute('inputmode', 'decimal');
     if (cur[kind] != null) i.value = String(cur[kind]);
     i.addEventListener('change', function () { HR.usage.setPrice(key, kind, i.value); return draw(); });
     return i;
   }
   function rateCell(key, kind, label) {
-    var td = el('td'), rate = rateOf(key), v = rate[kind];
-    if (v == null) td.appendChild(el('span', 'us-na', 'Rate unavailable'));
-    else td.appendChild(el('span', null, String(v)));
-    if (online(key) || HR.usage.prices()[key]) td.appendChild(priceInput(key, kind, label));
-    return td;
+    var td = el('td'); td.appendChild(priceInput(key, kind, label)); return td;   /* AG39: the field is the value */
   }
   function paintPeriod(box) {
     if (!box) return; clear(box);
@@ -165,7 +174,7 @@ HR.usageView = (function () {
         if (!r.badP) tot.p += r.p; else tot.badP = true;
         if (!r.badO) tot.o += r.o; else tot.badO = true;
         if (r.badP || r.badO) return;
-        var c = HR.usage.cost(m.key, r.p, r.o);
+        var c = costOf(m.key, r.p, r.o);
         if (c == null) return;
         tot.c += c; priced = true;
       });
@@ -187,11 +196,33 @@ HR.usageView = (function () {
     }
     host.appendChild(el('p', 'hint', storageNote() + ' Counts come from the provider; ≈ means some calls were estimated as characters / 4. Costs are estimates from your prices. Estimated spend is not a provider bill. No provider billing total is stored.'));
     host.appendChild(el('p', 'hint', 'Today and This month read the current month file. All time adds every stored month file. Dates are the YYYY-MM-DD keys already in those files. A file that does not parse is read as empty, same as before.'));
-    host.appendChild(el('p', 'hint us-image', 'Image generation: no image-cost records are stored with each picture, so image spend is not listed here and is not mixed into the token totals.'));
+    renderImages(host, view.img || {});
     host.appendChild(el('p', 'hint us-credits', view.creditsSeen ? 'Tavily credits recorded for this period: ' + view.credits + '. Search credits are not token spend and not a provider bill.' : 'No Tavily credits recorded for this period. Search credits are not token spend.'));
     if (view.bad) host.appendChild(el('p', 'hint', 'A stored count was not a number and is marked Unreadable. It is not counted as zero.'));
     host.appendChild(el('p', 'hint', 'Cached input is what the provider said it read from its own prompt cache, as part of the input tokens (not extra, not a saving). unknown = not reported. Only some providers report it.'));
     if (approx) host.appendChild(el('p', 'hint', 'A mark of ≈ means at least one call in that row was estimated as characters / 4 because the provider did not send a token count.'));
+  }
+  /* AG39: image generation, separate from chat tokens. Tokens only where the provider reported them. */
+  function renderImages(host, img) {
+    host.appendChild(el('h3', 'us-prov', 'Image generation'));
+    var keys = Object.keys(img).sort();
+    if (!keys.length) { host.appendChild(el('p', 'hint us-image', 'No image generations recorded for this period.')); return; }
+    var wrap = el('div', 'us-scroll'), t = el('table', 'us-t us-img'), hr = el('tr'), tot = 0, priced = false;
+    ['Provider', 'Model', 'Images', 'Failed', 'Stopped', 'Reported tokens (in / out)', '$ per image (your estimate)', 'Estimated spend'].forEach(function (h) { hr.appendChild(th(h)); });
+    t.appendChild(hr);
+    keys.forEach(function (key) {
+      var r = img[key], parts = splitKey(key), tr = el('tr'), pc = el('td'), c = HR.usage.imgCost(key, r.n);
+      tr.appendChild(el('td', 'us-m', parts.provider)); tr.appendChild(el('td', 'us-m', parts.model));
+      tr.appendChild(el('td', null, int(r.n))); tr.appendChild(el('td', null, int(r.f))); tr.appendChild(el('td', null, int(r.x)));
+      tr.appendChild(r.k ? el('td', null, int(r.p) + ' / ' + int(r.o) + (r.k < r.n ? ' (' + r.k + ' of ' + r.n + ' reported)' : '')) : el('td', 'us-na', 'unknown'));
+      pc.appendChild(priceInput('img:' + key, 'each', 'Your estimated price per image, US dollars')); tr.appendChild(pc);
+      tr.appendChild(c == null ? el('td', 'us-na', 'Not set') : el('td', null, money(c) + ' estimated'));
+      if (c != null) { tot += c; priced = true; }
+      t.appendChild(tr);
+    });
+    wrap.appendChild(t); host.appendChild(wrap);
+    host.appendChild(el('p', 'hint us-image', (priced ? 'Image estimate total: ' + money(tot) + ' (your per-image prices × successful images). ' : '') +
+      'Images are counted apart from chat tokens and are not in the token total. Tokens show only when the provider reported them; unknown is not zero. No image bill is read from any provider.'));
   }
   function renderRates(host, rateRows, listedOk) {
     clear(host);
@@ -206,15 +237,15 @@ HR.usageView = (function () {
     host.appendChild(el('p', 'hint', 'Manually entered marks a number saved in this app. Rate unavailable means no number is saved. A missing rate is not shown as zero.'));
     if (!list.length) { host.appendChild(el('p', 'hint', 'No saved rates and no models in the stored usage. Rate unavailable.')); return; }
     var wrap = el('div', 'us-scroll'), t = el('table', 'us-t'), hr = el('tr');
-    ['Provider', 'Model', 'Input per million tokens', 'Output per million tokens', 'Recorded as'].forEach(function (h) { hr.appendChild(th(h)); });
+    ['Provider', 'Model', 'Input $ / 1M tokens', 'Output $ / 1M tokens', 'Recorded as'].forEach(function (h) { hr.appendChild(th(h)); });
     t.appendChild(hr);
     list.forEach(function (key) {
       var parts = splitKey(key), rate = rateOf(key), tr = el('tr'), rec = el('td');
       tr.appendChild(el('td', 'us-m', parts.provider));
       tr.appendChild(el('td', 'us-m', parts.model));
-      tr.appendChild(rateCell(key, 'in', '$ / 1M in'));
-      tr.appendChild(rateCell(key, 'out', '$ / 1M out'));
-      if (rate.in == null && rate.out == null) { rec.className = 'us-na'; rec.textContent = 'Not recorded'; }
+      tr.appendChild(rateCell(key, 'in', 'Input price, US dollars per million tokens'));
+      tr.appendChild(rateCell(key, 'out', 'Output price, US dollars per million tokens'));
+      if (rate.in == null && rate.out == null) { rec.className = 'us-na'; rec.textContent = online(key) ? 'Not set' : 'Not set (counts as $0, local)'; }
       else rec.textContent = 'Manually entered';
       tr.appendChild(rec); t.appendChild(tr);
     });

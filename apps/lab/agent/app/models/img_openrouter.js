@@ -34,7 +34,8 @@ HR.imgProviders.openrouter = (function () {
         if (!r.ok) throw err('http', 'OpenRouter HTTP ' + r.status + ': ' + m, r.status);
         var msg = j && j.choices && j.choices[0] && j.choices[0].message, im = msg && msg.images && msg.images[0], u = im && im.image_url && im.image_url.url;
         if (!u) throw err('noimage', 'The model replied with text only, no picture. Try another model.');
-        return fetch(u).then(function (x) { return x.blob(); }).then(function (b) { return { blob: b }; }); }); });
+        var us = j.usage || {}, tok = Number.isSafeInteger(us.prompt_tokens) && Number.isSafeInteger(us.completion_tokens) ? { p: us.prompt_tokens, o: us.completion_tokens } : null;   /* AG39: reported only */
+        return fetch(u).then(function (x) { return x.blob(); }).then(function (b) { return { blob: b, tokens: tok }; }); }); });
   }
   return { id: 'openrouter', label: 'OpenRouter', note: 'Your OpenRouter key · paid image models', steps: false, size: 'ratio', ratios: ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'], cooldown: 0,
     ready: function () { return !!key(); }, models: models, generate: generate };

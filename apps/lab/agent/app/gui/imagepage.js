@@ -134,11 +134,12 @@ HR.imgpage = (function () {
     $('imgCard').hidden = true; ctrl = new AbortController(); busy(true); bar(0, 0);
     if (p.cooldown) try { localStorage.setItem(ckey(), String(Date.now())); } catch (e) {}
     var f = HR.imgsize.fit(p);
+    var logged = false, log = function (out, tok) { if (logged || !HR.usage || !HR.usage.image) return; logged = true; HR.usage.image(p.id, m, out, tok); };   /* AG39: once per run */
     p.generate({ model: m, prompt: prompt, steps: steps(), width: f.width, height: f.height, ratio: f.ratio, signal: ctrl.signal, onProgress: bar })
-      .then(function (r) { used(m); return shrink(r.blob); })
+      .then(function (r) { used(m); log('ok', r && r.tokens); return shrink(r.blob); })
       .then(function (b) { return HR.imgstore.add({ blob: b, prompt: prompt, model: p.label + ' · ' + m, time: Date.now() }); }).then(gallery)
       .then(function () { if (recent()[0] === m && recent().length && !$('imgModel').querySelector('optgroup')) load(); })
-      .catch(function (e) { if (e.kind !== 'busy') try { localStorage.removeItem(ckey()); } catch (x) {} if (e.kind !== 'abort') card(e); })
+      .catch(function (e) { log(e.kind === 'abort' ? 'abort' : 'fail'); if (e.kind !== 'busy') try { localStorage.removeItem(ckey()); } catch (x) {} if (e.kind !== 'abort') card(e); })
       .then(function () { ctrl = null; busy(false); cool(); });
   }
   function bar(c, t) { $('imgBar').hidden = false; $('imgBar').classList.toggle('indet', !t); $('imgFill').style.width = (t ? 100 * c / t : 0) + '%'; $('imgStep').textContent = t ? 'step ' + c + ' / ' + t : 'Painting…'; }

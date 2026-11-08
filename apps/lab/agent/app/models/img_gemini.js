@@ -45,7 +45,8 @@ HR.imgProviders.gemini = (function () {
       if (im) { var p = j.predictions && j.predictions[0]; if (p) { d = p.bytesBase64Encoded || ''; mt = p.mimeType || mt; } }
       else ((j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || []).forEach(function (p) { var x = p.inlineData || p.inline_data; if (x && x.data && !d) { d = x.data; mt = x.mimeType || x.mime_type || mt; } });
       if (!d) throw err('noimage', 'Gemini replied with text only, no picture. Try again or rephrase as "make a picture of …".');
-      return fetch('data:' + mt + ';base64,' + d).then(function (r) { return r.blob(); }).then(function (b) { return { blob: b }; });
+      var um = j.usageMetadata || {}, tok = Number.isSafeInteger(um.promptTokenCount) && Number.isSafeInteger(um.candidatesTokenCount) ? { p: um.promptTokenCount, o: um.candidatesTokenCount } : null;   /* AG39: reported only */
+      return fetch('data:' + mt + ';base64,' + d).then(function (r) { return r.blob(); }).then(function (b) { return { blob: b, tokens: tok }; });
     });
   }
   return { id: 'gemini', label: 'Gemini', note: 'Your Gemini key · Flash Image / Imagen (free tier often blocks images)', steps: false, size: 'ratio', ratios: ['1:1', '3:4', '4:3', '9:16', '16:9'], cooldown: 0,
