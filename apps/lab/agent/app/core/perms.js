@@ -5,12 +5,14 @@
 HR.perms = (function () {
   function on(k) { return HR.set.get(k) !== 'off'; }
   function allowed(name) {
-    if (name === 'write_file') return on('allowWrite');
+    if (name === 'write_file' || name === 'move_to_trash' || name === 'rename_file') return on('allowWrite');   /* AG40 */
     if (name === 'run_shell') return on('allowShell');
     if (name === 'web_search' || name === 'web_fetch') return HR.set.get('allowWeb') !== 'off';   /* AG6 */
     if (name === 'memory_read' || name === 'memory_append' || name === 'memory_search' || name === 'memory_semantic_search') return on('memory');   /* AG33/AG34 */
     return true;
   }
-  function auto(kind) { return HR.set.get(kind === 'shell' ? 'autoShell' : 'autoWrite') === 'on'; }
+  /* AG40: only 'write' and 'shell' can be auto-approved; trash, rename and writes into user/ always show the card.
+     AG40 Legacy: auto(kind) used autoWrite for every non-shell kind. */
+  function auto(kind) { if (kind === 'shell') return HR.set.get('autoShell') === 'on'; return kind === 'write' && HR.set.get('autoWrite') === 'on'; }
   return { allowed: allowed, auto: auto, memory: function () { return on('memory'); } };
 })();

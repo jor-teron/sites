@@ -26,8 +26,8 @@ const DEFAULT = '# Agent system prompt\n\n' +
   '- Do not save secrets to memory.\n\n' +
   '_Edit this file (agent/prompts/system.md) to change how Agent behaves. It is read on every message._\n';
 const HEAD = '## Current settings (these override anything above)';
-const WRITE_AUTO = '- Files: list_dir, read_file, search and write_file. Writes are auto-approved: they happen at once, so be careful.';
-const WRITE_ASK = '- Files: list_dir, read_file, search and write_file. Every write asks the user first.';
+const WRITE_AUTO = '- Files: list_dir, read_file, search and write_file. Writes are auto-approved: they happen at once, so be careful.\n- Folder layout: workspace/ for your work and projects, user/ for files the user shared (read them; change them only when asked), trash/ for removed files, agent/ is internal. Remove a file with move_to_trash (never deleted); rename_file moves or renames one file and never overwrites. Both always ask the user first.';   // AG40: + folder layout
+const WRITE_ASK = '- Files: list_dir, read_file, search and write_file. Every write asks the user first.\n- Folder layout: workspace/ for your work and projects, user/ for files the user shared (read them; change them only when asked), trash/ for removed files, agent/ is internal. Remove a file with move_to_trash (never deleted); rename_file moves or renames one file and never overwrites. Both always ask the user first.';   // AG40
 const READ_ONLY = '- Files: read-only (list_dir, read_file, search). Writing is turned off — do not offer to write files.';
 const NO_FOLDER = '- No folder is connected: no file tools.';
 const SHELL_AUTO = '- Shell: run_shell is available. Commands are auto-approved and run at once — only run safe commands.';

@@ -499,3 +499,37 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 ### Legacy code notes — AG39
 - The top-bar order before AG39 is in the agent.html comment. folder.js keeps the old chip words in a comment.
 - `j.img` is new and older code ignores it. Text rows (`days`), cache fields and credits are unchanged.
+
+## AG40 — Folder layout, move to trash, rename
+- **Layout:** the connected folder now has four sibling folders. When a folder becomes ready, `HR.move.ensureDirs()`
+  creates the missing ones. It never replaces anything: if a file already has one of those names, it's left alone.
+  - `agent/` — Agent's own files (protected).
+  - `workspace/` — Agent's work and projects.
+  - `user/` — files you share. A write here always shows the approval card, even with auto-approve on.
+  - `trash/` — removed files.
+
+  Existing files are never moved, and old `agent/trash/` write backups stay where they are.
+- **`move_to_trash(path, reason)`** moves one file to `trash/YYYY-MM-DD/<path>`. If that name is taken, it becomes
+  `name~HHMMSS.ext`, then `-2`, `-3`… Each move adds a line to `trash/trash.md`: time · original path → trash path · reason.
+  Agent has no permanent-delete tool; you empty `trash/` yourself. To restore, move the file back by hand, using the log.
+- **`rename_file(path, new_path)`** renames or moves one file and creates parent folders as needed.
+  It never overwrites: an existing `new_path` is refused before the approval card.
+- **Approval and permissions:** both tools need Allow writes and always show an approval card; auto-approve applies
+  only to `write_file` outside `user/` (`HR.perms.auto`). Files only; folders are refused. Paths are relative, and `..`
+  and absolute paths are refused. Nothing under `agent/` or `trash/` can be a source or a rename target.
+  `write_file` also refuses `trash/`.
+- **How a move works** (`app/storage/move.js`):
+  1. Check the source is unchanged since approval (size + lastModified).
+  2. Copy its bytes as a File/Blob, so binary files are safe.
+  3. Read the copy back and compare it byte by byte.
+  4. For trash only, add the log line.
+  5. Re-check the source, then remove it.
+
+  A failure in steps 1–4 removes only Agent's own new copy and leaves the original unchanged. If removing the original
+  fails, or it changed during the copy, the tool says "Not fully done" and that both copies exist; for trash it adds a
+  "not removed" line to the log. It is **not atomic**: another program could change files between steps.
+- `fs.js` gained `kind()`, `file()` and `mkdir()`. The file prompts (`prompt_files.txt`, regenerated fallback) explain the layout.
+
+### Legacy code notes — AG40
+- Before AG40, `HR.perms.auto(kind)` used autoWrite for every non-shell kind. Now only `'write'` uses it.
+- `HR.fs.remove` is still used only by chat delete and write Undo. No tool can call it.

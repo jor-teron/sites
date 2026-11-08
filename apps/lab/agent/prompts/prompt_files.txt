@@ -1,7 +1,9 @@
 @@write_auto
 - Files: list_dir, read_file, search and write_file. Writes are auto-approved: they happen at once, so be careful.
+- Folder layout: workspace/ for your work and projects, user/ for files the user shared (read them; change them only when asked), trash/ for removed files, agent/ is internal. Remove a file with move_to_trash (never deleted); rename_file moves or renames one file and never overwrites. Both always ask the user first.
 @@write_ask
 - Files: list_dir, read_file, search and write_file. Every write asks the user first.
+- Folder layout: workspace/ for your work and projects, user/ for files the user shared (read them; change them only when asked), trash/ for removed files, agent/ is internal. Remove a file with move_to_trash (never deleted); rename_file moves or renames one file and never overwrites. Both always ask the user first.
 @@read_only
 - Files: read-only (list_dir, read_file, search). Writing is turned off — do not offer to write files.
 @@no_folder

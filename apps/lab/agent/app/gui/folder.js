@@ -27,7 +27,7 @@ HR.folder = (function () {
     chip.onclick = function () { HR.fs.state() === 'need' ? reconnect() : pick(); };
     bPick.onclick = pick; bRe.onclick = reconnect;
     HR.fs.onChange(paint); paint();
-    HR.fs.onChange(function (s) { if (s === 'ready') HR.migrate.folder(); });
+    HR.fs.onChange(function (s) { if (s === 'ready') { HR.migrate.folder(); if (HR.move) HR.move.ensureDirs().catch(function () {}); } });   /* AG40: workspace/ user/ trash/ */
     return HR.fs.init().catch(function () {}).then(paint);
   }
   return { init: init };

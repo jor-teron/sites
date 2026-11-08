@@ -1,6 +1,8 @@
 /* Agent — app/tools/files.js: folder tools (HR3), offered only while a folder is connected (HR.fs.ready()).
    list_dir(path), read_file(path) (capped ~20k chars), write_file(path, content) (Approve / Deny card; deny -> 'User denied'),
    search(query, path?) (file names + plain text, capped results). Paths are relative to the folder root.
+   AG40: move_to_trash(path, reason) and rename_file(path, new_path) (app/storage/move.js), each always asks (never auto-approved),
+   need Allow writes, files only, never overwrite. No permanent-delete tool exists. write_file into user/ always asks too.
    AG7: write_file backs up the old file to agent/trash/YYYY_MM_DD/<path>~HHMMSS first (HR.trash) and hands Undo info to ctx.undo. */
 (function () {
   var READ_CAP = 20000, HITS = 40, FILES = 3000, BIG = 1024 * 1024;
@@ -25,12 +27,33 @@
       var path = HR.fs.norm(a.path).join('/'), content = String(a.content == null ? '' : a.content);
       if (!path) throw new Error('A file path is needed');
       var old = await HR.fs.stat(path);
-      var ok = ctx.approve ? await ctx.approve({ kind: 'write', path: path, size: new Blob([content]).size, exists: old.exists, oldSize: old.size, preview: content }) : false;
+      var ok = ctx.approve ? await ctx.approve({ kind: /^user\//i.test(path) ? 'write_user' : 'write', path: path, size: new Blob([content]).size, exists: old.exists, oldSize: old.size, preview: content }) : false;
       if (!ok) return 'User denied';
       if (/^agent\/trash\//.test(path)) throw new Error('agent/trash/ holds backups; write somewhere else');
+      if (/^trash(\/|$)/i.test(path)) throw new Error('trash/ holds removed files; write somewhere else');   /* AG40 */
       var u = await HR.trash.before(path);   /* AG7: old version -> agent/trash/, Undo on the chip */
       await HR.fs.write(path, content); if (ctx.undo) ctx.undo(u);
       return 'Wrote ' + path + ' (' + content.length + ' chars' + (old.exists ? ', replaced existing file; old version kept in ' + u.backup : ', new file') + ')';
+    } });
+  /* AG40: move and rename. info() runs before the card so the card shows the size and the move refuses if the file changes after approval. */
+  async function moveCard(ctx, card) { return ctx.approve ? !!(await ctx.approve(card)) : false; }
+  function moved(r, verb) { return r.ok ? verb + ' → ' + r.to : 'Not fully done: ' + r.note; }
+  HR.tools.register({ name: 'move_to_trash', available: avail, description: 'Remove a file by moving it into trash/ (the user empties trash/ by hand; nothing is deleted). One file, not folders. The user must approve. Not allowed for agent/ or trash/.',
+    parameters: { type: 'object', properties: { path: P('Relative file path'), reason: P('Short reason, written to trash/trash.md') }, required: ['path', 'reason'] },
+    run: async function (a, ctx) {
+      var path = HR.move.guard(HR.move.clean(a.path), 'Cannot move to trash'), seen = await HR.move.info(path);
+      if (!seen) throw new Error(path + ' does not exist');
+      if (!(await moveCard(ctx, { kind: 'trash', path: path, size: seen.size, reason: String(a.reason || '') }))) return 'User denied';
+      return moved(await HR.move.toTrash(path, a.reason, seen), 'Moved ' + path + ' to trash');
+    } });
+  HR.tools.register({ name: 'rename_file', available: avail, description: 'Rename or move one file to a new relative path (folders are created as needed). Never overwrites: fails if new_path exists. Files only. The user must approve. Not allowed for agent/ or trash/.',
+    parameters: { type: 'object', properties: { path: P('Current relative file path'), new_path: P('New relative file path') }, required: ['path', 'new_path'] },
+    run: async function (a, ctx) {
+      var path = HR.move.guard(HR.move.clean(a.path), 'Cannot rename'), to = HR.move.guard(HR.move.clean(a.new_path), 'Cannot rename to that path'), seen = await HR.move.info(path);
+      if (!seen) throw new Error(path + ' does not exist');
+      if (await HR.fs.kind(to)) throw new Error(to + ' already exists; pick another name');
+      if (!(await moveCard(ctx, { kind: 'rename', path: path, to: to, size: seen.size }))) return 'User denied';
+      return moved(await HR.move.rename(path, to, seen), 'Renamed ' + path);
     } });
   HR.tools.register({ name: 'search', available: avail, description: 'Search the user\'s folder: file names and plain text lines containing the query (case-insensitive). Capped results.',
     parameters: { type: 'object', properties: { query: P('Text to find'), path: P('Optional relative folder to search in') }, required: ['query'] },

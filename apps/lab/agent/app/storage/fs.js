@@ -3,7 +3,9 @@
    queryPermission; AG1: falls back once to the old 'harness' db), pick(), reconnect() (requestPermission; needs a tap), ready(), onChange(fn).
    AG4: remove(path) deletes one file (chat delete). AG7: copy(from, to) byte-exact (write_file backups / Undo).
    Paths are relative to the folder root: '/', '\', 'C:' and '..' are rejected (norm). list(path), read(path) -> {text,size},
-   write(path, text), append(path, text), stat(path), walk(path, fn) — all stay inside the folder. */
+   write(path, text), append(path, text), stat(path), walk(path, fn) — all stay inside the folder.
+   AG40: kind(path) 'file' | 'directory' | '' (absent), file(path) -> File (bytes, for binary-safe copies),
+   mkdir(path) -> true when it made the folder (never replaces anything). Used by HR.move (app/storage/move.js). */
 HR.fs = (function () {
   var supported = typeof window.showDirectoryPicker === 'function', root = null, st = supported ? 'none' : 'unsupported', subs = [];
   function idb(mode, fn) {
@@ -55,6 +57,15 @@ HR.fs = (function () {
   async function read(path) { var f = await (await fileH(path)).getFile(); return { text: await f.text(), size: f.size }; }
   async function write(path, text) { var w = await (await fileH(path, true)).createWritable(); await w.write(text); await w.close(); }
   async function copy(from, to) { var f = await (await fileH(from)).getFile(), w = await (await fileH(to, true)).createWritable(); await w.write(f); await w.close(); }
+  async function kind(path) {
+    need(); var parts = norm(path); if (!parts.length) return 'directory';
+    var d; try { d = await dir(parts.slice(0, -1)); } catch (e) { if (e && (e.name === 'NotFoundError' || e.name === 'TypeMismatchError')) return ''; throw e; }
+    var n = parts[parts.length - 1];
+    try { await d.getFileHandle(n); return 'file'; } catch (e) { if (!e || (e.name !== 'TypeMismatchError' && e.name !== 'NotFoundError')) throw e; }
+    try { await d.getDirectoryHandle(n); return 'directory'; } catch (e) { if (e && e.name === 'NotFoundError') return ''; if (e && e.name === 'TypeMismatchError') return 'file'; throw e; }
+  }
+  async function file(path) { return (await fileH(path)).getFile(); }
+  async function mkdir(path) { need(); var parts = norm(path); if ((await kind(path)) === 'directory') return false; await dir(parts, true); return true; }
   async function remove(path) { var parts = norm(path); need(); var d = await dir(parts.slice(0, -1)); await d.removeEntry(parts[parts.length - 1]); }
   async function append(path, text) {
     var h = await fileH(path, true), size = (await h.getFile()).size, w = await h.createWritable({ keepExistingData: true });
@@ -73,5 +84,5 @@ HR.fs = (function () {
     }
   }
   return { supported: supported, state: function () { return st; }, name: function () { return root ? root.name : ''; }, ready: function () { return st === 'ready'; },
-    init: init, pick: pick, reconnect: reconnect, onChange: onChange, norm: norm, list: list, stat: stat, read: read, write: write, append: append, remove: remove, copy: copy, walk: walk };
+    init: init, pick: pick, reconnect: reconnect, onChange: onChange, norm: norm, list: list, stat: stat, read: read, write: write, append: append, remove: remove, copy: copy, walk: walk, kind: kind, file: file, mkdir: mkdir };
 })();
