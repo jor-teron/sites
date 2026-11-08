@@ -84,7 +84,7 @@ HR.chat = (function () {
     HR.view.clearErrors();
     ctrl = new AbortController(); busy(true);
     var opts = { adapter: HR.models.current(), cfg: HR.models.cfg(), model: model, think: HR.set.get('think'), signal: ctrl.signal, maxSteps: HR.set.maxSteps(), useTools: HR.set.get('tools') !== 'off',
-      system: function () { return HR.prompt.system().then(function (t) { HR.meter.sys = (t || '').length; return t; }); }, ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
+      system: function () { return HR.prompt.system().then(HR.length.addTo).then(function (t) { HR.meter.sys = (t || '').length; return t; }); }, ui: { modelStart: modelStart, toolStart: toolStart, note: note, approve: approve } };
     if (opts.adapter.id === 'browser') { opts.useTools = false; opts.maxSteps = 1; opts.system = null; HR.meter.sys = 0; HR.steps.note('Browser model: tools and the loop are off (story model); it continues your text as a story.'); }
     var t0 = Date.now();
     HR.loop.run(opts).then(function (r) {

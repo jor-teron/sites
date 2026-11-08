@@ -27,7 +27,8 @@
    AG30 Legacy: those price fields were edited in Settings → Usage. The key and the {in, out} shape are the same. */
 HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', customBase: '', browserModel: '',
-    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'off', thinkLive: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 128000, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic' };
+    autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'off', thinkLive: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 128000, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic',
+    answerLength: 'normal', assistProvider: '', assistModel: '' };   /* AG31: core/length.js, core/assist.js */
   /* AG28 Legacy: ctxMax default was 8192. maxSteps default stays 8. A stored ctxMax (including an older 8192) still wins. */
   function all() { var s = {}; try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; } return Object.assign({}, DEF, s); }
   function get(k) { return all()[k]; }

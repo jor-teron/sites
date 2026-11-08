@@ -39,6 +39,7 @@ Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) 
   HR.chat.init();
   var folder = HR.folder.init();
   HR.helperSet.init();
+  HR.assistSet.init();   /* AG31 */
   HR.provider.init();
   HR.bcard.init();
   if (HR.modelbar) HR.modelbar.init();   /* AG18: top-row dropdowns, before the first load */

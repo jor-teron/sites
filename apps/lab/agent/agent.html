@@ -107,6 +107,10 @@
     </div>
     <h3>Thinking</h3><div class="seg" id="setThink" role="radiogroup" aria-label="Thinking"></div>
     <p class="hint">Auto = the model's default. Not sent to OpenAI-compatible providers.</p>
+    <h3>Answer length</h3><div class="seg" id="setLen" role="radiogroup" aria-label="Answer length"></div>
+    <h3>Assist model <small>(short side jobs like summaries; not the bash Helper)</small></h3>
+    <div class="ec-row start"><select id="setAsProv" class="inp" aria-label="Assist provider"></select><select id="setAsModel" class="inp" aria-label="Assist model" hidden></select></div>
+    <p class="hint" id="asStat"></p>
   </div></details>
   <details class="scard" id="sc_folder"><summary><span class="sc-i">📁</span>Folder &amp; Memory</summary><div class="sc-b">
     <p class="hint" id="folderStat"></p>
@@ -181,6 +185,8 @@
 <script src="app/core/prompt.js"></script>
 <script src="app/core/memory.js"></script>
 <script src="app/core/helper.js"></script>
+<script src="app/core/length.js"></script>
+<script src="app/core/assist.js"></script>
 <script src="app/core/hubkeys.js"></script>
 <script src="app/models/net.js"></script>
 <script src="app/core/hubapi.js"></script>
@@ -210,6 +216,7 @@
 <script src="app/gui/approve.js"></script>
 <script src="app/gui/folder.js"></script>
 <script src="app/gui/helperset.js"></script>
+<script src="app/gui/assistset.js"></script>
 <script src="app/gui/provider.js"></script>
 <script src="app/gui/hubrows.js"></script>
 <script src="app/gui/browsercard.js"></script>

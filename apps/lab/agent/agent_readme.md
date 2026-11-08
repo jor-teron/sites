@@ -343,3 +343,11 @@ A usage file that does not parse is still read as empty. All time is withheld wh
 
 AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without price boxes, This month with `$ / 1M` boxes for online models, an em dash when an online price was missing, and the word `local` for Ollama and Browser. The estimated total was blank when nothing had a price. That markup is an HTML comment in `agent.html`. The old table builder is a comment at the bottom of `app/gui/usageview.js`. The chat page still loads `usageview.js` so the Web card's Tavily line keeps updating. Tests are syntax/static checks plus an offline VM smoke of navigation, the two sections, Settings without the Usage card, stored totals, filters, grouping, manual / zero / missing rates, estimated-versus-bill wording, and safe text. No browser tests and no paid API calls.
 
+
+## AG31 — Assist model and answer length
+
+- **Answer length** (Settings › Model): Short, Normal (default) or Detailed, saved as `agent.settings.answerLength`. Short and Detailed add one plain line to the system prompt (`app/core/length.js`), so every model call of a message carries it, tool follow-ups included. Normal adds nothing, so requests match AG30. It never cuts replies or lowers max tokens, and it asks the model to keep code, files and tool arguments complete.
+- **Assist model** (Settings › Model): Off (default) or a provider + model picked from the providers this Agent has set up (the Browser story model is left out). Saved as `agent.settings.assistProvider` (`''` = Off) and `agent.settings.assistModel`. It is not the ⌨️ Helper (bash on your computer).
+- `app/core/assist.js` gives `HR.assist.ask({prompt|messages, system, json, maxChars, signal})` and `HR.assist.classify(text, labels)`: one call, no tools, through the same HubAPI/provider adapters, usage logged. Off, no model, not set up or a failed call is an error: there is no fallback to the main model and no retry. The main chat's provider and model are never changed.
+- Nothing uses the Assist model yet. It is groundwork for rolling summaries (AG32, not built).
+- Tests: `tests/ag31.test.cjs` (mocked adapters, no network).

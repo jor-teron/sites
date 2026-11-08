@@ -201,7 +201,7 @@ test('AG30 page, navigation, service worker and readme', () => {
   assert.equal(liveSource(read('app/gui/usageview.js')).includes('window.prompt'), false);
   assert.match(read('app/gui/usageview.js'), /AG30 Legacy:/);
   assert.match(read('app/storage/usage.js'), /AG30 Legacy:/);
-  assert.equal(liveSw.includes("VER = 'agent-ag30'"), true);
+  assert.match(liveSw, /VER = 'agent-ag(30|31)'/);   // AG31 bumped VER
   assert.equal(liveSw.includes("VER = 'agent-ag29'"), false);
   assert.equal(liveSw.includes("VER = 'agent-ag28'"), false);
   assert.match(sw, /AG30 Legacy: VER = 'agent-ag29'/);
