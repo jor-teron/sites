@@ -20,9 +20,11 @@
   AG27: ✎ Rename uses UiDialog.ask (shared/dialog). The Hub draws it when framed; standalone and file:// use the same dialog.
   AG28: Step limit is any safe whole number (0 = unlimited; 99 and 999 are allowed). Context size default is 128000 when none is saved.
   AG29: Prompt wording is prompts/prompt_*.txt. prompts/prompt_fallback.js (generated from those files) loads before app/core/prompt.js.
+  AG30: 📊 Usage is a link to usage.html (Token usage & spending, and Rates). It is not a Settings card.
   AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
-  AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
+  AG10: Settings = collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
+  AG30: Usage is its own page, so Settings no longer has a Usage card. The other cards stay.
 -->
 <html lang="en">
 <head>
@@ -56,6 +58,7 @@
   <span class="grow"></span>
   <button type="button" class="chip" id="btnFolder" hidden>📁 Pick folder</button>
   <a class="hb" id="btnImage" href="image.html" title="Image" aria-label="Make a picture">🖼</a>
+  <a class="hb" id="btnUsage" href="usage.html" title="Usage" aria-label="Usage">📊</a>
   <button type="button" class="hb" id="btnSteps" title="Steps" aria-label="Show steps">☰<span id="stepCount" class="badge"></span></button>
   <button type="button" class="hb" id="btnClear" title="New chat" aria-label="New chat">＋</button>
   <button type="button" class="hb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
@@ -146,9 +149,11 @@
     <div class="sw"><span>Token meter<small>Context used by this chat</small></span><div id="set_tokenMeter"></div></div>
     <div class="sw"><span>Hub card when done<small>For tasks over 20 s</small></span><div id="set_notifyLong"></div></div>
   </div></details>
-  <details class="scard" id="sc_usage"><summary><span class="sc-i">📊</span>Usage</summary><div class="sc-b">
-    <div id="usageBox" class="usage"></div>
-  </div></details>
+  <!-- AG30 Legacy: Usage was a Settings card here:
+    <details class="scard" id="sc_usage"><summary><span class="sc-i">📊</span>Usage</summary><div class="sc-b">
+      <div id="usageBox" class="usage"></div>
+    </div></details>
+    Those totals and the $ / 1M price fields are on usage.html. The prices value in agent.settings is unchanged. -->
   <details class="scard" id="sc_adv"><summary><span class="sc-i">⚙️</span>Advanced</summary><div class="sc-b">
     <div class="sw"><span>Tools<small>Off = plain chat, no tools</small></span><div id="setTools"></div></div>
     <!-- AG28 Legacy: step limit was min 1 max 30. That product cap is gone; 0 means unlimited. -->

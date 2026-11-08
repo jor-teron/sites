@@ -1,0 +1,24 @@
+/* Agent — ui/usage.css (AG30): Usage page. One column, the same cards and type as Settings.
+   The period control uses the shared .seg buttons. Tables scroll sideways on a narrow screen. */
+body.usage-body{min-height:100%}
+.usage-main{flex:1;min-height:0;overflow:auto;width:100%;max-width:920px;margin:0 auto;box-sizing:border-box;
+  display:flex;flex-direction:column;gap:16px;
+  padding:14px max(12px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.usage-main section{border:1.5px solid var(--line);border-radius:14px;background:var(--card);padding:12px 14px}
+.usage-main h2{margin:0 0 8px;font-size:18px}
+.usage-main h3{margin:12px 0 6px;font-size:14px}
+.usage-main .seg{margin:8px 0}
+.usage-main .seg .hb{height:44px;min-height:44px;padding:0 14px}
+#usageBack{height:44px;min-width:44px;padding:0 12px;font-weight:600}
+#usageBack:focus-visible,.usage-main .seg .hb:focus-visible,.usage-main .us-in:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.us-scroll{overflow-x:auto;max-width:100%}
+.usage-main .us-t{font-size:13px}
+.usage-main .us-t th,.usage-main .us-t td{vertical-align:top}
+.us-na{color:var(--mut)}
+.us-grand{margin-top:8px}
+@media (max-width:520px){
+  .us-back-t{display:none}
+  .usage-main{padding:10px}
+  .usage-main .us-t{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){.usage-main{animation:none}}

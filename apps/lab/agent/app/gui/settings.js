@@ -19,9 +19,12 @@
    defaults 'off' (only for people with no saved choice — saved values always win via all()).
    AG10: Settings = collapsible cards (Model, Folder & Memory, Permissions, Web, Helper, Display, Usage, Advanced; last open
    card remembered in 'agent.setCard'); on/off settings are big switches (sw()); same keys as before, nothing renamed.
+   AG30: the Usage card is not in this dialog anymore (usage.html). agent.setCard and every other card are unchanged.
+   If the remembered card was sc_usage, no card has that id, so the dialog keeps the card marked open in the page.
    AG12: provider also 'groq' | 'openrouter' | 'xai' | 'deepseek' | 'deepinfra' | 'custom' ('openai' = api.openai.com now), customBase
    (Custom tab base URL), <id>Model / model_<id> per tab.
-   prices {'provider|model': {in, out}} $ per 1M tokens (Settings → Usage, app/gui/usageview.js). */
+   prices {'provider|model': {in, out}} $ per 1M tokens (Usage page, app/gui/usageview.js).
+   AG30 Legacy: those price fields were edited in Settings → Usage. The key and the {in, out} shape are the same. */
 HR.set = (function () {
   var KEY = 'agent.settings', DEF = { theme: 'dark', baseUrl: 'http://localhost:11434', model: '', think: 'auto', tools: 'on', maxSteps: 8, saveChats: 'on', helper: 'off', helperUrl: 'http://127.0.0.1:11500', helperToken: '', provider: 'ollama', openaiBase: 'https://api.openai.com/v1', customBase: '', browserModel: '',
     autoWrite: 'off', autoShell: 'off', allowWrite: 'on', allowShell: 'on', memory: 'on', showThink: 'on', showSteps: 'off', thinkLive: 'on', notifyLong: 'on', tokenMeter: 'on', ctxMax: 128000, liveShell: 'off', prices: {}, allowWeb: 'on', tavilyKey: '', webDepth: 'basic' };

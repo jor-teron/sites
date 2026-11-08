@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+  Agent — usage.html: the Usage page (AG30). Own URL inside the Agent app, same idea as image.html. Not a separate Hub app.
+  ← Chat returns to agent.html (history.back when this tab came from there).
+  Token usage & spending reads agent/usage/YYYY_MM.json, or IndexedDB usage:YYYY_MM when no folder is connected.
+  Rates edits the same agent.settings "prices" object Settings used to edit. No new usage is recorded here.
+  Standalone, file:// and the Hub iframe use this page as-is. The service worker is skipped on file://, same as image.html.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#111318">
+  <title>Agent · Usage</title>
+  <link rel="icon" href="agent_icon.png">
+  <link rel="stylesheet" href="ui/main.css">
+  <link rel="stylesheet" href="ui/components.css">
+  <link rel="stylesheet" href="ui/usage.css">
+  <script src="../../../shared/theme/hub_theme.js"></script>
+  <script>try{var s=JSON.parse(localStorage.getItem('agent.settings')||localStorage.getItem('harness.settings')||'{}'),m=s.theme||'dark';document.documentElement.dataset.ht=m==='light'?'light':m==='system'?(localStorage.getItem('sites-hub.theme')==='light'?'light':'dark'):'dark'}catch(e){document.documentElement.dataset.ht='dark'}</script>
+</head>
+<body class="usage-body">
+<header class="top usage-top">
+  <a class="hb" id="usageBack" href="agent.html" aria-label="Back to chat" title="Back to chat">← <span class="us-back-t">Chat</span></a>
+  <h1 class="brand">Usage</h1>
+</header>
+<main id="usagePage" class="usage-main">
+  <section aria-labelledby="usageSpendTitle">
+    <h2 id="usageSpendTitle">Token usage &amp; spending</h2>
+    <div id="usagePeriod" class="seg" role="radiogroup" aria-label="Period"></div>
+    <div id="usageSpend" aria-live="polite"></div>
+  </section>
+  <section aria-labelledby="usageRatesTitle">
+    <h2 id="usageRatesTitle">Rates</h2>
+    <div id="usageRates" aria-live="polite"></div>
+  </section>
+</main>
+<script>window.HR = window.HR || {};</script>
+<script src="app/storage/fs.js"></script>
+<script src="app/gui/settings.js"></script>
+<script src="app/storage/usage.js"></script>
+<script src="app/gui/usageview.js"></script>
+<script>
+  HR.set.applyTheme();
+  document.getElementById('usageBack').onclick = function (e) {   /* came from chat: real Back keeps its state */
+    try { if (document.referrer && new URL(document.referrer).pathname.slice(-10) === 'agent.html' && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {}
+  };
+  HR.usageView.init();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('agent_sw.js', { scope: './', updateViaCache: 'none' }).catch(function () {});
+</script>
+</body>
+</html>

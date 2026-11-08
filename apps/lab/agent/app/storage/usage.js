@@ -3,7 +3,8 @@
    Folder connected: agent/usage/YYYY_MM.json ({v:1, days:{'YYYY-MM-DD':{'provider|model':{p,o,n,e}}}}); no folder:
    the same JSON in IndexedDB 'agent-chats'/'kv' under 'usage:YYYY_MM'. Writes are queued one after another.
    AG6: credits(service, n) adds API credits (Tavily) to the month: j.credits {service: n} and j.days[d]._credits {service: n}.
-   Prices (Settings → Usage, online models only): setting 'prices' {'provider|model': {in, out}} in $ per 1M tokens; cost(key, p, o). */
+   Prices (AG30: Usage page; AG7–AG29: Settings → Usage): setting 'prices' {'provider|model': {in, out}} in $ per 1M tokens; cost(key, p, o).
+   AG30: listMonths() only reads which month files exist. record, credits, month, prices, setPrice and cost are unchanged. */
 HR.usage = (function () {
   var q = Promise.resolve(), subs = [];
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -47,5 +48,50 @@ HR.usage = (function () {
   function prices() { var v = HR.set.get('prices'); return v && typeof v === 'object' ? v : {}; }
   function setPrice(key, kind, val) { var p = prices(), r = p[key] = p[key] || {}; var n = parseFloat(val); if (isNaN(n) || n < 0) delete r[kind]; else r[kind] = n; if (!Object.keys(r).length) delete p[key]; HR.set.put('prices', p); }
   function cost(key, p, o) { var r = prices()[key]; if (!r || (r.in == null && r.out == null)) return null; return (p * (r.in || 0) + o * (r.out || 0)) / 1e6; }
-  return { record: record, credits: credits, month: month, ym: ym, day: day, prices: prices, setPrice: setPrice, cost: cost, onChange: function (f) { subs.push(f); } };
+  /* AG30: read-only list of stored month ids. Does not write a usage file and does not invent months.
+     Folder: agent/usage/YYYY_MM.json. No folder: IndexedDB keys usage:YYYY_MM. A missing usage folder is an empty list.
+     null listed means the months could not be listed (all-time must not pretend the current month is everything). */
+  function dbKeys() {
+    return new Promise(function (ok, no) {
+      var r; try { r = indexedDB.open('agent-chats', 1); } catch (e) { no(e); return; }
+      r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+      r.onerror = function () { no(r.error); };
+      r.onsuccess = function () {
+        var d = r.result;
+        try {
+          var tx = d.transaction('kv', 'readonly'), s = tx.objectStore('kv');
+          if (typeof s.getAllKeys !== 'function') { d.close(); ok(null); return; }
+          var q = s.getAllKeys();
+          tx.oncomplete = function () { d.close(); ok(q.result || []); };
+          tx.onerror = function () { d.close(); no(tx.error); };
+        } catch (e) { try { d.close(); } catch (x) {} no(e); }
+      };
+    });
+  }
+  async function listMonths() {
+    var ids = [], listed = false, entries = [];
+    function add(m) { if (/^\d{4}_\d{2}$/.test(m) && ids.indexOf(m) < 0) ids.push(m); }
+    if (HR.fs && HR.fs.ready()) {
+      try { entries = await HR.fs.list('agent/usage'); listed = true; }
+      catch (e) {
+        var nm = String((e && e.name) || '') + ' ' + String((e && e.message) || '');
+        if (/NotFound|not found/i.test(nm)) listed = true;
+      }
+      if (listed) (entries || []).forEach(function (e) {
+        if (!e || e.kind === 'directory') return;
+        var m = /^(\d{4}_\d{2})\.json$/.exec(e.name || '');
+        if (m) add(m[1]);
+      });
+    } else {
+      try {
+        var keys = await dbKeys();
+        if (keys == null) listed = false;
+        else { listed = true; keys.forEach(function (k) { var m = /^usage:(\d{4}_\d{2})$/.exec(String(k)); if (m) add(m[1]); }); }
+      } catch (e2) { listed = false; }
+    }
+    ids.sort();
+    return { ids: ids, listed: listed };
+  }
+  /* AG30 Legacy: return { record, credits, month, ym, day, prices, setPrice, cost, onChange } — listMonths is only added beside those. */
+  return { record: record, credits: credits, month: month, ym: ym, day: day, prices: prices, setPrice: setPrice, cost: cost, listMonths: listMonths, onChange: function (f) { subs.push(f); } };
 })();
