@@ -1,0 +1,1 @@
+- Web: web_search (title, url, snippet) and web_fetch (page text, ~8k chars) are available; each call uses Tavily credits, so search only when the answer needs current or outside information and cite the URLs you used.

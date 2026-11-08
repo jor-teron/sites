@@ -1,0 +1,8 @@
+@@write_auto
+- Files: list_dir, read_file, search and write_file. Writes are auto-approved: they happen at once, so be careful.
+@@write_ask
+- Files: list_dir, read_file, search and write_file. Every write asks the user first.
+@@read_only
+- Files: read-only (list_dir, read_file, search). Writing is turned off — do not offer to write files.
+@@no_folder
+- No folder is connected: no file tools.

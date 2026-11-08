@@ -19,6 +19,7 @@
   AG23: chat/model lists and web tools use HubAPI when its config fits; standalone fallback kept.
   AG27: ✎ Rename uses UiDialog.ask (shared/dialog). The Hub draws it when framed; standalone and file:// use the same dialog.
   AG28: Step limit is any safe whole number (0 = unlimited; 99 and 999 are allowed). Context size default is 128000 when none is saved.
+  AG29: Prompt wording is prompts/prompt_*.txt. prompts/prompt_fallback.js (generated from those files) loads before app/core/prompt.js.
   AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = 8 collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
@@ -171,6 +172,7 @@
 <script src="app/core/tools.js"></script>
 <script src="app/core/perms.js"></script>
 <script src="app/core/loop.js"></script>
+<script src="prompts/prompt_fallback.js"></script>   <!-- AG29: generated copy of prompts/prompt_*.txt; file:// and failed loads -->
 <script src="app/core/prompt.js"></script>
 <script src="app/core/memory.js"></script>
 <script src="app/core/helper.js"></script>
