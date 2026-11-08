@@ -8,7 +8,7 @@ HR.perms = (function () {
     if (name === 'write_file') return on('allowWrite');
     if (name === 'run_shell') return on('allowShell');
     if (name === 'web_search' || name === 'web_fetch') return HR.set.get('allowWeb') !== 'off';   /* AG6 */
-    if (name === 'memory_read' || name === 'memory_append' || name === 'memory_search') return on('memory');   /* AG33: memory_search too */
+    if (name === 'memory_read' || name === 'memory_append' || name === 'memory_search' || name === 'memory_semantic_search') return on('memory');   /* AG33/AG34 */
     return true;
   }
   function auto(kind) { return HR.set.get(kind === 'shell' ? 'autoShell' : 'autoWrite') === 'on'; }

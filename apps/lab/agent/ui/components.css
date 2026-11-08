@@ -121,3 +121,6 @@ a.hb{text-decoration:none;display:inline-flex;align-items:center;justify-content
 .know-hit{margin:6px 0;padding:6px 8px;border:1px solid var(--line);border-radius:10px}
 .know-src{font-size:12px;color:var(--mut)}
 .know-snip{margin:4px 0 0;white-space:pre-wrap;word-break:break-word;font-size:12px}
+
+/* AG34 */
+.sem-adv{margin:4px 0}.sem-adv summary{cursor:pointer;font-size:13px;color:var(--mut)}

@@ -132,6 +132,7 @@ HR.prompt = (function () {
     if (have.web_search) L.push(await part('prompt_web.txt'));
     L.push(await part('prompt_memory.txt', have.memory_read ? 'on' : 'off'));
     if (have.memory_search) L.push(await part('prompt_memory.txt', 'search'));   /* AG33 */
+    if (have.memory_semantic_search) L.push(await part('prompt_memory.txt', 'semantic'));   /* AG34 */
     return L.join('\n');
   }
   async function system() {

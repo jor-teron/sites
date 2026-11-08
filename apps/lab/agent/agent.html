@@ -133,6 +133,18 @@
     <div id="knowList" class="know-list"></div>
     <div class="ec-row start"><input id="knowQ" class="inp" type="search" placeholder="Test a search…" aria-label="Search memory and knowledge"><button type="button" class="hb" id="btnKnowFind">Search</button></div>
     <div id="knowRes"></div>
+    <h3>Semantic search <small>(optional, by meaning; uses an embedding model)</small></h3>
+    <div class="ec-row start"><select id="semProv" class="inp" aria-label="Embedding provider"></select></div>
+    <div id="semModelRow" hidden>
+      <input id="semModel" class="inp gap" list="semModels" spellcheck="false" placeholder="Embedding model name" aria-label="Embedding model"><datalist id="semModels"></datalist>
+      <p class="hint" id="semHint"></p>
+      <details class="sem-adv"><summary>Prefixes (only if the model needs them)</summary>
+        <input id="semDocPre" class="inp gap" spellcheck="false" placeholder="Document prefix, e.g. what the model card says" aria-label="Document prefix">
+        <input id="semQPre" class="inp gap" spellcheck="false" placeholder="Query prefix" aria-label="Query prefix">
+      </details>
+    </div>
+    <p class="hint" id="semStat"></p>
+    <div class="ec-row start"><button type="button" class="hb wide" id="btnSemBuild">Build</button><button type="button" class="hb wide" id="btnSemStop" hidden>Stop</button><button type="button" class="hb wide" id="btnSemReset">Delete index</button></div>
     <p class="hint">Imports are copies in <code>agent/knowledge/raw/</code>; ✕ removes the copy only. Search covers this chat's session notes, your and the agent's notes, topics and these documents, never other chats.</p>
   </div></details>
   <details class="scard" id="sc_perms"><summary><span class="sc-i">🛡️</span>Permissions</summary><div class="sc-b">
@@ -205,6 +217,7 @@
 <script src="app/core/assist.js"></script>
 <script src="app/core/summary.js"></script>
 <script src="app/core/ksearch.js"></script>
+<script src="app/core/semantic.js"></script>
 <script src="app/core/hubkeys.js"></script>
 <script src="app/models/net.js"></script>
 <script src="app/core/hubapi.js"></script>
@@ -225,6 +238,7 @@
 <script src="app/tools/files.js"></script>
 <script src="app/tools/memory.js"></script>
 <script src="app/tools/search_memory.js"></script>
+<script src="app/tools/search_semantic.js"></script>
 <script src="app/tools/shell.js"></script>
 <script src="app/tools/web.js"></script>
 <script src="app/gui/settings.js"></script>
@@ -239,6 +253,7 @@
 <script src="app/gui/assistset.js"></script>
 <script src="app/gui/summaryview.js"></script>
 <script src="app/gui/knowview.js"></script>
+<script src="app/gui/semview.js"></script>
 <script src="app/gui/provider.js"></script>
 <script src="app/gui/hubrows.js"></script>
 <script src="app/gui/browsercard.js"></script>

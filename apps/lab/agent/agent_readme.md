@@ -388,3 +388,29 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
   - A small "Test a search" box shows what the agent would find (shown as text, no HTML).
 - Existing memory files and layout are unchanged; no migration.
 - Tests: `tests/ag33.test.cjs`.
+
+## AG34 — semantic (meaning) search, optional
+
+- Uses only the central **HubAPI.embeddingModels / HubAPI.embed** (H139a). Providers are Ollama and saved OpenAI-compatible Hub services (`svc_…`). Credentials stay in the Hub; Agent never reads or stores them. Without the Hub (standalone page), semantic search is unavailable and keyword search still works. No Gemini, no main-model or other fallback.
+- **Settings › Folder & Memory › Semantic search:**
+  - **Provider:** Off by default.
+  - **Model:** picked from the Hub's list, or typed when the provider lists none. Generic OpenAI-compatible services return no list.
+  - **Prefixes (optional):** a document prefix and a query prefix, sent exactly as typed (≤ 200 chars each). Default is none, so only use models that accept plain text, or type the prefixes their model card asks for.
+  - **Build / Rebuild:** a confirm says how many pieces and characters go to which provider and model, and that it may cost.
+  - **Stop**, and **Delete index** (deletes the derived file only).
+- Keys in `agent.settings`: `semProvider`, `semModel`, `semDocPrefix`, `semQueryPrefix`.
+- **What is indexed:** `memory/user.md`, `memory/assistant.md`, `memory/topics/*.md` and `knowledge/raw/*.txt|*.md`. **Session notes are not indexed**, so a shared index never holds a chat's private notes; keyword `memory_search` still covers this chat's session. Never the diary, chats, prompts or configs.
+- **Index file:** `agent/knowledge/index/semantic.json` (folder only):
+  - `{v:1, fp:{provider, model, dims, docPrefix, queryPrefix}, built, chunks:[{path, scope, a, b, hash, vec}]}`.
+  - Vectors are unit-normalised to 5 decimals. No document text and no credentials are stored.
+- **Chunks:** ≤ 20 lines and ≤ 1500 chars. A single longer line is embedded from its first 1500 chars.
+- **Build limits:** ≤ 250 files, ≤ 512 KB each, ≤ 2000 chunks, ≤ 1.5 M stored numbers, dims ≤ 4096. Batches are ≤ 32 inputs and ≤ 60 000 UTF-8 bytes, within the Hub caps.
+- **Build safety:** every reply is checked (one finite, nonzero vector per input, all the same size). The file is written once, only after all batches succeed and the settings are unchanged. Stop, an error or a settings change keeps the previous index.
+- **Tool `memory_semantic_search(query, limit?)`:**
+  - Offered only when the index matches the current provider, model and prefixes, a folder is open, Memory is on and the Hub API is present. The prompt mentions it only then.
+  - Each call makes one query embedding.
+  - Cosine similarity ≥ 0.30, top 1–8 (default 4).
+  - Every hit's lines are re-read and re-hashed; changed or deleted text is skipped and counted as stale.
+  - Results are quoted data with `path:lines`, not instructions.
+- Keyword `memory_search` stays the default and works without any index.
+- Tests: `tests/ag34.test.cjs` (mocked HubAPI).
