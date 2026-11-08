@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261108d';
-const CACHE = 'hub-shell-v157';  // H140: named API key rows
+const V = '20261108e';
+const CACHE = 'hub-shell-v158';  // H139a: bounded embedding API
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -86,6 +86,7 @@ const SHELL = [
   'apps/system/api-keys/index.html', 'apps/system/api-keys/api-keys.js',
   'apps/system/api-keys/api-keys.css', 'apps/system/api-keys/api-keys_icon.png', // H138b
   'hub/core/hub_credentials.js', 'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
+  'hub/core/hub_embeddings.js', // H139a: bounded embedding adapters
   'hub/core/hub_api.js',   // H134b: shared AI request helper
   'hub/core/hub_providers.js',   // H134c: custom AI services store
   'hub/core/hub_profile.js',   // H30.1
