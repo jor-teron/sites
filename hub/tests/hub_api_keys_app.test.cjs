@@ -82,10 +82,10 @@ test('provider add/edit/test/delete preserves blank saved key and never autofetc
   await click(row.querySelector('.key-save')); await settle();
   assert.equal((await b.ctx.HubProviders.secret(id)).key, 'placeholder-provider');
   assert.equal(b.calls.length, 0);
-  const testButton = row.querySelectorAll('.key-btn').find((n) => n.textContent === 'Test');
+  const testButton = row.querySelectorAll('.key-btn').find((n) => n.textContent === 'Test model list');
   await click(testButton); assert.equal(b.calls.length, 1);
   assert.equal(b.calls[0].url, 'https://provider.invalid/v1/models');
-  assert.match(row.querySelector('.key-out').textContent, /^Works/);
+  assert.match(row.querySelector('.key-out').textContent, /^Model list received/);
   await click(row.querySelector('.key-del')); assert.equal(b.ctx.HubProviders.list().length, 0);
 });
 
@@ -174,4 +174,127 @@ test('cross-origin Settings legacy bridge navigates only its own frame', () => {
   b.load('apps/system/settings/sec_keys.js');section.render(b.pane,'svc_synthetic123');
   assert.equal(b.replaced.length,1); assert.equal(b.opened.length,0);
   assert.ok(b.replaced[0].endsWith('/api-keys/#keys/svc_synthetic123'));
+});
+
+// H138c: model-list diagnostics/preset tests; synthetic placeholders and mocked fetch only.
+function providerTestFixture(endpoint = 'https://integrate.api.nvidia.com/v1') {
+  const b = fixture();
+  const id = b.ctx.HubProviders.add({ label: 'NVIDIA', type: 'openai', key: 'placeholder-private-key', endpoint });
+  b.load('apps/system/api-keys/api-keys.js');
+  const row = b.pane.querySelector('#prov-' + id);
+  const button = row.querySelectorAll('.key-btn').find((n) => n.textContent === 'Test model list');
+  return { ...b, id, row, button, result: () => row.querySelector('.key-out').textContent };
+}
+
+test('NVIDIA preset fills type/base only, preserves typed key, persists only on explicit Add', async () => {
+  const b = fixture(); b.load('apps/system/api-keys/api-keys.js');
+  const add = b.pane.querySelector('.prov-add');
+  await input(add.querySelector('.prov-key'), 'placeholder-private-key');
+  await click(add.querySelector('.prov-nvidia'));
+  assert.equal(add.querySelector('.prov-label').value, 'NVIDIA');
+  assert.equal(add.querySelector('.prov-type').value, 'openai');
+  assert.equal(add.querySelector('.prov-endpoint').value, 'https://integrate.api.nvidia.com/v1');
+  assert.equal(add.querySelector('.prov-key').value, 'placeholder-private-key');
+  assert.equal(b.ctx.HubProviders.list().length, 0); assert.equal(b.calls.length, 0);
+  assert.equal(add.querySelector('.prov-nvidia').attrs['aria-describedby'], 'nvidia-guide');
+  await click(add.querySelector('.key-save')); await settle();
+  const id = b.ctx.HubProviders.list()[0].id;
+  assert.equal(b.ctx.HubProviders.info(id).type, 'openai');
+  assert.equal(b.ctx.HubProviders.info(id).endpoint, 'https://integrate.api.nvidia.com/v1');
+  assert.equal((await b.ctx.HubProviders.secret(id)).key, 'placeholder-private-key');
+  assert.equal(b.pane.querySelector('#prov-' + id).querySelector('.prov-key').value, '');
+  assert.equal(b.calls.length, 0);
+});
+
+for (const endpoint of ['https://integrate.api.nvidia.com/v1/chat/completions', 'https://integrate.api.nvidia.com/v1/chat/completions/', 'https://integrate.api.nvidia.com/v1/models', 'https://provider.invalid/v1?key=placeholder-private-key', 'https://user:placeholder-private-key@provider.invalid/v1', 'not a URL']) {
+  test('base validation refuses unsafe/full request URL without fetching: ' + endpoint.replace(/placeholder-private-key/g, '[synthetic]'), async () => {
+    const b = fixture(); b.load('apps/system/api-keys/api-keys.js'); const add = b.pane.querySelector('.prov-add');
+    await input(add.querySelector('.prov-label'), 'Synthetic'); await input(add.querySelector('.prov-endpoint'), endpoint);
+    await input(add.querySelector('.prov-key'), 'placeholder-private-key'); await click(add.querySelector('.key-save'));
+    assert.equal(b.ctx.HubProviders.list().length, 0); assert.equal(b.calls.length, 0);
+    const text = add.querySelector('.key-out').textContent;
+    assert.ok(text.length > 0); assert.ok(!text.includes('placeholder-private-key'));
+  });
+}
+
+test('arbitrary compatible base remains intact apart from whitespace/trailing slash normalization', async () => {
+  const b = fixture(); b.load('apps/system/api-keys/api-keys.js'); const add = b.pane.querySelector('.prov-add');
+  await input(add.querySelector('.prov-label'), 'Custom');
+  await input(add.querySelector('.prov-endpoint'), ' https://provider.invalid/proxy/custom/v4/// ');
+  await click(add.querySelector('.key-save')); await settle();
+  const id = b.ctx.HubProviders.list()[0].id;
+  assert.equal(b.ctx.HubProviders.info(id).endpoint, 'https://provider.invalid/proxy/custom/v4');
+  assert.equal(b.calls.length, 0);
+});
+
+test('old saved full request URL is not silently rewritten or requested with a duplicate suffix', async () => {
+  const b = providerTestFixture('https://integrate.api.nvidia.com/v1/chat/completions'); await click(b.button);
+  assert.equal(b.calls.length, 0); assert.match(b.result(), /base URL, not the full/);
+  assert.equal(b.ctx.HubProviders.info(b.id).endpoint, 'https://integrate.api.nvidia.com/v1/chat/completions');
+});
+
+for (const [status, expected] of [[400, /request refused.*does not prove the key is invalid/], [401, /Authentication failed/], [403, /Access denied.*does not prove the key is invalid/], [404, /not found.*may not support model listing/], [429, /Rate limit or quota/], [500, /Provider server error/]]) {
+  test('model-list HTTP ' + status + ' uses safe status-based diagnostics, never upstream body', async () => {
+    const b = providerTestFixture(); let bodyReads = 0;
+    b.ctx.fetch = async (url, options) => { b.calls.push({ url, options }); return { ok: false, status, json: async () => { bodyReads++; return { error: 'placeholder-private-key' }; } }; };
+    await click(b.button);
+    assert.match(b.result(), expected); assert.match(b.result(), /Inference was not tested/);
+    assert.ok(!b.result().includes('placeholder-private-key')); assert.equal(bodyReads, 0);
+    assert.equal(b.calls.length, 1); assert.equal(b.calls[0].url, 'https://integrate.api.nvidia.com/v1/models');
+    assert.equal(b.button.disabled, false);
+  });
+}
+
+for (const [description, payload] of [['object without model array', { error: 'placeholder-private-key' }], ['array root', []], ['error with misleading data', {error:'placeholder-private-key',data:[{id:'synthetic'}]}], ['non-array data', { data: { length: 3 } }], ['invalid entry', { data: [{ id: '' }] }]]) {
+  test('malformed model list: ' + description, async () => {
+    const b = providerTestFixture(); b.ctx.fetch = async () => ({ ok: true, json: async () => payload });
+    await click(b.button); assert.match(b.result(), /unexpected format/); assert.match(b.result(), /Inference was not tested/);
+    assert.ok(!b.result().includes('placeholder-private-key'));
+  });
+}
+
+test('invalid JSON is not reported as success and parser text cannot leak a key', async () => {
+  const b = providerTestFixture(); b.ctx.fetch = async () => ({ ok: true, json: async () => { throw Error('placeholder-private-key'); } });
+  await click(b.button); assert.match(b.result(), /not valid JSON/); assert.ok(!b.result().includes('placeholder-private-key'));
+});
+
+test('successful model listing never claims authentication/inference verified or prints model ids', async () => {
+  const b = providerTestFixture(); b.ctx.fetch = async () => ({ ok: true, json: async () => ({ data: [{ id: 'placeholder-private-key' }] }) });
+  await click(b.button); assert.equal(b.result(), 'Model list received · 1 model. Inference was not tested.');
+  assert.ok(!b.result().includes('placeholder-private-key'));
+});
+
+test('network error retains ambiguity and never displays upstream exception text', async () => {
+  const b = providerTestFixture(); b.ctx.fetch = async () => { throw TypeError('CORS blocked placeholder-private-key'); };
+  await click(b.button); assert.match(b.result(), /Network, endpoint or browser restrictions \(possibly CORS\)/);
+  assert.match(b.result(), /key has not been verified/); assert.ok(!b.result().includes('placeholder-private-key'));
+});
+
+test('real fetchT abort path is reported as timeout, not invalid credentials', async () => {
+  const b = providerTestFixture(); let abort;
+  b.ctx.setTimeout = (cb) => { abort = cb; return 1; }; b.ctx.clearTimeout = () => {};
+  b.ctx.fetch = async (url, options) => new Promise((resolve, reject) => {
+    options.signal.addEventListener('abort', () => reject(Object.assign(Error('placeholder-private-key'), { name: 'AbortError' })));
+    queueMicrotask(abort);
+  });
+  await click(b.button); assert.equal(b.result(), 'Model-list request timed out. Inference was not tested.');
+  assert.equal(b.button.disabled, false);
+});
+
+test('NVIDIA row edit keeps provider id and blank-key preservation; save does not test', async () => {
+  const b = providerTestFixture(); await settle();
+  await input(b.row.querySelector('.prov-label'), 'Renamed NVIDIA');
+  await click(b.row.querySelector('.key-save')); await settle();
+  assert.equal(b.ctx.HubProviders.list()[0].id, b.id);
+  assert.equal((await b.ctx.HubProviders.secret(b.id)).key, 'placeholder-private-key');
+  assert.equal(b.calls.length, 0);
+});
+
+test('Gemini custom provider defaults and model-list format remain supported', async () => {
+  const b = fixture(); const id = b.ctx.HubProviders.add({label:'Synthetic Gemini',type:'gemini',key:'placeholder-private-key',endpoint:''});
+  b.load('apps/system/api-keys/api-keys.js');
+  b.ctx.fetch = async (url, options) => { b.calls.push({url,options}); return {ok:true,json:async()=>({models:[{name:'models/synthetic'}]})}; };
+  const row=b.pane.querySelector('#prov-'+id); await click(row.querySelectorAll('.key-btn').find((n)=>n.textContent==='Test model list'));
+  assert.equal(b.calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000');
+  assert.match(row.querySelector('.key-out').textContent,/Model list received/);
 });
