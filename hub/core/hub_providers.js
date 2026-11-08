@@ -1,6 +1,6 @@
 /**
  * H134c: custom AI providers ("services") the user adds in Settings > API Keys, without code edits.
- * Stored only in this browser: localStorage 'sites-hub.providers' = JSON list of
+ * Stored only in this browser: HubCredentials providers section (single sites-hub.credentials record), list of
  *   { id: 'svc_<base36 time><random>', label, type: 'openai' | 'gemini', key, endpoint, created }
  * Four user fields only (Label, Provider type, API key, API endpoint). No model: apps pick models.
  * id is generated once at creation and never changes; label is display text only (rename never breaks callers).
@@ -24,7 +24,9 @@
 (function () {
   'use strict';
   if (window.HubProviders) return;
-  const STORE = 'sites-hub.providers';
+  const C = window.HubCredentials;
+  if (!C) throw new Error('HubProviders requires hub_credentials.js.');
+  const STORE = C.STORE;
   const ID_RE = /^svc_[a-z0-9]{6,40}$/;
   const TYPES = [{ type: 'openai', label: 'OpenAI-compatible' }, { type: 'gemini', label: 'Gemini' }];
   const GEMINI_DEFAULT = 'https://generativelanguage.googleapis.com/v1beta';
@@ -35,15 +37,9 @@
     return { id: r.id, label: String(r.label || r.id).slice(0, 60), type: r.type,
       key: typeof r.key === 'string' ? r.key : '', endpoint: typeof r.endpoint === 'string' ? r.endpoint : '', created: +r.created || 0 };
   }
-  function read() {
-    try { const a = JSON.parse(localStorage.getItem(STORE) || '[]'); return Array.isArray(a) ? a.map(clean).filter(Boolean) : []; }
-    catch (_) { return []; }
-  }
-  function write(a) {
-    try { if (a.length) localStorage.setItem(STORE, JSON.stringify(a)); else localStorage.removeItem(STORE); return true; }
-    catch (_) { return false; }
-  }
-  function emit(id) { listeners.forEach((fn) => { try { fn({ id }); } catch (e) { console.warn('HubProviders listener', e); } }); }
+  function read() { return C.read().providers.map(clean).filter(Boolean); }
+  function write(providers) { return C.update((o) => { o.providers = providers; }); }
+  function emit(id) { listeners.forEach((fn) => { try { fn({ id }); } catch (_) { /* do not log listener errors */ } }); }
   function newId() {
     let r = '';
     try { const b = new Uint8Array(6); crypto.getRandomValues(b); b.forEach((x) => { r += (x % 36).toString(36); }); }
@@ -91,7 +87,6 @@
     while (a.some((r) => r.id === rec.id)) rec.id = newId();
     a.push(rec);
     if (!write(a)) throw new Error('Could not save (browser storage full or blocked).');
-    emit(rec.id);
     return rec.id;
   }
   function update(id, o = {}) {
@@ -103,14 +98,12 @@
     if (o.key === null) r.key = '';
     else if (o.key !== undefined && String(o.key).trim()) r.key = key(o.key);
     if (!write(a)) throw new Error('Could not save (browser storage full or blocked).');
-    emit(id);
     return true;
   }
   function remove(id) {
     const a = read(), b = a.filter((r) => r.id !== id);
     if (a.length === b.length) return false;
     const ok = write(b);
-    if (ok) emit(id);
     return ok;
   }
   function secret(id) {
@@ -127,7 +120,15 @@
     if (H && typeof H.open === 'function') return H.open(id);   // same #keys/<name> deep link; ids are lowercase
     return false;
   }
-  window.addEventListener('storage', (e) => { if (e.key === STORE || e.key === null) emit(''); });
+  let last = JSON.stringify(read());
+  C.onChange(() => {
+    const now = read(), text = JSON.stringify(now);
+    if (text === last) return;
+    const prev = JSON.parse(last); last = text;
+    const ids = new Set(prev.concat(now).map((r) => r.id));
+    const changed = Array.from(ids).filter((id) => JSON.stringify(prev.find((r) => r.id === id)) !== JSON.stringify(now.find((r) => r.id === id)));
+    emit(changed.length === 1 ? changed[0] : '');
+  });
 
   window.HubProviders = Object.freeze({ list, has, info, add, update, remove, secret, onChange, open,
     TYPES: Object.freeze(TYPES.map((t) => Object.freeze(Object.assign({}, t)))), GEMINI_DEFAULT, STORE });

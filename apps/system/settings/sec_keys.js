@@ -1,6 +1,6 @@
 /*
  * Settings → API Keys (apps/system/settings/sec_keys.js, H28). One place for the API keys every Hub
- * app uses (Agent, News, …), stored by hub/core/hub_keys.js in localStorage 'sites-hub.keys'
+ * app uses (Agent, News, …), stored by hub/core/hub_keys.js in HubCredentials (sites-hub.credentials)
  * (only this browser; every Hub app gets them, no per-app prompt). Uses the Hub's window.top.HubKeys
  * when Settings runs inside the Hub (so the Hub's onChange listeners fire at once), else its own copy.
  * One row per known key (HubKeys.KNOWN): masked input (URLs shown plain) + 👁 reveal, Save (also on
@@ -17,7 +17,7 @@
  * H134e: four visible Services rows, then Providers. There are no hidden legacy/provider-key
  * definitions or deep-link maintenance rows; users re-enter those keys through Add provider.
  * H134a: "Used by" comes from the four visible HubKeys definitions.
- * H134c/H134e: 'Providers' section (hub/core/hub_providers.js, localStorage 'sites-hub.providers'): Label, Provider type
+ * H134c/H134e: 'Providers' section (hub/core/hub_providers.js, HubCredentials providers section): Label, Provider type
  *   (OpenAI-compatible | Gemini), API endpoint, API key; stable id svc_… per service; Save / Test / Delete. The saved key
  *   is never written back into the page. Test = GET <endpoint>/models (free). Deep link #keys/svc_… scrolls to that row.
  * Guide: hub/keys.readme.md (shown folded at the bottom, plus a GitHub link).
@@ -150,7 +150,7 @@
     function doSave() {
       const v = inp.value.trim();
       if (v === '' && !K.has(name)) { save.disabled = true; return; }
-      try { K.set(name, v); say(v ? 'Saved' : 'Removed', 'ok'); } catch (e) { say(String(e.message || e), 'bad'); }
+      try { if (K.set(name, v) === false) throw new Error('Could not save (browser storage full or blocked).'); say(v ? 'Saved' : 'Removed', 'ok'); } catch (e) { say(String(e.message || e), 'bad'); }
       load();
     }
     inp.addEventListener('input', () => { save.disabled = false; say(''); });

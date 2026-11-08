@@ -9,7 +9,7 @@
  *   hub = every localStorage 'sites-hub.*' setting (theme, accent, wallpaper, Start pins = favorites, window
  *   settings, notification timeout, ...) without the 'sites-hub.' prefix. JSON values (favorites) are stored
  *   as JSON so the file stays readable.
- * Never in the file: sites-hub.keys (API keys, H28), sites-hub.google (sign-in tokens), phonekeyRooms,
+ * Never in the file: HubCredentials keys section (API keys, H28), sites-hub.google (sign-in tokens), phonekeyRooms,
  *   caches / per-session state (startList, lastRefresh, wmSession, lastApp, updTried, fromCat, fromLab; H52: lastBuild, lastUpdated),
  *   this module's own keys (profile*), any name that looks like a key / token / secret, and any value that
  *   looks like an API key or token. The same filter runs again when a file is loaded.
@@ -50,7 +50,7 @@
  *   Export files: "system": { app: settings } as before + "apps": { category: { app: settings } }.
  * H30.3 Keys + export:
  *   'Include keys in profile' (Settings → About → Profile folder; localStorage 'sites-hub.profileKeys' = '1', off by
- *   default): when on, hub.json also holds "keys": { name: value } (the API keys of sites-hub.keys, H28), saved
+ *   default): when on, hub.json also holds "keys": { name: value } (the API keys of HubCredentials keys section, H28), saved
  *   on change like the rest. A hub.json / export file that has "keys" brings them in on load (merged: the file's
  *   names win, other local keys stay) and turns the switch on here too. Off = keys never leave this browser.
  *   exportData() → one object { version: 1, kind: 'hub-profile', savedAt, device, hub, system: { app: settings },
@@ -61,7 +61,7 @@
  *   (shared / desktop / phone) come from SYNC_GROUPS below (unknown = shared); wmMode is never synced.
  * H29.2 What + keys: exportData({ what: 'hub' | 'system' | 'everything', keys: true }) and
  *   diffData(profile, { groups, what, keys: true }). what = Hub settings (hub.json "hub") / System app settings
- *   ("system") / everything (hub + system + every app category). keys: true adds the key store (sites-hub.keys,
+ *   ("system") / everything (hub + system + every app category). keys: true adds the key store (HubCredentials keys section,
  *   H28) as its own 'keys' group; diff items for keys carry MASKED values only (maskKey: '••••' + last 4) and
  *   the receiver applies the real value from the offer it holds (applyItems item.scope 'key' + item.value).
  *   The key-like value filter still runs on every hub / app setting; keys only ever travel in "keys".
@@ -69,9 +69,9 @@
  *   then (only when something will be written) saves the previous value of each of those settings in
  *   localStorage 'sites-hub.syncUndo' = { v: 1, at, from, settings: [{ k: '<localStorage key>', prev: text | null }],
  *   keys: count } (prev null = did not exist → Undo removes it; only the last sync is kept, a new one replaces it)
- *   and the keys' old values through HubKeys.backupKeys (their own entry 'sites-hub.keysUndo', see hub_keys.js;
+ *   and the keys' old values through HubKeys.backupKeys (the HubCredentials undo section, see hub_keys.js;
  *   never in syncUndo, never shown). Then it writes. undoSync() restores both exactly and clears them;
- *   syncBackup() → null | { at, from, settings, keys } (counts only); clearSyncBackup(). Both entries are excluded
+ *   syncBackup() → null | { at, from, settings, keys } (counts only); clearSyncBackup(). Credential and settings backups are excluded
  *   from the profile (EXCLUDE). The immediate profile folder save after Apply / Undo is done by hub_sync.js
  *   with the normal save() below.
  * API window.HubProfile:
@@ -107,9 +107,9 @@
     'lastBuild', 'lastUpdated',   // H52: this device's running build + when it arrived (hub_update.js)
     // 'notifs']);   // H66: this device's Notification Centre history (never saved, never synced)   (before H134c)
     'notifs',   // H66: this device's Notification Centre history (never saved, never synced)
-    'providers']);   // H134c: custom AI services hold API keys (hub_providers.js): never in the profile, never synced
+    'providers', 'credentials']);   // H134c: custom AI services hold API keys (hub_providers.js): never in the profile, never synced
   const K_UNDO = P + 'syncUndo';   // H29.3
-  const K_KEYS = P + 'profileKeys', K_STORE = P + 'keys';   // H30.3
+  const K_KEYS = P + 'profileKeys', K_STORE = P + 'credentials';   // H30.3
   const KEY_NAME = /key|token|secret|passw|auth|cred|cookie/i;
   const KEY_VALUE = /(sk-[A-Za-z0-9_-]{8,}|sk_(live|test)_|gsk_[A-Za-z0-9]{8,}|xai-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_|tvly-[A-Za-z0-9]{8,}|hf_[A-Za-z0-9]{20,}|ya29\.|Bearer\s|-----BEGIN)/;
   const OPAQUE = /^[A-Za-z0-9_\-+=]{32,}$/;   // one long token-looking word
@@ -200,6 +200,7 @@
     const names = [];
     for (let i = 0; i < ls.length; i++) { const k = ls.key(i); if (k && k.indexOf(P) === 0) names.push(k.slice(P.length)); }
     names.sort().forEach((n) => {
+      if (!allowedName(n)) return;
       const v = lget(P + n);
       if (!allowed(n, v)) return;
       let val = v;
@@ -226,19 +227,22 @@
   /* H30.3: API keys, only when the switch is on */
   const includeKeys = () => lget(K_KEYS) === '1';
   function readKeys() {
-    try { const o = JSON.parse(lget(K_STORE) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (_) { return {}; }
+    const C = window.HubCredentials;
+    return C ? C.read().keys : {}; // fail closed; never consult legacy stores
   }
-  /** merge a file's keys into this browser's key store (file names win) */
+  /** Explicit profile import only; no automatic migration from old browser stores. */
   function importKeys(k) {
-    if (!k || typeof k !== 'object' || Array.isArray(k)) return 0;
-    const cur = readKeys();
+    if (!k || typeof k !== 'object' || Array.isArray(k) || !window.HubKeys) return 0;
     let n = 0;
-    Object.keys(k).forEach((name) => {
-      if (/^[\w.-]{1,60}$/.test(name) && typeof k[name] === 'string' && k[name] && k[name].length < 4096) { cur[name] = k[name]; n++; }
-    });
-    if (!n) return 0;
     applying = true;
-    try { lset(K_STORE, JSON.stringify(cur)); lset(K_KEYS, '1'); } finally { applying = false; }
+    try {
+      Object.keys(k).forEach((name) => {
+        if (/^[a-z0-9][a-z0-9_.-]{0,39}$/.test(name) && typeof k[name] === 'string' && k[name] && k[name].length < 4096) {
+          if (window.HubKeys.set(name, k[name])) n++;
+        }
+      });
+      if (n) lset(K_KEYS, '1');
+    } finally { applying = false; }
     return n;
   }
   function deviceInfo() {
@@ -899,7 +903,6 @@
   //   ks.forEach((it) => {
   //     let done = false;
   //     try { if (window.HubKeys && window.HubKeys.set) done = window.HubKeys.set(it.key, it.value) !== false; } catch (_) { done = false; }
-  //     if (!done) { const cur = readKeys(); cur[it.key] = it.value; lset(K_STORE, JSON.stringify(cur)); done = readKeys()[it.key] === it.value; }
   //     if (done) n++;
   //   });
   //   if (n) { lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit(); }
@@ -937,7 +940,7 @@
     ks.forEach((it) => {
       let done = false;
       try { if (window.HubKeys && window.HubKeys.set) done = window.HubKeys.set(it.key, it.value) !== false; } catch (_) { done = false; }
-      if (!done) { const cur = readKeys(); cur[it.key] = it.value; lset(K_STORE, JSON.stringify(cur)); done = readKeys()[it.key] === it.value; }
+      // H138a: no direct-store fallback; a missing HubKeys fails this item closed.
       if (done) n++;
     });
     if (n) { lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit(); }
@@ -945,7 +948,6 @@
   }
 
   /* ---------- H29.3: Undo last sync ---------- */
-  const K_KEYS_UNDO = P + 'keysUndo';   // fallback only (no HubKeys): same entry and format hub_keys.js uses
   function saveUndo(plan, keyNames, meta) {
     const seen = new Set();
     const settings = [];
@@ -954,12 +956,7 @@
     if (keyNames.length) {
       try {
         if (window.HubKeys && window.HubKeys.backupKeys) keys = window.HubKeys.backupKeys(keyNames);
-        else {
-          const cur = readKeys(), prev = {};
-          keyNames.forEach((nm) => { prev[nm] = typeof cur[nm] === 'string' ? cur[nm] : null; });
-          lset(K_KEYS_UNDO, JSON.stringify({ v: 1, at: Date.now(), prev }));
-          keys = Object.keys(prev).length;
-        }
+        else keys = -1; // no separate undo store
       } catch (_) { keys = -1; }
     } else clearKeysUndo();   // only the last sync is kept: an older key backup goes too
     const rec = { v: 1, at: Date.now(), from: String((meta && meta.from) || 'Device').slice(0, 40), settings, keys: Math.max(0, keys) };
@@ -969,7 +966,7 @@
   }
   function clearKeysUndo() {
     try { if (window.HubKeys && window.HubKeys.clearBackup) { window.HubKeys.clearBackup(); return; } } catch (_) { /* fall through */ }
-    ldel(K_KEYS_UNDO);
+    // No separate credential backup persistence.
   }
   function readUndo() {
     try {
@@ -983,9 +980,6 @@
     if (!b) return null;
     let keys = 0;
     try { const i = window.HubKeys && window.HubKeys.backupInfo ? window.HubKeys.backupInfo() : null; keys = i ? i.count : 0; } catch (_) { keys = 0; }
-    if (!keys && !(window.HubKeys && window.HubKeys.backupInfo)) {
-      try { const k = JSON.parse(lget(K_KEYS_UNDO) || 'null'); keys = k && k.prev ? Object.keys(k.prev).length : 0; } catch (_) { keys = 0; }
-    }
     if (!b.settings.length && !keys) return null;
     return { at: +b.at || 0, from: String(b.from || 'Device'), settings: b.settings.length, keys };
   }
@@ -999,7 +993,7 @@
     applying = true;
     try {
       b.settings.forEach((x) => {
-        if (!x || typeof x.k !== 'string' || !x.k || x.k === K_UNDO || x.k === K_STORE || x.k === K_KEYS_UNDO) return;
+        if (!x || typeof x.k !== 'string' || !x.k || x.k === K_UNDO || x.k === K_STORE) return;
         if (x.k.indexOf(P) === 0 ? SYNC_SKIP.has(x.k.slice(P.length)) || !allowedName(x.k.slice(P.length)) : !appOf(x.k)) return;
         if (x.prev == null) ldel(x.k); else lset(x.k, x.prev);
         settings++;
@@ -1007,14 +1001,6 @@
     } finally { applying = false; }
     try {
       if (window.HubKeys && window.HubKeys.restoreBackup) keys = window.HubKeys.restoreBackup();
-      else {
-        const k = JSON.parse(lget(K_KEYS_UNDO) || 'null');
-        if (k && k.prev) {
-          const cur = readKeys();
-          Object.keys(k.prev).forEach((nm) => { if (!KEYNAME_RE.test(nm)) return; if (typeof k.prev[nm] === 'string' && k.prev[nm]) cur[nm] = k.prev[nm]; else delete cur[nm]; keys++; });
-          lset(K_STORE, JSON.stringify(cur));
-        }
-      }
     } catch (_) { /* keys not restored */ }
     clearSyncBackup();
     lset(K_AT, Date.now()); lastText = ''; dirty = true; schedule(); emit();
