@@ -1,0 +1,126 @@
+/* base.css — reset, layout, typography, phone layout */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background: #0e1118;
+  color: #e8ecf5;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ---- scene (left / top) ---- */
+.scene {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ---- controls panel ---- */
+.controls {
+  flex: 0 0 340px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 18px 20px 28px;
+  background: #161a24;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.controls-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* =========================================================
+   PHONE (portrait, narrow): scene on top, controls below.
+   Scene shrinks while you drag a slider so the report shows.
+   ========================================================= */
+@media (max-width: 720px) {
+  .app {
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  .scene {
+    flex: 0 0 34dvh;
+    transition: flex-basis 0.25s ease;
+  }
+
+  .app:focus-within .scene {
+    flex-basis: 24dvh;
+  }
+
+  .controls {
+    flex: 1 1 auto;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 14px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .controls-head {
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: 16px;
+  }
+
+  /* 6 sliders in 2 columns → much less scrolling on a phone */
+  .sliders {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 14px;
+  }
+
+  .slider-row {
+    margin-bottom: 6px;
+    min-width: 0;
+  }
+
+  /* temperature + time get their own full rows (they pair well) */
+  .slider-row:first-child,
+  .slider-row:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .slider-row label {
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+
+  .slider-row output {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+
+  .report {
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+}

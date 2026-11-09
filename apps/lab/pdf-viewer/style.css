@@ -1,0 +1,174 @@
+:root {
+  --bg-1: #1b1e27;
+  --bg-2: #2b3145;
+  --card: rgba(255, 255, 255, 0.07);
+  --card-border: rgba(255, 255, 255, 0.14);
+  --text: #e8eaf2;
+  --muted: #9aa1b8;
+  --accent: #6c8cff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at 20% 0%, var(--bg-2), var(--bg-1) 60%);
+}
+
+/* ---------- Toolbar (kept short: one slim row) ---------- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  background: var(--card);
+  border-bottom: 1px solid var(--card-border);
+  backdrop-filter: blur(10px);
+}
+
+.toolbar h1 {
+  margin: 0 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.file-btn,
+.controls button {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 0.28rem 0.5rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.file-btn:hover,
+.controls button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--accent);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.page-info {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.page-info input {
+  width: 2.8rem;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text);
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 5px;
+  padding: 0.2rem;
+}
+
+#zoom-label {
+  min-width: 2.4rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Print + Native sit slightly apart from the page controls */
+#print-btn,
+#native-link {
+  border-color: rgba(108, 140, 255, 0.45);
+}
+
+/* ---------- Viewer ---------- */
+
+.viewer {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.viewer canvas {
+  max-width: 100%;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.15s ease;
+}
+
+.placeholder {
+  margin: auto;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ---------- Print ---------- */
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .toolbar {
+    display: none;
+  }
+
+  .viewer {
+    padding: 0;
+    overflow: visible;
+    display: block;
+  }
+
+  .viewer canvas {
+    display: block;
+    max-width: 100%;
+    margin: 0 auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

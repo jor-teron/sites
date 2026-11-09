@@ -1,0 +1,114 @@
+/* screens.css — lobby / play / result visibility + layout */
+
+.screen {
+  height: 100vh;
+  height: 100dvh;          /* mobile: ignore the collapsing URL bar */
+  width: 100%;
+  min-height: 0;
+}
+
+/* ---------- LOBBY ---------- */
+#screen-lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.lobby-card {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(340px, 100%);
+  padding: 22px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-align: left;
+}
+.lobby-card .btn-primary { margin-top: 4px; }
+
+/* ---------- PLAY ---------- */
+#screen-play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(250px, 26vw, 360px);
+  gap: 12px;
+  padding: 12px;
+}
+
+#board-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ---------- RESULT ---------- */
+#screen-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+}
+
+/* ---------- phone / portrait ---------- */
+@media (max-width: 720px), (orientation: portrait) and (max-width: 900px) {
+  #screen-play {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  #panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    max-height: 42vh;
+    overflow-y: auto;
+  }
+
+  /* dice + roll button sit together on one row */
+  #dice-box { flex: 1 1 100%; }
+  #dice { width: 44px; height: 44px; font-size: 18px; }
+  #btn-roll { padding: 12px; font-size: 15px; }
+
+  /* the player strip becomes a compact horizontal row */
+  #players {
+    flex: 1 1 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  #players li {
+    flex: 1 1 45%;
+    padding: 6px 8px;
+    font-size: 13px;
+  }
+
+  /* log is secondary on a phone */
+  #log {
+    flex: 1 1 100%;
+    max-height: 84px;
+    font-size: 11.5px;
+  }
+
+  .panel-top { flex: 1 1 100%; }
+}
+
+/* very short screens (landscape phones): keep the board usable */
+@media (max-height: 500px) and (orientation: landscape) {
+  #log { display: none; }
+  #players { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  #players li { padding: 4px 7px; font-size: 12px; }
+}

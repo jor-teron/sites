@@ -1,0 +1,213 @@
+/* ground.css — where the ground is, where the pines stand, and what lies below
+
+   Numbers written into .scene every render:
+     by js/ground.js:  --horizon      0 = bottom of the scene, 1 = top; the line
+                                      where the trees stand. The sky ends here.
+                       --sea-level    the water surface (0 = no water)
+                       --water-span   how much of the width is shore
+     by js/look.js:    --altitude    0 at the coast … 1 at the snow line
+                       --altitude-basin 1 when you are below sea level
+                       --crest-snow   how white the crest is (0…1)
+
+   The rule: the GROUND is only ever positioned from --horizon. The sea lives
+   in the band underneath the horizon and never touches the ground's height.
+   That is what keeps the trees on the skyline at every place. */
+
+.scene {
+  --horizon: 0.30;
+  --sea-level: 0;
+  --water-span: 0;
+  --altitude: 0;
+  --altitude-basin: 0;
+  --crest-snow: 0;
+  --ground-h: 30%;   /* how tall the ground block is, as a share of the scene */
+}
+
+/* the ground carries the trees and snow; it never moves on its own.
+   Its TOP EDGE is the horizon: that is where the trees stand. */
+.ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--ground-h);
+  bottom: calc(var(--horizon) * 100% - var(--ground-h));
+  z-index: 2;
+  transition: bottom 0.6s ease;
+  overflow: visible;
+}
+
+/* ===== THE VIEW BELOW A HIGH PLACE =====
+   Everything under the horizon: land falling away to the sea.
+   It grows as you climb, because the horizon climbs — the ground block
+   itself never changes size, so a summit still fills the front of the frame. */
+.valley {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  bottom: calc(var(--sea-level) * 100%);
+  height: calc((var(--horizon) - var(--sea-level)) * 100%);
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 0.6s ease, bottom 0.6s ease, height 0.6s ease;
+  background: linear-gradient(
+    #8fa6b0 0%,        /* far haze just under the skyline */
+    #7d9a96 40%,
+    #5f8370 78%,
+    #4c7159 100%       /* slopes just under your feet */
+  );
+}
+
+/* one soft band of haze, and a couple of distant ridges for depth */
+.valley::before,
+.valley::after {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
+}
+
+.valley::before {
+  bottom: 34%;
+  height: 26%;
+  background: #6c8b81;
+  opacity: 0.55;
+  filter: blur(6px);
+}
+
+.valley::after {
+  bottom: 16%;
+  height: 22%;
+  background: #55785f;
+  opacity: 0.7;
+  filter: blur(4px);
+}
+
+.scene.is-elevated .valley {
+  opacity: 1;
+}
+
+/* a far band: at height the distance loses its green and turns blue.
+   --altitude is 0 at the coast, so it fades in as you climb. */
+.valley .far {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(126, 156, 190, 0.85) 0%,
+    rgba(110, 143, 176, 0.55) 45%,
+    rgba(90, 125, 155, 0) 100%
+  );
+  opacity: var(--altitude);
+  pointer-events: none;
+}
+
+/* ===== THE CREST =====
+   A soft edge on the skyline so the ground reads as a ridge, not a ruler,
+   and a white cap above the snow line that fades with --crest-snow. */
+.ground::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  height: 34%;
+  z-index: 0;
+  background: linear-gradient(
+    rgba(247, 251, 255, 0.95) 0%,
+    rgba(232, 241, 250, 0.55) 42%,
+    rgba(232, 241, 250, 0) 100%
+  );
+  border-radius: 50% 50% 0 0 / 26px 26px 0 0;
+  opacity: var(--crest-snow);
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+/* ===== WATER (below sea level) =====
+   Sits in the band under the horizon. Its top is --sea-level, well below
+   the trees, so you are standing on the shore looking down at it. */
+.water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--sea-level) * 100%);
+  z-index: 1;                              /* under the ground */
+  opacity: 0;
+  transition: opacity 0.6s ease, height 0.6s ease;
+  background: linear-gradient(
+    #2a6a95 0%,
+    #1d5b86 12%,
+    #16476b 55%,
+    #0f3350 100%
+  );
+  overflow: hidden;
+}
+
+.scene.has-water .water {
+  opacity: 1;
+}
+
+/* a few slow glints on the surface */
+.water::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    96deg,
+    rgba(255, 255, 255, 0.14) 0 2px,
+    transparent 2px 26px
+  );
+  opacity: 0.5;
+  animation: water-drift 9s linear infinite;
+}
+
+@keyframes water-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-26px); }
+}
+
+/* ===== ELEVATION TAG ===== */
+.altitude-tag {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-variant-numeric: tabular-nums;
+}
+
+.altitude-tag b {
+  font-weight: 700;
+}
+
+.altitude-tag .arrow {
+  font-size: 12px;
+  line-height: 1;
+}
+
+/* ===== PHONE ===== */
+@media (max-width: 720px) {
+  .scene {
+    --ground-h: 28%;
+  }
+
+  .altitude-tag {
+    right: 8px;
+    bottom: 8px;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+}

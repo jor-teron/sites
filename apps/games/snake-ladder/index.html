@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake &amp; Ladder — 00-99 Boards</title>
+<link rel="stylesheet" href="ui/base.css">
+<link rel="stylesheet" href="ui/board.css">
+<link rel="stylesheet" href="ui/controls.css">
+<link rel="stylesheet" href="ui/screens.css">
+</head>
+<body>
+
+<!-- ============ LOBBY ============ -->
+<section id="screen-lobby" class="screen">
+  <h1>Snake &amp; Ladder</h1>
+  <p class="sub">100 procedural boards &mdash; the board number is the seed.</p>
+
+  <div class="lobby-card">
+    <label class="field">
+      <span>Board / seed</span>
+      <input id="seed-input" type="number" min="0" max="99" value="07" inputmode="numeric">
+    </label>
+    <button id="seed-random" class="btn btn-ghost" type="button">Random</button>
+
+    <label class="field">
+      <span>Players</span>
+      <select id="player-count">
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </label>
+
+    <button id="btn-start" class="btn btn-primary" type="button">Start Game</button>
+  </div>
+</section>
+
+<!-- ============ PLAY ============ -->
+<section id="screen-play" class="screen hidden">
+
+  <div id="board-wrap">
+    <div id="board">
+      <svg id="board-svg" viewBox="0 0 10 10" preserveAspectRatio="none"></svg>
+      <!-- cells + tokens injected here -->
+    </div>
+  </div>
+
+  <aside id="panel">
+    <header class="panel-top">
+      <div class="panel-seed">Board <strong id="panel-seed">07</strong></div>
+      <button id="btn-quit" class="btn btn-ghost btn-sm" type="button">Quit</button>
+    </header>
+
+    <div id="dice-box">
+      <div id="dice" class="dice">–</div>
+      <button id="btn-roll" class="btn btn-primary" type="button">Roll</button>
+    </div>
+
+    <ul id="players"></ul>
+
+    <div id="log"></div>
+  </aside>
+
+</section>
+
+<!-- ============ RESULT ============ -->
+<section id="screen-result" class="screen hidden">
+  <h1 id="result-title">Winner!</h1>
+  <p id="result-sub" class="sub"></p>
+  <button id="btn-again" class="btn btn-primary" type="button">Play Again</button>
+</section>
+
+<!-- load order matters -->
+<script src="core/config.js"></script>
+<script src="core/board.js"></script>
+<script src="core/rules.js"></script>
+<script src="core/engine.js"></script>
+<script src="core/render.js"></script>
+<script src="core/ui.js"></script>
+<script src="core/main.js"></script>
+</body>
+</html>

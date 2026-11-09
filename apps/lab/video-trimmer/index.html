@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Video Trimmer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Video Trimmer</h1>
+            <p>Select a video, pick start and end times, and download your clip instantly.</p>
+        </header>
+
+        <main>
+            <!-- Step 1: Upload -->
+            <section class="card upload-card" id="uploadSection">
+                <label for="videoInput" class="drop-zone">
+                    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    <span>Choose a video file or drag it here</span>
+                    <input type="file" id="videoInput" accept="video/*" hidden>
+                </label>
+            </section>
+
+            <!-- Step 2: Editor (Hidden initially) -->
+            <section class="card editor-card hidden" id="editorSection">
+                <div class="video-container">
+                    <video id="videoPreview" controls></video>
+                </div>
+
+                <div class="controls-panel">
+                    <div class="time-display">
+                        <span>Start: <strong id="startTimeDisplay">0.0s</strong></span>
+                        <span>Duration: <strong id="durationDisplay">0.0s</strong></span>
+                        <span>End: <strong id="endTimeDisplay">0.0s</strong></span>
+                    </div>
+
+                    <div class="range-sliders">
+                        <div class="slider-group">
+                            <label for="startTimeRange">Start Time</label>
+                            <input type="range" id="startTimeRange" min="0" max="100" step="0.1" value="0">
+                        </div>
+                        <div class="slider-group">
+                            <label for="endTimeRange">End Time</label>
+                            <input type="range" id="endTimeRange" min="0" max="100" step="0.1" value="100">
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button id="previewTrimBtn" class="btn secondary-btn">Preview Cut</button>
+                        <button id="trimBtn" class="btn primary-btn">Trim & Download</button>
+                        <button id="resetBtn" class="btn text-btn">Choose Another Video</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Processing Status Modal / Banner -->
+            <div id="statusBanner" class="status-banner hidden">
+                <div class="spinner"></div>
+                <span id="statusText">Processing video clip...</span>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

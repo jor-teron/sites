@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Viewer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <h1>PDF</h1>
+
+    <label class="file-btn" title="Open a PDF file">
+      Open
+      <input type="file" id="file-input" accept="application/pdf" hidden>
+    </label>
+
+    <div class="controls" hidden id="controls">
+      <button id="prev-btn" title="Previous page">&#8592;</button>
+      <span class="page-info">
+        <input type="number" id="page-input" min="1" value="1" aria-label="Page number">
+        / <span id="page-count">0</span>
+      </span>
+      <button id="next-btn" title="Next page">&#8594;</button>
+
+      <button id="zoom-out-btn" title="Zoom out">&#8722;</button>
+      <span id="zoom-label">100%</span>
+      <button id="zoom-in-btn" title="Zoom in">&#43;</button>
+
+      <button id="print-btn" title="Print">&#128438;</button>
+      <a class="file-btn" id="native-link" href="#" target="_blank" rel="noopener" hidden
+         title="Open the PDF in the browser's native viewer">Native</a>
+    </div>
+  </header>
+
+  <main id="viewer" class="viewer">
+    <p class="placeholder" id="placeholder">Open a PDF file to view it here.</p>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

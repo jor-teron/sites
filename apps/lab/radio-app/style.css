@@ -1,0 +1,66 @@
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  background: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: #333;
+}
+
+.container {
+  text-align: center;
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  width: 90%;
+  max-width: 400px;
+}
+
+h1 {
+  margin-bottom: 1.5rem;
+}
+
+#stations button {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  background: #eee;
+  border-radius: 5px;
+  transition: background 0.3s;
+}
+
+#stations button:hover {
+  background: #ddd;
+}
+
+.controls {
+  margin-top: 1.5rem;
+}
+
+#play-pause {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  background: #007bff;
+  color: white;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+
+#volume {
+  width: 100%;
+}

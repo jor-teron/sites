@@ -1,0 +1,35 @@
+/* ===== FOG ===== */
+/* a milky veil over the scene; opacity is set from JS (fogLevel 0..1) */
+.fog {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(
+    rgba(225, 232, 240, 0.75),
+    rgba(200, 210, 222, 0.9)
+  );
+  transition: opacity 0.8s linear;
+}
+
+/* ===== PHONE: lighter scene effects ===== */
+@media (max-width: 720px) {
+  .sun,
+  .moon {
+    transform: scale(0.74);
+    margin-left: 9px;
+    margin-top: 9px;
+  }
+
+  .scene-label {
+    top: 8px;
+    left: 8px;
+    font-size: 11px;
+  }
+
+  .fog {
+    background: linear-gradient(
+      rgba(225, 232, 240, 0.8),
+      rgba(196, 206, 218, 0.95)
+    );
+  }
+}
