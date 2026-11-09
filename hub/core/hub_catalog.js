@@ -24,6 +24,7 @@ Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls
 Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
 Connect 4,        connect-4/, , , Puzzle, Drop red and yellow discs to line up four - play a friend or the computer
+Snake & Ladder,    snake-ladder/,  , , Puzzle, Classic snakes and ladders board game - roll the dice and race to 100
 Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
 Snake,             snake/,         , , Arcade, Steer the snake to eat food and grow longer without hitting yourself
 Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon and blast waves of descending aliens
@@ -172,6 +173,16 @@ Three.js Viewer v2, threejs-viewer-v2/,           , , Media, Run Three.js code a
 WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect, Peer-to-peer chat by QR or 6-digit code over WebRTC
 P2P Chat,           ../connectivity/p2pchat.html, , , Connect, Simple peer-to-peer chat: host a 4-digit code and a friend joins
 Phone,              ../media/phone/,              , , Connect, Android-style shortcut page that opens phone apps and settings
+
+Cooking Timer,      cooking-timer/,               , , New, Kitchen timers for cooking: set - start and get an alarm
+Ingredient Swaps,   ingredient-substitutions/,    , , New, Find substitutes for common cooking ingredients
+Knife Skills,       knife-skills/,                , , New, Kitchen knife skills 101: basic cuts and safety tips
+Nutrition Calculator, nutrition-calculator/,      , , New, Work out calories and nutrients for your meals
+PDF Viewer,         pdf-viewer/,                  , , New, Open and read PDF files in the browser
+Radio,              radio-app/,                   , , New, Simple internet radio player
+Unblock,            unblock-game/,                , , New, Sliding block puzzle: move blocks to free the red one
+Video Trimmer,      video-trimmer/,               , , New, Basic video trimmer: cut a clip from a video
+Weather Simulator,  weather-sim/,                 , , New, Animated weather scene: sky - clouds - rain - snow and fog
 
 Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes
 Photo Editor,       ../media/photo-editor/,       , , Legacy, Old photo editor: brightness - contrast - rotate - crop and print

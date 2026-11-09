@@ -25,6 +25,16 @@ WebRTC Chat,        ../connectivity/webrtc-chat/, , , Connect, Peer-to-peer chat
 P2P Chat,           ../connectivity/p2pchat.html, , , Connect, Simple peer-to-peer chat: host a 4-digit code and a friend joins
 Phone,              ../media/phone/,              , , Connect, Android-style shortcut page that opens phone apps and settings
 
+Cooking Timer,      cooking-timer/,               , , New, Kitchen timers for cooking: set - start and get an alarm
+Ingredient Swaps,   ingredient-substitutions/,    , , New, Find substitutes for common cooking ingredients
+Knife Skills,       knife-skills/,                , , New, Kitchen knife skills 101: basic cuts and safety tips
+Nutrition Calculator, nutrition-calculator/,      , , New, Work out calories and nutrients for your meals
+PDF Viewer,         pdf-viewer/,                  , , New, Open and read PDF files in the browser
+Radio,              radio-app/,                   , , New, Simple internet radio player
+Unblock,            unblock-game/,                , , New, Sliding block puzzle: move blocks to free the red one
+Video Trimmer,      video-trimmer/,               , , New, Basic video trimmer: cut a clip from a video
+Weather Simulator,  weather-sim/,                 , , New, Animated weather scene: sky - clouds - rain - snow and fog
+
 Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes
 Photo Editor,       ../media/photo-editor/,       , , Legacy, Old photo editor: brightness - contrast - rotate - crop and print
 Notepad,            ../office/notepad/,           , , Legacy, Old simple notepad: type - save and download text
