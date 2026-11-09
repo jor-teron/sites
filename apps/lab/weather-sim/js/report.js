@@ -1,5 +1,6 @@
 /* report.js — turns slider values into plain-English weather
    Rule order matters: the first rule that fits wins.
+   WS6: rain/snow headlines still read precipType()/precipAmount() — now Rain-slider driven.
 
    `state.temperature` is the air AT YOUR PLACE (rounded °C). The slider is
    the sea-level air. Both get said out loud, because "12 °C, though it is

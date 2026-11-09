@@ -1,5 +1,7 @@
 /* precip.js — canvas rain / snow particles
    WS1: fewer particles when prefers-reduced-motion is on
+   WS6: precip is driven ONLY by the Rain slider (mm/h). Cloud darkens the sky
+   but never starts rain on its own. Amount = sqrt(rain/8), lightly scaled by cloud.
 
    Only one thing here knows about the place: the *bottom* of the fall.
    Drops stop at the horizon — the line where the trees stand and where the
@@ -20,19 +22,38 @@ let canvasW = 0;
 let canvasH = 0;
 let floorY = 0;   // px from the top of the canvas where drops disappear
 
-/* what is falling? */
+/* Word for the Rain slider label / report, from mm/h. */
+function rainWord(mm) {
+  const r = Number(mm) || 0;
+  if (!(r > 0)) return "none";
+  if (r <= 0.5) return "drizzle";
+  if (r <= 2.5) return "light";
+  if (r <= 7.5) return "moderate";
+  return "heavy";
+}
+
+/* "0 mm/h · none", "2.4 mm/h · light" */
+function formatRain(mm) {
+  const n = Math.round((Number(mm) || 0) * 10) / 10;
+  const text = (Math.abs(n - Math.round(n)) < 1e-9) ? String(Math.round(n)) : n.toFixed(1);
+  return text + " mm/h · " + rainWord(n);
+}
+
+/* what is falling? WS6: rain == 0 → none; else snow if temp ≤ 0, else rain. */
 function precipType() {
-  if (state.cloud < 50) return "none";
-  if (state.humidity < 45) return "none";       // not enough moisture
+  if (!(state.rain > 0)) return "none";
   if (state.temperature <= 0) return "snow";
   return "rain";
 }
 
-/* amount 0..1 based on cloud + humidity */
+/* amount 0..1 from mm/h. Curve: min(1, sqrt(rain/8)) so ~2 mm/h ≈ 0.5, 8+ = full.
+   Cloud may dim the visual intensity a little, but never creates precip alone. */
 function precipAmount() {
-  const c = (state.cloud - 50) / 50;
-  const h = (state.humidity - 45) / 55;
-  return Math.max(0, Math.min(1, c * 0.6 + h * 0.6));
+  const r = Number(state.rain) || 0;
+  if (r <= 0) return 0;
+  const base = Math.min(1, Math.sqrt(r / 8));
+  const cloudScale = 0.7 + 0.3 * ((Number(state.cloud) || 0) / 100);
+  return Math.min(1, base * cloudScale);
 }
 
 /* where the fall ends, in px (called on resize and on every render) */

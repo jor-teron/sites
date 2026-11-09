@@ -1,5 +1,6 @@
 /* state.js — single source of truth for slider values + helpers
    WS3: default place is "default" (neutral sea-level); Temperature slider is 0…50 °C.
+   WS6: rain mm/h (0…10) is its own slider — cloud no longer invents precip.
 
    Nothing in here knows about CSS or the DOM except the one element
    lookup every other file uses ($).
@@ -12,6 +13,10 @@
 const SEA_TEMP_MIN = 0;
 const SEA_TEMP_MAX = 50;
 
+/* Rain slider range (mm/h). Shared by main / save / live. */
+const RAIN_MIN = 0;
+const RAIN_MAX = 10;
+
 const DEFAULT_STATE = {
   place: "default", // key into PLACES (js/ground.js) — neutral until user sets one
   temperature: 20,  // °C AT YOUR PLACE — ground.js derives it from the slider
@@ -19,6 +24,7 @@ const DEFAULT_STATE = {
   humidity: 50,     // %
   wind: 10,         // km/h — the same number wind speed and wind chill use
   cloud: 40,        // %
+  rain: 0,          // mm/h — WS6: drives rain/snow; 0 = dry even under 100% cloud
   time: 12,         // hours, 0–24
 };
 

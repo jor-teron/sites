@@ -1,7 +1,8 @@
 /* Weather Sim — tests/ws2.test.cjs: live → slider mapping (WS2)
    Loads ground.js + the pure helpers from live.js in Node. No network.
    WS3: presets gone — inverse test registers temporary custom elevations;
-   clamp ranges updated to 0…50. */
+   clamp ranges updated to 0…50.
+   WS6: liveToSliders also returns rain; these asserts ignore it (see ws6). */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');

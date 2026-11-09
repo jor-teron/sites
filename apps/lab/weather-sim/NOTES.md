@@ -221,3 +221,23 @@ sway / reduced-motion behaviour are unchanged; feet still sit on `--horizon`.
 night, in fog, and toward full overcast — then `--ground-dim` washes the
 whole strip a little darker instead of patchy blobs. Under
 `prefers-reduced-motion` the shadows stay put.
+
+## 27. WS6 — Rain has its own slider
+Cloud cover used to invent rain once it passed ~50% with enough humidity.
+That was wrong for many real days (60% cloudy and dry). Rain is now a
+**sixth slider**: `state.rain` in mm/h, 0…10, step 0.1.
+
+```js
+precipType:   rain == 0 → none; else snow if temp ≤ 0, else rain
+precipAmount: min(1, sqrt(rain / 8)) × (0.7 + 0.3 × cloud/100)
+```
+
+Cloud still darkens the sky; it never starts precip on its own. The light
+cloud scale only softens how heavy the falling look is once rain > 0.
+
+**Live.** Open-Meteo `current.precipitation` is mm of water for the preceding
+interval (typically 15 minutes). We approximate mm/h as `mm × 4`, clamp to
+0…10, and set the Rain slider. Prefer `precipitation`; fall back to
+`rain + snowfall_cm/7` if needed. ↻ Live resets rain with the other sliders.
+Old saves without `rain` load as 0. Reset clears rain to 0.
+

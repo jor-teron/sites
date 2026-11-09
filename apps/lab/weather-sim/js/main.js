@@ -2,7 +2,8 @@
    WS1: pause rAF while the tab is hidden; resume without a big dt jump
    WS2: custom place registration before load; live pull on pick; Reset keeps the place
    WS3: no preset select — one place button; Temperature 0…50; unknown saved keys fall back
-   WS5: syncCloudShadowLook on every redraw (patchy shadows + overcast dim) */
+   WS5: syncCloudShadowLook on every redraw (patchy shadows + overcast dim)
+   WS6: Rain slider (mm/h) after Cloud Cover; Reset clears rain to 0 */
 
 const sceneEl = $("scene");
 
@@ -36,6 +37,7 @@ const SLIDERS = {
   humidity: { el: $("humidity"), out: $("humidity-out"), fmt: (v) => Math.round(v) + " %" },
   wind:     { el: $("wind"),     out: $("wind-out"),     fmt: (v) => Math.round(v) + " km/h" },
   cloud:    { el: $("cloud"),    out: $("cloud-out"),    fmt: (v) => Math.round(v) + " %" },
+  rain:     { el: $("rain"),     out: $("rain-out"),     fmt: formatRain },
   time:     { el: $("time"),     out: $("time-out"),     fmt: formatTime },
 };
 
@@ -217,9 +219,22 @@ if (typeof state.temperature === "number" && isFinite(state.temperature)) {
   state.temperature = Math.min(SEA_TEMP_MAX, Math.max(SEA_TEMP_MIN, state.temperature));
 }
 
+/* WS6: clamp rain mm/h into 0…10; missing old saves stay at DEFAULT 0 */
+if (typeof state.rain === "number" && isFinite(state.rain)) {
+  const lo = typeof RAIN_MIN === "number" ? RAIN_MIN : 0;
+  const hi = typeof RAIN_MAX === "number" ? RAIN_MAX : 10;
+  state.rain = Math.round(Math.min(hi, Math.max(lo, state.rain)) * 10) / 10;
+} else {
+  state.rain = 0;
+}
+
 /* keep the range attribute in sync with the shared constants */
 SLIDERS.temperature.el.min = SEA_TEMP_MIN;
 SLIDERS.temperature.el.max = SEA_TEMP_MAX;
+if (SLIDERS.rain) {
+  SLIDERS.rain.el.min = typeof RAIN_MIN === "number" ? RAIN_MIN : 0;
+  SLIDERS.rain.el.max = typeof RAIN_MAX === "number" ? RAIN_MAX : 10;
+}
 
 /* the sliders are only drawn from state — this is the single point where
    HTML default values are replaced by the remembered ones */

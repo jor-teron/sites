@@ -1,7 +1,8 @@
-/* live.js — WS2/WS3: user-settable place + one-shot live weather from Open-Meteo
+/* live.js — WS2/WS3/WS6: user-settable place + one-shot live weather from Open-Meteo
    Standalone: never reads My Day / dashboard storage. Pure mapping is
    liveToSliders() so tests can check sea-level inverse + clamping without a network.
-   WS3: no preset select — one place button; Temperature range defaults 0…50. */
+   WS3: no preset select — one place button; Temperature range defaults 0…50.
+   WS6: Rain slider from current.precipitation (mm per ~15 min × 4 ≈ mm/h). */
 
 const LIVE_API = "https://api.open-meteo.com/v1/forecast";
 const LIVE_GEO = "https://geocoding-api.open-meteo.com/v1/search";
@@ -23,16 +24,35 @@ function localHourFromIso(iso) {
 }
 
 /**
- * Map a live "current" block onto the five slider values.
+ * Map a live "current" block onto the six slider values.
  * Temperature: API gives local air; we invert temperatureAt() so the
  * Temperature slider (sea-level air) lands in the right place.
+ * Rain: Open-Meteo current.precipitation is mm of water for the preceding
+ * interval (typically 15 minutes). We treat mm_per_15min × 4 as an
+ * approximate mm/h, then clamp to 0…10. Prefer `precipitation` (already mm
+ * water); fall back to rain + snowfall_cm/7 if precipitation is missing.
  *
  * @param {object} current  Open-Meteo current: temperature_2m, relative_humidity_2m,
- *                          wind_speed_10m (km/h), cloud_cover, time
+ *                          wind_speed_10m (km/h), cloud_cover, precipitation, rain,
+ *                          snowfall, time
  * @param {number} elevM    place elevation in metres
- * @param {object} ranges   { tempMin, tempMax, humidityMax, windMax, cloudMax, timeMax }
- * @returns {{ temperature, humidity, wind, cloud, time }}
+ * @param {object} ranges   { tempMin, tempMax, humidityMax, windMax, cloudMax, rainMax, timeMax }
+ * @returns {{ temperature, humidity, wind, cloud, rain, time }}
  */
+function liveRainMmH(current) {
+  const precip = Number(current && current.precipitation);
+  let mm;
+  if (isFinite(precip)) {
+    mm = precip;
+  } else {
+    const rain = Number(current && current.rain);
+    const snowCm = Number(current && current.snowfall);
+    mm = (isFinite(rain) ? rain : 0) + (isFinite(snowCm) ? snowCm / 7 : 0);
+  }
+  /* current interval ≈ 15 min → ×4 for approximate mm/h */
+  return mm * 4;
+}
+
 function liveToSliders(current, elevM, ranges) {
   const r = ranges || {};
   const tempMin = r.tempMin != null ? r.tempMin : 0;
@@ -40,6 +60,7 @@ function liveToSliders(current, elevM, ranges) {
   const humidityMax = r.humidityMax != null ? r.humidityMax : 100;
   const windMax = r.windMax != null ? r.windMax : 100;
   const cloudMax = r.cloudMax != null ? r.cloudMax : 100;
+  const rainMax = r.rainMax != null ? r.rainMax : 10;
   const timeMax = r.timeMax != null ? r.timeMax : 24;
 
   const local = Number(current && current.temperature_2m);
@@ -51,6 +72,7 @@ function liveToSliders(current, elevM, ranges) {
     humidity: Math.round(clampNum(Number(current && current.relative_humidity_2m), 0, humidityMax)),
     wind: Math.round(clampNum(Number(current && current.wind_speed_10m), 0, windMax)),
     cloud: Math.round(clampNum(Number(current && current.cloud_cover), 0, cloudMax)),
+    rain: Math.round(clampNum(liveRainMmH(current), 0, rainMax) * 10) / 10,
     time: Math.round(clampNum(localHourFromIso(current && current.time), 0, timeMax) * 10) / 10,
   };
 }
@@ -72,7 +94,7 @@ function forecastUrl(lat, lon) {
   return LIVE_API +
     "?latitude=" + encodeURIComponent(lat) +
     "&longitude=" + encodeURIComponent(lon) +
-    "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,is_day" +
+    "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,cloud_cover,precipitation,rain,snowfall,is_day" +
     "&timezone=auto";
 }
 
@@ -91,7 +113,7 @@ function formatLiveClock(iso) {
 /* ---- apply mapped values through the same path a slider uses ---- */
 
 function applySliderValues(vals) {
-  for (const key of ["temperature", "humidity", "wind", "cloud", "time"]) {
+  for (const key of ["temperature", "humidity", "wind", "cloud", "rain", "time"]) {
     if (!(key in vals)) continue;
     const s = SLIDERS[key];
     if (!s) continue;
@@ -143,6 +165,7 @@ function pullLiveWeather(opts) {
         humidityMax: 100,
         windMax: 100,
         cloudMax: 100,
+        rainMax: typeof RAIN_MAX === "number" ? RAIN_MAX : 10,
         timeMax: 24,
       });
       applySliderValues(vals);

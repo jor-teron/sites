@@ -3,13 +3,14 @@
    clears the weather snapshot but keeps the place — it is a setting, not history.
    WS3: Temperature clamped to SEA_TEMP_MIN…SEA_TEMP_MAX (0…50); unknown place
    keys are dropped so main.js can fall back via resolvePlaceKey().
+   WS6: rain (mm/h) saved with the other sliders; old saves without rain → 0.
 
    One object in localStorage, one line of code to read it back.
    We save exactly what the user can change:
-     - the five slider values (temperature is stored as sea level °C)
+     - the six slider values (temperature is stored as sea level °C; rain as mm/h)
      - the chosen place (elevation and horizon follow from it)
      - the snow pile, because it is the only value with "memory"
-       (rain is gone the next second; a snowdrift lasts for hours)
+       (falling rain vanishes when the slider is 0; a snowdrift lasts for hours)
 
    NOT saved: particles, clouds, trees, sky. Those are rebuilt every frame
    from state anyway — saving them would store copies of things that are
@@ -22,7 +23,7 @@ const SAVE_KEY = "weather-sim:v2";
 const OLD_KEYS = ["weather-sim:v1"];
 
 /* which keys belong to the user's settings (not derived, not defaults) */
-const SAVED_KEYS = ["place", "temperature", "humidity", "wind", "cloud", "time"];
+const SAVED_KEYS = ["place", "temperature", "humidity", "wind", "cloud", "rain", "time"];
 
 /* are we allowed to use localStorage at all?
    (file:// pages, private mode and some embeds throw on access) */
@@ -79,6 +80,10 @@ function loadSave() {
         const lo = typeof SEA_TEMP_MIN === "number" ? SEA_TEMP_MIN : 0;
         const hi = typeof SEA_TEMP_MAX === "number" ? SEA_TEMP_MAX : 50;
         out[key] = Math.min(hi, Math.max(lo, v));
+      } else if (key === "rain") {
+        const lo = typeof RAIN_MIN === "number" ? RAIN_MIN : 0;
+        const hi = typeof RAIN_MAX === "number" ? RAIN_MAX : 10;
+        out[key] = Math.round(Math.min(hi, Math.max(lo, v)) * 10) / 10;
       } else {
         out[key] = v;
       }
