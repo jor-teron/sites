@@ -1,7 +1,8 @@
 /* main.js — wiring: sliders ↔ state, render loop, reset, keyboard, save
    WS1: pause rAF while the tab is hidden; resume without a big dt jump
    WS2: custom place registration before load; live pull on pick; Reset keeps the place
-   WS3: no preset select — one place button; Temperature 0…50; unknown saved keys fall back */
+   WS3: no preset select — one place button; Temperature 0…50; unknown saved keys fall back
+   WS5: syncCloudShadowLook on every redraw (patchy shadows + overcast dim) */
 
 const sceneEl = $("scene");
 
@@ -72,6 +73,7 @@ function renderAll() {
   syncPlaceLook();     // altitude tint, crest snow, tree line
   renderSky();
   updateCloudVisibility();
+  syncCloudShadowLook(); // WS5: patchy shadows + overcast dim
   syncParticles();
   updateGround();
   syncTreeLook();      // frost / fog fade / snow on branches

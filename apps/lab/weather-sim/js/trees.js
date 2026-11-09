@@ -1,4 +1,5 @@
-/* trees.js — procedural trees that lean in the wind
+/* trees.js — procedural pines that lean in the wind
+   WS5: 3–4 overlapping clip-path tiers, short trunk, depth haze (--haze)
 
    No images, no SVG files: one tree = one <div class="tree"> with a trunk
    <div class="trunk"> plus a stack of foliage <div class="tier">s.
@@ -46,7 +47,7 @@ function makeTree(rng) {
   /* shape */
   const height = 0.62 + rng() * 0.38;       // 0.62…1 of the height unit
   const widthRatio = 0.34 + rng() * 0.16;   // foliage width / tree height
-  const tiers = 3 + Math.floor(rng() * 3);  // 3…5 cones
+  const tiers = 3 + Math.floor(rng() * 2);  // WS5: 3…4 cones (was 3…5)
 
   /* colour: greens that cool off when it freezes */
   const hue = 96 + rng() * 34;              // 96…130 (green → blue-green)
@@ -56,14 +57,17 @@ function makeTree(rng) {
 
   const tierEls = [];
 
-  /* tiers sit from the top of the tree down to the trunk line */
+  /* WS5: tiers overlap down from the tip; leave ~20% at the bottom for trunk */
   for (let i = 0; i < tiers; i++) {
     const tier = document.createElement("div");
     tier.className = "tier";
-    const p = i / tiers;                    // 0 = top … ~1 = bottom
-    tier.style.width = (100 - p * 46).toFixed(1) + "%";
-    tier.style.height = (100 / tiers + 6).toFixed(1) + "%";
-    tier.style.top = (p * 66).toFixed(1) + "%";   // top 66%: leaves 34% for the trunk
+    const p = i / Math.max(1, tiers - 1);   // 0 = top … 1 = bottom
+    /* narrower at the tip, wider at the base */
+    tier.style.width = (48 + p * 52).toFixed(1) + "%";
+    /* each tier is tall enough to overlap the one below */
+    tier.style.height = (38 + (1 - p) * 8).toFixed(1) + "%";
+    /* stack from tip; overlap ~35% of height so edges droop over the next */
+    tier.style.top = (p * 52).toFixed(1) + "%";
     tier.style.zIndex = String(tiers - i);
     el.appendChild(tier);
     tierEls.push(tier);
@@ -125,6 +129,9 @@ function layoutTrees() {
     /* --tree-h is one unit of tree height, set on the layer (css/trees.css) */
     t.el.style.setProperty("--h", `calc(var(--tree-h) * ${(t.height * t.depth * narrow).toFixed(3)})`);
     t.el.style.setProperty("--w", `calc(var(--tree-h) * ${(t.height * t.widthRatio * t.depth * narrow).toFixed(3)})`);
+    /* WS5: far (small) trees are a touch lighter / hazier */
+    const haze = Math.max(0, 1 - t.depth); // 0 at front … ~0.45 at back
+    t.el.style.setProperty("--haze", haze.toFixed(2));
     t.el.style.opacity = (0.72 + t.depth * 0.28).toFixed(2);
     t.el.style.zIndex = String(Math.round(t.depth * 10));
   });

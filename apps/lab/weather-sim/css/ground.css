@@ -1,5 +1,6 @@
 /* ground.css — where the ground is, where the pines stand, and what lies below
    WS4: --horizon capped ≤ 0.25; trees use the same var (see trees.css)
+   WS5: cloud-shadow ellipses + --ground-dim overcast wash
 
    Numbers written into .scene every render:
      by js/ground.js:  --horizon      0 = bottom of the scene, 1 = top; the line
@@ -197,6 +198,61 @@
 .altitude-tag .arrow {
   font-size: 12px;
   line-height: 1;
+}
+
+
+/* ===== CLOUD SHADOWS (WS5) =====
+   Soft ellipses on the ground strip. Positions come from clouds.js (same x as
+   each cloud). Blur is baked into the radial-gradient — no filter:blur per frame.
+   Opacity of the whole layer is -- driven by syncCloudShadowLook(). */
+.cloud-shadows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4%;
+  bottom: 0;
+  z-index: 1;               /* above grass tint, below snow pile & trees */
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s linear;
+}
+
+.cloud-shadow {
+  position: absolute;
+  top: 6%;
+  left: 0;
+  border-radius: 50%;
+  /* soft dark ellipse — gradient does the blur, cheap on a weak phone */
+  background: radial-gradient(
+    ellipse at center,
+    rgba(18, 24, 32, 0.32) 0%,
+    rgba(18, 24, 32, 0.16) 42%,
+    rgba(18, 24, 32, 0) 72%
+  );
+  opacity: 0;
+  transition: opacity 0.4s linear;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* uniform overcast dim: replaces patchy shadows when cloud cover is full */
+.ground::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(16, 22, 32, var(--ground-dim, 0));
+  pointer-events: none;
+  transition: background 0.6s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-shadows,
+  .cloud-shadow,
+  .ground::after {
+    transition: none;
+  }
 }
 
 /* ===== PHONE ===== */

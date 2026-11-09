@@ -207,3 +207,17 @@ beside it under `.scene`, both reading `var(--horizon)`. Feet = crest, always.
 
 **Crescent moon.** `mask-image` cuts an offset circle out of the pale disc →
 a clean half crescent, glow kept.
+
+## 26. WS5 — nicer pines + cloud shadows (UI only)
+**Trees.** Still one `<div class="tree">` per pine (7 of them, same seed).
+Tiers are now **3–4** overlapping clip-path cones that taper toward the tip,
+with a short visible trunk and a left→right shade gradient. Farther trees
+(smaller `depth`) get a `--haze` bump so they read lighter. Snow coat and
+sway / reduced-motion behaviour are unchanged; feet still sit on `--horizon`.
+
+**Cloud shadows.** Each cloud has a twin `.cloud-shadow` ellipse inside
+`.ground > #cloud-shadows`. Same `x` as the cloud, soft `radial-gradient`
+(no `filter:blur`). Layer opacity ramps with mid cloud cover and fades at
+night, in fog, and toward full overcast — then `--ground-dim` washes the
+whole strip a little darker instead of patchy blobs. Under
+`prefers-reduced-motion` the shadows stay put.
