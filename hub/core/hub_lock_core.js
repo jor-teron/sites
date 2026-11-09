@@ -36,6 +36,8 @@
  *   newPeerId(crypto), randomHex(n, crypto), validPeerId(id), unlockUrl(base, id),
  *   createSession({ Peer, verify, onUnlock, onState, refreshMs, settleMs, timers, crypto,
  *     pinOk(), finger() → {allow:[credId]} | null, verifyAssert(msg, challenge) })        (H143: fingerprint)
+ *     H143.1: pinOk() false (fingerprint only) no longer refuses a phone PIN: hello says pinHidden and the PIN is
+ *     checked as the recovery PIN. onState('error', {type}) carries the PeerJS error type / 'disconnected'.
  *   createRegSession({ Peer, onCred(msg, challenge) → Promise<{ok, error}>, exclude(), onDone, onState, ... })   (H143)
  *   H143: METHODS, b64u(bytes), unb64u(str), derToRaw(der, n), parseAuthData(bytes), challenges(),
  *     verifyRegistration(msg, {challenge, origin, crypto, now}) → Promise<{ok, rec | error}>,
@@ -399,7 +401,11 @@
       try { p = new o.Peer(id, { debug: 0 }); } catch (err) { onState('error', { type: 'peer' }); retry(my); return; }
       peer = p;
       onState('starting', { id });
-      p.on('open', () => { if (my === gen) onState('ready', { id }); });
+      p.on('open', () => {
+        if (my !== gen) return;
+        if (retryT) { T.clearTimeout(retryT); retryT = 0; }   // H143.1: back on the server (reconnect): same ID, no new one
+        onState('ready', { id });
+      });
       p.on('error', (err) => {
         if (my !== gen) return;
         const type = (err && err.type) || 'error';
@@ -408,7 +414,13 @@
         if (type === 'unavailable-id') { start(); return; }
         retry(my);
       });
-      p.on('disconnected', () => { if (my === gen && !used) { onState('error', { type: 'disconnected' }); retry(my); } });
+      // H143.1: lost the PeerJS server: say so (the code shows), try to get back on with the same ID, else a new ID later
+      p.on('disconnected', () => {
+        if (my !== gen || used || stopped) return;
+        onState('error', { type: 'disconnected' });
+        retry(my);
+        try { if (typeof p.reconnect === 'function' && !p.destroyed) p.reconnect(); } catch (_) { /* the retry makes a new ID */ }
+      });
       p.on('connection', (conn) => accept(conn, my));
       refreshT = T.setTimeout(() => { refreshT = 0; if (my === gen && !used && !stopped) start(); }, refreshMs);
     }
@@ -472,12 +484,14 @@
       greet(cur) {
         const f = finger();
         if (!f) return [{ t: 'hello', v: 1, nonce: cur.nonce }];   // H142 phones: unchanged
-        return [{ t: 'hello', v: 2, nonce: cur.nonce, pin: pinOk(), finger: true },
+        // H143.1: the phone always may send the PIN (fingerprint only: pinHidden = it is the hidden recovery, behind
+        // 'Use PIN instead'); it is checked the same way (o.verify = the PBKDF2 record) and uses the one try
+        return [{ t: 'hello', v: 2, nonce: cur.nonce, pin: true, pinHidden: !pinOk(), finger: true },
           { t: 'chal', nonce: cur.nonce, challenge: cur.challenge, allowCredentials: f.allow.slice() }];
       },
       handle(d, cur) {
         if (d.t === 'pin') {
-          if (!pinOk()) return { reply: { t: 'result', ok: false, reason: 'method' } };   // fingerprint only: PIN only on the lock screen
+          // (H143 refused the PIN here for fingerprint only; H143.1 takes it as the recovery PIN)
           const pin = typeof d.pin === 'string' ? d.pin : '';
           return { check: () => (validPin(pin) ? o.verify(pin) : false) };
         }

@@ -22,7 +22,9 @@
  * H143 fingerprint: Settings › Screen lock › Unlock with = PIN only / Fingerprint only / Both ('hub-lock.method').
  * With a fingerprint method the QR session also sends {t:'chal'} and the phone answers with its passkey
  * (HubLockCore.verifyAssertion, origin = this page's origin, rpId = its hostname). Fingerprint only: the PIN pad is
- * hidden behind a small 'Use PIN' recovery link (the PIN always exists) and the phone page offers no PIN box.
+ * hidden behind a small 'Use PIN' recovery link (the PIN always exists); H143.1: the phone page has the same recovery
+ * behind 'Use PIN instead' (the PIN sent from the phone is checked like the pad's). H143.1: a phone-link error shows
+ * its code (PeerJS error type / 'disconnected' / 'peerjs-load') under the QR while it retries.
  *
  * The optional head line in desktop.html adds html.hub-locked before the first paint when the lock will show.
  *
@@ -184,14 +186,15 @@
     checking: 'Checking the answer from your phone\u2026',
     wrong: 'That did not unlock. Scan the new code to try again.',
     unlocked: 'Unlocked from your phone.',
-    error: 'Phone unlock is not available right now. Use the keypad.',
+    error: 'Phone unlock is not available right now. Retrying\u2026 Use the keypad meanwhile.',
     offline: 'No internet, so phone unlock is off. Use the keypad.',
     file: 'Phone unlock works when the Hub is opened from its web address. Use the keypad.'
   };
   function onState(s, info) {
     if (!isLocked || !qrNote) return;
     const m = store.method();
-    qrNote.textContent = (s === 'ready' && m !== 'pin' ? NOTES[m === 'finger' ? 'readyFinger' : 'readyBoth'] : NOTES[s]) || '';
+    qrNote.textContent = ((s === 'ready' && m !== 'pin' ? NOTES[m === 'finger' ? 'readyFinger' : 'readyBoth'] : NOTES[s]) || '') +
+      (s === 'error' ? ' (Error code: ' + ((info && info.type) || 'unknown') + ')' : '');   // H143.1
     if (s === 'ready' && info && info.id) drawQr(C.unlockUrl(document.baseURI, info.id));
     else if (s !== 'checking' && s !== 'unlocked') drawQr('');
     if (s === 'wrong' && pinShown) say(m === 'pin' ? 'Wrong PIN from the phone.' : 'The phone did not unlock it.', true);
@@ -208,7 +211,7 @@
         finger: () => (store.method() !== 'pin' ? { allow: store.keys().map((k) => k.credId) } : null),
         verifyAssert: (d, ch) => store.verifyAssert(d, ch, { origin: here ? here.origin : '', rpId: here ? here.hostname : '' }) });
       session.start();
-    }, () => { onState('error'); setTimeout(() => { if (isLocked && !session) startPhone(); }, 30000); });
+    }, () => { onState('error', { type: 'peerjs-load' }); setTimeout(() => { if (isLocked && !session) startPhone(); }, 30000); });
   }
   function stopPhone() { if (session) { session.stop(true); session = null; } }
   window.addEventListener('online', () => { if (isLocked && !session) startPhone(); });
