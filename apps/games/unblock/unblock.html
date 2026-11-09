@@ -1,16 +1,15 @@
 <!DOCTYPE html>
 <!--
-  Unblock (UNB-2) — sliding block puzzle. Free the red hero block through the EXIT.
-  Precomputed solver-verified levels in assets/levels.json.
+  Unblock (UNB-3) — sliding block puzzle. Free the red hero block through the EXIT.
+  Phone-first: largest board that fits, compact HUD, landscape side chrome, dvh/safe-area.
   Core: config, gameLogic, solver, levels, storage, game.
-  UI: render, input, hud, hint, levelPicker, modals, settings (shared gear/theme), app.
-  Shared Games Settings: ../common/settings/games-settings.js (optional fallback).
+  UI: layout, render, input, hud, hint, levelPicker, modals, settings, app.
 -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Unblock UNB-2</title>
+    <title>Unblock UNB-3</title>
     <link rel="stylesheet" href="ui/base.css">
     <link rel="stylesheet" href="ui/theme.css">
     <link rel="stylesheet" href="ui/board.css">
@@ -22,15 +21,15 @@
 
         <header class="app-header">
             <div class="header-left">
-                <button id="btn-levels" class="btn btn-icon" title="Level Select">☰ Levels</button>
+                <button id="btn-levels" class="btn btn-icon" title="Level Select">☰</button>
             </div>
             <div class="header-center">
                 <h1 class="game-title">UNBLOCK</h1>
-                <div class="level-indicator">Level <span id="current-level-num">000</span></div>
+                <div class="level-indicator">Lv <span id="current-level-num">000</span></div>
             </div>
             <div class="header-right">
                 <div class="stat-badge" title="Moves">
-                    <span class="stat-label">Moves</span>
+                    <span class="stat-label">Mv</span>
                     <span id="move-count" class="stat-value">0</span>
                 </div>
                 <div class="stat-badge" title="Par (best possible)">
@@ -52,7 +51,7 @@
         <footer class="app-footer">
             <button id="btn-undo" class="btn btn-secondary" disabled>Undo</button>
             <button id="btn-hint" class="btn btn-secondary">Hint</button>
-            <button id="btn-next" class="btn btn-primary" style="display: none;">Next Level →</button>
+            <button id="btn-next" class="btn btn-primary" style="display: none;">Next →</button>
         </footer>
 
         <div id="modal-levels" class="modal" style="display: none;">
@@ -90,7 +89,6 @@
         </div>
     </div>
 
-    <!-- Shared Games Settings (optional: the game runs with defaults if it fails to load) -->
     <script src="../common/settings/games-settings.js"></script>
     <script type="module" src="ui/app.js"></script>
 </body>

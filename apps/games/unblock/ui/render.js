@@ -1,15 +1,21 @@
 /**
- * Unblock — board drawing (UNB-1).
+ * Unblock — board drawing (UNB-3).
+ * cellSize is derived from the live board width after layout.sizeBoard().
  */
 import { CONFIG } from '../core/config.js';
 import { clearHintHighlight } from './hint.js';
+import { sizeBoard } from './layout.js';
 
 /**
  * @param {import('../core/game.js').Game} game
  * @param {(el: HTMLElement, blockId: string, cellSize: number) => void} onAttachDrag
+ * @returns {number} cellSize in px
  */
 export function renderBoard(game, onAttachDrag) {
     clearHintHighlight();
+    // Fit the square first so clientWidth matches the available space
+    sizeBoard();
+
     const boardEl = document.getElementById('game-board');
     boardEl.innerHTML = '';
 

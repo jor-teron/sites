@@ -1,6 +1,6 @@
 /**
- * Unblock — app wiring (UNB-2).
- * Async boot: load levels.json, apply shared theme, mount gear, bind UI.
+ * Unblock — app wiring (UNB-3).
+ * Async boot: load levels, theme, gear; re-layout on resize / orientationchange.
  */
 import { loadLevels } from '../core/levels.js';
 import { Game } from '../core/game.js';
@@ -11,6 +11,7 @@ import { showVictory, hideVictory, bindVictoryControls } from './modals.js';
 import { bindLevelPicker } from './levelPicker.js';
 import { showHint } from './hint.js';
 import { UnblockSettings } from './settings.js';
+import { sizeBoard } from './layout.js';
 
 class UnblockApp {
     constructor() {
@@ -25,7 +26,9 @@ class UnblockApp {
         this.render();
     }
 
+    /** Full HUD + board redraw (also re-fits the board square). */
     render() {
+        sizeBoard();
         updateHud(this.game);
         renderBoard(this.game, (el, blockId, cellSize) => {
             attachDragHandlers(this.game, el, blockId, cellSize, () => this.afterMove());
@@ -74,7 +77,6 @@ class UnblockApp {
         };
 
         document.getElementById('btn-hint').onclick = () => {
-            // Hint always works; showHints only gates the auto tip (we have a real solver hint)
             showHint(this.game);
         };
 
@@ -92,12 +94,22 @@ class UnblockApp {
             onNext: () => this.nextLevel()
         });
 
-        window.onresize = () => this.render();
+        // Recompute cellSize after rotate / chrome show-hide
+        let resizeTimer = 0;
+        const onResize = () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => this.render(), 50);
+        };
+        window.addEventListener('resize', onResize);
+        window.addEventListener('orientationchange', onResize);
+        // visualViewport covers Android URL-bar show/hide better than resize alone
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', onResize);
+        }
     }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-    // Theme before paint when possible (settings script already loaded)
     try { UnblockSettings.applyTheme(); } catch (_) { /* ok */ }
     const loading = document.getElementById('loading');
     try {
