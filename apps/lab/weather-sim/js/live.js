@@ -1,6 +1,7 @@
-/* live.js — WS2: user-settable place + one-shot live weather from Open-Meteo
+/* live.js — WS2/WS3: user-settable place + one-shot live weather from Open-Meteo
    Standalone: never reads My Day / dashboard storage. Pure mapping is
-   liveToSliders() so tests can check sea-level inverse + clamping without a network. */
+   liveToSliders() so tests can check sea-level inverse + clamping without a network.
+   WS3: no preset select — one place button; Temperature range defaults 0…50. */
 
 const LIVE_API = "https://api.open-meteo.com/v1/forecast";
 const LIVE_GEO = "https://geocoding-api.open-meteo.com/v1/search";
@@ -34,8 +35,8 @@ function localHourFromIso(iso) {
  */
 function liveToSliders(current, elevM, ranges) {
   const r = ranges || {};
-  const tempMin = r.tempMin != null ? r.tempMin : 20;
-  const tempMax = r.tempMax != null ? r.tempMax : 60;
+  const tempMin = r.tempMin != null ? r.tempMin : 0;
+  const tempMax = r.tempMax != null ? r.tempMax : 50;
   const humidityMax = r.humidityMax != null ? r.humidityMax : 100;
   const windMax = r.windMax != null ? r.windMax : 100;
   const cloudMax = r.cloudMax != null ? r.cloudMax : 100;
@@ -135,7 +136,7 @@ function pullLiveWeather(opts) {
         place.tz = data.timezone;
         saveCustomPlace(place);
       }
-      const elev = elevationOf("custom");
+      const elev = elevationOf(CUSTOM_PLACE_KEY);
       const vals = liveToSliders(current, elev, {
         tempMin: SEA_TEMP_MIN,
         tempMax: SEA_TEMP_MAX,
@@ -215,14 +216,19 @@ function useMyLocation() {
   });
 }
 
-/* ---- place panel UI ---- */
+/* ---- place button + panel UI (WS3: no preset <select>) ---- */
 
-function refreshCustomOption() {
-  const opt = $("place-custom");
-  if (!opt) return;
+function refreshPlaceButton() {
+  const btn = $("place-btn");
+  if (!btn) return;
   const p = getCustomPlace();
-  opt.textContent = p && p.name ? "📍 " + p.name : "📍 My place";
-  opt.disabled = false;
+  if (p && p.name) {
+    btn.textContent = "📍 " + p.name;
+    btn.classList.remove("needs-place");
+  } else {
+    btn.textContent = "📍 Set your place";
+    btn.classList.add("needs-place");
+  }
 }
 
 function openPlacePanel() {
@@ -248,12 +254,9 @@ function closePlacePanel() {
 function adoptCustomPlace(p) {
   saveCustomPlace(p);
   registerCustomPlace(p);
-  refreshCustomOption();
+  refreshPlaceButton();
   closePlacePanel();
-  state.place = "custom";
-  const placeEl = $("place");
-  if (placeEl) placeEl.value = "custom";
-  applyPlace("custom");
+  applyPlace(CUSTOM_PLACE_KEY);
   renderAll();
   saveWeather();
   pullLiveWeather();
@@ -281,17 +284,24 @@ function renderGeoResults(list) {
 }
 
 function initLiveWeather() {
-  refreshCustomOption();
+  refreshPlaceButton();
 
-  const setBtn = $("place-set");
-  if (setBtn) setBtn.addEventListener("click", openPlacePanel);
+  const placeBtn = $("place-btn");
+  if (placeBtn) placeBtn.addEventListener("click", openPlacePanel);
 
   const liveBtn = $("live-refresh");
   if (liveBtn) {
     liveBtn.addEventListener("click", () => {
-      if (state.place !== "custom") {
-        setLiveStatus("Pick 📍 My place first");
+      if (!getCustomPlace()) {
+        setLiveStatus("Set a place first");
+        openPlacePanel();
         return;
+      }
+      /* Ensure we are on the custom place before pulling. */
+      if (state.place !== CUSTOM_PLACE_KEY) {
+        applyPlace(CUSTOM_PLACE_KEY);
+        renderAll();
+        saveWeather();
       }
       pullLiveWeather();
     });
@@ -300,10 +310,9 @@ function initLiveWeather() {
   const cancel = $("place-cancel");
   if (cancel) cancel.addEventListener("click", () => {
     closePlacePanel();
-    /* If custom was selected but never saved, fall back to a fixed place. */
-    if (state.place === "custom" && !getCustomPlace()) {
-      applyPlace(DEFAULT_STATE.place);
-      $("place").value = state.place;
+    /* If custom was never saved, stay on the neutral default. */
+    if (state.place === CUSTOM_PLACE_KEY && !getCustomPlace()) {
+      applyPlace(DEFAULT_PLACE_KEY);
       renderAll();
       saveWeather();
     }
@@ -343,9 +352,11 @@ function initLiveWeather() {
     });
   }
 
-  /* On open: one automatic live pull if custom is selected and we are online. */
-  if (state.place === "custom" && getCustomPlace()) {
+  /* On open: one automatic live pull if custom is the active place and online. */
+  if (state.place === CUSTOM_PLACE_KEY && getCustomPlace()) {
     if (navigator.onLine === false) setLiveStatus("Offline — using saved values");
     else pullLiveWeather({ silent: true });
+  } else if (!getCustomPlace()) {
+    setLiveStatus("Set your place to pull live weather");
   }
 }

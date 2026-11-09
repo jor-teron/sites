@@ -1,13 +1,13 @@
 /* main.js — wiring: sliders ↔ state, render loop, reset, keyboard, save
    WS1: pause rAF while the tab is hidden; resume without a big dt jump
-   WS2: custom place registration before load; live pull on pick; Reset keeps the place */
+   WS2: custom place registration before load; live pull on pick; Reset keeps the place
+   WS3: no preset select — one place button; Temperature 0…50; unknown saved keys fall back */
 
 const sceneEl = $("scene");
 
 /* The Temperature slider is SEA LEVEL air. Your place bends it:
-   high air is colder, a deep basin is warmer. ground.js owns that maths. */
-const SEA_TEMP_MIN = 20;   // slider low
-const SEA_TEMP_MAX = 60;   // slider high
+   high air is colder, a deep basin is warmer. ground.js owns that maths.
+   SEA_TEMP_MIN / SEA_TEMP_MAX live in state.js (shared with save / live). */
 
 const SLIDERS = {
   temperature: {
@@ -38,8 +38,6 @@ const SLIDERS = {
   time:     { el: $("time"),     out: $("time-out"),     fmt: formatTime },
 };
 
-const placeEl = $("place");
-
 function formatTime(hour) {
   const h = Math.floor(hour) % 24;
   const m = Math.round((hour - Math.floor(hour)) * 60);
@@ -57,7 +55,7 @@ function syncLabels() {
   /* elevation tag: arrow turns over below sea level.
      The height comes from the place (elevationOf), never from state. */
   const tag = $("altitude-tag");
-  const place = PLACE_BY_KEY[state.place] || PLACES[0];
+  const place = PLACE_BY_KEY[state.place] || PLACE_BY_KEY[DEFAULT_PLACE_KEY] || PLACES[0];
   const metres = elevationOf(state.place);
   tag.querySelector(".arrow").textContent = metres < 0 ? "▼" : "▲";
   $("altitude-tag-value").textContent = formatAltitude(metres);
@@ -79,6 +77,7 @@ function renderAll() {
   syncTreeLook();      // frost / fog fade / snow on branches
   layoutTrees();       // wind moves trees, the place hides the ones in the sea
   renderReport();
+  if (typeof refreshPlaceButton === "function") refreshPlaceButton();
 }
 
 /* slider input → state → redraw → remember */
@@ -92,39 +91,12 @@ for (const key in SLIDERS) {
   });
 }
 
-/* place picker → the place decides height; height bends the air you set.
-   The place is the boss: there is no state.altitude to set, height is read
-   with elevationOf(state.place).
-
-   Picking a place does NOT move the Temperature slider. The air mass you
-   set stays; only the height it has to climb changes. (It used to snap to
-   the latitude's base air, which hid the lesson: same air, colder up top.) */
+/* place → height bends the air you set. Unknown / removed keys fall back. */
 function applyPlace(key) {
-  if (!PLACE_BY_KEY[key]) key = PLACES[0][0];
+  key = resolvePlaceKey(key);
   state.place = key;
   applyTemperature(parseFloat(SLIDERS.temperature.el.value));
 }
-
-placeEl.addEventListener("change", () => {
-  const key = placeEl.value;
-  /* WS2: custom with no saved place → open the panel instead of applying */
-  if (key === "custom") {
-    if (!getCustomPlace()) {
-      openPlacePanel();
-      placeEl.value = state.place === "custom" ? DEFAULT_STATE.place : state.place;
-      return;
-    }
-    applyPlace("custom");
-    renderAll();
-    saveWeather();
-    pullLiveWeather();
-    return;
-  }
-  applyPlace(key);
-  renderAll();
-  saveWeather();
-  setLiveStatus("");
-});
 
 /* ---- the snow pile changes the ground, the trees and the report ---- */
 function tickSnowUI(dt) {
@@ -180,14 +152,21 @@ document.addEventListener("visibilitychange", () => {
   else startLoop();
 });
 
-/* ---- reset: forget the weather, not the saved custom place (WS2) ---- */
+/* ---- reset: forget the weather; keep the saved custom place (WS2/WS3) ---- */
 function doReset() {
   Object.assign(state, DEFAULT_STATE);
+  /* place is a setting: stay on custom when one is registered */
+  state.place = hasCustomPlaceRegistered() ? CUSTOM_PLACE_KEY : DEFAULT_PLACE_KEY;
   for (const key in SLIDERS) {
-    SLIDERS[key].el.value = state[key];
+    SLIDERS[key].el.value = key === "temperature"
+      ? Math.min(SEA_TEMP_MAX, Math.max(SEA_TEMP_MIN, state[key]))
+      : state[key];
   }
-  applyPlace(DEFAULT_STATE.place);
-  placeEl.value = state.place;
+  /* DEFAULT_STATE.temperature is local-ish placeholder; slider holds sea-level.
+     Use the default sea-level number (same as DEFAULT_STATE.temperature at elev 0). */
+  SLIDERS.temperature.el.value = DEFAULT_STATE.temperature;
+  state.temperature = DEFAULT_STATE.temperature;
+  applyPlace(state.place);
   resetSnow();     // a clean slate: no old snow, no storm
   clearSave();     // weather snapshot only — custom place stays in its own key
   setLiveStatus("");
@@ -215,7 +194,12 @@ const saved = loadSave();
 if (saved) {
   /* the place comes first: the saved temperature is sea-level air *for that
      place*, so it must not be read before the place is known */
-  if (saved.place) state.place = saved.place;
+  if (saved.place) {
+    state.place = saved.place;
+  } else if (hasCustomPlaceRegistered()) {
+    /* WS3: removed preset was dropped by loadSave → prefer custom if set */
+    state.place = CUSTOM_PLACE_KEY;
+  }
   for (const key of SAVED_KEYS) {
     if (key === "place") continue;
     if (key in saved) state[key] = saved[key];
@@ -223,12 +207,23 @@ if (saved) {
   if (typeof saved.snow === "number") snow = saved.snow;
 }
 
+/* WS3: unknown / removed preset keys → custom (if set) or default */
+state.place = resolvePlaceKey(state.place);
+
+/* WS3: clamp sea-level temperature into the new 0…50 range */
+if (typeof state.temperature === "number" && isFinite(state.temperature)) {
+  state.temperature = Math.min(SEA_TEMP_MAX, Math.max(SEA_TEMP_MIN, state.temperature));
+}
+
+/* keep the range attribute in sync with the shared constants */
+SLIDERS.temperature.el.min = SEA_TEMP_MIN;
+SLIDERS.temperature.el.max = SEA_TEMP_MAX;
+
 /* the sliders are only drawn from state — this is the single point where
    HTML default values are replaced by the remembered ones */
 for (const key in SLIDERS) {
   SLIDERS[key].el.value = state[key];
 }
-placeEl.value = state.place;
 applyTemperature(state.temperature); // slider = sea level, state = here
 
 buildClouds();

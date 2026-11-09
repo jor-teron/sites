@@ -51,16 +51,7 @@
       </div>
 
       <div class="place-row">
-        <label for="place">Place</label>
-        <select id="place">
-          <option id="place-custom" value="custom">📍 My place</option>
-          <option value="coast">Mumbai coast</option>
-          <option value="himalaya">Kedarnath Pass</option>
-          <option value="deadsea">Dead Sea shore</option>
-          <option value="alps">Zermatt valley</option>
-          <option value="leadville">Leadville, CO</option>
-        </select>
-        <button class="place-set" id="place-set" type="button" title="Set or change your place">Set place</button>
+        <button class="place-btn" id="place-btn" type="button" title="Set or change your place">📍 Set your place</button>
         <button class="live-btn" id="live-refresh" type="button" title="Pull live weather for your place">↻ Live</button>
       </div>
       <p class="live-status" id="live-status" aria-live="polite"></p>
@@ -83,7 +74,7 @@
           <label for="temperature">Temperature <small id="temperature-mark">sea level</small>
             <output id="temperature-out">20 °C</output>
           </label>
-          <input type="range" id="temperature" min="20" max="60" step="1" value="20">
+          <input type="range" id="temperature" min="0" max="50" step="1" value="20">
         </div>
 
         <div class="slider-row">

@@ -2,6 +2,9 @@
    the ground is drawn.
    WS2: registerCustomPlace() adds a user-set "custom" row; seaLevelFromLocal()
    is the inverse of temperatureAt() so live local air can drive the sea-level slider.
+   WS3: fixed presets removed. Only a built-in "default" (sea-level land) plus the
+   user "custom" place remain. Shore/sea drawing code is kept (unused until a
+   custom place has elevation < 0).
 
    Two ideas do all the work.
 
@@ -17,24 +20,30 @@
         - at the bottom: the ground you stand on, with the trees on its crest
       Every place gets its own horizon, so the ground is always the same
       readable size. Height is told by the view DOWN, not by the ground
-      creeping up the screen: a 3,550 m pass shows a deep valley, the Dead Sea
-      shows water almost at your feet. */
+      creeping up the screen. */
 
 /* [key, name, latitude, longitude, elevation (m), name of the water beside you]
-   latitude > 0 = north, < 0 = south */
+   latitude > 0 = north, < 0 = south
+   WS3: only the neutral default. Custom is registered at runtime. */
+const DEFAULT_PLACE_KEY = "default";
 const PLACES = [
-  ["coast",     "Mumbai coast",     19.0,   72.8,   10,  "Arabian Sea"],
-  ["himalaya",  "Kedarnath Pass",   30.7,   79.1, 3550,  "river far below"],
-  ["deadsea",   "Dead Sea shore",   31.5,   35.5, -430,  "Dead Sea"],
-  ["alps",      "Zermatt valley",   46.0,    7.7, 1620,  "river"],
-  ["leadville", "Leadville, CO",    39.2, -106.3, 3100, "creek"],
+  [DEFAULT_PLACE_KEY, "Set your place", 26.18, 91.75, 0, ""],
 ];
 
 const PLACE_BY_KEY = Object.fromEntries(PLACES.map((p) => [p[0], p]));
 
+const CUSTOM_PLACE_KEY = "custom";
+
+/* resolve an unknown / removed preset key → custom (if set) or default */
+function resolvePlaceKey(placeKey) {
+  if (placeKey && PLACE_BY_KEY[placeKey]) return placeKey;
+  if (PLACE_BY_KEY[CUSTOM_PLACE_KEY]) return CUSTOM_PLACE_KEY;
+  return DEFAULT_PLACE_KEY;
+}
+
 /* metres of the place (derived from the place — never typed by hand) */
 function elevationOf(placeKey) {
-  return (PLACE_BY_KEY[placeKey] || PLACES[0])[4];
+  return (PLACE_BY_KEY[placeKey] || PLACE_BY_KEY[DEFAULT_PLACE_KEY] || PLACES[0])[4];
 }
 
 /* ---- where the world changes character ---- */
@@ -54,7 +63,7 @@ const HEMISPHERE = 1;        // +1 = northern summer now, −1 = southern summer
 /* the temperature a sea-level air mass would have at this latitude.
    Shown to the reader as the "sea level 24 °C" hint, not applied on its own. */
 function baseTemperatureAt(placeKey) {
-  const lat = Math.abs((PLACE_BY_KEY[placeKey] || PLACES[0])[2]);
+  const lat = Math.abs((PLACE_BY_KEY[placeKey] || PLACE_BY_KEY[DEFAULT_PLACE_KEY] || PLACES[0])[2]);
   const shift = HEMISPHERE * Math.sin((lat * Math.PI) / 90) * (12 * SEASON_SWING);
   const effective = Math.max(0, lat - shift);
   return SEA_LEVEL_TEMP - effective * TEMP_FALLOFF;
@@ -115,7 +124,9 @@ function horizonLine(placeKey) {
 }
 
 /* the water surface: only where you are below sea level.
-   Between the shore and your feet, so you look DOWN at the water. */
+   Between the shore and your feet, so you look DOWN at the water.
+   WS3: unused for the default inland place; still used if a custom place
+   has elevation < 0. */
 function seaLine(placeKey) {
   return elevationOf(placeKey) < 0 ? SEA_SURFACE : 0;
 }
@@ -126,8 +137,7 @@ function isElevated(placeKey) {
 }
 
 /* where falling drops stop: the horizon the eye sees.
-   Rain lands on the ground in front of you, never on the far valley,
-   and at the Dead Sea it falls into the water on the way down. */
+   Rain lands on the ground in front of you, never on the far valley. */
 function fallTarget(placeKey) {
   return horizonLine(placeKey);
 }
@@ -149,12 +159,10 @@ function updateHorizon() {
   sceneEl.dataset.place = state.place;
 }
 
-/* ---- WS2: custom (user-set) place ----
+/* ---- WS2/WS3: custom (user-set) place ----
    One extra row, key "custom". Water name is "" so an inland town stays land
    (seaLine only draws water when elevation < 0). Elevation comes from the
    geocoder or from the forecast response. */
-
-const CUSTOM_PLACE_KEY = "custom";
 
 /* inverse of temperatureAt: local air + height → the sea-level slider value */
 function seaLevelFromLocal(localTemp, elevM) {

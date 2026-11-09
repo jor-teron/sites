@@ -1,6 +1,8 @@
 /* save.js — remember the sliders after a reload
    WS2: custom place lives in its own key (weather-sim:custom-place). Reset
    clears the weather snapshot but keeps the place — it is a setting, not history.
+   WS3: Temperature clamped to SEA_TEMP_MIN…SEA_TEMP_MAX (0…50); unknown place
+   keys are dropped so main.js can fall back via resolvePlaceKey().
 
    One object in localStorage, one line of code to read it back.
    We save exactly what the user can change:
@@ -70,9 +72,16 @@ function loadSave() {
   for (const key of SAVED_KEYS) {
     const v = data[key];
     if (key === "place") {
+      /* Unknown / removed preset keys are skipped; main resolves the fallback. */
       if (typeof v === "string" && PLACE_BY_KEY[v]) out.place = v;
     } else if (typeof v === "number" && isFinite(v)) {
-      out[key] = v;
+      if (key === "temperature") {
+        const lo = typeof SEA_TEMP_MIN === "number" ? SEA_TEMP_MIN : 0;
+        const hi = typeof SEA_TEMP_MAX === "number" ? SEA_TEMP_MAX : 50;
+        out[key] = Math.min(hi, Math.max(lo, v));
+      } else {
+        out[key] = v;
+      }
     }
   }
   if (typeof data.snow === "number" && isFinite(data.snow)) {

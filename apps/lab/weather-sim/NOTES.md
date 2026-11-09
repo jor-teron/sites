@@ -75,16 +75,19 @@ Small + faint + behind = far away. No 3D, no camera.
 ## 14. A place is a latitude, not a preset
 Two numbers could decide the base air: `SEA_LEVEL_TEMP - |lat| * TEMP_FALLOFF`
 (27 °C at the equator, 0.42 °C colder per degree). `baseTemperatureAt()` still
-computes it, but **v1.0 does not apply it for you**: picking a place keeps the air
+computes it, but it is **not applied for you**: setting a place keeps the air
 mass you set and only changes the height it has to climb. Otherwise the two
 lessons (latitude vs. altitude) cancel each other out on screen.
-Adding a new place is still **one row** in `PLACES`.
+WS3: the only built-in row is a neutral `default`; your town is registered as
+`"custom"` via `registerCustomPlace()`.
 
 ## 15. Height bends the air (the lapse rate)
 `temperatureAt()`: −6.5 °C per 1,000 m up, **+11 °C per 1,000 m down** into a basin.
-That second sign is why the Dead Sea (already hot at 31°N) reads *warmer* than the
-sea beside it, and why a 3,550 m pass is ~23 °C colder than the coast.
-Same air mass, different height — that is the whole demonstration.
+That second sign is why a below-sea-level basin reads *warmer* than the coast beside
+it, and why a 3,550 m pass is ~23 °C colder than sea level. Same air mass, different
+height — that is the whole demonstration.
+(WS3 removed the old Dead Sea / Kedarnath presets; the maths still applies to any
+custom place you set with a high or negative elevation.)
 
 ## 16. The ground has its own line — the sea never sets it
 There is **one** fraction that positions the ground: `--horizon`
@@ -139,9 +142,9 @@ CSS variables into `.scene`:
 JS writes numbers, CSS maps numbers to colour — same rule as the fog.
 
 ## 21. Tree line and snow line are the same idea
-`TREE_LINE_M = 2600`, `SNOW_LINE_M = 1200`. Kedarnath (3,550 m) has no trees;
-Zermatt (1,620 m) does and can hold snow on top. Nobody wrote "if Kedarnath" —
-the two constants did it.
+`TREE_LINE_M = 2600`, `SNOW_LINE_M = 1200`. A custom place at 3,550 m has no trees;
+one at 1,620 m does and can hold snow on top. Nobody wrote "if mountain X" —
+the two constants did it. (WS3 removed the Kedarnath / Zermatt presets.)
 
 ## 22. WS1 — light pass (taps, battery, calm motion)
 Dropped the leftover stub files (`css/_link-check.css`, `agent/_trees-layout.patch.txt`).
@@ -151,10 +154,10 @@ The rAF loop pauses while the tab is hidden (no big dt on resume), and
 
 ## 23. WS2 — your place + live weather
 Weather Sim is **standalone**: it never reads My Day's saved place. Your town
-lives in `localStorage` under `weather-sim:custom-place` (`{name,lat,lon,elev,tz}`),
-and the fixed `PLACES` stay as extras. `registerCustomPlace()` adds a `"custom"`
-row so `elevationOf` / look / report all keep working. Water name is `""`, so an
-inland town is just land (`seaLine` only draws water when elevation < 0).
+lives in `localStorage` under `weather-sim:custom-place` (`{name,lat,lon,elev,tz}`).
+`registerCustomPlace()` adds a `"custom"` row so `elevationOf` / look / report
+all keep working. Water name is `""`, so an inland town is just land
+(`seaLine` only draws water when elevation < 0).
 
 **Live → sliders.** Open-Meteo gives *local* air. The Temperature slider is
 *sea-level* air, so we invert the lapse:
@@ -164,11 +167,26 @@ inland town is just land (`seaLine` only draws water when elevation < 0).
 // seaLevelFromLocal: sea = local + (km × 6.5)
 ```
 
-Then clamp to the slider's real range (20…60). Humidity / cloud / wind (km/h)
-map straight across; time of day is the place's local hour from `current.time`.
-`liveToSliders()` is a pure function so a small Node test can check the maths
-without a network.
+Then clamp to the slider's real range (WS3: 0…50; was 20…60 in WS2). Humidity /
+cloud / wind (km/h) map straight across; time of day is the place's local hour
+from `current.time`. `liveToSliders()` is a pure function so a small Node test
+can check the maths without a network.
 
-One pull on open (if custom is selected and online), and again when you tap
+One pull on open (if a custom place is set and online), and again when you tap
 **↻ Live**. Dragging a slider afterwards is free simulation — no auto-refetch.
 Reset clears the weather snapshot but **keeps** your place (it is a setting).
+
+## 24. WS3 — smaller thumbs, 0…50 °C, presets gone
+Slider thumbs are ~24px again (WS1 had made them 48px); the input stays ~44px
+tall so the finger still has room, and the track is a bit slimmer.
+Temperature sea-level range is **0…50 °C** (was 20…60). Old saved values outside
+that band are clamped on load. Semantics unchanged: the slider is still
+sea-level air; local air is derived via `temperatureAt`.
+
+All fixed presets (Mumbai / Kedarnath / Dead Sea / Zermatt / Leadville) are
+gone. `PLACES` holds only a neutral `default` (lat ~26, elev 0, inland) plus
+the runtime `"custom"` row. The place `<select>` is replaced by one big
+**📍** button that opens the Set place panel. Shore / sea drawing code stays
+in place for a custom place with elevation < 0, but nothing ships with water
+now. Unknown saved place keys fall back through `resolvePlaceKey()` → custom
+(if set) or `default`.

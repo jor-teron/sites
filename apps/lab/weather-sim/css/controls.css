@@ -1,6 +1,7 @@
 /* controls.css — place picker, sliders, reset button, report card
    WS1: 48px taps on Reset / place / slider thumbs; jelly press on Reset
-   WS2: Set place / Live buttons, status line, place-search panel */
+   WS2: Set place / Live buttons, status line, place-search panel
+   WS3: smaller ~24px slider thumbs (tall hit area kept); place button replaces select */
 
 /* ===== PLACE PICKER ===== */
 .place-row {
@@ -11,43 +12,43 @@
   margin-bottom: 16px;
 }
 
-.place-row label {
-  font-size: 13px;
-  color: #aeb6c8;
-  flex: 0 0 auto;
-}
-
-.place-row select {
+/* WS3: one big place button (replaces the preset <select>) */
+.place-btn {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 48px; /* WS1: big tap target */
+  min-height: 48px;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #e8ecf5;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 10px 14px;
   cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  /* the little chevron, drawn with a gradient so there is no image file */
-  background-image: linear-gradient(45deg, transparent 50%, #8e98ac 50%),
-                    linear-gradient(135deg, #8e98ac 50%, transparent 50%);
-  background-position: calc(100% - 16px) 52%, calc(100% - 11px) 52%;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-  padding-right: 28px;
+  text-align: left;
+  transition: background 0.15s ease;
 }
 
-.place-row select:focus-visible {
+.place-btn.needs-place {
+  color: #8fa8ff;
+  border-color: rgba(143, 168, 255, 0.45);
+}
+
+.place-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.place-btn:active {
+  animation: jelly-press 0.35s ease;
+}
+
+.place-btn:focus-visible {
   outline: 2px solid #8fa8ff;
   outline-offset: 2px;
 }
 
-/* WS2: Set place + Live — big taps, jelly press */
-.place-set,
+/* WS2/WS3: Live + panel buttons — big taps, jelly press */
 .live-btn,
 .place-gps,
 .place-search-btn,
@@ -67,7 +68,6 @@
   transition: background 0.15s ease;
 }
 
-.place-set:hover,
 .live-btn:hover,
 .place-gps:hover,
 .place-search-btn:hover,
@@ -76,7 +76,6 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
-.place-set:active,
 .live-btn:active,
 .place-gps:active,
 .place-search-btn:active,
@@ -199,7 +198,7 @@ input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 48px; /* WS1: tall hit area; track stays thin via ::*-track */
+  height: 44px; /* WS3: tall hit area; thumb itself is ~24px */
   border-radius: 3px;
   background: transparent;
   outline: none;
@@ -207,24 +206,24 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
+  height: 4px; /* WS3: slimmer track */
+  border-radius: 2px;
   background: #2b3243;
 }
 
 input[type="range"]::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   background: #2b3243;
 }
 
-/* WS1: 48px thumbs for fat fingers */
+/* WS3: ~24px thumbs (was 48px in WS1); hit area stays the 44px input height */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 48px;
-  height: 48px;
-  margin-top: -21px; /* centre 48px thumb on 6px track */
+  width: 24px;
+  height: 24px;
+  margin-top: -10px; /* centre 24px thumb on 4px track */
   border-radius: 50%;
   background: linear-gradient(135deg, #7fb3ff, #5b8cff);
   border: 2px solid #161a24;
@@ -233,8 +232,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 48px;
-  height: 48px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: linear-gradient(135deg, #7fb3ff, #5b8cff);
   border: 2px solid #161a24;
@@ -339,22 +338,15 @@ input[type="range"]:focus-visible {
     margin-bottom: 10px;
   }
 
-  .place-row label {
-    font-size: 11px;
-  }
-
   .place-row {
     flex-wrap: wrap;
   }
 
-  .place-row select {
+  .place-btn {
     flex: 1 1 100%;
-    font-size: 12px;
-    padding: 10px 28px 10px 10px;
-    min-height: 48px;
+    font-size: 13px;
   }
 
-  .place-set,
   .live-btn {
     flex: 1 1 auto;
     font-size: 12px;
@@ -397,7 +389,7 @@ input[type="range"]:focus-visible {
 /* WS1: calm motion when the phone asks for less */
 @media (prefers-reduced-motion: reduce) {
   .reset,
-  .place-set,
+  .place-btn,
   .live-btn,
   .place-gps,
   .place-search-btn,
@@ -407,7 +399,7 @@ input[type="range"]:focus-visible {
   }
 
   .reset:active,
-  .place-set:active,
+  .place-btn:active,
   .live-btn:active,
   .place-gps:active,
   .place-search-btn:active,
