@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cooking Timer</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="ct_base.css">
+    <link rel="stylesheet" href="ct_cards.css">
 </head>
 <body>
     <div class="app-container">
@@ -14,7 +15,6 @@
         </header>
 
         <main class="app-main">
-            <!-- Presets Section -->
             <section class="card">
                 <h2>Quick Presets</h2>
                 <div class="presets-grid" id="presets-grid">
@@ -22,7 +22,6 @@
                 </div>
             </section>
 
-            <!-- Custom Timer Form -->
             <section class="card">
                 <h2>Custom Timer</h2>
                 <form id="custom-timer-form" class="timer-form">
@@ -45,16 +44,19 @@
                 </form>
             </section>
 
-            <!-- Active Timers Section -->
             <section class="card">
                 <h2>Active Timers</h2>
                 <div id="active-timers-list" class="active-timers-list">
-                    <p class="empty-state" id="empty-state">No active timers. Start one above or pick a preset!</p>
+                    <p class="empty-state">No active timers. Start one above or pick a preset!</p>
                 </div>
             </section>
         </main>
     </div>
 
-    <script src="script.js"></script>
+    <script src="ct_presets.js"></script>
+    <script src="ct_timers.js"></script>
+    <script src="ct_sound.js"></script>
+    <script src="ct_ui.js"></script>
+    <script src="ct_main.js"></script>
 </body>
 </html>

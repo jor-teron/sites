@@ -1,0 +1,156 @@
+/* Cooking Timer — ct_cards.css: presets, timer cards, big buttons, jelly press, finished pulse. CT1 */
+.presets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.preset-btn {
+  background-color: #0f172a;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.85rem;
+  color: var(--text-color);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 48px;
+}
+
+.preset-btn:hover {
+  border-color: var(--primary);
+  background-color: #263548;
+}
+
+.preset-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.preset-time {
+  color: var(--primary);
+  font-size: 0.85rem;
+}
+
+.active-timers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.empty-state {
+  color: var(--text-light);
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+
+.timer-card {
+  background-color: #0f172a;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
+.timer-card.finished {
+  border-color: var(--danger);
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% { border-color: var(--danger); }
+  50% { border-color: transparent; }
+  100% { border-color: var(--danger); }
+}
+
+.timer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.timer-card-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.timer-card-time {
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+
+.timer-card.finished .timer-card-time {
+  color: var(--danger);
+}
+
+.timer-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  min-height: 48px;
+  min-width: 88px;
+}
+
+.btn-action:hover {
+  background-color: var(--card-border);
+}
+
+.btn-action.btn-danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.btn-action.btn-danger:hover {
+  background-color: rgba(239, 68, 68, 0.25);
+}
+
+@keyframes jelly-press {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.92, 0.88); }
+  65% { transform: scale(1.05, 1.06); }
+  100% { transform: scale(1); }
+}
+
+.btn:active,
+.preset-btn:active,
+.btn-action:active {
+  animation: jelly-press 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-card.finished {
+    animation: none;
+  }
+  .btn:active,
+  .preset-btn:active,
+  .btn-action:active {
+    animation: none;
+    transform: scale(0.97);
+  }
+}
