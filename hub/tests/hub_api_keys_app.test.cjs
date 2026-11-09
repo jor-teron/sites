@@ -348,10 +348,7 @@ for (const [name, label, endpoint] of fixed) {
     await input(field, 'synthetic-fixed-key'); await click(row.querySelector('.key-save'));
     const [record] = b.ctx.HubProviders.list(), info = b.ctx.HubProviders.info(record.id);
     assert.match(record.id, /^svc_/); assert.equal(info.label, label); assert.equal(info.type, 'openai'); assert.equal(info.endpoint, endpoint);
-    // Exercise the unchanged Agent matcher against actual newly saved records, not a parallel mock.
-    b.ctx.HR = {}; b.load('apps/lab/agent/app/models/presets.js'); b.load('apps/lab/agent/app/core/hubkeys.js');
-    if (name !== 'nvidia') assert.equal(b.ctx.HR.presets.get(name).base, endpoint);
-    assert.equal(b.ctx.HR.hubKeys.service(name === 'nvidia' ? 'custom' : name, endpoint).id, record.id);
+    // Agent (apps/lab/agent) keeps its own provider store since AG37, so no Agent cross-check here.
     assert.equal((await b.ctx.HubProviders.secret(record.id)).key, 'synthetic-fixed-key');
     assert.equal(field.value, ''); assert.equal(field.type, 'password');
     assert.ok(!uiText(b.pane).includes('synthetic-fixed-key'));
