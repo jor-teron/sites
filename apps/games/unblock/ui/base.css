@@ -1,6 +1,36 @@
-/* Unblock UI — base.css (UNB-0) */
-/* --- CSS Reset & Base Variables --- */
+/* Unblock UI — base.css (UNB-2). Shared theme via html.dark (light = :root). */
 :root {
+    --bg-primary: #e8edf5;
+    --bg-secondary: #ffffff;
+    --bg-card: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent: #d97706;
+    --accent-hover: #b45309;
+    --accent-glow: rgba(217, 119, 6, 0.25);
+
+    --player-color: #ef4444;
+    --player-glow: rgba(239, 68, 68, 0.35);
+
+    --block-h1: #3b82f6;
+    --block-h2: #10b981;
+    --block-v1: #8b5cf6;
+    --block-v2: #ec4899;
+    --block-v3: #06b6d4;
+
+    --board-bg: #cbd5e1;
+    --board-border: #94a3b8;
+    --exit-color: #d97706;
+
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --app-shadow: 0 0 40px rgba(15, 23, 42, 0.12);
+}
+
+html.dark {
     --bg-primary: #12141c;
     --bg-secondary: #1a1e29;
     --bg-card: #222838;
@@ -9,25 +39,14 @@
     --accent: #f59e0b;
     --accent-hover: #d97706;
     --accent-glow: rgba(245, 158, 11, 0.3);
-    
+
     --player-color: #ef4444;
     --player-glow: rgba(239, 68, 68, 0.4);
-    
-    --block-h1: #3b82f6;
-    --block-h2: #10b981;
-    --block-v1: #8b5cf6;
-    --block-v2: #ec4899;
-    --block-v3: #06b6d4;
 
     --board-bg: #0d0f14;
     --board-border: #2a324a;
     --exit-color: #f59e0b;
-
-    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --radius-sm: 6px;
-    --radius-md: 12px;
-    --radius-lg: 18px;
-    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --app-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -39,7 +58,7 @@
     -webkit-touch-callout: none;
 }
 
-body {
+html, body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: var(--font-sans);
@@ -58,5 +77,5 @@ body {
     width: 100%;
     position: relative;
     background-color: var(--bg-secondary);
-    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+    box-shadow: var(--app-shadow);
 }

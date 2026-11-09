@@ -1,6 +1,6 @@
 /**
- * Unblock — app wiring (UNB-1).
- * Async boot: load levels.json, then bind HUD / board / picker / hint.
+ * Unblock — app wiring (UNB-2).
+ * Async boot: load levels.json, apply shared theme, mount gear, bind UI.
  */
 import { loadLevels } from '../core/levels.js';
 import { Game } from '../core/game.js';
@@ -10,10 +10,17 @@ import { updateHud, hideNextButton } from './hud.js';
 import { showVictory, hideVictory, bindVictoryControls } from './modals.js';
 import { bindLevelPicker } from './levelPicker.js';
 import { showHint } from './hint.js';
+import { UnblockSettings } from './settings.js';
 
 class UnblockApp {
     constructor() {
         this.game = new Game();
+        UnblockSettings.applyTheme();
+        UnblockSettings.onChange((ch) => {
+            if ('theme' in ch) UnblockSettings.applyTheme();
+        });
+        const gear = document.getElementById('gearSlot');
+        if (gear) UnblockSettings.mountGear(gear);
         this.bindControls();
         this.render();
     }
@@ -32,6 +39,7 @@ class UnblockApp {
 
     handleVictory() {
         const stars = this.game.recordVictory();
+        UnblockSettings.vibrate([40, 40, 60]);
         showVictory(this.game, stars);
     }
 
@@ -66,6 +74,7 @@ class UnblockApp {
         };
 
         document.getElementById('btn-hint').onclick = () => {
+            // Hint always works; showHints only gates the auto tip (we have a real solver hint)
             showHint(this.game);
         };
 
@@ -88,6 +97,8 @@ class UnblockApp {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    // Theme before paint when possible (settings script already loaded)
+    try { UnblockSettings.applyTheme(); } catch (_) { /* ok */ }
     const loading = document.getElementById('loading');
     try {
         await loadLevels();

@@ -85,3 +85,22 @@
 .app-header .stat-value {
     font-size: 0.9rem;
 }
+
+/* UNB-2 gear slot in the header */
+.gear-slot {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+.gear-slot a {
+    position: static !important;
+    display: inline-flex !important;
+    visibility: visible !important;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 1.1rem;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--board-border);
+    background: var(--bg-card);
+}
