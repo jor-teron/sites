@@ -5,7 +5,7 @@
  * list first; tapping a section opens it with ‹ Back. The open section is in the hash
  * (#wallpaper, #about …) so links like settings/#about work. H28: '#<section>/<sub>' (e.g. #keys/tavily)
  * opens the section and passes sub to render(el, sub) (the row to scroll to).
- * Helpers for sections: Settings.ui.choice(), .switch(), .title(), .note().
+ * Helpers for sections: Settings.ui.choice(), .switch() (H142: + .set(v)), .title(), .note().
  * H29.2b: ALIASES rewrites old deep links of cards that moved section (#about/device → #devices/device,
  *   #about/profile → #devices/profile, #about/sync → #devices/sync); the hash is replaced, so Back skips the old one.
  */
@@ -105,7 +105,7 @@ window.Settings = (function () {
       g.repaint = paint;
       return g;
     },
-    /** On / off switch row. */
+    /** On / off switch row. H142: b.set(v) repaints it without onToggle (a refused change snaps back). */
     switch(label, hint, on, onToggle) {
       const b = el('button', 'switch');
       b.type = 'button';
@@ -117,6 +117,7 @@ window.Settings = (function () {
       const paint = (v) => { b.classList.toggle('on', v); b.setAttribute('aria-checked', v ? 'true' : 'false'); };
       paint(on);
       b.addEventListener('click', () => { on = !on; paint(on); onToggle(on); });
+      b.set = (v) => { on = !!v; paint(on); };   // H142
       return b;
     }
   };

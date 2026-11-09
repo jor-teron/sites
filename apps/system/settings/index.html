@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Hub bar (H52), Windows, Sizes, Look, API Keys (H28), Devices (H29.2b), How-to, About (H56: How-to and Devices swapped; was ... How-to, Devices, About).
+  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Hub bar (H52), Do Not Disturb (H82), Screen lock (H142), Windows, Sizes, Look, API Keys (H28), Devices (H29.2b), How-to, About (H56: How-to and Devices swapped; was ... How-to, Devices, About).
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
   (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
@@ -55,6 +55,8 @@
   <!-- <script src="sec_hubbar.js"></script> -->
   <script src="sec_hubbar.js"></script><!-- H63: + Eye comfort 🌙 --><!-- H52c: Update off = no dot --><!-- H52b: same switches in Phone mode, Desktop only tags --><!-- H52: Hub bar (taskbar items on / off), right after Desktop; H53: Devices note --><!-- H52: Hub bar (taskbar items on / off), right after Desktop -->
   <script src="sec_dnd.js"></script><!-- H82: Do Not Disturb, after Hub bar -->
+  <script src="../../../hub/core/hub_lock_core.js"></script><!-- H142: PIN record + hash when Settings runs on its own -->
+  <script src="sec_lock.js"></script><!-- H142: Screen lock (PIN, Activate, Lock now), after Do Not Disturb -->
   <script src="sec_windows.js"></script>
   <script src="sec_sizes.js"></script>
   <!-- <script src="sec_look.js"></script> -->
