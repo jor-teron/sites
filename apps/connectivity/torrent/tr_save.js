@@ -1,4 +1,4 @@
-/* Torrent — tr_save.js: Choose folder (File System Access), IndexedDB handle, stream writes, fallback download. TR2 */
+/* Torrent — tr_save.js: Choose folder (File System Access), IndexedDB handle, stream writes, fallback download. TR2+TR4 */
 (function (root) {
   'use strict';
 
@@ -173,9 +173,14 @@
     return wtFile.name || 'download';
   }
 
-  /** Save every file in the torrent: folder stream when ready, else browser download. */
-  async function saveTorrentFiles(torrent, onFile) {
-    var files = torrent.files || [];
+  /** Save files in the torrent (optional selectedPaths filter): folder stream or browser download. */
+  async function saveTorrentFiles(torrent, onFile, selectedPaths) {
+    var all = torrent.files || [];
+    var files = all;
+    if (Array.isArray(selectedPaths)) {
+      files = all.filter(function (f) { return selectedPaths.indexOf(f.path) !== -1; });
+    }
+    if (!files.length) files = all;
     var results = [];
     for (var i = 0; i < files.length; i++) {
       var f = files[i];

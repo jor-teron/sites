@@ -1,34 +1,48 @@
-# Torrent (TR1+TR2)
+# Torrent (TR3–TR5)
 
-Browser torrent client for the Hub Connectivity section. Uses **WebTorrent**
-(vendored, no CDN) so everything stays on-device.
+Browser torrent client for Hub Connectivity. Uses **WebTorrent 2.8.5**
+(vendored, no CDN) so traffic stays peer-to-peer in the tab.
 
-## What it does
+## Features
 
-- Paste a **magnet** link or a raw **info-hash**, or open / drop a **.torrent** file
-- One big download card: name, size, progress, ↓/↑ speed, peers, ETA, status
-- After ~30s with 0 peers, shows a clear hint (browsers only reach WebTorrent / WebRTC peers)
-- **Choose folder** (Chrome / Edge desktop): writes finished files into that folder,
-  keeps subfolders, streams via `createWritable` (no giant in-memory Blob), never
-  overwrites — adds ` (1)`, ` (2)`, …
-- Other browsers: finished files go to the normal Downloads folder
-- At most **one** active torrent; adding another asks to replace
-- Client is destroyed on `pagehide`
+### TR1+TR2 (base)
+- Paste a **magnet** / info-hash, or open / drop a **.torrent**
+- Progress card: size, speeds, peers, ETA
+- **Choose folder** (Chrome / Edge): stream finished files to disk with
+  collision-safe names; other browsers use normal Downloads
+
+### TR3 — multi-torrent
+- Several torrents in a list
+- At most **2 active downloads**; extras stay **queued**
+- Pause / Resume / Remove per card (remove never deletes folder files)
+- List remembered in `localStorage` and restored **paused** after reload
+
+### TR4 — files + player
+- Per-torrent file checkboxes (`file.select` / `file.deselect`)
+- In-page **video/audio** player: prefers WebTorrent `streamTo` via a
+  **service worker scoped to this app folder**
+  (`vendor/webtorrent/sw.min.js`); falls back to a blob URL
+- “May not play” note for MKV / HEVC and similar
+
+### TR5 — seeding & limits
+- **Seed when done** toggle per torrent
+- Global ↑ / ↓ speed limits (KB/s) via `throttleUpload` / `throttleDownload`
+- Ratio / uploaded on each card; clearer 30s no-peer hint
 
 ## Files
 
 | File | Role |
 |------|------|
-| `index.html` | App page |
-| `tr_helpers.js` | Magnet / size / ETA / unique names |
-| `tr_save.js` | Folder picker, IndexedDB handle, saves |
-| `tr_client.js` | WebTorrent wrapper (one torrent) |
-| `tr_ui.js` | Card + status DOM |
-| `tr_main.js` | ESM entry (imports vendored WebTorrent) |
-| `vendor/webtorrent/` | `webtorrent.min.js` + LICENSE + VERSION |
+| `tr_helpers.js` | Pure helpers (magnet, queue, throttle, media) |
+| `tr_store.js` | localStorage persist |
+| `tr_save.js` | Folder picker + streamed writes |
+| `tr_client.js` | Multi-torrent WebTorrent wrapper |
+| `tr_player.js` | SW registration + playback |
+| `tr_ui.js` / `tr_main.js` | UI + wiring |
+| `vendor/webtorrent/` | `webtorrent.min.js`, `sw.min.js`, LICENSE |
 
 ## Limits
 
-- Not a full BitTorrent client: no TCP/UDP peers in the browser
-- Folder save needs the File System Access API (hidden on unsupported browsers)
-- Seeding only lasts while the tab is open (no controls yet — see TR5)
+- WebRTC / WebTorrent peers only — many public magnets stay at 0 peers
+- Folder save needs File System Access; player SW needs a secure context
+- Seeding lasts only while the tab is open

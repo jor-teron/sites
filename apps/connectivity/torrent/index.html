@@ -11,7 +11,8 @@
   <div class="app" id="app">
     <header class="top">
       <h1>Torrent</h1>
-      <span class="tag">TR1+TR2 · WebTorrent</span>
+      <span class="tag">TR3–TR5 · WebTorrent</span>
+      <span class="tag" id="client-ratio">Client ratio 0.00</span>
     </header>
 
     <section class="panel" aria-label="Add torrent">
@@ -20,7 +21,7 @@
         <button type="button" class="btn btn-primary" id="btn-add">Add</button>
       </div>
       <div class="row">
-        <label class="file-btn" id="file-label" title="Open a .torrent file">
+        <label class="file-btn" title="Open a .torrent file">
           Open .torrent
           <input type="file" id="torrent-file" accept=".torrent,application/x-bittorrent" hidden>
         </label>
@@ -33,36 +34,39 @@
       <p class="fallback" id="folder-fallback" hidden></p>
     </section>
 
+    <section class="panel settings" aria-label="Speed limits">
+      <div class="settings-title">Speed limits (KB/s, empty = unlimited)</div>
+      <div class="row">
+        <label class="field">↑ Upload
+          <input type="number" id="limit-up" min="0" step="1" placeholder="unlimited" inputmode="numeric">
+        </label>
+        <label class="field">↓ Download
+          <input type="number" id="limit-down" min="0" step="1" placeholder="unlimited" inputmode="numeric">
+        </label>
+        <label class="seed-toggle inline">
+          <input type="checkbox" id="seed-default" checked>
+          Seed new torrents when done
+        </label>
+        <button type="button" class="btn" id="btn-save-settings">Save limits</button>
+      </div>
+    </section>
+
     <div class="empty" id="empty">
       <strong>Paste a magnet or drop a .torrent</strong>
-      <p>Browsers only reach WebTorrent / WebRTC peers. Many normal torrents will show 0 peers.</p>
+      <p>Up to 2 downloads run at once; the rest wait in a queue. Browsers only reach WebTorrent / WebRTC peers.</p>
     </div>
 
-    <article class="card" id="card" hidden aria-live="polite">
+    <div id="torrent-list" class="torrent-list" aria-live="polite"></div>
+
+    <section class="panel player-panel" id="player-panel" hidden>
       <div class="card-head">
-        <div class="card-name" id="card-name">Torrent</div>
-        <div class="card-status" id="card-status">Looking</div>
+        <div class="card-name" id="player-title">Player</div>
+        <button type="button" class="btn btn-tiny" id="btn-stop-play">Stop</button>
       </div>
-      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Download progress">
-        <span id="progress-bar"></span>
-      </div>
-      <div class="card-meta">
-        <span id="card-pct" class="mute">0%</span>
-        <span id="card-size">0 B / 0 B</span>
-        <span id="card-down">↓ 0 B/s</span>
-        <span id="card-up">↑ 0 B/s</span>
-        <span id="card-peers">0 peers</span>
-        <span id="card-eta">ETA —</span>
-      </div>
-      <div class="card-actions">
-        <button type="button" class="btn btn-danger" id="btn-remove">Remove</button>
-      </div>
-    </article>
-
-    <div class="peers-hint" id="peers-hint" hidden>
-      <strong>No WebTorrent peers found</strong>
-      Browsers can only talk to WebTorrent / WebRTC peers — not the usual qBittorrent / uTorrent crowd. Try a torrent that is also seeded by WebTorrent, or one with web seeds.
-    </div>
+      <p class="player-note" id="player-note"></p>
+      <video id="media" class="media" controls playsinline></video>
+      <p class="muted">MKV / HEVC and some other codecs may not play in the browser.</p>
+    </section>
 
     <div class="status" id="status" role="status" aria-live="polite"></div>
   </div>
@@ -70,8 +74,10 @@
   <div class="drop-overlay" id="drop-overlay" hidden aria-hidden="true">Drop .torrent to add</div>
 
   <script src="tr_helpers.js"></script>
+  <script src="tr_store.js"></script>
   <script src="tr_save.js"></script>
   <script src="tr_client.js"></script>
+  <script src="tr_player.js"></script>
   <script src="tr_ui.js"></script>
   <script type="module" src="tr_main.js"></script>
 </body>

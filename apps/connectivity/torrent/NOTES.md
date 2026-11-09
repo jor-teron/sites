@@ -1,25 +1,33 @@
 # Torrent — notes
 
-## TR1+TR2 (this release)
+## TR1+TR2
 
-- WebTorrent **2.8.5** browser ESM bundle in `vendor/webtorrent/webtorrent.min.js` (~213 KB).
-  Loaded from `tr_main.js` as `import WebTorrent from './vendor/webtorrent/webtorrent.min.js'`.
-- Classic scripts (`tr_helpers`, `tr_save`, `tr_client`, `tr_ui`) attach to `window`; the
-  module entry wires them after WebTorrent loads.
-- Default browser chunk store uses OPFS / memory inside WebTorrent. We still **copy**
-  finished files out with an async iterator → `FileSystemWritableFileStream.write`, so a
-  chosen folder gets real files with collision-safe names.
-- `noPeers` / 30s timer: many public magnets will stick at 0 peers. That is expected.
+- WebTorrent **2.8.5** ESM bundle in `vendor/webtorrent/webtorrent.min.js` (~213 KB).
+- `tr_main.js` is the only module script; it imports WebTorrent and uses `window.TR*`.
+- Finished files are copied out with an async iterator → `createWritable` (or `<a download>`).
 
-## Planned
+## TR3 — multi-torrent + queue
 
-### TR3 — multi-torrent
-Several torrents at once, pause / resume / remove, cap at 2 active, remember the list
-after reload.
+- `TRHelpers.reconcileQueue(entries, 2)` decides `active` / `queued` / `paused` / `done`.
+- Active means “allowed to download now”; queued torrents stay `torrent.pause()`’d.
+- When one finishes or is paused, the next queued item is resumed.
+- Persistence: `TRStore` → `localStorage` key `torrent.tr.state.v1`. On restore every
+  torrent is re-added **paused** until the user hits Resume (avoids surprise bandwidth).
 
-### TR4 — streaming + file pick
-Play video / audio while downloading; choose which files inside a torrent to fetch.
+## TR4 — file pick + streaming
 
-### TR5 — seeding controls
-Upload limit, stop seeding when done, clearer “no WebTorrent peers” guidance, maybe a
-note about a desktop helper for full BitTorrent compatibility.
+- Selection uses WebTorrent `file.select()` / `file.deselect()`.
+- Playback prefers `client.createServer({ controller: serviceWorkerRegistration })`
+  then `file.streamTo(video)`.
+- Service worker: `vendor/webtorrent/sw.min.js` registered with **`scope: './'`** so it
+  only controls `apps/connectivity/torrent/` — never the Hub root `sw.js`.
+- Fallback: `file.blob()` → object URL (uses more memory).
+- MKV / HEVC / AVI etc. get a “may not play” note; browsers often lack demuxers.
+
+## TR5 — seed + throttle
+
+- Per-torrent “Seed when done”: after `done`, `pause()` if seed is off, else leave running.
+- Settings panel stores KB/s; `parseThrottleKBs` maps empty/unlimited → `-1`, else `KB * 1024`
+  into `client.throttleUpload` / `throttleDownload`.
+- No-peers hint after ~30s explains WebRTC-only reachability and suggests WebTorrent-seeded
+  magnets or web seeds.

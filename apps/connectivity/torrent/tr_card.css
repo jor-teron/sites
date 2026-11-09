@@ -109,3 +109,66 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* TR3–TR5: file list + seed row inside cards */
+.files {
+  border-top: 1px solid var(--surface-2);
+  padding-top: 8px;
+}
+
+.files summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  color: var(--mute);
+  list-style: none;
+}
+
+.files summary::-webkit-details-marker { display: none; }
+
+.file-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.file-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(15, 23, 42, 0.45);
+  border-radius: 10px;
+}
+
+.file-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1 1 160px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.file-check input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.codec-note {
+  color: var(--warn);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.card-actions {
+  align-items: center;
+}
