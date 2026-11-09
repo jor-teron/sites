@@ -4,40 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Viewer</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pv_base.css">
+  <link rel="stylesheet" href="pv_view.css">
 </head>
 <body>
-  <header class="toolbar">
-    <h1>PDF</h1>
+  <div class="app">
+    <header class="toolbar">
+      <h1>PDF</h1>
+      <div class="toolbar-meta" id="toolbar-meta"></div>
 
-    <label class="file-btn" title="Open a PDF file">
-      Open
-      <input type="file" id="file-input" accept="application/pdf" hidden>
-    </label>
+      <label class="file-btn" id="open-label" title="Open a PDF file">
+        Open
+        <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+      </label>
 
-    <div class="controls" hidden id="controls">
-      <button id="prev-btn" title="Previous page">&#8592;</button>
-      <span class="page-info">
-        <input type="number" id="page-input" min="1" value="1" aria-label="Page number">
-        / <span id="page-count">0</span>
-      </span>
-      <button id="next-btn" title="Next page">&#8594;</button>
+      <div class="controls" id="controls" hidden>
+        <button type="button" class="btn" id="prev-btn" title="Previous page">Prev</button>
+        <span class="page-info">
+          <input type="number" id="page-input" min="1" value="1" inputmode="numeric" aria-label="Page number">
+          / <span id="page-count">0</span>
+        </span>
+        <button type="button" class="btn" id="next-btn" title="Next page">Next</button>
 
-      <button id="zoom-out-btn" title="Zoom out">&#8722;</button>
-      <span id="zoom-label">100%</span>
-      <button id="zoom-in-btn" title="Zoom in">&#43;</button>
+        <button type="button" class="btn" id="zoom-out-btn" title="Zoom out">Zoom −</button>
+        <span id="zoom-label">Fit</span>
+        <button type="button" class="btn" id="zoom-in-btn" title="Zoom in">Zoom +</button>
+        <button type="button" class="btn" id="fit-btn" title="Fit width">Fit</button>
 
-      <button id="print-btn" title="Print">&#128438;</button>
-      <a class="file-btn" id="native-link" href="#" target="_blank" rel="noopener" hidden
-         title="Open the PDF in the browser's native viewer">Native</a>
+        <button type="button" class="btn" id="print-btn" title="Print all pages">Print</button>
+      </div>
+    </header>
+
+    <div class="viewer-wrap">
+      <main class="viewer" id="viewer">
+        <div class="empty" id="empty">
+          <strong>Drop a PDF here or tap Open</strong>
+          <p>Your file stays on this device. Nothing is uploaded.</p>
+        </div>
+        <div class="pages" id="pages" hidden></div>
+      </main>
+      <div class="drop-overlay" id="drop-overlay" aria-hidden="true">Drop PDF to open</div>
     </div>
-  </header>
 
-  <main id="viewer" class="viewer">
-    <p class="placeholder" id="placeholder">Open a PDF file to view it here.</p>
-  </main>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="script.js"></script>
+  <div id="print-root" aria-hidden="true"></div>
+
+  <script src="vendor/pdfjs/pdf.min.js"></script>
+  <script src="pv_helpers.js"></script>
+  <script src="pv_load.js"></script>
+  <script src="pv_render.js"></script>
+  <script src="pv_ui.js"></script>
+  <script src="pv_print.js"></script>
+  <script src="pv_main.js"></script>
 </body>
 </html>

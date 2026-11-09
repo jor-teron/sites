@@ -1,0 +1,128 @@
+/* PDF Viewer — pv_view.css: scroll viewer, page slots, empty + drop overlay. PV1 */
+.viewer-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #0b1220;
+}
+
+.viewer {
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .viewer {
+    scroll-behavior: auto;
+  }
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 60vh;
+  color: var(--mute);
+  text-align: center;
+  padding: 24px;
+}
+
+.empty strong {
+  color: var(--text);
+  font-size: 1.15rem;
+}
+
+.empty p {
+  max-width: 28rem;
+  line-height: 1.45;
+}
+
+.pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.page-slot {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
+  overflow: hidden;
+  /* width/height set by JS from page viewport */
+}
+
+.page-slot canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.page-slot .page-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.page-slot.is-rendered .page-placeholder {
+  display: none;
+}
+
+.drop-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 165, 233, 0.18);
+  border: 3px dashed var(--accent);
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.drop-overlay.show {
+  display: flex;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #print-root,
+  #print-root * {
+    visibility: visible !important;
+  }
+  #print-root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  #print-root img {
+    display: block;
+    max-width: 100%;
+    page-break-after: always;
+    break-after: page;
+  }
+}
+
+#print-root {
+  display: none;
+}
