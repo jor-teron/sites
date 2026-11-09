@@ -2,20 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Video Trimmer</title>
   <meta name="color-scheme" content="light dark">
   <link rel="stylesheet" href="vt_base.css">
   <link rel="stylesheet" href="vt_range.css">
 </head>
 <body>
-  <div class="container">
+  <div class="app" id="app">
     <header class="app-header">
       <h1>🎬 Video Trimmer</h1>
     </header>
 
-    <main>
-      <section class="card upload-card" id="uploadSection">
+    <main class="stage">
+      <!-- Empty state: fills the video area -->
+      <section class="empty-stage" id="uploadSection">
         <label for="videoInput" class="drop-zone">
           <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
           <span>Choose a video file or drag it here</span>
@@ -23,12 +24,15 @@
         </label>
       </section>
 
-      <section class="card editor-card hidden" id="editorSection">
-        <div class="video-container">
-          <video id="videoPreview" controls playsinline></video>
+      <!-- Editor: video flexes; controls pinned (bottom or side) -->
+      <section class="editor-stage hidden" id="editorSection">
+        <div class="video-area">
+          <div class="video-frame">
+            <video id="videoPreview" controls playsinline></video>
+          </div>
         </div>
 
-        <div class="controls-panel">
+        <aside class="controls-panel">
           <div class="range-block" id="rangeBlock">
             <div class="range-times">
               <button type="button" class="time-chip" id="startChip" title="Tap to edit start">0:00.0</button>
@@ -50,13 +54,13 @@
             <button type="button" id="trimBtn" class="btn primary-btn">Trim &amp; Download</button>
             <button type="button" id="resetBtn" class="btn text-btn">Choose Another Video</button>
           </div>
-        </div>
-      </section>
 
-      <div id="statusBanner" class="status-banner hidden" role="status" aria-live="polite">
-        <div class="spinner" aria-hidden="true"></div>
-        <span id="statusText">Processing video clip...</span>
-      </div>
+          <div id="statusBanner" class="status-banner hidden" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <span id="statusText">Processing video clip...</span>
+          </div>
+        </aside>
+      </section>
     </main>
   </div>
 
