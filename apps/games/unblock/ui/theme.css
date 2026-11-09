@@ -1,4 +1,4 @@
-/* Unblock UI — theme.css (UNB-4). Compact one-row HUD + footer; narrow-safe header. */
+/* Unblock UI — theme.css (UNB-5). Compact HUD; portrait = single bottom bar. */
 
 .app-header {
     display: flex;
@@ -15,16 +15,14 @@
 
 .header-left,
 .header-center,
-.header-right {
+.header-stats {
     display: flex;
     align-items: center;
     gap: 4px;
     min-width: 0;
 }
 
-/* Buttons / chrome never shrink below touch size */
-.header-left,
-.header-right {
+.header-left {
     flex: 0 0 auto;
 }
 
@@ -35,6 +33,10 @@
     flex-direction: row;
     gap: 6px;
     overflow: hidden;
+}
+
+.header-stats {
+    flex: 0 0 auto;
 }
 
 .game-title {
@@ -53,34 +55,37 @@
     color: var(--text-secondary);
     margin-top: 0;
     white-space: nowrap;
-    flex: 0 0 auto; /* never truncate "Lv 000" */
+    flex: 0 0 auto;
     font-variant-numeric: tabular-nums;
 }
 
-.level-indicator::before {
-    content: none;
-}
+.level-indicator::before { content: none; }
 
-.stat-badge {
+/* Combined moves/par chip (2-line on portrait, row on desktop) */
+.stat-chip {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 6px;
     background: var(--bg-card);
-    padding: 2px 6px;
+    border: 1px solid var(--board-border);
     border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    min-height: 32px;
+    flex: 0 0 auto;
+}
+.stat-chip-col {
     display: flex;
     flex-direction: row;
     align-items: baseline;
     gap: 4px;
-    border: 1px solid var(--board-border);
-    min-height: 32px;
-    flex: 0 0 auto;
 }
-
 .stat-label {
     font-size: 0.55rem;
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.4px;
 }
-
 .stat-value {
     font-size: 0.85rem;
     font-weight: 700;
@@ -111,14 +116,17 @@
     align-items: center;
 }
 
-.app-footer .btn {
+.app-footer .btn-chrome {
     flex: 1;
     min-height: 44px;
 }
-
-.header-right {
+.app-footer .btn-icon {
     flex: 0 0 auto;
 }
+
+/* Desktop/landscape: show text labels on undo/hint/next */
+.btn-chrome .btn-ico { display: none; }
+.btn-chrome .btn-txt { display: inline; }
 
 .gear-slot {
     display: inline-flex;
@@ -142,56 +150,107 @@
     background: var(--bg-card);
 }
 
+/* Narrow-but-not-phone-bar (wide portrait tablets keep split chrome) */
+@media (max-width: 420px) and (orientation: portrait) and (min-width: 601px) {
+    .game-title { display: none; }
+}
+
 /*
- * Narrow portrait (phones ~320–400px): drop the text title so levels +
- * theme/levels/restart buttons never overlap or clip. Keep ≥40px targets.
+ * Portrait phone bottom bar — icon-first, ≥40px targets, no overlap.
+ * (Paired with base.css phone-bar flex + display:contents.)
  */
-@media (max-width: 420px) and (orientation: portrait) {
-    .game-title {
-        /* Hide wordmark; 🎨 + level carry identity on tiny screens */
-        display: none;
+@media (max-width: 600px) and (orientation: portrait) {
+    .app-header {
+        border: none;
+        background: transparent;
+        padding: 0;
+        min-height: 0;
+        overflow: visible;
     }
-    .header-center {
-        justify-content: flex-start;
-        flex: 0 1 auto;
-        gap: 4px;
+    .app-footer {
+        border: none;
+        background: transparent;
+        padding: 0;
+        min-height: 0;
+        gap: 0;
     }
+
     .level-indicator {
-        font-size: 0.8rem;
+        font-size: 0.72rem;
         font-weight: 700;
         color: var(--text-primary);
-        letter-spacing: 0.2px;
+        padding: 0 2px;
+        letter-spacing: 0;
     }
-    .stat-badge {
-        padding: 2px 4px;
-        gap: 2px;
+
+    /* Tight 2-line moves/par chip */
+    .stat-chip {
+        flex-direction: row;
+        gap: 4px;
+        padding: 2px 5px;
         min-height: 40px;
+        align-items: center;
     }
-    .stat-label { font-size: 0.5rem; }
-    .stat-value { font-size: 0.8rem; }
-    .header-left,
-    .header-right {
-        gap: 2px;
+    .stat-chip-col {
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        line-height: 1.05;
     }
-    .app-header {
-        gap: 2px;
-        padding: 4px 4px;
+    .stat-label { font-size: 0.45rem; }
+    .stat-value { font-size: 0.75rem; }
+
+    /* Icon-only chrome buttons — beat components.css 44px mins */
+    .phone-bar .btn.btn-chrome,
+    .phone-bar .btn.btn-icon {
+        flex: 0 0 auto !important;
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 0 !important;
+        font-size: 1rem;
+        gap: 0;
     }
-    /* Slightly tighter icon buttons but still ≥40px touch */
-    .app-header .btn-icon {
-        min-width: 40px;
-        min-height: 40px;
-        padding: 0 6px;
+    .btn-chrome .btn-ico { display: inline; }
+    .btn-chrome .btn-txt { display: none; }
+
+    .phone-bar .gear-slot a {
+        min-width: 40px !important;
+        min-height: 40px !important;
+        width: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
     }
-    .gear-slot a {
-        min-width: 40px;
-        min-height: 40px;
-        padding: 0 6px;
+
+    /* Next (when shown) stays icon-sized so the bar doesn't overflow */
+    #btn-next.btn-chrome {
+        background: var(--accent);
+        color: var(--bg-primary);
+    }
+
+    .game-main {
+        /* Centre the square in the space above the bottom bar (slight bottom bias). */
+        justify-content: center;
+        padding: 4px 6px 8px;
+    }
+
+    /* Never let flex squash tap targets or clip "Lv 000" */
+    .phone-bar .btn-icon,
+    .phone-bar .btn-chrome,
+    .phone-bar .level-indicator,
+    .phone-bar .stat-chip,
+    .phone-bar .gear-slot {
+        flex-shrink: 0;
     }
 }
 
-/* Very narrow stress (≤340px): shrink badge labels further if needed */
+/* Ultra-narrow stress: slightly smaller type, still ≥40px hits */
 @media (max-width: 340px) and (orientation: portrait) {
-    .stat-label { display: none; } /* "Mv"/"Par" — value alone is enough */
-    .stat-badge { min-width: 28px; justify-content: center; }
+    .level-indicator { font-size: 0.62rem; padding: 0 1px; }
+    .stat-chip { padding: 1px 3px; gap: 2px; min-height: 40px; }
+    .stat-value { font-size: 0.68rem; }
+    .stat-label { font-size: 0.4rem; }
+    .phone-bar { gap: 0; padding-left: 1px; padding-right: 1px; }
 }
