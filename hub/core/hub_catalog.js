@@ -108,6 +108,7 @@ Mail,         mail/,                , , Mail, Simple Gmail client: read and send
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
 File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan a QR or type a 4-digit code
+Torrent,   torrent/,   , , Share, Download magnets and .torrent files: save to a folder you pick
 QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
 Code Maker, code-maker/, code-maker/code-maker_icon.png, , Share, Make QR codes and barcodes: Wi-Fi - contact - UPI - links - EAN - Code 128
 Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device

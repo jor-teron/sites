@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torrent</title>
+  <link rel="stylesheet" href="tr_base.css">
+  <link rel="stylesheet" href="tr_card.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <h1>Torrent</h1>
+      <span class="tag">TR1+TR2 · WebTorrent</span>
+    </header>
+
+    <section class="panel" aria-label="Add torrent">
+      <div class="row">
+        <input type="text" id="magnet-input" placeholder="magnet: link or info-hash" autocomplete="off" spellcheck="false" aria-label="Magnet link or info-hash">
+        <button type="button" class="btn btn-primary" id="btn-add">Add</button>
+      </div>
+      <div class="row">
+        <label class="file-btn" id="file-label" title="Open a .torrent file">
+          Open .torrent
+          <input type="file" id="torrent-file" accept=".torrent,application/x-bittorrent" hidden>
+        </label>
+        <button type="button" class="btn" id="btn-choose">Choose folder</button>
+        <button type="button" class="btn" id="btn-reconnect" hidden>Reconnect</button>
+      </div>
+      <div id="folder-row" class="row" hidden>
+        <p class="folder-label" id="folder-label"></p>
+      </div>
+      <p class="fallback" id="folder-fallback" hidden></p>
+    </section>
+
+    <div class="empty" id="empty">
+      <strong>Paste a magnet or drop a .torrent</strong>
+      <p>Browsers only reach WebTorrent / WebRTC peers. Many normal torrents will show 0 peers.</p>
+    </div>
+
+    <article class="card" id="card" hidden aria-live="polite">
+      <div class="card-head">
+        <div class="card-name" id="card-name">Torrent</div>
+        <div class="card-status" id="card-status">Looking</div>
+      </div>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Download progress">
+        <span id="progress-bar"></span>
+      </div>
+      <div class="card-meta">
+        <span id="card-pct" class="mute">0%</span>
+        <span id="card-size">0 B / 0 B</span>
+        <span id="card-down">↓ 0 B/s</span>
+        <span id="card-up">↑ 0 B/s</span>
+        <span id="card-peers">0 peers</span>
+        <span id="card-eta">ETA —</span>
+      </div>
+      <div class="card-actions">
+        <button type="button" class="btn btn-danger" id="btn-remove">Remove</button>
+      </div>
+    </article>
+
+    <div class="peers-hint" id="peers-hint" hidden>
+      <strong>No WebTorrent peers found</strong>
+      Browsers can only talk to WebTorrent / WebRTC peers — not the usual qBittorrent / uTorrent crowd. Try a torrent that is also seeded by WebTorrent, or one with web seeds.
+    </div>
+
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="drop-overlay" id="drop-overlay" hidden aria-hidden="true">Drop .torrent to add</div>
+
+  <script src="tr_helpers.js"></script>
+  <script src="tr_save.js"></script>
+  <script src="tr_client.js"></script>
+  <script src="tr_ui.js"></script>
+  <script type="module" src="tr_main.js"></script>
+</body>
+</html>

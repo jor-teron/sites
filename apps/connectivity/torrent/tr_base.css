@@ -1,0 +1,228 @@
+/* Torrent — tr_base.css: shell, form, buttons, jelly press, reduced motion. TR1+TR2 */
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #334155;
+  --text: #f8fafc;
+  --mute: #94a3b8;
+  --accent: #34d399;
+  --accent-press: #10b981;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --radius: 14px;
+  --gap: 10px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 14px 20px;
+  gap: 14px;
+  position: relative;
+}
+
+header.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+}
+
+header.top h1 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+header.top .tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mute);
+  border: 1px solid var(--surface-2);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+
+input[type="text"] {
+  flex: 1 1 180px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--surface-2);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+input[type="text"]:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.btn,
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--surface-2);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary,
+.file-btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #052e1c;
+}
+
+.btn-primary:hover,
+.file-btn:hover {
+  background: var(--accent-press);
+  border-color: var(--accent-press);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+@keyframes jelly-press {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.92, 0.88); }
+  70% { transform: scale(1.04, 1.06); }
+  100% { transform: scale(1); }
+}
+
+.btn:active:not(:disabled),
+.file-btn:active,
+.btn.jelly,
+.file-btn.jelly {
+  animation: jelly-press 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled),
+  .file-btn:active,
+  .btn.jelly,
+  .file-btn.jelly {
+    animation: none;
+    transform: scale(0.97);
+  }
+}
+
+.folder-label,
+.hint,
+.fallback,
+.empty p,
+.muted {
+  color: var(--mute);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.fallback {
+  padding: 4px 2px;
+}
+
+.empty {
+  text-align: center;
+  padding: 28px 12px;
+}
+
+.empty strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.status {
+  min-height: 1.4em;
+  font-size: 0.9rem;
+  color: var(--mute);
+}
+
+.status.error { color: var(--danger); }
+.status.warn { color: var(--warn); }
+.status.busy { color: var(--accent); }
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.82);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.drop-overlay[hidden] {
+  display: none !important;
+}
