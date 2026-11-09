@@ -5,6 +5,9 @@
   Type the 4-digit PIN here; it goes straight to that computer over a PeerJS data connection
   (shared/vendor/peerjs.min.js; the free PeerJS server only introduces the two devices). Logic: hub/core/hub_unlock.js.
   Each code takes one try: after a wrong PIN, scan the new QR on the computer.
+  H143: with a fingerprint method the page also offers "Unlock with fingerprint" (a passkey on this phone,
+  navigator.credentials.get); unlock.html#r:hublock-<16 hex> (Settings › Screen lock › Add phone) registers one.
+  Passkeys belong to this address (rp.id = its hostname), so the fingerprint works only on the github.io Hub.
 -->
 <html lang="en">
 <head>
@@ -26,7 +29,9 @@
       background: rgba(255, 255, 255, 0.06); color: inherit; font-size: 32px; letter-spacing: 0.5em; text-align: center; }
     #pin:focus { outline: none; border-color: #70b8ff; }
     #go { width: 100%; min-height: 54px; border: 0; border-radius: 14px; background: #70b8ff; color: #0b0d12; font-size: 18px; font-weight: 700; cursor: pointer; }
-    #go:disabled { opacity: 0.45; cursor: default; }
+    #go:disabled, #fp:disabled { opacity: 0.45; cursor: default; }
+    #fp { width: 100%; min-height: 54px; margin: 16px 0 4px; border: 0; border-radius: 14px; background: #34d399; color: #0b0d12; font-size: 18px; font-weight: 700; cursor: pointer; }
+    [hidden] { display: none !important; }
     #msg { min-height: 2.8em; font-weight: 600; }
     #msg.ok { color: #34d399; } #msg.bad { color: #f87171; }
   </style>
@@ -34,8 +39,9 @@
 <body>
   <main>
     <div class="ico" aria-hidden="true">&#128274;</div>
-    <h1>Unlock Hub</h1>
-    <p>Type your 4-digit Hub PIN.</p>
+    <h1 id="title">Unlock Hub</h1>
+    <p id="lead">Type your 4-digit Hub PIN.</p>
+    <button id="fp" type="button" hidden disabled>Unlock with fingerprint</button>
     <form id="form" autocomplete="off">
       <input id="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="4-digit PIN" disabled />
       <button id="go" type="submit" disabled>Unlock</button>
