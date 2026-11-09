@@ -1,0 +1,56 @@
+/* H142 Hub PIN lock screen (hub/core/hub_lock.js). #hub-lock is a child of <html> after <body>; while locked
+   html.hub-locked hides <body> (it is also inert), so nothing of the desktop shows behind the lock.
+   Dark (default); Light (html.hub-light); Glass (html.hub-glass). Chrome 109 safe (no color-mix, no nesting). */
+html.hub-locked > body { visibility: hidden !important; }
+html.hub-locked { background: #080b14; }
+#hub-lock {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 2147483647;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; box-sizing: border-box; overflow: auto;
+  background: #080b14; color: #eef2f8;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  text-align: center; cursor: default; user-select: none; -webkit-user-select: none;
+  outline: none; visibility: visible;
+}
+#hub-lock[hidden] { display: none; }
+#hub-lock .hub-lock-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 48px; max-width: 960px; }
+#hub-lock .hub-lock-side { flex: 0 1 340px; min-width: 260px; }
+#hub-lock .hub-lock-ico { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+#hub-lock h2 { margin: 0 0 6px; font-size: 28px; font-weight: 600; }
+#hub-lock h3 { margin: 0 0 14px; font-size: 18px; font-weight: 600; opacity: 0.9; }
+#hub-lock .hub-lock-sub { margin: 0 0 14px; opacity: 0.75; }
+#hub-lock .hub-lock-dots { display: flex; justify-content: center; gap: 16px; margin: 8px 0 6px; }
+#hub-lock .hub-lock-dots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; opacity: 0.7; }
+#hub-lock .hub-lock-dots i.on { background: currentColor; opacity: 1; }
+#hub-lock .hub-lock-msg { min-height: 1.4em; margin: 6px 0 10px; font-size: 15px; }
+#hub-lock .hub-lock-msg.bad { color: #f87171; }
+#hub-lock .hub-lock-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 12px; justify-content: center; }
+#hub-lock .hub-lock-key {
+  width: 72px; height: 72px; border-radius: 50%; border: 1px solid rgba(238, 242, 248, 0.35);
+  background: rgba(255, 255, 255, 0.06); color: inherit; font: inherit; font-size: 26px; cursor: pointer;
+  touch-action: manipulation;
+}
+#hub-lock .hub-lock-key.hub-lock-fn { font-size: 22px; }
+#hub-lock .hub-lock-key:hover { background: rgba(255, 255, 255, 0.14); }
+#hub-lock .hub-lock-key:active { background: rgba(255, 255, 255, 0.24); }
+#hub-lock .hub-lock-key:focus-visible { outline: 3px solid #70b8ff; outline-offset: 3px; }
+#hub-lock.busy .hub-lock-pad { opacity: 0.5; pointer-events: none; }
+#hub-lock .hub-lock-qr {
+  display: inline-block; background: #fff; border-radius: 12px; padding: 6px; line-height: 0;
+  width: 300px; height: 300px; max-width: 70vw; max-height: 70vw; box-sizing: border-box;
+}
+#hub-lock .hub-lock-qr svg { width: 100%; height: 100%; }
+#hub-lock .hub-lock-qr.empty { background: rgba(255, 255, 255, 0.06); border: 1px dashed rgba(238, 242, 248, 0.35); }
+#hub-lock .hub-lock-qrnote { margin: 12px auto 0; max-width: 320px; font-size: 14px; opacity: 0.8; min-height: 2.6em; }
+#hub-lock.shake .hub-lock-dots { animation: hub-lock-shake 0.4s; }
+@keyframes hub-lock-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+html.hub-motion-off #hub-lock.shake .hub-lock-dots { animation: none; }
+html.hub-light.hub-locked, html.hub-light #hub-lock { background: #eef2f8; color: #1b2333; }
+html.hub-light #hub-lock .hub-lock-key { border-color: rgba(27, 35, 51, 0.3); background: rgba(27, 35, 51, 0.05); }
+html.hub-light #hub-lock .hub-lock-key:hover { background: rgba(27, 35, 51, 0.12); }
+html.hub-light #hub-lock .hub-lock-msg.bad { color: #c0262d; }
+html.hub-glass.hub-locked, html.hub-glass #hub-lock { background: #141c30; color: #fff; }
+@media (max-width: 720px) {
+  #hub-lock .hub-lock-wrap { gap: 28px; }
+  #hub-lock .hub-lock-qr { width: 220px; height: 220px; }
+}

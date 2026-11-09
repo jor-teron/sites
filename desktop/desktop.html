@@ -55,6 +55,10 @@
   <link rel="stylesheet" href="hub/core/hub_xp.css" />
   <!-- H65: Computer break lock (hub/core/hub_break.js); follows Light / Dark / Glass -->
   <link rel="stylesheet" href="hub/core/hub_break.css" />
+  <!-- H142: PIN lock screen (hub/core/hub_lock.js); off by default. When Settings › Screen lock › Activate is on and a PIN
+       exists, html.hub-locked hides the page before the first paint; hub_lock.js then draws the lock (or drops the class). -->
+  <link rel="stylesheet" href="hub/core/hub_lock.css" />
+  <script>try { if (localStorage.getItem('hub-lock.on') === '1' && localStorage.getItem('hub-lock.pin')) document.documentElement.classList.add('hub-locked'); } catch (_) { /* blocked */ }</script>
 </head>
 <body>
   <header id="header">
@@ -156,6 +160,8 @@
   <script src="hub/core/hub_core.js" data-parts="boot"></script>
   <script src="hub/core/hub_eye.js"></script><!-- H63: Eye comfort warm layer + 🌙 -->
   <script src="hub/core/hub_break.js"></script><!-- H65: Computer break (25 / 5 Hub lock); early, so a reload mid-break locks at once -->
+  <script src="hub/core/hub_lock_core.js"></script><!-- H142: PIN lock core (PIN hash, Activate switch, one-time phone session) -->
+  <script src="hub/core/hub_lock.js"></script><!-- H142: PIN lock screen; right after the break, so a locked Hub shows nothing first. PeerJS only loads while locked -->
   <!-- Desktop mode (big screen + mouse): windows + taskbar; Phone mode = the single frame -->
   <!-- <script src="hub/wm/wm_mode.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_mode.js"></script>
