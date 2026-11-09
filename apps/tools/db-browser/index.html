@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DB Browser</title>
+  <link rel="stylesheet" href="db_base.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <h1>DB Browser</h1>
+      <span class="tag">DB1+DB2</span>
+      <span class="badge" id="mod-badge" hidden>modified</span>
+      <span class="db-label" id="db-label">No database open</span>
+    </header>
+
+    <div class="toolbar">
+      <button type="button" class="btn btn-primary" id="btn-open">Open .db</button>
+      <input type="file" id="file-input" accept=".db,.sqlite,.sqlite3,application/x-sqlite3,application/vnd.sqlite3" hidden>
+      <button type="button" class="btn" id="btn-new">New empty</button>
+      <button type="button" class="btn" id="btn-save" disabled>Save as new .db</button>
+      <button type="button" class="btn" id="btn-csv" disabled>Export CSV</button>
+      <button type="button" class="btn" id="btn-refresh" title="Refresh tables">Refresh</button>
+    </div>
+
+    <section class="welcome" id="welcome" aria-label="Welcome">
+      <h2>Open a SQLite database</h2>
+      <p>Drop a <strong>.db</strong>, <strong>.sqlite</strong> or <strong>.sqlite3</strong> file here, or pick one. Everything runs offline in this tab.</p>
+      <div class="dropzone" id="welcome-drop">Drop a database file here</div>
+      <div class="toolbar" style="justify-content:center">
+        <button type="button" class="btn btn-primary" id="welcome-open">Open .db</button>
+        <button type="button" class="btn" id="welcome-new">New empty database</button>
+      </div>
+    </section>
+
+    <div class="main-ui" id="main-ui" hidden>
+      <aside class="side" aria-label="Tables">
+        <div class="side-title">Tables &amp; views</div>
+        <select class="obj-select" id="obj-select" aria-label="Tables and views"></select>
+        <div class="obj-list" id="obj-list"></div>
+      </aside>
+
+      <div class="content">
+        <details class="panel schema-panel" id="schema-panel">
+          <summary>Schema</summary>
+          <pre id="schema-pre">(pick a table)</pre>
+        </details>
+
+        <section class="panel" aria-label="SQL query">
+          <textarea class="query-box" id="query-box" spellcheck="false" placeholder="SELECT * FROM …" aria-label="SQL query"></textarea>
+          <div class="query-actions">
+            <button type="button" class="btn btn-primary" id="btn-run" disabled>Run</button>
+            <span class="hint">Ctrl+Enter</span>
+          </div>
+          <div class="hist" id="query-history" hidden></div>
+        </section>
+
+        <div class="error-box" id="error-box" hidden role="alert"></div>
+
+        <section class="panel" aria-label="Results">
+          <div class="pager" id="pager"></div>
+          <p class="grid-note" id="grid-note" hidden></p>
+          <div class="grid-wrap" id="grid-wrap">
+            <p class="muted">Pick a table or run a query</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="drop-overlay" id="drop-overlay" hidden aria-hidden="true">Drop to open</div>
+
+  <script src="db_helpers.js"></script>
+  <script src="db_engine.js"></script>
+  <script src="db_save.js"></script>
+  <script src="db_ui.js"></script>
+  <script src="db_main.js"></script>
+</body>
+</html>
