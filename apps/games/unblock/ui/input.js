@@ -1,28 +1,30 @@
 /**
- * Unblock — pointer drag on blocks (UNB-0).
- * Snaps to whole cells (same as the original Lab build).
- * Calls onMoved() after a committed move so the app can re-render / check win.
+ * Unblock — smooth pointer drag (UNB-1).
+ * Block follows the finger continuously, clamped to free range, then snaps to
+ * the nearest cell with a short ease on release. Pointer Events for mouse+touch.
  */
+import { CONFIG } from '../core/config.js';
+
 /**
- * Attach pointer drag handlers to a block element.
  * @param {import('../core/game.js').Game} game
  * @param {HTMLElement} element
  * @param {string} blockId
  * @param {number} cellSize
- * @param {() => void} onMoved called after a non-zero move is applied
+ * @param {() => void} onMoved
  */
 export function attachDragHandlers(game, element, blockId, cellSize, onMoved) {
     let startX = 0, startY = 0;
-    let currentDelta = 0;
+    let pixelDelta = 0;
     const block = game.getBlock(blockId);
 
     const onPointerDown = (e) => {
         e.preventDefault();
-        startX = e.clientX || (e.touches && e.touches[0].clientX);
-        startY = e.clientY || (e.touches && e.touches[0].clientY);
-        currentDelta = 0;
+        startX = e.clientX;
+        startY = e.clientY;
+        pixelDelta = 0;
 
         element.classList.add('dragging');
+        element.style.transition = 'none';
         element.setPointerCapture(e.pointerId);
 
         element.onpointermove = onPointerMove;
@@ -31,24 +33,19 @@ export function attachDragHandlers(game, element, blockId, cellSize, onMoved) {
     };
 
     const onPointerMove = (e) => {
-        const clientX = e.clientX;
-        const clientY = e.clientY;
-        if (clientX === undefined || clientY === undefined) return;
+        if (e.clientX === undefined) return;
+        const { min, max } = game.getSlideLimits(blockId);
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const raw = block.orientation === 'h' ? dx : dy;
+        const minPx = min * cellSize;
+        const maxPx = max * cellSize;
+        pixelDelta = Math.max(minPx, Math.min(maxPx, raw));
 
-        const dx = clientX - startX;
-        const dy = clientY - startY;
-
-        let rawDelta = 0;
         if (block.orientation === 'h') {
-            rawDelta = Math.round(dx / cellSize);
-            const validDelta = game.getValidDeltaRange(blockId, rawDelta);
-            currentDelta = validDelta;
-            element.style.transform = `translateX(${validDelta * cellSize}px)`;
+            element.style.transform = `translateX(${pixelDelta}px)`;
         } else {
-            rawDelta = Math.round(dy / cellSize);
-            const validDelta = game.getValidDeltaRange(blockId, rawDelta);
-            currentDelta = validDelta;
-            element.style.transform = `translateY(${validDelta * cellSize}px)`;
+            element.style.transform = `translateY(${pixelDelta}px)`;
         }
     };
 
@@ -58,12 +55,40 @@ export function attachDragHandlers(game, element, blockId, cellSize, onMoved) {
         element.onpointerup = null;
         element.onpointercancel = null;
 
-        element.style.transform = '';
+        const { min, max } = game.getSlideLimits(blockId);
+        let cellDelta = Math.round(pixelDelta / cellSize);
+        cellDelta = Math.max(min, Math.min(max, cellDelta));
+        const snapPx = cellDelta * cellSize;
 
-        if (currentDelta !== 0) {
-            game.moveBlock(blockId, currentDelta);
-            onMoved();
+        let finished = false;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            element.style.transition = '';
+            element.style.transform = '';
+            if (cellDelta !== 0) {
+                game.moveBlock(blockId, cellDelta);
+                onMoved();
+            }
+        };
+
+        if (Math.abs(pixelDelta - snapPx) < 0.5) {
+            finish();
+            return;
         }
+
+        element.style.transition = `transform ${CONFIG.snapMs}ms ease-out`;
+        if (block.orientation === 'h') {
+            element.style.transform = `translateX(${snapPx}px)`;
+        } else {
+            element.style.transform = `translateY(${snapPx}px)`;
+        }
+        const done = () => {
+            element.removeEventListener('transitionend', done);
+            finish();
+        };
+        element.addEventListener('transitionend', done);
+        setTimeout(done, CONFIG.snapMs + 40);
     };
 
     element.onpointerdown = onPointerDown;

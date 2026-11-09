@@ -1,10 +1,9 @@
 /**
- * Unblock — session / level flow (UNB-0).
- * Pure of DOM: loads levels, owns GameLogic, records wins via Storage.
- * UI modules call into this and re-render from its public fields.
+ * Unblock — session / level flow (UNB-1).
+ * Loads precomputed levels, owns GameLogic, tracks hints, records wins.
  */
-import { CONFIG } from './config.js';
-import { generateLevel } from './levelGenerator.js';
+import { CONFIG, starsFor } from './config.js';
+import { getLevel } from './levels.js';
 import { GameLogic } from './gameLogic.js';
 import { Storage } from './storage.js';
 
@@ -14,86 +13,79 @@ export class Game {
         this.currentLevelNum = this.progress.currentLevel || 0;
         /** @type {GameLogic|null} */
         this.logic = null;
+        /** @type {number} */
+        this.par = 0;
+        /** hints used on the current attempt */
+        this.hintsUsed = 0;
         this.loadCurrentLevel();
     }
 
-    /** Rebuild GameLogic from the current level seed. */
+    /** Rebuild from assets/levels.json entry. */
     loadCurrentLevel() {
-        const blocks = generateLevel(this.currentLevelNum);
+        const { par, blocks } = getLevel(this.currentLevelNum);
+        this.par = par;
         this.logic = new GameLogic(blocks);
+        this.hintsUsed = 0;
     }
 
     /**
-     * Jump to a level index (0 .. totalLevels-1).
+     * Jump to a level and persist it as current.
      * @param {number} levelNum
-     * @returns {boolean} false if out of range
      */
     setLevel(levelNum) {
         if (levelNum < 0 || levelNum >= CONFIG.totalLevels) return false;
         this.currentLevelNum = levelNum;
+        this.progress = Storage.setCurrentLevel(levelNum);
         this.loadCurrentLevel();
         return true;
     }
 
-    /** Advance to the next level (clamped by setLevel). */
     nextLevel() {
         return this.setLevel(this.currentLevelNum + 1);
     }
 
-    /**
-     * Apply a cell delta move.
-     * @param {string} blockId
-     * @param {number} delta
-     * @returns {boolean}
-     */
     moveBlock(blockId, delta) {
         return this.logic.moveBlock(blockId, delta);
     }
 
-    /** @returns {boolean} */
     undo() {
         return this.logic.undo();
     }
 
-    /** @returns {boolean} */
     isWon() {
         return this.logic.isWon();
     }
 
-    /** Persist best moves and advance saved currentLevel. */
     recordVictory() {
-        this.progress = Storage.completeLevel(this.currentLevelNum, this.logic.moveCount);
+        const stars = starsFor(this.logic.moveCount, this.par);
+        this.progress = Storage.completeLevel(
+            this.currentLevelNum,
+            this.logic.moveCount,
+            stars
+        );
+        return stars;
     }
 
-    /** Refresh progress from storage (e.g. before painting the level grid). */
     reloadProgress() {
         this.progress = Storage.loadProgress();
         return this.progress;
     }
 
-    get moveCount() {
-        return this.logic.moveCount;
+    noteHintUsed() {
+        this.hintsUsed += 1;
     }
 
-    get historyLength() {
-        return this.logic.history.length;
-    }
+    get moveCount() { return this.logic.moveCount; }
+    get historyLength() { return this.logic.history.length; }
+    get blocks() { return this.logic.blocks; }
 
-    get blocks() {
-        return this.logic.blocks;
-    }
+    getBlock(id) { return this.logic.getBlock(id); }
 
-    /** @param {string} id */
-    getBlock(id) {
-        return this.logic.getBlock(id);
-    }
-
-    /**
-     * Clamp a drag delta against collisions.
-     * @param {string} blockId
-     * @param {number} delta
-     */
     getValidDeltaRange(blockId, delta) {
         return this.logic.getValidDeltaRange(blockId, delta);
+    }
+
+    getSlideLimits(blockId) {
+        return this.logic.getSlideLimits(blockId);
     }
 }

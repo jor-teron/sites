@@ -1,15 +1,15 @@
 /**
- * Unblock — board drawing (UNB-0).
- * Clears #game-board and places absolutely-positioned block divs.
- * Drag handlers are attached by ui/input.js via the onAttachDrag callback.
+ * Unblock — board drawing (UNB-1).
  */
 import { CONFIG } from '../core/config.js';
+import { clearHintHighlight } from './hint.js';
 
 /**
  * @param {import('../core/game.js').Game} game
  * @param {(el: HTMLElement, blockId: string, cellSize: number) => void} onAttachDrag
  */
 export function renderBoard(game, onAttachDrag) {
+    clearHintHighlight();
     const boardEl = document.getElementById('game-board');
     boardEl.innerHTML = '';
 
@@ -21,7 +21,6 @@ export function renderBoard(game, onAttachDrag) {
         const blockEl = document.createElement('div');
         blockEl.className = `block ${block.isPlayer ? 'player' : `${block.orientation}-block-${block.length}`}`;
 
-        // Positioning & dimensions
         blockEl.style.left = `${block.x * cellSize}px`;
         blockEl.style.top = `${block.y * cellSize}px`;
 
@@ -37,4 +36,6 @@ export function renderBoard(game, onAttachDrag) {
         onAttachDrag(blockEl, block.id, cellSize);
         boardEl.appendChild(blockEl);
     }
+
+    return cellSize;
 }

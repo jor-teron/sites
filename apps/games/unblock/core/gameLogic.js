@@ -1,7 +1,8 @@
 /**
- * Unblock — pure board rules (UNB-0).
- * No DOM. Holds block positions, collision grid, move/undo and win check.
+ * Unblock — pure board rules (UNB-1).
+ * No DOM. Holds block positions, collision grid, move/undo, win check, slide limits.
  * Player (red) wins when on row 2 and its right edge reaches column gridSize.
+ * One slide of any distance = 1 move.
  */
 import { CONFIG } from './config.js';
 
@@ -17,7 +18,6 @@ export class GameLogic {
 
     /** @param {Array} blocks */
     setBlocks(blocks) {
-        // Deep clone blocks
         this.blocks = blocks.map(b => ({ ...b }));
         this.updateGrid();
     }
@@ -26,11 +26,13 @@ export class GameLogic {
     updateGrid() {
         const size = CONFIG.gridSize;
         this.grid = Array.from({ length: size }, () => Array(size).fill(null));
-        
+
         for (const block of this.blocks) {
             for (let i = 0; i < block.length; i++) {
                 const cx = block.orientation === 'h' ? block.x + i : block.x;
                 const cy = block.orientation === 'h' ? block.y : block.y + i;
+                // Skip cells that have already slid past the board (player exiting)
+                if (cy < 0 || cy >= size || cx < 0 || cx >= size) continue;
                 this.grid[cy][cx] = block.id;
             }
         }
@@ -39,6 +41,17 @@ export class GameLogic {
     /** @param {string} id */
     getBlock(id) {
         return this.blocks.find(b => b.id === id);
+    }
+
+    /**
+     * Integer cell slide limits for smooth drag clamping.
+     * @param {string} blockId
+     * @returns {{ min: number, max: number }}
+     */
+    getSlideLimits(blockId) {
+        const min = this.getValidDeltaRange(blockId, -(CONFIG.gridSize + 1));
+        const max = this.getValidDeltaRange(blockId, CONFIG.gridSize + 1);
+        return { min, max };
     }
 
     /**
@@ -56,13 +69,13 @@ export class GameLogic {
 
         if (block.orientation === 'h') {
             if (delta > 0) {
-                // Moving right
                 for (let step = 1; step <= delta; step++) {
                     const targetX = block.x + block.length - 1 + step;
-                    // Check right wall / exit (player can exit at x >= size - 2 if on row 2)
                     if (targetX >= size) {
                         if (block.isPlayer && block.y === 2) {
-                            allowedDelta = step; // Can slide out/win
+                            // Cap exit slide so the block can fully leave the board
+                            if (block.x + step > size) break;
+                            allowedDelta = step;
                             continue;
                         } else {
                             break;
@@ -72,7 +85,6 @@ export class GameLogic {
                     allowedDelta = step;
                 }
             } else if (delta < 0) {
-                // Moving left
                 for (let step = 1; step <= Math.abs(delta); step++) {
                     const targetX = block.x - step;
                     if (targetX < 0) break;
@@ -81,9 +93,7 @@ export class GameLogic {
                 }
             }
         } else {
-            // Vertical orientation
             if (delta > 0) {
-                // Moving down
                 for (let step = 1; step <= delta; step++) {
                     const targetY = block.y + block.length - 1 + step;
                     if (targetY >= size) break;
@@ -91,7 +101,6 @@ export class GameLogic {
                     allowedDelta = step;
                 }
             } else if (delta < 0) {
-                // Moving up
                 for (let step = 1; step <= Math.abs(delta); step++) {
                     const targetY = block.y - step;
                     if (targetY < 0) break;
@@ -114,7 +123,6 @@ export class GameLogic {
         const actualDelta = this.getValidDeltaRange(blockId, delta);
         if (actualDelta === 0) return false;
 
-        // Save state for undo before applying move
         this.history.push(this.blocks.map(b => ({ ...b })));
 
         const block = this.getBlock(blockId);
@@ -142,7 +150,6 @@ export class GameLogic {
     isWon() {
         const player = this.getBlock('player');
         if (!player) return false;
-        // Player wins if its right edge reaches or exceeds the rightmost column (index 5 in 6x6)
         return player.y === 2 && (player.x + player.length >= CONFIG.gridSize);
     }
 }

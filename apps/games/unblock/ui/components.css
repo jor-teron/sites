@@ -204,3 +204,77 @@
     from { opacity: 0; transform: scale(0.96); }
     to { opacity: 1; transform: scale(1); }
 }
+
+/* --- UNB-1: paging, stars, hints --- */
+.level-page-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--board-border);
+    background: var(--bg-primary);
+}
+
+.level-page-bar .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+#level-page-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.level-cell {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.8rem;
+}
+
+.level-cell .level-num {
+    font-weight: 700;
+}
+
+.level-cell .level-stars {
+    font-size: 0.55rem;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+}
+
+.vic-stars {
+    font-size: 1.8rem;
+    color: var(--accent);
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+}
+
+.vic-hints {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px !important;
+}
+
+.loading {
+    position: absolute;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.btn.hint-miss {
+    animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}

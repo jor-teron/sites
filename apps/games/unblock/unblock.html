@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <!--
-  Unblock (UNB-0) — sliding block puzzle. Free the red hero block through the EXIT.
-  Layout: index.html (no-flash redirect) + this page.
-  Core (no DOM): config, gameLogic, levelGenerator, seedrandom, storage, game.
-  UI: render, input, hud, modals, app wiring. Theme: ui/*.css. Assets: assets/.
+  Unblock (UNB-1) — sliding block puzzle. Free the red hero block through the EXIT.
+  Precomputed solver-verified levels in assets/levels.json.
+  Core: config, gameLogic, solver, levels, storage, game.
+  UI: render, input (smooth drag), hud, hint, levelPicker, modals, app.
 -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Unblock UNB-0</title>
+    <title>Unblock UNB-1</title>
     <link rel="stylesheet" href="ui/base.css">
     <link rel="stylesheet" href="ui/theme.css">
     <link rel="stylesheet" href="ui/board.css">
@@ -17,7 +17,8 @@
 </head>
 <body>
     <div id="app">
-        <!-- Header HUD -->
+        <div id="loading" class="loading">Loading levels…</div>
+
         <header class="app-header">
             <div class="header-left">
                 <button id="btn-levels" class="btn btn-icon" title="Level Select">☰ Levels</button>
@@ -31,41 +32,44 @@
                     <span class="stat-label">Moves</span>
                     <span id="move-count" class="stat-value">0</span>
                 </div>
+                <div class="stat-badge" title="Par (best possible)">
+                    <span class="stat-label">Par</span>
+                    <span id="par-count" class="stat-value">0</span>
+                </div>
                 <button id="btn-restart" class="btn btn-icon" title="Restart">↺</button>
             </div>
         </header>
 
-        <!-- Main Game Board Area -->
         <main class="game-main">
             <div class="board-container">
                 <div class="exit-marker">EXIT</div>
-                <div id="game-board" class="game-board">
-                    <!-- Dynamic blocks rendered here via JS -->
-                </div>
+                <div id="game-board" class="game-board"></div>
             </div>
         </main>
 
-        <!-- Footer Controls -->
         <footer class="app-footer">
             <button id="btn-undo" class="btn btn-secondary" disabled>Undo</button>
             <button id="btn-hint" class="btn btn-secondary">Hint</button>
             <button id="btn-next" class="btn btn-primary" style="display: none;">Next Level →</button>
         </footer>
 
-        <!-- Level Select Modal -->
+        <!-- Level Select Modal (paged) -->
         <div id="modal-levels" class="modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Select Level (000 - 999)</h2>
+                    <h2>Select Level</h2>
                     <button id="btn-close-levels" class="btn btn-close">×</button>
                 </div>
                 <div class="level-search-bar">
                     <input type="number" id="level-jump-input" min="0" max="999" placeholder="Jump to level # (0-999)">
                     <button id="btn-jump-level" class="btn btn-primary">Go</button>
                 </div>
-                <div id="level-grid" class="level-grid">
-                    <!-- Populated dynamically -->
+                <div class="level-page-bar">
+                    <button id="btn-page-prev" class="btn btn-secondary">← Prev</button>
+                    <span id="level-page-label">000 – 099</span>
+                    <button id="btn-page-next" class="btn btn-secondary">Next →</button>
                 </div>
+                <div id="level-grid" class="level-grid"></div>
             </div>
         </div>
 
@@ -74,7 +78,10 @@
             <div class="modal-content victory-content">
                 <div class="victory-icon">🎉</div>
                 <h2>Level Completed!</h2>
-                <p>You solved level <span id="vic-level">000</span> in <span id="vic-moves">0</span> moves.</p>
+                <div id="vic-stars" class="vic-stars">★★★</div>
+                <p>You solved level <span id="vic-level">000</span> in <span id="vic-moves">0</span> moves
+                    (par <span id="vic-par">0</span>).</p>
+                <p id="vic-hints" class="vic-hints">No hints used</p>
                 <div class="victory-actions">
                     <button id="btn-vic-replay" class="btn btn-secondary">Replay</button>
                     <button id="btn-vic-next" class="btn btn-primary">Next Level →</button>
@@ -83,7 +90,6 @@
         </div>
     </div>
 
-    <!-- ES Module entry (ui/app.js wires core + UI) -->
     <script type="module" src="ui/app.js"></script>
 </body>
 </html>

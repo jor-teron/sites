@@ -1,12 +1,15 @@
 /**
- * Unblock — app wiring (UNB-0).
- * Creates Game, binds HUD / board / modals / buttons, exposes window.app.
+ * Unblock — app wiring (UNB-1).
+ * Async boot: load levels.json, then bind HUD / board / picker / hint.
  */
+import { loadLevels } from '../core/levels.js';
 import { Game } from '../core/game.js';
 import { renderBoard } from './render.js';
 import { attachDragHandlers } from './input.js';
 import { updateHud, hideNextButton } from './hud.js';
-import { showVictory, hideVictory, bindModalControls } from './modals.js';
+import { showVictory, hideVictory, bindVictoryControls } from './modals.js';
+import { bindLevelPicker } from './levelPicker.js';
+import { showHint } from './hint.js';
 
 class UnblockApp {
     constructor() {
@@ -15,7 +18,6 @@ class UnblockApp {
         this.render();
     }
 
-    /** Full board + HUD redraw. */
     render() {
         updateHud(this.game);
         renderBoard(this.game, (el, blockId, cellSize) => {
@@ -23,29 +25,27 @@ class UnblockApp {
         });
     }
 
-    /** Called after a committed drag move. */
     afterMove() {
         this.render();
-        if (this.game.isWon()) {
-            this.handleVictory();
-        }
+        if (this.game.isWon()) this.handleVictory();
     }
 
     handleVictory() {
-        this.game.recordVictory();
-        showVictory(this.game);
+        const stars = this.game.recordVictory();
+        showVictory(this.game, stars);
     }
 
-    /** Restart / load helpers used by buttons. */
     restart() {
         this.game.loadCurrentLevel();
         hideNextButton();
+        hideVictory();
         this.render();
     }
 
     setLevel(n) {
         if (!this.game.setLevel(n)) return;
         hideNextButton();
+        hideVictory();
         this.render();
     }
 
@@ -66,7 +66,7 @@ class UnblockApp {
         };
 
         document.getElementById('btn-hint').onclick = () => {
-            alert('Hint: Clear intersecting blocks by sliding them up/down or left/right to free the red hero block!');
+            showHint(this.game);
         };
 
         document.getElementById('btn-next').onclick = () => {
@@ -74,8 +74,11 @@ class UnblockApp {
             this.nextLevel();
         };
 
-        bindModalControls(this.game, {
-            onPickLevel: (n) => this.setLevel(n),
+        bindLevelPicker(this.game, {
+            onPickLevel: (n) => this.setLevel(n)
+        });
+
+        bindVictoryControls({
             onReplay: () => this.restart(),
             onNext: () => this.nextLevel()
         });
@@ -84,7 +87,14 @@ class UnblockApp {
     }
 }
 
-// Start app on DOMContentLoaded (same as the Lab entry)
-window.addEventListener('DOMContentLoaded', () => {
-    window.app = new UnblockApp();
+window.addEventListener('DOMContentLoaded', async () => {
+    const loading = document.getElementById('loading');
+    try {
+        await loadLevels();
+        if (loading) loading.style.display = 'none';
+        window.app = new UnblockApp();
+    } catch (err) {
+        console.error(err);
+        if (loading) loading.textContent = 'Failed to load levels.';
+    }
 });

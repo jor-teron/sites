@@ -71,3 +71,17 @@
 .app-footer .btn {
     flex: 1;
 }
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-header .stat-badge {
+    padding: 4px 8px;
+}
+
+.app-header .stat-value {
+    font-size: 0.9rem;
+}
