@@ -1,10 +1,11 @@
 /**
- * Unblock — board drawing (UNB-3).
- * cellSize is derived from the live board width after layout.sizeBoard().
+ * Unblock — board drawing (UNB-4).
+ * cellSize from live board width after layout.sizeBoard(); themes decorate blocks.
  */
 import { CONFIG } from '../core/config.js';
 import { clearHintHighlight } from './hint.js';
 import { sizeBoard } from './layout.js';
+import { decorateBlock } from './themes/registry.js';
 
 /**
  * @param {import('../core/game.js').Game} game
@@ -13,7 +14,6 @@ import { sizeBoard } from './layout.js';
  */
 export function renderBoard(game, onAttachDrag) {
     clearHintHighlight();
-    // Fit the square first so clientWidth matches the available space
     sizeBoard();
 
     const boardEl = document.getElementById('game-board');
@@ -39,6 +39,7 @@ export function renderBoard(game, onAttachDrag) {
         }
 
         blockEl.dataset.id = block.id;
+        decorateBlock(blockEl, block);
         onAttachDrag(blockEl, block.id, cellSize);
         boardEl.appendChild(blockEl);
     }

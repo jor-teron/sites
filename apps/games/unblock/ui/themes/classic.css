@@ -1,0 +1,32 @@
+/* Classic board theme (UNB-4) — default flat look. */
+
+[data-board-theme="classic"] .board-container {
+    background: var(--board-bg);
+    border: 3px solid var(--board-border);
+    box-shadow: inset 0 4px 12px rgba(0,0,0,0.35);
+}
+
+[data-board-theme="classic"] .exit-marker {
+    background: var(--exit-color);
+    color: var(--bg-primary);
+    box-shadow: 2px 0 8px var(--accent-glow);
+}
+
+[data-board-theme="classic"] .block.player {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    border-color: #fca5a5;
+    box-shadow: 0 4px 12px var(--player-glow);
+}
+[data-board-theme="classic"] .block.h-block-2 { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+[data-board-theme="classic"] .block.h-block-3 { background: linear-gradient(135deg, #34d399, #10b981); }
+[data-board-theme="classic"] .block.v-block-2 { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+[data-board-theme="classic"] .block.v-block-3 { background: linear-gradient(135deg, #f472b6, #ec4899); }
+
+[data-board-theme="classic"] .block::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1px dashed rgba(255,255,255,0.25);
+    border-radius: 4px;
+    pointer-events: none;
+}

@@ -1,4 +1,4 @@
-/* Unblock UI — components.css (UNB-3) */
+/* Unblock UI — components.css (UNB-4) */
 /* --- UI Components, Buttons & Modals --- */
 
 .btn {
@@ -286,3 +286,121 @@
     25% { transform: translateX(-3px); }
     75% { transform: translateX(3px); }
 }
+
+
+/* --- Board theme picker (UNB-4) --- */
+.theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 12px 14px 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    max-height: min(60vh, 420px);
+}
+
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--board-border);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    min-height: 44px;
+    font-family: var(--font-sans);
+}
+.theme-card:hover { border-color: var(--accent); }
+.theme-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.theme-card-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.theme-card-blurb {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    line-height: 1.25;
+}
+
+.theme-preview {
+    height: 72px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+}
+.theme-preview .tp-board {
+    position: absolute;
+    inset: 6px;
+    border-radius: 4px;
+    border: 2px solid rgba(0,0,0,0.25);
+}
+.theme-preview .tp-block {
+    position: absolute;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+.theme-preview .tp-player {
+    left: 8%; top: 38%; width: 36%; height: 22%;
+    background: #ef4444;
+}
+.theme-preview .tp-h2 {
+    left: 50%; top: 12%; width: 40%; height: 22%;
+    background: #3b82f6;
+}
+.theme-preview .tp-v2 {
+    left: 12%; top: 62%; width: 18%; height: 30%;
+    background: #8b5cf6;
+}
+.theme-preview .tp-exit {
+    position: absolute;
+    right: -2px; top: 38%;
+    width: 8px; height: 22%;
+    background: #f59e0b;
+    font-size: 0.4rem;
+    color: #111;
+    display: flex; align-items: center; justify-content: center;
+}
+
+/* Preview boards mirror each theme's board fill */
+.theme-preview[data-board-theme="classic"] .tp-board { background: #cbd5e1; }
+html.dark .theme-preview[data-board-theme="classic"] .tp-board { background: #0d0f14; }
+
+.theme-preview[data-board-theme="wood"] .tp-board {
+    background: linear-gradient(145deg, #5c3a21, #2a160c);
+}
+.theme-preview[data-board-theme="wood"] .tp-player { background: #b91c1c; }
+.theme-preview[data-board-theme="wood"] .tp-h2 { background: #c4a06a; }
+.theme-preview[data-board-theme="wood"] .tp-v2 { background: #a67c4a; }
+
+.theme-preview[data-board-theme="carbus"] .tp-board {
+    background:
+        repeating-linear-gradient(0deg, transparent 0 10px, rgba(255,255,255,0.15) 10px 11px),
+        linear-gradient(160deg, #27272a, #0a0a0a);
+}
+.theme-preview[data-board-theme="carbus"] .tp-h2 { background: #2563eb; border-radius: 6px; }
+.theme-preview[data-board-theme="carbus"] .tp-v2 { background: #059669; border-radius: 6px; }
+.theme-preview[data-board-theme="carbus"] .tp-exit { background: #fbbf24; }
+
+.theme-preview[data-board-theme="floor"] .tp-board {
+    background:
+        repeating-linear-gradient(0deg, #9ca3af 0 1px, transparent 1px 12px),
+        repeating-linear-gradient(90deg, #9ca3af 0 1px, transparent 1px 12px),
+        #d1d5db;
+}
+.theme-preview[data-board-theme="floor"] .tp-h2 { background: linear-gradient(145deg, #93c5fd, #1d4ed8); }
+.theme-preview[data-board-theme="floor"] .tp-v2 { background: linear-gradient(145deg, #c4b5fd, #5b21b6); }
+
+.theme-preview[data-board-theme="stone"] .tp-board {
+    background: linear-gradient(160deg, #334155, #0f172a);
+}
+.theme-preview[data-board-theme="stone"] .tp-h2 { background: linear-gradient(145deg, #e2e8f0, #64748b); }
+.theme-preview[data-board-theme="stone"] .tp-v2 { background: linear-gradient(145deg, #ddd6fe, #6d28d9); }

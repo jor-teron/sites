@@ -1,0 +1,49 @@
+/* Wood board theme (UNB-4) — walnut + light timber blocks. */
+
+[data-board-theme="wood"] .board-container {
+    background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 28px),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0 1px, transparent 1px 18px),
+        linear-gradient(145deg, #5c3a21 0%, #3e2414 45%, #2a160c 100%);
+    border: 3px solid #1a0e08;
+    box-shadow: inset 0 6px 18px rgba(0,0,0,0.45);
+}
+
+[data-board-theme="wood"] .exit-marker {
+    background: linear-gradient(180deg, #ef4444, #b91c1c);
+    color: #fff7ed;
+    box-shadow: 2px 0 10px rgba(185, 28, 28, 0.55);
+    font-weight: 900;
+}
+
+[data-board-theme="wood"] .block {
+    border: 2px solid rgba(60, 30, 10, 0.35);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+}
+[data-board-theme="wood"] .block::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 3px;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,0.08) 0 2px,
+        transparent 2px 7px
+    );
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+[data-board-theme="wood"] .block.player {
+    background: linear-gradient(135deg, #f87171 0%, #b91c1c 55%, #7f1d1d 100%);
+    border-color: #fecaca;
+    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.55);
+}
+[data-board-theme="wood"] .block.h-block-2,
+[data-board-theme="wood"] .block.v-block-2 {
+    background: linear-gradient(135deg, #e8c89a, #c4a06a 50%, #a67c4a);
+}
+[data-board-theme="wood"] .block.h-block-3,
+[data-board-theme="wood"] .block.v-block-3 {
+    background: linear-gradient(135deg, #d2b48c, #b08968 50%, #8d6e4c);
+}

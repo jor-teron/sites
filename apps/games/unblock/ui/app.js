@@ -1,6 +1,6 @@
 /**
- * Unblock — app wiring (UNB-3).
- * Async boot: load levels, theme, gear; re-layout on resize / orientationchange.
+ * Unblock — app wiring (UNB-4).
+ * Async boot: levels, light/dark chrome, board theme, gear; re-layout on resize.
  */
 import { loadLevels } from '../core/levels.js';
 import { Game } from '../core/game.js';
@@ -12,11 +12,14 @@ import { bindLevelPicker } from './levelPicker.js';
 import { showHint } from './hint.js';
 import { UnblockSettings } from './settings.js';
 import { sizeBoard } from './layout.js';
+import { applyBoardTheme } from './themes/registry.js';
+import { bindThemePicker } from './themePicker.js';
 
 class UnblockApp {
     constructor() {
         this.game = new Game();
         UnblockSettings.applyTheme();
+        applyBoardTheme();
         UnblockSettings.onChange((ch) => {
             if ('theme' in ch) UnblockSettings.applyTheme();
         });
@@ -94,7 +97,11 @@ class UnblockApp {
             onNext: () => this.nextLevel()
         });
 
-        // Recompute cellSize after rotate / chrome show-hide
+        // Re-render so Car & Bus SVGs / cellSize refresh after a theme change
+        bindThemePicker({
+            onThemeChange: () => this.render()
+        });
+
         let resizeTimer = 0;
         const onResize = () => {
             clearTimeout(resizeTimer);
@@ -102,7 +109,6 @@ class UnblockApp {
         };
         window.addEventListener('resize', onResize);
         window.addEventListener('orientationchange', onResize);
-        // visualViewport covers Android URL-bar show/hide better than resize alone
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', onResize);
         }
@@ -111,6 +117,7 @@ class UnblockApp {
 
 window.addEventListener('DOMContentLoaded', async () => {
     try { UnblockSettings.applyTheme(); } catch (_) { /* ok */ }
+    try { applyBoardTheme(); } catch (_) { /* ok */ }
     const loading = document.getElementById('loading');
     try {
         await loadLevels();

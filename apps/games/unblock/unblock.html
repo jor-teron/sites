@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <!--
-  Unblock (UNB-3) — sliding block puzzle. Free the red hero block through the EXIT.
-  Phone-first: largest board that fits, compact HUD, landscape side chrome, dvh/safe-area.
+  Unblock (UNB-4) — sliding block puzzle. Free the red hero block through the EXIT.
+  Phone-first layout (UNB-3) + flat 2D board themes (Classic, Wood, Car & Bus, Floor, Stone).
   Core: config, gameLogic, solver, levels, storage, game.
-  UI: layout, render, input, hud, hint, levelPicker, modals, settings, app.
+  UI: layout, render, input, hud, hint, levelPicker, themePicker, themes/*, modals, settings, app.
 -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Unblock UNB-3</title>
+    <title>Unblock UNB-4</title>
     <link rel="stylesheet" href="ui/base.css">
     <link rel="stylesheet" href="ui/theme.css">
     <link rel="stylesheet" href="ui/board.css">
     <link rel="stylesheet" href="ui/components.css">
+    <link rel="stylesheet" href="ui/themes/classic.css">
+    <link rel="stylesheet" href="ui/themes/wood.css">
+    <link rel="stylesheet" href="ui/themes/carbus.css">
+    <link rel="stylesheet" href="ui/themes/floor.css">
+    <link rel="stylesheet" href="ui/themes/stone.css">
+    <link rel="stylesheet" href="ui/themes/hint-overlay.css">
 </head>
 <body>
     <div id="app">
@@ -22,6 +28,7 @@
         <header class="app-header">
             <div class="header-left">
                 <button id="btn-levels" class="btn btn-icon" title="Level Select">☰</button>
+                <button id="btn-board-theme" class="btn btn-icon" title="Board theme">🎨</button>
             </div>
             <div class="header-center">
                 <h1 class="game-title">UNBLOCK</h1>
@@ -70,6 +77,16 @@
                     <button id="btn-page-next" class="btn btn-secondary">Next →</button>
                 </div>
                 <div id="level-grid" class="level-grid"></div>
+            </div>
+        </div>
+
+        <div id="modal-themes" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Board Theme</h2>
+                    <button id="btn-close-themes" class="btn btn-close">×</button>
+                </div>
+                <div id="theme-grid" class="theme-grid"></div>
             </div>
         </div>
 

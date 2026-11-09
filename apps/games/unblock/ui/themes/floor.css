@@ -1,0 +1,54 @@
+/* Floor Tiles board theme (UNB-4) — ceramic grout grid + glossy tiles. */
+
+[data-board-theme="floor"] .board-container {
+    background:
+        repeating-linear-gradient(
+            0deg,
+            #9ca3af 0,
+            #9ca3af 2px,
+            transparent 2px,
+            transparent calc(100% / 6)
+        ),
+        repeating-linear-gradient(
+            90deg,
+            #9ca3af 0,
+            #9ca3af 2px,
+            transparent 2px,
+            transparent calc(100% / 6)
+        ),
+        linear-gradient(145deg, #e5e7eb, #d1d5db 50%, #c4c9d1);
+    border: 3px solid #6b7280;
+    box-shadow: inset 0 3px 10px rgba(0,0,0,0.2);
+}
+
+[data-board-theme="floor"] .exit-marker {
+    background: linear-gradient(180deg, #f97316, #c2410c);
+    color: #fff7ed;
+    box-shadow: 2px 0 10px rgba(249, 115, 22, 0.55);
+}
+
+[data-board-theme="floor"] .block {
+    border: 2px solid rgba(255,255,255,0.55);
+    box-shadow:
+        0 3px 6px rgba(0,0,0,0.25),
+        inset 0 1px 0 rgba(255,255,255,0.55),
+        inset 0 -2px 4px rgba(0,0,0,0.12);
+}
+[data-board-theme="floor"] .block::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, transparent 42%, transparent 60%, rgba(0,0,0,0.08) 100%);
+    pointer-events: none;
+}
+
+[data-board-theme="floor"] .block.player {
+    background: linear-gradient(145deg, #fca5a5, #ef4444 45%, #b91c1c);
+    border-color: #fecaca;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+[data-board-theme="floor"] .block.h-block-2 { background: linear-gradient(145deg, #93c5fd, #3b82f6 50%, #1d4ed8); }
+[data-board-theme="floor"] .block.h-block-3 { background: linear-gradient(145deg, #6ee7b7, #10b981 50%, #047857); }
+[data-board-theme="floor"] .block.v-block-2 { background: linear-gradient(145deg, #c4b5fd, #8b5cf6 50%, #5b21b6); }
+[data-board-theme="floor"] .block.v-block-3 { background: linear-gradient(145deg, #f9a8d4, #ec4899 50%, #9d174d); }

@@ -1,4 +1,4 @@
-/* Unblock UI — theme.css (UNB-3). Compact one-row HUD + footer. */
+/* Unblock UI — theme.css (UNB-4). Compact one-row HUD + footer; narrow-safe header. */
 
 .app-header {
     display: flex;
@@ -10,6 +10,7 @@
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--board-border);
     flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 .header-left,
@@ -21,12 +22,19 @@
     min-width: 0;
 }
 
+/* Buttons / chrome never shrink below touch size */
+.header-left,
+.header-right {
+    flex: 0 0 auto;
+}
+
 .header-center {
     flex: 1 1 auto;
     justify-content: center;
     text-align: center;
     flex-direction: row;
     gap: 6px;
+    overflow: hidden;
 }
 
 .game-title {
@@ -35,6 +43,9 @@
     letter-spacing: 1px;
     color: var(--accent);
     line-height: 1;
+    white-space: nowrap;
+    flex: 0 1 auto;
+    min-width: 0;
 }
 
 .level-indicator {
@@ -42,6 +53,8 @@
     color: var(--text-secondary);
     margin-top: 0;
     white-space: nowrap;
+    flex: 0 0 auto; /* never truncate "Lv 000" */
+    font-variant-numeric: tabular-nums;
 }
 
 .level-indicator::before {
@@ -58,6 +71,7 @@
     gap: 4px;
     border: 1px solid var(--board-border);
     min-height: 32px;
+    flex: 0 0 auto;
 }
 
 .stat-label {
@@ -71,6 +85,7 @@
     font-size: 0.85rem;
     font-weight: 700;
     color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
 }
 
 .game-main {
@@ -82,7 +97,6 @@
     padding: 4px 8px;
     position: relative;
     overflow: hidden;
-    /* Prevent rubber-band scroll stealing board drags */
     touch-action: none;
     overscroll-behavior: none;
 }
@@ -126,4 +140,58 @@
     border-radius: var(--radius-sm);
     border: 1px solid var(--board-border);
     background: var(--bg-card);
+}
+
+/*
+ * Narrow portrait (phones ~320–400px): drop the text title so levels +
+ * theme/levels/restart buttons never overlap or clip. Keep ≥40px targets.
+ */
+@media (max-width: 420px) and (orientation: portrait) {
+    .game-title {
+        /* Hide wordmark; 🎨 + level carry identity on tiny screens */
+        display: none;
+    }
+    .header-center {
+        justify-content: flex-start;
+        flex: 0 1 auto;
+        gap: 4px;
+    }
+    .level-indicator {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: 0.2px;
+    }
+    .stat-badge {
+        padding: 2px 4px;
+        gap: 2px;
+        min-height: 40px;
+    }
+    .stat-label { font-size: 0.5rem; }
+    .stat-value { font-size: 0.8rem; }
+    .header-left,
+    .header-right {
+        gap: 2px;
+    }
+    .app-header {
+        gap: 2px;
+        padding: 4px 4px;
+    }
+    /* Slightly tighter icon buttons but still ≥40px touch */
+    .app-header .btn-icon {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 0 6px;
+    }
+    .gear-slot a {
+        min-width: 40px;
+        min-height: 40px;
+        padding: 0 6px;
+    }
+}
+
+/* Very narrow stress (≤340px): shrink badge labels further if needed */
+@media (max-width: 340px) and (orientation: portrait) {
+    .stat-label { display: none; } /* "Mv"/"Par" — value alone is enough */
+    .stat-badge { min-width: 28px; justify-content: center; }
 }
