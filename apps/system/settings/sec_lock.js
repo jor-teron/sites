@@ -208,8 +208,8 @@
             if (st === 'ready' && info && info.id) { draw(C.regUrl(site, info.id)); qrNote.textContent = 'Scan with your phone camera, tap Register this phone, then touch the fingerprint sensor.'; }
             else if (st === 'starting') { draw(''); qrNote.textContent = 'Getting the phone code ready\u2026'; }
             else if (st === 'checking') qrNote.textContent = 'Checking the phone\u2026';
-            else if (st === 'wrong') { draw(''); tell(ERR[info && info.reason] || 'The phone was not added. Scan the new code to try again.'); }
-            else if (st === 'error') { draw(''); qrNote.textContent = 'Phone link not available right now (needs internet). Retrying\u2026'; }
+            else if (st === 'wrong') { draw(''); tell((ERR[info && info.reason] || 'The phone was not added. Scan the new code to try again.') + (info && info.reason ? ' (Error code: ' + info.reason + ')' : '')); }   // H143.1: + code
+            else if (st === 'error') { draw(''); qrNote.textContent = 'Phone link not available right now (needs internet). Retrying\u2026 (Error code: ' + ((info && info.type) || 'unknown') + ')'; }   // H143.1
           }
         });
         reg = s;

@@ -252,7 +252,7 @@ function fakeWorld() {
   return { Peer, peers, connect, timers, runTimers };
 }
 
-test('unlock session: fingerprint challenge, one answer per challenge, replay refused, PIN refused when fingerprint only', async () => {
+test('unlock session: fingerprint challenge, one answer per challenge, replay refused (H143.1: fingerprint only offers the PIN as hidden recovery)', async () => {
   const st = memStorage(), s = fast(st);
   await s.setPin('1357'); await s.addKey(recOf(ES), '1357'); await s.setMethod('finger', '1357'); await s.setOn(true);
   const w = fakeWorld();
@@ -262,24 +262,20 @@ test('unlock session: fingerprint challenge, one answer per challenge, replay re
     verifyAssert: (d, ch) => s.verifyAssert(d, ch, { origin: ORIGIN, rpId: RPID }) });
   hub.start();
   const c1 = w.connect(w.peers[0]);
-  assert.equal(c1.sent[0].t, 'hello'); assert.equal(c1.sent[0].v, 2); assert.equal(c1.sent[0].pin, false); assert.equal(c1.sent[0].finger, true);
+  assert.equal(c1.sent[0].t, 'hello'); assert.equal(c1.sent[0].v, 2); assert.equal(c1.sent[0].pin, true); assert.equal(c1.sent[0].pinHidden, true); assert.equal(c1.sent[0].finger, true);
   const chal = c1.sent[1];
   assert.equal(chal.t, 'chal'); assert.equal(chal.nonce, c1.sent[0].nonce);
   assert.deepEqual(chal.allowCredentials, [ES.credId]);
   assert.equal(Buffer.from(chal.challenge, 'base64url').length, 32);
-  // fingerprint only: a PIN from the phone is refused without using the try
-  c1.emit('data', { t: 'pin', pin: '1357', nonce: chal.nonce });
-  assert.deepEqual(c1.sent[2], { t: 'result', ok: false, reason: 'method' });
-  assert.equal(hub.used(), false);
   // a wrong-challenge answer uses the try and fails
   c1.emit('data', Object.assign(assertMsg(ES, { challenge: C.b64u(Buffer.alloc(32, 3)), count: 1 }), { nonce: chal.nonce }));
-  await until(() => c1.sent.length > 3, 'result 1');
-  assert.deepEqual(c1.sent[3], { t: 'result', ok: false });
+  await until(() => c1.sent.length > 2, 'result 1');
+  assert.deepEqual(c1.sent[2], { t: 'result', ok: false });
   assert.equal(unlocked, 0);
   // second answer on the same ID: used
   const good1 = Object.assign(assertMsg(ES, { challenge: chal.challenge, count: 1 }), { nonce: chal.nonce });
   c1.emit('data', good1);
-  assert.equal(c1.sent[4].reason, 'used');
+  assert.equal(c1.sent[3].reason, 'used');
   w.runTimers(10);   // fresh ID
   assert.equal(w.peers.length, 2);
   const c2 = w.connect(w.peers[1]);
@@ -482,7 +478,7 @@ test('lock screen: a fingerprint answer over the QR session unlocks (origin / rp
   assert.equal(p.peers.length, 1);
   const c = emitter({ sent: [], send(m) { this.sent.push(JSON.parse(JSON.stringify(m))); }, close() {} });
   p.peers[0].emit('connection', c); c.emit('open');
-  assert.equal(c.sent[0].pin, false);
+  assert.equal(c.sent[0].pin, true); assert.equal(c.sent[0].pinHidden, true);   // H143.1: the recovery PIN, behind 'Use PIN instead'
   const chal = c.sent[1];
   assert.equal(chal.t, 'chal');
   // wrong rpId (e.g. registered on a Tailscale address) fails, gets a new code
@@ -496,4 +492,47 @@ test('lock screen: a fingerprint answer over the QR session unlocks (origin / rp
   c2.emit('data', Object.assign(assertMsg(ES, { challenge: c2.sent[1].challenge, count: 1 }), { nonce: c2.sent[1].nonce }));
   await until(() => !p.api.locked(), 'fingerprint unlocks');
   assert.deepEqual(c2.sent[2], { t: 'result', ok: true });
+});
+
+/* ---------- H143.1: fingerprint only takes the recovery PIN from the phone (checked against the PBKDF2 record) ---------- */
+test('H143.1 unlock session: fingerprint only accepts the recovery PIN over the phone; a wrong one uses the try', async () => {
+  const st = memStorage(), s = fast(st);
+  await s.setPin('1357'); await s.addKey(recOf(ES), '1357'); await s.setMethod('finger', '1357'); await s.setOn(true);
+  const w = fakeWorld();
+  let unlocked = 0, checked = [];
+  const hub = C.createSession({ Peer: w.Peer, timers: w.timers, settleMs: 10, verify: (p) => { checked.push(p); return s.verify(p); }, onUnlock: () => unlocked++,
+    pinOk: () => s.method() !== 'finger', finger: () => (s.method() !== 'pin' ? { allow: s.keys().map((k) => k.credId) } : null),
+    verifyAssert: (d, ch) => s.verifyAssert(d, ch, { origin: ORIGIN, rpId: RPID }) });
+  hub.start();
+  const c1 = w.connect(w.peers[0]);
+  assert.deepEqual([c1.sent[0].pin, c1.sent[0].pinHidden, c1.sent[0].finger], [true, true, true]);
+  c1.emit('data', { t: 'pin', pin: '0000', nonce: c1.sent[0].nonce });
+  await until(() => c1.sent.length > 2, 'wrong PIN result');
+  assert.deepEqual(c1.sent[2], { t: 'result', ok: false });
+  assert.equal(hub.used(), true, 'a wrong PIN uses the one try');
+  assert.equal(unlocked, 0);
+  w.runTimers(10);
+  const c2 = w.connect(w.peers[1]);
+  c2.emit('data', { t: 'pin', pin: '1357', nonce: c2.sent[0].nonce });
+  await until(() => c2.sent.length > 2, 'right PIN result');
+  assert.deepEqual(c2.sent[2], { t: 'result', ok: true });
+  assert.equal(unlocked, 1);
+  assert.deepEqual(checked, ['0000', '1357'], 'both went through verify (the stored PBKDF2 hash)');
+  // Both: pinHidden false
+  await s.setMethod('both', '1357');
+  const w2 = fakeWorld();
+  C.createSession({ Peer: w2.Peer, timers: w2.timers, verify: () => false, pinOk: () => s.method() !== 'finger',
+    finger: () => ({ allow: s.keys().map((k) => k.credId) }), verifyAssert: () => false }).start();
+  const d1 = w2.connect(w2.peers[0]);
+  assert.deepEqual([d1.sent[0].pin, d1.sent[0].pinHidden, d1.sent[0].finger], [true, false, true]);
+});
+
+test('H143.1 lock screen: a phone-link error shows its code under the QR while it retries', async () => {
+  const p = page(await lockedStore('pin'));
+  await settle();
+  assert.equal(p.peers.length, 1);
+  p.peers[0].emit('error', { type: 'server-error' });
+  assert.equal(p.find('hub-lock-qrnote').textContent, 'Phone unlock is not available right now. Retrying\u2026 Use the keypad meanwhile. (Error code: server-error)');
+  p.peers[0].emit('disconnected');
+  assert.match(p.find('hub-lock-qrnote').textContent, /\(Error code: disconnected\)$/);
 });
