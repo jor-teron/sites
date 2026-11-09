@@ -148,3 +148,27 @@ Dropped the leftover stub files (`css/_link-check.css`, `agent/_trees-layout.pat
 Reset, place picker and slider thumbs are ≥ 48px, with a jelly press on Reset.
 The rAF loop pauses while the tab is hidden (no big dt on resume), and
 `prefers-reduced-motion` freezes tree sway / long fades and cuts rain particles.
+
+## 23. WS2 — your place + live weather
+Weather Sim is **standalone**: it never reads My Day's saved place. Your town
+lives in `localStorage` under `weather-sim:custom-place` (`{name,lat,lon,elev,tz}`),
+and the fixed `PLACES` stay as extras. `registerCustomPlace()` adds a `"custom"`
+row so `elevationOf` / look / report all keep working. Water name is `""`, so an
+inland town is just land (`seaLine` only draws water when elevation < 0).
+
+**Live → sliders.** Open-Meteo gives *local* air. The Temperature slider is
+*sea-level* air, so we invert the lapse:
+
+```js
+// temperatureAt: local = sea − (km × 6.5)   when above sea
+// seaLevelFromLocal: sea = local + (km × 6.5)
+```
+
+Then clamp to the slider's real range (20…60). Humidity / cloud / wind (km/h)
+map straight across; time of day is the place's local hour from `current.time`.
+`liveToSliders()` is a pure function so a small Node test can check the maths
+without a network.
+
+One pull on open (if custom is selected and online), and again when you tap
+**↻ Live**. Dragging a slider afterwards is free simulation — no auto-refetch.
+Reset clears the weather snapshot but **keeps** your place (it is a setting).

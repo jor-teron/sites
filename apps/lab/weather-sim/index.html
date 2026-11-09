@@ -53,12 +53,29 @@
       <div class="place-row">
         <label for="place">Place</label>
         <select id="place">
+          <option id="place-custom" value="custom">📍 My place</option>
           <option value="coast">Mumbai coast</option>
           <option value="himalaya">Kedarnath Pass</option>
           <option value="deadsea">Dead Sea shore</option>
           <option value="alps">Zermatt valley</option>
           <option value="leadville">Leadville, CO</option>
         </select>
+        <button class="place-set" id="place-set" type="button" title="Set or change your place">Set place</button>
+        <button class="live-btn" id="live-refresh" type="button" title="Pull live weather for your place">↻ Live</button>
+      </div>
+      <p class="live-status" id="live-status" aria-live="polite"></p>
+
+      <!-- WS2: search / GPS panel for the custom place -->
+      <div class="place-panel" id="place-panel" hidden>
+        <p class="place-panel-title">Your place</p>
+        <button class="place-gps" id="place-gps" type="button">📍 Use my location</button>
+        <div class="place-search-row">
+          <input type="search" id="place-search" placeholder="Town or city, e.g. Guwahati" aria-label="Place name" autocomplete="off">
+          <button class="place-search-btn" id="place-search-btn" type="button">Search</button>
+        </div>
+        <p class="place-panel-msg" id="place-panel-msg"></p>
+        <div class="place-results" id="place-results"></div>
+        <button class="place-cancel" id="place-cancel" type="button">Cancel</button>
       </div>
 
       <div class="sliders">
@@ -125,6 +142,7 @@
   <script src="js/trees.js"></script>
   <script src="js/save.js"></script>
   <script src="js/report.js"></script>
+  <script src="js/live.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

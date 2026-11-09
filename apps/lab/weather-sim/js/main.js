@@ -1,5 +1,6 @@
 /* main.js — wiring: sliders ↔ state, render loop, reset, keyboard, save
-   WS1: pause rAF while the tab is hidden; resume without a big dt jump */
+   WS1: pause rAF while the tab is hidden; resume without a big dt jump
+   WS2: custom place registration before load; live pull on pick; Reset keeps the place */
 
 const sceneEl = $("scene");
 
@@ -105,9 +106,24 @@ function applyPlace(key) {
 }
 
 placeEl.addEventListener("change", () => {
-  applyPlace(placeEl.value);
+  const key = placeEl.value;
+  /* WS2: custom with no saved place → open the panel instead of applying */
+  if (key === "custom") {
+    if (!getCustomPlace()) {
+      openPlacePanel();
+      placeEl.value = state.place === "custom" ? DEFAULT_STATE.place : state.place;
+      return;
+    }
+    applyPlace("custom");
+    renderAll();
+    saveWeather();
+    pullLiveWeather();
+    return;
+  }
+  applyPlace(key);
   renderAll();
   saveWeather();
+  setLiveStatus("");
 });
 
 /* ---- the snow pile changes the ground, the trees and the report ---- */
@@ -164,7 +180,7 @@ document.addEventListener("visibilitychange", () => {
   else startLoop();
 });
 
-/* ---- reset: forget the settings, not just move the sliders ---- */
+/* ---- reset: forget the weather, not the saved custom place (WS2) ---- */
 function doReset() {
   Object.assign(state, DEFAULT_STATE);
   for (const key in SLIDERS) {
@@ -173,7 +189,8 @@ function doReset() {
   applyPlace(DEFAULT_STATE.place);
   placeEl.value = state.place;
   resetSnow();     // a clean slate: no old snow, no storm
-  clearSave();     // and a reload should bring back *this*, not the old storm
+  clearSave();     // weather snapshot only — custom place stays in its own key
+  setLiveStatus("");
   renderAll();
 }
 
@@ -189,6 +206,10 @@ window.addEventListener("keydown", (e) => {
 });
 
 /* ---- init: last session first, defaults only if there was none ---- */
+/* WS2: register the custom place BEFORE loadSave validates the place key */
+const savedCustom = loadCustomPlace();
+if (savedCustom) registerCustomPlace(savedCustom);
+
 const saved = loadSave();
 
 if (saved) {
@@ -214,3 +235,4 @@ buildClouds();
 resizeCanvas();
 renderAll();
 startLoop();
+initLiveWeather(); // WS2: wire Set place / Live, optional one-shot pull

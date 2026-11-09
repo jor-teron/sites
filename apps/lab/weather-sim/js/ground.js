@@ -1,5 +1,7 @@
 /* ground.js — where you are: a place, its latitude, its elevation, and how high
    the ground is drawn.
+   WS2: registerCustomPlace() adds a user-set "custom" row; seaLevelFromLocal()
+   is the inverse of temperatureAt() so live local air can drive the sea-level slider.
 
    Two ideas do all the work.
 
@@ -145,4 +147,35 @@ function updateHorizon() {
   sceneEl.classList.toggle("has-water", sea > 0);
   sceneEl.classList.toggle("is-elevated", isElevated(state.place));
   sceneEl.dataset.place = state.place;
+}
+
+/* ---- WS2: custom (user-set) place ----
+   One extra row, key "custom". Water name is "" so an inland town stays land
+   (seaLine only draws water when elevation < 0). Elevation comes from the
+   geocoder or from the forecast response. */
+
+const CUSTOM_PLACE_KEY = "custom";
+
+/* inverse of temperatureAt: local air + height → the sea-level slider value */
+function seaLevelFromLocal(localTemp, elevM) {
+  const km = (typeof elevM === "number" && isFinite(elevM) ? elevM : 0) / 1000;
+  if (km > 0) return localTemp + km * LAPSE;
+  if (km < 0) return localTemp + km * BELOW_RATE;
+  return localTemp;
+}
+
+/* put / refresh the custom row so elevationOf / temperatureAt / look all work */
+function registerCustomPlace(p) {
+  if (!p || typeof p.lat !== "number" || typeof p.lon !== "number") return;
+  const elev = typeof p.elev === "number" && isFinite(p.elev) ? p.elev : 0;
+  const name = (p.name && String(p.name)) || "My place";
+  const row = [CUSTOM_PLACE_KEY, name, p.lat, p.lon, elev, ""];
+  const idx = PLACES.findIndex((r) => r[0] === CUSTOM_PLACE_KEY);
+  if (idx >= 0) PLACES[idx] = row;
+  else PLACES.push(row);
+  PLACE_BY_KEY[CUSTOM_PLACE_KEY] = row;
+}
+
+function hasCustomPlaceRegistered() {
+  return !!PLACE_BY_KEY[CUSTOM_PLACE_KEY];
 }

@@ -1,4 +1,6 @@
 /* save.js — remember the sliders after a reload
+   WS2: custom place lives in its own key (weather-sim:custom-place). Reset
+   clears the weather snapshot but keeps the place — it is a setting, not history.
 
    One object in localStorage, one line of code to read it back.
    We save exactly what the user can change:
@@ -116,3 +118,52 @@ window.addEventListener("pagehide", saveWeather);
 window.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") saveWeather();
 });
+
+/* ---- WS2: custom place (separate from the weather snapshot) ----
+   Shape: { name, lat, lon, elev, tz }. Reset must NOT clear this. */
+
+const CUSTOM_SAVE_KEY = "weather-sim:custom-place";
+
+function loadCustomPlace() {
+  if (!CAN_SAVE) return null;
+  let raw = null;
+  try {
+    raw = localStorage.getItem(CUSTOM_SAVE_KEY);
+  } catch (e) {
+    return null;
+  }
+  if (!raw) return null;
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+  if (!data || typeof data !== "object") return null;
+  if (typeof data.lat !== "number" || typeof data.lon !== "number") return null;
+  if (!isFinite(data.lat) || !isFinite(data.lon)) return null;
+  return {
+    name: typeof data.name === "string" && data.name ? data.name : "My place",
+    lat: data.lat,
+    lon: data.lon,
+    elev: typeof data.elev === "number" && isFinite(data.elev) ? data.elev : 0,
+    tz: typeof data.tz === "string" ? data.tz : "",
+  };
+}
+
+function saveCustomPlace(p) {
+  if (!CAN_SAVE || !p) return;
+  try {
+    localStorage.setItem(CUSTOM_SAVE_KEY, JSON.stringify({
+      name: p.name || "My place",
+      lat: p.lat,
+      lon: p.lon,
+      elev: typeof p.elev === "number" && isFinite(p.elev) ? p.elev : 0,
+      tz: p.tz || "",
+    }));
+  } catch (e) {}
+}
+
+function getCustomPlace() {
+  return loadCustomPlace();
+}
