@@ -1,4 +1,5 @@
 /* trees.css — procedural trees: trunk + stacked cones, sway via CSS vars
+   WS1: prefers-reduced-motion freezes sway and drops long transitions
 
    JS writes:  --h --w --hue --sat --cold --mist --snowcoat
                --sway (deg)   --tier-sway (deg)
@@ -105,5 +106,21 @@
 
   .trunk {
     min-width: 2px;
+  }
+}
+
+/* WS1: freeze sway and skip long fades when reduce-motion is on */
+@media (prefers-reduced-motion: reduce) {
+  .tree {
+    transform: none;
+  }
+
+  .tier {
+    transform: translateX(-50%);
+  }
+
+  .tier::after,
+  .tree::after {
+    transition: none;
   }
 }

@@ -1,5 +1,6 @@
-/* ===== FOG ===== */
-/* a milky veil over the scene; opacity is set from JS (fogLevel 0..1) */
+/* fog.css — milky veil over the scene; opacity from JS (fogLevel 0..1)
+   WS1: file header + calm transition when reduce-motion is on */
+
 .fog {
   position: absolute;
   inset: 0;
@@ -31,5 +32,12 @@
       rgba(225, 232, 240, 0.8),
       rgba(196, 206, 218, 0.95)
     );
+  }
+}
+
+/* WS1: no long fade when motion should stay calm */
+@media (prefers-reduced-motion: reduce) {
+  .fog {
+    transition: none;
   }
 }

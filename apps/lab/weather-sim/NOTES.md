@@ -142,3 +142,9 @@ JS writes numbers, CSS maps numbers to colour — same rule as the fog.
 `TREE_LINE_M = 2600`, `SNOW_LINE_M = 1200`. Kedarnath (3,550 m) has no trees;
 Zermatt (1,620 m) does and can hold snow on top. Nobody wrote "if Kedarnath" —
 the two constants did it.
+
+## 22. WS1 — light pass (taps, battery, calm motion)
+Dropped the leftover stub files (`css/_link-check.css`, `agent/_trees-layout.patch.txt`).
+Reset, place picker and slider thumbs are ≥ 48px, with a jelly press on Reset.
+The rAF loop pauses while the tab is hidden (no big dt on resume), and
+`prefers-reduced-motion` freezes tree sway / long fades and cuts rain particles.

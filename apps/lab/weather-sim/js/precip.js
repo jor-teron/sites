@@ -1,4 +1,5 @@
 /* precip.js — canvas rain / snow particles
+   WS1: fewer particles when prefers-reduced-motion is on
 
    Only one thing here knows about the place: the *bottom* of the fall.
    Drops stop at the horizon — the line where the trees stand and where the
@@ -10,6 +11,10 @@ const canvas = $("weather-canvas");
 const ctx = canvas.getContext("2d");
 
 const MAX_PARTICLES = 420;
+/* WS1: cut the particle budget when the device asks for less motion */
+const REDUCE_MOTION = (typeof matchMedia === "function") &&
+  matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PARTICLE_CAP = REDUCE_MOTION ? Math.round(MAX_PARTICLES * 0.4) : MAX_PARTICLES;
 let particles = [];
 let canvasW = 0;
 let canvasH = 0;
@@ -65,7 +70,7 @@ function syncParticles() {
   syncFallFloor();
 
   const type = precipType();
-  const target = type === "none" ? 0 : Math.round(MAX_PARTICLES * precipAmount());
+  const target = type === "none" ? 0 : Math.round(PARTICLE_CAP * precipAmount());
 
   const currentType = particles.length ? particles[0].type : type;
 

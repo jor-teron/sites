@@ -1,4 +1,5 @@
-/* controls.css — place picker, sliders, reset button, report card */
+/* controls.css — place picker, sliders, reset button, report card
+   WS1: 48px taps on Reset / place / slider thumbs; jelly press on Reset */
 
 /* ===== PLACE PICKER ===== */
 .place-row {
@@ -17,6 +18,7 @@
 .place-row select {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 48px; /* WS1: big tap target */
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -24,7 +26,7 @@
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  padding: 7px 9px;
+  padding: 10px 12px;
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
@@ -82,57 +84,47 @@ input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 6px;
+  height: 48px; /* WS1: tall hit area; track stays thin via ::*-track */
   border-radius: 3px;
-  background: #2b3243;
+  background: transparent;
   outline: none;
   touch-action: pan-y; /* let the page scroll, but not sideways */
 }
 
-/* bigger touch target on phones */
-@media (max-width: 720px) {
-  input[type="range"] {
-    height: 22px;
-    background: transparent;
-  }
-
-  input[type="range"]::-webkit-slider-runnable-track {
-    height: 6px;
-    border-radius: 3px;
-    background: #2b3243;
-  }
-
-  input[type="range"]::-moz-range-track {
-    height: 6px;
-    border-radius: 3px;
-    background: #2b3243;
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    margin-top: -6px; /* centre 18px thumb on 6px track */
-    width: 18px;
-    height: 18px;
-  }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #2b3243;
 }
 
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #2b3243;
+}
+
+/* WS1: 48px thumbs for fat fingers */
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 48px;
+  height: 48px;
+  margin-top: -21px; /* centre 48px thumb on 6px track */
   border-radius: 50%;
   background: linear-gradient(135deg, #7fb3ff, #5b8cff);
   border: 2px solid #161a24;
   cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: linear-gradient(135deg, #7fb3ff, #5b8cff);
   border: 2px solid #161a24;
   cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 input[type="range"]:focus-visible {
@@ -143,13 +135,15 @@ input[type="range"]:focus-visible {
 /* ===== RESET BUTTON ===== */
 .reset {
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: #cfd8ea;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  padding: 6px 12px;
+  border-radius: 10px;
+  min-height: 48px; /* WS1: big tap */
+  min-width: 48px;
+  padding: 10px 18px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -158,14 +152,16 @@ input[type="range"]:focus-visible {
   background: rgba(255, 255, 255, 0.15);
 }
 
-.reset:active {
-  transform: translateY(1px);
+/* WS1: playful jelly squash-and-spring on press */
+@keyframes jelly-press {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.92, 0.88); }
+  65% { transform: scale(1.05, 1.06); }
+  100% { transform: scale(1); }
 }
 
-@media (max-width: 720px) {
-  .reset {
-    padding: 8px 14px; /* comfier tap target */
-  }
+.reset:active {
+  animation: jelly-press 0.35s ease;
 }
 
 /* ===== REPORT CARD ===== */
@@ -234,7 +230,8 @@ input[type="range"]:focus-visible {
 
   .place-row select {
     font-size: 12px;
-    padding: 6px 26px 6px 8px;
+    padding: 10px 28px 10px 10px;
+    min-height: 48px;
   }
 
   .slider-row label small {
@@ -268,5 +265,17 @@ input[type="range"]:focus-visible {
 
   .report-stats b {
     font-size: 11.5px;
+  }
+}
+
+/* WS1: calm motion when the phone asks for less */
+@media (prefers-reduced-motion: reduce) {
+  .reset {
+    transition: none;
+  }
+
+  .reset:active {
+    animation: none;
+    transform: scale(0.97);
   }
 }

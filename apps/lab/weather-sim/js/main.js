@@ -1,4 +1,5 @@
-/* main.js — wiring: sliders ↔ state, render loop, reset, keyboard, save */
+/* main.js — wiring: sliders ↔ state, render loop, reset, keyboard, save
+   WS1: pause rAF while the tab is hidden; resume without a big dt jump */
 
 const sceneEl = $("scene");
 
@@ -122,9 +123,14 @@ function tickSnowUI(dt) {
 }
 
 /* ---- animation loop ---- */
+/* WS1: stop burning battery in a hidden tab. Cap dt so a long pause
+   never jumps the snow / trees / rain when the tab comes back. */
 let last = performance.now();
+let rafId = 0;
+let looping = false;
 
 function loop(now) {
+  if (!looping) return;
   const dt = Math.min((now - last) / 1000, 0.05); // clamp big gaps (tab switch)
   last = now;
 
@@ -134,8 +140,29 @@ function loop(now) {
   tickSnowUI(dt);
   tickTrees(dt);
 
-  requestAnimationFrame(loop);
+  rafId = requestAnimationFrame(loop);
 }
+
+function startLoop() {
+  if (looping) return;
+  looping = true;
+  last = performance.now(); // WS1: reset so the first frame after resume has a tiny dt
+  rafId = requestAnimationFrame(loop);
+}
+
+function stopLoop() {
+  looping = false;
+  if (rafId) {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+}
+
+/* own listener; save.js keeps its own visibilitychange for writing */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopLoop();
+  else startLoop();
+});
 
 /* ---- reset: forget the settings, not just move the sliders ---- */
 function doReset() {
@@ -186,4 +213,4 @@ applyTemperature(state.temperature); // slider = sea level, state = here
 buildClouds();
 resizeCanvas();
 renderAll();
-requestAnimationFrame(loop);
+startLoop();
