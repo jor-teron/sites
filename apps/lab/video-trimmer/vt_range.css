@@ -1,0 +1,142 @@
+/* Video Trimmer — vt_range.css: dual-handle range + time chips. VT1 */
+
+.range-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.range-times {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.time-chip {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  min-height: 40px;
+  min-width: 88px;
+  padding: 0.35rem 0.7rem;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.time-chip:hover,
+.time-chip:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.time-edit {
+  width: 5.5rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+}
+
+.sel-dur {
+  font-size: 0.9rem;
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  flex: 1;
+}
+
+.sel-dur strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.range-track {
+  position: relative;
+  height: 48px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.range-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.range-fill {
+  position: absolute;
+  top: 50%;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 999px;
+  background: var(--fill);
+  pointer-events: none;
+}
+
+.range-handle {
+  position: absolute;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  margin-left: -24px;
+  margin-top: -24px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: grab;
+  touch-action: none;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.range-handle:active {
+  cursor: grabbing;
+}
+
+.range-handle:focus-visible {
+  outline: none;
+}
+
+.range-handle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  background: var(--handle);
+  border: 3px solid var(--handle-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+  transition: transform 0.12s ease;
+}
+
+.range-handle:focus-visible::before,
+.range-handle:active::before {
+  transform: scale(1.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .range-handle::before {
+    transition: none;
+  }
+}
