@@ -1,3 +1,8 @@
+/**
+ * Unblock — seeded level generator (UNB-0).
+ * generateLevel(n) must stay byte-identical for every n in 0..999
+ * (same Mulberry32 seed n+1337, same placement rules, same BFS check).
+ */
 import { createRNG } from './seedrandom.js';
 import { CONFIG } from './config.js';
 import { GameLogic } from './gameLogic.js';
@@ -6,6 +11,8 @@ import { GameLogic } from './gameLogic.js';
  * Generates a guaranteed solvable Unblock puzzle for a given level seed.
  * Uses a backward-search solver to ensure every generated puzzle has a valid solution
  * and is not trivially empty or blocked.
+ * @param {number} levelNum
+ * @returns {Array<{id:string,x:number,y:number,length:number,orientation:string,isPlayer:boolean}>}
  */
 export function generateLevel(levelNum) {
     const rng = createRNG(levelNum + 1337);
@@ -102,6 +109,8 @@ export function generateLevel(levelNum) {
 
 /**
  * BFS solver to verify that a set of blocks has at least one valid path to victory.
+ * @param {Array} blocks
+ * @returns {boolean}
  */
 function isSolvable(blocks) {
     const serialize = (blks) => {

@@ -1,6 +1,12 @@
+/**
+ * Unblock — localStorage progress (UNB-0).
+ * Key: CONFIG.storageKey ('unblock_game_save_v1').
+ * Shape: { completedLevels: { [levelNum]: bestMoves }, currentLevel: number }.
+ */
 import { CONFIG } from './config.js';
 
 export const Storage = {
+    /** @returns {{ completedLevels: Object<string, number>, currentLevel: number }} */
     loadProgress() {
         try {
             const data = localStorage.getItem(CONFIG.storageKey);
@@ -11,6 +17,7 @@ export const Storage = {
         }
     },
 
+    /** @param {{ completedLevels: Object, currentLevel: number }} progress */
     saveProgress(progress) {
         try {
             localStorage.setItem(CONFIG.storageKey, JSON.stringify(progress));
@@ -19,6 +26,12 @@ export const Storage = {
         }
     },
 
+    /**
+     * Record a win and advance currentLevel.
+     * @param {number} levelNum
+     * @param {number} moves
+     * @returns {{ completedLevels: Object, currentLevel: number }}
+     */
     completeLevel(levelNum, moves) {
         const progress = this.loadProgress();
         const currentBest = progress.completedLevels[levelNum];

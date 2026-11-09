@@ -1,4 +1,10 @@
-// Mulberry32 PRNG for deterministic level generation
+/**
+ * Unblock — Mulberry32 PRNG (UNB-0).
+ * Tiny deterministic RNG used only by levelGenerator.
+ * Not the npm "seedrandom" package; kept in core/ as first-party code.
+ * @param {number} seed
+ * @returns {() => number} float in [0, 1)
+ */
 export function createRNG(seed) {
     let t = seed += 0x6D2B79F5;
     return function() {

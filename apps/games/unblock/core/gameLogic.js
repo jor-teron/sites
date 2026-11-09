@@ -1,18 +1,28 @@
+/**
+ * Unblock — pure board rules (UNB-0).
+ * No DOM. Holds block positions, collision grid, move/undo and win check.
+ * Player (red) wins when on row 2 and its right edge reaches column gridSize.
+ */
 import { CONFIG } from './config.js';
 
 export class GameLogic {
+    /**
+     * @param {Array<{id:string,x:number,y:number,length:number,orientation:string,isPlayer:boolean}>} blocks
+     */
     constructor(blocks) {
         this.setBlocks(blocks);
         this.moveCount = 0;
         this.history = []; // Array of board snapshots for undo
     }
 
+    /** @param {Array} blocks */
     setBlocks(blocks) {
         // Deep clone blocks
         this.blocks = blocks.map(b => ({ ...b }));
         this.updateGrid();
     }
 
+    /** Rebuild occupancy grid from this.blocks. */
     updateGrid() {
         const size = CONFIG.gridSize;
         this.grid = Array.from({ length: size }, () => Array(size).fill(null));
@@ -26,12 +36,16 @@ export class GameLogic {
         }
     }
 
+    /** @param {string} id */
     getBlock(id) {
         return this.blocks.find(b => b.id === id);
     }
 
     /**
-     * Calculates valid movement range (minDelta, maxDelta) for a block in its orientation.
+     * Calculates valid movement range (clamped delta) for a block in its orientation.
+     * @param {string} blockId
+     * @param {number} delta requested cells (+ right/down, - left/up)
+     * @returns {number} allowed delta (may be 0)
      */
     getValidDeltaRange(blockId, delta) {
         const block = this.getBlock(blockId);
@@ -90,6 +104,12 @@ export class GameLogic {
         return allowedDelta;
     }
 
+    /**
+     * Apply a move if valid; pushes undo snapshot.
+     * @param {string} blockId
+     * @param {number} delta
+     * @returns {boolean}
+     */
     moveBlock(blockId, delta) {
         const actualDelta = this.getValidDeltaRange(blockId, delta);
         if (actualDelta === 0) return false;
@@ -109,6 +129,7 @@ export class GameLogic {
         return true;
     }
 
+    /** @returns {boolean} */
     undo() {
         if (this.history.length === 0) return false;
         this.blocks = this.history.pop();
@@ -117,6 +138,7 @@ export class GameLogic {
         return true;
     }
 
+    /** @returns {boolean} */
     isWon() {
         const player = this.getBlock('player');
         if (!player) return false;
