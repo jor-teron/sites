@@ -144,6 +144,7 @@ Caption for NEI,       caption-for-nei/, , , Language, Live captions for English
 Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
 Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
 Device Benchmark,      devbench/,        , , Device, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
+Zip,                   zip/,             , , Files, Make and open zip files offline - optional password and folder extract
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
