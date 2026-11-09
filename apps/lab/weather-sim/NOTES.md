@@ -92,16 +92,16 @@ custom place you set with a high or negative elevation.)
 ## 16. The ground has its own line — the sea never sets it
 There is **one** fraction that positions the ground: `--horizon`
 (`horizonLine()` in js/ground.js). That is the line where the trees stand and
-where the sky ends. It depends **only on height**:
+where the sky ends. It depends **only on height**, and WS4 caps it at 25%:
 
 ```js
-HORIZON_COAST = 0.30   // you stand near the sea: a low, wide sky
-HORIZON_HIGH  = 0.46   // on a summit the horizon rises with you
+HORIZON_COAST = 0.16   // low coast: lots of sky
+HORIZON_HIGH  = 0.25   // hard cap — ground never more than 25% tall
 horizon = COAST + min(1, metres / 3600) * (HIGH - COAST)
 ```
 
 The water is a *separate* number, `--sea-level`, and it is **not** in that sum:
-in a basin the water surface sits at `SEA_SURFACE = 0.10`, well below the
+in a basin the water surface sits at `SEA_SURFACE = 0.08`, well below the
 horizon, so you look *down* at it. The sea never moves the ground.
 
 > This is the bug that was fixed: the ground used to be drawn with
@@ -111,12 +111,13 @@ horizon, so you look *down* at it. The sea never moves the ground.
 > ground block is a fixed `--ground-h` tall and its **top edge is the horizon**.
 
 ## 17. Trees stand on the horizon, always
-`.trees-layer` is a **zero-height** band pinned to the bottom of `.ground`
-(`css/trees.css`). A tree grows *up* from its own bottom edge, so its foot is
-the horizon by construction — no per-place padding, no magic offsets. Only
-heights are written by JS, never a foot position.
-The layer also has the `--tree-h` unit, so `--h`/`--w` are real lengths that
-cannot depend on the ground box (which is what made tall places look wrong).
+`.trees-layer` is a **zero-height** band pinned with the **same** `--horizon`
+CSS var as the ground crest (`css/trees.css`). It is a sibling of `.ground`
+(child of `.scene`), so `bottom: calc(var(--horizon) * 100%)` is a % of the
+scene — one shared source of truth. A tree grows *up* from that line.
+(WS4 fixed the old bug where the layer sat at the *bottom* of `.ground`, so
+the feet were lower than the crest.) Only heights are written by JS, never a
+foot position. `--tree-h` keeps `--h`/`--w` as real lengths.
 
 ## 18. Rain must stop where the eye stops
 `fallTarget()` returns `horizonLine()`: drops vanish at the skyline, in front of
@@ -190,3 +191,19 @@ the runtime `"custom"` row. The place `<select>` is replaced by one big
 in place for a custom place with elevation < 0, but nothing ships with water
 now. Unknown saved place keys fall back through `resolvePlaceKey()` → custom
 (if set) or `default`.
+
+## 25. WS4 — lower horizon, trees on it, sun arc, crescent moon
+**Horizon ≤ 25%.** `HORIZON_COAST = 0.16`, `HORIZON_HIGH = 0.25`. Even a high
+custom place only lifts the crest a little; the sky keeps most of the frame.
+`--ground-h` is ~22% so the green strip matches.
+
+**One `--horizon` for ground and trees.** Trees moved out of `.ground` to sit
+beside it under `.scene`, both reading `var(--horizon)`. Feet = crest, always.
+
+**Sun path.** `sunPosition(hour, horizonFrac)`: rises at left on the horizon
+(06:00), arcs to top-middle at noon (`sin(π·p)`), sets at right on the horizon
+(19:00). The disc's centre sits on the crest at rise/set, so it goes down
+*behind* the ground. Moon uses the same arc for the night (19:00→06:00).
+
+**Crescent moon.** `mask-image` cuts an offset circle out of the pale disc →
+a clean half crescent, glow kept.

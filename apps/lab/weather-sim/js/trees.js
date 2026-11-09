@@ -12,9 +12,9 @@
    The forest is skipped above the tree line (js/ground.js: TREE_LINE_M),
    not rebuilt — the same trees simply stay hidden.
 
-   WHERE THE FEET ARE: the layer is a zero-height band pinned to the horizon
-   (css/trees.css), so a tree's bottom edge IS the horizon line, in every
-   place. Only the heights are set here — never the foot position. */
+   WHERE THE FEET ARE (WS4): the layer is a zero-height band pinned with the
+   shared --horizon CSS var (css/trees.css), so a tree's bottom edge IS the
+   horizon line in every place. Only heights are set here — never the foot. */
 
 const treesLayerEl = $("trees");
 

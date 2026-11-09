@@ -34,10 +34,12 @@
       <canvas id="weather-canvas"></canvas>
 
       <div class="ground">
-        <div class="trees-layer" id="trees"></div>
         <div class="snow-layer" id="snow-layer"></div>
         <div class="grass"></div>
       </div>
+
+      <!-- WS4: sibling of .ground, pinned with the same --horizon var -->
+      <div class="trees-layer" id="trees"></div>
 
       <div class="scene-label" id="scene-label">Daytime</div>
       <div class="altitude-tag" id="altitude-tag"><span class="arrow">▲</span><b id="altitude-tag-value">+10 m</b> <span id="altitude-tag-water">at sea level</span></div>

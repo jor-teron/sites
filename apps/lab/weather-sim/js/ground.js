@@ -5,6 +5,8 @@
    WS3: fixed presets removed. Only a built-in "default" (sea-level land) plus the
    user "custom" place remain. Shore/sea drawing code is kept (unused until a
    custom place has elevation < 0).
+   WS4: horizon capped at 25% of scene height; --horizon is the shared source of
+   truth for the ground crest and the trees' feet.
 
    Two ideas do all the work.
 
@@ -18,9 +20,9 @@
         - the sky, down to the horizon line (where the trees stand)
         - below the horizon: the far valley (or the sea, in a deep basin)
         - at the bottom: the ground you stand on, with the trees on its crest
-      Every place gets its own horizon, so the ground is always the same
-      readable size. Height is told by the view DOWN, not by the ground
-      creeping up the screen. */
+      Every place gets its own horizon (capped at 25% in WS4), so the ground
+      stays a readable strip. Height is told by the view DOWN, not by the
+      ground creeping up the screen. */
 
 /* [key, name, latitude, longitude, elevation (m), name of the water beside you]
    latitude > 0 = north, < 0 = south
@@ -110,13 +112,14 @@ function pressureAt(placeKey) {
    pair, so the ground stays the same readable size at the top of a mountain
    and at the coast. */
 
-const HORIZON_COAST = 0.30;   // you stand near the sea: a low, wide sky
-const HORIZON_HIGH = 0.46;    // on a summit the horizon rises with you
+const HORIZON_COAST = 0.16;   // low coast: lots of sky
+const HORIZON_HIGH = 0.25;    // WS4 hard cap: ground never more than 25% tall
 const HORIZON_MAX_M = 3600;   // metres that reach HORIZON_HIGH
-const SEA_SURFACE = 0.10;     // in a basin the water is just below your feet
+const SEA_SURFACE = 0.08;     // in a basin the water is just below your feet
 
 /* where the trees stand, and where the ground's crest is drawn.
-   Purely a function of height — the sea is not part of this sum. */
+   Purely a function of height — the sea is not part of this sum.
+   Always ≤ HORIZON_HIGH (0.25), so the ground never eats the sky. */
 function horizonLine(placeKey) {
   const metres = Math.max(0, elevationOf(placeKey));
   const climb = Math.min(1, metres / HORIZON_MAX_M);

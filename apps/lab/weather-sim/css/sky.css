@@ -1,4 +1,5 @@
-/* sky.css — sky gradient, sun, moon, stars, clouds, ground *colour*, canvas */
+/* sky.css — sky gradient, sun, moon, stars, clouds, ground *colour*, canvas
+   WS4: moon is a half crescent (mask cuts an offset disc); sun path is in sky.js */
 
 /* ===== SKY ===== */
 .sky {
@@ -27,8 +28,11 @@
 }
 
 .moon {
+  /* full pale disc, then cut an offset circle → clean half crescent */
   background: radial-gradient(circle at 35% 30%, #ffffff, #d7dce8 60%, #aab2c6);
   box-shadow: 0 0 40px 10px rgba(220, 230, 255, 0.35);
+  -webkit-mask-image: radial-gradient(circle at 70% 45%, transparent 46%, #000 52%);
+  mask-image: radial-gradient(circle at 70% 45%, transparent 46%, #000 52%);
 }
 
 /* ===== STARS ===== */

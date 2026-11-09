@@ -1,4 +1,6 @@
-/* sky.js — sky gradient, sun/moon path, stars, fog, label */
+/* sky.js — sky gradient, sun/moon path, stars, fog, label
+   WS4: sun rises left@horizon → noon top-middle → sets right@horizon;
+        moon is a half crescent (css/sky.css) on the same night arc. */
 
 const skyEl = $("sky");
 const sunEl = $("sun");
@@ -19,6 +21,12 @@ const SKY_STOPS = [
   [21, "#1d2148", "#3a3f6b"],   // dusk
   [24, "#0b1030", "#1b2450"],   // back to night
 ];
+
+const SUN_RISE = 6;   // hour
+const SUN_SET = 19;   // hour
+const MOON_RISE = 19;
+const MOON_SET = 6;   // next morning
+const SUN_PEAK_TOP = 8; // CSS top % at solar noon (near the top of the scene)
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
@@ -58,22 +66,41 @@ function skyGradient(hour) {
   return { top: rgbToCss(top), bottom: rgbToCss(bottom) };
 }
 
-/* sun path: rises 6:00, sets 19:00 */
-function sunPosition(hour) {
-  const p = (hour - 6) / 13; // 0..1
-  const x = 8 + p * 84;      // % across
-  const y = 78 - Math.sin(Math.max(0, Math.min(1, p)) * Math.PI) * 62;
+/* ---- pure sky paths (WS4; tested without DOM) ----
+   x,y are CSS left/top percentages (0 = left/top, 100 = right/bottom).
+   horizonFrac is 0 = scene bottom, 1 = scene top (same as --horizon).
+   Sunrise/sunset sit ON the horizon so the disc sets behind the ground. */
+
+function dayFraction(hour) {
+  return (hour - SUN_RISE) / (SUN_SET - SUN_RISE);
+}
+
+function nightFraction(hour) {
+  const h = hour < MOON_SET + 1 ? hour + 24 : hour; // wrap past midnight
+  return (h - MOON_RISE) / ((MOON_SET + 24) - MOON_RISE);
+}
+
+/* arc: x left→right linear in fraction; y = sin(π·p) up from the horizon */
+function skyArc(p, horizonFrac) {
+  const t = Math.max(0, Math.min(1, p));
+  const x = 5 + t * 90;                          // left-bottom → right-bottom
+  const horizonTop = (1 - horizonFrac) * 100;    // CSS top % of the horizon
+  const y = horizonTop - Math.sin(t * Math.PI) * (horizonTop - SUN_PEAK_TOP);
+  return { x, y };
+}
+
+function sunPosition(hour, horizonFrac) {
+  const p = dayFraction(hour);
+  const { x, y } = skyArc(p, horizonFrac);
   return { x, y, visible: p >= 0 && p <= 1 };
 }
 
-/* moon path: rises 19:00, sets 6:00 */
-function moonPosition(hour) {
-  const h = hour < 7 ? hour + 24 : hour;
-  const p = (h - 19) / 11;   // 0..1
-  const x = 8 + p * 84;
-  const y = 78 - Math.sin(Math.max(0, Math.min(1, p)) * Math.PI) * 62;
+function moonPosition(hour, horizonFrac) {
+  const p = nightFraction(hour);
+  const { x, y } = skyArc(p, horizonFrac);
   return { x, y, visible: p >= 0 && p <= 1 };
 }
+/* ---- /pure sky paths ---- */
 
 /* stars: created once, randomised positions */
 function buildStars(count = 70) {
@@ -93,15 +120,16 @@ function renderSky() {
   skyEl.style.background = `linear-gradient(${top}, ${bottom})`;
 
   const clouds = cloudAmount();
+  const horizon = horizonLine(state.place);
 
   // sun
-  const sun = sunPosition(state.time);
+  const sun = sunPosition(state.time, horizon);
   sunEl.style.left = `calc(${sun.x}% - 35px)`;
   sunEl.style.top = `calc(${sun.y}% - 35px)`;
   sunEl.style.opacity = sun.visible ? String(1 - clouds * 0.85) : "0";
 
   // moon
-  const moon = moonPosition(state.time);
+  const moon = moonPosition(state.time, horizon);
   moonEl.style.left = `calc(${moon.x}% - 35px)`;
   moonEl.style.top = `calc(${moon.y}% - 35px)`;
   moonEl.style.opacity = moon.visible ? String(1 - clouds * 0.8) : "0";

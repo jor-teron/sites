@@ -1,5 +1,6 @@
 /* trees.css — procedural trees: trunk + stacked cones, sway via CSS vars
    WS1: prefers-reduced-motion freezes sway and drops long transitions
+   WS4: layer is a sibling of .ground, pinned with the same --horizon var
 
    JS writes:  --h --w --hue --sat --cold --mist --snowcoat
                --sway (deg)   --tier-sway (deg)
@@ -7,21 +8,20 @@
    while the rain canvas keeps drawing. No JS per-frame style of size/colour.
 
    PLACEMENT RULE: a tree's foot is the horizon line, always. The layer has no
-   height of its own — it is a zero-height band pinned at the horizon, and the
-   trees grow UP from it into the sky. That is why the forest sits on the
-   skyline at the coast, on a ridge, and on a summit alike. */
+   height of its own — it is a zero-height band pinned with --horizon (the same
+   CSS var ground.js writes for the ground crest). Trees grow UP into the sky. */
 
 /* ===== LAYER ===== */
-/* a hairline band sitting exactly on the horizon, inside .ground */
+/* hairline band on the shared --horizon (child of .scene, not .ground) */
 .trees-layer {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;                /* .ground's bottom + height = the horizon */
+  bottom: calc(var(--horizon) * 100%); /* same source of truth as .ground top */
   height: 0;                /* zero height: the trees' feet are the horizon */
-  z-index: 1;               /* over the ground colour, under the snow pile */
+  z-index: 3;               /* over the ground colour and rain canvas */
   pointer-events: none;
-  --tree-h: 16vw;           /* tree height unit; JS narrows this on phones */
+  --tree-h: 14vw;           /* WS4: a touch smaller now the horizon is lower */
 }
 
 /* ===== ONE TREE ===== */

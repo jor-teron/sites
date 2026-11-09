@@ -1,4 +1,5 @@
 /* ground.css — where the ground is, where the pines stand, and what lies below
+   WS4: --horizon capped ≤ 0.25; trees use the same var (see trees.css)
 
    Numbers written into .scene every render:
      by js/ground.js:  --horizon      0 = bottom of the scene, 1 = top; the line
@@ -11,16 +12,16 @@
 
    The rule: the GROUND is only ever positioned from --horizon. The sea lives
    in the band underneath the horizon and never touches the ground's height.
-   That is what keeps the trees on the skyline at every place. */
+   Trees are a sibling layer also pinned to --horizon (one shared source). */
 
 .scene {
-  --horizon: 0.30;
+  --horizon: 0.16;
   --sea-level: 0;
   --water-span: 0;
   --altitude: 0;
   --altitude-basin: 0;
   --crest-snow: 0;
-  --ground-h: 30%;   /* how tall the ground block is, as a share of the scene */
+  --ground-h: 22%;   /* WS4: ground strip ≤ horizon cap (25%) */
 }
 
 /* the ground carries the trees and snow; it never moves on its own.
@@ -201,7 +202,7 @@
 /* ===== PHONE ===== */
 @media (max-width: 720px) {
   .scene {
-    --ground-h: 28%;
+    --ground-h: 20%;
   }
 
   .altitude-tag {
