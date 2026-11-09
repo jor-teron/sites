@@ -277,7 +277,7 @@ test('keys stay out of profile / sync, and the SW shell lists the new files with
   const sw = read('hub/update/hub_sw.js');
   const V = sw.match(/^const V = '(\d{8}[a-z]?)';/m)[1];
   const cache = +sw.match(/^const CACHE = 'hub-shell-v(\d+)';/m)[1];
-  assert.equal(cache, 160);
+  assert.equal(cache, 161);   // H143
   assert.match(read('sw.js'), new RegExp("importScripts\\('hub/update/hub_sw\\.js\\?v=" + V + "'\\);"));
   const shell = sw.slice(sw.indexOf('const SHELL = ['), sw.indexOf('];', sw.indexOf('const SHELL = [')));
   const listed = Array.from(shell.replace(/\/\/.*$/gm, '').matchAll(/'([^']+)'/g), (m) => m[1]);

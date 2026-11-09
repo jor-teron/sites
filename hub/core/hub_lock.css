@@ -1,4 +1,4 @@
-/* H142 Hub PIN lock screen (hub/core/hub_lock.js). #hub-lock is a child of <html> after <body>; while locked
+/* H142 Hub PIN lock screen (H143: + 'Use PIN' recovery link) (hub/core/hub_lock.js). #hub-lock is a child of <html> after <body>; while locked
    html.hub-locked hides <body> (it is also inert), so nothing of the desktop shows behind the lock.
    Dark (default); Light (html.hub-light); Glass (html.hub-glass). Chrome 109 safe (no color-mix, no nesting). */
 html.hub-locked > body { visibility: hidden !important; }
@@ -45,6 +45,14 @@ html.hub-locked { background: #080b14; }
 #hub-lock.shake .hub-lock-dots { animation: hub-lock-shake 0.4s; }
 @keyframes hub-lock-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
 html.hub-motion-off #hub-lock.shake .hub-lock-dots { animation: none; }
+/* H143: fingerprint only — the PIN pad hides behind the small 'Use PIN' recovery link */
+#hub-lock .hub-lock-dots[hidden], #hub-lock .hub-lock-pad[hidden], #hub-lock .hub-lock-recover[hidden] { display: none; }
+#hub-lock .hub-lock-recover {
+  margin: 14px auto 0; padding: 6px 10px; border: 0; background: none; color: inherit; font: inherit; font-size: 14px;
+  opacity: 0.75; text-decoration: underline; cursor: pointer;
+}
+#hub-lock .hub-lock-recover:hover { opacity: 1; }
+#hub-lock .hub-lock-recover:focus-visible { outline: 3px solid #70b8ff; outline-offset: 3px; }
 html.hub-light.hub-locked, html.hub-light #hub-lock { background: #eef2f8; color: #1b2333; }
 html.hub-light #hub-lock .hub-lock-key { border-color: rgba(27, 35, 51, 0.3); background: rgba(27, 35, 51, 0.05); }
 html.hub-light #hub-lock .hub-lock-key:hover { background: rgba(27, 35, 51, 0.12); }

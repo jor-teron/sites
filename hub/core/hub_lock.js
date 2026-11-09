@@ -19,6 +19,11 @@
  * (and every ~2 minutes). No PeerJS / offline / file:// = pad only. No attempt limit in H142.
  * This is a casual lock: a webpage can only lock itself, and anyone with the browser's tools can get past it.
  *
+ * H143 fingerprint: Settings › Screen lock › Unlock with = PIN only / Fingerprint only / Both ('hub-lock.method').
+ * With a fingerprint method the QR session also sends {t:'chal'} and the phone answers with its passkey
+ * (HubLockCore.verifyAssertion, origin = this page's origin, rpId = its hostname). Fingerprint only: the PIN pad is
+ * hidden behind a small 'Use PIN' recovery link (the PIN always exists) and the phone page offers no PIN box.
+ *
  * The optional head line in desktop.html adds html.hub-locked before the first paint when the lock will show.
  *
  * API window.HubLock { isOn(), hasPin(), locked(), lockNow() → bool (false while off), apply() (unlocks if now off),
@@ -33,7 +38,9 @@
   const store = C.create();
 
   /* ---------- overlay ---------- */
-  let el = null, dotsEl = null, msgEl = null, padEl = null, qrBox = null, qrNote = null;
+  let el = null, dotsEl = null, msgEl = null, padEl = null, qrBox = null, qrNote = null, subEl = null, phoneH = null, recoverEl = null;
+  let pinShown = true;   // H143: false while fingerprint only and the 'Use PIN' link was not used
+  const here = (function () { try { return new URL(location.href); } catch (_) { return null; } })();
   let isLocked = false, priorFocus = null, bodyWasInert = false, entry = '', busy = false, session = null;
   function mk(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function build() {
@@ -52,7 +59,7 @@
     const h = mk('h2', '', 'Hub is locked');
     h.id = 'hub-lock-title';
     left.appendChild(h);
-    left.appendChild(mk('p', 'hub-lock-sub', 'Enter your 4-digit PIN'));
+    subEl = left.appendChild(mk('p', 'hub-lock-sub', 'Enter your 4-digit PIN'));
     dotsEl = mk('div', 'hub-lock-dots');
     dotsEl.setAttribute('aria-hidden', 'true');
     for (let i = 0; i < 4; i++) dotsEl.appendChild(mk('i'));
@@ -73,9 +80,15 @@
       padEl.appendChild(b);
     });
     left.appendChild(padEl);
+    // H143: fingerprint only: the PIN is a hidden recovery behind this link
+    recoverEl = mk('button', 'hub-lock-recover', 'Use PIN');
+    recoverEl.type = 'button';
+    recoverEl.hidden = true;
+    recoverEl.addEventListener('click', () => { showPin(true); grab(); });
+    left.appendChild(recoverEl);
     // right: the phone QR
     const right = mk('div', 'hub-lock-side hub-lock-phone');
-    right.appendChild(mk('h3', '', 'Or unlock with your phone'));
+    phoneH = right.appendChild(mk('h3', '', 'Or unlock with your phone'));
     qrBox = mk('div', 'hub-lock-qr');
     qrBox.setAttribute('role', 'img');
     qrBox.setAttribute('aria-label', 'QR code for the phone unlock page');
@@ -96,8 +109,19 @@
     for (let i = 0; i < d.length; i++) d[i].classList.toggle('on', i < entry.length);
   }
   function say(text, bad) { msgEl.textContent = text || ''; msgEl.classList.toggle('bad', !!bad); }
+  /* H143: PIN pad shown / hidden (fingerprint only shows it after 'Use PIN') */
+  function showPin(v) {
+    pinShown = !!v;
+    el.classList.toggle('hub-lock-pinhid', !pinShown);
+    padEl.hidden = !pinShown; dotsEl.hidden = !pinShown;
+    recoverEl.hidden = pinShown;
+    const m = store.method();
+    subEl.textContent = !pinShown ? 'Scan the QR code with your phone and use your fingerprint'
+      : (m === 'finger' ? 'Enter your 4-digit PIN (recovery)' : 'Enter your 4-digit PIN');
+    phoneH.textContent = m === 'finger' ? 'Unlock with your phone' : 'Or unlock with your phone';
+  }
   function key(k) {
-    if (!isLocked || busy) return;
+    if (!isLocked || busy || !pinShown) return;
     if (k === 'back') entry = entry.slice(0, -1);
     else if (k === 'clear') entry = '';
     else if (k === 'ok') { if (entry.length === 4) submit(); else say('Enter 4 digits', true); return; }
@@ -155,8 +179,10 @@
   const NOTES = {
     starting: 'Getting the phone code ready\u2026',
     ready: 'Scan with your phone camera, then type your PIN on the phone.',
-    checking: 'Checking the PIN from your phone\u2026',
-    wrong: 'Wrong PIN from the phone. Scan the new code to try again.',
+    readyFinger: 'Scan with your phone camera, then touch the fingerprint sensor on the phone.',
+    readyBoth: 'Scan with your phone camera, then use your fingerprint or type your PIN on the phone.',
+    checking: 'Checking the answer from your phone\u2026',
+    wrong: 'That did not unlock. Scan the new code to try again.',
     unlocked: 'Unlocked from your phone.',
     error: 'Phone unlock is not available right now. Use the keypad.',
     offline: 'No internet, so phone unlock is off. Use the keypad.',
@@ -164,10 +190,11 @@
   };
   function onState(s, info) {
     if (!isLocked || !qrNote) return;
-    qrNote.textContent = NOTES[s] || '';
+    const m = store.method();
+    qrNote.textContent = (s === 'ready' && m !== 'pin' ? NOTES[m === 'finger' ? 'readyFinger' : 'readyBoth'] : NOTES[s]) || '';
     if (s === 'ready' && info && info.id) drawQr(C.unlockUrl(document.baseURI, info.id));
     else if (s !== 'checking' && s !== 'unlocked') drawQr('');
-    if (s === 'wrong') say('Wrong PIN from the phone.', true);
+    if (s === 'wrong' && pinShown) say(m === 'pin' ? 'Wrong PIN from the phone.' : 'The phone did not unlock it.', true);
   }
   function startPhone() {
     if (!isLocked || session) return;
@@ -176,7 +203,10 @@
     onState('starting');
     loadPeer().then((Peer) => {
       if (!isLocked || session) return;
-      session = C.createSession({ Peer, verify: (pin) => store.verify(pin), onUnlock: unlock, onState });
+      session = C.createSession({ Peer, verify: (pin) => store.verify(pin), onUnlock: unlock, onState,
+        pinOk: () => store.method() !== 'finger',   // H143: fingerprint only = no PIN from the phone
+        finger: () => (store.method() !== 'pin' ? { allow: store.keys().map((k) => k.credId) } : null),
+        verifyAssert: (d, ch) => store.verifyAssert(d, ch, { origin: here ? here.origin : '', rpId: here ? here.hostname : '' }) });
       session.start();
     }, () => { onState('error'); setTimeout(() => { if (isLocked && !session) startPhone(); }, 30000); });
   }
@@ -192,6 +222,7 @@
       isLocked = true;
       priorFocus = document.activeElement;
       entry = ''; busy = false;
+      showPin(store.method() !== 'finger');   // H143
       paintDots(); say('');
       if (el.parentNode !== root || root.lastElementChild !== el) root.appendChild(el);   // after <body>
       el.hidden = false;
@@ -221,7 +252,7 @@
     if (!isLocked || !el) return;
     const a = document.activeElement;
     if (a && el.contains(a) && a !== el) return;
-    const first = padEl && padEl.querySelector('button');
+    const first = pinShown ? padEl && padEl.querySelector('button') : recoverEl;   // H143
     try { (first || el).focus({ preventScroll: true }); } catch (_) { el.focus(); }
   }
   const onPadButton = (t) => !!(t && t.tagName === 'BUTTON' && el && el.contains(t));
@@ -236,6 +267,7 @@
     if (/^\d$/.test(k)) key(k);
     else if (k === 'Backspace') key('back');
     else if (k === 'Escape' || k === 'Delete') key('clear');
+    else if (k === 'Enter' && !pinShown) { showPin(true); grab(); }   // H143: Enter on the lock = Use PIN
     else if (k === 'Enter') key('ok');
   }
   ['keydown', 'keyup', 'keypress'].forEach((t) => window.addEventListener(t, stopKey, true));
@@ -248,8 +280,11 @@
     isOn: store.isOn, hasPin: store.hasPin, locked: () => isLocked,
     lockNow: () => lock(), apply, verify: store.verify,
     setPin: store.setPin, removePin: (cur) => store.removePin(cur).then((r) => { apply(); return r; }),
+    // H143: phones + method (Settings › Screen lock); none of these turns the lock on
+    keys: store.keys, method: store.method, methodReady: store.methodReady, setMethod: store.setMethod,
+    addKey: store.addKey, removeKey: store.removeKey,
     setOn: (v, cur) => store.setOn(v, cur).then((r) => { apply(); return r; }),
-    state: () => ({ on: store.isOn(), hasPin: store.hasPin(), locked: isLocked, phone: !!session })
+    state: () => ({ on: store.isOn(), hasPin: store.hasPin(), locked: isLocked, phone: !!session, method: store.method(), phones: store.keys().length, pinShown })
   };
   // every load of the Hub page while Activate is on (no idle auto-lock)
   if (store.isOn()) lock(); else root.classList.remove('hub-locked');
