@@ -1170,4 +1170,3 @@ export function createScene(viewportEl, hooks) {
     isDragging: function () { return !!transform.dragging; }
   };
 }
-
