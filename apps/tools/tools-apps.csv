@@ -23,3 +23,4 @@ Altimeter,             altimeter/,          , , Weather, GPS altitude from your 
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
+Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings
