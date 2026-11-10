@@ -1638,7 +1638,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   numbered 1.90.
 
 
-### 1.85 Image Converter presets and quick edits, release CI2
+### 1.91 Image Converter presets and quick edits, release CI2
 
 - Presets and edits on `apps/media/image-converter/` (CI1). Branch
   `apps/ci2-image-converter`. RELEASE / title / `?v=` = CI2.
