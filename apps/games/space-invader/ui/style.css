@@ -83,3 +83,37 @@ html, body {
   opacity: 0.55;
   font-size: 12px !important;
 }
+
+/* SI-T1: theme-aware chrome; preserve the 480 × 640 playfield aspect ratio. */
+:root { --si-bg:#000; --si-ink:#fff; --si-accent:#5eff76; --si-muted:#092d13; --si-font:monospace; }
+html, body { background:var(--si-bg); color:var(--si-ink); font-family:var(--si-font); }
+body { display:grid; place-items:center; padding:56px 0 40px; height:100dvh; }
+#game { width:min(100vw, calc((100dvh - 96px) * .75)) !important; height:auto !important; max-height:calc(100dvh - 96px); aspect-ratio:3 / 4; background:var(--si-bg); }
+.hud { align-items:center; padding:8px max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left)); gap:8px; min-height:52px; background:var(--si-bg); border-bottom:1px solid var(--si-muted); font-size:12px; letter-spacing:1px; }
+.hud span { color:var(--si-accent); font-weight:bold; }
+button { font:inherit; color:var(--si-ink); border:1px solid var(--si-ink); background:var(--si-bg); padding:10px 12px; border-radius:12px; cursor:pointer; min-height:40px; }
+button:focus-visible, input:focus-visible { outline:3px solid var(--si-accent); outline-offset:3px; }
+.game-footer { position:fixed; bottom:env(safe-area-inset-bottom, 0); padding:10px 14px; width:100%; display:flex; justify-content:space-between; gap:8px; font-size:11px; border-top:1px solid var(--si-muted); background:var(--si-bg); }
+.overlay { inset:56px 0 40px; padding:20px; color:var(--si-ink); background:color-mix(in srgb, var(--si-bg) 88%, transparent); }
+.overlay h1 { color:var(--si-accent); text-shadow:none; font-size:clamp(21px, 4vw, 32px); letter-spacing:4px; }
+.overlay .hint { opacity:.8; line-height:1.7; }
+#theme-settings { margin:auto; width:min(720px, calc(100vw - 24px)); max-height:calc(100dvh - 24px); padding:20px; border:1px solid var(--si-ink); border-radius:20px; color:var(--si-ink); background:var(--si-bg); overflow:auto; touch-action:pan-y; }
+#theme-settings * { touch-action:pan-y; }
+#theme-settings::backdrop { background:#0009; }
+.settings-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; }
+.settings-heading h2 { font-size:22px; margin-bottom:5px; }
+.settings-heading p, .settings-note, #theme-status { font-size:12px; line-height:1.5; }
+.settings-note { margin-top:18px; opacity:.8; }
+#theme-status { min-height:18px; margin-top:8px; }
+.auto-option { display:block; padding:12px; border:1px solid var(--si-ink); border-radius:12px; cursor:pointer; }
+.auto-option small { display:block; font-size:11px; line-height:1.5; margin-top:5px; }
+input { accent-color:var(--si-accent); }
+.theme-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px; }
+.theme-card { display:grid; grid-template-columns:20px 1fr; border:1px solid var(--si-muted); border-radius:12px; overflow:hidden; padding:6px; cursor:pointer; }
+.theme-card:has(input:checked), .auto-option:has(input:checked) { border:2px solid var(--si-ink); box-shadow:0 0 0 1px var(--si-ink); }
+.theme-card canvas { grid-column:1 / -1; grid-row:1; width:100%; height:auto; border-radius:7px; }
+.theme-card input { margin:10px 0 4px; }
+.theme-card span { font-size:12px; margin:8px 0 4px; }
+@media (min-width:650px) { .theme-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (max-width:430px) { .game-footer { justify-content:center; } .game-footer > span:last-child { display:none; } #theme-settings { padding:14px; } }
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior:auto !important; animation:none !important; transition:none !important; } }
