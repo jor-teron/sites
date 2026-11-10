@@ -64,6 +64,7 @@ window.HUB_APP_INDEX = {
   "ludo": ["Games", "apps/games/ludo/", "Ludo", "apps/games/ludo/ludo_icon.png", 0, "Race four tokens round the cross board and home - 2 to 4 players on one device"],
   "orbito": ["Games", "apps/games/orbito/", "Orbito", "apps/games/orbito/orbito_icon.png", 0, "Push - place and turn the board: get four marbles in a row before your rival - play a friend or computer"],
   "aoe-rts": ["Games", "apps/games/aoe-rts/", "AoE RTS", "apps/games/aoe-rts/aoe-rts_icon.png", 0, "Tiny real-time strategy in Age of Empires style: gather - build and command units"],
+  "star-colony": ["Games", "apps/games/star-colony/", "Star Colony", "apps/games/star-colony/star-colony_icon.png", 0, "Build an alien settlement: guide settlers through research and storms to thrive"],
   "gravity-sandbox": ["Games", "apps/games/gravity-sandbox/", "Gravity Sandbox", "apps/games/gravity-sandbox/gravity-sandbox_icon.png", 0, "Drop planets - stars and black holes and watch gravity make orbits"],
   "solar-system": ["Games", "apps/games/solar-system/", "Solar System", "apps/games/solar-system/solar-system_icon.png", 0, "Explore the Sun and planets: tap a planet for key facts - pan and zoom"],
   "aquarium": ["Games", "apps/games/aquarium/", "Aquarium", "apps/games/aquarium/aquarium_icon.png", 0, "Virtual fish tank: meet the fish - feed them and keep the water clean"],

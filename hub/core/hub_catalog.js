@@ -49,6 +49,7 @@ Battleship,        battleship/,    , , Strategy, Hide five ships and take turns 
 Ludo,              ludo/,          , , Strategy, Race four tokens round the cross board and home - 2 to 4 players on one device
 Orbito,            orbito/,        , , Strategy, Push - place and turn the board: get four marbles in a row before your rival - play a friend or computer
 AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
+Star Colony,       star-colony/, star-colony/star-colony_icon.png, , Simulator, Build an alien settlement: guide settlers through research and storms to thrive
 Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
 Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
 Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fish - feed them and keep the water clean
