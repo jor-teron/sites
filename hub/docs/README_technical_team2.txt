@@ -1414,7 +1414,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 
   Note: 1.53–1.79 are already taken on main, so this section is 1.80.
 
-### 1.68 PDF Tools images to and from PDF, release P3
+### 1.81 PDF Tools images to and from PDF, release P3
 
 - apps/office/pdf-tools only, on top of P2. Add JPG/PNG as pages (menu or drop)
   with A4, Letter or fit-to-image, 0/10/20 mm margins, portrait or landscape.
