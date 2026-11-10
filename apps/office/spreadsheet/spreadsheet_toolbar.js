@@ -44,10 +44,21 @@ function wireUi() {
   onBtn("btn-export", exportCsv);
   onBtn("btn-print", printSheet);
   onBtn("btn-clear", function () {
-    if (!confirm(TXT.confirmClear)) return;
-    undoRecord("clear-all");
-    emptyGrid();
-    afterChange();
+    var msg = workbook.sheets.length > 1
+      ? "Clear every sheet and start a new workbook? This can be undone."
+      : TXT.confirmClear;
+    function go() {
+      undoRecord("clear-all");
+      emptyWorkbook();
+      selR = selC = extR = extC = 0; selMode = "cell";
+      afterChange();
+      if (typeof applyWidths === "function") applyWidths();
+      if (typeof renderSheetTabs === "function") renderSheetTabs();
+      highlightSel();
+    }
+    if (typeof OfficeDialog !== "undefined" && OfficeDialog.confirm) {
+      OfficeDialog.confirm({ title: "New / Clear", message: msg, okLabel: "Clear", danger: true }).then(function (ok) { if (ok) go(); });
+    } else go();
   });
   document.getElementById("file-import").addEventListener("change", function (ev) {
     var file = ev.target.files[0];
