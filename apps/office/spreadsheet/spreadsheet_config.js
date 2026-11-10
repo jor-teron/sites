@@ -20,8 +20,16 @@ const SPREADSHEET_CONFIG = {
 
   // localStorage
   storage: {
-    key: "sheet-v2",                     // current save key
-    legacyKey: "sheet-v1",               // older save read if the current key is empty
+    key: "sheet-v4",                     // current save key (workbook: sheets + charts)
+    legacyKey: "sheet-v3",               // SH8–SH11 workbook, migrated (left in place)
+    legacyKey1: "sheet-v2",              // older single-sheet save
+    legacyKey2: "sheet-v1",              // even older save
+  },
+
+  // Workbook (SH8)
+  sheets: {
+    max: 20,                             // cap for add / XLSX open, keeps the Celeron light
+    nameMax: 31,                         // Excel-style name length
   },
 
   // Default style of every cell
@@ -32,6 +40,9 @@ const SPREADSHEET_CONFIG = {
     underline: false,
     bg: "",                              // cell background ("" = CSS default)
     color: "",                           // text colour ("" = CSS default)
+    fontSize: "",                        // px, "" = default
+    wrap: false,
+    bt: "", br: "", bb: "", bl: "",     // border colours ("" = none extra)
   },
 
   // Colours / look
@@ -97,7 +108,7 @@ const SPREADSHEET_CONFIG = {
   precision: 15,
 
   // Cell values painted with the error style (ERR "#ERR" from spreadsheet_formula.js is added by the logic)
-  errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!"],
+  errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!", "#N/A", "#VALUE!"],
 
   // On-screen text
   text: {
@@ -107,7 +118,7 @@ const SPREADSHEET_CONFIG = {
     columnPrefix: "Column ",             // + letter, when a column header is clicked
     rowPrefix: "Row ",                   // + number, when a row number is clicked
     ready: "A–Z × 100",                  // status after start-up
-    confirmClear: "Clear entire sheet?",
+    confirmClear: "Clear the workbook and start a new sheet?",
     selectAll: "All cells",
     undone: "Undo",
     redone: "Redo",
@@ -117,5 +128,21 @@ const SPREADSHEET_CONFIG = {
     insertFull: "Can't insert: the last row / column has data",
     sortedAsc: "Sorted A→Z",
     sortedDesc: "Sorted Z→A",
+    sheetAdded: "Sheet added",
+    sheetRenamed: "Sheet renamed",
+    sheetDeleted: "Sheet deleted",
+    sheetDuplicated: "Sheet duplicated",
+    sheetMoved: "Sheet moved",
+    lastSheet: "Can't delete the last sheet",
+    sheetMax: "Can't add more than 20 sheets",
+    frozenTop: "Top row frozen",
+    frozenFirst: "First column frozen",
+    frozenPanes: "Panes frozen",
+    unfrozen: "Panes unfrozen",
+    rowsHidden: "Rows hidden",
+    colsHidden: "Columns hidden",
+    unhidden: "Rows / columns unhidden",
+    nothingHidden: "Nothing hidden in the selection",
+    freezeAtA1: "Select a cell below or to the right of A1 to freeze panes",
   },
 };

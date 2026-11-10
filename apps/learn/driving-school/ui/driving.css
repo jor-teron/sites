@@ -1,0 +1,53 @@
+:root{--bg:#101e2b;--panel:#1b3041;--ink:#eff7fb;--muted:#adc4d4;--line:#36566d;--blue:#65d9ff;color-scheme:dark;font:15px system-ui,sans-serif}
+:root.light{--bg:#edf4f6;--panel:#fff;--ink:#163348;--muted:#4c6574;--line:#bacfd9;--blue:#007da8;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,select{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:9px;min-height:44px;padding:8px 12px}button{cursor:pointer;touch-action:manipulation}button:hover,button.active{background:#176b87;color:white}button:focus-visible,select:focus-visible,#wheel:focus-visible{outline:3px solid var(--blue);outline-offset:2px}button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--blue)}
+.lrn-head{display:flex;align-items:center;gap:12px;padding:7px 16px;border-bottom:1px solid var(--line)}h1{font-size:20px;margin:0;flex:1}.toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap}.toolbar label{flex:1}.toolbar select{max-width:300px;width:75%}main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:0 12px}.world{position:relative;border-radius:15px;overflow:hidden;background:#31423e;min-height:340px}canvas{display:block;width:100%;height:100%;position:absolute;inset:0}#mirror{position:absolute;top:9px;left:50%;transform:translateX(-50%);background:#d1e0e6e8;border:3px solid #263c49;border-radius:10px;color:#132936;padding:6px;font-size:11px;white-space:nowrap}#rotate{display:none;position:absolute;bottom:4px;left:9px;right:9px;background:#123b4cdd;color:white;font-size:12px;padding:6px;border-radius:6px}
+aside{min-width:0}.dash{display:grid;grid-template-columns:1.5fr 1fr 40px;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;align-items:center}.dash strong:first-child{font-size:28px;font-variant-numeric:tabular-nums}.dash small{font-size:12px}.dash #gear{font-size:28px;color:var(--blue)}#lamps{grid-column:1/-1;color:#d98618;font-weight:700;font-size:13px}.instructor{padding:12px;margin:8px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:144px}.instructor p{margin:7px 0}.instructor #score{color:var(--blue);font-size:13px}#progress{color:var(--muted);font-size:12px}.touch{display:flex;gap:10px;align-items:center}.pedals{display:flex;gap:6px;flex:1}.pedals button{flex:1;padding:8px 4px;min-height:68px;touch-action:none;user-select:none}.pedals button:last-child{background:#176c59;color:white}#wheel{border:7px solid var(--muted);border-radius:50%;height:96px;width:96px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;user-select:none;cursor:grab}#wheel span{font-size:32px;line-height:1}#wheel small{font-size:10px}.switches{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}.switches button{flex:1;white-space:nowrap}.disclaimer{font-size:11px;color:var(--muted);padding:0 14px;margin:8px 0}dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;max-width:min(92vw,520px);max-height:90dvh;overflow:auto}dialog::backdrop{background:#06121ccc}dialog label{display:block;margin:12px 0}dialog select{width:100%;margin-top:5px}dialog p{line-height:1.6}dialog h2{margin:0 0 10px}body{min-height:100dvh}.world{height:calc(100dvh - 160px)}
+@media(max-width:700px) and (orientation:portrait){main{grid-template-columns:1fr;padding:0 8px;gap:6px}.world{height:32dvh;min-height:200px}#rotate{display:block}aside{display:grid;grid-template-columns:1fr;gap:4px}.instructor{min-height:0;margin:0;padding:8px}.dash{padding:5px 10px}.touch{justify-content:center}#wheel{width:90px;height:90px}.toolbar{gap:5px;padding:5px 8px}.toolbar button{padding:7px}.toolbar label{min-width:100%}.toolbar select{width:80%;max-width:none}.switches{margin:0}.disclaimer{font-size:10px}}
+@media(max-height:520px) and (orientation:landscape){.lrn-head{padding:2px 10px}h1{font-size:16px}.lrn-head button{min-height:32px;padding:3px 10px}.toolbar{padding:3px 8px}.toolbar button,.toolbar select{min-height:36px;padding:3px 8px}main{grid-template-columns:minmax(0,1fr) 310px;padding:0 6px;gap:6px}.world{height:calc(100dvh - 106px);min-height:200px}.instructor{min-height:0;font-size:12px;padding:5px;margin:3px 0}.instructor p{margin:2px 0}.dash{padding:3px 8px;font-size:11px;grid-template-columns:1fr 1fr 30px}.dash strong:first-child,.dash #gear{font-size:20px}.dash #lamps{grid-column:auto}.touch{gap:5px}#wheel{width:70px;height:70px;border-width:5px}.pedals button{min-height:48px;font-size:12px}.switches{margin-top:3px;gap:3px}.switches button{font-size:11px;padding:4px;min-height:44px}.disclaimer{margin:3px 0;font-size:9px}}
+#fault{font-size:12px;color:#d65544;font-weight:600}.light #fault{color:#ad3028}
+/* DS-1c: full-height cockpit, with all landscape touch controls in view. */
+#app{height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.lrn-head{flex-shrink:0;flex-wrap:wrap;padding:4px 12px;gap:6px}
+.lrn-head button{font-size:13px}h1{white-space:nowrap}.toolbar{flex-shrink:0}
+main{flex:1;min-height:0}.world{height:auto;min-height:0}
+aside{min-height:0;overflow:auto;padding-bottom:2px}.disclaimer{flex-shrink:0}
+.dash{background:linear-gradient(135deg,var(--panel),var(--bg));box-shadow:inset 0 1px #ffffff19}
+#lamps{white-space:nowrap;font-size:11px;min-height:15px}
+#rpm-meter{grid-column:1/-1;width:100%;height:6px;border:0}
+.switches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.switches button{font-size:12px;padding:4px;min-height:44px}
+#fault:empty{display:none}button:disabled{cursor:default;opacity:.8}
+.quiz-sign{width:130px;height:130px;display:block;margin:12px auto}
+.quiz-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.quiz-choices button{min-height:52px}button.correct{background:#1a7159;color:#fff}
+button.incorrect{background:#a52c40;color:#fff}#report-card li{margin-bottom:10px}
+#quiz-card>button{margin:4px}#help-card ol{padding-left:22px}#help-card li{line-height:1.5;margin:12px 0}
+a{color:var(--blue)}dialog[open]{animation:appear .15s ease-out}
+@keyframes appear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){dialog[open]{animation:none}}
+@media(max-height:520px) and (orientation:landscape){
+  #app{padding:0 max(0px,env(safe-area-inset-right)) 0 max(0px,env(safe-area-inset-left))}
+  .lrn-head{padding:2px 8px;gap:4px}.lrn-head button{font-size:11px;min-height:36px;padding:4px 9px}
+  .toolbar{flex-wrap:nowrap;padding:2px 6px;gap:4px}.toolbar label{min-width:0;font-size:12px}
+  .toolbar select{width:83%;max-width:270px;font-size:12px}.toolbar button{font-size:12px;min-height:36px}
+  main{grid-template-columns:minmax(0,1fr) 310px;gap:5px}.world{height:auto;min-height:0}
+  aside{display:grid;grid-template-rows:42px minmax(54px,1fr) 70px 88px;gap:3px;overflow:hidden;padding:0}
+  .dash{padding:2px 8px;gap:0;grid-template-columns:1fr 1fr 34px;position:relative}
+  .dash strong:first-child,.dash #gear{font-size:20px}.dash #lamps{grid-column:1/-1;font-size:10px;line-height:12px;min-height:12px}
+  #rpm-meter{position:absolute;bottom:0;left:4%;width:92%;height:3px}
+  .instructor{padding:4px 7px;margin:0;min-height:0;overflow:auto;font-size:11px}
+  .instructor #hint{margin:2px 0;font-size:11px;line-height:1.2}
+  .instructor #progress,.instructor #score{display:inline;font-size:10px;margin:0}
+  .touch{height:70px}.pedals button{height:62px;font-size:11px;min-width:0}
+  #wheel{height:68px;width:68px;flex-shrink:0}.switches{gap:3px;margin:0;grid-template-rows:44px 44px}
+  .switches button{font-size:10px}.disclaimer{font-size:9px;margin:3px 8px;padding:0}
+}
+@media(max-width:700px) and (orientation:portrait){
+  #app{height:auto;min-height:100dvh}.lrn-head{padding:5px 8px}.lrn-head h1{min-width:100%;font-size:18px}
+  .lrn-head button{flex:1;min-height:40px;font-size:11px;padding:4px}.toolbar{font-size:13px}
+  main{flex:none;display:flex;flex-direction:column}.world{height:25dvh;min-height:190px;flex-shrink:0}
+  aside{overflow:visible}.dash{gap:2px}.instructor{min-height:0;font-size:13px}
+  .switches{margin-top:4px}.switches button{font-size:11px}
+  #rotate{font-size:10px;margin:0;bottom:4px;padding:4px}#mirror{font-size:9px;padding:4px}
+}
