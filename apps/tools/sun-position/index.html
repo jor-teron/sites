@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!-- Redirect entry point to sun-position.html (keeps ?query and #hash). SP1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sun Position</title>
+  <link rel="canonical" href="sun-position.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#141820;color:#9aa3ad}html.dark a{color:#e8a63a}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('sun-position.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=sun-position.html"></noscript>
+</head>
+<body><noscript><p><a href="sun-position.html">Open Sun Position</a></p></noscript></body>
+</html>

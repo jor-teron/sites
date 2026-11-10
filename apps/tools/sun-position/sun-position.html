@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- SP1 Sun Position: compass dial, sunrise/sunset and times for any place and date. Logic: sp_calc.js, sun-position.js. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Sun Position · SP1</title>
+  <link rel="icon" href="sun-position_icon.svg">
+  <link rel="stylesheet" href="sun-position.css?v=SP1">
+  <script>try{var s=JSON.parse(localStorage.getItem('sun-position-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <h1>Sun Position</h1>
+    <button type="button" class="place" id="placeBtn" aria-haspopup="dialog" aria-label="Choose place">Place</button>
+    <button type="button" class="iconbtn" id="setBtn" aria-label="Settings">⚙</button>
+  </header>
+  <nav id="tabs" hidden></nav>
+  <main>
+    <section class="pane on" id="pane-now">
+      <div id="dialWrap">
+        <svg id="dial" viewBox="-160 -160 320 320" role="img" aria-label="Sun compass">
+          <g id="rose"></g>
+          <path id="arc" class="arc" d="" fill="none"></path>
+          <g id="sunG" transform="translate(0,0)">
+            <circle class="sun" r="11"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="big" id="azOut">—</div><div class="lab">Direction</div></div>
+        <div class="stat"><div class="big" id="elOut">—</div><div class="lab">Height</div></div>
+      </div>
+      <p class="when" id="whenOut"></p>
+      <p class="polar" id="polarOut" hidden></p>
+      <ul class="times" id="times"></ul>
+      <div class="whenrow">
+        <label class="sr" for="dateIn">Date</label>
+        <input type="date" id="dateIn" class="field">
+        <button type="button" class="btn" id="nowBtn">Now</button>
+      </div>
+      <label class="sr" for="timeSl">Time of day</label>
+      <input type="range" id="timeSl" min="0" max="1439" step="1" value="720">
+      <div class="slider-lab" id="timeLab"></div>
+    </section>
+  </main>
+  <p class="note center" id="tzNote"></p>
+</div>
+<div id="dlg" class="dlg" hidden><div class="box" role="dialog" aria-modal="true"><div id="dlgBody"></div><div class="acts" id="dlgActs"></div></div></div>
+<script src="sp_calc.js?v=SP1"></script>
+<script src="sp_cities.js?v=SP1"></script>
+<script src="sun-position.js?v=SP1"></script>
+</body>
+</html>
