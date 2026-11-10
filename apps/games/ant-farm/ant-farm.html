@@ -23,6 +23,8 @@
     <select id="tool" title="Tap tool">
       <option value="food">Food</option>
       <option value="water">Water</option>
+      <option value="dig">Dig</option>
+      <option value="inspect">Look</option>
     </select>
     <button id="pause" type="button">Pause</button>
     <button id="reset" class="wide-only" type="button">Reset</button>
@@ -40,12 +42,44 @@
       <button id="fit" type="button">Fit farm</button>
       <button id="fill" type="button">Fill view</button>
     </div>
+    <div class="row lapse">
+      <span>Time-lapse</span>
+      <button type="button" data-speed="2" class="lapse">Live</button>
+      <button type="button" data-speed="5" class="lapse">×8</button>
+      <button type="button" data-speed="6" class="lapse">×16</button>
+      <button type="button" id="dawn">Next dawn</button>
+    </div>
+    <div class="row">
+      <button id="helpBtn" type="button">How to play</button>
+      <button id="graphBtn" type="button">Graphs</button>
+    </div>
   </div>
+  <aside id="inspect" hidden></aside>
+  <aside id="help" hidden>
+    <h2>How to play</h2>
+    <p>This is a living ant farm. Workers dig tunnels, bring food home, and raise brood while the queen lays eggs.</p>
+    <ul>
+      <li><b>Food</b> and <b>Water</b> drop from the sky where you tap. Water soaks the soil (it dries later). Food is also found naturally by day.</li>
+      <li><b>Dig</b> to carve a cell of soil next to a tunnel or the surface.</li>
+      <li><b>Look</b>, or tap an ant or a chamber, to inspect it.</li>
+      <li>Drag to pan, pinch or use the wheel to zoom. <kbd>0</kbd> fills the view, <kbd>F</kbd> fits the whole farm.</li>
+      <li>At night the foragers sleep in the nest. Open the gear for theme, mute, and low graphics.</li>
+    </ul>
+    <button type="button" id="helpClose">Got it</button>
+  </aside>
+  <aside id="graphs" hidden>
+    <h2>Colony</h2>
+    <canvas id="graphcv" width="320" height="140"></canvas>
+    <p id="graphleg">Ants, brood and stored food over time.</p>
+    <button type="button" id="graphClose">Close</button>
+  </aside>
   <div id="stats"></div>
   <script src="../common/settings/games-settings.js"></script>
   <script src="ui/settings.js"></script>
   <script src="core/world.js"></script>
   <script src="core/colony.js"></script>
+  <script src="core/save.js"></script>
+  <script src="ui/sound.js"></script>
   <script src="assets/models/ant.js"></script>
   <script src="assets/draw/soil.js"></script>
   <script src="assets/draw/surface.js"></script>

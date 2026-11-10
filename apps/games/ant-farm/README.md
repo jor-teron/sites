@@ -37,4 +37,8 @@ nest, `F` to fit the whole tank. Fit farm and Fill view are also in the ⋯ menu
   clearer eggs / wriggling larvae / cocoons, soft glowing pheromone paths,
   ants that walk on dirt mounds, wet soil that dries with puddles and a
   drawn splash, and a moon with dimmer clouds at night (foragers inside the nest).
+- **AF-4c** — tap an ant or chamber to inspect it, save and resume in
+  `localStorage`, How to play, population and food graphs, time-lapse presets,
+  a player dig tool, a steadier food economy, quiet sounds with mute, and a
+  new side-view icon.
 

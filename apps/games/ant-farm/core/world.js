@@ -4,7 +4,7 @@
 // Uses nothing but the browser; no shared settings are read here.
 var AF = window.AF = {};
 AF.W = 160; AF.H = 100; AF.SURF = 14; // first soil row
-AF.rng = function (s) { return function () { s = s + 0x6D2B79F5 | 0; var t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+AF.rng = function (s) { var st = { s: s | 0 }; var fn = function () { st.s = st.s + 0x6D2B79F5 | 0; var t = Math.imul(st.s ^ st.s >>> 15, 1 | st.s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; fn.state = st; return fn; };
 AF.N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 AF.newWorld = function (seed) {

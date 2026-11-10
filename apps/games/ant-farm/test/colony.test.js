@@ -17,6 +17,7 @@ function load(rel) {
 }
 load('core/world.js');
 load('core/colony.js');
+load('core/save.js');
 const AF = ctx.AF;
 if (!AF || !AF.newWorld) throw new Error('AF failed to load');
 
@@ -83,6 +84,48 @@ ok('splash expires', !wet.splash, wet.splash);
 
 var d1 = run(11111, 90), d2 = run(11111, 90);
 eq('same seed, same after 90s (with drying)', snap(d1), snap(d2));
+
+// AF-4c save / resume, dig tool, and economy growth
+var g1 = run(11111, 40);
+var midDig = g1.ants.filter(function (a) { return a.tip; }).length;
+var data = AF.serialize(g1);
+var g2 = AF.deserialize(JSON.parse(JSON.stringify(data)));
+ok('deserialize restores ants and clock', g2 && g2.ants.length === g1.ants.length && Math.abs(g2.t - g1.t) < 0.05, g2 && [g2.ants.length, g2.t]);
+ok('deserialize restores stored food and grid', g2 && Math.abs(g2.stored - g1.stored) < 0.05 && g2.g.length === g1.g.length);
+if (midDig) {
+  ok('mid-dig tip is re-linked to the live job', g2.ants.some(function (a) { return a.tip && g2.tips.indexOf(a.tip) >= 0; }), midDig);
+}
+var busy = g1.tips.filter(function (t) { return t.busy; }).length;
+eq('busy dig jobs restored', busy, g2.tips.filter(function (t) { return t.busy; }).length);
+// fields() is rebuilt on load; recompute the live copy so both continue from the same distances
+AF.fields(g1); g1.needField = false;
+for (var ts = 0; ts < 60; ts += 1 / 30) { AF.step(g1, 1 / 30); AF.step(g2, 1 / 30); }
+eq('saved colony continues identically', snap(g1), snap(g2));
+
+var dug0 = g1.dug, nextTo = null, x, y, isolated = false;
+for (y = AF.SURF; y < AF.H - 1 && !nextTo; y++) for (x = 1; x < AF.W - 1 && !nextTo; x++) {
+  if (g1.g[y * AF.W + x] === 1 && (AF.walk(g1, x - 1, y) || AF.walk(g1, x + 1, y) || AF.walk(g1, x, y - 1) || AF.walk(g1, x, y + 1))) nextTo = [x, y];
+}
+ok('player can dig soil next to a tunnel', !!(nextTo && AF.playerDig(g1, nextTo[0], nextTo[1]) && g1.dug === dug0 + 1 && g1.g[nextTo[1] * AF.W + nextTo[0]] === 0), nextTo);
+for (y = AF.H - 8; y < AF.H - 1 && !isolated; y++) for (x = 2; x < AF.W - 2 && !isolated; x++) {
+  if (g1.g[y * AF.W + x] === 1 && !AF.walk(g1, x - 1, y) && !AF.walk(g1, x + 1, y) && !AF.walk(g1, x, y - 1) && !AF.walk(g1, x, y + 1)) isolated = AF.playerDig(g1, x, y) === false;
+}
+ok('player cannot dig soil that is not next to a tunnel', isolated);
+
+function mark(seed) {
+  var w = AF.newWorld(seed); AF.seedColony(w); var dt = 1 / 30, out = {}, m, t;
+  for (t = 0; t < 1800; t += dt) {
+    AF.step(w, dt);
+    for (m of [180, 600, 1800]) if (!out[m] && w.t >= m) out[m] = { ants: w.ants.length, stored: +w.stored.toFixed(1), brood: w.brood.length };
+  }
+  return out;
+}
+var growth = mark(11111);
+console.log('growth seed 11111', JSON.stringify(growth));
+ok('population rises 3 -> 10 min', growth[180].ants < growth[600].ants, growth);
+ok('population rises 10 -> 30 min', growth[600].ants < growth[1800].ants, growth);
+ok('colony is growing toward the cap at 30 min', growth[1800].ants >= 180 && growth[1800].ants <= 300, growth[1800]);
+ok('stored food is not empty at 10 min', growth[600].stored > 0, growth[600]);
 
 if (fail) { console.log('\n' + fail + ' failed'); process.exit(1); }
 console.log('\nAll checks passed.');

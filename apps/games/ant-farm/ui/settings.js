@@ -5,14 +5,15 @@
  * Used:     theme (light / dark; auto = Hub theme, else device — default Auto),
  *           fpsLimit (frame cap; the colony runs on real time), showFps (stats bar),
  *           autoPause (pause while the tab is hidden), lowGraphics (no trails / clouds),
+ *           sfx + masterVolume (quiet WebAudio; mute or volume 0 is silent),
  *           gear (in the top bar).
- * Not used yet: sound, difficulty, vibration, joystick (sandbox). AF-4c adds mute.
+ * Not used: difficulty, vibration, joystick (sandbox).
  * Load order: games-settings.js → this file → core/* and assets/*.
  * Old keys (fpsLimit, showFps, autoPause, lowGraphics) keep working.
  */
 var AF_SETTINGS = (function () {
   var GS = window.GameSettings;
-  var FALLBACK = { theme: 'auto', fpsLimit: 30, showFps: false, autoPause: true, lowGraphics: false };
+  var FALLBACK = { theme: 'auto', fpsLimit: 30, showFps: false, autoPause: true, lowGraphics: false, sfx: true, masterVolume: 0.8 };
   var api = {
     linked: !!GS,
     get: function (k) { return GS ? GS.get(k) : FALLBACK[k]; },

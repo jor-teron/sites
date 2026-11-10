@@ -29,7 +29,7 @@
     if (o.length) { var p = o[w.r() * o.length | 0]; a.nx = p[0]; a.ny = p[1]; }
   }
   function heading(w, a) { var v = w.r(); if (v < 0.4) { a.hx = 0; a.hy = 1; } else if (v < 0.62) { a.hx = 1; a.hy = 0; } else if (v < 0.92) { a.hx = -1; a.hy = 0; } else { a.hx = 0; a.hy = -1; } }
-  function nearFood(w, x) { var b = null, bd = 11; for (var i = 0; i < w.food.length; i++) { var d = Math.abs(w.food[i].x - x); if (w.food[i].amt > 0 && d < bd) { bd = d; b = w.food[i]; } } return b; }
+  function nearFood(w, x) { var b = null, bd = 16; for (var i = 0; i < w.food.length; i++) { var d = Math.abs(w.food[i].x - x); if (w.food[i].amt > 0 && d < bd) { bd = d; b = w.food[i]; } } return b; }
   function budget(w) { return w.dug < Math.min(1400, 160 + w.ants.length * 8); }
 
   // AF2 dig jobs ---------------------------------------------------------
@@ -118,8 +118,8 @@
     if (a.st === 'carry' || a.st === 'home') {
       if (a.load === 2) { var i = a.cy * W + a.cx; w.ph[i] = Math.min(1, w.ph[i] + 0.6); }
       if (w.distN[a.cy * W + a.cx] <= 1 && w.distN[a.cy * W + a.cx] >= 0) {
-        if (a.load === 2) { w.stored++; w.collected = (w.collected || 0) + 1; }
-        a.load = 0; a.st = 'rest'; a.t = 1 + w.r() * 3; return;
+        if (a.load === 2) { var got = a.carryAmt || 2; w.stored += got; w.collected = (w.collected || 0) + got; }
+        a.load = 0; a.carryAmt = 0; a.st = 'rest'; a.t = 1 + w.r() * 3; return;
       }
       if (!descend(w, a, w.distN)) randStep(w, a); return;
     }
@@ -133,9 +133,9 @@
     if (a.st === 'forage') {
       if (AF.nightAmt(w) > 0.18) { a.st = 'home'; return; }      // AF-4b: head in at dusk so they are clearly inside at night
       if (!atSurf) { if (!descend(w, a, w.distS)) randStep(w, a); return; }
-      if (a.trip > 35) { a.st = 'home'; a.trip = 0; return; }
+      if (a.trip > 48) { a.st = 'home'; a.trip = 0; return; }
       var f = nearFood(w, a.cx);
-      if (f && Math.abs(f.x - a.cx) <= 1) { f.amt--; a.load = 2; a.st = 'carry'; a.trip = 0; return; }
+      if (f && Math.abs(f.x - a.cx) <= 1) { var take = Math.min(2, f.amt); f.amt -= take; a.load = 2; a.carryAmt = take; a.st = 'carry'; a.trip = 0; return; }
       if (f) a.dir = f.x > a.cx ? 1 : -1;
       else {
         var ahead = w.ph[a.cy * W + a.cx + a.dir] || 0, back = w.ph[a.cy * W + a.cx - a.dir] || 0;
@@ -192,11 +192,11 @@
     }
     if (w.splash) { w.splash.t -= dt; if (w.splash.t <= 0) w.splash = null; }
     // food upkeep
-    w.stored = Math.max(0, w.stored - dt * (0.004 * w.ants.length + 0.02 * countStage(w, 'larva')));
+    w.stored = Math.max(0, Math.min(220, w.stored - dt * (0.0022 * w.ants.length + 0.01 * countStage(w, 'larva'))));
     // queen
     w.laidT -= dt;
-    if (w.laidT <= 0 && w.stored >= 3 && w.ants.length + w.brood.length < AF.MAXANTS) {
-      w.stored -= 1; w.laidT = AF.nightAmt(w) > 0.3 ? 4 : 6;     // the queen lays faster at night
+    if (w.laidT <= 0 && w.stored >= 2 && w.ants.length + w.brood.length < AF.MAXANTS) {
+      w.stored -= 1; w.laidT = AF.nightAmt(w) > 0.3 ? 6 : 9;     // AF-4c: steady laying, a little faster at night
       w.brood.push({ x: w.qx + (w.r() * 6 - 3), y: w.qy + 1.4 + w.r() * 0.8, age: 0, stage: 'egg', room: 'q' });
     }
     for (i = w.brood.length - 1; i >= 0; i--) {
@@ -217,9 +217,21 @@
       if (f.y >= S - 0.6) { w.falls.splice(i, 1); landFood(w, f.x, f.amt); }
     }
     w.natT -= dt;                                               // now and then a leaf or berry drops by itself (daytime)
-    if (w.natT <= 0) { w.natT = 18 + w.r() * 18; if (AF.nightAmt(w) < 0.3 && w.food.length + w.falls.length < 4) AF.dropFood(w, 4 + w.r() * (W - 8), 12); }
+    if (w.natT <= 0) {
+      var scarce = w.stored < 10, night = AF.nightAmt(w) > 0.3, cap = night ? 3 : 7;
+      w.natT = (scarce ? 7 : 10) + w.r() * (scarce ? 6 : 10);
+      if (w.food.length + w.falls.length < cap && (scarce || !night || w.r() < 0.35))
+        AF.dropFood(w, 4 + w.r() * (W - 8), night ? 10 : (scarce ? 16 : 18));
+    }
     for (i = w.food.length - 1; i >= 0; i--) if (w.food[i].amt <= 0) w.food.splice(i, 1);
+    w.histT = (w.histT || 0) + dt;
+    if (w.histT >= 2) {
+      w.histT = 0; if (!w.hist) w.hist = [];
+      w.hist.push({ t: w.t, ants: w.ants.length, brood: w.brood.length, stored: w.stored });
+      if (w.hist.length > 480) w.hist.splice(0, w.hist.length - 480);
+    }
   };
+
   function countStage(w, s) { var n = 0; for (var i = 0; i < w.brood.length; i++) if (w.brood[i].stage === s) n++; return n; }
   AF.countStage = countStage;
   function soak(w, cx) {
@@ -236,5 +248,33 @@
   }
   // Tap / natural drop: the food falls from the top of the sky, then lands as a pile.
   AF.dropFood = function (w, x, amt) { if (w.falls.length < 12) w.falls.push({ x: x, y: 0, vy: 0, amt: amt || 25, spin: w.r() * 6 }); };
+  AF.playerDig = function (w, x, y) {
+    var W = AF.W, H = AF.H, S = AF.SURF;
+    x = Math.round(x); y = Math.round(y);
+    if (x < 1 || x >= W - 1 || y < S || y >= H - 1) return false;
+    if (w.g[y * W + x] !== 1) return false;
+    var open = y === S || AF.walk(w, x - 1, y) || AF.walk(w, x + 1, y) || AF.walk(w, x, y - 1) || AF.walk(w, x, y + 1);
+    if (!open) return false;
+    AF.set(w, x, y, 0); w.dug++; w.tun.push(y * W + x); w.needField = true;
+    var mx = Math.max(0, Math.min(W - 1, (w.ents && w.ents[0] != null) ? w.ents[0] : (w.ex || x)));
+    w.mound[mx] = Math.min(6, w.mound[mx] + 0.1);
+    return true;
+  };
+  AF.hitAnt = function (w, x, y) {
+    var best = null, bd = 0.9, i, a, ax, ay, d;
+    if (Math.hypot((w.qx + 0.5) - x, (w.qy + 1.0) - y) < 1.8) return { kind: 'queen' };
+    for (i = 0; i < w.ants.length; i++) {
+      a = w.ants[i]; ax = a.cx + (a.nx - a.cx) * a.p + 0.5; ay = a.cy + (a.ny - a.cy) * a.p + 0.5;
+      if (AF.antDrawY) ay = AF.antDrawY(w, ax, ay);
+      d = Math.hypot(ax - x, ay - y); if (d < bd) { bd = d; best = { kind: 'ant', ant: a, i: i }; }
+    }
+    return best;
+  };
+  AF.hitRoom = function (w, x, y) {
+    var i, r, u, v;
+    for (i = 0; i < w.rooms.length; i++) { r = w.rooms[i]; u = (x - r.x) / (r.rx || 3); v = (y - r.y) / (r.ry || 2); if (u * u + v * v <= 1.05) return r; }
+    return null;
+  };
+
   AF.dropWater = function (w, x) { w.drops.push({ x: x, y: 0, vy: 0 }); };
 })();
