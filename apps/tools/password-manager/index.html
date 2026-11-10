@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Password Manager PW1</title>
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'self'">
+  <link rel="icon" href="password-manager_icon.svg">
+  <script src="pm_theme.js?v=PW1"></script>
+  <link rel="stylesheet" href="pm_base.css?v=PW1">
+</head>
+<body>
+  <div class="app" id="app">
+
+    <div class="gate" id="screenSetup" hidden>
+      <div class="gate-card">
+        <h2>Create a master password</h2>
+        <p class="gate-lead">This vault stays on this device. Everything in it is encrypted with your master password.</p>
+        <p class="warn">If you forget the master password, the vault cannot be recovered. There is no reset and no back-up email. Write it down and keep it somewhere safe, or wait for the encrypted backup in a later release.</p>
+        <label class="field">
+          <span class="field-label">Master password</span>
+          <input id="setupPw" type="password" autocomplete="new-password" spellcheck="false" minlength="8">
+        </label>
+        <p class="meter" id="setupMeter"></p>
+        <label class="field">
+          <span class="field-label">Confirm master password</span>
+          <input id="setupPw2" type="password" autocomplete="new-password" spellcheck="false" minlength="8">
+        </label>
+        <label class="field">
+          <span class="field-label">Optional hint (stored in plain text)</span>
+          <input id="setupHint" type="text" autocomplete="off" spellcheck="false" placeholder="A reminder only you would understand">
+        </label>
+        <p class="gate-lead">Do not put the password itself in the hint.</p>
+        <p class="status" id="setupStatus"></p>
+        <div class="gate-actions">
+          <button type="button" class="btn primary-btn" id="setupGo">Create vault</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="gate" id="screenUnlock" hidden>
+      <div class="gate-card">
+        <h2>Unlock Password Manager</h2>
+        <p class="gate-lead">Enter the master password for the vault on this device.</p>
+        <p class="hint-line" id="unlockHint" hidden></p>
+        <label class="field">
+          <span class="field-label">Master password</span>
+          <input id="unlockPw" type="password" autocomplete="off" spellcheck="false">
+        </label>
+        <p class="unlock-wait" id="unlockWait" hidden></p>
+        <p class="status" id="unlockStatus"></p>
+        <div class="gate-actions">
+          <button type="button" class="btn primary-btn" id="unlockGo">Unlock</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="screenApp" hidden>
+      <header class="app-header">
+        <h1>Password Manager</h1>
+        <div class="header-actions">
+          <button type="button" class="btn secondary-btn slim-btn" id="settingsBtn">Settings</button>
+          <button type="button" class="btn secondary-btn slim-btn" id="lockBtn" title="Lock now (Ctrl+L)">Lock</button>
+          <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+            <button type="button" data-v="auto">Auto</button>
+            <button type="button" data-v="light">Light</button>
+            <button type="button" data-v="dark">Dark</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <input class="search" id="searchBox" type="search" placeholder="Search title, username or website" autocomplete="off" spellcheck="false">
+        <div class="filters" id="filterBar" role="tablist" aria-label="Filter"></div>
+        <button type="button" class="btn primary-btn slim-btn" id="addBtn">Add</button>
+      </div>
+
+      <div class="workspace" id="workspace">
+        <aside class="list-pane">
+          <div class="list-head">
+            <span id="listCount">0 entries</span>
+          </div>
+          <div class="entry-list" id="entryList"></div>
+        </aside>
+        <section class="detail-pane" id="detailPane"></section>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="dlg" class="dlg" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody"></div>
+      <div class="acts" id="dlgActs"></div>
+    </div>
+  </div>
+
+  <noscript><p>Password Manager needs JavaScript.</p></noscript>
+
+  <script src="pm_util.js?v=PW1"></script>
+  <script src="pm_crypto.js?v=PW1"></script>
+  <script src="pm_store.js?v=PW1"></script>
+  <script src="pm_gen.js?v=PW1"></script>
+  <script src="pm_lock.js?v=PW1"></script>
+  <script src="pm_dlg.js?v=PW1"></script>
+  <script src="pm_ui.js?v=PW1"></script>
+  <script src="pm_main.js?v=PW1"></script>
+</body>
+</html>

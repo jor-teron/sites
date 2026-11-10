@@ -1003,6 +1003,33 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   version 3 (migrates v1 and v2). In-app Download dialogs only. 8 MB import cap.
   RELEASE/title/?v= TD3. Details: apps/media/3d-builder/NOTES.md.
 
+### 1.61 Password Manager, release PW1
+
+- New app `apps/tools/password-manager/` (Tools → Security). Encrypted vault for logins, cards,
+  notes and Wi-Fi, all on this device. Branch `apps/pw1-password-manager`.
+- Crypto (Web Crypto only): PBKDF2-SHA-256, 310,000 iterations (count stored in the header), random
+  16-byte salt, AES-GCM-256, random 12-byte IV per write. The whole vault JSON is one ciphertext.
+  Header `{v:1, kdf, iter, salt, iv, ct}` (salt/iv/ct Base64) in IndexedDB `pwmanager`. An optional
+  hint is stored in plain text beside the header. The master password is proved by a successful GCM
+  decrypt (no separate hash). The AES key is non-extractable. The decrypted vault is memory-only and
+  is wiped on Lock, idle auto-lock, or a hidden-tab lock.
+- First run sets a master password (at least 8 characters, strength meter, confirm, a no-recovery
+  warning). Unlock screen. After 5 wrong tries, a growing delay (5s, 10s, … cap 60s) with an in-app
+  countdown. Copy tries to clear the clipboard after 30s (adjustable). Passwords are masked by default.
+- Generator on password fields (length 8–64, character sets, avoid look-alikes, a simple entropy
+  estimate). Search, favourites, add / edit / delete (confirm) / duplicate. Open site (http/https,
+  rel=noopener). Settings: auto-lock 1/5/15/30 min (default 5), lock when the tab is hidden, clipboard
+  clear, Auto / Light / Dark (Auto follows `sites-hub.theme` / `sites-hub.themeAuto`).
+- CSP meta (`default-src 'self'`, no inline script, no external requests). In-app dialogs only.
+- Files: `index.html`, `pm_base.css`, `pm_{crypto,store,gen,util,lock,dlg,theme,ui,main}.js`,
+  `password-manager_icon.svg`, `NOTES.md`, `tests/pm_crypto_test.js`. RELEASE / title / `?v=` = PW1.
+- Tested with `node --check` on every JS file, `node tests/pm_crypto_test.js` (derive, encrypt/decrypt
+  round-trip, wrong password fails, tamper fails, generator, delay, URL safety), and a static curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+- Hub catalog / menu flyout: this CSV row is added; Main Builder still needs to regenerate
+  `hub_catalog.js` / `hub_appindex.js` before it shows in the Hub menu.
+- Section 1.61 is the next free number on main after 3D Builder TD3 (1.60).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
