@@ -50,24 +50,30 @@ const Ui = (() => {
     }
   }
 
-  /* ---------- dice ---------- */
-  let flickerTimer = null;
-
-  function flicker() {
-    const dice = $('dice');
-    dice.classList.add('rolling');
-    clearInterval(flickerTimer);
-    flickerTimer = setInterval(() => {
-      dice.textContent = 1 + Math.floor(Math.random() * 6);
-    }, 60);
-  }
-
+  /* Nine fixed pip positions; the face tumbles without changing the fair result. */
   function settle(value) {
-    clearInterval(flickerTimer);
-    flickerTimer = null;
     const dice = $('dice');
     dice.classList.remove('rolling');
-    dice.textContent = value;
+    dice.replaceChildren();
+    const faces = {
+      1: [4],
+      2: [0, 8],
+      3: [0, 4, 8],
+      4: [0, 2, 6, 8],
+      5: [0, 2, 4, 6, 8],
+      6: [0, 2, 3, 5, 6, 8],
+    };
+    for (let i = 0; i < 9; i++) {
+      const pip = document.createElement('i');
+      pip.className = 'pip' + ((faces[value] || []).includes(i) ? ' visible' : '');
+      dice.append(pip);
+    }
+    dice.setAttribute('aria-label', typeof value === 'number' ? `Die: ${value}` : 'Ready to roll');
+  }
+  function flicker() {
+    settle(5);
+    $('dice').classList.add('rolling');
+    $('dice').setAttribute('aria-label', 'Die rolling');
   }
 
   /* ---------- engine events ---------- */
@@ -94,18 +100,15 @@ const Ui = (() => {
       log(`${tag(player)} rolled <span class="hl">${value}</span>.`);
     });
 
-    Engine.on('hop', ({ player }) => {
-      refresh();
-      log(`&nbsp;&nbsp;${tag(player)} ${player.onBoard ? 'to' : 'enters at'} ${player.pos + 1}.`);
-    });
-
-    Engine.on('blocked', ({ needed }) => {
-      log(`&nbsp;&nbsp;overshoot — needs exactly ${needed}. No move.`);
-    });
-
-    Engine.on('step', ({ player }) => {
-      Render.layout(Engine.state.players, player.id);
+    const step = async ({ player, from, cell }) => {
+      await Render.hop(player, from, cell);
       renderPlayers(Engine.state);
+    };
+    Engine.on('hop', step);
+    Engine.on('step', step);
+    Engine.on('jump-start', ({ player, from, to, kind }) => Render.ride(player, from, to, kind));
+    Engine.on('blocked', ({ needed }) => {
+      log(`No move — needs exactly ${needed}.`);
     });
 
     Engine.on('jump', ({ player, from, to, kind }) => {
@@ -136,6 +139,7 @@ const Ui = (() => {
       $('result-title').textContent = `${player.name} wins!`;
       $('result-sub').textContent = `Board #${String(st.seed).padStart(2, '0')} · ${player.rolls} rolls`;
       show('result');
+      Render.confetti();
     });
   }
 
@@ -201,6 +205,10 @@ const Ui = (() => {
 
   function init() {
     SNLSettings.init();
+    $('motion-toggle').checked = !SNLSettings.get('lowGraphics');
+    $('motion-toggle').addEventListener('change', (e) => {
+      window.GameSettings?.set('lowGraphics', !e.target.checked);
+    });
     bindEngine();
     bindLobby();
     $('seed-input').value = String(Math.floor(Math.random() * 100));

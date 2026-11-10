@@ -137,3 +137,75 @@ select {
   color: var(--accent);
   font-weight: 800;
 }
+/* A bevelled die with inset pips and a three-axis tumble. */
+.dice {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  gap: 5px;
+  padding: 11px;
+  perspective: 400px;
+  transform-style: preserve-3d;
+  border: 1px solid #fff9;
+}
+.pip {
+  border-radius: 50%;
+  background: #304339;
+  box-shadow:
+    inset 1px 2px 2px #0007,
+    0 1px #fff;
+  visibility: hidden;
+  aspect-ratio: 1;
+}
+.pip.visible {
+  visibility: visible;
+}
+.dice.rolling {
+  animation: die-tumble 0.42s ease-in-out both;
+}
+@keyframes die-tumble {
+  0% {
+    transform: rotateX(0) rotateZ(0);
+  }
+  30% {
+    transform: translateY(-12px) rotateX(100deg) rotateY(60deg) rotateZ(-20deg);
+  }
+  70% {
+    transform: translateY(-6px) rotateX(290deg) rotateY(150deg) rotateZ(18deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(360deg) rotateZ(0);
+  }
+}
+.motion-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.motion-option input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+#gear {
+  margin-left: 8px;
+}
+.reduced-motion .dice.rolling {
+  animation: none;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice.rolling {
+    animation: none;
+    transform: none;
+  }
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  .dice {
+    gap: 3px;
+    padding: 8px;
+  }
+}

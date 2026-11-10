@@ -5,7 +5,9 @@ const SNLSettings = (() => {
   const gs = window.GameSettings;
   const fallback = { theme: 'auto', lowGraphics: false, sfx: true, masterVolume: 0.8, difficulty: 'normal' };
   const get = (k) => (gs ? gs.get(k) : fallback[k]);
+  const reduced = () => get('lowGraphics') || matchMedia('(prefers-reduced-motion: reduce)').matches;
   function apply() {
+    document.documentElement.classList.toggle('reduced-motion', reduced());
     let hub = '';
     try {
       hub = localStorage.getItem('sites-hub.theme') || '';
@@ -21,7 +23,8 @@ const SNLSettings = (() => {
     gs?.onChange(apply);
     addEventListener('storage', apply);
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', apply);
     apply();
   }
-  return { get, init, apply };
+  return { get, init, apply, reduced };
 })();

@@ -12,6 +12,7 @@ const Render = (() => {
   }
   const point = (p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`;
   function drawBoard(state) {
+    cancelMotion();
     const board = $('board');
     board.querySelectorAll('.cell,.token').forEach((n) => n.remove());
     svgEl = $('board-svg');
@@ -38,6 +39,7 @@ const Render = (() => {
     for (const player of state.players) {
       const el = document.createElement('div');
       el.className = `token ${player.color}`;
+      el.innerHTML = '<span class="pawn-ball"></span><span class="pawn-base"></span>';
       el.dataset.player = player.id;
       board.append(el);
       tokens.set(player.id, el);
@@ -195,5 +197,86 @@ const Render = (() => {
       el.setAttribute('aria-label', `${player.name}: square ${player.pos + 1}`);
     }
   }
-  return { drawBoard, layout };
+  let motionEpoch = 0;
+  const animations = new Set();
+  function cancelMotion() {
+    motionEpoch++;
+    // Resolve waiters as well as removing visuals, so cancelling cannot strand a roll.
+    for (const cancel of [...animations]) cancel();
+  }
+  function animateToken(player, pointAt, duration, hopping = false) {
+    const el = tokens.get(player.id);
+    if (!el) return Promise.resolve();
+    el.hidden = false;
+    const epoch = motionEpoch;
+    const ms = SNLSettings.reduced() ? 0 : duration;
+    return new Promise((resolve) => {
+      let frame = 0,
+        start = null;
+      const finish = () => {
+        cancelAnimationFrame(frame);
+        animations.delete(finish);
+        resolve();
+      };
+      animations.add(finish);
+      function tick(now) {
+        if (epoch !== motionEpoch) {
+          finish();
+          return;
+        }
+        start ??= now;
+        const t = ms ? Math.min(1, (now - start) / ms) : 1;
+        const eased = t * t * (3 - 2 * t),
+          p = pointAt(eased);
+        el.style.left = `${p.x * 10}%`;
+        el.style.top = `${(p.y - (hopping ? Math.sin(t * Math.PI) * 0.32 : 0)) * 10}%`;
+        const scale = hopping ? 1 + Math.sin(t * Math.PI) * 0.1 : 1;
+        el.style.transform = `translate(-50%,-50%) scale(${scale})`;
+        if (t < 1) frame = requestAnimationFrame(tick);
+        else {
+          el.style.transform = '';
+          finish();
+        }
+      }
+      if (ms) frame = requestAnimationFrame(tick);
+      else tick(performance.now());
+    });
+  }
+  function hop(player, from, to) {
+    const a = Board.center(from),
+      b = Board.center(to);
+    return animateToken(
+      player,
+      (t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }),
+      CONFIG.HOP_MS,
+      true,
+    );
+  }
+  function ride(player, from, to, kind) {
+    return animateToken(
+      player,
+      (t) => Board.connectorPoint(from, to, t, kind),
+      kind === 'snake' ? 1050 : 1200,
+    );
+  }
+  function confetti() {
+    if (SNLSettings.reduced()) return;
+    const epoch = motionEpoch,
+      root = document.createElement('div');
+    root.className = 'confetti';
+    root.setAttribute('aria-hidden', 'true');
+    document.body.append(root);
+    for (let i = 0; i < 64; i++) {
+      const piece = document.createElement('i');
+      piece.style.cssText = `left:${Math.random() * 100}%;--delay:${Math.random() * 0.4}s;--drift:${Math.random() * 160 - 80}px;background:${['#e55b50', '#e8bc50', '#62bfa0', '#a18bdd'][i % 4]}`;
+      root.append(piece);
+    }
+    const cleanup = () => {
+      root.remove();
+      animations.delete(cleanup);
+    };
+    animations.add(cleanup);
+    setTimeout(cleanup, 2800);
+  }
+  return { drawBoard, layout, hop, ride, cancelMotion, confetti };
 })();

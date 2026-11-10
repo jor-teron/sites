@@ -132,3 +132,70 @@
     padding: 5px 8px;
   }
 }
+/* SNL-2b: cell-relative sculpted pawns (46% of a square). */
+.token {
+  width: 4.6%;
+  height: 5.8%;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  border-radius: 35%;
+  filter: drop-shadow(0 2px 1px #0007);
+}
+.pawn-ball {
+  position: absolute;
+  inset: 0 14% 22%;
+  border-radius: 50%;
+  border: 1px solid #fff9;
+  background: radial-gradient(circle at 30% 22%, #fff 0 4%, var(--pawn) 27%, var(--pawn) 55%, #0009 100%);
+  box-shadow: inset -2px -3px 3px #0005;
+}
+.pawn-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32%;
+  border-radius: 50%;
+  border: 1px solid #fff8;
+  background: linear-gradient(160deg, #fff8, var(--pawn) 38%, #0007);
+  box-shadow: 0 2px 1px #0006;
+}
+.token.active {
+  outline: 0;
+}
+.token.active::after {
+  content: '';
+  position: absolute;
+  inset: -9%;
+  border: 1.5px solid #fff;
+  border-radius: 45%;
+  box-shadow: 0 0 0 1px #263f33;
+}
+.confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 99;
+}
+.confetti i {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 13px;
+  animation: confetti-fall 2.2s var(--delay) ease-in both;
+}
+@keyframes confetti-fall {
+  to {
+    transform: translate(var(--drift), 105dvh) rotate(720deg);
+  }
+}
+.reduced-motion .confetti {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}

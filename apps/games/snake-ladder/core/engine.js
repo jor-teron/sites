@@ -2,7 +2,6 @@
    Emits simple events; Ui/Render subscribe. No rendering code here. */
 
 const Engine = (() => {
-
   let state = null;
   const listeners = {};
 
@@ -10,7 +9,7 @@ const Engine = (() => {
     (listeners[evt] ||= []).push(fn);
   }
   function emit(evt, payload) {
-    for (const fn of listeners[evt] || []) fn(payload);
+    return Promise.all((listeners[evt] || []).map((fn) => fn(payload)));
   }
 
   function reset({ seed, playerCount }) {
@@ -22,7 +21,7 @@ const Engine = (() => {
       players: Array.from({ length: playerCount }, (_, i) => Rules.createPlayer(i)),
       turn: 0,
       rolling: false,
-      over: false
+      over: false,
     };
     emit('reset', state);
     return state;
@@ -32,7 +31,7 @@ const Engine = (() => {
     return state.players[state.turn];
   }
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   async function roll() {
     // guard re-entry: an animation in progress blocks a second roll
@@ -56,7 +55,7 @@ const Engine = (() => {
           player,
           value,
           from: player.pos,
-          needed: CONFIG.FINISH_CELL - player.pos
+          needed: CONFIG.FINISH_CELL - player.pos,
         });
         await sleep(320);
       } else {
@@ -66,24 +65,21 @@ const Engine = (() => {
         if (from === null || target - from <= 1) {
           // quick hop in from the start square, or a single-cell nudge
           player.pos = target;
-          emit('hop', { player, cell: target });
-          await sleep(CONFIG.HOP_MS * 2);
+          await emit('hop', { player, cell: target, from: from ?? CONFIG.START_CELL });
         } else {
           // walk one cell at a time
           for (let c = from + 1; c <= target; c++) {
             player.pos = c;
-            emit('step', { player, cell: c });
-            await sleep(CONFIG.HOP_MS);
+            await emit('step', { player, cell: c, from: c - 1 });
           }
         }
 
         // connector (applied once — no chaining, see CONFIG.MAX_CHAIN)
         const { cell, jump } = Rules.applyJump(player.pos, state.jumpMap);
         if (jump) {
-          await sleep(120);
+          await emit('jump-start', { player, ...jump });
           player.pos = cell;
           emit('jump', { player, ...jump });
-          await sleep(360);
         }
 
         if (Rules.hasWon(player)) {
@@ -103,11 +99,17 @@ const Engine = (() => {
       }
 
       emit('turn', { player: current() });
-
     } finally {
       state.rolling = false;
     }
   }
 
-  return { reset, roll, on, get state() { return state; } };
+  return {
+    reset,
+    roll,
+    on,
+    get state() {
+      return state;
+    },
+  };
 })();
