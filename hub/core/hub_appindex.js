@@ -5,6 +5,7 @@
  * H48c: the 6th item (description) is there only when the app's CSV row has one (optional last column).
  */
 window.HUB_APP_INDEX = {
+  "history-timeline": ["Learn", "apps/learn/history-timeline/", "History Timeline", "apps/learn/history-timeline/history-timeline_icon.png", 0, "Explore world and Indian history: zoomable timeline - facts - tours and quizzes"],
   "2048": ["Games", "apps/games/2048/", "2048", "apps/games/2048/2048_icon.png", 0, "Slide number tiles and merge matching pairs to reach the 2048 tile"],
   "tv": ["Favorite", "tv/", "TV", "tv/tv_icon.png", 0, "Live TV player for free IPTV channels from M3U playlists - remote and touch"],
   "draw": ["Media", "apps/media/draw/", "Draw", "apps/media/draw/draw_icon.png", 0, "Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG"],

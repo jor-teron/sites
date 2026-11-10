@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>History Timeline</title>
+<link rel="icon" href="history-timeline_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.history-timeline.theme"></script>
+<link rel="stylesheet" href="ui/timeline.css">
+</head>
+<body>
+<div class="lrn" id="app">
+<header class="lrn-head"><a href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1><span class="lrn-here">History Timeline</span></h1><button id="settings">Settings</button></header>
+<section class="toolbar" aria-label="Timeline controls">
+<label>Explore <select id="lanes"><option value="both">World + India</option><option value="world">World</option><option value="india">India</option></select></label>
+<label>Scale <select id="scale"><option value="log">Deep-time · compressed</option><option value="linear">Linear · equal years</option></select></label>
+<label class="search">Find <input id="search" type="search" placeholder="Search event titles" autocomplete="off"></label>
+<div class="zoom"><button id="out" aria-label="Zoom out">−</button><button id="in" aria-label="Zoom in">+</button><button id="all">All time</button><button id="decade">Decade</button></div>
+</section>
+<nav id="eras" aria-label="Jump to era"></nav>
+<main>
+<section class="explorer">
+<div class="view-head"><strong id="range"></strong><span id="scale-note">Unequal spacing · deep time compressed</span></div>
+<div class="stage"><canvas id="timeline" tabindex="0" role="img" aria-label="Interactive history timeline. Drag to pan, wheel or pinch to zoom. Arrow keys pan; plus and minus zoom. Event buttons follow below."></canvas></div>
+<p class="hint">Drag to travel · pinch / wheel to zoom · tap a marker. Crowded markers are sampled; every event is available below.</p>
+<section class="results"><div class="results-head"><h2 id="count">Events</h2><label><input type="checkbox" id="visible"> In view only</label></div><div id="event-list" aria-label="Events"></div><div class="pager"><button id="prev">Previous</button><span id="page"></span><button id="next">Next</button></div></section>
+</section>
+<aside id="card" aria-label="Event fact card"><h2>A window into history</h2><p>Choose an event on the timeline or in the list to open its fact card.</p><p>Dates with <b>c.</b> are approximate. Era boundaries are teaching conventions and can overlap.</p><p>The India lane covers the history of the subcontinent, not only today's borders.</p></aside>
+</main>
+<footer>Curated learning overview · BCE = Before Common Era · CE = Common Era · no year zero</footer>
+</div>
+<dialog id="preferences"><h2>Timeline settings</h2><label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label><p>Auto follows the Hub's chosen theme, or your device when the Hub has no choice saved.</p><button id="close-settings">Done</button></dialog>
+<noscript>History Timeline needs JavaScript to explore the events.</noscript>
+<script src="../shared/learn-hubbar.js"></script>
+<script src="core/data/base.js"></script><script src="core/model.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script>
+</body></html>
