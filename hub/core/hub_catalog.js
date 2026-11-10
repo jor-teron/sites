@@ -71,6 +71,7 @@ Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk
 Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 Rock Paper Scissors,   rps/,     , , Arcade, Rock paper scissors against the computer
 Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
+Bubble Shooter, bubble-shooter/, bubble-shooter/bubble-shooter_icon.png, , Arcade, Aim and bounce bubbles to match three - clear 20 levels then play endless
 Arrow Escape, arrow-escape/, arrow-escape/arrow-escape_icon.png, , Puzzle, Clear the grid by sending arrows out in the right order
 Jigsaw,            jigsaw/,        jigsaw/jigsaw_icon.png, , Puzzle, Join shaped pieces from six original pictures or your own photo
 Minesweeper,       minesweeper/,   minesweeper/minesweeper_icon.png, , Puzzle, Clear the minefield with safe first openings - flags and three board sizes
