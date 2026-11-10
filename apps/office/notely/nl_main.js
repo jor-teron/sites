@@ -1,4 +1,5 @@
-/* Notely — nl_main.js: wires the toolbar (NL2: Open, Download) and starts everything. */
+/* Notely — nl_main.js: wires the toolbar (Open, Download) and starts everything.
+   NL4: the same two buttons also go to the Hub window bar (nl_hubbar.js). */
 NL.main = (function () {
   let flashTimer = 0;
   function flash(msg) {
@@ -14,9 +15,12 @@ NL.main = (function () {
     NL.files.init();
     NL.keys.init();
     NL.handoff.init();
+    /* (before NL4) these clicks were the only Open and Download controls.
+       They stay so standalone keeps working. The Hub window bar calls the same actions. */
     const on = (id, fn) => document.getElementById(id).addEventListener('click', fn);
     on('btn-open', () => NL.files.open());
     on('btn-download', () => NL.files.download());
+    if (NL.hubbar) NL.hubbar.init();
   }
   return { init, flash };
 })();

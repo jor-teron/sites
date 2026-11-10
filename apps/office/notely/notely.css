@@ -62,3 +62,9 @@ body.dragging textarea { outline: 3px dashed var(--accent); outline-offset: -8px
   button { min-height: 36px; }
   textarea { padding: 8px 12px; }
 }
+/* NL4: once the Hub window bar has Open and Download, hide the in-page copies
+   so the notes gain that row. The word count stays. Standalone never has
+   body.hub-titlebar (HubTitleBar adds it only after hello, and only in a frame). */
+body.hub-titlebar #btn-open,
+body.hub-titlebar #btn-download { display: none; }
+body.hub-titlebar .bar { padding-top: 3px; padding-bottom: 3px; }
