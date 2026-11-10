@@ -1,13 +1,12 @@
 /* ui.js — screens, panel, dice, player list, log. Wires Engine to Render. */
 
 const Ui = (() => {
-
-  const $ = id => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
   const screens = {
-    lobby:  $('screen-lobby'),
-    play:   $('screen-play'),
-    result: $('screen-result')
+    lobby: $('screen-lobby'),
+    play: $('screen-play'),
+    result: $('screen-result'),
   };
 
   function show(name) {
@@ -23,9 +22,11 @@ const Ui = (() => {
     box.appendChild(line);
     box.scrollTop = box.scrollHeight;
   }
-  function clearLog() { $('log').innerHTML = ''; }
+  function clearLog() {
+    $('log').innerHTML = '';
+  }
 
-  const tag = p => `<span class="hl">${p.name}</span>`;
+  const tag = (p) => `<span class="hl">${p.name}</span>`;
 
   /* ---------- panel ---------- */
   function refresh() {
@@ -40,11 +41,11 @@ const Ui = (() => {
     list.innerHTML = '';
     for (const p of state.players) {
       const li = document.createElement('li');
-      li.className = p.id === state.turn && !state.over ? 'active' : '';
+      li.className = p.id === state.players[state.turn].id && !state.over ? 'active' : '';
       li.innerHTML = `
         <span class="dot ${p.color}"></span>
         <span class="pname">${p.name}</span>
-        <span class="pcell">${p.onBoard ? p.pos : '&ndash;'}</span>`;
+        <span class="pcell">${p.onBoard ? p.pos + 1 : '&ndash;'}</span>`;
       list.appendChild(li);
     }
   }
@@ -71,7 +72,7 @@ const Ui = (() => {
 
   /* ---------- engine events ---------- */
   function bindEngine() {
-    Engine.on('reset', st => {
+    Engine.on('reset', (st) => {
       clearLog();
       settle('–');
       Render.drawBoard(st);
@@ -95,7 +96,7 @@ const Ui = (() => {
 
     Engine.on('hop', ({ player }) => {
       refresh();
-      log(`&nbsp;&nbsp;${tag(player)} ${player.onBoard ? 'to' : 'enters at'} ${player.pos}.`);
+      log(`&nbsp;&nbsp;${tag(player)} ${player.onBoard ? 'to' : 'enters at'} ${player.pos + 1}.`);
     });
 
     Engine.on('blocked', ({ needed }) => {
@@ -109,9 +110,11 @@ const Ui = (() => {
 
     Engine.on('jump', ({ player, from, to, kind }) => {
       refresh();
-      log(kind === 'ladder'
-        ? `&nbsp;&nbsp;<span class="up">ladder ${from} &rarr; ${to}</span>`
-        : `&nbsp;&nbsp;<span class="down">snake ${from} &rarr; ${to}</span>`);
+      log(
+        kind === 'ladder'
+          ? `&nbsp;&nbsp;<span class="up">ladder ${from + 1} &rarr; ${to + 1}</span>`
+          : `&nbsp;&nbsp;<span class="down">snake ${from + 1} &rarr; ${to + 1}</span>`,
+      );
     });
 
     Engine.on('extra-turn', ({ player }) => {
@@ -125,14 +128,13 @@ const Ui = (() => {
     });
 
     Engine.on('win', ({ player }) => {
-      log(`${tag(player)} reaches ${CONFIG.FINISH_CELL}!`, 'win');
+      log(`${tag(player)} reaches ${CONFIG.FINISH_CELL + 1}!`, 'win');
     });
 
     Engine.on('gameover', ({ player, state: st }) => {
       refresh();
       $('result-title').textContent = `${player.name} wins!`;
-      $('result-sub').textContent =
-        `Board #${String(st.seed).padStart(2, '0')} · ${player.rolls} rolls`;
+      $('result-sub').textContent = `Board #${String(st.seed).padStart(2, '0')} · ${player.rolls} rolls`;
       show('result');
     });
   }
@@ -164,10 +166,18 @@ const Ui = (() => {
       $('seed-input').value = Math.floor(Math.random() * 100);
     });
 
-    $('seed-input').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { start(); }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); stepSeed(+1); }
-      if (e.key === 'ArrowDown') { e.preventDefault(); stepSeed(-1); }
+    $('seed-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        start();
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        stepSeed(+1);
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        stepSeed(-1);
+      }
     });
 
     $('btn-roll').addEventListener('click', () => Engine.roll());
@@ -175,7 +185,7 @@ const Ui = (() => {
     $('btn-quit').addEventListener('click', () => show('lobby'));
 
     // space / enter rolls while playing
-    document.addEventListener('keydown', e => {
+    document.addEventListener('keydown', (e) => {
       if (screens.play.classList.contains('hidden')) return;
       if (e.code !== 'Space' && e.code !== 'Enter') return;
       e.preventDefault();
@@ -190,6 +200,7 @@ const Ui = (() => {
   }
 
   function init() {
+    SNLSettings.init();
     bindEngine();
     bindLobby();
     $('seed-input').value = String(Math.floor(Math.random() * 100));

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#244c43" />
+    <title>Snake &amp; Ladder</title>
+    <link rel="icon" href="assets/snake-ladder_icon.png" />
+    <link rel="stylesheet" href="ui/base.css" />
+    <link rel="stylesheet" href="ui/board.css" />
+    <link rel="stylesheet" href="ui/controls.css" />
+    <link rel="stylesheet" href="ui/screens.css" />
+  </head>
+  <body>
+    <header class="appbar">
+      <a class="brand" href="../games.html"
+        ><img src="assets/snake-ladder_icon.png" alt="" width="36" height="36"
+      /></a>
+      <div>
+        <h1>Snake &amp; Ladder</h1>
+        <span class="eyebrow">A little luck. A big adventure.</span>
+      </div>
+      <div id="gear"></div>
+    </header>
+    <main>
+      <section id="screen-lobby" class="screen lobby">
+        <div class="welcome">
+          <span class="eyebrow">THE CLASSIC FAMILY BOARD GAME</span>
+          <h2>Up the ladders.<br />Past the snakes.</h2>
+          <p>Pick a board and gather your players.<br />The first to reach square 100 wins.</p>
+          <div class="ornament" aria-hidden="true">① ━ 🪜 ━ ➊⓿⓿</div>
+        </div>
+        <div class="lobby-card">
+          <h2>Let's play</h2>
+          <div class="seed-row">
+            <label class="field"
+              >Board seed
+              <input id="seed-input" type="number" min="0" max="99" value="7" inputmode="numeric" /></label
+            ><button id="seed-random" type="button">Shuffle</button>
+          </div>
+          <label class="field"
+            >Players<select id="player-count">
+              <option value="2">2 players</option>
+              <option value="3">3 players</option>
+              <option value="4">4 players</option>
+            </select></label
+          >
+          <p class="small">100 seeded boards · 9 ladders · 8 snakes</p>
+          <button id="btn-start" class="primary" type="button">Start adventure →</button>
+        </div>
+      </section>
+      <section id="screen-play" class="screen hidden">
+        <div id="board-wrap">
+          <div class="board-caption"><span>↗ Climb ladders</span><span>Watch the snakes ↘</span></div>
+          <div class="board-rim">
+            <div id="board" role="img" aria-label="Snakes and ladders board numbered 1 to 100">
+              <svg id="board-svg" viewBox="0 0 10 10" aria-hidden="true"></svg>
+            </div>
+          </div>
+          <div class="board-caption"><span>START AT 1</span><span>RACE TO 100 ✦</span></div>
+        </div>
+        <aside id="panel">
+          <header class="panel-top">
+            <div>
+              <span class="eyebrow">YOUR ADVENTURE</span>
+              <h2>Board <span id="panel-seed">07</span></h2>
+            </div>
+            <button id="btn-quit" type="button">Quit</button>
+          </header>
+          <div id="dice-box">
+            <div id="dice" class="dice" aria-label="Die">–</div>
+            <button id="btn-roll" class="primary" type="button">Roll</button>
+          </div>
+          <ul id="players"></ul>
+          <div class="log-title">THE JOURNEY</div>
+          <div id="log"></div>
+        </aside>
+      </section>
+      <section id="screen-result" class="screen hidden result">
+        <span class="trophy" aria-hidden="true">🏆</span>
+        <h2 id="result-title">Winner!</h2>
+        <p id="result-sub"></p>
+        <button id="btn-again" class="primary" type="button">Another adventure</button>
+      </section>
+    </main>
+    <script src="../common/settings/games-settings.js"></script>
+    <script src="core/config.js"></script>
+    <script src="ui/settings.js"></script>
+    <script src="core/board.js"></script>
+    <script src="core/rules.js"></script>
+    <script src="core/engine.js"></script>
+    <script src="ui/render.js"></script>
+    <script src="ui/ui.js"></script>
+    <script src="core/main.js"></script>
+  </body>
+</html>

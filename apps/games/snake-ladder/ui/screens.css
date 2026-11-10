@@ -1,114 +1,244 @@
-/* screens.css — lobby / play / result visibility + layout */
-
-.screen {
-  height: 100vh;
-  height: 100dvh;          /* mobile: ignore the collapsing URL bar */
-  width: 100%;
-  min-height: 0;
-}
-
-/* ---------- LOBBY ---------- */
-#screen-lobby {
-  display: flex;
-  flex-direction: column;
+.lobby {
+  display: grid;
+  grid-template-columns: 1fr 360px;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 24px;
-  text-align: center;
+  gap: 60px;
+  min-height: calc(100dvh - 120px);
+  max-width: 940px;
+  margin: auto;
 }
-
-.lobby-card {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: min(340px, 100%);
-  padding: 22px;
-  background: var(--bg-soft);
+.welcome h2 {
+  font:
+    700 clamp(34px, 5vw, 60px)/1.06 Georgia,
+    serif;
+  margin: 20px 0;
+  letter-spacing: -2px;
+}
+.welcome p {
+  color: var(--muted);
+}
+.ornament {
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-top: 26px;
+  color: var(--accent);
+}
+.lobby-card,
+#panel {
   border: 1px solid var(--line);
-  border-radius: 14px;
-  text-align: left;
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 14px 32px var(--shadow);
+  padding: 24px;
 }
-.lobby-card .btn-primary { margin-top: 4px; }
-
-/* ---------- PLAY ---------- */
+.lobby-card {
+  display: grid;
+  gap: 18px;
+}
+.lobby-card .small {
+  margin: 0;
+}
+.lobby-card h2 {
+  font:
+    700 28px Georgia,
+    serif;
+}
 #screen-play {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(250px, 26vw, 360px);
-  gap: 12px;
-  padding: 12px;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 22px;
+  align-items: center;
 }
-
-#board-wrap {
+#panel {
+  padding: 20px;
+}
+.panel-top {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 0;
-  min-height: 0;
+  justify-content: space-between;
+  gap: 8px;
 }
-
-/* ---------- RESULT ---------- */
-#screen-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
+.panel-top h2 {
+  font-family: Georgia, serif;
+}
+.panel-top button {
+  font-size: 12px;
+  padding: 8px 12px;
+}
+.result {
   text-align: center;
-  padding: 24px;
+  padding: 70px 10px;
 }
-
-/* ---------- phone / portrait ---------- */
-@media (max-width: 720px), (orientation: portrait) and (max-width: 900px) {
+.result h2 {
+  font:
+    700 46px Georgia,
+    serif;
+}
+.trophy {
+  font-size: 76px;
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .lobby {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 28px 16px;
+    min-height: 0;
+  }
+  .welcome {
+    text-align: center;
+  }
+  .welcome h2 {
+    font-size: 36px;
+    margin: 12px 0;
+  }
+  .welcome .ornament {
+    display: none;
+  }
+  .lobby-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    gap: 12px;
+  }
   #screen-play {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: 8px;
-    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
-
+  #board-wrap {
+    width: 100%;
+  }
   #panel {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 10px;
-    max-height: 42vh;
-    overflow-y: auto;
+    width: 100%;
+    padding: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 14px;
   }
-
-  /* dice + roll button sit together on one row */
-  #dice-box { flex: 1 1 100%; }
-  #dice { width: 44px; height: 44px; font-size: 18px; }
-  #btn-roll { padding: 12px; font-size: 15px; }
-
-  /* the player strip becomes a compact horizontal row */
+  .panel-top {
+    grid-column: 1/-1;
+  }
+  .panel-top h2 {
+    font-size: 20px;
+  }
+  #dice-box {
+    padding: 10px 0;
+  }
   #players {
-    flex: 1 1 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 6px;
+    grid-column: 2;
+    grid-row: 2/5;
+    gap: 0;
   }
   #players li {
-    flex: 1 1 45%;
-    padding: 6px 8px;
-    font-size: 13px;
+    padding: 7px 5px;
+    font-size: 12px;
+    gap: 6px;
   }
-
-  /* log is secondary on a phone */
+  .log-title {
+    margin: 5px 0 0;
+  }
   #log {
-    flex: 1 1 100%;
-    max-height: 84px;
-    font-size: 11.5px;
+    height: 78px;
   }
-
-  .panel-top { flex: 1 1 100%; }
+  .dice {
+    width: 52px;
+    height: 52px;
+  }
+  #dice-box {
+    gap: 12px;
+  }
+  #btn-roll {
+    padding: 10px;
+    font-size: 12px;
+  }
 }
-
-/* very short screens (landscape phones): keep the board usable */
-@media (max-height: 500px) and (orientation: landscape) {
-  #log { display: none; }
-  #players { flex-direction: row; flex-wrap: wrap; gap: 4px; }
-  #players li { padding: 4px 7px; font-size: 12px; }
+@media (orientation: landscape) and (max-height: 540px) {
+  .appbar {
+    height: 44px;
+    padding: 3px 12px;
+  }
+  .appbar .eyebrow {
+    display: none;
+  }
+  .appbar img {
+    width: 30px;
+    height: 30px;
+  }
+  .appbar h1 {
+    font-size: 17px;
+  }
+  main {
+    padding: 0 8px 6px;
+  }
+  #screen-play {
+    grid-template-columns: 1fr minmax(230px, 34%);
+    gap: 14px;
+  }
+  #board-wrap {
+    width: min(100%, calc(100dvh - 76px));
+  }
+  .board-caption {
+    font-size: 8px;
+    padding: 3px 5px;
+  }
+  .board-rim {
+    padding: 6px;
+    border-radius: 10px;
+  }
+  .cell {
+    padding: 2px;
+    font-size: 8px;
+  }
+  #panel {
+    padding: 12px;
+  }
+  #panel h2 {
+    font-size: 20px;
+  }
+  #dice-box {
+    padding: 8px 0;
+  }
+  .dice {
+    width: 46px;
+    height: 46px;
+  }
+  #players {
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  #players li {
+    padding: 5px;
+    font-size: 11px;
+    gap: 5px;
+  }
+  #log {
+    height: 56px;
+  }
+  .log-title {
+    margin-top: 5px;
+  }
+  .lobby {
+    min-height: 0;
+    grid-template-columns: 1fr 320px;
+    gap: 30px;
+    padding: 10px 20px;
+  }
+  .welcome h2 {
+    font-size: 34px;
+    margin: 12px 0;
+  }
+  .ornament {
+    display: none;
+  }
+  .lobby-card {
+    padding: 16px;
+    gap: 8px;
+  }
+  .lobby-card h2 {
+    font-size: 22px;
+  }
+  .lobby-card p {
+    font-size: 10px;
+  }
 }

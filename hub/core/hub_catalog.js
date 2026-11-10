@@ -25,7 +25,7 @@ Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lin
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
 Connect 4,        connect-4/, , , Puzzle, Drop red and yellow discs to line up four - play a friend or the computer
 Unblock,           unblock/,      unblock/unblock_icon.png, , Puzzle, Sliding block puzzle: move blocks to free the red one
-Snake & Ladder,    snake-ladder/,  , , Puzzle, Classic snakes and ladders board game - roll the dice and race to 100
+Snake & Ladder,snake-ladder/,snake-ladder/assets/snake-ladder_icon.png,,Puzzle,Climb wooden ladders and dodge colourful snakes in a race to 100
 Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
 Snake,             snake/,         , , Arcade, Steer the snake to eat food and grow longer without hitting yourself
 Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon and blast waves of descending aliens
