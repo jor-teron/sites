@@ -1,5 +1,5 @@
 /*
- * base.css  (BS1–BS6: warning banner, delete dialogs, new field types, Fields dialog, record links)
+ * base.css  (BS1–BS7: warning banner, delete dialogs, new field types, Fields dialog, record links, reports and charts)
  * Base look: dark default + body.base-light, mapped onto the shared --of-* variables.
  * Big tap targets, jelly/bouncy press effects. Shared ribbon/tools/menu look comes from ../shared/.
  */
@@ -207,3 +207,39 @@ body.in-hub .of-topbar { display: none; }
 .base-del-link-list { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
 .base-f-ref, .base-f-look { margin: 6px 0; }
 @media print { .base-related-wrap, .base-ref-actions, .base-pick-back { display: none !important; } }
+
+/* BS7: report builder, result table, SVG charts, print-as-report */
+.base-report-wrap { padding: 6px 0 10px; }
+.bq-checks { align-items: flex-start; }
+.bq-actions { margin-top: 8px; }
+.base-report-out { padding: 4px 0 16px; }
+.br-head { margin: 4px 0 12px; }
+.br-title { margin: 0 0 4px; font-size: 20px; font-weight: 650; }
+.br-sub { font-size: 13px; color: var(--muted); }
+.br-chart { margin: 8px 0 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 8px 10px; overflow: auto; }
+.br-svg { display: block; width: 100%; max-width: 720px; height: auto; color: var(--text); }
+.br-table { width: 100%; border-collapse: collapse; background: var(--cell); border-radius: 10px; overflow: hidden; }
+.br-table th, .br-table td { border-bottom: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+.br-table th { background: var(--panel); font-weight: 600; }
+.br-table th.num, .br-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.br-table tr.br-sub td { background: var(--panel); font-weight: 600; color: var(--muted); border-top: 1px solid var(--border); }
+.br-table tr.br-total td { background: var(--panel); font-weight: 700; border-top: 2px solid var(--sel); }
+@media print {
+  .base-report-wrap { display: none !important; }
+  body.base-print-report .of-topbar,
+  body.base-print-report .of-ribbon,
+  body.base-print-report .base-status,
+  body.base-print-report #of-file-menu,
+  body.base-print-report #query-wrap,
+  body.base-print-report #report-wrap,
+  body.base-print-report #grid-wrap,
+  body.base-print-report #form-wrap,
+  body.base-print-report #related-wrap,
+  body.base-print-report .base-warn { display: none !important; }
+  body.base-print-report #report-out { display: block !important; }
+  body.base-print-report { height: auto; background: #fff; color: #000; }
+  body.base-print-report .br-chart { border-color: #ccc; background: #fff; break-inside: avoid; }
+  body.base-print-report .br-svg { color: #111; max-width: 100%; }
+  body.base-print-report .br-table th, body.base-print-report .br-table td { border-color: #ccc; }
+  body.base-print-report .br-table tr.br-total td { border-top-color: #333; }
+}

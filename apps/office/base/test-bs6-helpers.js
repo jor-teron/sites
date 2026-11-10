@@ -121,7 +121,7 @@ test("queryFields adds Link ▸ column paths; resolve reads the linked value", f
   assert.deepStrictEqual(BaseLinks.resolve(t, path, t.rows[2], d), []);
 });
 
-test("repair upgrades schema 5 to 6 and keeps ref arrays", function () {
+test("repair upgrades schema 5 to current and keeps ref arrays", function () {
   var ctx = {
     console: console, setTimeout: setTimeout, clearTimeout: clearTimeout,
     BaseTypes: BaseTypes, BaseLinks: BaseLinks,
@@ -151,7 +151,7 @@ test("repair upgrades schema 5 to 6 and keeps ref arrays", function () {
   };
   var res = ctx.BaseStore.repair(raw);
   assert.strictEqual(res.migrated, true);
-  assert.strictEqual(res.db.schema, 6);
+  assert.strictEqual(res.db.schema, ctx.BaseStore.SCHEMA);
   var ot = res.db.tables.filter(function (x) { return x.id === "ord"; })[0];
   var tags = ot.fields.filter(function (f) { return f.id === "ot"; })[0];
   var look = ot.fields.filter(function (f) { return f.id === "ov"; })[0];
@@ -163,7 +163,7 @@ test("repair upgrades schema 5 to 6 and keeps ref arrays", function () {
   assert.strictEqual(JSON.stringify(ot.rows[0].v.ot), JSON.stringify(["c1", "c2"]));
   assert.strictEqual(ot.rows[0].v.oc, "c1");
   assert.strictEqual(ot.rows[0].v.ov, ""); /* lookup value is not stored */
-  raw.schema = 6;
+  raw.schema = ctx.BaseStore.SCHEMA;
   var res2 = ctx.BaseStore.repair(raw);
   assert.strictEqual(res2.migrated, false);
 });

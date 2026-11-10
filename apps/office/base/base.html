@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base BS6</title>
-  <!-- BS1-BS6 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <title>Base BS7</title>
+  <!-- BS1-BS7 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
-  <link rel="stylesheet" href="base.css?v=BS6">
+  <link rel="stylesheet" href="base.css?v=BS7">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -37,6 +37,8 @@
     <div class="file-sep" role="separator"></div>
     <div class="base-recent-title" id="file-queries-title" hidden>Saved queries</div>
     <div id="file-queries"></div>
+    <div class="base-recent-title" id="file-reports-title" hidden>Saved reports</div>
+    <div id="file-reports"></div>
     <div class="base-recent-title">Tables</div>
     <div id="file-tables"></div>
   </div>
@@ -75,6 +77,23 @@
         <button type="button" id="btn-query-sql" title="Show the query as SQL (read-only)">Show as SQL</button>
       </div>
     </div>
+    <div class="of-panel" role="tabpanel" id="of-panel-report" data-tab="report" hidden>
+      <div class="of-group tool-group" aria-label="Report">
+        <button type="button" id="btn-report" title="Open the report builder">Report…</button>
+        <button type="button" id="btn-report-clear" title="Back to the grid">Show all</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Saved reports">
+        <select id="report-pick" title="Run a saved report" aria-label="Saved reports"></select>
+        <button type="button" id="btn-report-save" title="Save the report">Save…</button>
+        <button type="button" id="btn-report-rename" title="Rename saved report">Rename</button>
+        <button type="button" id="btn-report-delete" title="Delete saved report">Delete</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Chart and print">
+        <button type="button" id="btn-report-bar" title="Bar chart of this report">Bar</button>
+        <button type="button" id="btn-report-pie" title="Pie chart of this report">Pie</button>
+        <button type="button" id="btn-report-print" title="Print this report (Save as PDF in the print window)">Print report</button>
+      </div>
+    </div>
     <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
       <div class="of-group tool-group" aria-label="View">
         <button type="button" id="btn-view-grid" class="base-view-btn" title="Grid view">Grid</button>
@@ -84,7 +103,7 @@
         <button type="button" id="btn-sort-clear" title="Back to entry order">Clear sort</button>
       </div>
       <div class="of-group tool-group" aria-label="Totals">
-        <button type="button" id="btn-totals" title="Sum / Avg / Count for Number and Currency fields">Totals row</button>
+        <button type="button" id="btn-totals" title="Sum / Avg / Min / Max / Count for Number and Currency fields under the grid">Summary row</button>
       </div>
     </div>
   </nav>
@@ -92,6 +111,8 @@
   <div id="status" class="base-status" aria-live="polite"></div>
   <main id="base-main" class="base-main">
     <div id="query-wrap" class="base-query-wrap" hidden></div>
+    <div id="report-wrap" class="base-report-wrap" hidden></div>
+    <div id="report-out" class="base-report-out" hidden></div>
     <div id="grid-wrap" class="base-grid-wrap"></div>
     <div id="form-wrap" class="base-form-wrap" hidden></div>
     <div id="related-wrap" class="base-related-wrap" hidden></div>
@@ -102,24 +123,25 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=BS6"></script>
+  <script src="modules/base-quick.js?v=BS7"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=BS6"></script>
-  <script src="modules/base-history.js?v=BS6"></script>
-  <script src="modules/base-store.js?v=BS6"></script>
-  <script src="modules/base-links.js?v=BS6"></script>
-  <script src="modules/base-pics.js?v=BS6"></script>
-  <script src="modules/base-csv.js?v=BS6"></script>
-  <script src="modules/base-grid.js?v=BS6"></script>
-  <script src="modules/base-form.js?v=BS6"></script>
-  <script src="modules/base-fields.js?v=BS6"></script>
-  <script src="modules/base-query.js?v=BS6"></script>
-  <script src="modules/base-delete.js?v=BS6"></script>
-  <script src="modules/base-ui.js?v=BS6"></script>
-  <script src="modules/base_hub.js?v=BS6"></script>
+  <script src="modules/base-types.js?v=BS7"></script>
+  <script src="modules/base-history.js?v=BS7"></script>
+  <script src="modules/base-store.js?v=BS7"></script>
+  <script src="modules/base-links.js?v=BS7"></script>
+  <script src="modules/base-pics.js?v=BS7"></script>
+  <script src="modules/base-csv.js?v=BS7"></script>
+  <script src="modules/base-grid.js?v=BS7"></script>
+  <script src="modules/base-form.js?v=BS7"></script>
+  <script src="modules/base-fields.js?v=BS7"></script>
+  <script src="modules/base-query.js?v=BS7"></script>
+  <script src="modules/base-report.js?v=BS7"></script>
+  <script src="modules/base-delete.js?v=BS7"></script>
+  <script src="modules/base-ui.js?v=BS7"></script>
+  <script src="modules/base_hub.js?v=BS7"></script>
 </body>
 </html>

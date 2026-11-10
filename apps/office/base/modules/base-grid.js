@@ -1,5 +1,5 @@
 /*
- * base-grid.js  (BS1, BS2, BS5, BS6: Link to record + Lookup cells)
+ * base-grid.js  (BS1, BS2, BS5, BS6: Link to record + Lookup cells, BS7: summary row Min/Max)
  * Grid view: one control per cell (inline edit, autosave), header click sorts (asc -> desc -> off),
  * search box filters rows (any field contains text; pictures are skipped). Row number click selects
  * a row (for Records ⋯ > Delete record…, BS4).
@@ -7,6 +7,7 @@
  *   textarea, Picture is a thumbnail, Auto-number ID is read-only, Link has an open-in-new-tab
  *   button, invalid (required / unique) cells are marked. Totals include Currency.
  * BS6: Link to record shows chips (pick / jump / clear); Lookup is read-only text from the linked record.
+ * BS7: the summary row under the grid also shows Min and Max (and Auto-number ID).
  * API: BaseGrid.render(), BaseGrid.visibleRows(t, ignoreSearch), BaseGrid.inputFor(field, value, onSet, mode, row)
  */
 var BaseGrid = (function () {
@@ -245,23 +246,30 @@ function inputFor(f, val, onSet, mode, r) {
     try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {}
     BaseUI.status(rows.length + " of " + t.rows.length + " records" + (aq ? " · query" + (aq.name ? " “" + aq.name + "”" : "") : "") + (BASE.memOnly ? " · memory only" : ""));
   }
-  /* Totals row (BS2/BS5): Sum / Avg / Count for Number and Currency fields over the visible rows */
+  /* Summary row (BS2/BS5/BS7): Sum / Avg / Min / Max / Count for Number, Currency and Auto-number ID over the visible rows */
   function fmt(n) { return Math.round(n * 100) / 100 + ""; }
   function totals(tbl, cols, rows, t) {
     var tr = tbl.createTFoot().insertRow(), c = tr.insertCell(); c.className = "num"; c.textContent = "Σ";
     cols.forEach(function (f) {
       var td = tr.insertCell(); td.className = "base-total";
       var typ = (f.type === "lookup" || f._via) && typeof BaseLinks !== "undefined" ? BaseLinks.resolvedType(t, f) : f.type;
-      var numeric = typ === "number" || typ === "currency";
+      var numeric = typ === "number" || typ === "currency" || typ === "id";
       if (!numeric) { if (f === cols[0]) td.textContent = rows.length + " records"; return; }
-      var v = rows.map(function (r) {
-        if (f.type === "lookup" && typeof BaseLinks !== "undefined") return BaseLinks.lookupValue(t, f, r);
-        if (f._via && typeof BaseLinks !== "undefined") { var vs = BaseLinks.resolve(t, f, r); return vs[0]; }
-        return r.v[f.id];
-      }).filter(function (x) { return x !== "" && x != null && !Array.isArray(x) && !isNaN(+x); }).map(Number);
+      var v = [];
+      rows.forEach(function (r) {
+        var raw;
+        if (f.type === "lookup" && typeof BaseLinks !== "undefined") raw = BaseLinks.lookupValue(t, f, r);
+        else if (f._via && typeof BaseLinks !== "undefined") raw = BaseLinks.resolve(t, f, r);
+        else raw = r.v[f.id];
+        (Array.isArray(raw) ? raw : [raw]).forEach(function (x) {
+          if (x !== "" && x != null && !isNaN(+x)) v.push(+x);
+        });
+      });
       var sum = v.reduce(function (a, b) { return a + b; }, 0);
       var show = function (n) { return typ === "currency" && T() ? BaseTypes.formatCurrency(n) : fmt(n); };
-      [["Sum", v.length ? show(sum) : "–"], ["Avg", v.length ? show(sum / v.length) : "–"], ["Count", v.length]].forEach(function (p) { var d = document.createElement("div"); d.textContent = p[0] + ": " + p[1]; td.appendChild(d); });
+      var lines = [["Sum", v.length ? show(sum) : "–"], ["Avg", v.length ? show(sum / v.length) : "–"],
+        ["Min", v.length ? show(Math.min.apply(null, v)) : "–"], ["Max", v.length ? show(Math.max.apply(null, v)) : "–"], ["Count", v.length]];
+      lines.forEach(function (p) { var d = document.createElement("div"); d.textContent = p[0] + ": " + p[1]; td.appendChild(d); });
     });
   }
   return { render: render, visibleRows: visibleRows, inputFor: inputFor };
