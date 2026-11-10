@@ -26,7 +26,8 @@ const PTSave = {
 
   /* Build a PDF from the current sources + page list with pdf-lib.
      Pages from PDFs are copied (text and quality kept). Blank pages are new. Images are embedded (JPG/PNG). */
-  async build(sources, pages) {
+  async build(sources, pages, opts) {
+    opts = opts || {};
     const { PDFDocument, degrees } = PDFLib;
     const out = await PDFDocument.create();
     const cache = new Map();
@@ -64,15 +65,30 @@ const PTSave = {
       }
       if (i && i % 8 === 0) await new Promise((r) => setTimeout(r, 0));
     }
-    const first = (sources || []).find((s) => s.kind === 'pdf' && cache.has(s.id)) || (sources || []).find((s) => s.kind === 'pdf');
-    if (first) {
-      const lib = await libOf(first);
-      try {
-        const t = lib.getTitle(); if (t) out.setTitle(t);
-        const a = lib.getAuthor && lib.getAuthor(); if (a) out.setAuthor(a);
-        const sub = lib.getSubject && lib.getSubject(); if (sub) out.setSubject(sub);
-      } catch (_) { /* some files have odd metadata */ }
+    if (opts.stamp && PT.Stamp) await PT.Stamp.decorate(out, pages, opts.stamp);
+    out.getPages().forEach((pg, i) => {
+      const p = pages[i];
+      if (!p || !p.crop) return;
+      const c = PTUtil.cropBox(pg.getSize().width, pg.getSize().height, p.crop);
+      if (c.ok) pg.setCropBox(c.x, c.y, c.w, c.h);
+    });
+    if (opts.meta && PT.Stamp) {
+      PT.Stamp.applyMeta(out, opts.meta);
+    } else {
+      const first = (sources || []).find((s) => s.kind === 'pdf' && cache.has(s.id)) || (sources || []).find((s) => s.kind === 'pdf');
+      if (first) {
+        const lib = await libOf(first);
+        try {
+          const t = lib.getTitle(); if (t) out.setTitle(t);
+          const a = lib.getAuthor && lib.getAuthor(); if (a) out.setAuthor(a);
+          const sub = lib.getSubject && lib.getSubject(); if (sub) out.setSubject(sub);
+        } catch (_) { /* some files have odd metadata */ }
+      }
     }
-    return new Blob([await out.save()], { type: 'application/pdf' });
+    let bytes = await out.save();
+    if (opts.shrink && PT.Stamp) {
+      bytes = await PT.Stamp.shrinkBytes(bytes, opts.onProgress);
+    }
+    return new Blob([bytes], { type: 'application/pdf' });
   },
 };

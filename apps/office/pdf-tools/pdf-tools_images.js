@@ -109,6 +109,7 @@ PT.Images = (() => {
       S.doc = { name: PTUtil.fileBase(loaded[0].name) + '.pdf' };
       S.sel.clear(); S.anchor = null;
       PT.Edit.reset();
+      if (PT.Stamp) PT.Stamp.reset();
     }
     const n = pages.length;
     if (started) {

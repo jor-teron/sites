@@ -22,6 +22,8 @@
   $('m-split').addEventListener('click', () => { PT.menu(false); PT.Edit.split(); });
   $('m-images').addEventListener('click', () => PT.Images.pick());
   $('m-export').addEventListener('click', () => { PT.menu(false); PT.Images.exportPages(); });
+  $('m-stamp').addEventListener('click', () => { PT.menu(false); PT.Stamp.dialog(); });
+  $('m-crop').addEventListener('click', () => { PT.menu(false); PT.Stamp.cropDialog(); });
 
   addEventListener('keydown', (e) => {
     if (PT.Images && PT.Images.isOpen()) {

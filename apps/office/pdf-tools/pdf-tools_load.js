@@ -30,6 +30,10 @@ PT.Load = (() => {
       const s = pg.getSize();
       return { w: s.width, h: s.height, baseRot: (pg.getRotation().angle || 0) };
     });
+    let title = '', author = '', subject = '';
+    try { title = lib.getTitle() || ''; } catch (_) { /* odd metadata */ }
+    try { author = lib.getAuthor && lib.getAuthor() || ''; } catch (_) { /* */ }
+    try { subject = lib.getSubject && lib.getSubject() || ''; } catch (_) { /* */ }
     const pdf = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
     if (!pdf.numPages) {
       pdf.destroy();
@@ -41,6 +45,7 @@ PT.Load = (() => {
       name: file.name || 'document.pdf',
       color: PTUtil.colorFor(S.nextSrc - 2),
       bytes, pdf, n: pdf.numPages, sizes,
+      title, author, subject,
     };
   }
 
@@ -81,6 +86,11 @@ PT.Load = (() => {
       S.doc = { name: loaded[0].name };
       S.sel.clear(); S.anchor = null;
       PT.Edit.reset();
+      if (PT.Stamp) {
+        PT.Stamp.reset();
+        const first = loaded[0];
+        S.meta = { title: first.title || '', author: first.author || '', subject: first.subject || '' };
+      }
       PT.emit('opened');
       PT.refresh();
     } else {
@@ -104,6 +114,7 @@ PT.Load = (() => {
     S.sources = [];
     S.doc = null; S.pages = []; S.sel.clear(); S.anchor = null;
     PT.Edit.reset();
+    if (PT.Stamp) PT.Stamp.reset();
     if (!silent) PT.refresh();
   }
 
