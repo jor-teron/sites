@@ -10,8 +10,8 @@ function moveExtent(key) {
   var dr = key === KEYS.up ? -1 : key === KEYS.down ? 1 : 0;
   var dc = key === KEYS.left ? -1 : key === KEYS.right ? 1 : 0;
   if (!dr && !dc) return false;
-  extR = Math.max(0, Math.min(ROWS - 1, extR + dr));
-  extC = Math.max(0, Math.min(COLS - 1, extC + dc));
+  var nv = nextVisible(extR, extC, dr, dc);
+  extR = nv.r; extC = nv.c;
   selMode = "cell";
   highlightSel();
   var td = inpGrid[extR][extC].parentNode;

@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <!--
   Space Invaders Clone — WebApp
-  Files: space-invader.html, space-invader.css, space-invader_config.js, space-invader_logic.js
+  SI-T1: procedural visual themes; core/ simulation, ui/ renderer and settings.
   Pure HTML + CSS + Canvas JS. No libraries.
   Controls: Arrow Left/Right or A/D to move. Space or click/tap to shoot.
-  Goal: Destroy all invaders. They speed up as rows clear. You have 3 lives.
+  Goal: Destroy all invaders. They speed up each wave. You have 3 lives.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Space Invaders Clone NIX-G2</title>
+  <title>Space Invaders • SI-T1</title>
+  <script src="../../../shared/theme/hub_theme.js"></script>
   <link rel="stylesheet" href="ui/style.css" />
 </head>
 <body>
@@ -19,10 +20,11 @@
     <div>SCORE <span id="score">0</span></div>
     <div>LIVES <span id="lives">3</span></div>
     <div>WAVE <span id="wave">1</span></div>
+    <button id="theme-open" type="button" aria-haspopup="dialog">⚙ Theme</button>
   </header>
 
   <!-- Game canvas. Size set in JS to fit screen. -->
-  <canvas id="game"></canvas>
+  <canvas id="game" tabindex="0" aria-label="Space Invaders playfield"></canvas>
 
   <!-- Overlay for start / pause / game over -->
   <div id="overlay" class="overlay">
@@ -31,7 +33,17 @@
     <p class="hint">← → move &nbsp; SPACE shoot &nbsp; ENTER pause &nbsp; ESC restart</p>
   </div>
 
+  <footer class="game-footer"><span id="theme-name"></span><span>← → Move · SPACE Fire · ENTER Pause</span></footer>
+  <dialog id="theme-settings" aria-labelledby="theme-title">
+    <form method="dialog" class="settings-heading"><div><h2 id="theme-title">Choose your universe</h2><p>Same game. Ten different worlds.</p></div><button aria-label="Close settings">✕</button></form>
+    <label class="auto-option"><input type="radio" name="visual-theme" value="auto"> Auto <small>Follow Hub: light → Minimal Flat, dark → Classic Arcade</small></label>
+    <div id="theme-grid" class="theme-grid"></div>
+    <p class="settings-note">Saved on this device. Reduced motion is respected. Background UFOs and bottom-edge bunkers are scenery only.</p>
+    <p id="theme-status" role="status"></p>
+  </dialog>
   <script src="core/config.js"></script>
+  <script src="ui/themes.js"></script>
+  <script src="ui/theme-settings.js"></script>
   <script src="core/logic.js"></script>
 </body>
 </html>
