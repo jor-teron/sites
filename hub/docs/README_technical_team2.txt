@@ -1329,7 +1329,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Tests: `node --check` on changed JS, `test-bs5-helpers.js` + `test-bs6-helpers.js` + new `test-bs7-helpers.js` (group-by, aggregates, date buckets, two-level subtotals, link/multi-link, chart series, schema 6→7 repair), static curl smoke (200 + BS7). No Puppeteer / Playwright / jsdom.
 
 
-### 1.72 Base views and filters: `apps/office/base/` (Office), release BS8
+### 1.76 Base views and filters: `apps/office/base/` (Office), release BS8
 - Why: BS7 added reports and charts, but everyday work still needed Excel-style header filters, saved layouts, frozen/resized columns, a splash of colour, and a way to browse records as cards or on a calendar — the next step planned to Jor after reports.
 - New `modules/base-view.js` (pure filter / layout / colour / calendar-cell helpers + header popover, Columns… / Colours… dialogs, gallery and month calendar). Click a column header to sort or to filter by ticked values and/or a condition; several columns AND together. Filters run after an active query and before the search box.
 - Saved views in `BASE.db.views` (same IndexedDB record) store filters, sort, visible/ordered columns, widths, freeze (0/1/2 data columns plus the row number), colour rules, and Grid / Gallery / Calendar. Listed in the View tab picker and the File menu. The working layout is also stored on the table (`t.layout`) so it survives a reload. Save / Rename / Delete / Apply, and changes to filters, columns, freeze, colours and a finished column resize, are undoable until Base is closed. Deleting a table drops its views (still not undoable).
