@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<!-- VPL2 Video Player: play local video files, folder list, resume, SRT/VTT, speed, PiP. Helpers: video-player_helpers.js. UI: video-player.js. -->
+<!-- VPL3 Video Player: play local video files, folder list, resume, SRT/VTT, speed, PiP. Helpers: video-player_helpers.js. UI: video-player.js. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Video Player · VPL2</title>
+  <title>Video Player · VPL3</title>
   <link rel="icon" href="video-player_icon.png">
-  <link rel="stylesheet" href="video-player.css?v=VPL2">
+  <link rel="stylesheet" href="video-player.css?v=VPL3">
   <script>try{var s=JSON.parse(localStorage.getItem('video-player-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
 </head>
 <body>
@@ -163,6 +163,47 @@
       </div>
     </div>
     <p class="note" id="sleepState" hidden></p>
+
+    <h3>Picture</h3>
+    <div class="row wrap">
+      <button type="button" class="btn" id="btnFrame">Save frame as PNG</button>
+    </div>
+    <div class="row"><span>Brightness</span>
+      <div class="slide">
+        <input type="range" id="bright" min="50" max="200" value="100" step="1" aria-label="Brightness">
+        <span id="brightVal" class="val">100%</span>
+      </div>
+    </div>
+    <div class="row"><span>Contrast</span>
+      <div class="slide">
+        <input type="range" id="contrast" min="50" max="200" value="100" step="1" aria-label="Contrast">
+        <span id="contrastVal" class="val">100%</span>
+      </div>
+    </div>
+    <div class="row"><span>Zoom to fill</span>
+      <div class="seg" id="zoomSeg" role="group" aria-label="Zoom to fill">
+        <button type="button" data-v="0">Off</button>
+        <button type="button" data-v="1">On</button>
+      </div>
+    </div>
+    <div class="row wrap">
+      <button type="button" class="btn" id="btnRotate">Rotate 90°</button>
+      <span id="rotVal" class="val">0°</span>
+    </div>
+    <div class="row"><span>Volume boost</span>
+      <div class="slide">
+        <input type="range" id="boost" min="100" max="200" value="100" step="5" aria-label="Volume boost">
+        <span id="boostVal" class="val">100%</span>
+      </div>
+    </div>
+    <h3>Bookmarks</h3>
+    <div class="row wrap">
+      <input type="text" id="markNote" maxlength="80" placeholder="Note (optional)" autocomplete="off">
+      <button type="button" class="btn" id="btnAddMark">Add at current time</button>
+    </div>
+    <ul id="markList" class="marks"></ul>
+    <h3>File</h3>
+    <dl id="infoBox" class="info"><p class="note">Open a video to see its size, type, resolution and duration.</p></dl>
     <h3>Keyboard</h3>
     <p class="keys"><kbd>Space</kbd> Play / pause · <kbd>←</kbd> <kbd>→</kbd> 10 seconds · <kbd>↑</kbd> <kbd>↓</kbd> Volume · <kbd>F</kbd> Full screen · <kbd>M</kbd> Mute</p>
     <p class="note">Release <span id="rel"></span>. Everything stays on this device.</p>
@@ -175,7 +216,7 @@
 <input type="file" id="inFolder" hidden webkitdirectory>
 <input type="file" id="inSub" hidden accept=".srt,.vtt,text/vtt">
 
-<script src="video-player_helpers.js?v=VPL2"></script>
-<script src="video-player.js?v=VPL2"></script>
+<script src="video-player_helpers.js?v=VPL3"></script>
+<script src="video-player.js?v=VPL3"></script>
 </body>
 </html>

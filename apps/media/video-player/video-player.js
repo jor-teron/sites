@@ -1,8 +1,8 @@
-/* Video Player VPL2 — local files, folder list, resume, SRT/VTT, speed, PiP.
+/* Video Player VPL3 — local files, folder list, resume, SRT/VTT, speed, PiP.
    Helpers live in video-player_helpers.js (VPL). In-app dialogs only. */
 (function () {
   'use strict';
-  var STORE = 'video-player-v1', RESUME = 'video-player-resume-v1';
+  var STORE = 'video-player-v1', RESUME = 'video-player-resume-v1', MARKS = 'video-player-marks-v1';
   var RESUME_CAP = 200, RESUME_MS = 2000, HIDE_MS = 2500;
   var $ = function (id) { return document.getElementById(id); };
   var app = $('app'), vid = $('vid'), chromeEl = $('chrome');
@@ -10,9 +10,11 @@
   var seeking = false, hideTimer = 0, resumeTimer = 0, dialogOpen = false;
   var listOpen = false, menuOpen = false;
   var order = [], loopA = null, loopB = null, sleepUntil = 0, sleepTimer = 0, addMode = false;
+  var audioCtx = null, mediaSrc = null, gainNode = null;
   var BG = { off: 'transparent', dark: 'rgba(0,0,0,.65)', solid: 'rgba(0,0,0,.95)' };
   var settings = { theme: 'auto', subSize: 'm', volume: 1, muted: false, speed: 1, subOn: true,
-    subColor: '#ffffff', subBg: 'dark', subPos: 'bottom', subShift: 0, shuffle: false, repeat: 'off' };
+    subColor: '#ffffff', subBg: 'dark', subPos: 'bottom', subShift: 0, shuffle: false, repeat: 'off',
+    brightness: 100, contrast: 100, zoomFill: false, rotate: 0, boost: 100 };
 
   /* ---------- settings + resume ---------- */
   function loadSettings() {
@@ -31,6 +33,11 @@
         if (typeof s.subShift === 'number' && isFinite(s.subShift)) settings.subShift = Math.round(s.subShift * 10) / 10;
         if (typeof s.shuffle === 'boolean') settings.shuffle = s.shuffle;
         if (s.repeat === 'off' || s.repeat === 'one' || s.repeat === 'all') settings.repeat = s.repeat;
+        if (typeof s.brightness === 'number') settings.brightness = Math.max(50, Math.min(200, s.brightness));
+        if (typeof s.contrast === 'number') settings.contrast = Math.max(50, Math.min(200, s.contrast));
+        if (typeof s.zoomFill === 'boolean') settings.zoomFill = s.zoomFill;
+        if (typeof s.rotate === 'number') settings.rotate = ((Math.round(s.rotate / 90) * 90) % 360 + 360) % 360;
+        if (typeof s.boost === 'number') settings.boost = Math.max(100, Math.min(200, s.boost));
       }
     } catch (e) { /* blocked or bad json */ }
   }
@@ -194,6 +201,184 @@
     var list = vid.audioTracks;
     if (!list) return;
     for (var n = 0; n < list.length; n++) list[n].enabled = n === i;
+  }
+  function applyPicture() {
+    var b = settings.brightness || 100, c = settings.contrast || 100;
+    vid.style.filter = (b === 100 && c === 100) ? '' : ('brightness(' + (b / 100) + ') contrast(' + (c / 100) + ')');
+    vid.style.objectFit = settings.zoomFill ? 'cover' : 'contain';
+    $('bright').value = String(b);
+    $('brightVal').textContent = b + '%';
+    $('contrast').value = String(c);
+    $('contrastVal').textContent = c + '%';
+    document.querySelectorAll('#zoomSeg button').forEach(function (btn) {
+      btn.classList.toggle('on', (btn.getAttribute('data-v') === '1') === !!settings.zoomFill);
+    });
+    applyRotate();
+  }
+  function applyRotate() {
+    var r = ((settings.rotate || 0) % 360 + 360) % 360;
+    $('rotVal').textContent = r + '°';
+    var box = $('stage').getBoundingClientRect();
+    if ((r === 90 || r === 270) && box.width && box.height) {
+      vid.style.width = box.height + 'px';
+      vid.style.height = box.width + 'px';
+      vid.style.left = ((box.width - box.height) / 2) + 'px';
+      vid.style.top = ((box.height - box.width) / 2) + 'px';
+    } else {
+      vid.style.width = '100%';
+      vid.style.height = '100%';
+      vid.style.left = '0';
+      vid.style.top = '0';
+    }
+    vid.style.transform = r ? ('rotate(' + r + 'deg)') : '';
+  }
+  function ensureBoost() {
+    if (gainNode) return gainNode;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try {
+      audioCtx = audioCtx || new AC();
+      mediaSrc = mediaSrc || audioCtx.createMediaElementSource(vid);
+      gainNode = audioCtx.createGain();
+      mediaSrc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+    } catch (e) {
+      gainNode = null;
+      return null;
+    }
+    return gainNode;
+  }
+  function setBoost(pct, fromUi) {
+    pct = Math.max(100, Math.min(200, Math.round(Number(pct) || 100)));
+    settings.boost = pct;
+    $('boost').value = String(pct);
+    $('boostVal').textContent = pct + '%';
+    if (!fromUi) { /* keep */ }
+    if (pct > 100 || gainNode) {
+      var g = ensureBoost();
+      if (g) g.gain.value = pct / 100;
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    saveSettings();
+  }
+  function saveFrame() {
+    if (!items.length || !vid.videoWidth) {
+      dialog('Save frame', 'Open a video first, then save a frame.');
+      return;
+    }
+    var c = document.createElement('canvas');
+    c.width = vid.videoWidth;
+    c.height = vid.videoHeight;
+    try {
+      c.getContext('2d').drawImage(vid, 0, 0);
+    } catch (e) {
+      dialog('Save frame', 'The frame could not be saved.');
+      return;
+    }
+    var name = VPL.baseName(items[index] && items[index].name || 'frame') + '-' + VPL.formatTime(vid.currentTime).replace(/:/g, '-') + '.png';
+    var done = function (blob) {
+      if (!blob) { dialog('Save frame', 'The frame could not be saved.'); return; }
+      var a = document.createElement('a');
+      var url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    };
+    if (c.toBlob) c.toBlob(done, 'image/png');
+    else {
+      try {
+        var data = c.toDataURL('image/png');
+        var a = document.createElement('a'); a.href = data; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+      } catch (e2) { dialog('Save frame', 'The frame could not be saved.'); }
+    }
+    c.width = 0; c.height = 0;
+  }
+  function rdMarks() {
+    try { var v = JSON.parse(localStorage.getItem(MARKS) || '{}'); return v && typeof v === 'object' ? v : {}; }
+    catch (e) { return {}; }
+  }
+  function wrMarks(all) {
+    try { localStorage.setItem(MARKS, JSON.stringify(all)); } catch (e) { /* full or blocked */ }
+  }
+  function marksFor(it) {
+    if (!it) return [];
+    var rec = rdMarks()[VPL.resumeKey(it.name, it.size)];
+    return rec && rec.items ? rec.items.slice() : [];
+  }
+  function writeMarks(it, list) {
+    if (!it) return;
+    var all = rdMarks(), key = VPL.resumeKey(it.name, it.size);
+    if (!list || !list.length) delete all[key];
+    else all[key] = { at: Date.now(), items: list };
+    var ks = Object.keys(all);
+    if (ks.length > 80) {
+      ks.sort(function (a, b) { return (all[a].at || 0) - (all[b].at || 0); })
+        .slice(0, ks.length - 80)
+        .forEach(function (k) { delete all[k]; });
+    }
+    wrMarks(all);
+  }
+  function renderMarks() {
+    var ul = $('markList');
+    ul.innerHTML = '';
+    var list = marksFor(items[index]);
+    list.sort(function (a, b) { return a.t - b.t; });
+    list.forEach(function (m, i) {
+      var li = document.createElement('li');
+      var go = document.createElement('button');
+      go.type = 'button';
+      go.className = 'go';
+      go.textContent = VPL.formatTime(m.t) + (m.note ? '  ' + m.note : '');
+      go.addEventListener('click', function () {
+        if (isFinite(vid.duration)) vid.currentTime = Math.max(0, Math.min(vid.duration, m.t));
+      });
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.setAttribute('aria-label', 'Remove bookmark');
+      del.textContent = '×';
+      del.addEventListener('click', function () {
+        var next = marksFor(items[index]).filter(function (x) { return !(x.t === m.t && x.note === m.note); });
+        writeMarks(items[index], next);
+        renderMarks();
+      });
+      li.appendChild(go);
+      li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+  function addMark() {
+    var it = items[index];
+    if (!it) { dialog('Bookmarks', 'Open a video first, then add a bookmark.'); return; }
+    var t = Math.round((vid.currentTime || 0) * 10) / 10;
+    var note = ($('markNote').value || '').trim().slice(0, 80);
+    var list = marksFor(it);
+    if (list.length >= 40) { dialog('Bookmarks', 'This file already has 40 bookmarks.'); return; }
+    list.push({ t: t, note: note });
+    writeMarks(it, list);
+    $('markNote').value = '';
+    renderMarks();
+  }
+  function fillInfo() {
+    var box = $('infoBox');
+    var it = items[index];
+    if (!it) {
+      box.innerHTML = '<p class="note">Open a video to see its size, type, resolution and duration.</p>';
+      return;
+    }
+    function row(k, v) { return '<div><dt>' + k + '</dt><dd></dd></div>'; }
+    box.innerHTML = row('Name') + row('Resolution') + row('Duration') + row('Size') + row('Type');
+    var dds = box.querySelectorAll('dd');
+    var w = vid.videoWidth, h = vid.videoHeight;
+    dds[0].textContent = it.name;
+    dds[1].textContent = w && h ? (w + ' × ' + h) : '—';
+    dds[2].textContent = isFinite(vid.duration) && vid.duration ? VPL.formatTime(vid.duration) : '—';
+    dds[3].textContent = VPL.formatSize(it.size);
+    dds[4].textContent = it.type || ('.' + VPL.ext(it.name)) || '—';
   }
 
   function rdResume() {
@@ -464,6 +649,9 @@
     vid.volume = settings.volume;
     vid.muted = settings.muted;
     bindSubs(it);
+    renderMarks();
+    fillInfo();
+    applyPicture();
     var typ = likelyType(it.file);
     if (typ && vid.canPlayType && vid.canPlayType(typ) === '') {
       /* still try: some browsers leave canPlayType empty for MKV they can play */
@@ -555,6 +743,9 @@
     }
     fillAudioTracks();
     applyCuePos();
+    fillInfo();
+    renderMarks();
+    applyPicture();
   }
   function onEnded() {
     flushResume();
@@ -659,6 +850,9 @@
     settings.subOn = true;
     saveSettings();
     bindSubs(it);
+    renderMarks();
+    fillInfo();
+    applyPicture();
   }
 
   function onKey(e) {
@@ -795,6 +989,27 @@
       setSleep(Number(b.getAttribute('data-v')));
     });
     $('audioSel').addEventListener('change', function () { setAudioTrack(Number($('audioSel').value) || 0); });
+    $('btnFrame').addEventListener('click', saveFrame);
+    $('bright').addEventListener('input', function () {
+      settings.brightness = Number($('bright').value) || 100; saveSettings(); applyPicture();
+    });
+    $('contrast').addEventListener('input', function () {
+      settings.contrast = Number($('contrast').value) || 100; saveSettings(); applyPicture();
+    });
+    $('zoomSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      settings.zoomFill = b.getAttribute('data-v') === '1'; saveSettings(); applyPicture();
+    });
+    $('btnRotate').addEventListener('click', function () {
+      settings.rotate = ((settings.rotate || 0) + 90) % 360; saveSettings(); applyPicture();
+    });
+    $('boost').addEventListener('input', function () { setBoost($('boost').value, true); });
+    $('btnAddMark').addEventListener('click', addMark);
+    $('markNote').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addMark(); }
+    });
+    window.addEventListener('resize', applyRotate);
+
     if (vid.audioTracks && vid.audioTracks.addEventListener) {
       vid.audioTracks.addEventListener('addtrack', fillAudioTracks);
       vid.audioTracks.addEventListener('removetrack', fillAudioTracks);
@@ -868,6 +1083,10 @@
   setPlayModeUi();
   setAbUi();
   setSleep(0);
+  applyPicture();
+  setBoost(settings.boost);
+  fillInfo();
+  renderMarks();
   vid.volume = settings.volume;
   vid.muted = settings.muted;
   setVolUi();

@@ -1583,6 +1583,26 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   formatTs, shiftVtt) and a static serve + curl smoke test. No Puppeteer,
   Playwright or jsdom. Details: apps/media/video-player/video-player_readme.md.
 
+### 1.89 Video Player, release VPL3
+
+- apps/media/video-player only (VPL1 + VPL2). Branch apps/vpl3-video-player.
+  Title / RELEASE / ?v= VPL3. The main control bar is unchanged. New tools
+  live in the ⋯ settings panel. "Send to Video Editor" was left out.
+- Save the current frame as PNG (one-shot canvas, then revoked). Bookmarks
+  with an optional note, stored per file in localStorage 'video-player-marks-v1'
+  (keyed by name+size, up to 40 marks per file and 80 files). Click a bookmark
+  to jump to that time.
+- Brightness and contrast (CSS filter, 50–200%, default 100). Zoom to fill
+  (object-fit cover) and rotate 90° (0 / 90 / 180 / 270; width/height are
+  swapped so a sideways phone video still fits). Volume boost up to 200%
+  through a Web Audio GainNode, created only when boost goes above 100%.
+- File info in the same panel: name, resolution, duration, size and type.
+  Picture and boost settings are stored in 'video-player-v1'.
+- formatSize() lives in video-player_helpers.js. Tested with `node --check`,
+  `node test_vpl_helpers.js` (including formatSize) and a static serve + curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+  Details: apps/media/video-player/video-player_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
