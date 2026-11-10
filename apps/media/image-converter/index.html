@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Image Converter CI3</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="image-converter_icon.png">
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('image-converter-v1') || '{}');
+        var m = s.theme || 'auto';
+        var auto = false, t = '';
+        try {
+          auto = localStorage.getItem('sites-hub.themeAuto') === '1';
+          t = localStorage.getItem('sites-hub.theme') || '';
+        } catch (e) { /* blocked */ }
+        var dark;
+        if (m === 'dark' || m === 'light') dark = m === 'dark';
+        else if (!auto && (t === 'dark' || t === 'light')) dark = t === 'dark';
+        else dark = !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        var el = document.documentElement;
+        el.classList.add(dark ? 'dark' : 'light');
+        el.dataset.theme = dark ? 'dark' : 'light';
+        el.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) { /* ok */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="image-converter.css?v=CI3">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-header">
+      <h1>Image Converter</h1>
+      <div class="header-actions">
+        <button type="button" class="header-btn" id="helpBtn" title="About this app">?</button>
+        <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+          <button type="button" data-v="auto">Auto</button>
+          <button type="button" data-v="light">Light</button>
+          <button type="button" data-v="dark">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="stage">
+      <aside class="side">
+        <div class="toolbar">
+          <button type="button" class="btn secondary-btn" id="addFilesBtn">Add photos</button>
+          <button type="button" class="btn secondary-btn" id="addFolderBtn">Add folder</button>
+          <button type="button" class="btn primary-btn" id="convertBtn">Convert</button>
+          <button type="button" class="btn secondary-btn" id="zipBtn">Download zip</button>
+          <button type="button" class="btn secondary-btn" id="iconSetBtn">Icon set</button>
+          <button type="button" class="btn text-btn" id="clearBtn">Clear list</button>
+        </div>
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,image/svg+xml,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.svg" multiple hidden>
+        <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+
+        <form class="settings" id="settingsForm" autocomplete="off">
+          <h2>Presets</h2>
+          <div class="preset-row" id="presetRow" role="group" aria-label="Presets"></div>
+          <div class="toolbar tight">
+            <button type="button" class="btn secondary-btn" id="savePresetBtn">Save preset</button>
+            <button type="button" class="btn secondary-btn" id="deletePresetBtn">Delete preset</button>
+          </div>
+          <p class="hint">WhatsApp, Instagram, Email, and Indian form uploads (passport photo 413×531, signature 300×80, both aimed at about 20–50 KB).</p>
+
+          <h2>Output</h2>
+          <div class="field">
+            <span class="label">Format</span>
+            <div class="seg" id="formatSeg" role="group" aria-label="Output format">
+              <button type="button" data-v="jpeg">JPG</button>
+              <button type="button" data-v="png">PNG</button>
+              <button type="button" data-v="webp">WebP</button>
+              <button type="button" data-v="avif" id="avifBtn" hidden>AVIF</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="label">Resize</span>
+            <div class="seg" id="resizeSeg" role="group" aria-label="Resize mode">
+              <button type="button" data-v="none">None</button>
+              <button type="button" data-v="longest">Longest</button>
+              <button type="button" data-v="percent">Percent</button>
+              <button type="button" data-v="exact">Exact</button>
+            </div>
+          </div>
+
+          <div class="field size-row" id="longestRow" data-hidden="1">
+            <label class="lab" for="longestIn">Longest side</label>
+            <input type="number" id="longestIn" min="16" max="8192" step="1" value="1920">
+            <span class="hint">px</span>
+          </div>
+          <div class="field size-row" id="percentRow" data-hidden="1">
+            <label class="lab" for="percentIn">Percent</label>
+            <input type="number" id="percentIn" min="1" max="400" step="1" value="100">
+            <span class="hint">%</span>
+          </div>
+          <div class="field size-row" id="exactRow" data-hidden="1">
+            <label class="lab" for="widthIn">Size</label>
+            <input type="number" id="widthIn" min="1" max="8192" step="1" value="1920" aria-label="Width">
+            <span class="hint">×</span>
+            <input type="number" id="heightIn" min="1" max="8192" step="1" value="1080" aria-label="Height">
+            <span class="hint">px</span>
+          </div>
+          <div class="field size-row" id="ratioRow" data-hidden="1">
+            <label class="chk"><input type="checkbox" id="keepAspect" checked> Keep aspect ratio</label>
+            <label class="chk"><input type="checkbox" id="noEnlarge" checked> Don't enlarge</label>
+          </div>
+
+          <div class="field quality-row" id="qualityRow">
+            <label class="lab" for="qualityIn">Quality</label>
+            <input type="range" id="qualityIn" min="1" max="100" step="1" value="80">
+            <span id="qualityVal">80</span>
+          </div>
+          <div class="field quality-row" id="targetRow">
+            <label class="chk"><input type="checkbox" id="useTarget"> Target under</label>
+            <input type="number" id="targetKb" min="1" max="20000" step="1" value="100" aria-label="Target size in kilobytes">
+            <span class="hint">KB</span>
+          </div>
+
+          <div class="field">
+            <label class="lab" for="patternIn">Rename</label>
+            <input type="text" class="grow" id="patternIn" value="{name}_{n}" spellcheck="false" aria-describedby="patternHint">
+          </div>
+          <p class="hint" id="patternHint">{name} is the original name, {n} is a padded number, {ext} is the new extension.</p>
+          <div class="field">
+            <label class="lab" for="bgIn">JPG background</label>
+            <input type="color" id="bgIn" value="#ffffff" aria-label="Background colour for JPG">
+            <span class="hint">Used when a transparent photo is saved as JPG.</span>
+          </div>
+
+          <h2>Watermark</h2>
+          <div class="field">
+            <label class="lab" for="wmText">Text</label>
+            <input type="text" class="grow" id="wmText" maxlength="80" placeholder="Optional text">
+          </div>
+          <div class="field">
+            <span class="label">Logo</span>
+            <button type="button" class="btn secondary-btn" id="wmLogoBtn">Choose logo</button>
+            <button type="button" class="btn text-btn" id="wmLogoClear">Clear logo</button>
+            <span class="hint" id="wmLogoName">No logo</span>
+            <input type="file" id="wmLogoInput" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+          </div>
+          <div class="field">
+            <span class="label">Place</span>
+            <div class="seg wrap-seg" id="wmPosSeg" role="group" aria-label="Watermark position">
+              <button type="button" data-v="top-left">TL</button>
+              <button type="button" data-v="top">Top</button>
+              <button type="button" data-v="top-right">TR</button>
+              <button type="button" data-v="left">Left</button>
+              <button type="button" data-v="center">Centre</button>
+              <button type="button" data-v="right">Right</button>
+              <button type="button" data-v="bottom-left">BL</button>
+              <button type="button" data-v="bottom">Bottom</button>
+              <button type="button" data-v="bottom-right" class="on">BR</button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lab" for="wmOpacity">Opacity</label>
+            <input type="range" id="wmOpacity" min="10" max="100" step="5" value="60">
+            <span id="wmOpacityVal">60%</span>
+          </div>
+          <div class="field">
+            <label class="lab" for="wmScale">Size</label>
+            <input type="range" id="wmScale" min="4" max="40" step="1" value="12">
+            <span id="wmScaleVal">12%</span>
+          </div>
+          <div class="field">
+            <label class="lab" for="wmColor">Colour</label>
+            <input type="color" id="wmColor" value="#ffffff">
+          </div>
+          <h2>Photo info</h2>
+          <p class="hint">When saving as JPG you can write a few original fields back in. Maker notes, lens data and thumbnails are not copied.</p>
+          <div class="field wrap-row">
+            <label class="chk"><input type="checkbox" id="keepDate"> Keep date</label>
+            <label class="chk"><input type="checkbox" id="keepCamera"> Keep camera</label>
+            <label class="chk"><input type="checkbox" id="keepGps"> Keep location (GPS)</label>
+          </div>
+          <p class="note warn-note">GPS is off by default. Only turn it on if you want the new file to say where the photo was taken.</p>
+          <p class="note">Location and camera data are stripped unless you choose to keep them. Photos are turned the right way up. Nothing is uploaded — this runs on your device.</p>
+          <p class="note">iPhone HEIC photos are not supported, because opening them offline needs a heavy library. Convert them to JPG on the phone first.</p>
+        </form>
+
+        <div class="preview-box">
+          <h2>Preview</h2>
+          <div class="adj-row wrap-row" id="editBtns">
+            <button type="button" class="btn secondary-btn" id="rotLeftBtn" title="Rotate 90° left">Rotate left</button>
+            <button type="button" class="btn secondary-btn" id="rotRightBtn" title="Rotate 90° right">Rotate right</button>
+            <button type="button" class="btn secondary-btn" id="flipHBtn" title="Flip horizontally">Flip H</button>
+            <button type="button" class="btn secondary-btn" id="flipVBtn" title="Flip vertically">Flip V</button>
+            <button type="button" class="btn secondary-btn" id="resetEditBtn" title="Reset rotate, flip and crop for this photo">Reset edits</button>
+            <button type="button" class="btn secondary-btn" id="infoBtn" title="Show camera, date and GPS from the original file">Photo info</button>
+            <button type="button" class="btn secondary-btn" id="copyDataBtn" title="Copy a data URL of this photo">Copy data URL</button>
+          </div>
+          <div class="field">
+            <span class="label">Crop</span>
+            <div class="seg wrap-seg" id="cropSeg" role="group" aria-label="Crop ratio">
+              <button type="button" data-v="none">None</button>
+              <button type="button" data-v="1:1">1:1</button>
+              <button type="button" data-v="4:5">4:5</button>
+              <button type="button" data-v="16:9">16:9</button>
+              <button type="button" data-v="passport">Passport</button>
+            </div>
+          </div>
+          <p class="hint">Rotate, flip and crop apply to the selected photo. Other photos use the same crop ratio, centred.</p>
+          <div class="preview-frame" id="previewFrame">
+            <span class="empty" id="previewEmpty">Select a photo in the list to preview it.</span>
+            <div class="preview-stage hidden" id="previewStage">
+              <canvas id="previewCanvas"></canvas>
+              <div class="crop-layer hidden" id="cropLayer">
+                <div class="crop-rect" id="cropRect">
+                  <span class="crop-h" data-h="nw"></span>
+                  <span class="crop-h" data-h="ne"></span>
+                  <span class="crop-h" data-h="se"></span>
+                  <span class="crop-h" data-h="sw"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="main-col">
+        <label for="fileInput" class="drop-zone" id="dropZone">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <span>Choose photos, a folder, or drag them here</span>
+          <span class="hint">JPG, PNG, WebP and SVG, plus AVIF when this browser can write it. A GIF uses its first frame. iPhone HEIC is not supported. One photo is converted at a time so a large batch stays light.</span>
+        </label>
+        <div class="list-wrap hidden" id="listWrap">
+          <ul class="file-list" id="fileList"></ul>
+        </div>
+        <div class="status-bar" id="statusBar">
+          <span id="statusText">No photos yet.</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="dlg" class="dlg" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody"></div>
+      <div class="acts" id="dlgActs"></div>
+    </div>
+  </div>
+
+  <script src="ic_helpers.js?v=CI3"></script>
+  <script src="ic_zip.js?v=CI3"></script>
+  <script src="ic_ico.js?v=CI3"></script>
+  <script src="ic_exif.js?v=CI3"></script>
+  <script src="ic_theme.js?v=CI3"></script>
+  <script src="ic_dlg.js?v=CI3"></script>
+  <script src="ic_presets.js?v=CI3"></script>
+  <script src="ic_edit.js?v=CI3"></script>
+  <script src="ic_convert.js?v=CI3"></script>
+  <script src="ic_ui.js?v=CI3"></script>
+  <script src="ic_main.js?v=CI3"></script>
+</body>
+</html>

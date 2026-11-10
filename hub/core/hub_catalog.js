@@ -24,14 +24,17 @@ Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls
 Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
 Connect 4,        connect-4/, , , Puzzle, Drop red and yellow discs to line up four - play a friend or the computer
+Sweet Swap,        sweet-swap/,   sweet-swap/sweet-swap_icon.png, , Puzzle, Swap colourful candy shapes to match three and chain cascades across score challenges
 Unblock,           unblock/,      unblock/unblock_icon.png, , Puzzle, Sliding block puzzle: move blocks to free the red one
-Snake & Ladder,    snake-ladder/,  , , Puzzle, Classic snakes and ladders board game - roll the dice and race to 100
+Snake & Ladder,snake-ladder/,snake-ladder/assets/snake-ladder_icon.png,,Puzzle,Climb wooden ladders and dodge colourful snakes in a race to 100
 Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
 Snake,             snake/,         , , Arcade, Steer the snake to eat food and grow longer without hitting yourself
 Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon and blast waves of descending aliens
 Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buildings and fight enemies with physics weapons
 Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
 Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
+Garden Guard,      garden-guard/, garden-guard/garden-guard_icon.png, , Strategy, Grow a garden defence across five lawns with sun makers and frosty shooters
+Breakout,          breakout/,      breakout/breakout_icon.png, , Arcade, Clear brick layouts with a paddle and ball - catch powers and survive endless levels
 Star Pinball,      pinball/,       , , Arcade, Original space pinball: ramp - spinner - drop targets and missions from Cadet to Admiral
 Osmos OSM1c,      osmos/,        osmos/assets/cell-icon.svg, , Arcade, Calm glow cell survival: absorb smaller cells and grow through seeded levels
 Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
@@ -46,6 +49,7 @@ Battleship,        battleship/,    , , Strategy, Hide five ships and take turns 
 Ludo,              ludo/,          , , Strategy, Race four tokens round the cross board and home - 2 to 4 players on one device
 Orbito,            orbito/,        , , Strategy, Push - place and turn the board: get four marbles in a row before your rival - play a friend or computer
 AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
+Star Colony,       star-colony/, star-colony/star-colony_icon.png, , Simulator, Build an alien settlement: guide settlers through research and storms to thrive
 Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
 Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
 Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fish - feed them and keep the water clean
@@ -67,6 +71,10 @@ Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk
 Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 Rock Paper Scissors,   rps/,     , , Arcade, Rock paper scissors against the computer
 Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
+Bubble Shooter, bubble-shooter/, bubble-shooter/bubble-shooter_icon.png, , Arcade, Aim and bounce bubbles to match three - clear 20 levels then play endless
+Arrow Escape, arrow-escape/, arrow-escape/arrow-escape_icon.png, , Puzzle, Clear the grid by sending arrows out in the right order
+Jigsaw,            jigsaw/,        jigsaw/jigsaw_icon.png, , Puzzle, Join shaped pieces from six original pictures or your own photo
+Minesweeper,       minesweeper/,   minesweeper/minesweeper_icon.png, , Puzzle, Clear the minefield with safe first openings - flags and three board sizes
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -79,10 +87,14 @@ Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
+Image Converter, image-converter/, , , Photo, Convert resize and compress photos: JPG PNG WebP - strip location - download a zip
 Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
 Music Player,    music-player/,    , , Audio, Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
+Video Player,    video-player/,    , , Video, Play your own videos: subtitles - speed - resume - picture-in-picture
+Video Editor,   video-editor/,    , , Video, Cut and export a video: in and out marks - cut or keep a selection - undo and redo
 3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
+3D Builder,      3d-builder/,      , , 3D, Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d
 News,            news/,            , , Read, Latest headlines from Google News India in story cards
 `,
   "Office": `# Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
@@ -92,8 +104,10 @@ News,            news/,            , , Read, Latest headlines from Google News I
 name, path, icon, newtab, section, description
 Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
+Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
+Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
@@ -137,6 +151,7 @@ Unit Converter,        unit-converter/,                   , , Calculators, Conve
 Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
 Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
 Calendar Maker,        calendar-maker/,  , , Time, Design and print a one-page A4 year calendar (PDF)
+Sun Position,          sun-position/,    sun-position/sun-position_icon.svg, , Time, Sunrise sunset and sun direction for any place and time - works offline
 My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
 Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
 Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
@@ -150,8 +165,11 @@ DB Browser,            db-browser/,    , , Files, Browse and query SQLite .db fi
 Web MCP,               web-mcp/,         , , AI, Browser MCP server: Grok edits files and runs BusyBox commands in a folder you pick
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
+Password Manager,     password-manager/, password-manager/password-manager_icon.svg, , Security, Encrypted vault for logins cards notes and Wi-Fi - stays on this device
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
+Numerology,            numerology/,      numerology/numerology_icon.svg, , Fun, Life Path and name numbers from your birth date - traditional readings for fun
+Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
@@ -210,6 +228,7 @@ Human Body Explorer,     human-body/,                , , Health, Tap body parts 
 Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
+Hindi Letters,           hindi-letters/,             , , Language, Hindi alphabet: trace letters - matras - picture words and gentle practice games
 English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
@@ -221,11 +240,15 @@ Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_ico
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
 Code School,             code-school/,               , , Coding, Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database
 Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
+Camping Checklist,       camping-checklist/,        , , Outdoors, Camping gear lists with weights - trip planner - packing tips and print
 Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
 Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
+History Timeline,       history-timeline/,          , , History, Explore world and Indian history: zoomable timeline - facts - tours and quizzes
+
+Driving School,          driving-school/,            , , Life Skills, Learn car controls and practise driving with guided lessons and road skills
 `,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search; H69: Mesh Viewer; H66: Notification Centre). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),

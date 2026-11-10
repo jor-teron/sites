@@ -1,0 +1,119 @@
+/* SP3 Sun Position — one accent, flat light/dark, large tap targets */
+:root{--bg:#f4f1eb;--fg:#1c1915;--card:#fffdf8;--mut:#6b6560;--acc:#c47b12;--line:#e5dfd4;--sun:#e8a020;--arc:#e8c46a}
+html.dark{--bg:#141820;--fg:#efe8dc;--card:#1c222c;--mut:#9aa3ad;--acc:#e8a63a;--line:#2c3440;--sun:#f0b429;--arc:#8a6a28}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:640px;margin:0 auto;padding:12px 14px calc(16px + env(safe-area-inset-bottom))}
+header{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+h1{font-size:20px;margin:0;flex:1}
+h2{font-size:14px;color:var(--mut);margin:18px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+.place,.iconbtn,.back,.btn{font:inherit;cursor:pointer;color:var(--fg)}
+.place,.iconbtn,.back{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:44px}
+.place{max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{padding:10px 12px;line-height:1}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:14px;padding:12px 18px;min-height:44px}
+html.dark .btn{color:#141820}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.danger{background:#d93025;color:#fff}
+.btn.lg{width:100%;margin-top:8px}
+.pane{display:none}.pane.on{display:block}
+#dialWrap{display:flex;justify-content:center;margin:4px 0 8px}
+#dial{width:min(100%,340px);height:auto;touch-action:manipulation}
+#dial .face{fill:var(--card);stroke:var(--line);stroke-width:2}
+#dial .tk{stroke:var(--line);stroke-width:1}
+#dial .tk.m{stroke:var(--mut);stroke-width:1.5}
+#dial .lb{fill:var(--fg);font:600 16px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}
+#dial .horizon{fill:none;stroke:var(--line);stroke-width:1.5}
+#dial .arc{stroke:var(--arc);stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+#dial .sun{fill:var(--sun);stroke:#fff;stroke-width:2}
+html.dark #dial .sun{stroke:#141820}
+#dial .sun.down{fill:var(--mut);opacity:.55}
+.stats{display:flex;gap:10px;margin:0 0 8px}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 8px;text-align:center}
+.stat .big{font-size:28px;font-weight:700;color:var(--acc);line-height:1.1}
+.stat .lab{color:var(--mut);font-size:13px;margin-top:4px}
+.when{text-align:center;margin:0 0 10px;color:var(--mut);font-size:14px}
+.polar{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 10px}
+.times{list-style:none;padding:0;margin:0 0 14px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.times li{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-top:1px solid var(--line);min-height:40px}
+.times li:first-child{border-top:0}
+.times .k{color:var(--mut)}
+.times .v{font-variant-numeric:tabular-nums;font-weight:600}
+.whenrow{display:flex;gap:8px;align-items:center;margin:0 0 8px}
+.field,select,input[type=date],input[type=number],input[type=text],input[type=search]{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-height:44px}
+.whenrow .field{flex:1;min-width:0}
+#timeSl{width:100%;accent-color:var(--acc);margin:0}
+.slider-lab{text-align:center;font-weight:600;margin:4px 0 8px;font-variant-numeric:tabular-nums}
+.note{color:var(--mut);font-size:13px}.center{text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.seg{display:flex;gap:6px}.seg button{flex:1;font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:12px;padding:12px 8px;min-height:44px}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+html.dark .seg button.on{color:#141820}
+#cityList{list-style:none;padding:0;margin:8px 0 0;max-height:40vh;overflow:auto}
+#cityList li button,#savedList li{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px;min-height:44px;font:inherit;cursor:pointer;color:var(--fg)}
+#savedList{list-style:none;padding:0;margin:0 0 10px}
+#savedList li{display:flex;gap:8px;align-items:center}
+#savedList li .who{flex:1;text-align:left;background:none;border:0;padding:8px;min-height:44px;min-width:0;font:inherit;cursor:pointer;color:var(--fg)}
+#savedList li .mini{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:44px;font:inherit;cursor:pointer;color:var(--fg)}
+.row{display:flex;gap:8px}.row .field{flex:1;min-width:0}
+.dlg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.dlg[hidden]{display:none}
+.dlg .box{background:var(--card);border-radius:18px;padding:18px;width:100%;max-width:400px;max-height:90vh;overflow:auto}
+.dlg label{display:block;margin:10px 0 4px;color:var(--mut);font-size:13px}
+.dlg input,.dlg select{width:100%}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.err{color:#d93025;font-size:14px;min-height:1.2em;margin-top:8px}
+#tabs{display:flex;gap:4px;margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px}
+#tabs button{flex:1;border:0;background:transparent;padding:12px 6px;border-radius:12px;min-height:44px;font:inherit;cursor:pointer;color:var(--fg)}
+#tabs button.on{background:var(--acc);color:#fff}
+html.dark #tabs button.on{color:#141820}
+#tabs[hidden]{display:none}
+button:focus-visible,.field:focus-visible,#timeSl:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+@media (min-width:520px){.stat .big{font-size:32px}}
+
+#tabs{display:flex}
+.whenbar{margin:4px 0 10px}
+.unit{color:var(--mut);min-width:4em}
+.cardblock{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}
+.cardblock h2{margin-top:0}
+.shadowout{font-weight:600;margin:8px 0 0;font-variant-numeric:tabular-nums}
+.svgwrap{overflow:hidden;margin:8px -4px 0}
+#yearSvg,#pathSvg{width:100%;height:auto;display:block}
+#yearSvg .band{fill:var(--arc);opacity:.45}
+#yearSvg .rise,#yearSvg .set{fill:none;stroke:var(--acc);stroke-width:1.4}
+#yearSvg .set{stroke:var(--mut)}
+#yearSvg .axis{stroke:var(--line);stroke-width:1}
+#yearSvg .lbl{fill:var(--mut);font:10px system-ui,sans-serif}
+#yearSvg .mark{stroke:var(--acc);stroke-width:1;stroke-dasharray:2 2}
+#yearSvg .marklab{fill:var(--fg);font:9px system-ui,sans-serif;text-anchor:middle}
+#pathSvg .face{fill:var(--bg);stroke:var(--line);stroke-width:2}
+#pathSvg .horizon{fill:none;stroke:var(--line);stroke-width:1.2}
+#pathSvg .month{fill:none;stroke:var(--acc);stroke-width:1.2;opacity:.85}
+#pathSvg .month.win{stroke:var(--mut);opacity:.7}
+#pathSvg .hour{fill:none;stroke:var(--line);stroke-width:1;opacity:.8}
+#pathSvg .hlbl{fill:var(--mut);font:9px system-ui,sans-serif;text-anchor:middle}
+#pathSvg .lb{fill:var(--fg);font:600 14px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}
+#dial .shadow{stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}
+#dial .shadow-head{fill:var(--mut)}
+
+#pointWrap{display:flex;flex-direction:column;align-items:center;margin:0 0 12px}
+#pointDial{width:min(100%,340px);height:auto}
+#pointDial .face{fill:var(--card);stroke:var(--line);stroke-width:2}
+#pointDial .tk{stroke:var(--line);stroke-width:1}
+#pointDial .tk.m{stroke:var(--mut);stroke-width:1.5}
+#pointDial .lb{fill:var(--fg);font:600 14px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}
+#pointDial .horizon{fill:none;stroke:var(--line);stroke-width:1.2}
+#pointDial .notch{fill:var(--acc)}
+#pointDial .mk-sun{fill:var(--sun);stroke:var(--bg);stroke-width:2}
+#pointDial .mk-moon{fill:#c9d2dc;stroke:var(--bg);stroke-width:2}
+html.dark #pointDial .mk-moon{fill:#d5dde6}
+#pointDial .mk-rise,#pointDial .mk-set{fill:var(--mut)}
+#pointDial .mk-lab{fill:var(--mut);font:9px system-ui,sans-serif;text-anchor:middle}
+.guide{font-size:22px;font-weight:700;text-align:center;margin:8px 0 0;min-height:2.4em;color:var(--acc)}
+.guide.on{color:var(--acc)}
+#pointStart[hidden]{display:none}
+.banner{position:fixed;left:12px;right:12px;top:12px;z-index:12;background:var(--acc);color:#fff;border-radius:14px;padding:12px 14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+html.dark .banner{color:#141820}
+.banner[hidden]{display:none}
+
+#pointDial .mk-sun.down{opacity:.5}

@@ -19,7 +19,9 @@ var ERR_DIV0 = "#DIV/0!";
 var ERR_NUM = "#NUM!";
 var ERR_REF = "#REF!";
 var ERR_LOOP = "#LOOP!";
-var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP];
+var ERR_NA = "#N/A";
+var ERR_VALUE = "#VALUE!";
+var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE];
 
 /* Thrown inside evaluation; evalFormula turns it into the cell's value */
 function CellError(value) { this.value = value; }
@@ -82,11 +84,12 @@ function evalExpr(expr) {
   if (s === "") return "";
 
   if (/^".*"$/.test(s)) return s.slice(1, -1);
+  if (/^(TRUE|FALSE)$/i.test(s)) return s.toUpperCase();
 
   bag = [];
   s = pullStrings(s, bag);
   if (s.indexOf(ERR_REF) !== -1) fail(ERR_REF);       // a ref removed by delete row / column
-  s = s.replace(/\$/g, "");                          // $ only matters when copying / filling
+  /* $ is consumed by mapRefs; do not strip it globally (would break 'Sheet $1'!A1) */
 
   var guard = 0;
   while (guard++ < 40) {
@@ -107,15 +110,19 @@ function evalExpr(expr) {
     }
   }
 
-  s = s.replace(/\b([A-Za-z]{1,3}[0-9]+)\b/g, function (tok) {
-    addr = parseAddr(tok);
-    if (!addr) fail(ERR_REF);                      // outside the sheet (rows/cols from config)
-    if (isErrorValue(rawVal(addr.r, addr.c))) fail(rawVal(addr.r, addr.c));
-    n = numVal(addr.r, addr.c);
+  /* SH8: resolve Sheet2!A1 / 'My Sheet'!A1 and ordinary A1 against evalSheetIdx */
+  s = mapRefs("=" + s, function (x) {
+    var si, rv;
+    if (x.range) return refToken(x);
+    si = x.sheet == null ? evalSheetIdx : findSheetIndex(x.sheet);
+    if (si < 0 || x.c1 < 0 || x.c1 >= COLS || x.r1 < 0 || x.r1 >= ROWS) fail(ERR_REF);
+    rv = rawVal(x.r1, x.c1, si);
+    if (isErrorValue(rv)) fail(rv);
+    n = numVal(x.r1, x.c1, si);
     if (!isNaN(n)) return String(n);
-    bag.push(String(rawVal(addr.r, addr.c)));
+    bag.push(String(rv));
     return "__S" + (bag.length - 1) + "__";
-  });
+  }).slice(1);
 
   if (s.indexOf("&") >= 0) {
     out = s.split("&").map(function (part) {
@@ -138,7 +145,9 @@ function evalExpr(expr) {
     var val = bag[parseInt(i, 10)];
     if (isErrorValue(val)) fail(val);
     var num = Number(val);
-    if (val !== "" && !isNaN(num)) return String(num);
+    /* Keep formatted text ("12.30", "25%") as a string; only coerce when
+       the canonical number text matches (so "10" can still be used in maths). */
+    if (val !== "" && !isNaN(num) && String(num) === val) return String(num);
     return JSON.stringify(val);
   });
 
@@ -160,7 +169,7 @@ function simpleMath(s) {
   var src = String(s).trim();
   if (src === "") return "";
   if (/^".*"$/.test(src)) return JSON.parse(src);
-  var toks = src.match(/(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?|[+\-*/^()]|\S/g) || [];
+  var toks = src.match(/(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?|[+\-*/^()]|TRUE|FALSE|\S/gi) || [];
   var pos = 0;
   function peek() { return toks[pos]; }
   function next() { return toks[pos++]; }
@@ -175,6 +184,8 @@ function simpleMath(s) {
     if (t === "(") { var v = sum(); if (next() !== ")") bad(); return v; }
     if (t === "-") return -power();
     if (t === "+") return power();
+    if (/^TRUE$/i.test(t)) return 1;
+    if (/^FALSE$/i.test(t)) return 0;
     if (/^(\d|\.\d)/.test(t)) { var n = Number(t); if (isNaN(n)) bad(); return num(n); }
     bad();
   }
@@ -230,45 +241,59 @@ function evalFormula(f) {
 }
 
 /**
- * Recalculate entire sheet: plain cells first, then formulas in dependency order.
- * Formulas left over after the topological sort sit on, or depend on, a cycle → #LOOP!.
+ * Recalculate the whole workbook: plain cells first, then formulas in dependency
+ * order across sheets (Sheet1!A1 may depend on Sheet2!B1). Formulas left over
+ * after the topological sort sit on, or depend on, a cycle → #LOOP!.
  */
 function recalcAll() {
-  var r, c, k, i, f, n = ROWS * COLS;
+  var sheets = workbook.sheets, ns = sheets.length, per = ROWS * COLS, n = ns * per;
+  var r, c, k, i, f, si, grid, d, dr, dc, dsi;
   var deps = [], users = [], indeg = [], queue = [], done = 0, total = 0;
+  var prevEval = evalSheetIdx;
   for (k = 0; k < n; k++) { users.push(null); indeg.push(0); deps.push(null); }
-  for (r = 0; r < ROWS; r++) {
-    for (c = 0; c < COLS; c++) {
-      f = cells[r][c].formula;
-      if (!isFormula(f)) cells[r][c].value = f == null ? "" : f;
+  for (si = 0; si < ns; si++) {
+    grid = sheets[si].cells;
+    for (r = 0; r < ROWS; r++) {
+      for (c = 0; c < COLS; c++) {
+        f = grid[r][c].formula;
+        if (!isFormula(f)) grid[r][c].value = f == null ? "" : f;
+      }
     }
   }
-  for (r = 0; r < ROWS; r++) {
-    for (c = 0; c < COLS; c++) {
-      f = cells[r][c].formula;
-      if (!isFormula(f)) continue;
-      k = r * COLS + c;
-      total++;
-      deps[k] = formulaDeps(f);
-      for (i = 0; i < deps[k].length; i++) {
-        var d = deps[k][i];
-        if (!isFormula(cells[Math.floor(d / COLS)][d % COLS].formula)) continue;
-        indeg[k]++;
-        (users[d] || (users[d] = [])).push(k);
+  for (si = 0; si < ns; si++) {
+    grid = sheets[si].cells;
+    for (r = 0; r < ROWS; r++) {
+      for (c = 0; c < COLS; c++) {
+        f = grid[r][c].formula;
+        if (!isFormula(f)) continue;
+        k = cellIndex(si, r, c);
+        total++;
+        deps[k] = formulaDeps(f, si);
+        for (i = 0; i < deps[k].length; i++) {
+          d = deps[k][i];
+          dsi = indexSheet(d); dr = indexRow(d); dc = indexCol(d);
+          if (!isFormula(sheets[dsi].cells[dr][dc].formula)) continue;
+          indeg[k]++;
+          (users[d] || (users[d] = [])).push(k);
+        }
+        if (indeg[k] === 0) queue.push(k);
       }
-      if (indeg[k] === 0) queue.push(k);
     }
   }
   for (i = 0; i < queue.length; i++) {
     k = queue[i];
-    r = Math.floor(k / COLS); c = k % COLS;
-    cells[r][c].value = evalFormula(cells[r][c].formula);
+    si = indexSheet(k); r = indexRow(k); c = indexCol(k);
+    evalSheetIdx = si;
+    sheets[si].cells[r][c].value = evalFormula(sheets[si].cells[r][c].formula);
     done++;
     if (users[k]) users[k].forEach(function (u) { if (--indeg[u] === 0) queue.push(u); });
   }
   if (done < total) {
     for (k = 0; k < n; k++) {
-      if (deps[k] && indeg[k] > 0) cells[Math.floor(k / COLS)][k % COLS].value = ERR_LOOP;
+      if (deps[k] && indeg[k] > 0) {
+        sheets[indexSheet(k)].cells[indexRow(k)][indexCol(k)].value = ERR_LOOP;
+      }
     }
   }
+  evalSheetIdx = prevEval;
 }
