@@ -7,6 +7,7 @@
   PT.Load.init();
   PT.Thumbs.init();
   PT.Select.init();
+  PT.Images.init();
 
   $('b-all').addEventListener('click', PT.Select.all);
   $('b-rl').addEventListener('click', () => PT.Edit.rotate(-90));
@@ -19,13 +20,20 @@
   $('b-save').addEventListener('click', () => PT.Edit.save());
   $('m-extract').addEventListener('click', () => { PT.menu(false); PT.Edit.extract(); });
   $('m-split').addEventListener('click', () => { PT.menu(false); PT.Edit.split(); });
+  $('m-images').addEventListener('click', () => PT.Images.pick());
+  $('m-export').addEventListener('click', () => { PT.menu(false); PT.Images.exportPages(); });
 
   addEventListener('keydown', (e) => {
+    if (PT.Images && PT.Images.isOpen()) {
+      if (e.key === 'Escape') { e.preventDefault(); PT.Images.close(); }
+      return;
+    }
     if (PT.dialogOpen) { if (e.key === 'Escape') $('dlg-no').hidden ? $('dlg-yes').click() : $('dlg-no').click(); return; }
     if (e.target.closest && e.target.closest('input, textarea, select')) return;
     const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (mod && k === 'o') { e.preventDefault(); PT.Load.pick(); return; }
     if (e.key === 'Escape') { PT.menu(false); PT.Select.none(); return; }
+    if (e.key === 'Enter' && PT.S.sel.size === 1) { PT.Images.preview([...PT.S.sel][0]); return; }
     if (!PT.S.doc) return;
     if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); PT.Edit.undo(); }
     else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); PT.Edit.redo(); }

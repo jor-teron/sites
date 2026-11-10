@@ -1,4 +1,4 @@
-/* Node tests for PDF Tools P2 helpers (pdf-tools_util.js, pdf-tools_zip.js).
+/* Node tests for PDF Tools P2/P3 helpers (pdf-tools_util.js, pdf-tools_zip.js).
    Run: node test_pdf_tools_util.js
    No DOM, no jsdom, no browser. */
 'use strict';
@@ -22,6 +22,8 @@ function ok(name, cond, detail) {
 eq('fileBase strips pdf', U.fileBase('Report.PDF'), 'Report');
 eq('fileBase empty', U.fileBase(''), 'document');
 eq('fileBase dots', U.fileBase('my.file.pdf'), 'my.file');
+eq('fileBase jpg', U.fileBase('Photo.JPG'), 'Photo');
+eq('fileBase png', U.fileBase('scan.png'), 'scan');
 eq('shortName short', U.shortName('Notes', 10), 'Notes');
 ok('shortName trims', U.shortName('AVeryLongName', 10).length === 10);
 eq('color cycles', U.colorFor(8), U.colorFor(0));
@@ -75,6 +77,50 @@ eq('neighbour last', U.neighbourSize(
 eq('neighbour empty is A4', U.neighbourSize([], [], 0), U.PAPER.a4);
 
 eq('pageKey', U.pageKey({ srcId: 3, src: 4 }), '3:4');
+
+
+// ---- image layout (P3) ----
+ok('mm 25.4 is 72pt', Math.abs(U.ptFromMm(25.4) - 72) < 1e-9);
+var a4sq = U.imagePageLayout(100, 100, { paper: 'a4', marginMm: 0, landscape: false });
+ok('A4 square fits width', Math.abs(a4sq.w - U.PAPER.a4.w) < 0.01 && Math.abs(a4sq.h - U.PAPER.a4.w) < 0.01);
+ok('A4 square centred', Math.abs(a4sq.x) < 0.01 && Math.abs(a4sq.y - (U.PAPER.a4.h - a4sq.h) / 2) < 0.01);
+ok('A4 page size', Math.abs(a4sq.pageW - U.PAPER.a4.w) < 0.01 && Math.abs(a4sq.pageH - U.PAPER.a4.h) < 0.01);
+var land = U.imagePageLayout(200, 100, { paper: 'a4', marginMm: 0, landscape: true });
+ok('landscape swaps paper', Math.abs(land.pageW - U.PAPER.a4.h) < 0.01 && Math.abs(land.pageH - U.PAPER.a4.w) < 0.01);
+ok('landscape wide image fills height or width', land.w <= land.pageW + 0.01 && land.h <= land.pageH + 0.01);
+ok('contain keeps aspect 2:1', Math.abs(land.w / land.h - 2) < 1e-9);
+var m20 = U.imagePageLayout(1000, 1000, { paper: 'a4', marginMm: 20 });
+ok('20mm margin inset', Math.abs(m20.margin - U.ptFromMm(20)) < 1e-9 && m20.x >= m20.margin - 0.01);
+ok('20mm image inside', m20.x + m20.w <= m20.pageW - m20.margin + 0.01);
+var letter = U.imagePageLayout(100, 200, { paper: 'letter', marginMm: 0 });
+ok('letter page', Math.abs(letter.pageW - U.PAPER.letter.w) < 0.01 && Math.abs(letter.pageH - U.PAPER.letter.h) < 0.01);
+var fit = U.imagePageLayout(1500, 1500, { paper: 'fit', marginMm: 0, dpi: 150 });
+ok('fit 150dpi 1500px is 720pt', Math.abs(fit.pageW - 720) < 0.05 && Math.abs(fit.pageH - 720) < 0.05);
+ok('fit image fills page', Math.abs(fit.w - 720) < 0.05 && Math.abs(fit.x) < 0.05);
+var fitM = U.imagePageLayout(1500, 1500, { paper: 'fit', marginMm: 10, dpi: 150 });
+ok('fit plus margin larger page', fitM.pageW > fit.pageW && Math.abs(fitM.margin - U.ptFromMm(10)) < 1e-9);
+var tall = U.imagePageLayout(100, 400, { paper: 'a4', marginMm: 0 });
+ok('tall image fills height', Math.abs(tall.h - U.PAPER.a4.h) < 0.01 && tall.w < tall.pageW);
+ok('wide not cover', tall.w / tall.h - 100 / 400 < 1e-9);
+var cap = U.imagePageLayout(20000, 20000, { paper: 'fit', marginMm: 0, dpi: 72 });
+ok('fit caps long side at 1440', cap.pageW <= 1440.01 && cap.pageH <= 1440.01);
+eq('image mime png', U.imageMime({ name: 'a.PNG', type: '' }), 'image/png');
+eq('image mime jpg', U.imageMime({ name: 'a.jpg', type: 'image/jpeg' }), 'image/jpeg');
+ok('isImageFile png', U.isImageFile({ name: 'x.png', type: '' }));
+ok('not image pdf', !U.isImageFile({ name: 'x.pdf', type: 'application/pdf' }));
+eq('image part name', U.imagePartName('Report', 7, 'jpg'), 'Report-p007.jpg');
+ok('renderScale caps', U.renderScale(4000, 2000, 1600) === 1600 / 4000);
+ok('renderScale small up to 4', U.renderScale(100, 80, 1600) === 4);
+
+// displaySize uses image layout page, not pixel size
+eq('display image layout', U.displaySize(
+  { kind: 'image', width: 3000, height: 2000, layout: { pageW: 595, pageH: 842 } },
+  { src: 0, rot: 0 }
+), { w: 595, h: 842 });
+eq('display image layout 90', U.displaySize(
+  { kind: 'image', layout: { pageW: 595, pageH: 842 } },
+  { src: 0, rot: 90 }
+), { w: 842, h: 595 });
 
 // ---- zip (stored, local headers) ----
 ok('crc32 empty', Z.crc32(new Uint8Array(0)) === 0);

@@ -4,11 +4,11 @@
  * PT.S.pages is the edit list: [{ id, srcId, src (0-based in that source), rot (extra 0/90/180/270) }].
  * PT.S.doc is the session ({ name }) while anything is open.
  */
-const RELEASE = 'P2';
+const RELEASE = 'P3';
 const PT = (() => {
   const $ = (id) => document.getElementById(id);
   const SKEY = 'pdf-tools-settings-v1';
-  const P = Object.assign({ theme: 'dark' }, (() => { try { return JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch (_) { return {}; } })());
+  const P = Object.assign({ theme: 'dark', paper: 'a4', marginMm: 10, landscape: false, exportFmt: 'png' }, (() => { try { return JSON.parse(localStorage.getItem(SKEY) || '{}'); } catch (_) { return {}; } })());
   const S = { doc: null, sources: [], pages: [], sel: new Set(), anchor: null, nextId: 1, nextSrc: 1 };
   const hooks = {};
   const on = (k, f) => (hooks[k] = hooks[k] || []).push(f);
@@ -214,7 +214,7 @@ const PT = (() => {
     $('empty').hidden = has;
     $('grid').hidden = !has;
     const drop = $('drop');
-    if (drop) drop.textContent = has ? 'Drop PDF to add' : 'Drop PDF to open';
+    if (drop) drop.textContent = has ? 'Drop PDF or images to add' : 'Drop PDF or images to open';
   }
 
   function busy(text) {
@@ -247,7 +247,7 @@ const PT = (() => {
       ask({
         title: 'PDF Tools ' + RELEASE,
         no: false,
-        text: 'Page organiser (' + RELEASE + '): reorder, rotate, delete, merge, split, extract, duplicate and insert blank pages, then save a new copy.\nEverything happens on this device; files are never uploaded.\npdf.js (Apache-2.0) and pdf-lib 1.17.1 (MIT).',
+        text: 'Page organiser (' + RELEASE + '): reorder, rotate, delete, merge, split, extract, duplicate, insert blank pages, add JPG/PNG images, export pages as images, and preview a page with a double-click.\nEverything happens on this device; files are never uploaded.\npdf.js (Apache-2.0) and pdf-lib 1.17.1 (MIT).',
       });
     });
     addEventListener('storage', (e) => { if (e.key === 'sites-hub.theme') theme(); });

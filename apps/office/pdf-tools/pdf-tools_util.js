@@ -12,7 +12,7 @@ const PTUtil = (() => {
   const colorFor = (i) => COLORS[((i % COLORS.length) + COLORS.length) % COLORS.length];
 
   function fileBase(name) {
-    return (String(name || 'document').replace(/\.pdf$/i, '').replace(/[/\\?%*:|"<>]/g, '').trim() || 'document');
+    return (String(name || 'document').replace(/\.(pdf|png|jpe?g)$/i, '').replace(/[/\\?%*:|"<>]/g, '').trim() || 'document');
   }
 
   function shortName(name, max) {
@@ -109,7 +109,10 @@ const PTUtil = (() => {
   function displaySize(source, page) {
     let w, h, base = 0;
     if (!source) return { w: PAPER.a4.w, h: PAPER.a4.h };
-    if (source.kind === 'blank' || source.kind === 'image') {
+    if (source.kind === 'image' && source.layout) {
+      w = source.layout.pageW;
+      h = source.layout.pageH;
+    } else if (source.kind === 'blank' || source.kind === 'image') {
       w = source.width || PAPER.a4.w;
       h = source.height || PAPER.a4.h;
     } else {
@@ -141,10 +144,76 @@ const PTUtil = (() => {
     return page.srcId + ':' + page.src;
   }
 
+
+  const MM = 72 / 25.4; /* 1 mm in PDF points */
+  const ptFromMm = (n) => Number(n) * MM;
+  const RENDER_MAX = 1600; /* long-side cap for preview / image export (Celeron-safe) */
+
+  /*
+   * Place an image on a page. imgW/imgH are pixel size.
+   * opts: { paper: 'a4'|'letter'|'fit', marginMm, landscape, dpi }
+   * Returns { pageW, pageH, x, y, w, h, margin } in points, y from the bottom-left.
+   * The image is contained and centred; aspect ratio is kept.
+   */
+  function imagePageLayout(imgW, imgH, opts) {
+    opts = opts || {};
+    imgW = Number(imgW) || 1;
+    imgH = Number(imgH) || 1;
+    if (imgW < 1) imgW = 1;
+    if (imgH < 1) imgH = 1;
+    const margin = Math.max(0, ptFromMm(opts.marginMm || 0));
+    let pageW, pageH;
+    if (opts.paper === 'fit') {
+      const dpi = Number(opts.dpi) > 0 ? Number(opts.dpi) : 150;
+      let w = imgW * 72 / dpi + 2 * margin;
+      let h = imgH * 72 / dpi + 2 * margin;
+      const cap = 1440; /* 20 in */
+      const s = Math.min(1, cap / Math.max(w, h));
+      pageW = w * s;
+      pageH = h * s;
+    } else {
+      const paper = PAPER[opts.paper] || PAPER.a4;
+      pageW = paper.w;
+      pageH = paper.h;
+      if (opts.landscape) { const tmp = pageW; pageW = pageH; pageH = tmp; }
+    }
+    const innerW = Math.max(1, pageW - 2 * margin);
+    const innerH = Math.max(1, pageH - 2 * margin);
+    const scale = Math.min(innerW / imgW, innerH / imgH);
+    const w = imgW * scale;
+    const h = imgH * scale;
+    return { pageW, pageH, x: (pageW - w) / 2, y: (pageH - h) / 2, w, h, margin };
+  }
+
+  function isImageFile(file) {
+    const n = (file && (file.name || '')) + '';
+    const t = (file && (file.type || '')) + '';
+    return /image\/(jpeg|jpg|png)/i.test(t) || /\.(png|jpe?g)$/i.test(n);
+  }
+
+  function imageMime(file) {
+    const t = (file && file.type || '').toLowerCase();
+    const n = (file && file.name || '').toLowerCase();
+    if (t === 'image/png' || n.endsWith('.png')) return 'image/png';
+    if (t === 'image/jpeg' || t === 'image/jpg' || /\.jpe?g$/.test(n)) return 'image/jpeg';
+    return '';
+  }
+
+  function imagePartName(base, index1, ext, width) {
+    width = width || 3;
+    return fileBase(base) + '-p' + pad(index1, width) + '.' + String(ext || 'png').replace(/^\./, '');
+  }
+
+  function renderScale(pageW, pageH, max) {
+    max = max || RENDER_MAX;
+    const long = Math.max(pageW, pageH, 1);
+    return Math.min(max / long, 4);
+  }
+
   return {
     COLORS, PAPER, colorFor, fileBase, shortName, pad, isContiguous, partName,
     parseRanges, planSingles, planEvery, planHint, displaySize, neighbourSize,
-    sourceOf, pageKey,
+    sourceOf, pageKey, MM, ptFromMm, RENDER_MAX, imagePageLayout, isImageFile, imageMime, imagePartName, renderScale,
   };
 })();
 
