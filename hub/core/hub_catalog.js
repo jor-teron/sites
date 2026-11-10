@@ -125,6 +125,7 @@ Live Location, live-location/, live-location/live-location_icon.svg, , Share, Se
 Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 VNC,        vnc/,        vnc/vnc_icon.svg, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
+Remote,      remote/,        remote/rm_icon.svg, , Remote, One list for all your remote connections: SSH - VNC - SFTP - FTP
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),

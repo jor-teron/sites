@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--
+  Remote — RM1: one saved-connections list for SSH, VNC, SFTP and FTP.
+  This release is the list only (add, edit, delete, duplicate, search, groups, export/import JSON).
+  Tapping a row shows an honest toast; viewers and a file browser arrive in later RM releases.
+  The app is standalone: it does not open the old SSH or VNC apps, and it does not import their hosts.
+  Styles: rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_ui.js, rm_main.js.
+  Connections are stored in localStorage 'remote-conns-v1'. Passwords are never stored.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Remote</title>
+  <link rel="icon" href="rm_icon.svg">
+  <script>try{var t=localStorage.getItem('sites-hub.theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+  <link rel="stylesheet" href="rm_base.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <a class="back jelly" href="../connectivity.html">Back</a>
+      <img src="rm_icon.svg" alt="">
+      <h1>Remote</h1>
+      <span class="tag">RM1</span>
+      <button type="button" id="btn-add" class="jelly">Add</button>
+    </header>
+
+    <p class="hint">One list for SSH, VNC, SFTP and FTP. Viewers and file browsing arrive in later releases.</p>
+
+    <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
+
+    <div class="row">
+      <button type="button" id="btn-export" class="ghost jelly">Export</button>
+      <button type="button" id="btn-import" class="ghost jelly">Import JSON</button>
+      <input id="import-file" type="file" accept="application/json,.json" hidden>
+    </div>
+
+    <div id="list" aria-label="Saved connections"></div>
+    <p id="empty" class="hint">No connections yet. Tap Add to save one, or Import JSON.</p>
+  </div>
+
+  <dialog id="edit">
+    <form id="edit-form">
+      <h2 id="edit-title">Add connection</h2>
+      <label class="field">Name<input id="f-name" name="name" maxlength="60" placeholder="Radxa" autocomplete="off"></label>
+      <label class="field">Protocol
+        <select id="f-protocol" name="protocol">
+          <option value="sftp" selected>SFTP</option>
+          <option value="ssh">SSH</option>
+          <option value="vnc">VNC</option>
+          <option value="ftp">FTP</option>
+        </select>
+      </label>
+      <label class="field">Host<input id="f-host" name="host" maxlength="255" required placeholder="192.168.1.8" autocomplete="off" spellcheck="false"></label>
+      <label class="field">Port<input id="f-port" name="port" type="number" min="1" max="65535" value="22" inputmode="numeric"></label>
+      <label class="field">User<input id="f-user" name="user" maxlength="64" placeholder="optional" autocomplete="username" spellcheck="false"></label>
+      <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="wss://host/ws or 192.168.1.8:8787" autocomplete="off" spellcheck="false"></label>
+      <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host.</p>
+      <label class="field">Group<input id="f-group" name="group" maxlength="60" placeholder="optional, e.g. Home" autocomplete="off"></label>
+      <label class="field">Notes<textarea id="f-notes" name="notes" maxlength="240" rows="2" placeholder="optional"></textarea></label>
+      <p id="edit-err" class="form-err" hidden></p>
+      <div class="row">
+        <button type="button" id="btn-cancel" class="ghost jelly">Cancel</button>
+        <button type="submit" id="btn-save" class="jelly">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="menu" hidden role="menu" aria-label="Connection actions">
+    <button type="button" id="menu-edit" role="menuitem" class="jelly">Edit</button>
+    <button type="button" id="menu-dup" role="menuitem" class="jelly">Duplicate</button>
+    <button type="button" id="menu-del" role="menuitem" class="jelly danger-text">Delete</button>
+  </div>
+
+  <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+
+  <script src="rm_config.js"></script>
+  <script src="rm_url.js"></script>
+  <script src="rm_store.js"></script>
+  <script src="rm_ui.js"></script>
+  <script src="rm_main.js"></script>
+</body>
+</html>

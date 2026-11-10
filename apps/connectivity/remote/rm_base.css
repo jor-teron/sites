@@ -1,0 +1,363 @@
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM1 */
+
+/* Light defaults, then overridden by a Hub or device dark theme. */
+:root,
+html[data-theme="light"],
+html.light {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #e2e8f0;
+  --text: #0f172a;
+  --mute: #64748b;
+  --accent: #0f766e;
+  --accent-press: #0d9488;
+  --on-accent: #ffffff;
+  --warn: #d97706;
+  --danger: #dc2626;
+  --ok: #059669;
+  --radius: 14px;
+  --gap: 10px;
+  --ssh: #2563eb;
+  --vnc: #7c3aed;
+  --sftp: #0f766e;
+  --ftp: #c2410c;
+}
+
+html[data-theme="dark"],
+html.dark {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #334155;
+  --text: #f8fafc;
+  --mute: #94a3b8;
+  --accent: #2dd4bf;
+  --accent-press: #14b8a6;
+  --on-accent: #042f2e;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --ok: #34d399;
+  --ssh: #93c5fd;
+  --vnc: #c4b5fd;
+  --sftp: #5eead4;
+  --ftp: #fdba74;
+}
+
+/* Before JS runs, follow the device scheme so the first paint is not a flash. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.light) {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-2: #334155;
+    --text: #f8fafc;
+    --mute: #94a3b8;
+    --accent: #2dd4bf;
+    --accent-press: #14b8a6;
+    --on-accent: #042f2e;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --ok: #34d399;
+    --ssh: #93c5fd;
+    --vnc: #c4b5fd;
+    --sftp: #5eead4;
+    --ftp: #fdba74;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.4 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+a { color: var(--accent); }
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 12px 14px 28px;
+  gap: 12px;
+}
+
+header.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+}
+
+header.top img {
+  width: 40px;
+  height: 40px;
+}
+
+header.top h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+header.top .tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mute);
+  border: 1px solid var(--surface-2);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.hint {
+  margin: 0;
+  color: var(--mute);
+  font-size: 0.95rem;
+}
+
+.hint.err { color: var(--danger); }
+.hint.warn { color: var(--warn); }
+
+.search {
+  width: 100%;
+  min-height: 48px;
+  font: inherit;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 2px solid var(--surface-2);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.search:focus, input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button, .btn {
+  font: inherit;
+  font-weight: 700;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 10px 16px;
+  min-height: 48px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text);
+  border: 2px solid var(--surface-2);
+}
+
+.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Playful jelly press, shared with other Hub apps. */
+.jelly { transition: transform 0.15s cubic-bezier(0.3, 1.8, 0.5, 1); }
+.jelly:hover { transform: scale(1.04); }
+.jelly:active { transform: scale(0.9, 1.08); }
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+#list { display: flex; flex-direction: column; gap: 8px; }
+
+.group-head {
+  margin: 12px 2px 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.conn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: 18px;
+  padding: 10px 8px 10px 14px;
+  box-shadow: 0 1px 6px #0001;
+  animation: pop 0.3s ease-out;
+  cursor: pointer;
+}
+
+.conn-body { flex: 1; min-width: 0; }
+
+.nm {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.sub {
+  color: var(--mute);
+  font-size: 0.88rem;
+  word-break: break-all;
+}
+
+.badge {
+  flex: 0 0 auto;
+  min-width: 52px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 6px 8px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.badge-ssh { background: color-mix(in srgb, var(--ssh) 22%, var(--surface)); color: var(--ssh); }
+.badge-vnc { background: color-mix(in srgb, var(--vnc) 22%, var(--surface)); color: var(--vnc); }
+.badge-sftp { background: color-mix(in srgb, var(--sftp) 22%, var(--surface)); color: var(--sftp); }
+.badge-ftp { background: color-mix(in srgb, var(--ftp) 22%, var(--surface)); color: var(--ftp); }
+
+.more {
+  flex: 0 0 auto;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+#empty { padding: 28px 8px; text-align: center; }
+
+#menu {
+  position: absolute;
+  z-index: 8;
+  min-width: 160px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--surface-2);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px #0003;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  animation: pop 0.2s ease-out;
+}
+
+#menu[hidden] { display: none; }
+
+#menu button {
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+#menu button:hover { background: var(--surface-2); }
+#menu .danger-text { color: var(--danger); background: transparent; }
+
+dialog {
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  width: min(420px, 92vw);
+  padding: 18px;
+  animation: pop 0.3s;
+}
+
+dialog::backdrop { background: #0008; }
+
+dialog h2 { margin: 0 0 8px; font-size: 1.15rem; }
+
+label.field {
+  display: block;
+  margin: 10px 0;
+  font-size: 0.9em;
+  color: var(--mute);
+}
+
+label.field input,
+label.field select,
+label.field textarea {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--surface-2);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 4px;
+  min-height: 48px;
+}
+
+label.field textarea { min-height: 72px; resize: vertical; }
+
+.form-err {
+  color: var(--danger);
+  font-weight: 600;
+  margin: 8px 0 0;
+}
+
+.form-err[hidden] { display: none; }
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111e;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 14px;
+  z-index: 9;
+  max-width: min(420px, 92vw);
+  text-align: center;
+  animation: pop 0.3s;
+}
+
+.toast[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .jelly, .jelly:hover, .jelly:active { transition: none; transform: none; }
+  .jelly:active { transform: scale(0.97); }
+  .conn, dialog, #menu, .toast { animation: none; }
+}
