@@ -824,6 +824,21 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+
+### 1.55 3D Builder, release TD1
+
+- New apps/media/3d-builder (Media, section '3D', row added after 3D Viewer in media-apps.csv).
+  Local three.js r170 in vendor/three (LandCraft's unmodified build + official OrbitControls and
+  TransformControls; import map, no CDN). Renders on demand only; pixelRatio cap 1.5; no shadows.
+- Viewport with grid and axes, orbit/pan/zoom, Perspective/Front/Top/Side + Frame (F). Add box,
+  sphere, cylinder, cone, plane, torus (sit on the grid, offset so they do not overlap). Select,
+  Move/Rotate/Scale gizmo (W/E/R), snap 0.5 / 15° / 0.1. Properties, outliner, rename dialog,
+  Duplicate (Ctrl+D), Delete. Undo/redo snapshot stack (cap 100). Autosave key 3dbuilder.scene
+  (.h3d JSON, format version 1); New / Save / Open. Theme Auto/Light/Dark (3dbuilder.theme), Auto
+  follows sites-hub.theme. In-app dialogs only.
+- RELEASE/title/?v= TD1. Details: apps/media/3d-builder/NOTES.md.
+  Note: 1.53 is Video Editor VD1 on branch apps/vd1-video-editor; 1.54 is reserved for RA1.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
