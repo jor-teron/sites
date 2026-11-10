@@ -1307,7 +1307,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - `<title>Base BS5</title>`, `BASE_VERSION = "BS5"`, Base's own css/js `?v=BS5`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, a static curl smoke test (200 + BS5), and pure-helper Node tests for validation, auto-number and the undo stack (no Puppeteer / Playwright / jsdom).
 
-### 1.65 Base links between tables: `apps/office/base/` (Office), release BS6
+### 1.74 Base links between tables: `apps/office/base/` (Office), release BS6
 - Why: BS5 added field types and rules but tables still could not point at each other, so a real little database (Orders → Customers) was out of reach.
 - New `modules/base-links.js` (pure helpers + in-app record picker, jump, add-related, related-records panel). New types: `ref` (Link to record: `{to, multi?, display?}`, value is a row id or an array of ids) and `lookup` (read-only `{via, src}`, computed from the linked record(s), not stored). The URL field stays `link`.
 - Record picker: in-app `dlg-*` dialog with search, single-click (or tick + OK when multi). Chips in the grid/form jump to the linked record; Change / Clear / × edit the link. Undo covers link edits (JSON snapshots already include arrays).
