@@ -72,4 +72,35 @@
   fully in IndexedDB.
 - Lights have no shadows. Multi-select rotation is around the selection
   centre (a pivot), not each object's own origin.
-- GLB / OBJ / STL import and export are still TD3.
+- GLB / OBJ / STL import and export were added in TD3.
+
+## TD3
+
+- Export the scene as `.glb` (official GLTFExporter), `.obj` (OBJExporter) or
+  `.stl` (binary STLExporter). All three are local r170 copies under
+  `vendor/three/examples/jsm/` (plus `GLTFLoader` and `BufferGeometryUtils`).
+  Default lights are added to the export so other viewers are not black.
+  Helpers, the gizmo and the grid are left out.
+- Import a self-contained `.glb` (or a single-file `.gltf`). The model is
+  wrapped as one object, scaled to a comfortable size and sat on the grid.
+  The original file is stored in the project `models` map as a data URL.
+- PNG screenshot of the current view (gizmo and selection box hidden).
+- Save / Open still use `.h3d`. Format version 3 (opens and migrates v1 and
+  v2). Import is capped at 8 MB.
+- Downloads go through an in-app dialog with a Download button. No native
+  alert/confirm/prompt. RELEASE / title / `?v=` = TD3.
+- Tests: `node --check`, `tests/td1.test.mjs`, `td2.test.mjs`, `td3.test.mjs`.
+  No Puppeteer, Playwright or jsdom.
+
+### TD3 limits
+
+- `.gltf` files that need a sidecar `.bin` or external textures will fail.
+  Prefer a single `.glb`.
+- Imported models are one object: you can move, rotate, scale, hide, lock
+  and group them, but not edit their inner meshes or materials. The stored
+  file is the original import, not a bake of later material tweaks (there
+  are none).
+- STL has no colour or textures. OBJ is a single geometry dump without a
+  separate `.mtl`.
+- Large models make `.h3d` autosave heavy; IndexedDB holds the full project,
+  localStorage may drop models/textures if the quota is hit.

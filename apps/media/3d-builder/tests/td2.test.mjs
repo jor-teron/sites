@@ -15,8 +15,8 @@ function assert(cond, msg) {
 }
 function almost(a, b, eps) { return Math.abs(a - b) < (eps == null ? 1e-9 : eps); }
 
-assert(RELEASE === 'TD2', 'RELEASE TD2');
-assert(FORMAT_VERSION === 2, 'FORMAT_VERSION 2');
+assert(RELEASE === 'TD3', 'RELEASE TD3');
+assert(FORMAT_VERSION === 3, 'FORMAT_VERSION 3');
 assert(SHAPE_TYPES.length === 6 && LIGHT_TYPES.length === 3, 'type lists');
 assert(ALL_TYPES.indexOf('group') >= 0, 'group is a type');
 
@@ -28,7 +28,7 @@ const v1 = {
   ]
 };
 const mig = migrateProject(v1);
-assert(mig.ok && mig.project.version === 2, 'v1 migrates to v2');
+assert(mig.ok && mig.project.version === 3, 'v1 migrates to current version');
 assert(mig.fromVersion === 1, 'fromVersion 1');
 const o = mig.project.objects[0];
 assert(o.visible === true && o.locked === false && o.parentId === null, 'v1 defaults visible/unlocked');
@@ -74,7 +74,7 @@ assert(normalizeTexture({ kind: 'image', id: 'tex1' }).id === 'tex1', 'image tex
 assert(normalizeTexture({ kind: 'image' }) === null, 'image without id dropped');
 
 const v1text = parseProject(JSON.stringify(v1));
-assert(v1text.ok && v1text.project.version === 2, 'parseProject migrates v1 JSON');
+assert(v1text.ok && v1text.project.version === 3, 'parseProject migrates v1 JSON');
 
 assert(!migrateProject({ format: 'h3d', version: 99, objects: [] }).ok, 'future version rejected');
 
