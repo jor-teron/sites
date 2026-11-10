@@ -68,6 +68,7 @@ Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk
 Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 Rock Paper Scissors,   rps/,     , , Arcade, Rock paper scissors against the computer
 Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
+Minesweeper,       minesweeper/,   minesweeper/minesweeper_icon.png, , Puzzle, Clear the minefield with safe first openings - flags and three board sizes
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
