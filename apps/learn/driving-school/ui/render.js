@@ -9,6 +9,8 @@
     const g = canvas.getContext('2d'), c = s.c, z = Math.max(2.2, Math.min(6, box.width / 85));
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = '#668773'; g.fillRect(0, 0, box.width, box.height);
     g.translate(box.width / 2 - c.x * z, box.height / 2 - c.y * z); g.scale(z, z);
+    if (s.w) D.drawTown(g, s, prefs);
+    else {
     g.fillStyle = '#48545c'; g.fillRect(0, 0, 240, 200);
     g.strokeStyle = '#c2cdcf'; g.lineWidth = .3; g.strokeRect(3, 3, 234, 194);
     g.setLineDash([3, 3]);
@@ -16,6 +18,7 @@
     g.setLineDash([]);
     for (let x = 15; x < 230; x += 14) for (const y of [12, 188]) {
       g.fillStyle = '#ff9a3c'; g.beginPath(); g.moveTo(x, y - 1); g.lineTo(x - .8, y + 1); g.lineTo(x + .8, y + 1); g.fill();
+    }
     }
     const gates = s.l.def.gates;
     g.strokeStyle = '#71d8fc'; g.lineWidth = .6; g.setLineDash([1, 2]); g.beginPath();

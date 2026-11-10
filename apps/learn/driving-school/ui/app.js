@@ -7,15 +7,16 @@
   let s, last = 0, mirrorTime = 0;
   const keys = new Set(), held = { throttle: 0, brake: 0, clutch: 0, steer: 0 };
   const wheel = $('wheel'), list = $('lessons');
+  const definitions = () => D.basics.concat(D.roadLessons(prefs.side));
   function options() {
-    list.replaceChildren(...D.basics.map(def => {
+    list.replaceChildren(...definitions().map(def => {
       const opt = document.createElement('option'); opt.value = def.id;
       opt.textContent = def.name + (best[def.id] != null ? ' · best ' + best[def.id] : ''); return opt;
     }));
   }
   options();
   function reset() {
-    const def = D.basics.find(d => d.id === list.value) || D.basics[0];
+    const def = definitions().find(d => d.id === list.value) || D.basics[0];
     s = D.session(def, prefs); keys.clear(); Object.keys(held).forEach(k => held[k] = 0);
     $('lesson-name').textContent = def.name; write('last', def.id); mirrorTime = 0;
   }
@@ -42,7 +43,7 @@
   $('transmission').onchange = e => {
     prefs.auto = e.target.value === 'auto'; write('settings', prefs); reset(); s.paused = true;
   };
-  $('side').onchange = e => { prefs.side = e.target.value; write('settings', prefs); };
+  $('side').onchange = e => { prefs.side = e.target.value; write('settings', prefs); const id = list.value; options(); list.value = id; reset(); s.paused = true; };
   $('theme').onchange = e => HubTheme.setOwn(e.target.value);
   // Follow Hub preference when set, otherwise the operating system. No shared files changed.
   function syncTheme() {
@@ -99,6 +100,12 @@
     $('left').setAttribute('aria-pressed', s.c.indicator === 'left'); $('right').setAttribute('aria-pressed', s.c.indicator === 'right');
     wheel.style.transform = 'rotate(' + s.c.steer * 65 + 'deg)'; wheel.setAttribute('aria-valuenow', Math.round(s.c.steer * 100));
     $('mirror').textContent = mirrorTime > s.c.elapsed ? 'REAR CHECKED · lot clear · check sides too' : 'REAR · practice lot · M to look';
+    const f = s.l.faults[s.l.faults.length - 1];
+    $('fault').textContent = f && (s.w ? s.w.time - f.time < 5 : s.l.elapsed - f.time < 5) ? f.reason : '';
+    if (s.w) {
+      const back = s.w.cars.filter(ai => { const dx = ai.x - s.c.x, dy = ai.y - s.c.y; return dx * Math.cos(s.c.heading) + dy * Math.sin(s.c.heading) < 0 && Math.hypot(dx, dy) < 30; });
+      $('mirror').textContent = 'REAR · ' + back.length + ' vehicle(s) nearby · check blind spots';
+    }
     D.draw($('road'), s, prefs);
   }
   function frame(t) { let dt = Math.min(.1, (t - (last || t)) / 1000); last = t; while (dt > 0) { const step = Math.min(dt, 1 / 60); update(step); dt -= step; } requestAnimationFrame(frame); }

@@ -38,3 +38,18 @@ Only `?test` exposes the deterministic test interface. No lesson is auto-complet
 
 Related: [Road Safety](../road-safety/) covers road rules and safe pedestrian
 crossing; Driving School is specifically hands-on vehicle-control practice.
+
+## DS-1b
+Town lessons 7–13: lane keeping, indicated turns, signals, roundabout, STOP/yield,
+parallel parking and reversing into a bay. AI vehicles use lanes and stop for
+signals/nearby obstacles; pedestrians periodically use the zebra crossing.
+Rules give brief reasons and minor/serious faults. Follow rings in order; signal
+and stop lessons also require a real wait/stop. Parking requires alignment inside
+the bay, a full stop, neutral and handbrake. Select N/D/R explicitly in Automatic;
+it changes forward gears for you, not the direction. Switching traffic side or
+transmission restarts the current lesson. The miniature mirror reports nearby
+rear vehicles but cannot replace looking around or a real car's mirrors.
+
+The road network is a deliberately compact practice map, not a replica of any
+city. AI follows procedural routes; there is no realistic crash damage. Fault
+cooldowns avoid dozens of duplicate reports from one ongoing mistake.

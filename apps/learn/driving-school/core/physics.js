@@ -39,7 +39,7 @@
     c.elapsed += dt;
     if (c.auto) {
       // Reverse remains an explicit selection; never select it by braking.
-      if (c.gear >= 0) c.gear = Math.abs(c.v) < 5 ? 1 : Math.abs(c.v) < 9 ? 2 : Math.abs(c.v) < 14 ? 3 : Math.abs(c.v) < 20 ? 4 : 5;
+      if (c.gear > 0) c.gear = Math.abs(c.v) < 5 ? 1 : Math.abs(c.v) < 9 ? 2 : Math.abs(c.v) < 14 ? 3 : Math.abs(c.v) < 20 ? 4 : 5;
       c.clutch = c.engine && !c.handbrake && throttle > 0 ? 0 : Math.abs(c.v) < 2 ? 1 : 0;
     } else {
       const target = clamp(input.clutch || 0, 0, 1);

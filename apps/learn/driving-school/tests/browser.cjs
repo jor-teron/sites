@@ -38,6 +38,20 @@ const puppeteer = require(process.env.DS_PUPPETEER || '/workspace/gg-test/node_m
       return { done: s.l.done, score: s.l.score };
     });
     assert(result.done); assert(result.score >= 80);
+    const roadResult = await page.evaluate(() => {
+      const { D } = drivingTest, s = D.session(D.roadLessons('left')[0], { auto: true, side: 'left' });
+      D.start(s.c); D.shift(s.c, 1); s.c.handbrake = false;
+      for (let i = 0; i < 6000 && !s.l.done; i++) D.tick(s, { throttle: s.c.v < 4 ? .7 : 0 }, 1/60);
+      return { done: s.l.done, faults: s.l.faults };
+    });
+    assert(roadResult.done); assert.equal(roadResult.faults.length, 0);
+    await page.select('#lessons', 'signals');
+    for (const [width, height] of [[1280,800],[844,390],[390,844]]) {
+      await page.setViewport({ width, height, deviceScaleFactor: 2 });
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.screenshot({ path: '/workspace/ds-town-' + width + 'x' + height + '.png' });
+      assert.equal(await page.$eval('#lessons', e => e.options.length), 13);
+    }
     await page.click('#pause'); assert(await page.$eval('#pause-card', e => e.open));
     await page.click('#resume'); await page.click('#settings');
     await page.select('#theme', 'dark'); assert.equal(await page.$eval('html', e => e.dataset.theme), 'dark');
@@ -46,6 +60,6 @@ const puppeteer = require(process.env.DS_PUPPETEER || '/workspace/gg-test/node_m
     await page.reload({ waitUntil: 'networkidle0' });
     assert.equal(await page.evaluate(() => drivingTest.prefs.side), 'right');
     assert.equal(errors.length, 0, errors.join('\n'));
-    console.log('PASS: desktop + 844x390 + 390x844; DPR, >=44px controls, keyboard, L1 autodrive, pause, theme, settings persistence; no console errors.');
+    console.log('PASS: desktop + 844x390 + 390x844; DPR, >=44px controls, keyboard, L1 + town autodrive, 13 lessons, town phone rendering, pause, theme, settings persistence; no console errors.');
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

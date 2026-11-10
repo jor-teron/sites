@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Driving School DS-1a</title>
+<title>Driving School DS-1b</title>
 <link rel="icon" href="driving-school_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.driving-school.theme"></script>
 <link rel="stylesheet" href="ui/driving.css">
@@ -14,7 +14,7 @@
 <main>
 <section class="world"><canvas id="road" aria-label="Driving practice ground. Use the steering and pedal controls below."></canvas><div id="mirror" aria-label="Rear view mirror">REAR · clear practice lot</div><p id="rotate">Landscape gives a wider view. All controls still work in portrait.</p></section>
 <aside><div class="dash"><strong><span id="speed">0</span> <small>km/h</small></strong><span id="rpm">0 RPM</span><strong id="gear">N</strong><span id="lamps">PARK</span></div>
-<div class="instructor"><strong id="lesson-name"></strong><p id="hint" aria-live="polite"></p><span id="progress"></span><p id="score"></p></div>
+<div class="instructor"><strong id="lesson-name"></strong><p id="hint" aria-live="polite"></p><span id="progress"></span><p id="score"></p><p id="fault" aria-live="polite"></p></div>
 <div class="touch"><div id="wheel" role="slider" tabindex="0" aria-label="Steering wheel" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><span>◉</span><small>STEER</small></div><div class="pedals"><button data-hold="clutch">Clutch</button><button data-hold="brake">Brake</button><button data-hold="throttle">Accelerate</button></div></div>
 <div class="switches"><button id="down">Gear −</button><button id="up">Gear +</button><button id="park">Handbrake</button><button id="left">◀ Signal</button><button id="right">Signal ▶</button><button id="look">Check mirrors</button></div>
 </aside>
@@ -25,6 +25,6 @@
 <dialog id="pause-card"><h2>Practice paused</h2><p>Take your time. The car and lesson clock are stopped.</p><button id="resume">Resume</button></dialog>
 <noscript>Driving School requires JavaScript.</noscript>
 <script src="../shared/learn-hubbar.js"></script>
-<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/session.js"></script>
-<script src="ui/render.js"></script><script src="ui/app.js"></script>
+<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/town.js"></script><script src="core/rules.js"></script><script src="core/session.js"></script>
+<script src="ui/town-render.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script>
 </body></html>
