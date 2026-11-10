@@ -3,31 +3,89 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Ant Farm v0.3</title>
+  <title>Ant Farm v0.4</title>
   <link rel="icon" href="ant-farm_icon.png" />
   <link rel="stylesheet" href="ui/ant-farm.css" />
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('games.settings'); if (t) t = (JSON.parse(t) || {}).theme || ''; } catch (_) { t = ''; }
+      if (!t || t === 'auto') { try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { t = ''; }
+        t = t ? t : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+      document.documentElement.className = t === 'light' ? 'light' : 'dark';
+    })();
+  </script>
 </head>
 <body>
   <canvas id="c"></canvas>
   <header id="bar">
     <a id="back" href="../" title="Games">&#8592;</a>
-    <b>ANT FARM</b> <span id="ver">v0.3</span>
+    <b>ANT FARM</b> <span id="ver">v0.4</span>
     <select id="tool" title="Tap tool">
-      <option value="food">Drop food</option>
-      <option value="water">Drop water</option>
+      <option value="food">Food</option>
+      <option value="water">Water</option>
+      <option value="dig">Dig</option>
+      <option value="inspect">Look</option>
     </select>
     <button id="pause" type="button">Pause</button>
-    <button id="reset" type="button">Reset</button>
-    <label>Speed <input id="speed" type="range" min="0" max="6" step="1" value="2" /></label>
-    <label><input id="trails" type="checkbox" checked /> Trails</label>
-    <input id="seed" type="number" title="Colony seed" />
-    <button id="newc" type="button">New colony</button>
+    <button id="reset" class="wide-only" type="button">Reset</button>
+    <label class="speed-wrap" title="Speed"><span class="wide-only">Speed</span> <input id="speed" type="range" min="0" max="6" step="1" value="2" /></label>
+    <button id="moreBtn" type="button" title="More" aria-expanded="false">&#8943;</button>
   </header>
+  <div id="more" hidden>
+    <label><input id="trails" type="checkbox" checked /> Trails</label>
+    <div class="row">
+      <input id="seed" type="number" title="Colony seed" />
+      <button id="newc" type="button">New colony</button>
+    </div>
+    <div class="row">
+      <button id="resetPhone" class="phone-reset" type="button">Reset</button>
+      <button id="fit" type="button">Fit farm</button>
+      <button id="fill" type="button">Fill view</button>
+    </div>
+    <div class="row lapse">
+      <span>Time-lapse</span>
+      <button type="button" data-speed="2" class="lapse">Live</button>
+      <button type="button" data-speed="5" class="lapse">×8</button>
+      <button type="button" data-speed="6" class="lapse">×16</button>
+      <button type="button" id="dawn">Next dawn</button>
+    </div>
+    <div class="row">
+      <button id="helpBtn" type="button">How to play</button>
+      <button id="graphBtn" type="button">Graphs</button>
+    </div>
+  </div>
+  <aside id="inspect" hidden></aside>
+  <div id="goals" hidden></div>
+  <div id="toast" hidden></div>
+  <aside id="help" hidden>
+    <h2>How to play</h2>
+    <p>This is a living ant farm. Workers dig tunnels, bring food home, and raise brood while the queen lays eggs.</p>
+    <ul>
+      <li><b>Food</b> and <b>Water</b> drop from the sky where you tap. Water soaks the soil (it dries later). Food is also found naturally by day.</li>
+      <li><b>Dig</b> to carve a cell of soil next to a tunnel or the surface.</li>
+      <li><b>Look</b>, or tap an ant or a chamber, to inspect it.</li>
+      <li>Drag to pan, pinch or use the wheel to zoom. <kbd>0</kbd> fills the view, <kbd>F</kbd> fits the whole farm.</li>
+      <li>At night the foragers sleep in the nest. Open the gear for theme, mute, and low graphics.</li>
+      <li>The year has seasons. Winter is lean, but a warm chamber and a stocked pantry help.</li>
+      <li>Soldiers patrol the entrances and drive off the occasional hungry bird.</li>
+      <li>Workers age and eventually die; the last few always remain so the colony can recover.</li>
+    </ul>
+    <button type="button" id="helpClose">Got it</button>
+  </aside>
+  <aside id="graphs" hidden>
+    <h2>Colony</h2>
+    <canvas id="graphcv" width="320" height="140"></canvas>
+    <p id="graphleg">Ants, brood and stored food over time.</p>
+    <button type="button" id="graphClose">Close</button>
+  </aside>
   <div id="stats"></div>
   <script src="../common/settings/games-settings.js"></script>
-  <script src="ant-farm_settings.js"></script>
+  <script src="ui/settings.js"></script>
   <script src="core/world.js"></script>
   <script src="core/colony.js"></script>
+  <script src="core/life.js"></script>
+  <script src="core/save.js"></script>
+  <script src="ui/sound.js"></script>
   <script src="assets/models/ant.js"></script>
   <script src="assets/draw/soil.js"></script>
   <script src="assets/draw/surface.js"></script>
