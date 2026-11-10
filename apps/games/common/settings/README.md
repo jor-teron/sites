@@ -120,3 +120,9 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 | Star Pinball (`pinball`) | done (PIN-1c) | theme (light/dark; auto = Hub theme), fpsLimit (drawing rate; the physics always runs in fixed 1/1440 s sub-steps), lowGraphics (fewer stars, no glow, 1x pixels), autoPause (also pause on window blur; a hidden tab always pauses), sfx + masterVolume (WebAudio sounds for flippers, bumpers, slings, targets, spinner, ramp, hole, missions, ranks, drain, ball save, nudge, tilt, game over; volume 0 = silent), vibration (bumper, mission done, tilt, drain), screenShake (camera shake on big hits), gear (title bar). Effects (flashes, shake, mission light show) are off for lowGraphics or the device's reduced-motion setting. High score in `pinball.best`; the game in progress (score, ball, rank, mission, multiplier, bonus, lanes, drop targets) in `pinball.save`. Unused: music, difficulty, controls |
 | Unblock (`unblock`) | done (UNB-2) | theme (light/dark; auto = Hub theme), vibration (win), gear (`?from=unblock`). No sound; turn-based so fpsLimit, showFps, autoPause, difficulty, controls unused |
 | All other games | pending | |
+
+## Per-game visual settings
+
+| Storage key | Values | Default |
+|---|---|---|
+| `space-invader.visualTheme` | `auto`, `classic`, `retro`, `gameboy`, `amber`, `neon`, `space`, `flat`, `cyber`, `paper`, `ocean` | `auto` (Hub light → Minimal Flat; dark → Classic Arcade). The in-game Theme dialog saves the choice; live Hub changes only affect Auto. |
