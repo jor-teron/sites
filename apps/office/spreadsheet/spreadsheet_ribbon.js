@@ -9,7 +9,8 @@ var SHEET_RIBBON_TABS = [
   { id: "home", label: "Home" },
   { id: "insert", label: "Insert" },
   { id: "page", label: "Page" },
-  { id: "data", label: "Data" }
+  { id: "data", label: "Data" },
+  { id: "view", label: "View" }
 ];
 var RIBBON_TAB_KEY = "spreadsheet-ribbon-tab";
 var SHEET_RIBBON = null;

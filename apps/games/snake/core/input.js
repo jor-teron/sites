@@ -9,6 +9,9 @@ window.SN = window.SN || {};
   const K = SN.K, G = SN.G, isKey = SN.isKey, game = SN.game;
 
   function onKey(e, down) {
+    if (window.SnakeAppearance && SnakeAppearance.dialog.open) return;
+    if (/^(INPUT|SELECT)$/.test(e.target.tagName)) return;
+    if (e.target.tagName === 'BUTTON' && ['Enter', 'Space', ' '].includes(e.code || e.key)) return;
     if (down) {
       if (isKey(K.up, e)) { game.queueDir('up'); e.preventDefault(); }
       else if (isKey(K.down, e)) { game.queueDir('down'); e.preventDefault(); }
