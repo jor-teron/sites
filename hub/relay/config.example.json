@@ -1,0 +1,21 @@
+{
+  "HOST": "127.0.0.1",
+  "PORT": 8787,
+  "MODULES": [
+    "mcp",
+    "tcp",
+    "fetch"
+  ],
+  "CORS_ORIGINS": [
+    "https://jor-teron.github.io",
+    "http://localhost:8787",
+    "http://127.0.0.1:8787"
+  ],
+  "PUBLIC_HOSTS": [],
+  "TOKEN": "",
+  "TCP_ALLOWLIST": [],
+  "TCP_ALLOWLIST_FILE": "",
+  "FETCH_ALLOWLIST": [],
+  "TLS_CERT": "",
+  "TLS_KEY": ""
+}
