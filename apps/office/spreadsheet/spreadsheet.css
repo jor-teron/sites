@@ -529,3 +529,67 @@ td.merge-hidden { display: none; }
   td.cell .cell-face { color: #000; }
   td.cell.wrap input { color: transparent !important; }
 }
+
+
+/* SH12: charts */
+#sheet-wrap { position: relative; }
+#chart-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.sheet-chart {
+  position: absolute;
+  pointer-events: auto;
+  background: var(--panel, #fff);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px var(--shadow);
+  z-index: 8;
+  overflow: hidden;
+}
+.sheet-chart.on { outline: 2px solid var(--sel); }
+.sheet-chart-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  background: var(--head, #f1f3f7);
+  border-bottom: 1px solid var(--border);
+  cursor: move;
+  font-size: 12px;
+  user-select: none;
+}
+.sheet-chart-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-chart-bar button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0 4px;
+}
+.sheet-chart-canvas { display: block; width: 100%; background: #fff; }
+.sheet-chart-h {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--sel);
+  border: 1px solid #fff;
+  display: none;
+}
+.sheet-chart.on .sheet-chart-h { display: block; }
+.sheet-chart-h-se { right: -4px; bottom: -4px; cursor: nwse-resize; }
+.sheet-chart-h-ne { right: -4px; top: -4px; cursor: nesw-resize; }
+.sheet-chart-h-sw { left: -4px; bottom: -4px; cursor: nesw-resize; }
+.sheet-chart-h-nw { left: -4px; top: -4px; cursor: nwse-resize; }
+.sheet-chart-h-e { right: -4px; top: 50%; margin-top: -4px; cursor: ew-resize; }
+.sheet-chart-h-s { bottom: -4px; left: 50%; margin-left: -4px; cursor: ns-resize; }
+@media print {
+  .sheet-chart-bar, .sheet-chart-h { display: none !important; }
+  .sheet-chart { box-shadow: none; break-inside: avoid; }
+}

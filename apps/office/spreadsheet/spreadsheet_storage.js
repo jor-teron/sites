@@ -1,8 +1,8 @@
 /*
  * spreadsheet_storage.js
- * Save / load the workbook in localStorage (SH8: sheet-v3).
- * An older sheet-v2 (or v1) save is copied into Sheet1 on first load and left
- * in place as a backup; later loads use only v3.
+ * Save / load the workbook in localStorage (SH12: sheet-v4).
+ * Older sheet-v3 / v2 / v1 saves are migrated into v4 on first load and left
+ * in place as a backup; later loads use only v4. Charts live on each sheet.
  */
 
 function serializeSheet(s) {
@@ -20,14 +20,15 @@ function serializeSheet(s) {
     filters: s.filters || { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
     validations: s.validations || [],
     merges: s.merges || [],
-    condFormats: s.condFormats || []
+    condFormats: s.condFormats || [],
+    charts: s.charts || []
   };
 }
 
 function serializeWorkbook() {
   stashSheetView();
   return {
-    v: 3,
+    v: 4,
     cols: COLS,
     rows: ROWS,
     active: workbook.active,
@@ -82,6 +83,7 @@ function deserializeSheet(raw, fallbackName) {
   if (raw && Array.isArray(raw.validations)) s.validations = raw.validations;
   if (raw && Array.isArray(raw.merges)) s.merges = raw.merges;
   if (raw && Array.isArray(raw.condFormats)) s.condFormats = raw.condFormats;
+  if (raw && Array.isArray(raw.charts)) s.charts = raw.charts;
   if (typeof applyFilters === "function") {
     /* compute filterHidden after the workbook is bound; loadStore does it per sheet later */
   }
@@ -117,50 +119,57 @@ function loadLegacyGrid(data) {
 }
 
 /**
- * Load the workbook. sheet-v3 wins. If it is missing, a sheet-v2 / v1 save
- * is migrated into Sheet1 and v2/v1 are left untouched as a backup.
+ * Build a workbook from a parsed localStorage payload (v4, v3, or a legacy grid).
+ * Returns true on success. Does not write storage.
+ */
+function applyWorkbookPayload(data) {
+  if (data && Array.isArray(data.sheets) && data.sheets.length) {
+    var used = {}, sheets = [], i, s, max = CFG.sheets.max || 20, act, sel, fi;
+    for (i = 0; i < data.sheets.length && i < max; i++) {
+      s = deserializeSheet(data.sheets[i], "Sheet" + (i + 1));
+      s.name = uniqueName(s.name, used);
+      if (!s.charts) s.charts = [];
+      sheets.push(s);
+    }
+    if (!sheets.length) return false;
+    act = data.active | 0;
+    if (act < 0 || act >= sheets.length) act = 0;
+    workbook = { sheets: sheets, active: act };
+    bindActiveSheet();
+    if (typeof applyFilters === "function") {
+      for (fi = 0; fi < sheets.length; fi++) applyFilters(fi);
+    }
+    sel = sheets[act].sel;
+    if (sel && sel.length >= 4) {
+      selR = sel[0]; selC = sel[1]; extR = sel[2]; extC = sel[3];
+      selMode = sel[4] || "cell";
+    }
+    return true;
+  }
+  if (data && data.cells) { loadLegacyGrid(data); return true; }
+  return false;
+}
+
+/**
+ * Load the workbook. sheet-v4 wins. If it is missing, a sheet-v3 / v2 / v1
+ * save is migrated into v4 and the old key is left in place as a backup.
  */
 function loadStore() {
-  var raw, data;
+  var keys = [STORE_KEY, CFG.storage.legacyKey, CFG.storage.legacyKey1, CFG.storage.legacyKey2], k, raw, data, i;
   try {
-    raw = localStorage.getItem(STORE_KEY);
-    if (raw) {
+    for (i = 0; i < keys.length; i++) {
+      k = keys[i];
+      if (!k) continue;
+      raw = localStorage.getItem(k);
+      if (!raw) continue;
       data = JSON.parse(raw);
-      if (data && Array.isArray(data.sheets) && data.sheets.length) {
-        var used = {}, sheets = [], i, s, max = CFG.sheets.max || 20;
-        for (i = 0; i < data.sheets.length && i < max; i++) {
-          s = deserializeSheet(data.sheets[i], "Sheet" + (i + 1));
-          s.name = uniqueName(s.name, used);
-          sheets.push(s);
-        }
-        if (!sheets.length) return false;
-        var act = data.active | 0;
-        if (act < 0 || act >= sheets.length) act = 0;
-        workbook = { sheets: sheets, active: act };
-        bindActiveSheet();
-        if (typeof applyFilters === "function") {
-          var fi;
-          for (fi = 0; fi < sheets.length; fi++) applyFilters(fi);
-        }
-        var sel = sheets[act].sel;
-        if (sel && sel.length >= 4) {
-          selR = sel[0]; selC = sel[1]; extR = sel[2]; extC = sel[3];
-          selMode = sel[4] || "cell";
-        }
-        return true;
+      if (!applyWorkbookPayload(data)) continue;
+      if (k !== STORE_KEY) {
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(serializeWorkbook())); } catch (e) {}
       }
-      /* A v3 key that still looks like a single-sheet v2 payload */
-      if (data && data.cells) { loadLegacyGrid(data); return true; }
-      return false;
+      return true;
     }
-    raw = localStorage.getItem(CFG.storage.legacyKey);
-    if (!raw && CFG.storage.legacyKey1) raw = localStorage.getItem(CFG.storage.legacyKey1);
-    if (!raw) return false;
-    data = JSON.parse(raw);
-    if (!data || !data.cells) return false;
-    loadLegacyGrid(data);
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(serializeWorkbook())); } catch (e) {}
-    return true;
+    return false;
   } catch (e) {
     return false;
   }

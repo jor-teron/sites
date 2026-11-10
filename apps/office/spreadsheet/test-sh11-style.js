@@ -97,7 +97,7 @@ test("xlsx !merges are written from the sheet", function () {
   eq(ws["!merges"][0].e.r, 1);
 });
 
-test("v3 save keeps merges and rules; older files still load", function () {
+test("v4 save keeps merges and rules; older files still load", function () {
   ctx.emptyWorkbook();
   var s = ctx.workbook.sheets[0];
   s.merges = [{ r1: 0, c1: 0, r2: 0, c2: 1 }];
@@ -105,7 +105,7 @@ test("v3 save keeps merges and rules; older files still load", function () {
   s.cells[0][0].style.fontSize = 16;
   s.cells[0][0].style.wrap = true;
   var raw = ctx.serializeWorkbook();
-  eq(raw.v, 3);
+  eq(raw.v, 4);
   eq(raw.sheets[0].merges[0].c2, 1);
   eq(raw.sheets[0].condFormats[0].type, "above");
   var legacy = ctx.deserializeSheet({ name: "Old", cells: [[{ formula: "1", value: 1, style: {} }]] }, "Sheet1");

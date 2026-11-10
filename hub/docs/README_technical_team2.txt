@@ -862,6 +862,14 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Title / SHEET_VERSION / ?v=: SH11. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
 
+### 1.82 Spreadsheet charts, release SH12
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Column, bar, line and pie charts from the selected range (or the used area), drawn on a canvas with no libraries. Move / resize, save as PNG, delete with an in-app confirm. At most 8 charts per sheet. Undo covers add / delete / move / resize. Charts are redrawn from current cell values.
+- Storage bumped to sheet-v4 {sheets, charts, active}. A sheet-v3 / v2 / v1 save is migrated on first load and left in place as a backup. Page setup also falls back to sheet-v3-page then sheet-v2-page. Charts are not written to XLSX or CSV.
+- Title / SHEET_VERSION / ?v=: SH12. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

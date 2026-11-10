@@ -18,7 +18,7 @@ var COLS = CFG.grid.cols;
 /* Number of data rows — fixed 100 */
 var ROWS = CFG.grid.rows;
 
-/* LocalStorage key (sheet-v3) */
+/* LocalStorage key (sheet-v4) */
 var STORE_KEY = CFG.storage.key;
 
 /* Column letters A-Z */
@@ -105,6 +105,7 @@ function makeSheet(name) {
     validations: [],
     merges: [],
     condFormats: [],
+    charts: [],
     freeze: { rows: 0, cols: 0 },
     sel: [CFG.start.row, CFG.start.col, CFG.start.row, CFG.start.col, CFG.start.mode]
   };
@@ -129,6 +130,7 @@ function bindActiveSheet() {
   if (!s.validations) s.validations = [];
   if (!s.merges) s.merges = [];
   if (!s.condFormats) s.condFormats = [];
+  if (!s.charts) s.charts = [];
   filterHidden = s.filterHidden;
   freeze = s.freeze;
   evalSheetIdx = workbook.active;
@@ -158,6 +160,7 @@ function emptyGrid() {
   s.validations = [];
   s.merges = [];
   s.condFormats = [];
+  s.charts = [];
   bindActiveSheet();
 }
 

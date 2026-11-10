@@ -32,7 +32,8 @@ function undoSnapshot() {
         filters: sh.filters ? JSON.parse(JSON.stringify(sh.filters)) : { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
         validations: sh.validations ? JSON.parse(JSON.stringify(sh.validations)) : [],
         merges: sh.merges ? JSON.parse(JSON.stringify(sh.merges)) : [],
-        condFormats: sh.condFormats ? JSON.parse(JSON.stringify(sh.condFormats)) : []
+        condFormats: sh.condFormats ? JSON.parse(JSON.stringify(sh.condFormats)) : [],
+        charts: sh.charts ? JSON.parse(JSON.stringify(sh.charts)) : []
       };
     })
   });
@@ -74,6 +75,7 @@ function undoRestore(snap) {
     sh.validations = src.validations ? JSON.parse(JSON.stringify(src.validations)) : [];
     sh.merges = src.merges ? JSON.parse(JSON.stringify(src.merges)) : [];
     sh.condFormats = src.condFormats ? JSON.parse(JSON.stringify(src.condFormats)) : [];
+    sh.charts = src.charts ? JSON.parse(JSON.stringify(src.charts)) : [];
     workbook.sheets.push(sh);
   }
   workbook.active = Math.max(0, Math.min(workbook.sheets.length - 1, d.active | 0));
