@@ -476,18 +476,30 @@
       menuFor = tab.id;
       $('ssh-menu-disc').textContent = tab.live ? 'Disconnect' : 'Reconnect';
       $('ssh-menu-keys').textContent = $('ssh-keys').hidden ? 'Show keys' : 'Hide keys';
+      /* (before RM7)
       m.hidden = false;
       var r = btn.getBoundingClientRect();
       m.style.top = (window.scrollY + r.bottom + 4) + 'px';
       var left = window.scrollX + r.right - m.offsetWidth;
       var maxLeft = window.scrollX + window.innerWidth - m.offsetWidth - 8;
       m.style.left = Math.max(8, Math.min(left, maxLeft)) + 'px';
+      */
+      m.style.top = '0px';
+      m.style.left = '0px';
+      if (root.RMUI) {
+        root.RMUI.showFloat(m);
+        root.RMUI.placeMenu(m, root.RMUI.anchorRect(btn));
+      } else {
+        m.hidden = false;
+      }
     }
 
     /* Hide the SSH overflow menu. */
     function closeMenu() {
       var m = $('ssh-menu');
-      if (m) m.hidden = true;
+      /* (before RM7) if (m) m.hidden = true; */
+      if (m && root.RMUI) root.RMUI.hideFloat(m);
+      else if (m) m.hidden = true;
       menuFor = null;
     }
 
@@ -510,6 +522,11 @@
     $('ssh-btn-more').addEventListener('click', function (e) {
       e.stopPropagation();
       toggleMenu($('ssh-btn-more'));
+    });
+    if ($('ssh-btn-edit')) $('ssh-btn-edit').addEventListener('click', function () {
+      closeMenu();
+      var t = activeTab();
+      if (t && opts.onEdit) opts.onEdit(t.connId);
     });
     $('ssh-menu-copy').addEventListener('click', function () {
       closeMenu();

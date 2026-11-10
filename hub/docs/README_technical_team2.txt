@@ -1830,6 +1830,27 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.96 is HO2, so this note is numbered 1.97.
 
 
+### 1.98 Remote saved-connection actions, release RM7
+
+- `apps/connectivity/remote/` only, plus this note. No hub/, shared/, catalog,
+  index.html, or build bump.
+- Root cause: the ⋯ menu was `position: absolute` at `window.scrollY` plus the
+  button's viewport bottom, and it always opened downward. A Hub window clips
+  its iframe, and a saved row sits low in that short frame, so Edit, Duplicate
+  and Delete were painted below the fold and could not be clicked. Delete had
+  a second failure: `confirm()` is blocked in the Hub window and returns false,
+  so a click that did land did nothing.
+- RM7 pins the menu to the visible window (`position: fixed`, flip upward,
+  clamp to the edges) and shows it as a manual popover so it paints above the
+  tabs and open dialogs. Right-click and a 500 ms press open the same menu.
+  Delete, busy-tab close, and file/folder delete use an in-app dialog. Each
+  session bar (SFTP, WebDAV, SSH, VNC) has Edit. The Back link is gone and the
+  tabs sit in the header row. Old lines stay, marked `(before RM7)`.
+- Checked with `node --check` and `node apps/connectivity/remote/tests/rm7.test.cjs`,
+  plus the existing RM1–RM6 node tests. No browser runner.
+- 1.97 is NL4, so this note is numbered 1.98.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

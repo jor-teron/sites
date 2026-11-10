@@ -39,7 +39,8 @@ var Store = require(path.join(app, 'rm_store.js'));
 var Client = require(path.join(app, 'rm_vnc_client.js'));
 
 assert(/^RM\d+$/.test(C.RELEASE), 'release tag is RMn');
-assertEq(C.RELEASE, 'RM4', 'this release is tagged RM4');
+/* (before RM7) assertEq(C.RELEASE, 'RM4', 'this release is tagged RM4'); */
+assertEq(C.RELEASE, 'RM7', 'this release is tagged RM7');
 assert(C.PROTOCOLS.indexOf('vnc') >= 0, 'vnc is in the protocol list');
 assertEq(C.DEFAULT_PORTS.vnc, 5900, 'vnc default port is 5900');
 assertEq(C.PROTOCOL_LABELS.vnc, 'VNC', 'vnc label');

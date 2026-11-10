@@ -515,18 +515,30 @@
       if (menuFor === tab.id && !m.hidden) { closeMenu(); return; }
       menuFor = tab.id;
       syncMenu(tab);
+      /* (before RM7)
       m.hidden = false;
       var r = btn.getBoundingClientRect();
       m.style.top = (window.scrollY + r.bottom + 4) + 'px';
       var left = window.scrollX + r.right - m.offsetWidth;
       var maxLeft = window.scrollX + window.innerWidth - m.offsetWidth - 8;
       m.style.left = Math.max(8, Math.min(left, maxLeft)) + 'px';
+      */
+      m.style.top = '0px';
+      m.style.left = '0px';
+      if (root.RMUI) {
+        root.RMUI.showFloat(m);
+        root.RMUI.placeMenu(m, root.RMUI.anchorRect(btn));
+      } else {
+        m.hidden = false;
+      }
     }
 
     /* Hide the VNC overflow menu. */
     function closeMenu() {
       var m = $('vnc-menu');
-      if (m) m.hidden = true;
+      /* (before RM7) if (m) m.hidden = true; */
+      if (m && root.RMUI) root.RMUI.hideFloat(m);
+      else if (m) m.hidden = true;
       menuFor = null;
     }
 
@@ -539,6 +551,11 @@
     $('vnc-btn-more').addEventListener('click', function (e) {
       e.stopPropagation();
       toggleMenu($('vnc-btn-more'));
+    });
+    if ($('vnc-btn-edit')) $('vnc-btn-edit').addEventListener('click', function () {
+      closeMenu();
+      var t = activeTab();
+      if (t && opts.onEdit) opts.onEdit(t.connId);
     });
     $('vnc-btn-kbd').addEventListener('click', function () {
       openKeyboard();

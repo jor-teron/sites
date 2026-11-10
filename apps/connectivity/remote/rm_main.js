@@ -1,4 +1,4 @@
-/* Remote — rm_main.js: start the RM4 connections list, tabs, SFTP/WebDAV browse and transfers, the SSH terminal, and the VNC viewer, once the page has loaded. */
+/* Remote — rm_main.js: start the RM7 connections list, tabs, SFTP/WebDAV browse and transfers, the SSH terminal, and the VNC viewer, once the page has loaded. */
 (function (root) {
   'use strict';
 
@@ -43,6 +43,12 @@
     var sftp = null;
     var ssh = null;
     var vnc = null;
+    /* Open the saved-connection editor for a live session (SFTP, WebDAV, SSH or VNC). */
+    function editSaved(connId) {
+      var c = store.get(connId);
+      if (!c) { ui.toast('That connection is no longer saved.'); return; }
+      ui.openEditor(c);
+    }
     var ui = UI.init({
       store: store,
       tabs: tabs,
@@ -61,20 +67,24 @@
       store: store,
       tabs: tabs,
       toast: ui.toast,
-      pageProtocol: ui.pageProtocol
+      pageProtocol: ui.pageProtocol,
+      onEdit: editSaved,
+      confirm: UI.confirm
     });
     ssh = SshView.init({
       store: store,
       tabs: tabs,
       toast: ui.toast,
       pageProtocol: ui.pageProtocol,
-      storage: mem
+      storage: mem,
+      onEdit: editSaved
     });
     vnc = VncView.init({
       store: store,
       tabs: tabs,
       toast: ui.toast,
-      pageProtocol: ui.pageProtocol
+      pageProtocol: ui.pageProtocol,
+      onEdit: editSaved
     });
     /* Redraw the tab strip and the visible pane whenever a tab is opened, selected or closed. */
     tabs.onChange(function () {

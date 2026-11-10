@@ -387,7 +387,7 @@
       var m = $('entry-menu');
       if (menuEntry && menuEntry.name === e.name && !m.hidden && menuEntry.side === side) { closeEntryMenu(); return; }
       menuEntry = { name: e.name, side: side };
-      m.hidden = false;
+      /* (before RM7) m.hidden = false; */
       m.textContent = '';
       function item(label, fn, danger) {
         var b = document.createElement('button');
@@ -412,17 +412,30 @@
         if (e.isDir) item('Open', function () { loadLocal(tab, e.handle, (tab.local.path || []).concat(e.name)); });
         item('Upload to server', function () { uploadLocalEntry(tab, e); });
       }
+      /* (before RM7)
+      m.hidden = false;
       var r = btn.getBoundingClientRect();
       m.style.top = (window.scrollY + r.bottom + 4) + 'px';
       var left = window.scrollX + r.right - m.offsetWidth;
       var maxLeft = window.scrollX + window.innerWidth - m.offsetWidth - 8;
       m.style.left = Math.max(8, Math.min(left, maxLeft)) + 'px';
+      */
+      m.style.top = '0px';
+      m.style.left = '0px';
+      if (root.RMUI) {
+        root.RMUI.showFloat(m);
+        root.RMUI.placeMenu(m, root.RMUI.anchorRect(btn));
+      } else {
+        m.hidden = false;
+      }
     }
 
     /* Hide the row overflow menu. */
     function closeEntryMenu() {
       var m = $('entry-menu');
-      if (m) m.hidden = true;
+      /* (before RM7) if (m) m.hidden = true; */
+      if (m && root.RMUI) root.RMUI.hideFloat(m);
+      else if (m) m.hidden = true;
       menuEntry = null;
     }
 
@@ -891,13 +904,18 @@
     /* Delete a remote file, or a folder (recursive, after confirm). */
     function deleteEntry(tab, e) {
       var msg = e.isDir ? (C.DELETE_FOLDER || 'Delete this folder and everything inside it?') : (C.DELETE_FILE || 'Delete this file?');
-      if (!confirm(msg + '\n' + e.name)) return Promise.resolve();
-      var path = Path.parts(tab.path).concat(e.name);
-      return tab.client.remove(path, !!e.isDir).then(function () {
-        toast('Deleted ' + e.name);
-        return loadFolder(tab, tab.path);
-      }).catch(function (err) {
-        setStatus((err && (err.explain || err.message)) || String(err), true);
+      var ask = opts.confirm || (root.RMUI && root.RMUI.confirm);
+      /* (before RM7) if (!confirm(msg + '\n' + e.name)) return Promise.resolve(); */
+      if (!ask) return Promise.resolve();
+      return ask({ title: msg, text: e.name, ok: 'Delete', danger: true }).then(function (yes) {
+        if (!yes) return;
+        var path = Path.parts(tab.path).concat(e.name);
+        return tab.client.remove(path, !!e.isDir).then(function () {
+          toast('Deleted ' + e.name);
+          return loadFolder(tab, tab.path);
+        }).catch(function (err) {
+          setStatus((err && (err.explain || err.message)) || String(err), true);
+        });
       });
     }
 
@@ -935,6 +953,10 @@
     $('sftp-mkdir').addEventListener('click', function () {
       var t = activeTab();
       if (t) newFolder(t);
+    });
+    if ($('sftp-edit')) $('sftp-edit').addEventListener('click', function () {
+      var t = activeTab();
+      if (t && opts.onEdit) opts.onEdit(t.connId);
     });
     $('sftp-open-local').addEventListener('click', function () {
       var t = activeTab();

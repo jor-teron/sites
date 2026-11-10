@@ -1,7 +1,19 @@
-<!-- Remote — README.md: how to use the RM4 connections list, tabs, SFTP and WebDAV browse and transfers, the SSH terminal, and the VNC viewer. -->
-# Remote (RM4)
+<!-- Remote — README.md: how to use the RM7 connections list, tabs, SFTP and WebDAV browse and transfers, the SSH terminal, and the VNC viewer. -->
+# Remote (RM7)
 
-One saved-connections list for SSH, VNC, SFTP, WebDAV and FTP, with Remmina-style tabs. This release adds a VNC viewer on top of SFTP, WebDAV (RM5), and the SSH terminal (RM6). No passwords are stored. A relay token (SFTP only) is stored only if you save it on the connection or tick **Remember this token** when you connect (off by default).
+One saved-connections list for SSH, VNC, SFTP, WebDAV and FTP, with Remmina-style tabs. RM4 added the VNC viewer on top of SFTP, WebDAV (RM5), and the SSH terminal (RM6). No passwords are stored. A relay token (SFTP only) is stored only if you save it on the connection or tick **Remember this token** when you connect (off by default).
+
+## RM7
+
+Saved-connection actions work inside a Hub window.
+
+- **Delete** asks with an in-app card (`Delete "Name"?`, Delete and Cancel). The same kind of card is used for closing a tab while a transfer is running, and for deleting a file or folder. The page does not call `alert`, `confirm` or `prompt` (a Hub window blocks those, so Delete used to do nothing).
+- The **⋯** menu stays inside the visible window. It opens under the button and flips upward when the window is too short to show it below. It sits above the tabs and above open dialogs, and it works with a mouse or a finger.
+- **Right-click** a connection row, or **press and hold** it for about half a second, to open that same menu.
+- Each open session (SFTP, WebDAV, SSH, VNC) has an **Edit** button in its own bar. It opens the connection editor, so the host, user, relay and token can be changed without going back to the list. The password is still asked when you connect and is not stored.
+- The top of the page is one bar: the title, the **RM7** tag, the session tabs, and **Add**. The Back link is gone. When several sessions are open the tabs scroll sideways, including on a narrow phone.
+
+The notes below are the RM4, RM5 and RM6 guide. They still apply.
 
 Tapping a row:
 
