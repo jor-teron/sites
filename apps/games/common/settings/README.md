@@ -134,4 +134,5 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 
 | Storage key | Values | Default |
 |---|---|---|
+| `snake.visualTheme` | `auto`, `nokia`, `arcade`, `gameboy`, `neon`, `garden`, `desert`, `jungle`, `ocean`, `flat`, `paper` | `auto` (Hub light → Minimal Flat; dark → Classic Nokia). The in-game Theme dialog saves the choice; live Hub changes only affect Auto. |
 | `space-invader.visualTheme` | `auto`, `classic`, `retro`, `gameboy`, `amber`, `neon`, `space`, `flat`, `cyber`, `paper`, `ocean` | `auto` (Hub light → Minimal Flat; dark → Classic Arcade). The in-game Theme dialog saves the choice; live Hub changes only affect Auto. |
