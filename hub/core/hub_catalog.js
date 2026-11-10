@@ -226,6 +226,8 @@ Guitar Chords,           guitar-chords/,             , , Music, Learn guitar cho
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
+
+Driving School,          driving-school/,            , , Life Skills, Learn car controls and practise driving with guided lessons and road skills
 `,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search; H69: Mesh Viewer; H66: Notification Centre). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),

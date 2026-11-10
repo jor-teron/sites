@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Driving School DS-1a</title>
+<link rel="icon" href="driving-school_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.driving-school.theme"></script>
+<link rel="stylesheet" href="ui/driving.css">
+</head>
+<body>
+<div id="app" class="lrn">
+<header class="lrn-head"><h1><span class="lrn-here">Driving School</span></h1><button id="settings">Settings</button></header>
+<div class="toolbar"><label>Lesson <select id="lessons" aria-label="Lesson"></select></label><button id="retry">Retry</button><button id="engine">Start engine</button><button id="pause">Pause</button></div>
+<main>
+<section class="world"><canvas id="road" aria-label="Driving practice ground. Use the steering and pedal controls below."></canvas><div id="mirror" aria-label="Rear view mirror">REAR · clear practice lot</div><p id="rotate">Landscape gives a wider view. All controls still work in portrait.</p></section>
+<aside><div class="dash"><strong><span id="speed">0</span> <small>km/h</small></strong><span id="rpm">0 RPM</span><strong id="gear">N</strong><span id="lamps">PARK</span></div>
+<div class="instructor"><strong id="lesson-name"></strong><p id="hint" aria-live="polite"></p><span id="progress"></span><p id="score"></p></div>
+<div class="touch"><div id="wheel" role="slider" tabindex="0" aria-label="Steering wheel" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><span>◉</span><small>STEER</small></div><div class="pedals"><button data-hold="clutch">Clutch</button><button data-hold="brake">Brake</button><button data-hold="throttle">Accelerate</button></div></div>
+<div class="switches"><button id="down">Gear −</button><button id="up">Gear +</button><button id="park">Handbrake</button><button id="left">◀ Signal</button><button id="right">Signal ▶</button><button id="look">Check mirrors</button></div>
+</aside>
+</main>
+<p class="disclaimer">Practice concepts only — not real driving instruction. Train with a qualified instructor in a real car.</p>
+</div>
+<dialog id="preferences"><h2>Driving settings</h2><label>Transmission <select id="transmission"><option value="manual">Manual · 5 speed</option><option value="auto">Automatic</option></select></label><label>Road side <select id="side"><option value="left">Left-hand traffic · India · RHD</option><option value="right">Right-hand traffic · LHD</option></select></label><label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label><p>W / ↑ accelerator · S / ↓ or Space brake · A/D or ←/→ steer · C clutch · Q/E gears · H handbrake · Z/X indicators. Enter starts engine. M checks mirrors.</p><button id="close-settings">Done</button></dialog>
+<dialog id="pause-card"><h2>Practice paused</h2><p>Take your time. The car and lesson clock are stopped.</p><button id="resume">Resume</button></dialog>
+<noscript>Driving School requires JavaScript.</noscript>
+<script src="../shared/learn-hubbar.js"></script>
+<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/session.js"></script>
+<script src="ui/render.js"></script><script src="ui/app.js"></script>
+</body></html>
