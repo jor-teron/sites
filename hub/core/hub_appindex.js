@@ -5,6 +5,7 @@
  * H48c: the 6th item (description) is there only when the app's CSV row has one (optional last column).
  */
 window.HUB_APP_INDEX = {
+  "history-timeline": ["Learn", "apps/learn/history-timeline/", "History Timeline", "apps/learn/history-timeline/history-timeline_icon.png", 0, "Explore world and Indian history: zoomable timeline - facts - tours and quizzes"],
   "hindi-letters": ["Learn", "apps/learn/hindi-letters/", "Hindi Letters", "apps/learn/hindi-letters/hindi-letters_icon.png", 0, "Hindi alphabet: trace letters - matras - picture words and gentle practice games"],
   "arrow-escape": ["Games", "apps/games/arrow-escape/", "Arrow Escape", "apps/games/arrow-escape/arrow-escape_icon.png", 0, "Clear the grid by sending arrows out in the right order"],
   "minesweeper": ["Games", "apps/games/minesweeper/", "Minesweeper", "apps/games/minesweeper/minesweeper_icon.png", 0, "Clear the minefield with safe first openings - flags and three board sizes"],

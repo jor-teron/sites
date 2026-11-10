@@ -235,6 +235,7 @@ Guitar Chords,           guitar-chords/,             , , Music, Learn guitar cho
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
+History Timeline,       history-timeline/,          , , History, Explore world and Indian history: zoomable timeline - facts - tours and quizzes
 
 Driving School,          driving-school/,            , , Life Skills, Learn car controls and practise driving with guided lessons and road skills
 `,
