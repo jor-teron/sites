@@ -1,18 +1,18 @@
 /*
- * base-ui.js  (BS1, BS2: Query tab, Totals toggle, dropdowns for field type + template, BS3: safe start)
+ * base-ui.js  (BS1–BS5: undo, new field types, field rules, auto-number ID)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
- * Field editing uses OfficeDialog.form: a name box + type dropdown per field (empty name = delete field).
+ * Field editing uses BaseFields.add / .edit (rules, Choice options, retype preview).
  * BS4: delete table / delete record go through BaseDelete (modules/base-delete.js): ribbon ⋯ menus, typed confirm.
  * BS3: boot wraps the first render in try/catch; on failure BaseUI.recover(err) shows an in-app dialog
  *   (office-dialog look, no alert/confirm): "Download raw data" (JSON file of what was loaded) and
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS4";
-var BASE_TYPE_OPTS = [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
+var BASE_VERSION = "BS5";
+var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
-var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No" };
+var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID" };
 
 function ribbonSelectTab(id, focus) { if (BASE_RIBBON) BASE_RIBBON.select(id, focus); }
 function ribbonSetFile(show) { if (BASE_RIBBON) BASE_RIBBON.setFile(show); }
@@ -27,13 +27,13 @@ var BaseUI = (function () {
   function $(id) { return document.getElementById(id); }
   function toast(m) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 2500); }
   function status(m) { $("status").textContent = m; }
-  function typeLabel(t) { return BASE_TYPES[t] || "Text"; }
-  function parseType(s) {
+  function typeLabel(t) { return (typeof BaseTypes !== "undefined" ? BaseTypes.label(t) : BASE_TYPES[t]) || "Text"; }
+  function parseType(s) { return typeof BaseTypes !== "undefined" ? BaseTypes.parseType(s) : (function () {
     s = String(s || "").trim().toLowerCase();
     if (/^num/.test(s)) return "number"; if (/^date/.test(s)) return "date";
     if (/^(yes|bool|y\/n|check)/.test(s)) return "bool"; if (!s || /^te?xt/.test(s)) return "text";
     return null;
-  }
+  })(); }
   function render() {
     var t = BaseStore.table();
     if (t) BASE.db.current = t.id;
@@ -50,6 +50,7 @@ var BaseUI = (function () {
     if (BASE.view === "grid") BaseGrid.render(); else BaseForm.render();
     if (typeof BaseQuery !== "undefined") BaseQuery.renderPicker();
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.sendTitle) BASE_HUB.sendTitle();
+    try { if (typeof OfficeQuick !== "undefined" && OfficeQuick.refresh) OfficeQuick.refresh(); } catch (e) {}
   }
   function switchTable(id) { BASE.db.current = id; BASE.sort = null; BASE.selRow = null; BASE.formIndex = 0; BaseStore.save(); render(); }
   function renderEmpty(wrap) {
@@ -63,60 +64,41 @@ var BaseUI = (function () {
     d.appendChild(row); wrap.appendChild(d); status("");
   }
   function uniqueName(n) { var base = n, i = 2; while (BASE.db.tables.some(function (t) { return t.name === n; })) n = base + " " + i++; return n; }
-  function fromTemplate(k, name) { var tp = BaseStore.templates[k]; BaseStore.newTable(uniqueName(name), tp.fields, tp.rows); BASE.sort = null; BASE.selRow = null; render(); toast("Table “" + BaseStore.table().name + "” created"); }
+  function fromTemplate(k, name, addId) {
+    try { if (typeof BaseHistory !== "undefined") BaseHistory.push("New table"); } catch (e) {}
+    var tp = BaseStore.templates[k]; BaseStore.newTable(uniqueName(name), tp.fields, tp.rows, { addId: !!addId });
+    BASE.sort = null; BASE.selRow = null; render(); toast("Table “" + BaseStore.table().name + "” created");
+  }
   function newTable() {
     OfficeDialog.form({ title: "New table",
-      fields: [{ key: "name", label: "Table name", value: "Table" }, { key: "tpl", label: "Template", type: "select", options: Object.keys(BaseStore.templates), value: "Blank" }],
+      fields: [
+        { key: "name", label: "Table name", value: "Table" },
+        { key: "tpl", label: "Template", type: "select", options: Object.keys(BaseStore.templates), value: "Blank" },
+        { key: "id", label: "Auto-number ID field", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (add a read-only ID column)" }], value: "no" }
+      ],
       validate: function (v) { return !v.name.trim() ? "Enter a name" : ""; }
-    }).then(function (v) { if (v) fromTemplate(matchTpl(v.tpl) || "Blank", v.name.trim()); });
+    }).then(function (v) { if (v) fromTemplate(matchTpl(v.tpl) || "Blank", v.name.trim(), v.id === "yes"); });
   }
   function matchTpl(s) { s = String(s || "").trim().toLowerCase() || "blank"; return Object.keys(BaseStore.templates).filter(function (k) { return k.toLowerCase().indexOf(s) === 0; })[0]; }
   function renameTable() {
     var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.prompt({ title: "Rename table", label: "Name", value: t.name }).then(function (v) { if (v) { t.name = v.trim(); BaseStore.save(); render(); } });
+    OfficeDialog.prompt({ title: "Rename table", label: "Name", value: t.name }).then(function (v) { if (v && v.trim() && v.trim() !== t.name) { try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Rename table"); } catch (e) {} t.name = v.trim(); BaseStore.save(); render(); } });
   }
   function deleteTable() { return BaseDelete.table(); }   /* BS4: typed-name confirm */
   function addRow() {
     var t = BaseStore.table(); if (!t) return;
-    var r = { id: BaseStore.uid(), v: {} }; t.fields.forEach(function (f) { r.v[f.id] = f.type === "bool" ? false : ""; });
+    try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Add record"); } catch (e) {}
+    var r = BaseStore.newRow(t);
     t.rows.push(r); BASE.selRow = r.id; BASE.search = ""; $("search").value = ""; BASE.sort = null; BaseStore.save(); BASE.focusForm = true; render();
-    var tr = document.querySelector(".base-grid tr.sel"); if (tr) { tr.classList.add("pop"); tr.scrollIntoView({ block: "nearest" }); var i = tr.querySelector("input"); if (i) i.focus(); }
+    var tr = document.querySelector(".base-grid tr.sel"); if (tr) { tr.classList.add("pop"); tr.scrollIntoView({ block: "nearest" }); var i = tr.querySelector("input:not([readonly]), select, textarea"); if (i) i.focus(); }
   }
   function deleteRow() { return BaseDelete.records(); }   /* BS4: typed DELETE confirm, no one-tap delete */
-  function addField() {
-    var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.form({ title: "Add field", fields: [{ key: "name", label: "Field name", value: "" }, { key: "type", label: "Type", type: "select", options: BASE_TYPE_OPTS, value: "text" }],
-      validate: function (v) { return !v.name.trim() ? "Enter a name" : ""; }
-    }).then(function (v) {
-      if (!v) return; var f = { id: BaseStore.uid(), name: v.name.trim(), type: parseType(v.type) };
-      t.fields.push(f); t.rows.forEach(function (r) { r.v[f.id] = f.type === "bool" ? false : ""; }); BaseStore.save(); render();
-    });
-  }
-  function editFields() {
-    var t = BaseStore.table(); if (!t) return;
-    var fs = [];
-    t.fields.forEach(function (f, i) {
-      fs.push({ key: "n_" + f.id, label: "Field " + (i + 1) + " name", value: f.name });
-      fs.push({ key: "t_" + f.id, label: "Type", type: "select", options: BASE_TYPE_OPTS, value: f.type });
-    });
-    OfficeDialog.form({ title: "Fields of " + t.name, message: "Rename or change the type. Clear a name to delete that field.", fields: fs,
-      validate: function (v) { return t.fields.some(function (f) { return v["n_" + f.id].trim(); }) ? "" : "Keep at least one field"; }
-    }).then(function (v) {
-      if (!v) return;
-      t.fields = t.fields.filter(function (f) {
-        var nm = v["n_" + f.id].trim(), nt = v["t_" + f.id] || f.type;
-        if (!nm) { t.rows.forEach(function (r) { delete r.v[f.id]; }); return false; }
-        f.name = nm;
-        if (nt !== f.type) { t.rows.forEach(function (r) { r.v[f.id] = BaseCsv.cast(String(r.v[f.id] === true ? "yes" : r.v[f.id] === false ? "" : r.v[f.id]), nt); if (nt === "number" && isNaN(r.v[f.id])) r.v[f.id] = ""; }); f.type = nt; }
-        return true;
-      });
-      BASE.sort = null; BaseStore.save(); render();
-    });
-  }
+  function addField() { return BaseFields.add(); }
+  function editFields() { return BaseFields.edit(); }
   function setView(v) { BASE.view = v; render(); }
   function importFile(file) {
     var rd = new FileReader();
-    rd.onload = function () { var t = BaseCsv.importText(uniqueName(file.name.replace(/\.[^.]+$/, "")), String(rd.result)); if (!t) return toast("That CSV is empty"); BASE.sort = null; render(); toast("Imported " + t.rows.length + " records"); };
+    rd.onload = function () { try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Import CSV"); } catch (e) {} var t = BaseCsv.importText(uniqueName(file.name.replace(/\.[^.]+$/, "")), String(rd.result)); if (!t) return toast("That CSV is empty"); BASE.sort = null; render(); toast("Imported " + t.rows.length + " records"); };
     rd.readAsText(file);
   }
   function downloadRaw() {

@@ -1,21 +1,24 @@
 /*
- * base-query.js  (BS2)
+ * base-query.js  (BS2, BS5: new field types in the builder)
  * Query builder (no SQL typing): pick table, condition rows (field / operator / value), AND/OR,
  * sort field + direction, fields to show. Run = grid shows only matching rows + chosen fields
  * (cells stay editable; edits go to the real table). Saved queries live in BASE.db.queries
  * (same IndexedDB record as the tables). "Show as SQL" prints the same query as SQL + a plain
  * explanation of each part, for learning only.
  *   Query: { id, name, table, join: "and"|"or", conds: [{field, op, val}], sort: {field, dir}|null, show: [fieldId] }
+ * BS5: Choice fields accept = and ≠ (and is empty / is not empty); Currency and Auto-number ID
+ *   use the number operators; Email / Phone / Link / Long text use the text operators;
+ *   Picture only has is empty / is not empty.
  * API: BaseQuery.open(), .close(), .run(q), .clear(), .filter(t, rows), .shown(t), .active(),
  *      .save(), .rename(), .remove(), .pick(id), .toggleSql(), .renderPicker()
  */
 var BaseQuery = (function () {
   var OPS = [
-    { id: "eq", label: "=", sql: "=", types: "text number date" }, { id: "ne", label: "≠", sql: "<>", types: "text number date" },
+    { id: "eq", label: "=", sql: "=", types: "text number date choice" }, { id: "ne", label: "≠", sql: "<>", types: "text number date choice" },
     { id: "gt", label: ">", sql: ">", types: "number date" }, { id: "lt", label: "<", sql: "<", types: "number date" },
     { id: "ge", label: ">=", sql: ">=", types: "number date" }, { id: "le", label: "<=", sql: "<=", types: "number date" },
     { id: "has", label: "contains", types: "text" }, { id: "sw", label: "starts with", types: "text" },
-    { id: "empty", label: "is empty", types: "text number date" }, { id: "full", label: "is not empty", types: "text number date" },
+    { id: "empty", label: "is empty", types: "text number date choice picture" }, { id: "full", label: "is not empty", types: "text number date choice picture" },
     { id: "yes", label: "is yes", types: "bool" }, { id: "no", label: "is no", types: "bool" }
   ];
   var draft = null, showSql = false;
@@ -25,7 +28,8 @@ var BaseQuery = (function () {
   function queries() { if (!BASE.db.queries) BASE.db.queries = []; return BASE.db.queries; }
   function fieldOf(t, id) { return t.fields.filter(function (f) { return f.id === id; })[0]; }
   function opOf(id) { return OPS.filter(function (o) { return o.id === id; })[0]; }
-  function opsFor(type) { return OPS.filter(function (o) { return o.types.split(" ").indexOf(type) >= 0; }); }
+  function group(type) { return typeof BaseTypes !== "undefined" ? BaseTypes.queryGroup(type) : type; }
+  function opsFor(type) { var g = group(type); return OPS.filter(function (o) { return o.types.split(" ").indexOf(g) >= 0; }); }
   function active() { var q = BASE.query, t = BaseStore.table(); return q && t && q.table === t.id ? q : null; }
   function blank(t) { return { id: null, name: "", table: t.id, join: "and", conds: [], sort: null, show: t.fields.map(function (f) { return f.id; }) }; }
   function copy(q) { return JSON.parse(JSON.stringify(q)); }
@@ -36,7 +40,7 @@ var BaseQuery = (function () {
     if (o === "yes") return !!v; if (o === "no") return !v;
     if (o === "empty") return empty; if (o === "full") return !empty;
     var a = v, b = c.val;
-    if (f.type === "number") { if (empty || b === "" || isNaN(+b)) return o === "ne" && !empty; a = +a; b = +b; }
+    if (group(f.type) === "number") { if (empty || b === "" || isNaN(+b)) return o === "ne" && !empty; a = +a; b = +b; }
     else { a = String(a == null ? "" : a).toLowerCase(); b = String(b == null ? "" : b).toLowerCase(); }
     switch (o) {
       case "eq": return a === b; case "ne": return a !== b;
@@ -63,7 +67,7 @@ var BaseQuery = (function () {
 
   /* ---- SQL text (learning only) ---- */
   function qi(n) { return /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : '"' + n.replace(/"/g, '""') + '"'; }
-  function lit(f, v) { return f.type === "number" && v !== "" && !isNaN(+v) ? String(+v) : "'" + String(v).replace(/'/g, "''") + "'"; }
+  function lit(f, v) { return group(f.type) === "number" && v !== "" && !isNaN(+v) ? String(+v) : "'" + String(v).replace(/'/g, "''") + "'"; }
   function condSql(t, c) {
     var f = fieldOf(t, c.field), o = opOf(c.op); if (!f || !o) return "";
     var n = qi(f.name);
@@ -119,11 +123,19 @@ var BaseQuery = (function () {
       row.appendChild(sel(t.fields.map(function (x) { return [x.id, x.name]; }), f.id, "bq-sel", function (v) { c.field = v; c.val = ""; render(); }));
       row.appendChild(sel(ops.map(function (o) { return [o.id, o.label]; }), c.op, "bq-sel", function (v) { c.op = v; render(); }));
       if (["empty", "full", "yes", "no"].indexOf(c.op) < 0) {
-        var inp = el("input", "bq-val"); inp.type = f.type === "number" ? "number" : f.type === "date" ? "date" : "text";
-        if (f.type === "number") inp.step = "any"; inp.value = c.val == null ? "" : c.val; inp.placeholder = "value";
-        inp.addEventListener("input", function () { c.val = inp.value; if (showSql) renderSql(); });
-        inp.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
-        row.appendChild(inp);
+        if (f.type === "choice") {
+          var opts = [["", "—"]].concat((f.options || []).map(function (o) { return [o, o]; }));
+          if (c.val && (f.options || []).indexOf(c.val) < 0) opts.push([c.val, c.val]);
+          row.appendChild(sel(opts, c.val == null ? "" : c.val, "bq-val", function (v) { c.val = v; if (showSql) renderSql(); }));
+        } else {
+          var inp = el("input", "bq-val");
+          var g = group(f.type);
+          inp.type = g === "number" ? "number" : f.type === "date" ? "date" : f.type === "email" ? "email" : "text";
+          if (g === "number") inp.step = "any"; inp.value = c.val == null ? "" : c.val; inp.placeholder = "value";
+          inp.addEventListener("input", function () { c.val = inp.value; if (showSql) renderSql(); });
+          inp.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
+          row.appendChild(inp);
+        }
       }
       var x = el("button", "bq-x", "✕"); x.type = "button"; x.title = "Remove condition";
       x.addEventListener("click", function () { draft.conds.splice(i, 1); render(); }); row.appendChild(x);

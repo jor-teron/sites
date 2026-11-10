@@ -2,13 +2,14 @@
  * base-quick.js  (HO1 Hub Office Quick Access)
  * Registers Base with ../../shared/office-quick.js (bar before File; Hub title bar through
  * ../../shared/office-hubbar.js).
- *   Undo / Redo: Base has no history yet, so both stay disabled (Base Undo/Redo is a later release).
+ *   Undo / Redo: BaseHistory (BS5, in-memory, ~100 steps). Disabled when the stack is empty.
  *   Save = BaseStore.saveNow() now + ✓ Saved tick (fails when storage is memory-only).
  *   Print = window.print() (same as File > Print).
- *   Ctrl/Cmd+S and Ctrl/Cmd+P go through OfficeQuick; Ctrl+Z / Ctrl+Y stay native (text fields).
+ *   Ctrl/Cmd+S and Ctrl/Cmd+P go through OfficeQuick; Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z go to
+ *   BaseHistory except inside a text field, where the browser's own undo still runs.
  * Loads early (no edits to base-ui.js / base-store.js) and registers on DOMContentLoaded,
  * after base-ui.js has built the ribbon.
- * DEPENDS: OfficeQuick, BaseStore, BASE, BASE_RIBBON_TABS, BASE_RIBBON, BASE_COLLAPSE, ribbonSelectTab, ribbonSetFile.
+ * DEPENDS: OfficeQuick, BaseStore, BaseHistory, BASE, BASE_RIBBON_TABS, BASE_RIBBON, BASE_COLLAPSE, ribbonSelectTab, ribbonSetFile.
  */
 (function () {
   function start() {
@@ -22,7 +23,15 @@
       app: "Base",
       save: function () { BaseStore.saveNow(); return !BASE.memOnly; },
       print: function () { ribbonSetFile(false); window.print(); },
-      undoKey: function () { return false; },
+      undo: function () { if (typeof BaseHistory !== "undefined") BaseHistory.undo(); },
+      redo: function () { if (typeof BaseHistory !== "undefined") BaseHistory.redo(); },
+      canUndo: function () { return typeof BaseHistory !== "undefined" && BaseHistory.canUndo(); },
+      canRedo: function () { return typeof BaseHistory !== "undefined" && BaseHistory.canRedo(); },
+      undoKey: function (ev) {
+        var tg = ev && ev.target, tag = tg && tg.tagName;
+        var editable = tg && (tg.isContentEditable || tag === "TEXTAREA" || (tag === "INPUT" && !/^(checkbox|radio|button|submit|reset|file|range|color)$/i.test(tg.type) && !tg.readOnly));
+        return !editable;
+      },
       tabs: function () { return [{ id: "file", label: "File" }].concat(BASE_RIBBON_TABS.map(function (t) { return { id: t.id, label: t.label }; })); },
       activeTab: activeTab,
       onTab: function (id) {

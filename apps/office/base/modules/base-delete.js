@@ -1,5 +1,5 @@
 /*
- * base-delete.js  (BS4 delete safety)
+ * base-delete.js  (BS4 delete safety, BS5: undo for records)
  * Deleting a table and deleting records are both deliberately hard, and look clearly different.
  *   - No visible delete button beside the table, on rows or in the form view. Both deletes live in small
  *     "⋯" menus in the ribbon (Home > Table ⋯ and Home > Records ⋯), shown in danger red.
@@ -9,7 +9,8 @@
  *                    first record's values; the user must type DELETE (or the record count) to enable it.
  *   - Wrong or empty text keeps the red button disabled (Enter does nothing). Esc / Cancel / backdrop keep data.
  *   - The Delete and Backspace keys never delete records: outside a text field they do nothing.
- *   - No Undo toast (Undo/Redo is a later release). Deletes save straight away (BaseStore.saveNow).
+ *   - Record deletes are undoable (BaseHistory, Ctrl+Z) until you close Base. Deleting a whole
+ *     table cannot be undone (the undo stack is cleared). Deletes save straight away (BaseStore.saveNow).
  * Dialog uses the shared dlg-* look (../../shared/office-dialog.css), never alert/confirm.
  * API: BaseDelete.table(), BaseDelete.records(rows?), BaseDelete.menu(anchor, items), BaseDelete.isOpen()
  * DEPENDS: BASE, BaseStore, BaseUI (render, status), OfficeNotify (optional).
@@ -98,7 +99,7 @@ var BaseDelete = (function () {
       var r = el("div", "base-del-fact"); r.appendChild(el("span", null, p[0])); r.appendChild(el("b", null, p[1])); body.appendChild(r);
     });
     return typed({ kind: "table", icon: "🗑", title: "Delete whole table",
-      lead: "This permanently removes the table “" + t.name + "” with all " + plural(t.rows.length, "record") + " and " + plural(t.fields.length, "field") + ". This cannot be undone.",
+      lead: "This permanently removes the table “" + t.name + "” with all " + plural(t.rows.length, "record") + " and " + plural(t.fields.length, "field") + ". Deleting a whole table cannot be undone.",
       body: body, prompt: "Type the table name “" + t.name + "” to confirm", ok: "Delete table",
       check: function (v) { return v.trim() === t.name; }
     }).then(function (yes) {
@@ -107,7 +108,9 @@ var BaseDelete = (function () {
       BASE.db.current = BASE.db.tables[0] ? BASE.db.tables[0].id : null;
       BASE.selRow = null; BASE.sort = null; BASE.formIndex = 0;
       if (BASE.query && BASE.query.table === t.id) BASE.query = null;
+      try { if (typeof BaseHistory !== "undefined") BaseHistory.clear(); } catch (e) {}
       BaseStore.saveNow(); BaseUI.render(); toast("Table “" + t.name + "” deleted");
+      try { if (typeof BasePics !== "undefined") BasePics.gc(); } catch (e) {}
       return true;
     });
   }
@@ -125,17 +128,18 @@ var BaseDelete = (function () {
     body.appendChild(el("div", "base-del-prev-title", (n > 1 ? "First record" : "Record") + " #" + pos + " of “" + t.name + "”"));
     var list = el("dl", "base-del-prev-list");
     t.fields.slice(0, 6).forEach(function (f) {
-      var v = first.v[f.id]; v = f.type === "bool" ? (v ? "Yes" : "No") : String(v == null || v === "" ? "—" : v);
+      var v = first.v[f.id]; v = typeof BaseTypes !== "undefined" ? BaseTypes.previewText(f, v) : (f.type === "bool" ? (v ? "Yes" : "No") : String(v == null || v === "" ? "—" : v));
       list.appendChild(el("dt", null, f.name)); list.appendChild(el("dd", null, v.length > 60 ? v.slice(0, 57) + "…" : v));
     });
     if (t.fields.length > 6) { list.appendChild(el("dt", null, "…")); list.appendChild(el("dd", null, "+" + (t.fields.length - 6) + " more fields")); }
     body.appendChild(list);
     return typed({ kind: "record", icon: "⊖", title: n > 1 ? "Delete " + n + " records" : "Delete 1 record",
-      lead: "This removes " + (n > 1 ? "these " + n + " records" : "this record") + " from the table “" + t.name + "”. The table and its other records stay. This cannot be undone.",
+      lead: "This removes " + (n > 1 ? "these " + n + " records" : "this record") + " from the table “" + t.name + "”. The table and its other records stay. You can Undo this afterwards (Ctrl+Z) until you close Base.",
       body: body, prompt: "Type DELETE (or " + n + ") to confirm", ok: n > 1 ? "Delete " + n + " records" : "Delete record",
       check: function (v) { v = v.trim(); return v === "DELETE" || v === String(n); }
     }).then(function (yes) {
       if (!yes) return false;
+      try { if (typeof BaseHistory !== "undefined") BaseHistory.push(n > 1 ? "Delete records" : "Delete record"); } catch (e) {}
       var ids = {}; rows.forEach(function (r) { ids[r.id] = 1; });
       t.rows = t.rows.filter(function (r) { return !ids[r.id]; });
       BASE.selRow = null; BaseStore.saveNow(); BaseUI.render(); toast(plural(n, "record") + " deleted");
