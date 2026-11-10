@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<!-- EXT1 Expense Tracker: spending and income, budgets, charts, recurring, CSV/JSON. Logic: ex_core.js, expense-tracker.js. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Expense Tracker · EXT1</title>
+  <link rel="icon" href="expense-tracker_icon.svg">
+  <link rel="stylesheet" href="expense-tracker.css?v=EXT1">
+  <script>try{var s=JSON.parse(localStorage.getItem('expense-tracker-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <section class="pane on" id="pane-main">
+    <header id="top">
+      <h1>Expense Tracker</h1>
+      <div class="month-nav">
+        <button type="button" id="prevM" aria-label="Previous month">‹</button>
+        <button type="button" id="monthBtn" class="month-lbl" title="Jump to this month"></button>
+        <button type="button" id="nextM" aria-label="Next month">›</button>
+      </div>
+      <button type="button" id="menuBtn" class="icon-btn" aria-label="Settings">Settings</button>
+    </header>
+
+    <section class="summary" id="summary" aria-live="polite">
+      <div class="stat inc"><span>Income</span><b id="sumIn">₹0.00</b></div>
+      <div class="stat out"><span>Spent</span><b id="sumOut">₹0.00</b></div>
+      <div class="stat bal"><span>Balance</span><b id="sumBal">₹0.00</b></div>
+    </section>
+    <div id="budgetOverall"></div>
+
+    <form id="quick" autocomplete="off">
+      <div class="seg" id="typeSeg" role="tablist" aria-label="Entry type">
+        <button type="button" data-v="expense" class="on">Expense</button>
+        <button type="button" data-v="income">Income</button>
+      </div>
+      <div class="row">
+        <label class="grow amt-lab">Amount (₹)
+          <input id="qAmt" class="field" inputmode="decimal" enterkeyhint="done" placeholder="0.00" autocomplete="off">
+        </label>
+        <label class="grow">Category
+          <select id="qCat" class="field"></select>
+        </label>
+      </div>
+      <div class="row">
+        <label class="grow">Date
+          <input id="qDate" class="field" type="date" required>
+        </label>
+        <label class="grow">Paid by
+          <select id="qMode" class="field"></select>
+        </label>
+      </div>
+      <label>Note
+        <input id="qNote" class="field" maxlength="200" placeholder="Optional">
+      </label>
+      <button type="submit" class="btn lg" id="qAdd">Add</button>
+      <p class="err" id="qErr"></p>
+    </form>
+
+    <div id="catBudgets" class="cat-buds"></div>
+
+    <div class="filters">
+      <input id="search" class="field" type="search" placeholder="Search notes, amount, category" autocomplete="off">
+      <select id="fCat" class="field" aria-label="Filter category"></select>
+      <select id="fMode" class="field" aria-label="Filter payment mode"></select>
+    </div>
+
+    <section id="list" class="list" aria-label="Entries"></section>
+
+    <section class="charts" id="charts">
+      <h2>This month</h2>
+      <div class="chart-card">
+        <h3>Spending by category</h3>
+        <canvas id="pie" width="280" height="200"></canvas>
+        <div id="pieLeg" class="legend"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Daily spending</h3>
+        <canvas id="bars" width="320" height="200"></canvas>
+      </div>
+    </section>
+  </section>
+
+  <section class="pane" id="pane-set">
+    <button type="button" class="back" id="setBack">Back</button>
+    <h2>Theme</h2>
+    <div class="seg" id="themeSeg">
+      <button type="button" data-v="auto">Auto</button>
+      <button type="button" data-v="light">Light</button>
+      <button type="button" data-v="dark">Dark</button>
+    </div>
+    <p class="note">Auto follows the Hub theme, or your device if the Hub has not set one.</p>
+
+    <h2>Monthly budget</h2>
+    <label>Overall spending limit (₹)
+      <input id="bOverall" class="field" inputmode="decimal" placeholder="No limit">
+    </label>
+    <div id="bCats"></div>
+    <button type="button" class="btn" id="bSave">Save budgets</button>
+
+    <h2>Categories</h2>
+    <ul id="catList" class="plain-list"></ul>
+    <button type="button" class="btn ghost" id="catAdd">Add category</button>
+
+    <h2>Recurring</h2>
+    <p class="note">Monthly rent and bills are added automatically on their date. Deleting one month does not remove later months.</p>
+    <ul id="recList" class="plain-list"></ul>
+    <button type="button" class="btn ghost" id="recAdd">Add recurring entry</button>
+
+    <h2>Backup</h2>
+    <div class="btn-col">
+      <button type="button" class="btn ghost" id="csvOut">Export CSV</button>
+      <button type="button" class="btn ghost" id="csvInBtn">Import CSV</button>
+      <button type="button" class="btn ghost" id="jsonOut">Download backup</button>
+      <button type="button" class="btn ghost" id="jsonInBtn">Restore backup</button>
+    </div>
+    <input id="csvIn" type="file" accept=".csv,text/csv,text/plain" hidden>
+    <input id="jsonIn" type="file" accept=".json,application/json" hidden>
+    <p class="note">Everything stays on this device. A restore replaces what is saved here.</p>
+    <p class="note small">Release <span id="rel"></span></p>
+  </section>
+</div>
+<div id="dlg" class="dlg" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="dlgTitle"><div id="dlgBody"></div><div class="acts" id="dlgActs"></div></div></div>
+<div id="toast" class="toast" hidden></div>
+<script src="ex_core.js?v=EXT1"></script>
+<script src="expense-tracker.js?v=EXT1"></script>
+</body>
+</html>
