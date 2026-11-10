@@ -871,7 +871,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 
 
 
-### 1.58 Video Editor looks, transform, speed, titles, release VD3
+### 1.55 Video Editor looks, transform, speed, titles, release VD3
 
 - apps/media/video-editor only (local commit on apps/vd3-video-editor, from VD2
   9f49bc36). Per-clip colour filters (brightness, contrast, saturation, greyscale,
@@ -898,7 +898,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   + vd3.test.cjs (pure helpers: speed-adjusted sequence timing, crop/rotate
   output size, overlay visibility). No Puppeteer / Playwright / jsdom.
   Details: apps/media/video-editor/NOTES.md.
-  Note: 1.55-1.57 were taken by parallel branches, so this section is 1.58.
+  Note: section 1.55 is the next free number on main after VD2 (1.54).
 
 ## 2. Releases (PR → what)
 
