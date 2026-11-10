@@ -49,7 +49,9 @@
       food: w.food, drops: w.drops, falls: w.falls,
       ants: packAnts(w.ants, w.tips), brood: w.brood,
       tips: packTips(w.tips, w.rooms), rooms: w.rooms,
-      hist: w.hist || [], splash: w.splash || null
+      hist: w.hist || [], splash: w.splash || null,
+      pred: w.pred || null, predT: w.predT, predSeen: w.predSeen || 0,
+      goals: w.goals || null, goalLog: w.goalLog || [], dead: w.dead || 0, lost: w.lost || 0
     };
   };
   AF.deserialize = function (data) {
@@ -63,7 +65,9 @@
       phT: data.phT || 0, tips: data.tips || [], tun: data.tun || [], rooms: data.rooms || [],
       ents: data.ents || [], tipT: data.tipT || 2, natT: data.natT || 8, collected: data.collected || 0,
       qx: data.qx, qy: data.qy, sx: data.sx, sy: data.sy, bx: data.bx, by: data.by, ex: data.ex,
-      dryT: data.dryT || 0, histT: data.histT || 0, hist: data.hist || [], splash: data.splash || null
+      dryT: data.dryT || 0, histT: data.histT || 0, hist: data.hist || [], splash: data.splash || null,
+      pred: data.pred || null, predT: data.predT, predSeen: data.predSeen || 0,
+      goals: data.goals || null, goalLog: data.goalLog || [], dead: data.dead || 0, lost: data.lost || 0
     };
     if (w.r.state) w.r.state.s = data.rng | 0;
     link(w);

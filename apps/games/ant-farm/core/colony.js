@@ -1,17 +1,26 @@
-// Colony: ants (dig, forage, carry, haul, rest), queen, brood.
+// Colony: ants (dig, forage, carry, haul, rest, soldier), queen, brood.
 // AF2: digging follows dig jobs (w.tips) so tunnels stay 1 cell wide, branch,
 // and sometimes end in a side chamber. Uses world.js (AF.addTip, AF.fields).
 // AF3: nurses carry eggs from the queen to the brood room; egg -> larva -> pupa -> ant
 // (capped at AF.MAXANTS); foragers sleep in the nest at night; food falls from the sky.
+// AF-4d: soldiers, aging, winter-aware food and laying, useful side chambers.
 (function () {
   var W = AF.W, H = AF.H, S = AF.SURF, DAY = 60;
   AF.DAY = DAY; AF.MAXANTS = 300;                  // ui.js lowers the cap with lowGraphics (weak phones)
   AF.addAnt = function (w, x, y, role) {
     var a = { cx: x, cy: y, nx: x, ny: y, p: 0, st: role === 'nurse' ? 'rest' : role, role: role, t: 1 + w.r() * 3,
-      hx: 0, hy: 1, dig: 0, load: 0, trip: 0, dir: w.r() < .5 ? 1 : -1, ph: w.r() * 6, ang: 0, spd: 3 + w.r(), tip: null };
+      hx: 0, hy: 1, dig: 0, load: 0, trip: 0, dir: w.r() < .5 ? 1 : -1, ph: w.r() * 6, ang: 0, spd: 3 + w.r(), tip: null,
+      age: 0, life: (AF.DAY || 60) * (26 + w.r() * 10) };
     w.ants.push(a); return a;
   };
-  AF.pickRole = function (w) { var v = w.r(); return v < 0.55 ? 'forage' : v < 0.88 ? 'dig' : 'nurse'; };
+  AF.pickRole = function (w) {
+    var v = w.r(), n = w.ants.length, s = 0, i;
+    for (i = 0; i < n; i++) if (w.ants[i].role === 'soldier') s++;
+    if (n >= 18 && s < Math.max(2, n * 0.1) && v < 0.22) return 'soldier';
+    if (v < 0.52) return 'forage';
+    if (v < 0.84) return 'dig';
+    return 'nurse';
+  };
   AF.seedColony = function (w) { for (var i = 0; i < 12; i++) AF.addAnt(w, w.qx + (i % 5) - 2, w.qy, i < 5 ? 'forage' : i < 10 ? 'dig' : 'nurse'); };
 
   function fv(f, x, y) { return AF.walk(w0, x, y) ? f[y * W + x] : -1; }
@@ -68,7 +77,7 @@
       for (var k = 0; k < 4; k++) { x = p[0] + AF.N4[k][0]; y = p[1] + AF.N4[k][1]; var n = y * W + x;
         if (!seen[n] && inR(x, y)) { seen[n] = 1; q.push([x, y]); } } }
     if (cells.length < 6) return false;
-    var room = { x: cx, y: cy, rx: rx, ry: ry, kind: 'side', cells: cells, i: 0 };
+    var room = { x: cx, y: cy, rx: rx, ry: ry, kind: AF.pickRoomKind ? AF.pickRoomKind(w) : 'side', cells: cells, i: 0 };
     w.rooms.push(room); AF.addTip(w, ex, ey, mx, my, 0).room = room; return true;
   }
   AF.endTip = function (w, t) {
@@ -158,9 +167,40 @@
       if (w.distT && w.distT[a.cy * W + a.cx] >= 0) { if (!descend(w, a, w.distT)) randStep(w, a); return; }
       randStep(w, a); return;
     }
+    if (a.role === 'soldier' || a.st === 'guard' || a.st === 'patrol') { soldierAct(w, a); return; }
     // rest / nurse
     if (a.role === 'nurse') { nurse(w, a); return; }
     a.st = a.role; a.t = 2 + w.r() * 3;
+  }
+
+  function soldierAct(w, a) {
+    var atSurf = a.cy === S - 1, pred = w.pred, br = AF.hasRoom && AF.hasRoom(w, 'barracks');
+    if (pred && pred.st !== 'flee' && pred.st !== 'gone') {
+      a.st = 'guard';
+      if (atSurf) {
+        if (Math.abs(a.cx + 0.5 - pred.x) <= 2.2) { pred.fear = (pred.fear || 0) + 1; a.t = 0.3; return; }
+        a.dir = pred.x > a.cx ? 1 : -1;
+        var gx = a.cx + a.dir; if (gx >= 0 && gx < W) a.nx = gx;
+        return;
+      }
+      if (!descend(w, a, w.distS)) randStep(w, a); return;
+    }
+    if (AF.nightAmt(w) > 0.18 || (AF.winterAmt && AF.winterAmt(w) > 0.75)) {
+      if (br && w.distR && w.distR[a.cy * W + a.cx] > 2) { if (!descend(w, a, w.distR)) randStep(w, a); return; }
+      a.st = 'rest'; a.t = 1 + w.r() * 2; return;
+    }
+    a.st = 'patrol';
+    if (!atSurf) { if (!descend(w, a, w.distS)) randStep(w, a); return; }
+    if (a.trip > 18) { a.st = 'home'; a.trip = 0; return; }
+    var ex = (w.ents && w.ents[0] != null) ? w.ents[0] : w.ex, i, d, bd;
+    if (w.ents && w.ents.length) {
+      ex = w.ents[0]; bd = Math.abs(a.cx - ex);
+      for (i = 1; i < w.ents.length; i++) { d = Math.abs(a.cx - w.ents[i]); if (d < bd) { bd = d; ex = w.ents[i]; } }
+    }
+    if (Math.abs(a.cx - ex) > 10) a.dir = a.cx < ex ? 1 : -1;
+    else if (w.r() < 0.05) a.dir = -a.dir;
+    var nx = a.cx + a.dir; if (nx < 0 || nx >= W) { a.dir = -a.dir; return; }
+    a.nx = nx;
   }
 
   AF.step = function (w, dt) {
@@ -169,7 +209,7 @@
     w.tipT -= dt; if (w.tipT <= 0) { w.tipT = 2.5; if (w.tips.length < Math.min(8, 2 + w.ants.length / 25) && budget(w)) newTip(w); }
     for (var i = 0; i < w.ants.length; i++) {
       var a = w.ants[i]; a.ph += dt * 14;
-      if (a.st === 'forage') a.trip += dt;
+      if (a.st === 'forage' || a.st === 'patrol') a.trip += dt;
       if (a.dig > 0) { a.dig -= dt; if (a.dig <= 0) { var tp = a.tip; a.tip = null; if (tp) tp.busy = false;
         if (w.g[a.dy * W + a.dx] === 1) { AF.set(w, a.dx, a.dy, 0); w.dug++; w.needField = true; a.load = 1; a.st = 'haul'; if (tp) tipDug(w, tp, a.dx, a.dy); } } continue; }
       if (a.st === 'rest' && a.t > 0) { a.t -= dt; continue; }
@@ -191,12 +231,22 @@
       }
     }
     if (w.splash) { w.splash.t -= dt; if (w.splash.t <= 0) w.splash = null; }
-    // food upkeep
-    w.stored = Math.max(0, Math.min(220, w.stored - dt * (0.0022 * w.ants.length + 0.01 * countStage(w, 'larva'))));
-    // queen
+    // aging: workers live ~26-36 colony days; the last 8 are kept so a colony never dies out
+    for (i = w.ants.length - 1; i >= 0; i--) {
+      a = w.ants[i]; a.age = (a.age || 0) + dt;
+      if (w.ants.length > 8 && a.age > (a.life == null ? AF.DAY * 30 : a.life)) {
+        if (a.tip) a.tip.busy = false;
+        w.ants.splice(i, 1); w.dead = (w.dead || 0) + 1;
+      }
+    }
+    // food upkeep (a little hungrier in winter; pantry rooms raise the cap)
+    var win = AF.winterAmt ? AF.winterAmt(w) : 0, cap = AF.foodCap ? AF.foodCap(w) : 220;
+    w.stored = Math.max(0, Math.min(cap, w.stored - dt * ((0.0022 + 0.0008 * win) * w.ants.length + 0.01 * countStage(w, 'larva'))));
+    // queen (slower in winter unless a warm chamber is finished)
     w.laidT -= dt;
     if (w.laidT <= 0 && w.stored >= 2 && w.ants.length + w.brood.length < AF.MAXANTS) {
-      w.stored -= 1; w.laidT = AF.nightAmt(w) > 0.3 ? 6 : 9;     // AF-4c: steady laying, a little faster at night
+      var warm = AF.hasRoom && AF.hasRoom(w, 'warmth'), slow = win > 0.5 ? (warm ? 1.2 : 1.55) : 1;
+      w.stored -= 1; w.laidT = (AF.nightAmt(w) > 0.3 ? 6 : 9) * slow;
       w.brood.push({ x: w.qx + (w.r() * 6 - 3), y: w.qy + 1.4 + w.r() * 0.8, age: 0, stage: 'egg', room: 'q' });
     }
     for (i = w.brood.length - 1; i >= 0; i--) {
@@ -218,10 +268,11 @@
     }
     w.natT -= dt;                                               // now and then a leaf or berry drops by itself (daytime)
     if (w.natT <= 0) {
-      var scarce = w.stored < 10, night = AF.nightAmt(w) > 0.3, cap = night ? 3 : 7;
-      w.natT = (scarce ? 7 : 10) + w.r() * (scarce ? 6 : 10);
-      if (w.food.length + w.falls.length < cap && (scarce || !night || w.r() < 0.35))
-        AF.dropFood(w, 4 + w.r() * (W - 8), night ? 10 : (scarce ? 16 : 18));
+      var scarce = w.stored < 10, night = AF.nightAmt(w) > 0.3, season = AF.season ? AF.season(w) : 'spring';
+      var capF = win > 0.6 ? 2 : (night ? 3 : (season === 'spring' || season === 'summer' ? 8 : 6));
+      w.natT = (win > 0.6 ? 16 : (scarce ? 7 : 10)) + w.r() * (win > 0.6 ? 10 : (scarce ? 6 : 10));
+      if (w.food.length + w.falls.length < capF && (scarce || (win <= 0.6 && (!night || w.r() < 0.35)) || (win > 0.6 && w.r() < 0.2)))
+        AF.dropFood(w, 4 + w.r() * (W - 8), win > 0.6 ? 6 : (night ? 10 : (scarce || season === 'spring' ? 18 : 16)));
     }
     for (i = w.food.length - 1; i >= 0; i--) if (w.food[i].amt <= 0) w.food.splice(i, 1);
     w.histT = (w.histT || 0) + dt;
@@ -230,6 +281,7 @@
       w.hist.push({ t: w.t, ants: w.ants.length, brood: w.brood.length, stored: w.stored });
       if (w.hist.length > 480) w.hist.splice(0, w.hist.length - 480);
     }
+    if (AF.tickLife) AF.tickLife(w, dt);
   };
 
   function countStage(w, s) { var n = 0; for (var i = 0; i < w.brood.length; i++) if (w.brood[i].stage === s) n++; return n; }

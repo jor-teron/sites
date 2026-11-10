@@ -89,5 +89,8 @@ AF.fields = function (w) {
   w.distS = AF.bfs(w, s);
   var t = []; for (var i = 0; i < w.tips.length; i++) if (AF.walk(w, w.tips[i].x, w.tips[i].y)) t.push(w.tips[i].y * AF.W + w.tips[i].x);
   w.distT = t.length ? AF.bfs(w, t) : null;
-  w.distQ = AF.bfs(w, [w.qy * AF.W + w.qx]); w.distB = AF.bfs(w, [w.by * AF.W + w.bx]);   // AF3: queen + brood rooms      // AF2: diggers walk down this to the nearest dig job
+  w.distQ = AF.bfs(w, [w.qy * AF.W + w.qx]); w.distB = AF.bfs(w, [w.by * AF.W + w.bx]);   // AF3: queen + brood rooms
+  var br = null;
+  for (i = 0; i < (w.rooms || []).length; i++) if (w.rooms[i].kind === 'barracks') { br = w.rooms[i]; break; }
+  w.distR = br ? AF.bfs(w, [Math.round(br.y) * AF.W + Math.round(br.x)]) : null;
 };

@@ -28,6 +28,8 @@ var AF_SOUND = (function () {
     dig: function () { beep(140, 0.07, 'square', 0.28, 0.7); },
     inspect: function () { beep(680, 0.05, 'sine', 0.25); },
     hatch: function () { beep(440, 0.1, 'triangle', 0.3, 1.6); },
+    goal: function () { beep(620, 0.16, 'sine', 0.4, 1.5); },
+    warn: function () { beep(180, 0.18, 'sawtooth', 0.25, 0.6); },
     unlock: function () { var a = ac(); if (a && a.state === 'suspended') try { a.resume(); } catch (e) {} }
   };
 })();

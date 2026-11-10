@@ -17,6 +17,8 @@
     var p = AF.dayPhase(w) * 5, i = p | 0, t = p - i, a = KEYS[i], b = KEYS[i + 1];
     var g = c.createLinearGradient(0, oy, 0, oy + S * k); g.addColorStop(0, mix(a[0], b[0], t)); g.addColorStop(1, mix(a[1], b[1], t));
     c.fillStyle = g; c.fillRect(ox, oy, W * k, S * k);
+    var win = AF.winterAmt ? AF.winterAmt(w) : 0;
+    if (win > 0) { c.fillStyle = 'rgba(210,222,240,' + (win * 0.5).toFixed(3) + ')'; c.fillRect(ox, oy, W * k, S * k); }
     var night = Math.max(0, Math.abs(AF.dayPhase(w) - 0.5) * 4 - 1.2);   // 0 by day, ~0.8 deep night
     c.save(); c.beginPath(); c.rect(ox, oy, W * k, S * k); c.clip();
     if (night > 0) { c.fillStyle = 'rgba(255,255,230,' + Math.min(1, night) + ')';
@@ -32,16 +34,23 @@
       var cx = ox - cw + ((q[0] * span + w.t * q[3] * k * 0.4) % span);
       c.drawImage(cloud, cx, oy + q[1] * k, cw, cw * 0.42);
 }
+    if (win > 0.25 && !low) {
+      c.globalAlpha = 0.55 + win * 0.4; c.fillStyle = '#fff';
+      for (var s = 0; s < 28; s++) {
+        var sx = ((s * 37 + w.t * (7 + s % 5)) % W + W) % W, sy = ((s * 19 + w.t * (5 + s % 4)) % S + S) % S;
+        c.fillRect(ox + sx * k, oy + sy * k, Math.max(1.2, k * 0.22), Math.max(1.2, k * 0.22));
+      }
+    }
     c.restore(); c.globalAlpha = 1;
   };
 
   AF.drawSurface = function (c, w, ox, oy, k) {
-    var x, base = oy + S * k;
+    var x, base = oy + S * k, win = AF.winterAmt ? AF.winterAmt(w) : 0;
     // mounds of excavated dirt, with a darker crest line
     c.fillStyle = '#a87a4a'; c.beginPath(); c.moveTo(ox, base);
     for (x = 0; x < W; x++) { var m = (w.mound[Math.max(0, x - 1)] + w.mound[x] * 2 + w.mound[Math.min(W - 1, x + 1)]) / 4; c.lineTo(ox + (x + .5) * k, base - m * k); }
     c.lineTo(ox + W * k, base); c.fill();
-    c.fillStyle = '#4c8f35'; c.fillRect(ox, base, W * k, k * 0.4);
+    c.fillStyle = win > 0.5 ? '#8aa56a' : '#4c8f35'; c.fillRect(ox, base, W * k, k * 0.4);
     // grass: 3 blades per cell in two shades, varied height and sway (batched into 2 strokes)
     c.lineWidth = Math.max(1, k * 0.28); c.lineCap = 'round';
     for (var shade = 0; shade < 2; shade++) {
@@ -73,5 +82,35 @@
       c.fillStyle = 'rgba(255,255,255,' + (0.12 + wet * 0.15).toFixed(3) + ')';
       c.beginPath(); c.ellipse(px - k * 0.15, py - k * 0.04, k * 0.25, k * 0.05, -0.2, 0, 7); c.fill();
     }
+    if (win > 0.2) {
+      c.fillStyle = 'rgba(248,252,255,' + (win * 0.9).toFixed(3) + ')';
+      c.beginPath(); c.moveTo(ox, base);
+      for (x = 0; x < W; x++) {
+        var sm = (w.mound[Math.max(0, x - 1)] + w.mound[x] * 2 + w.mound[Math.min(W - 1, x + 1)]) / 4;
+        c.lineTo(ox + (x + .5) * k, base - sm * k - k * 0.06);
+      }
+      c.lineTo(ox + W * k, base); c.lineTo(ox, base); c.fill();
+    }
+  };
+
+  // AF-4d: a surface bird that walks and pecks. lowGraphics keeps it as a simple silhouette.
+  AF.drawPred = function (c, w, ox, oy, k, low) {
+    var p = w.pred; if (!p) return;
+    var x = ox + p.x * k, y = oy + (p.y + Math.sin(p.t * 8) * 0.08) * k, s = k * 1.15;
+    c.save(); c.translate(x, y); if (p.vx < 0) c.scale(-1, 1);
+    c.fillStyle = p.st === 'flee' ? '#4a3a32' : '#2c2420';
+    c.beginPath(); c.ellipse(0, 0, s * 1.1, s * 0.55, -0.2, 0, 7); c.fill();           // body
+    c.beginPath(); c.ellipse(s * 1.05, -s * 0.35, s * 0.45, s * 0.38, 0.2, 0, 7); c.fill(); // head
+    c.fillStyle = '#e0a040'; c.beginPath();
+    c.moveTo(s * 1.4, -s * 0.35); c.lineTo(s * 2.0, -s * 0.18); c.lineTo(s * 1.35, -s * 0.12); c.fill();
+    if (!low) {
+      c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.arc(s * 1.15, -s * 0.45, s * 0.1, 0, 7); c.fill();
+      c.fillStyle = '#1a1008'; c.beginPath(); c.arc(s * 1.18, -s * 0.45, s * 0.05, 0, 7); c.fill();
+      c.fillStyle = 'rgba(60,50,40,.7)'; c.beginPath(); c.ellipse(-s * 0.1, -s * 0.15, s * 0.7, s * 0.28, 0.4, 0, 7); c.fill();
+    }
+    c.strokeStyle = '#2c2420'; c.lineWidth = Math.max(1, k * 0.12); c.beginPath();
+    c.moveTo(-s * 0.2, s * 0.4); c.lineTo(-s * 0.15, s * 0.85);
+    c.moveTo(s * 0.25, s * 0.4); c.lineTo(s * 0.35, s * 0.85); c.stroke();
+    c.restore();
   };
 })();

@@ -79,6 +79,7 @@
       c.globalAlpha = 1;
     }
     AF.drawStore(c, w, ox, oy, k);
+    if (AF.drawSpecialRooms) AF.drawSpecialRooms(c, w, ox, oy, k);
     AF.drawBrood(c, w, ox, oy, k);
     var lowA = !!opt.low || w.ants.length > 180, qang = Math.sin(w.t * .3) * 0.15;
     AF.drawAnt(c, ox + (w.qx + .5) * k, oy + (w.qy + 1.35) * k, qang, k * 1.45, w.t * 3, '#7a1c10', 0, false, true, 'rest', !!opt.low);
@@ -87,8 +88,11 @@
       var a = w.ants[i], ax = a.cx + (a.nx - a.cx) * a.p + .5, ay = AF.antDrawY(w, ax, a.cy + (a.ny - a.cy) * a.p + .5);
       var moving = a.nx !== a.cx || a.ny !== a.cy, act = a.dig > 0 ? 'dig' : (a.load ? 'carry' : (moving ? 'walk' : 'rest'));
       var ang = a.dig > 0 ? Math.atan2(a.dy - a.cy, a.dx - a.cx) : a.ang;
-      AF.drawAnt(c, ox + ax * k, oy + ay * k, ang, k * (act === 'dig' ? 0.62 : 0.58), a.ph, ac[i & 1], a.load, moving || a.dig > 0, false, act, lowA);
+      var soldier = a.role === 'soldier';
+      AF.drawAnt(c, ox + ax * k, oy + ay * k, ang, k * (soldier ? 0.66 : (act === 'dig' ? 0.62 : 0.58)), a.ph,
+        soldier ? '#3a1410' : ac[i & 1], a.load, moving || a.dig > 0, false, act, lowA, soldier ? 'soldier' : '');
     }
+    if (AF.drawPred) AF.drawPred(c, w, ox, oy, k, !!opt.low);
     // water drops with a small shine
     for (i = 0; i < w.drops.length; i++) { var dx = ox + w.drops[i].x * k, dy = oy + w.drops[i].y * k;
       c.fillStyle = '#5ab4ff'; c.beginPath(); c.arc(dx, dy, k * .6, 0, 7); c.fill();

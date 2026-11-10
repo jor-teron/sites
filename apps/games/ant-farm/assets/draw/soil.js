@@ -9,7 +9,7 @@
   var cv = document.createElement('canvas'), c = cv.getContext('2d');
   cv.width = W * CP; cv.height = H * CP;
   var cols = [[166, 122, 76], [138, 94, 56], [110, 74, 44], [88, 58, 38], [70, 48, 34], [58, 40, 30]];
-  var FLOOR = { queen: [118, 78, 44], brood: [96, 66, 40], store: [108, 72, 42], side: [90, 62, 40] };
+  var FLOOR = { queen: [118, 78, 44], brood: [96, 66, 40], store: [108, 72, 42], side: [90, 62, 40], barracks: [110, 62, 40], pantry: [120, 86, 44], warmth: [130, 84, 48] };
   function hash(i, n) { var h = Math.imul(i ^ (n * 374761393), 668265263); h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; }
   function rgb(r, g, b) { return 'rgb(' + (r | 0) + ',' + (g | 0) + ',' + (b | 0) + ')'; }
   function rgba(r, g, b, a) { return 'rgba(' + (r | 0) + ',' + (g | 0) + ',' + (b | 0) + ',' + a + ')'; }
@@ -173,6 +173,12 @@
       if (r.kind === 'brood') {
         c.fillStyle = 'rgba(230,210,170,.28)';
         c.fillRect(cx - rx * 0.5, cy + ry * 0.45, rx, 2);
+      } else if (r.kind === 'barracks') {
+        c.fillStyle = 'rgba(160,70,50,.22)'; c.fillRect(cx - rx * 0.55, cy + ry * 0.4, rx * 1.1, 2);
+      } else if (r.kind === 'pantry') {
+        c.fillStyle = 'rgba(230,190,80,.2)'; c.fillRect(cx - rx * 0.5, cy + ry * 0.42, rx, 2);
+      } else if (r.kind === 'warmth') {
+        c.fillStyle = 'rgba(255,160,60,.16)'; c.fillRect(cx - rx, cy - ry * 0.2, rx * 2, ry * 1.2);
       }
       c.restore();
     }

@@ -5,8 +5,9 @@
 // load: 1 soil grain, 2 food, 3 egg (carried in the mandibles).
 // act: 'walk' | 'dig' | 'carry' | 'rest' (optional; inferred from load / moving).
 // low: fewer leg segments and no gloss, for 300-ant colonies and lowGraphics.
-AF.drawAnt = function (c, x, y, ang, s, phase, col, load, moving, queen, act, low) {
+AF.drawAnt = function (c, x, y, ang, s, phase, col, load, moving, queen, act, low, kind) {
   if (!act) act = load && moving ? 'carry' : (moving ? 'walk' : 'rest');
+  var soldier = kind === 'soldier';
   c.save(); c.translate(x, y); c.rotate(ang);
   if (Math.cos(ang) < -0.01) c.scale(1, -1);
   c.scale(s, s);
@@ -40,7 +41,7 @@ AF.drawAnt = function (c, x, y, ang, s, phase, col, load, moving, queen, act, lo
     }
     c.restore(); return;
   }
-  var gx = -0.72, gr = 0.48, hx = 0.72;
+  var gx = -0.72, gr = 0.48, hx = soldier ? 0.78 : 0.72;
 
   // legs: 3 pairs under the thorax, tripod gait; dig = braced + scratch
   c.strokeStyle = col; c.lineWidth = queen ? 0.16 : 0.13; c.lineJoin = 'round'; c.lineCap = 'round';
@@ -80,8 +81,14 @@ AF.drawAnt = function (c, x, y, ang, s, phase, col, load, moving, queen, act, lo
   c.ellipse(gx, -0.02, gr, gr * (queen ? 0.62 : 0.7), queen ? -0.12 : -0.08, 0, 7);
   c.ellipse(-0.1, 0, 0.12, 0.09, 0, 0, 7);
   c.ellipse(0.18, -0.04, queen ? 0.38 : 0.3, queen ? 0.24 : 0.2, 0, 0, 7);
-  c.ellipse(hx, -0.06, queen ? 0.36 : 0.28, queen ? 0.3 : 0.24, 0.15, 0, 7);
+  c.ellipse(hx, -0.06, queen ? 0.36 : (soldier ? 0.34 : 0.28), queen ? 0.3 : (soldier ? 0.28 : 0.24), 0.15, 0, 7);
   c.fill();
+  if (soldier) {                                   // heavier soldier mandibles
+    c.strokeStyle = col; c.lineWidth = 0.12; c.lineCap = 'round'; c.beginPath();
+    c.moveTo(hx + 0.22, 0.06); c.lineTo(hx + 0.62, 0.16);
+    c.moveTo(hx + 0.22, 0.0); c.lineTo(hx + 0.58, -0.08);
+    c.stroke();
+  }
 
   if (!low && s >= 3.2) {
     c.fillStyle = 'rgba(255,255,255,.3)'; c.beginPath();

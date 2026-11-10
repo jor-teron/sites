@@ -17,6 +17,7 @@ function load(rel) {
 }
 load('core/world.js');
 load('core/colony.js');
+load('core/life.js');
 load('core/save.js');
 const AF = ctx.AF;
 if (!AF || !AF.newWorld) throw new Error('AF failed to load');
@@ -126,6 +127,41 @@ ok('population rises 3 -> 10 min', growth[180].ants < growth[600].ants, growth);
 ok('population rises 10 -> 30 min', growth[600].ants < growth[1800].ants, growth);
 ok('colony is growing toward the cap at 30 min', growth[1800].ants >= 180 && growth[1800].ants <= 300, growth[1800]);
 ok('stored food is not empty at 10 min', growth[600].stored > 0, growth[600]);
+
+// AF-4d: seasons, aging, goals, soldiers, save of new state
+var spring = AF.newWorld(11111); AF.seedColony(spring);
+ok('year starts in spring', AF.season(spring) === 'spring', AF.season(spring));
+for (var twi = 0; twi < AF.YEAR * 0.8; twi += 1 / 30) AF.step(spring, 1 / 30);
+ok('later it is winter', AF.season(spring) === 'winter' && AF.winterAmt(spring) > 0.5, AF.season(spring) + ' ' + AF.winterAmt(spring));
+for (; twi < AF.YEAR + 1; twi += 1 / 30) AF.step(spring, 1 / 30);
+ok('survive-winter goal unlocks after a year', AF.goalsOf(spring).winter, AF.goalsOf(spring));
+ok('first-brood goal unlocks', AF.goalsOf(spring).brood);
+
+var aged = AF.newWorld(11111); AF.seedColony(aged);
+var n0 = aged.ants.length;
+aged.ants[0].life = 2; aged.ants[0].age = 0;
+for (var td = 0; td < 5; td += 1 / 30) AF.step(aged, 1 / 30);
+ok('an old ant dies', aged.ants.length === n0 - 1 && (aged.dead || 0) >= 1, [aged.ants.length, aged.dead]);
+var guard = 0;
+while (aged.ants.length > 8 && guard++ < 400) { aged.ants.forEach(function (a) { a.life = 0.01; a.age = 1; }); AF.step(aged, 1 / 30); }
+var hold = aged.ants.length;
+for (var tk = 0; tk < 3; tk += 1 / 30) { aged.ants.forEach(function (a) { a.life = 0.01; a.age = 99; }); AF.step(aged, 1 / 30); }
+ok('the last eight ants are kept', aged.ants.length >= 8, aged.ants.length);
+
+ok('50-ant goal is reachable by 10 min', growth[600].ants >= 50, growth[600]);
+ok('food is not empty through the first winter', growth[600].stored > 0, growth[600]);
+
+var roles = run(11111, 600);
+var soldiers = roles.ants.filter(function (a) { return a.role === 'soldier'; }).length;
+ok('soldiers appear as the colony grows', soldiers >= 1, soldiers);
+ok('a useful extra chamber can be dug', roles.rooms.some(function (r) { return r.kind === 'barracks' || r.kind === 'pantry' || r.kind === 'warmth'; }) || roles.rooms.length >= 3, roles.rooms.map(function (r) { return r.kind; }));
+
+var s1 = run(11111, 90);
+var s2 = AF.deserialize(JSON.parse(JSON.stringify(AF.serialize(s1))));
+ok('4d save restores goals and ages', s2 && s2.goals && s2.ants[0].life === s1.ants[0].life && !!s2.goals.brood === !!s1.goals.brood);
+AF.fields(s1); s1.needField = false;
+for (var ts4 = 0; ts4 < 30; ts4 += 1 / 30) { AF.step(s1, 1 / 30); AF.step(s2, 1 / 30); }
+eq('4d saved colony continues identically', snap(s1), snap(s2));
 
 if (fail) { console.log('\n' + fail + ' failed'); process.exit(1); }
 console.log('\nAll checks passed.');

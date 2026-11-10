@@ -48,4 +48,25 @@
       inRow++;
     }
   };
+
+  // AF-4d: a few props so barracks, pantry and the warm chamber read clearly.
+  AF.drawSpecialRooms = function (c, w, ox, oy, k) {
+    var i, r, x, y, j;
+    for (i = 0; i < w.rooms.length; i++) {
+      r = w.rooms[i];
+      x = ox + r.x * k; y = oy + (r.y + r.ry * 0.45) * k;
+      if (r.kind === 'barracks') {
+        c.strokeStyle = 'rgba(180,90,50,.55)'; c.lineWidth = Math.max(1, k * 0.1);
+        for (j = -2; j <= 2; j++) { c.beginPath(); c.moveTo(x + j * 0.7 * k, y - 0.15 * k); c.lineTo(x + j * 0.7 * k + 0.15 * k, y + 0.35 * k); c.stroke(); }
+      } else if (r.kind === 'pantry') {
+        for (j = 0; j < 6; j++) {
+          c.fillStyle = j % 2 ? '#e0b24a' : '#8fbf4a';
+          c.beginPath(); c.ellipse(x + (j - 2.5) * 0.45 * k, y, k * 0.22, k * 0.16, j, 0, 7); c.fill();
+        }
+      } else if (r.kind === 'warmth') {
+        var R = 5 * k * (1 + Math.sin(w.t * 1.4) * 0.08);
+        c.fillStyle = 'rgba(255,150,50,.14)'; c.beginPath(); c.ellipse(x, y - 0.2 * k, R, R * 0.55, 0, 0, 7); c.fill();
+      }
+    }
+  };
 })();

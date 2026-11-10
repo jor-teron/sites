@@ -41,4 +41,9 @@ nest, `F` to fit the whole tank. Fit farm and Fill view are also in the ⋯ menu
   `localStorage`, How to play, population and food graphs, time-lapse presets,
   a player dig tool, a steadier food economy, quiet sounds with mute, and a
   new side-view icon.
+- **AF-4d** — soldiers patrol the entrances, the year has seasons (winter is
+  lean and snowy), a surface bird sometimes hunts, workers age and die (the
+  last eight always remain), new chambers (barracks, pantry, warm chamber)
+  do a useful job, and three simple goals (first brood, 50 ants, survive
+  winter) are tracked. The sim stays forgiving and seed-deterministic.
 
