@@ -3,9 +3,9 @@
 Small database app (like a light LibreOffice Base / Access). Plain HTML/CSS/JS, no build, works from `file://`.
 Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, notify cards, theme, settings, hover, collapse).
 
-Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 7, 'pics' store),
+Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 8, 'pics' store),
 `base-types.js` (field types, validation, conversion, auto-number), `base-history.js` (in-memory undo/redo),
-`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard), `base-report.js` (BS7: group-by reports, summary, SVG charts, print),
+`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard), `base-report.js` (BS7: group-by reports, summary, SVG charts, print), `base-view.js` (BS8: header filters, saved views, freeze, resize, colours, gallery, calendar),
 `base-fields.js` (Fields / Add field dialogs and edit commit),
 `base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view),
 `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs),
@@ -74,4 +74,12 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 - **Summary row** under the grid (View tab, was Totals) also shows Min and Max.
 - Existing BS6 databases load unchanged. Schema becomes 7; the first BS7 open writes a backup and migrates in place.
 
-**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a URL-type Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. A Link to record whose table (or record) was removed shows as “(missing)” until you clear or repick it. Lookups only follow one link (they don't chain). CSV import still creates a new table and cannot rebuild links from names. A report that groups by a multi-link field counts the row in each linked group. Charts have no animation and cap the number of bars or slices. Print quality depends on the browser's print window. Shared Office files were not edited.
+## BS8 (views and filters)
+- **Header filters:** click a column header to sort (A→Z / Z→A) or filter by ticked values and/or a condition (=, contains, >, is empty…). Filters on several columns all have to match (AND). They run on top of an active query, then the search box.
+- **Saved views** per table remember filters, sort, which columns are shown and in what order, column widths, how many columns are frozen, colour rules, and whether you were in Grid, Gallery or Calendar. Listed in the View tab picker and the File menu. Save / Rename / Delete / Apply are undoable until you close Base.
+- **Columns…** shows, hides and reorders fields. Drag a header's right edge to resize (60–480 px). Freeze 1 or 2 columns (plus the row number) so they stay visible when you scroll sideways.
+- **Conditional colours:** a rule is “field, operator, value → colour the whole row or just that cell”. Up to 8 rules; the first match wins. Pastel washes that work in light and dark themes.
+- **Gallery** shows a card per record (a picture field if the table has one, plus a few fields). Click a card to open the record in the form. **Calendar** is a month grid by a Date field; click a record to open it. Records with no date are listed under the month.
+- Existing BS7 databases load unchanged. Schema becomes 8; the first BS8 open writes a backup and migrates in place. The current layout is stored on the table itself, so filters, widths and freeze survive a reload.
+
+**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a URL-type Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. A Link to record whose table (or record) was removed shows as “(missing)” until you clear or repick it. Lookups only follow one link (they don't chain). CSV import still creates a new table and cannot rebuild links from names. A report that groups by a multi-link field counts the row in each linked group. Charts have no animation and cap the number of bars or slices. Print quality depends on the browser's print window. The grid draws at most 200 rows and the gallery at most 80 cards (narrow the filter to see the rest); a calendar day shows 8 records and then “+N more”. A header value list shows at most 50 values. Shared Office files were not edited.

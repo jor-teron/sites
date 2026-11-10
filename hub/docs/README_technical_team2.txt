@@ -856,6 +856,17 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - `<title>Base BS7</title>`, `BASE_VERSION = "BS7"`, Base's own css/js `?v=BS7`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, `test-bs5-helpers.js` + `test-bs6-helpers.js` + new `test-bs7-helpers.js` (group-by, aggregates, date buckets, two-level subtotals, link/multi-link, chart series, schema 6→7 repair), static curl smoke (200 + BS7). No Puppeteer / Playwright / jsdom.
 
+
+### 1.72 Base views and filters: `apps/office/base/` (Office), release BS8
+- Why: BS7 added reports and charts, but everyday work still needed Excel-style header filters, saved layouts, frozen/resized columns, a splash of colour, and a way to browse records as cards or on a calendar — the next step planned to Jor after reports.
+- New `modules/base-view.js` (pure filter / layout / colour / calendar-cell helpers + header popover, Columns… / Colours… dialogs, gallery and month calendar). Click a column header to sort or to filter by ticked values and/or a condition; several columns AND together. Filters run after an active query and before the search box.
+- Saved views in `BASE.db.views` (same IndexedDB record) store filters, sort, visible/ordered columns, widths, freeze (0/1/2 data columns plus the row number), colour rules, and Grid / Gallery / Calendar. Listed in the View tab picker and the File menu. The working layout is also stored on the table (`t.layout`) so it survives a reload. Save / Rename / Delete / Apply, and changes to filters, columns, freeze, colours and a finished column resize, are undoable until Base is closed. Deleting a table drops its views (still not undoable).
+- Conditional colours: “field, operator, value → colour the row or the cell”, up to 8 rules, first match wins, named pastel washes (no raw colour picker). Gallery: a card per record with a picture field and a few fields; click opens the form. Calendar: a Sunday-start month by a Date field; click a record to open it; records with no date are listed under the month.
+- Celeron-light: the grid renders at most 200 rows, the gallery at most 80 cards, a calendar day shows 8 then “+N more”, and a header value list caps at 50 (use a condition for the rest). Totals still use every visible row, not just the ones drawn.
+- Data: `schema: 8`. Existing schema 7 (and older) records in IndexedDB `office-base` load unchanged; first open writes `db-backup` and migrates in place. Repair validates views and layout. IndexedDB version stays 2.
+- `<title>Base BS8</title>`, `BASE_VERSION = "BS8"`, Base's own css/js `?v=BS8`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5` + `test-bs6` + `test-bs7` + new `test-bs8-helpers.js` (AND filters, checklist/blank, operators, multi-link, unique-value cap, column order, layout clamp, colour first-match, month cells, schema 7→8 repair), static curl smoke (200 + BS8). No Puppeteer / Playwright / jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

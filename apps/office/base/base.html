@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base BS7</title>
-  <!-- BS1-BS7 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <title>Base BS8</title>
+  <!-- BS1-BS8 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
-  <link rel="stylesheet" href="base.css?v=BS7">
+  <link rel="stylesheet" href="base.css?v=BS8">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -39,6 +39,8 @@
     <div id="file-queries"></div>
     <div class="base-recent-title" id="file-reports-title" hidden>Saved reports</div>
     <div id="file-reports"></div>
+    <div class="base-recent-title" id="file-views-title" hidden>Saved views</div>
+    <div id="file-views"></div>
     <div class="base-recent-title">Tables</div>
     <div id="file-tables"></div>
   </div>
@@ -98,9 +100,29 @@
       <div class="of-group tool-group" aria-label="View">
         <button type="button" id="btn-view-grid" class="base-view-btn" title="Grid view">Grid</button>
         <button type="button" id="btn-view-form" class="base-view-btn" title="Form view (one record)">Form</button>
+        <button type="button" id="btn-view-gallery" class="base-view-btn" title="Gallery of cards (picture + a few fields)">Gallery</button>
+        <button type="button" id="btn-view-calendar" class="base-view-btn" title="Month calendar by a date field">Calendar</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Saved views">
+        <select id="view-pick" title="Apply a saved view" aria-label="Saved views"></select>
+        <button type="button" id="btn-view-save" title="Save the current filters, columns and colours as a view">Save…</button>
+        <button type="button" id="btn-view-rename" title="Rename saved view">Rename</button>
+        <button type="button" id="btn-view-delete" title="Delete saved view">Delete</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Columns">
+        <button type="button" id="btn-columns" title="Show, hide and reorder columns">Columns…</button>
+        <label class="base-freeze-lab">Freeze
+          <select id="view-freeze" title="Freeze the first columns so they stay visible when you scroll" aria-label="Freeze columns">
+            <option value="0">None</option>
+            <option value="1">1 column</option>
+            <option value="2">2 columns</option>
+          </select>
+        </label>
+        <button type="button" id="btn-colours" title="Colour a row or cell when a field matches a rule">Colours…</button>
       </div>
       <div class="of-group tool-group" aria-label="Sort">
         <button type="button" id="btn-sort-clear" title="Back to entry order">Clear sort</button>
+        <button type="button" id="btn-filters-clear" title="Clear header filters">Clear filters</button>
       </div>
       <div class="of-group tool-group" aria-label="Totals">
         <button type="button" id="btn-totals" title="Sum / Avg / Min / Max / Count for Number and Currency fields under the grid">Summary row</button>
@@ -115,6 +137,8 @@
     <div id="report-out" class="base-report-out" hidden></div>
     <div id="grid-wrap" class="base-grid-wrap"></div>
     <div id="form-wrap" class="base-form-wrap" hidden></div>
+    <div id="gallery-wrap" class="base-gallery-wrap" hidden></div>
+    <div id="cal-wrap" class="base-cal-wrap" hidden></div>
     <div id="related-wrap" class="base-related-wrap" hidden></div>
   </main>
 
@@ -123,25 +147,26 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=BS7"></script>
+  <script src="modules/base-quick.js?v=BS8"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=BS7"></script>
-  <script src="modules/base-history.js?v=BS7"></script>
-  <script src="modules/base-store.js?v=BS7"></script>
-  <script src="modules/base-links.js?v=BS7"></script>
-  <script src="modules/base-pics.js?v=BS7"></script>
-  <script src="modules/base-csv.js?v=BS7"></script>
-  <script src="modules/base-grid.js?v=BS7"></script>
-  <script src="modules/base-form.js?v=BS7"></script>
-  <script src="modules/base-fields.js?v=BS7"></script>
-  <script src="modules/base-query.js?v=BS7"></script>
-  <script src="modules/base-report.js?v=BS7"></script>
-  <script src="modules/base-delete.js?v=BS7"></script>
-  <script src="modules/base-ui.js?v=BS7"></script>
-  <script src="modules/base_hub.js?v=BS7"></script>
+  <script src="modules/base-types.js?v=BS8"></script>
+  <script src="modules/base-history.js?v=BS8"></script>
+  <script src="modules/base-store.js?v=BS8"></script>
+  <script src="modules/base-links.js?v=BS8"></script>
+  <script src="modules/base-pics.js?v=BS8"></script>
+  <script src="modules/base-csv.js?v=BS8"></script>
+  <script src="modules/base-grid.js?v=BS8"></script>
+  <script src="modules/base-form.js?v=BS8"></script>
+  <script src="modules/base-fields.js?v=BS8"></script>
+  <script src="modules/base-query.js?v=BS8"></script>
+  <script src="modules/base-view.js?v=BS8"></script>
+  <script src="modules/base-report.js?v=BS8"></script>
+  <script src="modules/base-delete.js?v=BS8"></script>
+  <script src="modules/base-ui.js?v=BS8"></script>
+  <script src="modules/base_hub.js?v=BS8"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /*
- * base-grid.js  (BS1, BS2, BS5, BS6: Link to record + Lookup cells, BS7: summary row Min/Max)
+ * base-grid.js  (BS1, BS2, BS5, BS6: Link to record + Lookup cells, BS7: summary row Min/Max, BS8: header filters, freeze, resize, colours)
  * Grid view: one control per cell (inline edit, autosave), header click sorts (asc -> desc -> off),
  * search box filters rows (any field contains text; pictures are skipped). Row number click selects
  * a row (for Records ⋯ > Delete record…, BS4).
@@ -8,6 +8,7 @@
  *   button, invalid (required / unique) cells are marked. Totals include Currency.
  * BS6: Link to record shows chips (pick / jump / clear); Lookup is read-only text from the linked record.
  * BS7: the summary row under the grid also shows Min and Max (and Auto-number ID).
+ * BS8: click a header to sort or filter; columns can be resized and frozen; rows/cells can take a colour; a long list is capped at 200 rows.
  * API: BaseGrid.render(), BaseGrid.visibleRows(t, ignoreSearch), BaseGrid.inputFor(field, value, onSet, mode, row)
  */
 var BaseGrid = (function () {
@@ -20,7 +21,13 @@ var BaseGrid = (function () {
     return String(a == null ? "" : a).localeCompare(String(b == null ? "" : b), undefined, { numeric: true, sensitivity: "base" });
   }
   function visibleRows(t, ignoreSearch) {
-    var rows = typeof BaseQuery !== "undefined" ? BaseQuery.filter(t, t.rows.slice()) : t.rows.slice(), q = ignoreSearch ? "" : BASE.search.trim().toLowerCase(), s = BASE.sort;
+    if (typeof BaseView !== "undefined") {
+      BaseView.syncSort(t);
+      if (!BASE.sort) { var Ls = BaseView.layout(t).sort; if (Ls) BASE.sort = Ls; }
+    }
+    var rows = typeof BaseQuery !== "undefined" ? BaseQuery.filter(t, t.rows.slice()) : t.rows.slice();
+    if (typeof BaseView !== "undefined") rows = BaseView.applyFilters(t, rows, BaseView.layout(t).filters);
+    var q = ignoreSearch ? "" : BASE.search.trim().toLowerCase(), s = BASE.sort;
     var qf = typeof BaseLinks !== "undefined" ? BaseLinks.queryFields(t) : t.fields;
     if (q) rows = rows.filter(function (r) {
       return t.fields.some(function (f) {
@@ -209,8 +216,10 @@ function inputFor(f, val, onSet, mode, r) {
     if (!t) { try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {} return BaseUI.renderEmpty(wrap); }
     var tbl = document.createElement("table"); tbl.className = "base-grid";
     var hr = tbl.createTHead().insertRow(), th = document.createElement("th");
-    th.className = "num"; th.textContent = "#"; hr.appendChild(th);
-    var cols = typeof BaseQuery !== "undefined" ? BaseQuery.shown(t) : t.fields;
+    th.className = "num"; th.textContent = "#"; th.style.width = th.style.minWidth = th.style.maxWidth = "40px"; hr.appendChild(th);
+    var all = typeof BaseQuery !== "undefined" ? BaseQuery.shown(t) : t.fields;
+    var cols = typeof BaseView !== "undefined" ? BaseView.visibleCols(t, all) : all;
+    var totalW = 40;
     cols.forEach(function (f) {
       var h = document.createElement("th"), s = BASE.sort;
       h.textContent = f.name + (f.required ? " *" : "");
@@ -218,33 +227,44 @@ function inputFor(f, val, onSet, mode, r) {
       var sm = document.createElement("small");
       var lab = T() ? BaseTypes.label(f.type) : BaseUI.typeLabel(f.type);
       sm.textContent = (s && s.field === f.id ? (s.dir > 0 ? "▲ " : "▼ ") : "") + lab;
-      h.appendChild(sm); if (!h.title) h.title = "Sort by " + f.name;
-      h.addEventListener("click", function () {
-        var s = BASE.sort;
-        BASE.sort = !s || s.field !== f.id ? { field: f.id, dir: 1 } : s.dir > 0 ? { field: f.id, dir: -1 } : null;
-        render();
-      });
+      h.appendChild(sm);
+      if (typeof BaseView !== "undefined") { BaseView.decorateHeader(h, t, f); totalW += BaseView.widthOf(t, f); }
+      else {
+        if (!h.title) h.title = "Sort by " + f.name;
+        h.addEventListener("click", function () {
+          var s = BASE.sort;
+          BASE.sort = !s || s.field !== f.id ? { field: f.id, dir: 1 } : s.dir > 0 ? { field: f.id, dir: -1 } : null;
+          render();
+        });
+      }
       hr.appendChild(h);
     });
+    tbl.style.tableLayout = "fixed"; tbl.style.width = totalW + "px";
     var body = tbl.createTBody(), rows = visibleRows(t);
-    rows.forEach(function (r, n) {
+    var cap = typeof BaseView !== "undefined" ? BaseView.GRID_CAP : 0;
+    var capped = cap && rows.length > cap, shown = capped ? rows.slice(0, cap) : rows;
+    shown.forEach(function (r, n) {
       var tr = body.insertRow(); if (r.id === BASE.selRow) tr.className = "sel";
       var c = tr.insertCell(); c.className = "num"; c.textContent = n + 1; c.title = "Select record";
       c.addEventListener("click", function () { BASE.selRow = r.id; BASE.formIndex = t.rows.indexOf(r); render(); });
+      var tds = {};
       cols.forEach(function (f) {
-        var td = tr.insertCell();
+        var td = tr.insertCell(); tds[f.id] = td;
         var inp = inputFor(f, r.v[f.id], null, "grid", r);
         inp.addEventListener("focus", function (e) { if (BASE.selRow !== r.id) { var o = body.querySelector("tr.sel"); if (o) o.className = ""; tr.className = "sel"; BASE.selRow = r.id; } }, true);
         var ctrl = inp.querySelector("input, select, textarea");
         if (ctrl) ctrl.setAttribute("aria-label", f.name + " " + (n + 1));
         td.appendChild(inp);
       });
+      if (typeof BaseView !== "undefined") BaseView.paintRow(tr, tds, t, r);
     });
     if (BASE.totals) totals(tbl, cols, rows, t);
     wrap.appendChild(tbl);
+    var extra = [];
+    if (typeof BaseView !== "undefined") extra = BaseView.afterGrid(tbl, cols, t, rows, shown.length, capped) || [];
     var aq = typeof BaseQuery !== "undefined" && BaseQuery.active();
     try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {}
-    BaseUI.status(rows.length + " of " + t.rows.length + " records" + (aq ? " · query" + (aq.name ? " “" + aq.name + "”" : "") : "") + (BASE.memOnly ? " · memory only" : ""));
+    BaseUI.status(rows.length + " of " + t.rows.length + " records" + (aq ? " · query" + (aq.name ? " “" + aq.name + "”" : "") : "") + (extra.length ? " · " + extra.join(" · ") : "") + (BASE.memOnly ? " · memory only" : ""));
   }
   /* Summary row (BS2/BS5/BS7): Sum / Avg / Min / Max / Count for Number, Currency and Auto-number ID over the visible rows */
   function fmt(n) { return Math.round(n * 100) / 100 + ""; }

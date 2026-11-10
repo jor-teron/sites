@@ -171,7 +171,7 @@ test("format shows a dash for a missing number and currency via BaseTypes", func
   assert.ok(String(cur).indexOf("1,500") >= 0 || String(cur).indexOf("1500") >= 0);
 });
 
-test("repair upgrades schema 6 to 7 and keeps saved reports", function () {
+test("repair upgrades schema 6 to current and keeps saved reports", function () {
   var ctx = {
     console: console, setTimeout: setTimeout, clearTimeout: clearTimeout,
     BaseTypes: BaseTypes, BaseLinks: BaseLinks,
@@ -197,19 +197,19 @@ test("repair upgrades schema 6 to 7 and keeps saved reports", function () {
   };
   var res = ctx.BaseStore.repair(raw);
   assert.strictEqual(res.migrated, true);
-  assert.strictEqual(res.db.schema, 7);
-  assert.strictEqual(ctx.BaseStore.SCHEMA, 7);
+  assert.strictEqual(res.db.schema, ctx.BaseStore.SCHEMA);
+  assert.ok(ctx.BaseStore.SCHEMA >= 7);
   assert.strictEqual(res.db.reports.length, 1);
   assert.strictEqual(res.db.reports[0].name, "By category");
   assert.strictEqual(res.db.reports[0].chart, "bar");
   assert.strictEqual(res.db.reports[0].aggs.length, 2);
   /* already current, plus a broken report, is not a migrate */
-  raw.schema = 7;
+  raw.schema = ctx.BaseStore.SCHEMA;
   raw.reports.push({ id: "", name: "no-id" });
   raw.reports.push({ id: "bad", name: "x", aggs: "nope", chart: "weird" });
   var res2 = ctx.BaseStore.repair(raw);
   assert.strictEqual(res2.migrated, false);
-  assert.strictEqual(res2.db.schema, 7);
+  assert.strictEqual(res2.db.schema, ctx.BaseStore.SCHEMA);
   var kept = res2.db.reports.filter(function (r) { return r.id === "rep1"; })[0];
   assert.ok(kept);
   var fixed = res2.db.reports.filter(function (r) { return r.id === "bad"; })[0];

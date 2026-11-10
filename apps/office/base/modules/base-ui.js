@@ -1,5 +1,5 @@
 /*
- * base-ui.js  (BS1–BS7: undo, field types, rules, auto-number ID, links between tables, reports and charts)
+ * base-ui.js  (BS1–BS8: undo, field types, rules, links, reports, views, gallery and calendar)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
  * Field editing uses BaseFields.add / .edit (rules, Choice options, retype preview).
@@ -9,7 +9,7 @@
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS7";
+var BASE_VERSION = "BS8";
 var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };
@@ -45,17 +45,33 @@ var BaseUI = (function () {
       b.textContent = x.name; b.addEventListener("click", function () { ribbonSetFile(false); switchTable(x.id); }); ft.appendChild(b);
     });
     $("grid-wrap").hidden = BASE.view !== "grid"; $("form-wrap").hidden = BASE.view !== "form";
-    var rw = $("related-wrap"); if (rw && BASE.view === "report") rw.hidden = true;
+    var gw = $("gallery-wrap"); if (gw) gw.hidden = BASE.view !== "gallery";
+    var cw = $("cal-wrap"); if (cw) cw.hidden = BASE.view !== "calendar";
+    var rw = $("related-wrap"); if (rw && (BASE.view === "report" || BASE.view === "gallery" || BASE.view === "calendar")) rw.hidden = true;
     $("btn-view-grid").classList.toggle("on", BASE.view === "grid"); $("btn-view-form").classList.toggle("on", BASE.view === "form");
     $("btn-totals").classList.toggle("on", !!BASE.totals);
     if (BASE.view === "grid") BaseGrid.render();
     else if (BASE.view === "form") BaseForm.render();
+    else if (BASE.view === "gallery" && typeof BaseView !== "undefined") BaseView.renderGallery();
+    else if (BASE.view === "calendar" && typeof BaseView !== "undefined") BaseView.renderCalendar();
     if (typeof BaseQuery !== "undefined") BaseQuery.renderPicker();
     if (typeof BaseReport !== "undefined") BaseReport.render();
+    if (typeof BaseView !== "undefined") BaseView.renderPicker();
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.sendTitle) BASE_HUB.sendTitle();
     try { if (typeof OfficeQuick !== "undefined" && OfficeQuick.refresh) OfficeQuick.refresh(); } catch (e) {}
   }
-  function switchTable(id) { BASE.db.current = id; BASE.sort = null; BASE.selRow = null; BASE.formIndex = 0; BaseStore.save(); render(); }
+  function switchTable(id) {
+    BASE.db.current = id; BASE.selRow = null; BASE.formIndex = 0;
+    var nt = BaseStore.table();
+    if (BASE.report) BASE.report = null;
+    if (typeof BaseView !== "undefined" && nt) {
+      var L = BaseView.layout(nt);
+      BASE.sort = L.sort;
+      if (BASE.view === "report") BASE.view = "grid";
+      if (BASE.view !== "form" && (L.mode === "gallery" || L.mode === "calendar" || L.mode === "grid")) BASE.view = L.mode;
+    } else { BASE.sort = null; if (BASE.view === "report") BASE.view = "grid"; }
+    BaseStore.save(); render();
+  }
   function renderEmpty(wrap) {
     var d = document.createElement("div"); d.className = "base-empty";
     d.appendChild(document.createTextNode("No tables yet. Start from a template:"));
@@ -101,6 +117,7 @@ var BaseUI = (function () {
   function setView(v) {
     BASE.view = v;
     if (v !== "report" && BASE.report) BASE.report = null;
+    if ((v === "grid" || v === "gallery" || v === "calendar") && typeof BaseView !== "undefined") BaseView.setMode(v);
     render();
   }
   function importFile(file) {
@@ -216,6 +233,16 @@ function initBaseSettings() {
   $("btn-field-edit").addEventListener("click", BaseUI.editFields);
   $("btn-view-grid").addEventListener("click", function () { BaseUI.setView("grid"); });
   $("btn-view-form").addEventListener("click", function () { BaseUI.setView("form"); });
+  $("btn-view-gallery").addEventListener("click", function () { BaseUI.setView("gallery"); });
+  $("btn-view-calendar").addEventListener("click", function () { BaseUI.setView("calendar"); });
+  $("btn-view-save").addEventListener("click", BaseView.save);
+  $("btn-view-rename").addEventListener("click", BaseView.rename);
+  $("btn-view-delete").addEventListener("click", BaseView.remove);
+  $("btn-columns").addEventListener("click", BaseView.columns);
+  $("btn-colours").addEventListener("click", BaseView.colours);
+  $("btn-filters-clear").addEventListener("click", BaseView.clearFilters);
+  $("view-freeze").addEventListener("change", function (e) { BaseView.setFreeze(+e.target.value); });
+  $("view-pick").addEventListener("change", function (e) { if (e.target.value) BaseView.pick(e.target.value); });
   $("btn-totals").addEventListener("click", function () { BASE.totals = !BASE.totals; try { localStorage.setItem("base_totals", BASE.totals ? "1" : ""); } catch (e) {} BaseUI.render(); });
   try { BASE.totals = !!localStorage.getItem("base_totals"); } catch (e) {}
   $("btn-query").addEventListener("click", BaseQuery.open);
@@ -234,11 +261,24 @@ function initBaseSettings() {
   $("btn-report-pie").addEventListener("click", function () { BaseReport.setChart("pie"); });
   $("btn-report-print").addEventListener("click", BaseReport.print);
   $("report-pick").addEventListener("change", function (e) { if (e.target.value) BaseReport.pick(e.target.value); });
-  $("btn-sort-clear").addEventListener("click", function () { BASE.sort = null; BaseUI.render(); });
+  $("btn-sort-clear").addEventListener("click", function () {
+    BASE.sort = null;
+    var t = BaseStore.table();
+    if (t && typeof BaseView !== "undefined") { BaseView.layout(t).sort = null; BaseView.persist(t); }
+    BaseUI.render();
+  });
   var st = null;
   $("search").addEventListener("input", function (e) { clearTimeout(st); st = setTimeout(function () { BASE.search = e.target.value; BaseUI.render(); }, 150); });
   window.addEventListener("pagehide", BaseStore.saveNow);
   BaseStore.load(function () {
-    try { BaseUI.render(); } catch (e) { BaseUI.recover(e); }
+    try {
+      var t0 = BaseStore.table();
+      if (t0 && typeof BaseView !== "undefined") {
+        var L0 = BaseView.layout(t0);
+        BASE.sort = L0.sort;
+        if (L0.mode === "gallery" || L0.mode === "calendar") BASE.view = L0.mode;
+      }
+      BaseUI.render();
+    } catch (e) { BaseUI.recover(e); }
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start(); });
 })();
