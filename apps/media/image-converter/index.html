@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Image Converter CI1</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="image-converter_icon.png">
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('image-converter-v1') || '{}');
+        var m = s.theme || 'auto';
+        var auto = false, t = '';
+        try {
+          auto = localStorage.getItem('sites-hub.themeAuto') === '1';
+          t = localStorage.getItem('sites-hub.theme') || '';
+        } catch (e) { /* blocked */ }
+        var dark;
+        if (m === 'dark' || m === 'light') dark = m === 'dark';
+        else if (!auto && (t === 'dark' || t === 'light')) dark = t === 'dark';
+        else dark = !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        var el = document.documentElement;
+        el.classList.add(dark ? 'dark' : 'light');
+        el.dataset.theme = dark ? 'dark' : 'light';
+        el.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) { /* ok */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="image-converter.css?v=CI1">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-header">
+      <h1>Image Converter</h1>
+      <div class="header-actions">
+        <button type="button" class="header-btn" id="helpBtn" title="About this app">?</button>
+        <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+          <button type="button" data-v="auto">Auto</button>
+          <button type="button" data-v="light">Light</button>
+          <button type="button" data-v="dark">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="stage">
+      <aside class="side">
+        <div class="toolbar">
+          <button type="button" class="btn secondary-btn" id="addFilesBtn">Add photos</button>
+          <button type="button" class="btn secondary-btn" id="addFolderBtn">Add folder</button>
+          <button type="button" class="btn primary-btn" id="convertBtn">Convert</button>
+          <button type="button" class="btn secondary-btn" id="zipBtn">Download zip</button>
+          <button type="button" class="btn text-btn" id="clearBtn">Clear list</button>
+        </div>
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,image/svg+xml,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.svg" multiple hidden>
+        <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+
+        <form class="settings" id="settingsForm" autocomplete="off">
+          <h2>Output</h2>
+          <div class="field">
+            <span class="label">Format</span>
+            <div class="seg" id="formatSeg" role="group" aria-label="Output format">
+              <button type="button" data-v="jpeg">JPG</button>
+              <button type="button" data-v="png">PNG</button>
+              <button type="button" data-v="webp">WebP</button>
+              <button type="button" data-v="avif" id="avifBtn" hidden>AVIF</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="label">Resize</span>
+            <div class="seg" id="resizeSeg" role="group" aria-label="Resize mode">
+              <button type="button" data-v="none">None</button>
+              <button type="button" data-v="longest">Longest</button>
+              <button type="button" data-v="percent">Percent</button>
+              <button type="button" data-v="exact">Exact</button>
+            </div>
+          </div>
+
+          <div class="field size-row" id="longestRow" data-hidden="1">
+            <label class="lab" for="longestIn">Longest side</label>
+            <input type="number" id="longestIn" min="16" max="8192" step="1" value="1920">
+            <span class="hint">px</span>
+          </div>
+          <div class="field size-row" id="percentRow" data-hidden="1">
+            <label class="lab" for="percentIn">Percent</label>
+            <input type="number" id="percentIn" min="1" max="400" step="1" value="100">
+            <span class="hint">%</span>
+          </div>
+          <div class="field size-row" id="exactRow" data-hidden="1">
+            <label class="lab" for="widthIn">Size</label>
+            <input type="number" id="widthIn" min="1" max="8192" step="1" value="1920" aria-label="Width">
+            <span class="hint">×</span>
+            <input type="number" id="heightIn" min="1" max="8192" step="1" value="1080" aria-label="Height">
+            <span class="hint">px</span>
+          </div>
+          <div class="field size-row" id="ratioRow" data-hidden="1">
+            <label class="chk"><input type="checkbox" id="keepAspect" checked> Keep aspect ratio</label>
+            <label class="chk"><input type="checkbox" id="noEnlarge" checked> Don't enlarge</label>
+          </div>
+
+          <div class="field quality-row" id="qualityRow">
+            <label class="lab" for="qualityIn">Quality</label>
+            <input type="range" id="qualityIn" min="1" max="100" step="1" value="80">
+            <span id="qualityVal">80</span>
+          </div>
+          <div class="field quality-row" id="targetRow">
+            <label class="chk"><input type="checkbox" id="useTarget"> Target under</label>
+            <input type="number" id="targetKb" min="1" max="20000" step="1" value="100" aria-label="Target size in kilobytes">
+            <span class="hint">KB</span>
+          </div>
+
+          <div class="field">
+            <label class="lab" for="patternIn">Rename</label>
+            <input type="text" class="grow" id="patternIn" value="{name}_{n}" spellcheck="false" aria-describedby="patternHint">
+          </div>
+          <p class="hint" id="patternHint">{name} is the original name, {n} is a padded number, {ext} is the new extension.</p>
+          <p class="note">Location and camera data are removed. Photos are turned the right way up. Nothing is uploaded — this runs on your device.</p>
+        </form>
+
+        <div class="preview-box">
+          <h2>Preview</h2>
+          <div class="preview-frame" id="previewFrame">
+            <span class="empty" id="previewEmpty">Select a photo in the list to preview it.</span>
+            <img id="previewImg" alt="" hidden>
+          </div>
+        </div>
+      </aside>
+
+      <section class="main-col">
+        <label for="fileInput" class="drop-zone" id="dropZone">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <span>Choose photos, a folder, or drag them here</span>
+          <span class="hint">JPG, PNG and WebP, plus AVIF when this browser can write it. One photo is converted at a time so a large batch stays light.</span>
+        </label>
+        <div class="list-wrap hidden" id="listWrap">
+          <ul class="file-list" id="fileList"></ul>
+        </div>
+        <div class="status-bar" id="statusBar">
+          <span id="statusText">No photos yet.</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="dlg" class="dlg" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody"></div>
+      <div class="acts" id="dlgActs"></div>
+    </div>
+  </div>
+
+  <script src="ic_helpers.js?v=CI1"></script>
+  <script src="ic_zip.js?v=CI1"></script>
+  <script src="ic_exif.js?v=CI1"></script>
+  <script src="ic_theme.js?v=CI1"></script>
+  <script src="ic_dlg.js?v=CI1"></script>
+  <script src="ic_convert.js?v=CI1"></script>
+  <script src="ic_ui.js?v=CI1"></script>
+  <script src="ic_main.js?v=CI1"></script>
+</body>
+</html>

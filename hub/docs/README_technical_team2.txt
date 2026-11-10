@@ -824,6 +824,41 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+
+### 1.84 Image Converter, release CI1
+
+- New Media app at `apps/media/image-converter/` (Photo section, after
+  GIF Maker). Branch `apps/ci1-image-converter`. RELEASE / title / `?v=`
+  = CI1. Storage key `image-converter-v1` `{theme, format, resize, …}`.
+  Auto follows Hub `sites-hub.theme` / `sites-hub.themeAuto` live.
+- Add photos with a file picker, a folder picker (`webkitdirectory`), or
+  drag and drop. Converts between JPG, PNG and WebP. AVIF is offered only
+  after `canvas.toBlob('image/avif')` actually returns an AVIF blob.
+- Resize by longest side, by percent, or to an exact W×H (aspect ratio
+  kept by default; optional "don't enlarge"). Quality slider, or a target
+  such as under 100 KB found by a binary search on quality (eight tries).
+- Location and camera data are stripped by re-encoding on a canvas.
+  Orientation is fixed with `createImageBitmap` `imageOrientation:
+  'from-image'` when the bitmap size shows it was applied, otherwise an
+  EXIF Orientation fallback (`ic_exif.js`).
+- The list shows each file's size before and after, plus the total saved.
+  Download one file, or all as a store-only zip (`ic_zip.js`, no library).
+  Rename pattern `{name}_{n}` with zero padding (`{nnn}` for a fixed width).
+- One photo is converted at a time. Bitmaps, working canvases and object
+  URLs are released after each file so a large batch stays light on a
+  4 GB Celeron. Working size is capped at 8192 px.
+- In-app dialogs only (no alert/confirm/prompt). Fully offline, no CDN.
+  iPhone HEIC is rejected with an in-app note (no HEIC library).
+- Tested with `node --check` on every JS file, `node tests/ci1.test.cjs`
+  (resize math, rename pattern, quality search, zip CRC / round-trip,
+  EXIF orientation fixtures) and a static curl smoke test. No Puppeteer,
+  Playwright or jsdom.
+- The Media page tile comes from `apps/media/media-apps.csv`. The Hub
+  menu catalog needs a Team 1 / Main Builder `hub_appindex_gen.py
+  --catalog-only` run before the new app shows in the Hub flyout.
+- 1.53–1.83 are reserved for in-flight Team 2 branches, so this note is
+  numbered 1.84.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -9,6 +9,7 @@ Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
+Image Converter, image-converter/, , , Photo, Convert resize and compress photos: JPG PNG WebP - strip location - download a zip
 Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
 Music Player,    music-player/,    , , Audio, Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
