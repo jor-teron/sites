@@ -1349,6 +1349,30 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - `<title>Base BS9</title>`, `BASE_VERSION = "BS9"`, Base's own css/js `?v=BS9`. Shared Office files and Spreadsheet files untouched. No build bump.
 - Tests: `node --check` on changed JS, `test-bs5` … `test-bs8` + new `test-bs9-helpers.js` (pack/parse, reject non-hbase, remap copy + links/pics, JSON shapes + row cap, AoA/SQL helpers, sheetAoA skips pictures), static curl smoke (200 + BS9). No Puppeteer / Playwright / jsdom.
 
+### 1.78 Numerology app, release NU1
+
+- New apps/tools/numerology (Tools, section 'Fun', row added after Astrology in
+  apps/tools/tools-apps.csv). Offline, no libraries. First run asks only for a
+  full name and date of birth, then shows the numbers. Large tap targets and
+  plain-language labels (Life Path, Name / Heart / Outer / Birthday numbers).
+- localStorage 'numerology-v1' {profiles[{id,name,dob}], current, theme auto/light/dark,
+  system pythagorean|chaldean}. Auto follows sites-hub.theme. Add/edit/delete with
+  in-app dialogs only.
+- Core numbers, master 11/22/33 kept unreduced: Life Path (birth date; reduce month,
+  day and year separately then add), Name / Destiny (all letters), Heart / Soul Urge
+  (vowels; Y is a vowel unless it sits next to A,E,I,O,U), Outer / Personality
+  (consonants), Birthday (day of month). Timing: Personal Year/Month/Day for today
+  (calendar year from 1 January, plus birth month and day). Compatibility of two
+  Life Path numbers from a fixed table. Name checker for a spelling.
+- Letter values: Western/Pythagorean (default, 1–9) or Chaldean (1–8, often used in
+  India), remembered. Maths in nu_calc.js (pure, node-testable). Tested with
+  `node --check` on every JS file, `node test_nu_calc.js`, and a static serve + curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= NU1. Readings labelled traditional, for fun, not facts.
+  Details: apps/tools/numerology/numerology_readme.md.
+
+  Note: 1.53–1.77 are already taken on main, so this section is 1.78.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
