@@ -1662,6 +1662,35 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   size, watermark placement), and a static curl smoke test. No
   Puppeteer, Playwright or jsdom.
 
+
+### 1.92 Image Converter inspect and extras, release CI3
+
+- Inspect and extras on `apps/media/image-converter/` (CI1+CI2). Branch
+  `apps/ci3-image-converter`. RELEASE / title / `?v=` = CI3.
+- Photo info viewer: `ic_exif.js` describes camera, date and GPS from
+  a JPEG, with a privacy warning when a location is present. When
+  saving as JPG, optional "Keep date", "Keep camera" and "Keep
+  location (GPS)" write a minimal EXIF block back into the new file
+  (`writeJpegExif`). GPS is off by default and asks once before it is
+  turned on. Maker notes, lens data, ICC profiles and thumbnails are
+  not copied — only the fields the user ticks.
+- Icon set maker: from the selected photo (with current rotate / flip
+  / crop), an ICO containing PNG entries (`ic_ico.js`) plus a zip of
+  16, 32, 48, 64, 128 and 256 px PNGs.
+- SVG files are rasterised to the chosen output format and size. A
+  GIF uses its first frame (noted in the list). Copy a photo as a
+  data URL / Base64 (clipboard, or an in-app textarea if the
+  clipboard is blocked).
+- iPhone HEIC is not included; a standing in-app note and the drop
+  handler say so.
+- New files: `ic_ico.js`, `tests/ci3.test.cjs`. In-app dialogs only.
+  No CDN.
+- Tested with `node --check` on every JS file, `node tests/ci1.test.cjs`,
+  `ci2.test.cjs` and `ci3.test.cjs` (EXIF write/parse including GPS
+  hemispheres, keep-only-date, strip, ICO header and PNG-entry
+  round-trip) and a static curl smoke test. No Puppeteer, Playwright
+  or jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

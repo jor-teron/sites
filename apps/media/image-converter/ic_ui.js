@@ -1,8 +1,8 @@
-/* Image Converter — ic_ui.js: convert, presets, crop/rotate/watermark. CI2 */
+/* Image Converter — ic_ui.js: convert, presets, edits, photo info, icon set. CI3 */
 (function (root) {
   'use strict';
 
-  var RELEASE = 'CI2';
+  var RELEASE = 'CI3';
   var H = root.ICHelpers;
   var Zip = root.ICZip;
   var Theme = root.ICTheme;
@@ -10,6 +10,8 @@
   var Conv = root.ICConvert;
   var Presets = root.ICPresets;
   var Edit = root.ICEdit;
+  var Exif = root.ICExif;
+  var Ico = root.ICIco;
 
   var items = [];
   var selectedId = null;
@@ -26,6 +28,7 @@
   var avifOk = false;
   var activePreset = '';
   var cropDrag = null;
+  var gpsAck = false;
 
   function $(id) { return document.getElementById(id); }
 
@@ -49,7 +52,10 @@
       wmPosition: 'bottom-right',
       wmOpacity: 60,
       wmColor: '#ffffff',
-      wmScale: 12
+      wmScale: 12,
+      keepDate: false,
+      keepCamera: false,
+      keepGps: false
     };
   }
 
@@ -76,6 +82,9 @@
     if (Number(s.wmOpacity) > 0) d.wmOpacity = Math.round(Number(s.wmOpacity));
     if (typeof s.wmColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.wmColor)) d.wmColor = s.wmColor;
     if (Number(s.wmScale) > 0) d.wmScale = Math.round(Number(s.wmScale));
+    if (typeof s.keepDate === 'boolean') d.keepDate = s.keepDate;
+    if (typeof s.keepCamera === 'boolean') d.keepCamera = s.keepCamera;
+    if (typeof s.keepGps === 'boolean') d.keepGps = s.keepGps;
     if (typeof s.activePreset === 'string') activePreset = s.activePreset;
     return d;
   }
@@ -102,6 +111,9 @@
     s.wmOpacity = cfg.wmOpacity;
     s.wmColor = cfg.wmColor;
     s.wmScale = cfg.wmScale;
+    s.keepDate = cfg.keepDate;
+    s.keepCamera = cfg.keepCamera;
+    s.keepGps = cfg.keepGps;
     s.activePreset = activePreset;
     Theme.saveStore(s);
   }
@@ -126,7 +138,10 @@
       wmPosition: currentSeg('wmPosSeg', 'bottom-right'),
       wmOpacity: numVal('wmOpacity', 60),
       wmColor: ($('wmColor') && $('wmColor').value) || '#ffffff',
-      wmScale: numVal('wmScale', 12)
+      wmScale: numVal('wmScale', 12),
+      keepDate: $('keepDate') ? $('keepDate').checked : false,
+      keepCamera: $('keepCamera') ? $('keepCamera').checked : false,
+      keepGps: $('keepGps') ? $('keepGps').checked : false
     };
     if (cfg.format === 'avif' && !avifOk) cfg.format = 'jpeg';
     return cfg;
@@ -175,6 +190,9 @@
     if ($('wmColor')) $('wmColor').value = cfg.wmColor || '#ffffff';
     if ($('wmScale')) $('wmScale').value = cfg.wmScale;
     if ($('wmScaleVal')) $('wmScaleVal').textContent = String(cfg.wmScale) + '%';
+    if ($('keepDate')) $('keepDate').checked = !!cfg.keepDate;
+    if ($('keepCamera')) $('keepCamera').checked = !!cfg.keepCamera;
+    if ($('keepGps')) $('keepGps').checked = !!cfg.keepGps;
     syncSettingVisibility();
   }
 
@@ -252,7 +270,9 @@
         rotate: 0,
         flipH: false,
         flipV: false,
-        crop: null
+        crop: null,
+        kind: kindOf(name),
+        exifInfo: undefined
       });
       added += 1;
     }
@@ -311,7 +331,17 @@
     item.error = '';
     renderList();
     try {
-      var result = await Conv.processFile(item.file, itemSettings(item, cfg));
+      if (cfg.keepDate || cfg.keepCamera || cfg.keepGps) {
+        await ensureExif(item);
+      }
+      var convSettings = itemSettings(item, cfg);
+      convSettings.exifInfo = item.exifInfo || null;
+      convSettings.exifKeep = {
+        date: !!cfg.keepDate,
+        camera: !!cfg.keepCamera,
+        gps: !!cfg.keepGps
+      };
+      var result = await Conv.processFile(item.file, convSettings);
       item.outBlob = result.blob;
       item.outSize = result.size;
       item.outW = result.width;
@@ -582,6 +612,212 @@
       };
     }
     return s;
+  }
+
+  function kindOf(name) {
+    var ext = H.extOf(name);
+    if (ext === 'svg') return 'svg';
+    if (ext === 'gif') return 'gif';
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpeg';
+    return ext || '';
+  }
+
+  async function ensureExif(item) {
+    if (!item) return null;
+    if (item.exifInfo !== undefined) return item.exifInfo;
+    item.exifInfo = null;
+    if (!Exif || !item.file) return null;
+    try {
+      var buf = new Uint8Array(await item.file.arrayBuffer());
+      item.exifInfo = Exif.describe(buf);
+    } catch (_) {
+      item.exifInfo = null;
+    }
+    return item.exifInfo;
+  }
+
+  function esc(s) {
+    return H.escapeHtml(s);
+  }
+
+  async function showInfo(id) {
+    var item = findItem(id);
+    if (!item) {
+      Dlg.message('Select a photo', 'Tap a photo in the list first, then open Photo info.');
+      return;
+    }
+    selectedId = item.id;
+    renderList();
+    var info = await ensureExif(item);
+    var rows = '';
+    function row(lab, val) {
+      if (val == null || val === '') return;
+      rows += '<tr><th>' + esc(lab) + '</th><td>' + esc(String(val)) + '</td></tr>';
+    }
+    rows += '<tr><th>File</th><td>' + esc(item.name) + ' · ' + esc(H.formatBytes(item.size)) + '</td></tr>';
+    if (item.kind === 'gif') {
+      rows += '<tr><th>Note</th><td>Animated GIFs: only the first frame is used.</td></tr>';
+    }
+    if (item.kind === 'svg') {
+      rows += '<tr><th>Note</th><td>SVG is drawn as a bitmap at the size you choose.</td></tr>';
+    }
+    var warn = '';
+    if (info) {
+      row('Size', (info.width && info.height) ? (info.width + '×' + info.height) : '');
+      row('Camera', info.camera);
+      row('Date', info.date);
+      if (info.hasGps && info.gps) {
+        row('Location', info.gps.text);
+        warn = '<p class="privacy-warn">This photo has a GPS location. It is stripped from the converted file unless you turn on “Keep location (GPS)”.</p>';
+      } else {
+        row('Location', 'None in this file');
+      }
+    } else {
+      rows += '<tr><th>Info</th><td>No JPEG EXIF was found. PNG, WebP, SVG and GIF do not carry this camera and GPS block, and some JPEGs have already had it removed.</td></tr>';
+    }
+    rows += '<tr><th>Keep</th><td>When saving as JPG, only the date, camera name and GPS you tick are written back. Maker notes, lens data and thumbnails are not copied.</td></tr>';
+    Dlg.open({
+      title: 'Photo info',
+      wide: true,
+      html: warn + '<table class="info-table">' + rows + '</table>',
+      actions: [
+        { label: 'Copy data URL', cls: 'secondary-btn', fn: function () { copyDataUrl(item.id); return false; } },
+        { label: 'OK', cls: 'primary-btn' }
+      ]
+    });
+  }
+
+  async function copyDataUrl(id) {
+    var item = findItem(id);
+    if (!item) {
+      Dlg.message('Select a photo', 'Tap a photo in the list first.');
+      return;
+    }
+    var src = item.outBlob || item.file;
+    if (!src) {
+      Dlg.message('Nothing to copy', 'This photo could not be read.');
+      return;
+    }
+    try {
+      var url = await Conv.blobToDataUrl(src);
+      var copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(url);
+          copied = true;
+        } catch (_) { copied = false; }
+      }
+      if (copied) {
+        Dlg.message('Copied', 'The data URL is on the clipboard. It starts with data:image/… and then Base64 bytes.');
+        return;
+      }
+      Dlg.open({
+        title: 'Data URL',
+        wide: true,
+        html: '<p>This browser blocked clipboard access. Select the text below and copy it yourself.</p>' +
+          '<textarea id="dataUrlOut" readonly></textarea>',
+        actions: [{ label: 'OK', cls: 'primary-btn' }],
+        onOpen: function () {
+          var ta = $('dataUrlOut');
+          if (ta) {
+            ta.value = url;
+            ta.focus();
+            ta.select();
+          }
+        }
+      });
+    } catch (err) {
+      Dlg.message('Copy failed', (err && err.message) || 'Could not build a data URL.');
+    }
+  }
+
+  function iconSetDialog() {
+    var item = selectedItem();
+    if (!item) {
+      Dlg.message('Select a photo', 'Tap a photo in the list first, then make an icon set from it.');
+      return;
+    }
+    var sizes = (Ico && Ico.DEFAULT_SIZES) ? Ico.DEFAULT_SIZES.slice() : [16, 32, 48, 64, 128, 256];
+    var checks = sizes.map(function (s) {
+      return '<label class="chk"><input type="checkbox" class="icon-size" value="' + s + '" checked> ' + s + ' px</label>';
+    }).join('');
+    Dlg.open({
+      title: 'Icon set',
+      wide: true,
+      html: '<p>Make icons from “' + esc(item.name) + '”. Each size is a square PNG (the photo is fitted inside, with a transparent background). You can download an ICO that contains those PNGs, or a zip of the PNG files.</p>' +
+        '<div class="size-checks">' + checks + '</div>' +
+        '<p class="hint">SVG is drawn as a bitmap. A GIF uses its first frame. Current rotate, flip and crop are applied.</p>',
+      actions: [
+        { label: 'Cancel', cls: 'secondary-btn' },
+        { label: 'Download ICO', cls: 'secondary-btn', fn: function () { buildIconSet(item, 'ico'); return false; } },
+        { label: 'Download PNG zip', cls: 'primary-btn', fn: function () { buildIconSet(item, 'zip'); return false; } }
+      ]
+    });
+  }
+
+  function selectedIconSizes() {
+    var boxes = document.querySelectorAll('.icon-size:checked');
+    var out = [];
+    for (var i = 0; i < boxes.length; i++) {
+      var n = Number(boxes[i].value);
+      if (n > 0) out.push(n);
+    }
+    return out;
+  }
+
+  async function buildIconSet(item, kind) {
+    var sizes = selectedIconSizes();
+    if (!sizes.length) {
+      Dlg.message('Pick a size', 'Tick at least one icon size.');
+      return;
+    }
+    if (busy) return;
+    var cfg = readSettings();
+    busy = true;
+    cancelled = false;
+    var prog = Dlg.progress({
+      title: 'Making icons',
+      note: item.name,
+      onCancel: function () { cancelled = true; }
+    });
+    var work = null;
+    try {
+      work = await Conv.rasterize(item.file, itemSettings(item, cfg));
+      var entries = [];
+      for (var i = 0; i < sizes.length; i++) {
+        if (cancelled) break;
+        prog.update(((i + 1) / (sizes.length + 1)) * 100, sizes[i] + ' px', item.name);
+        var blob = await Conv.pngAtSize(work, sizes[i], '');
+        var data = new Uint8Array(await blob.arrayBuffer());
+        entries.push({ width: sizes[i], height: sizes[i], data: data, name: 'icon-' + sizes[i] + '.png' });
+        await new Promise(function (r) { setTimeout(r, 0); });
+      }
+      if (cancelled) {
+        Dlg.message('Stopped', 'The icon set was not created.');
+        return;
+      }
+      if (!entries.length) {
+        Dlg.message('Icon set failed', 'No icon sizes were created.');
+        return;
+      }
+      var stem = H.stemOf(item.name) || 'icon';
+      if (kind === 'zip') {
+        var zip = Zip.writeStoreZip(entries.map(function (e) {
+          return { name: e.name, data: e.data };
+        }));
+        Conv.downloadBlob(new Blob([zip], { type: 'application/zip' }), stem + '-icons.zip');
+      } else {
+        var ico = Ico.writeIco(entries);
+        Conv.downloadBlob(new Blob([ico], { type: 'image/x-icon' }), stem + '.ico');
+      }
+    } catch (err) {
+      Dlg.message('Icon set failed', (err && err.message) || 'Could not build the icons.');
+    } finally {
+      if (work && Conv.dropCanvas) Conv.dropCanvas(work);
+      busy = false;
+      prog.close();
+      renderAll();
+    }
   }
 
   function dropPreviewBase() {
@@ -897,6 +1133,15 @@
           r.textContent = 'Ready';
           sub.appendChild(r);
         }
+        if (item.kind === 'gif') {
+          var g = document.createElement('span');
+          g.textContent = 'GIF — first frame only';
+          sub.appendChild(g);
+        } else if (item.kind === 'svg') {
+          var sv = document.createElement('span');
+          sv.textContent = 'SVG — drawn as a bitmap';
+          sub.appendChild(sv);
+        }
         meta.appendChild(name);
         meta.appendChild(sub);
         var acts = document.createElement('div');
@@ -917,6 +1162,15 @@
           ev.stopPropagation();
           removeItem(item.id);
         });
+        var info = document.createElement('button');
+        info.type = 'button';
+        info.className = 'btn secondary-btn';
+        info.textContent = 'Info';
+        info.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          showInfo(item.id);
+        });
+        acts.appendChild(info);
         acts.appendChild(dl);
         acts.appendChild(rm);
         li.appendChild(meta);
@@ -976,6 +1230,9 @@
     if ($('convertBtn')) $('convertBtn').disabled = !has || busy;
     if ($('zipBtn')) $('zipBtn').disabled = !has || busy;
     if ($('clearBtn')) $('clearBtn').disabled = !has || busy;
+    if ($('iconSetBtn')) $('iconSetBtn').disabled = !has || busy;
+    if ($('infoBtn')) $('infoBtn').disabled = !has;
+    if ($('copyDataBtn')) $('copyDataBtn').disabled = !has;
   }
 
   function helpHtml() {
@@ -992,6 +1249,10 @@
       '<li>Presets: WhatsApp, Instagram, Email, Indian passport photo (413×531, under 40 KB) and signature (300×80, under 30 KB). You can save your own.</li>' +
       '<li>Crop to 1:1, 4:5, 16:9 or passport (7:9). Rotate 90° and flip the selected photo.</li>' +
       '<li>Optional text or logo watermark, with position and opacity. A background colour fills transparent areas when saving as JPG.</li>' +
+      '<li>Photo info shows camera, date and GPS from a JPEG, with a privacy warning if a location is present. When saving as JPG you can keep the date, the camera, or the location. Only those fields are written back; maker notes, lens data and thumbnails are not copied.</li>' +
+      '<li>Icon set: make an ICO (PNG images inside) plus a zip of 16, 32, 48, 64, 128 and 256 px PNGs from the selected photo.</li>' +
+      '<li>SVG files are drawn as a bitmap. Animated GIFs use the first frame. You can copy a photo as a data URL (Base64).</li>' +
+      '<li>iPhone HEIC photos are not supported, because opening them offline needs a heavy library.</li>' +
       '</ul>' +
       '<p class="hint">Release ' + RELEASE + '. Fully offline.</p>';
   }
@@ -1031,7 +1292,7 @@
     bindSeg('cropSeg', function () { onCropRatio(); });
     bindSeg('wmPosSeg', function () { settingsChanged(); });
 
-    ['longestIn', 'percentIn', 'widthIn', 'heightIn', 'qualityIn', 'targetKb', 'patternIn', 'keepAspect', 'noEnlarge', 'useTarget', 'bgIn', 'wmText', 'wmOpacity', 'wmScale', 'wmColor'].forEach(function (id) {
+    ['longestIn', 'percentIn', 'widthIn', 'heightIn', 'qualityIn', 'targetKb', 'patternIn', 'keepAspect', 'noEnlarge', 'useTarget', 'bgIn', 'wmText', 'wmOpacity', 'wmScale', 'wmColor', 'keepDate', 'keepCamera'].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       el.addEventListener('change', settingsChanged);
@@ -1113,6 +1374,32 @@
     if ($('convertBtn')) $('convertBtn').addEventListener('click', function () { convertAll(); });
     if ($('zipBtn')) $('zipBtn').addEventListener('click', function () { downloadZip(); });
     if ($('clearBtn')) $('clearBtn').addEventListener('click', clearList);
+    if ($('iconSetBtn')) $('iconSetBtn').addEventListener('click', iconSetDialog);
+    if ($('infoBtn')) $('infoBtn').addEventListener('click', function () { showInfo(selectedId); });
+    if ($('copyDataBtn')) $('copyDataBtn').addEventListener('click', function () { copyDataUrl(selectedId); });
+    if ($('keepGps')) {
+      $('keepGps').addEventListener('change', function () {
+        if ($('keepGps').checked && !gpsAck) {
+          Dlg.open({
+            title: 'Keep the location?',
+            html: '<p class="privacy-warn">This will write the photo’s GPS coordinates into the new JPG. Only do this if you want to share where it was taken.</p>',
+            dismissable: false,
+            actions: [
+              { label: 'Don’t keep', cls: 'secondary-btn', fn: function () {
+                $('keepGps').checked = false;
+                settingsChanged();
+              } },
+              { label: 'Keep location', cls: 'primary-btn', fn: function () {
+                gpsAck = true;
+                settingsChanged();
+              } }
+            ]
+          });
+          return;
+        }
+        settingsChanged();
+      });
+    }
     if ($('helpBtn')) {
       $('helpBtn').addEventListener('click', function () {
         Dlg.open({

@@ -47,3 +47,31 @@
   RELEASE / title / `?v=` = CI2.
 - Tests: `node --check`, `node tests/ci1.test.cjs`, `node tests/ci2.test.cjs`.
   No Puppeteer, Playwright or jsdom.
+
+
+## CI3
+
+- Photo info viewer: a pure-JS EXIF parse (`ic_exif.js`) shows camera,
+  date and GPS, with a privacy warning when a location is present.
+  When saving as JPG you can keep the date, the camera, and/or GPS.
+  A minimal EXIF block is written back. Maker notes, lens data, ICC
+  and thumbnails are not copied. GPS is off by default.
+- Icon set: from the selected photo, an ICO containing PNG entries
+  (`ic_ico.js`) plus a zip of 16, 32, 48, 64, 128 and 256 px PNGs.
+- SVG is drawn as a bitmap. A GIF uses its first frame. Copy a photo
+  as a data URL (Base64), with a fallback textarea if the clipboard
+  is blocked.
+- iPhone HEIC is not supported; a standing in-app note says so.
+- New files: `ic_ico.js`, `tests/ci3.test.cjs`. RELEASE / title /
+  `?v=` = CI3.
+- Tests: `node --check`, `node tests/ci1.test.cjs`, `ci2`, `ci3`.
+  No Puppeteer, Playwright or jsdom.
+
+### CI3 limits
+
+- Selective EXIF keep only works for JPEG output, and only for date,
+  camera make/model and GPS. Adding EXIF after a target-size search
+  can make the file a few hundred bytes over the target.
+- Icon ICO files use PNG entries (Windows Vista and later).
+- Clipboard write needs a secure context; otherwise the data URL is
+  shown in a dialog to copy by hand.

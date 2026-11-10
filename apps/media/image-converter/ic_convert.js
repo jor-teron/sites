@@ -1,4 +1,4 @@
-/* Image Converter — ic_convert.js: decode (oriented), crop/rotate/watermark, resize, encode. CI2 */
+/* Image Converter — ic_convert.js: decode, edit, encode, optional EXIF write-back. CI3 */
 (function (root) {
   'use strict';
 
@@ -336,6 +336,15 @@
         blob = await canvasToBlob(outCanvas, mime, format === 'png' ? undefined : quality);
       }
 
+      if (format === 'jpeg' && E && settings.exifKeep && settings.exifInfo) {
+        var opts = E.keepFromDescribe(settings.exifInfo, settings.exifKeep);
+        if (opts.date || opts.make || opts.model || opts.gps) {
+          var bytes = new Uint8Array(await blob.arrayBuffer());
+          bytes = E.writeJpegExif(bytes, opts);
+          blob = new Blob([bytes], { type: mime });
+        }
+      }
+
       return {
         blob: blob,
         width: outCanvas.width,
@@ -349,6 +358,53 @@
       dropCanvas(outCanvas);
       dropCanvas(src);
     }
+  }
+
+  /**
+   * Decode, honour orientation, apply CI2 transforms, and return the
+   * working canvas. Caller must dropCanvas when done.
+   */
+  async function rasterize(file, settings) {
+    var decoded = await decodeOriented(file);
+    var out = applyTransforms(decoded.canvas, settings);
+    if (out !== decoded.canvas) dropCanvas(decoded.canvas);
+    return out;
+  }
+
+  /** Draw src into a square PNG of `size` px (contain, optional background). */
+  async function pngAtSize(srcCanvas, size, bg) {
+    size = Math.max(1, Math.round(Number(size) || 1));
+    var c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    var ctx = c.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not available');
+    if (bg) {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, size, size);
+    }
+    var s = Math.min(size / srcCanvas.width, size / srcCanvas.height);
+    var w = Math.max(1, Math.round(srcCanvas.width * s));
+    var h = Math.max(1, Math.round(srcCanvas.height * s));
+    var x = Math.round((size - w) / 2);
+    var y = Math.round((size - h) / 2);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = size >= 48 ? 'high' : 'medium';
+    ctx.drawImage(srcCanvas, x, y, w, h);
+    try {
+      return await canvasToBlob(c, 'image/png');
+    } finally {
+      dropCanvas(c);
+    }
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result || '')); };
+      r.onerror = function () { reject(new Error('Could not read the file')); };
+      r.readAsDataURL(blob);
+    });
   }
 
   function downloadBlob(blob, name) {
@@ -370,7 +426,10 @@
     decodeOriented: decodeOriented,
     applyTransforms: applyTransforms,
     processFile: processFile,
+    rasterize: rasterize,
+    pngAtSize: pngAtSize,
     canvasToBlob: canvasToBlob,
+    blobToDataUrl: blobToDataUrl,
     downloadBlob: downloadBlob,
     dropCanvas: dropCanvas
   };
