@@ -188,7 +188,16 @@ const Render = (() => {
       const el = tokens.get(player.id);
       if (!el) continue;
       const group = players.filter((p) => p.onBoard && p.pos === player.pos);
-      const off = group.length > 1 ? CONFIG.TOKEN_LAYOUT[group.indexOf(player)] : [0, 0];
+      const slot = group.indexOf(player);
+      const off =
+        group.length === 2
+          ? [
+              [-0.23, 0],
+              [0.23, 0],
+            ][slot]
+          : group.length > 2
+            ? CONFIG.TOKEN_LAYOUT[slot]
+            : [0, 0];
       const p = Board.center(player.pos);
       el.classList.toggle('active', player.id === activeId);
       el.hidden = !player.onBoard;
@@ -261,8 +270,7 @@ const Render = (() => {
   }
   function confetti() {
     if (SNLSettings.reduced()) return;
-    const epoch = motionEpoch,
-      root = document.createElement('div');
+    const root = document.createElement('div');
     root.className = 'confetti';
     root.setAttribute('aria-hidden', 'true');
     document.body.append(root);

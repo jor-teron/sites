@@ -40,6 +40,7 @@ window.HUB_APP_INDEX = {
   "tic-tac-toe": ["Games", "apps/games/tic-tac-toe/", "Tic-Tac-Toe", "apps/games/tic-tac-toe/tic-tac-toe_icon.png", 0, "Get three in a row on a 3x3 grid - play a friend or the computer"],
   "connect-4": ["Games", "apps/games/connect-4/", "Connect 4", "apps/games/connect-4/connect-4_icon.png", 0, "Drop red and yellow discs to line up four - play a friend or the computer"],
   "ping-pong": ["Games", "apps/games/ping-pong/", "Ping Pong", "apps/games/ping-pong/ping-pong_icon.png", 0, "Paddle and ball table tennis - return the ball and outscore your opponent"],
+  "snake-ladder": ["Games", "apps/games/snake-ladder/", "Snake & Ladder", "apps/games/snake-ladder/assets/snake-ladder_icon.png", 0, "Climb wooden ladders and dodge colourful snakes in a race to 100"],
   "snake": ["Games", "apps/games/snake/", "Snake", "apps/games/snake/snake_icon.png", 0, "Steer the snake to eat food and grow longer without hitting yourself"],
   "space-invader": ["Games", "apps/games/space-invader/", "Space Invaders", "apps/games/space-invader/space-invader_icon.png", 0, "Retro shooter: move your cannon and blast waves of descending aliens"],
   "demolisher": ["Games", "apps/games/demolisher/", "Demolisher", "apps/games/demolisher/demolisher_icon.png", 0, "Side-scrolling action: smash buildings and fight enemies with physics weapons"],

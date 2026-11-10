@@ -144,20 +144,7 @@ select {
   gap: 5px;
   padding: 11px;
   perspective: 400px;
-  transform-style: preserve-3d;
   border: 1px solid #fff9;
-}
-.pip {
-  border-radius: 50%;
-  background: #304339;
-  box-shadow:
-    inset 1px 2px 2px #0007,
-    0 1px #fff;
-  visibility: hidden;
-  aspect-ratio: 1;
-}
-.pip.visible {
-  visibility: visible;
 }
 .dice.rolling {
   animation: die-tumble 0.42s ease-in-out both;
@@ -208,4 +195,196 @@ select {
     gap: 3px;
     padding: 8px;
   }
+}
+/* SNL-2c: seat setup, rules and accessible help. */
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+legend {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.seats {
+  display: grid;
+  gap: 7px;
+}
+.seat-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 1fr;
+  gap: 7px;
+  align-items: center;
+}
+.seat-row select {
+  font-size: 12px;
+  padding: 8px;
+  min-height: 38px;
+}
+.seat-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.house-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 12px;
+}
+.house-rules label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+.house-rules input {
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  accent-color: var(--accent);
+}
+#lobby-error:empty {
+  display: none;
+}
+#lobby-error {
+  color: #c54c3f;
+  font-size: 12px;
+  margin: 0;
+}
+.player-label {
+  display: flex;
+  flex-direction: column;
+}
+.player-label small {
+  font-size: 9px;
+  color: var(--muted);
+}
+#save-note {
+  font-size: 10px;
+  margin: 8px 0 0;
+  grid-column: 1/-1;
+}
+#mute-toggle {
+  margin-left: auto;
+}
+#mute-toggle,
+#btn-help {
+  padding: 5px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  font-size: 20px;
+}
+#btn-help {
+  font-size: 16px;
+}
+#gear {
+  margin-left: 0;
+}
+.appbar {
+  gap: 8px;
+}
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+dialog {
+  width: min(540px, calc(100% - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 20px 80px #0008;
+}
+dialog::backdrop {
+  background: #132b27aa;
+}
+.help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+dialog h3 {
+  font-size: 16px;
+  margin: 20px 0 6px;
+}
+dialog p,
+dialog li {
+  font-size: 13px;
+  color: var(--muted);
+}
+dialog li {
+  margin: 8px 0;
+}
+.motion-option {
+  margin: 20px 0 0;
+  font-size: 13px;
+}
+@media (max-width: 420px) {
+  .appbar h1 {
+    font-size: 15px;
+  }
+  .appbar .eyebrow {
+    display: none;
+  }
+  .appbar img {
+    width: 30px;
+    height: 30px;
+  }
+  .appbar {
+    padding: 7px 9px;
+    gap: 7px;
+  }
+  #gear a {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .seat-row {
+    grid-template-columns: 64px 1fr 1fr;
+  }
+  .lobby-card {
+    gap: 12px;
+  }
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  #players {
+    margin: 3px 0;
+  }
+  #players li {
+    padding: 3px 5px;
+  }
+  .player-label small {
+    font-size: 8px;
+  }
+  #save-note {
+    margin: 4px 0 0;
+  }
+  .lobby {
+    align-items: start;
+  }
+  .lobby-card {
+    margin-bottom: 20px;
+  }
+}
+
+#board:focus-visible {
+  outline: 3px solid #e49c36;
+  outline-offset: 4px;
 }

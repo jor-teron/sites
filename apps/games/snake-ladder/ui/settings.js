@@ -5,6 +5,11 @@ const SNLSettings = (() => {
   const gs = window.GameSettings;
   const fallback = { theme: 'auto', lowGraphics: false, sfx: true, masterVolume: 0.8, difficulty: 'normal' };
   const get = (k) => (gs ? gs.get(k) : fallback[k]);
+  const set = (k, v) => {
+    if (gs) gs.set(k, v);
+    else fallback[k] = v;
+    apply();
+  };
   const reduced = () => get('lowGraphics') || matchMedia('(prefers-reduced-motion: reduce)').matches;
   function apply() {
     document.documentElement.classList.toggle('reduced-motion', reduced());
@@ -26,5 +31,5 @@ const SNLSettings = (() => {
     matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', apply);
     apply();
   }
-  return { get, init, apply, reduced };
+  return { get, set, init, apply, reduced };
 })();

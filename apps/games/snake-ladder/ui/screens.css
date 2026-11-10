@@ -176,10 +176,11 @@
     gap: 14px;
   }
   #board-wrap {
-    width: min(100%, calc(100dvh - 76px));
+    width: min(100%, calc(100dvh - 86px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
   }
   .board-caption {
     font-size: 8px;
+    line-height: 1;
     padding: 3px 5px;
   }
   .board-rim {
@@ -213,7 +214,7 @@
     gap: 5px;
   }
   #log {
-    height: 56px;
+    height: 66px;
   }
   .log-title {
     margin-top: 5px;

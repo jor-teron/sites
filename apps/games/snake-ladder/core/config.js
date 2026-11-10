@@ -23,10 +23,10 @@ const CONFIG = {
   PLAYER_NAMES: ['Red', 'Green', 'Yellow', 'Purple'],
   TOKEN_LAYOUT: [
     // offsets inside a cell, as fraction of cell size
-    [-0.18, -0.18],
-    [0.18, -0.18],
-    [-0.18, 0.18],
-    [0.18, 0.18],
+    [-0.23, -0.2],
+    [0.23, -0.2],
+    [-0.23, 0.2],
+    [0.23, 0.2],
   ],
   MIN_PLAYERS: 2,
   MAX_PLAYERS: 4,
@@ -38,5 +38,5 @@ const CONFIG = {
 
   // feel
   HOP_MS: 130, // time per cell when walking
-  DICE_MS: 420, // dice flicker duration
+  DICE_MS: 420, // dice tumble duration
 };

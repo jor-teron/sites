@@ -1,57 +1,56 @@
-/* ui.js — screens, panel, dice, player list, log. Wires Engine to Render. */
-
+/* Screens, accessible turn log, automatic seats and cancellation boundaries. */
 const Ui = (() => {
   const $ = (id) => document.getElementById(id);
-
-  const screens = {
-    lobby: $('screen-lobby'),
-    play: $('screen-play'),
-    result: $('screen-result'),
-  };
-
+  let screen = 'lobby',
+    cpuTimer = null,
+    cpuEpoch = 0;
+  const screens = ['lobby', 'play', 'result'];
+  function clearCPU() {
+    clearTimeout(cpuTimer);
+    cpuTimer = null;
+    cpuEpoch++;
+  }
   function show(name) {
-    for (const k in screens) screens[k].classList.toggle('hidden', k !== name);
+    screen = name;
+    screens.forEach((s) => $(`screen-${s}`).classList.toggle('hidden', s !== name));
+    if (name !== 'play') clearCPU();
   }
-
-  /* ---------- log ---------- */
-  function log(html, cls = '') {
-    const box = $('log');
+  function log(text) {
     const line = document.createElement('div');
-    if (cls) line.className = cls;
-    line.innerHTML = html;
-    box.appendChild(line);
-    box.scrollTop = box.scrollHeight;
+    line.textContent = text;
+    $('log').append(line);
+    while ($('log').childElementCount > 40) $('log').firstChild.remove();
+    $('log').scrollTop = $('log').scrollHeight;
   }
-  function clearLog() {
-    $('log').innerHTML = '';
-  }
-
-  const tag = (p) => `<span class="hl">${p.name}</span>`;
-
-  /* ---------- panel ---------- */
-  function refresh() {
-    const st = Engine.state;
-    if (!st) return;
-    Render.layout(st.players, st.players[st.turn]?.id);
-    renderPlayers(st);
-  }
-
-  function renderPlayers(state) {
-    const list = $('players');
-    list.innerHTML = '';
-    for (const p of state.players) {
+  function renderPlayers(s) {
+    $('players').replaceChildren();
+    for (const p of s.players) {
       const li = document.createElement('li');
-      li.className = p.id === state.players[state.turn].id && !state.over ? 'active' : '';
-      li.innerHTML = `
-        <span class="dot ${p.color}"></span>
-        <span class="pname">${p.name}</span>
-        <span class="pcell">${p.onBoard ? p.pos + 1 : '&ndash;'}</span>`;
-      list.appendChild(li);
+      li.className = p.id === s.players[s.turn].id && !s.over ? 'active' : '';
+      const dot = document.createElement('span');
+      dot.className = `dot ${p.color}`;
+      dot.setAttribute('aria-hidden', 'true');
+      const name = document.createElement('span');
+      name.textContent = p.name;
+      const sub = document.createElement('small');
+      sub.textContent = p.kind === 'cpu' ? `CPU · ${p.level}` : 'Human';
+      const label = document.createElement('span');
+      label.className = 'player-label';
+      label.append(name, sub);
+      const pos = document.createElement('span');
+      pos.className = 'pcell';
+      pos.textContent = p.onBoard ? p.pos + 1 : 'Gate';
+      li.append(dot, label, pos);
+      $('players').append(li);
     }
   }
-
-  /* Nine fixed pip positions; the face tumbles without changing the fair result. */
-  function settle(value) {
+  function refresh() {
+    const s = Engine.state;
+    if (!s) return;
+    Render.layout(s.players, s.players[s.turn]?.id);
+    renderPlayers(s);
+  }
+  function settleDie(value) {
     const dice = $('dice');
     dice.classList.remove('rolling');
     dice.replaceChildren();
@@ -63,158 +62,237 @@ const Ui = (() => {
       5: [0, 2, 4, 6, 8],
       6: [0, 2, 3, 5, 6, 8],
     };
-    for (let i = 0; i < 9; i++) {
-      const pip = document.createElement('i');
-      pip.className = 'pip' + ((faces[value] || []).includes(i) ? ' visible' : '');
-      dice.append(pip);
-    }
-    dice.setAttribute('aria-label', typeof value === 'number' ? `Die: ${value}` : 'Ready to roll');
+    // Paint pips in the same background as the bevel. Some mobile/Chrome GPU paths
+    // intermittently lose independently composited grid children after a 3D tumble.
+    const circles = (faces[value] || [])
+      .map(
+        (i) =>
+          `<circle cx="${27 + (i % 3) * 23}" cy="${24 + Math.floor(i / 3) * 23}" r="6.5" fill="#304339"/>`,
+      )
+      .join('');
+    const face = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${circles}</svg>`;
+    dice.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(face)}"),linear-gradient(135deg,#fff,#e7d8b8)`;
+    dice.dataset.value = value || '';
+    dice.setAttribute('aria-label', value ? `Die: ${value}` : 'Ready to roll');
   }
-  function flicker() {
-    settle(5);
-    $('dice').classList.add('rolling');
-    $('dice').setAttribute('aria-label', 'Die rolling');
+  function resumeButton() {
+    const saved = SNLSave.load();
+    $('btn-resume').hidden = !saved;
+    if (saved) $('btn-resume').textContent = `Resume board ${String(saved.seed).padStart(2, '0')} →`;
   }
-
-  /* ---------- engine events ---------- */
+  function scheduleCPU() {
+    clearCPU();
+    const s = Engine.state;
+    if (screen !== 'play' || document.hidden || $('help').open || !s || s.over || s.rolling) return;
+    const player = s.players[s.turn];
+    if (player.kind !== 'cpu') return;
+    const plan = SNLCPU.plan(s, player.level),
+      token = cpuEpoch;
+    log(`${player.name}: ${plan.message}`);
+    cpuTimer = setTimeout(() => {
+      if (
+        token === cpuEpoch &&
+        screen === 'play' &&
+        !document.hidden &&
+        !$('help').open &&
+        Engine.state === s
+      )
+        Engine.roll();
+    }, plan.delay);
+  }
+  function turn({ player }) {
+    refresh();
+    $('btn-roll').disabled = player.kind === 'cpu' || Engine.state.rolling;
+    $('btn-roll').textContent = player.kind === 'cpu' ? `${player.name} thinking…` : `Roll · ${player.name}`;
+    $('turn-status').textContent = `${player.name}'s turn${player.kind === 'cpu' ? ' · computer' : ''}`;
+    scheduleCPU();
+  }
   function bindEngine() {
-    Engine.on('reset', (st) => {
-      clearLog();
-      settle('–');
-      Render.drawBoard(st);
-      renderPlayers(st);
-      $('btn-roll').disabled = false;
-      $('panel-seed').textContent = String(st.seed).padStart(2, '0');
-      log(`Board <span class="hl">#${String(st.seed).padStart(2, '0')}</span> —
-           ${st.board.ladders.length} ladders, ${st.board.snakes.length} snakes.`);
-      log(`${tag(st.players[0])} to roll.`);
+    Engine.on('reset', (s) => {
+      clearCPU();
+      $('log').replaceChildren();
+      settleDie();
+      Render.drawBoard(s);
+      renderPlayers(s);
+      $('panel-seed').textContent = String(s.seed).padStart(2, '0');
+      log(`Board #${String(s.seed).padStart(2, '0')} — 9 ladders and 8 snakes. Race to 100!`);
     });
-
+    Engine.on('cancel', () => {
+      clearCPU();
+      Render.cancelMotion();
+      settleDie();
+    });
+    Engine.on('settled', (s) => {
+      if (s.over) SNLSave.clear();
+      else {
+        const ok = SNLSave.store(Engine.snapshot());
+        $('save-note').textContent = ok
+          ? 'Progress saved after every turn.'
+          : 'Storage unavailable — progress lasts only in this tab.';
+      }
+    });
     Engine.on('roll-start', () => {
       $('btn-roll').disabled = true;
-      flicker();
+      $('turn-status').textContent = 'Rolling…';
+      settleDie(5);
+      $('dice').classList.add('rolling');
+      $('dice').setAttribute('aria-label', 'Die rolling');
+      SNLSound.play('roll');
     });
-
     Engine.on('rolled', ({ player, value }) => {
-      settle(value);
-      log(`${tag(player)} rolled <span class="hl">${value}</span>.`);
+      settleDie(value);
+      log(`${player.name} rolled ${value}.`);
     });
-
     const step = async ({ player, from, cell }) => {
+      SNLSound.play('hop');
       await Render.hop(player, from, cell);
-      renderPlayers(Engine.state);
+      // The render waiter may have resolved because Quit cancelled it.
+      if (Engine.state?.players.includes(player)) renderPlayers(Engine.state);
     };
-    Engine.on('hop', step);
     Engine.on('step', step);
-    Engine.on('jump-start', ({ player, from, to, kind }) => Render.ride(player, from, to, kind));
-    Engine.on('blocked', ({ needed }) => {
-      log(`No move — needs exactly ${needed}.`);
+    Engine.on('hop', step);
+    Engine.on('jump-start', ({ player, from, to, kind }) => {
+      SNLSound.play(kind);
+      return Render.ride(player, from, to, kind);
     });
-
-    Engine.on('jump', ({ player, from, to, kind }) => {
+    Engine.on('jump', ({ from, to, kind }) => {
       refresh();
-      log(
-        kind === 'ladder'
-          ? `&nbsp;&nbsp;<span class="up">ladder ${from + 1} &rarr; ${to + 1}</span>`
-          : `&nbsp;&nbsp;<span class="down">snake ${from + 1} &rarr; ${to + 1}</span>`,
-      );
+      log(`${kind === 'ladder' ? 'Climb' : 'Slide'}: ${from + 1} → ${to + 1}.`);
     });
-
-    Engine.on('extra-turn', ({ player }) => {
-      log(`&nbsp;&nbsp;${tag(player)} rolls again.`);
-    });
-
-    Engine.on('turn', ({ player }) => {
-      refresh();
-      $('btn-roll').disabled = false;
-      $('btn-roll').textContent = `Roll — ${player.name}`;
-    });
-
+    Engine.on('blocked', ({ needed, entry }) =>
+      log(entry ? 'A six opens the gate. Try next turn.' : `Needs exactly ${needed} to reach 100. No move.`),
+    );
+    Engine.on('extra-turn', ({ player }) => log(`A six! ${player.name} rolls again.`));
+    Engine.on('turn', turn);
     Engine.on('win', ({ player }) => {
-      log(`${tag(player)} reaches ${CONFIG.FINISH_CELL + 1}!`, 'win');
+      log(`${player.name} reaches 100!`);
+      SNLSound.play('win');
     });
-
-    Engine.on('gameover', ({ player, state: st }) => {
+    Engine.on('gameover', ({ player }) => {
       refresh();
       $('result-title').textContent = `${player.name} wins!`;
-      $('result-sub').textContent = `Board #${String(st.seed).padStart(2, '0')} · ${player.rolls} rolls`;
+      $('result-sub').textContent = `Board #${Engine.state.seed} · ${player.rolls} rolls · first to 100`;
       show('result');
       Render.confetti();
+      $('btn-again').focus();
     });
   }
-
-  /* ---------- lobby ---------- */
   function readLobby() {
-    let seed = parseInt($('seed-input').value.trim(), 10);
-    if (!Number.isFinite(seed)) seed = 0;
-    seed = Math.min(99, Math.max(0, seed));
+    const value = Number.parseInt($('seed-input').value, 10),
+      seed = Math.max(0, Math.min(99, Number.isFinite(value) ? value : 0));
     $('seed-input').value = seed;
-    return { seed, playerCount: parseInt($('player-count').value, 10) };
+    const seats = [0, 1, 2, 3]
+      .map((id) => ({ id, kind: $(`seat-${id}`).value, level: $(`level-${id}`).value }))
+      .filter((s) => s.kind !== 'off');
+    return {
+      seed,
+      seats,
+      rules: {
+        exact: $('rule-exact').checked,
+        sixAgain: $('rule-again').checked,
+        sixStart: $('rule-start').checked,
+      },
+    };
   }
-
   function start() {
-    const { seed, playerCount } = readLobby();
+    const options = readLobby();
+    if (options.seats.length < 2) {
+      $('lobby-error').textContent = 'Choose at least two Human or CPU seats.';
+      return;
+    }
+    SNLSound.unlock();
+    clearCPU();
+    Render.cancelMotion();
     show('play');
-    Engine.reset({ seed, playerCount });
+    Engine.reset(options);
+    $('btn-roll').focus();
   }
-
-  function stepSeed(delta) {
-    const cur = readLobby().seed;
-    $('seed-input').value = (cur + delta + 100) % 100;
+  function quit() {
+    // Engine first invalidates the async session, then Render resolves outstanding animation waiters.
+    Engine.cancel();
+    show('lobby');
+    resumeButton();
+    $('btn-start').focus();
   }
-
-  function bindLobby() {
-    $('btn-start').addEventListener('click', start);
-
-    $('seed-random').addEventListener('click', () => {
-      $('seed-input').value = Math.floor(Math.random() * 100);
-    });
-
-    $('seed-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        start();
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        stepSeed(+1);
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        stepSeed(-1);
-      }
-    });
-
-    $('btn-roll').addEventListener('click', () => Engine.roll());
-    $('btn-again').addEventListener('click', () => show('lobby'));
-    $('btn-quit').addEventListener('click', () => show('lobby'));
-
-    // space / enter rolls while playing
-    document.addEventListener('keydown', (e) => {
-      if (screens.play.classList.contains('hidden')) return;
-      if (e.code !== 'Space' && e.code !== 'Enter') return;
-      e.preventDefault();
-      if (!$('btn-roll').disabled) Engine.roll();
-    });
-
-    // tokens are positioned in %, so a resize needs a re-layout
-    window.addEventListener('resize', () => {
-      const st = Engine.state;
-      if (st) Render.layout(st.players, st.players[st.turn]?.id);
-    });
+  function syncSettings() {
+    $('motion-toggle').checked = !SNLSettings.get('lowGraphics');
+    $('mute-toggle').textContent = SNLSettings.get('sfx') ? '♪' : '♫̸';
+    $('mute-toggle').setAttribute('aria-pressed', String(!SNLSettings.get('sfx')));
+    $('mute-toggle').setAttribute('aria-label', SNLSettings.get('sfx') ? 'Mute sounds' : 'Unmute sounds');
   }
-
   function init() {
     SNLSettings.init();
-    $('motion-toggle').checked = !SNLSettings.get('lowGraphics');
-    $('motion-toggle').addEventListener('change', (e) => {
-      window.GameSettings?.set('lowGraphics', !e.target.checked);
-    });
+    syncSettings();
     bindEngine();
-    bindLobby();
-    $('seed-input').value = String(Math.floor(Math.random() * 100));
-    $('btn-roll').textContent = 'Roll';
+    window.GameSettings?.onChange(syncSettings);
+    const defaultLevel =
+      { easy: 'easy', normal: 'medium', hard: 'hard' }[SNLSettings.get('difficulty')] || 'medium';
+    for (let id = 0; id < 4; id++) {
+      $(`level-${id}`).value = defaultLevel;
+      const update = () => {
+        $(`level-${id}`).disabled = $(`seat-${id}`).value !== 'cpu';
+      };
+      $(`seat-${id}`).addEventListener('change', update);
+      update();
+    }
+    $('btn-start').addEventListener('click', start);
+    $('btn-resume').addEventListener('click', () => {
+      const saved = SNLSave.load();
+      if (!saved) {
+        resumeButton();
+        return;
+      }
+      SNLSound.unlock();
+      show('play');
+      Engine.restore(saved);
+    });
+    $('seed-random').addEventListener(
+      'click',
+      () => ($('seed-input').value = Math.floor(Math.random() * 100)),
+    );
+    $('btn-roll').addEventListener('click', () => {
+      SNLSound.unlock();
+      Engine.roll();
+    });
+    $('btn-quit').addEventListener('click', quit);
+    $('btn-again').addEventListener('click', () => {
+      Engine.cancel();
+      show('lobby');
+      resumeButton();
+    });
+    $('motion-toggle').addEventListener('change', (e) => SNLSettings.set('lowGraphics', !e.target.checked));
+    $('mute-toggle').addEventListener('click', () => {
+      SNLSettings.set('sfx', !SNLSettings.get('sfx'));
+      syncSettings();
+      SNLSound.unlock();
+    });
+    $('btn-help').addEventListener('click', () => {
+      clearCPU();
+      $('help').showModal();
+    });
+    $('help-close').addEventListener('click', () => $('help').close());
+    $('help').addEventListener('close', scheduleCPU);
+    document.addEventListener('visibilitychange', () => (document.hidden ? clearCPU() : scheduleCPU()));
+    addEventListener('storage', (e) => {
+      if (e.key === SNLSave.KEY || e.key === null) resumeButton();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (
+        screen !== 'play' ||
+        $('help').open ||
+        e.repeat ||
+        e.code !== 'Space' ||
+        /INPUT|SELECT|BUTTON|A/.test(e.target.tagName)
+      )
+        return;
+      e.preventDefault();
+      if (!$('btn-roll').disabled) {
+        SNLSound.unlock();
+        Engine.roll();
+      }
+    });
+    resumeButton();
     show('lobby');
   }
-
-  return { init, show };
+  return { init, show, start, quit };
 })();
