@@ -21,13 +21,27 @@ const assert = require('node:assert/strict');
     await page.select('#scale',mode); await page.click('#all');
     const range=await page.evaluate(()=>HT.range(HT.state.view));assert(Math.abs(range[0]+300000)<1);checks++;
     await page.click('#decade');const short=await page.evaluate(()=>HT.range(HT.state.view));assert(short[1]-short[0]<=10.1);checks++;
-    await page.click('#all'); const r=await page.$eval('canvas',e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
+    await page.click('#all'); await page.$eval('canvas',e=>e.scrollIntoView({block:'center'})); const r=await page.$eval('canvas',e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
     await page.mouse.move(r.x+r.w*.7,r.y+r.h*.6);await page.mouse.wheel({deltaY:-1000});
     await page.waitForFunction(()=>HT.range(HT.state.view)[0]>-299999);checks++;
     await page.click('#all');await page.focus('canvas');await page.keyboard.press('+');assert((await page.evaluate(()=>HT.range(HT.state.view)[0]))>-300000);checks++;
    }
+   if(await page.$('.filters')){
+    await page.click('[data-topic=science]');assert(await page.evaluate(()=>HT.state.events.length>0&&HT.state.events.every(e=>e.topic==='science')));checks++;
+    await page.click('[data-topic=""]');
+    assert.equal(await page.evaluate(()=>HT.events.length),350);checks++;
+    await page.evaluate(()=>HT.select(HT.events.find(e=>e.id==='independence')));
+    if(await page.$('#contemporaries > button'))await page.click('#contemporaries > button');
+    assert(await page.$eval('#contemporaries',e=>e.textContent.includes('United Nations founded')));checks++;
+    assert.equal(await page.$$eval('.map svg circle',e=>e.length),2);checks++;
+    await page.click('#bookmark-event');assert(await page.evaluate(()=>HT.bookmarks.includes('independence')));checks++;
+    await page.click('[data-topic=bookmarks]');assert(await page.evaluate(()=>HT.state.events.length===1&&HT.state.events[0].id==='independence'));checks++;
+    await page.reload({waitUntil:'networkidle0'});assert(await page.evaluate(()=>HT.bookmarks.includes('independence')));checks++;
+    await page.evaluate(()=>HT.select(HT.events.find(e=>e.id==='independence')));await page.click('#bookmark-event');assert(await page.evaluate(()=>HT.bookmarks.length===0));checks++;
+   }
    await page.select('#scale','log'); await page.click('#all');
    await page.waitForFunction(()=>HT.state.hits.length>0);
+   await page.$eval('canvas',e=>e.scrollIntoView({block:'center'}));
    const hit=await page.evaluate(()=>{const h=HT.state.hits[0],r=document.querySelector('canvas').getBoundingClientRect();return {id:h.e.id,x:r.x+h.x,y:r.y+h.y};});
    await page.mouse.click(hit.x,hit.y);assert.equal(await page.evaluate(()=>HT.state.selected),hit.id);checks++;
    if(width<900){

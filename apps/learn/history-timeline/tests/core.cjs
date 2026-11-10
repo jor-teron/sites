@@ -57,3 +57,11 @@ test('well-established anchors retained without invented exactness', () => {
   assert.equal(byId('independence').year,1947); assert.equal(byId('apollo11').year,1969);
   assert.equal(byId('constitution').year,1950); assert.equal(byId('indus').endYear,-1900);
 });
+test('combined filters preserve all regions in the contemporaries query', () => {
+  const selected=events.find(e=>e.id==='independence');
+  const related=H.contemporary(events,selected);
+  assert(related.some(e=>e.region==='world'));assert(related.some(e=>e.region==='india'));
+  assert(related.every(e=>e.id!==selected.id&&Math.abs(H.astro(e.year)-H.astro(selected.year))<=25));
+  const filtered=H.query(events,{region:'india',topics:['science','culture'],search:'Raman',ids:['raman']});
+  assert.deepEqual(filtered.map(e=>e.id),['raman']);
+});

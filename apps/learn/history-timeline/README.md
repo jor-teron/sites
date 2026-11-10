@@ -1,4 +1,4 @@
-# History Timeline — HT-1a
+# History Timeline — HT-1b
 
 An offline-first Learn app: open `history-timeline.html` (classic scripts; no CDN, tiles or network requests). The index redirects in one hop. The Learn CSV and generated Hub catalog/index expose it in a normal Hub window. LearnHubBar mirrors the Settings action; standalone pages retain a Learn back link. Auto (System / Hub) is the default theme.
 
@@ -27,3 +27,9 @@ HT_PUPPETEER=/path/to/puppeteer-core node apps/learn/history-timeline/tests/brow
 ```
 
 The browser test uses installed Google Chrome and port 8833 only; the driver is a development dependency outside the app. No build bump or changes to shared/, hub_apps.js or hub_sw.js.
+
+## HT-1b
+
+350 records in two structured data files; topic chips are OR within selected topics and intersect title/region/bookmark filters. No selected topics means all. At-the-same-time queries use all records within ±25 years of the start date, not only visible/filter matches. The map is a coarse equirectangular sketch with a representative pin, no country borders. Bookmarks use `learn.history-timeline.bookmarks`; corrupt values and unavailable storage are handled without breaking the app.
+
+Expansion audit: retained approximate dates for early writing, the wheel, ancient monuments, traditional dynastic foundations and Kabir/Sangam chronology. Removed the initial exact-year interpretation of Hubble’s public announcement (1924/1925); the card now describes his 1924 observations instead. Did not add disputed Buddha birth dates, precise zero-invention dates, or sole-inventor claims. The late medieval art and learning entries describe periods rather than pretending to know a day of foundation.
