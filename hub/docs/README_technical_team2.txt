@@ -824,6 +824,31 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.87 Video Player, release VPL1
+
+- New apps/media/video-player (Media → Video, row added after Screen Recorder in
+  apps/media/media-apps.csv). Minimal player: the video and one thin control bar
+  that hides while playing (mouse move or tap brings it back). Open file, open
+  folder (webkitdirectory) or drag and drop. A folder shows a hideable side list,
+  sorted naturally. Offline, no libraries, no thumbnails. Object URLs are revoked.
+- Resume per file in localStorage 'video-player-resume-v1', keyed by name+size,
+  written at most every 2 s and on pause / hide / page leave. Near the end, the
+  saved position is cleared. Settings (theme, subtitle size, volume, speed) in
+  'video-player-v1'. Auto theme follows sites-hub.theme, else the device setting.
+- SRT / VTT subtitles: a file with the same base name in the folder is picked up;
+  or Load subtitle… in the ⋯ menu. SRT is converted to VTT (video-player_helpers.js)
+  and attached as a blob URL track. Size S / M / L. Speed 0.5×–2×. Skip 10 s.
+  Picture-in-picture where the browser allows it. Plays the next video in the folder.
+- Keyboard: Space, ← → (10 s), ↑ ↓ (volume), F, M. In-app dialogs only. A plain
+  message is shown when the browser cannot play the file (error / canPlayType).
+  Plays what the browser supports (usually MP4 H.264, WebM, some MKV).
+- Title / RELEASE / ?v= VPL1. Tested with `node --check`, `node test_vpl_helpers.js`
+  (SRT→VTT, natural sort, subtitle name matching, time formatting) and a static
+  serve + curl smoke test. No Puppeteer, Playwright or jsdom.
+  Details: apps/media/video-player/video-player_readme.md.
+
+  Note: 1.53–1.86 were taken by parallel Team 2 branches, so this section is 1.87.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
