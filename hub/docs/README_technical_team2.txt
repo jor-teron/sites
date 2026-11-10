@@ -1515,7 +1515,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   No Puppeteer, Playwright or jsdom.
 - RELEASE/title/?v= SP2. Details: apps/tools/sun-position/sun-position_readme.md.
 
-### 1.75 Sun Position point, moon and alerts, release SP3
+### 1.86 Sun Position point, moon and alerts, release SP3
 
 - apps/tools/sun-position only. Point tab added (Now | Plan | Point). Phone mode uses
   DeviceOrientation (webkitCompassHeading, deviceorientationabsolute, or 360-alpha), plus
