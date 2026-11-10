@@ -1,4 +1,4 @@
-/* Node tests for PDF Tools P2/P3 helpers (pdf-tools_util.js, pdf-tools_zip.js).
+/* Node tests for PDF Tools P2–P4 helpers (pdf-tools_util.js, pdf-tools_zip.js).
    Run: node test_pdf_tools_util.js
    No DOM, no jsdom, no browser. */
 'use strict';
@@ -121,6 +121,43 @@ eq('display image layout 90', U.displaySize(
   { kind: 'image', layout: { pageW: 595, pageH: 842 } },
   { src: 0, rot: 90 }
 ), { w: 842, h: 595 });
+
+
+// ---- stamps, numbers, crop (P4) ----
+eq('page num first', U.pageIndexNumber(0, 10, 1, false), { n: 1, of: 10 });
+eq('page num start 3', U.pageIndexNumber(0, 5, 3, false), { n: 3, of: 5 });
+eq('page num skip cover', U.pageIndexNumber(0, 10, 1, true), null);
+eq('page num after cover', U.pageIndexNumber(1, 10, 1, true), { n: 1, of: 9 });
+eq('page num last after cover', U.pageIndexNumber(9, 10, 1, true), { n: 9, of: 9 });
+ok('page num oob', U.pageIndexNumber(10, 10, 1, false) == null);
+eq('label plain', U.pageLabel('1', 4, 9), '4');
+eq('label page-of', U.pageLabel('page-of', 4, 9), 'Page 4 of 9');
+eq('label slash', U.pageLabel('slash', 4, 9), '4 / 9');
+eq('label empty', U.pageLabel('page-of', null, 9), '');
+eq('bates default', U.batesLabel('HUB-', 7, 4), 'HUB-0007');
+eq('bates clamp digits 0', U.batesLabel('X', 3, 0), 'X3');
+eq('bates clamp digits 9', U.batesLabel('', 3, 9).length, 8);
+eq('date 10 Nov 2026', U.formatDate(new Date(2026, 10, 10)), '10/11/2026');
+eq('template', U.expandTemplate('Printed {date}  p.{page}/{pages}  {file}', { date: '10/11/2026', page: 2, pages: 5, file: 'Doc' }), 'Printed 10/11/2026  p.2/5  Doc');
+eq('template unknown stays?', U.expandTemplate('{nope}', {}), '{nope}');
+eq('winAnsi ascii', U.winAnsiSafe('Page 1 of 9'), 'Page 1 of 9');
+eq('winAnsi rupee', U.winAnsiSafe('Fee ₹10'), 'Fee ?10');
+var box = U.cropBox(595, 842, { l: 20, r: 20, t: 40, b: 10 });
+ok('crop insets', box.ok && Math.abs(box.x - 20) < 1e-9 && Math.abs(box.y - 10) < 1e-9 && Math.abs(box.w - 555) < 1e-9 && Math.abs(box.h - 792) < 1e-9);
+ok('crop too much fails', U.cropBox(100, 100, { l: 50, r: 50, t: 0, b: 0 }).ok === false);
+var existing = U.cropBox(595, 842, { l: 10, r: 10, t: 10, b: 10 }, { x: 20, y: 20, w: 555, h: 802 });
+ok('crop on existing', existing.ok && Math.abs(existing.x - 30) < 1e-9 && Math.abs(existing.y - 30) < 1e-9);
+var tl = U.slotPoint(200, 100, 'tl', 40, 10, 10);
+ok('slot tl', Math.abs(tl.x - 10) < 1e-9 && Math.abs(tl.y - 80) < 1e-9 && tl.top);
+var br = U.slotPoint(200, 100, 'br', 40, 10, 10);
+ok('slot br', Math.abs(br.x - 150) < 1e-9 && Math.abs(br.y - 10) < 1e-9 && !br.top);
+var bc = U.slotPoint(200, 100, 'bc', 40, 10, 10);
+ok('slot bc centred', Math.abs(bc.x - 80) < 1e-9);
+var wm0 = U.watermarkOrigin(200, 100, 40, 20, 0);
+ok('wm upright centred', Math.abs(wm0.x - 80) < 1e-9 && Math.abs(wm0.y - 40) < 1e-9);
+var wm90 = U.watermarkOrigin(200, 100, 40, 20, 90);
+ok('wm 90 centred x', Math.abs(wm90.x - (100 + 10)) < 1e-6);
+ok('wm 90 centred y', Math.abs(wm90.y - (50 - 20)) < 1e-6);
 
 // ---- zip (stored, local headers) ----
 ok('crc32 empty', Z.crc32(new Uint8Array(0)) === 0);

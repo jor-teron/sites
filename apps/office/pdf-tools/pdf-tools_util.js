@@ -210,10 +210,98 @@ const PTUtil = (() => {
     return Math.min(max / long, 4);
   }
 
+
+  const SLOTS = ['tl', 'tc', 'tr', 'bl', 'bc', 'br'];
+  const SLOT_LABELS = [['tl', 'Top left'], ['tc', 'Top centre'], ['tr', 'Top right'], ['bl', 'Bottom left'], ['bc', 'Bottom centre'], ['br', 'Bottom right']];
+
+  function pageIndexNumber(i, total, start, skipFirst) {
+    i = Number(i); total = Number(total);
+    if (!Number.isInteger(i) || i < 0 || i >= total) return null;
+    if (skipFirst && i === 0) return null;
+    const n = (Number.isFinite(Number(start)) ? Number(start) : 1) + i - (skipFirst ? 1 : 0);
+    const of = total - (skipFirst ? 1 : 0);
+    return { n, of };
+  }
+
+  function pageLabel(format, n, of) {
+    if (n == null) return '';
+    if (format === 'page-of') return 'Page ' + n + ' of ' + of;
+    if (format === 'slash') return n + ' / ' + of;
+    return String(n);
+  }
+
+  function batesLabel(prefix, n, digits) {
+    digits = Number(digits);
+    if (!Number.isInteger(digits)) digits = 4;
+    if (digits < 1) digits = 1;
+    if (digits > 8) digits = 8;
+    return String(prefix || '') + pad(n, digits);
+  }
+
+  /* insets {l,r,t,b} in points, from the visible box (existing or full page). y from bottom. */
+  function cropBox(pageW, pageH, insets, existing) {
+    const base = existing && existing.w > 0 && existing.h > 0
+      ? { x: existing.x, y: existing.y, w: existing.w, h: existing.h }
+      : { x: 0, y: 0, w: pageW, h: pageH };
+    const l = Math.max(0, Number(insets && insets.l) || 0);
+    const r = Math.max(0, Number(insets && insets.r) || 0);
+    const top = Math.max(0, Number(insets && insets.t) || 0);
+    const b = Math.max(0, Number(insets && insets.b) || 0);
+    const x = base.x + l;
+    const y = base.y + b;
+    const w = base.w - l - r;
+    const h = base.h - top - b;
+    if (w < 8 || h < 8) return { ok: false, error: 'Crop is too large — there would be almost no page left.' };
+    return { ok: true, x, y, w, h };
+  }
+
+  function slotPoint(pageW, pageH, slot, textW, fontSize, margin) {
+    margin = margin == null ? 36 : margin;
+    fontSize = fontSize || 10;
+    textW = textW || 0;
+    const top = /t/.test(slot || '');
+    const y = top ? pageH - margin - fontSize : margin;
+    let x;
+    if ((slot || '').indexOf('l') >= 0) x = margin;
+    else if ((slot || '').indexOf('r') >= 0) x = pageW - margin - textW;
+    else x = (pageW - textW) / 2;
+    return { x, y, top };
+  }
+
+  /* Origin so a string of size textW×textH, rotated by angleDeg about that origin, is centred on the page. */
+  function watermarkOrigin(pageW, pageH, textW, textH, angleDeg) {
+    const rad = ((Number(angleDeg) || 0) * Math.PI) / 180;
+    const cx = pageW / 2, cy = pageH / 2;
+    const dx = (textW || 0) / 2, dy = (textH || 0) / 2;
+    return {
+      x: cx - dx * Math.cos(rad) + dy * Math.sin(rad),
+      y: cy - dx * Math.sin(rad) - dy * Math.cos(rad),
+    };
+  }
+
+  function formatDate(d) {
+    d = d || new Date();
+    return pad(d.getDate(), 2) + '/' + pad(d.getMonth() + 1, 2) + '/' + d.getFullYear();
+  }
+
+  function expandTemplate(text, vars) {
+    vars = vars || {};
+    return String(text == null ? '' : text).replace(/\{(date|page|pages|file)\}/gi, (m, k) => {
+      const v = vars[k.toLowerCase()];
+      return v == null ? '' : String(v);
+    });
+  }
+
+  /* Characters Helvetica (WinAnsi) cannot draw, replaced with '?'. */
+  function winAnsiSafe(text) {
+    return String(text == null ? '' : text).replace(/[^\t\n\r\x20-\x7E\xA0-\xFF]/g, '?');
+  }
+
   return {
     COLORS, PAPER, colorFor, fileBase, shortName, pad, isContiguous, partName,
     parseRanges, planSingles, planEvery, planHint, displaySize, neighbourSize,
     sourceOf, pageKey, MM, ptFromMm, RENDER_MAX, imagePageLayout, isImageFile, imageMime, imagePartName, renderScale,
+    SLOTS, SLOT_LABELS, pageIndexNumber, pageLabel, batesLabel, cropBox, slotPoint, watermarkOrigin, formatDate, expandTemplate, winAnsiSafe,
   };
 })();
 

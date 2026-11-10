@@ -6,7 +6,7 @@
 PT.Edit = (() => {
   const { S } = PT;
   let undo = [], redo = [], savedAt = 0, ver = 0;
-  const snap = () => ({ pages: S.pages.map((p) => ({ ...p })), sel: [...S.sel], ver, name: S.doc && S.doc.name });
+  const snap = () => ({ pages: S.pages.map((p) => ({ ...p, crop: p.crop ? { ...p.crop } : null })), sel: [...S.sel], ver, name: S.doc && S.doc.name });
 
   function commit(pages, label) {
     undo.push(snap());
@@ -134,7 +134,14 @@ PT.Edit = (() => {
     if (!S.doc) return;
     PT.busy('Saving…');
     try {
-      const blob = await PTSave.build(S.sources, S.pages);
+      const st = PT.Stamp ? PT.Stamp.ensure() : null;
+      if (st && st.shrink) PT.busy('Shrinking…');
+      const blob = await PTSave.build(S.sources, S.pages, {
+        stamp: st,
+        meta: S.meta,
+        shrink: !!(st && st.shrink),
+        onProgress: (i, n) => PT.busy('Shrinking ' + i + ' of ' + n + '…'),
+      });
       const name = await PTSave.save(blob, sessionName('save'));
       savedAt = ver;
       PT.toast('Saved ' + name);
@@ -217,8 +224,9 @@ PT.Edit = (() => {
 
   function reset() { undo = []; redo = []; ver = 0; savedAt = 0; }
   function touch() { ver = Date.now() + Math.random(); PT.refresh(); }
+  function setPages(pages, label) { commit(pages, label); }
   return {
-    rotate, remove, move, save, reset, touch, selected, duplicate, insertBlank, append, extract, split,
+    rotate, remove, move, save, reset, touch, setPages, selected, duplicate, insertBlank, append, extract, split,
     undo: () => step(undo, redo, 'Undo'), redo: () => step(redo, undo, 'Redo'),
     canUndo: () => undo.length > 0, canRedo: () => redo.length > 0,
     dirty: () => ver !== savedAt,

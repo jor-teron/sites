@@ -865,6 +865,26 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   not full resolution; a plain click no longer toggles a single page off (so
   double-click preview can work). Details: apps/office/pdf-tools/pdf-tools_readme.md.
 
+### 1.69 PDF Tools stamp and tidy, release P4
+
+- apps/office/pdf-tools only, on top of P3. Stamp & tidy dialog (applied on
+  Save, not Extract or Split): page numbers (1 / Page 1 of N / 1 / N, position,
+  start, skip first page), text watermark (opacity, angle, size), header and
+  footer with {date} {page} {pages} {file}, Bates numbers (prefix, start, digits,
+  position, skip first), and title/author/subject metadata. Crop page edges
+  (CropBox, insets in mm, selected or all, undoable). Optional Shrink (image)
+  with a clear warning: pages are redrawn as JPEG (~120 dpi, long side capped
+  at 1600 px) and text becomes unselectable. No password encryption.
+- New pdf-tools_stamp.js. Number formats, crop box, watermark origin and
+  templates in pdf-tools_util.js (node-tested). Helvetica / WinAnsi only.
+  All output still through PTSave.save. In-app dialogs only. No new library.
+- RELEASE/title/?v= P4 on this app's own CSS/JS only. Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: stamps skipped on Extract/Split; crop thumbs stay uncropped; crop is
+  on the original page box; Shrink is rasterisation, not a smart compressor;
+  unusual characters become ?. Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

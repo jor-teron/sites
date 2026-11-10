@@ -1,7 +1,7 @@
 # PDF Tools
 
 ## 1. What it is
-A page organiser for PDF files that runs entirely in the browser: open one or more PDFs, see every page as a thumbnail, reorder by dragging, rotate, delete, duplicate, insert blank pages, extract or split, and save a new copy. Nothing is uploaded. Current release **P3** (P1 organiser, P2 merge / split). Planned: P4 stamps / crop / metadata, P5 fill & sign.
+A page organiser for PDF files that runs entirely in the browser: open one or more PDFs, see every page as a thumbnail, reorder by dragging, rotate, delete, duplicate, insert blank pages, extract or split, and save a new copy. Nothing is uploaded. Current release **P4** (P1 organiser, P2 merge / split, P3 images). Planned: P5 fill & sign.
 
 ## 2. Files
 - `pdf-tools.html` / `pdf-tools.css`: page shell, compact layout, light / dark, safe-area
@@ -13,7 +13,8 @@ A page organiser for PDF files that runs entirely in the browser: open one or mo
 - `pdf-tools_save.js`: **every file goes through `PTSave.save(blob, name)`** (Hub Drive can replace it later), plus `build()` with pdf-lib
 - `pdf-tools_zip.js`: tiny stored (method 0) ZIP writer, adapted from Draftly, used when a split makes more than one file
 - `pdf-tools_images.js`: add JPG/PNG as pages, export pages as PNG/JPG, double-click zoom preview
-- `pdf-tools_util.js`: pure helpers (range parser, split plans, names, sizes, image layout). Node-tested by `test_pdf_tools_util.js`
+- `pdf-tools_stamp.js`: page numbers, watermark, header/footer, Bates numbers, crop, metadata, Shrink (image)
+- `pdf-tools_util.js`: pure helpers (range parser, split plans, names, sizes, image layout, number formats, crop box). Node-tested by `test_pdf_tools_util.js`
 - `pdf-tools_app.js`: rail buttons, keyboard shortcuts, start-up
 - `vendor/pdf-lib.min.js` (pdf-lib **1.17.1**, UMD, MIT, `vendor/LICENSE.md`)
 - pdf.js is **read-only** from the Hub's `shared/vendor/pdfjs/` (3.11.174, Apache-2.0)
@@ -37,8 +38,11 @@ A page organiser for PDF files that runs entirely in the browser: open one or mo
 - **Add images:** Menu → Add images, or drop JPG/PNG files. A dialog asks for A4, Letter or Fit to image, portrait or landscape (not used for Fit), and margins of 0 / 10 / 20 mm. Each image becomes one page, centred and kept in proportion. The last size, margin and orientation are remembered. Adding is undoable when a file is already open.
 - **Preview:** Double-click a page (or Enter when one page is selected) opens a zoomed preview, drawn at up to 1600 px on the long side. Esc or Close or a click outside dismisses it. A plain click on a selected page no longer clears the selection (Esc or a click on empty space still does), so the double-click can work.
 - **Export as images:** Menu dialog, PNG or JPG (JPG quality 0.85), selected pages or all. Each page is rendered (including paper, margins and rotation) at up to 1600 px on the long side. One file is an image; several files are a `.zip` (`name-pages.zip`, pages named `name-p001.png`).
+- **Stamp & tidy:** Menu dialog, applied when you **Save** (not Extract or Split). Page numbers (`1`, `Page 1 of N`, `1 / N`, position, start number, skip first page). Text watermark (opacity, angle, size). Header (top centre) and footer (bottom left), with `{date}` (DD/MM/YYYY), `{page}`, `{pages}` and `{file}`. Bates numbers (prefix, start, digits 1–8, position, skip first). Title, author and subject. If two marks share a corner, the later one moves inward. Helvetica only (WinAnsi; other characters become `?`).
+- **Crop:** Menu dialog, insets in mm from the original page box (not after a rotate you added here). Applied to selected or all pages, kept with the pages, undoable, shown as a small "Crop" badge. Extract and Split keep the crop. Thumbnails still show the uncropped page.
+- **Shrink (image):** Optional checkbox in Stamp & tidy, with a second confirm. After the stamped PDF is built, every page is redrawn as a JPEG at about 120 dpi (long side capped at 1600 px). Text can no longer be selected or searched, and the file may not get smaller if the pages are already pictures. The open grid is unchanged.
 - **Theme:** Dark (default) / Light / System in the menu; System follows the Hub preference `sites-hub.theme`, else the device.
-- **Cache strings:** `?v=P3` is on this app's own CSS and JS only (same convention as Spreadsheet SH8 / Slides / Base). Shared Office files, pdf.js and pdf-lib have none. The title, `RELEASE` and those `?v=` tags are all `P3`.
+- **Cache strings:** `?v=P4` is on this app's own CSS and JS only (same convention as Spreadsheet SH8 / Slides / Base). Shared Office files, pdf.js and pdf-lib have none. The title, `RELEASE` and those `?v=` tags are all `P4`.
 
 ## 4. Storage
 - localStorage `pdf-tools-settings-v1` (`theme`). Files are only held in memory.
@@ -53,3 +57,4 @@ A page organiser for PDF files that runs entirely in the browser: open one or mo
 - Only JPG and PNG can be added (no WebP, GIF or HEIC). Some unusual JPEGs (for example CMYK) may fail when saving, with an error. Transparency in a PNG sits on a white page.
 - Fit-to-image uses 150 dpi, plus margins, and caps the long side of the page at 20 inches (1440 pt). Export and preview cap the long side at 1600 px, so they are not print-resolution.
 - Image export draws the page (paper + margins), not the original file at full resolution.
+- Stamps use Helvetica (WinAnsi). There is no password option (pdf-lib cannot encrypt without a heavy extra library). Shrink is a rasterisation, not a smart compressor. Crop is not previewed on the thumbnail. Stamps are not applied to Extract or Split.

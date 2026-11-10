@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!--
-  PDF Tools — P3 images ↔ PDF. Page shell only.
+  PDF Tools — P4 stamp and tidy. Page shell only.
   Styles: pdf-tools.css. Modules: pdf-tools_ui.js (state, theme, menu, dialog, cards via ../shared/office-notify.js),
   pdf-tools_load.js (open, add, drop, errors), pdf-tools_thumbs.js (lazy thumbnail grid, source badges),
   pdf-tools_select.js (selection + drag reorder), pdf-tools_edit.js (rotate, delete, duplicate, blank, extract, split, undo/redo),
-  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_zip.js (stored zip), pdf-tools_util.js (pure helpers), pdf-tools_images.js (add images, export, preview),
+  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_zip.js (stored zip), pdf-tools_util.js (pure helpers), pdf-tools_images.js (add images, export, preview), pdf-tools_stamp.js (numbers, watermark, crop, metadata, shrink),
   pdf-tools_app.js (wiring, keys).
   pdf.js is read from the Hub's shared/vendor/pdfjs (read-only); pdf-lib is vendored in ./vendor.
   Everything stays on the device. Actions are a rail on the RIGHT (right-handed).
@@ -14,10 +14,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>PDF Tools P3</title>
+  <title>PDF Tools P4</title>
   <link rel="icon" href="pdf-tools_icon.png">
   <script>try{var m=(JSON.parse(localStorage.getItem('pdf-tools-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
-  <link rel="stylesheet" href="pdf-tools.css?v=P3">
+  <link rel="stylesheet" href="pdf-tools.css?v=P4">
   <link rel="stylesheet" href="../shared/office-notify.css">
 </head>
 <body>
@@ -64,6 +64,8 @@
     <button type="button" class="mi" id="m-extract" data-need="sel">Extract selected</button>
     <button type="button" class="mi" id="m-split" data-need="doc">Split…</button>
     <button type="button" class="mi" id="m-export" data-need="doc">Export as images…</button>
+    <button type="button" class="mi" id="m-stamp" data-need="doc">Stamp &amp; tidy…</button>
+    <button type="button" class="mi" id="m-crop" data-need="doc">Crop pages…</button>
     <button type="button" class="mi" id="m-close" data-need="doc">Close file</button>
     <button type="button" class="mi" id="m-about">About</button>
   </div>
@@ -92,15 +94,16 @@
 <script src="../../../shared/vendor/pdfjs/pdf.min.js"></script>
 <script src="vendor/pdf-lib.min.js"></script>
 <script src="../shared/office-notify.js"></script>
-<script src="pdf-tools_util.js?v=P3"></script>
-<script src="pdf-tools_zip.js?v=P3"></script>
-<script src="pdf-tools_ui.js?v=P3"></script>
-<script src="pdf-tools_save.js?v=P3"></script>
-<script src="pdf-tools_load.js?v=P3"></script>
-<script src="pdf-tools_thumbs.js?v=P3"></script>
-<script src="pdf-tools_edit.js?v=P3"></script>
-<script src="pdf-tools_select.js?v=P3"></script>
-<script src="pdf-tools_images.js?v=P3"></script>
-<script src="pdf-tools_app.js?v=P3"></script>
+<script src="pdf-tools_util.js?v=P4"></script>
+<script src="pdf-tools_zip.js?v=P4"></script>
+<script src="pdf-tools_ui.js?v=P4"></script>
+<script src="pdf-tools_save.js?v=P4"></script>
+<script src="pdf-tools_load.js?v=P4"></script>
+<script src="pdf-tools_thumbs.js?v=P4"></script>
+<script src="pdf-tools_edit.js?v=P4"></script>
+<script src="pdf-tools_select.js?v=P4"></script>
+<script src="pdf-tools_images.js?v=P4"></script>
+<script src="pdf-tools_stamp.js?v=P4"></script>
+<script src="pdf-tools_app.js?v=P4"></script>
 </body>
 </html>

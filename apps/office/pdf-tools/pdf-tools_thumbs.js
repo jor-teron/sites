@@ -145,6 +145,9 @@ PT.Thumbs = (() => {
       let badge = el.querySelector('.rot');
       if (p.rot && !badge) { badge = document.createElement('span'); badge.className = 'rot'; el.appendChild(badge); }
       if (badge) { if (p.rot) badge.textContent = p.rot + '°'; else badge.remove(); }
+      let cropb = el.querySelector('.cropped');
+      if (p.crop && !cropb) { cropb = document.createElement('span'); cropb.className = 'cropped'; cropb.textContent = 'Crop'; el.appendChild(cropb); }
+      else if (cropb && !p.crop) cropb.remove();
       if (src && src.kind === 'blank') markBlank(el, p);
       else if (src && src.kind === 'image' && (src.thumb || urls.has(keyOf(p)))) setImg(el, src.thumb || urls.get(keyOf(p)));
       else if (urls.has(keyOf(p))) setImg(el, urls.get(keyOf(p)));
