@@ -429,3 +429,76 @@ th.frozen-cell, td.row-num.frozen-cell { background: var(--head); }
   letter-spacing: 0.04em;
 }
 @media print { .fx-hint, .fx-picker, .sheet-fx-btn { display: none !important; } }
+
+
+/* SH10: find / sort / filter / validation panels */
+.data-panel {
+  position: fixed;
+  z-index: 50;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px var(--shadow);
+  padding: 8px 10px;
+  font-size: 13px;
+  min-width: 260px;
+  max-width: min(420px, calc(100vw - 16px));
+  max-height: min(360px, 60vh);
+  overflow: auto;
+}
+#data-find { left: 80px; top: 110px; }
+.data-field, .data-check, .data-sort-row { display: block; margin: 6px 0; }
+.data-field input, #data-valid-src {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 2px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input);
+  color: var(--text);
+  font: inherit;
+}
+.data-scope { display: flex; gap: 12px; flex-wrap: wrap; }
+.data-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.data-sort-row { display: flex; align-items: center; gap: 6px; }
+.data-sort-row select {
+  flex: 1;
+  padding: 4px 6px;
+  background: var(--input);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+th.has-filter { padding-right: 16px; position: relative; }
+.filter-btn {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+th.filter-active .filter-btn { color: var(--sel); font-weight: 700; }
+.data-valid-arrow {
+  position: fixed;
+  z-index: 45;
+  width: 16px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--btn);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 16px;
+  cursor: pointer;
+}
+@media print {
+  .data-panel, .data-valid-arrow, .filter-btn { display: none !important; }
+}

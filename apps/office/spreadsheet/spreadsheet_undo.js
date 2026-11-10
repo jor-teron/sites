@@ -28,7 +28,9 @@ function undoSnapshot() {
         hiddenRows: sh.hiddenRows.slice(),
         hiddenCols: sh.hiddenCols.slice(),
         freeze: { rows: sh.freeze.rows || 0, cols: sh.freeze.cols || 0 },
-        sel: (sh.sel || [0, 0, 0, 0, "cell"]).slice()
+        sel: (sh.sel || [0, 0, 0, 0, "cell"]).slice(),
+        filters: sh.filters ? JSON.parse(JSON.stringify(sh.filters)) : { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
+        validations: sh.validations ? JSON.parse(JSON.stringify(sh.validations)) : []
       };
     })
   });
@@ -66,10 +68,15 @@ function undoRestore(snap) {
     if (src.hiddenCols) { for (c = 0; c < COLS; c++) sh.hiddenCols[c] = !!src.hiddenCols[c]; }
     sh.freeze = { rows: (src.freeze && src.freeze.rows) || 0, cols: (src.freeze && src.freeze.cols) || 0 };
     sh.sel = src.sel || [0, 0, 0, 0, "cell"];
+    sh.filters = src.filters ? JSON.parse(JSON.stringify(src.filters)) : { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };
+    sh.validations = src.validations ? JSON.parse(JSON.stringify(src.validations)) : [];
     workbook.sheets.push(sh);
   }
   workbook.active = Math.max(0, Math.min(workbook.sheets.length - 1, d.active | 0));
   bindActiveSheet();
+  if (typeof applyFilters === "function") {
+    for (i = 0; i < workbook.sheets.length; i++) applyFilters(i);
+  }
   selR = d.s[0]; selC = d.s[1]; extR = d.s[2]; extC = d.s[3];
   selMode = d.s[4] || "cell";
   UNDO.lastTag = "";

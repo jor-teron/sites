@@ -16,7 +16,9 @@ function serializeSheet(s) {
     hiddenRows: hiddenR,
     hiddenCols: hiddenC,
     freeze: { rows: s.freeze.rows || 0, cols: s.freeze.cols || 0 },
-    sel: s.sel || [0, 0, 0, 0, "cell"]
+    sel: s.sel || [0, 0, 0, 0, "cell"],
+    filters: s.filters || { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
+    validations: s.validations || []
   };
 }
 
@@ -74,6 +76,11 @@ function deserializeSheet(raw, fallbackName) {
     s.freeze.cols = Math.max(0, Math.min(COLS, raw.freeze.cols | 0));
   }
   if (raw && Array.isArray(raw.sel) && raw.sel.length >= 4) s.sel = raw.sel.slice(0, 5);
+  if (raw && raw.filters) s.filters = raw.filters;
+  if (raw && Array.isArray(raw.validations)) s.validations = raw.validations;
+  if (typeof applyFilters === "function") {
+    /* compute filterHidden after the workbook is bound; loadStore does it per sheet later */
+  }
   return s;
 }
 
@@ -127,6 +134,10 @@ function loadStore() {
         if (act < 0 || act >= sheets.length) act = 0;
         workbook = { sheets: sheets, active: act };
         bindActiveSheet();
+        if (typeof applyFilters === "function") {
+          var fi;
+          for (fi = 0; fi < sheets.length; fi++) applyFilters(fi);
+        }
         var sel = sheets[act].sel;
         if (sel && sel.length >= 4) {
           selR = sel[0]; selC = sel[1]; extR = sel[2]; extC = sel[3];

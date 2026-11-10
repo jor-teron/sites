@@ -7,9 +7,11 @@
 
 function afterSheetOp() {
   bindActiveSheet();
+  if (typeof applyFilters === "function") applyFilters();
   if (typeof applyWidths === "function") applyWidths();
   else if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
   paintAll();
+  if (typeof dataRenderFilterButtons === "function") dataRenderFilterButtons();
   highlightSel();
   renderSheetTabs();
   saveStore();
@@ -61,6 +63,8 @@ function duplicateSheet(idx) {
     copy.hiddenCols[c] = !!src.hiddenCols[c];
   }
   copy.freeze = { rows: src.freeze.rows || 0, cols: src.freeze.cols || 0 };
+  copy.filters = typeof cloneFilters === "function" ? cloneFilters(src.filters) : JSON.parse(JSON.stringify(src.filters || { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} }));
+  copy.validations = typeof cloneValidations === "function" ? cloneValidations(src.validations) : JSON.parse(JSON.stringify(src.validations || []));
   workbook.sheets.splice(idx + 1, 0, copy);
   workbook.active = idx + 1;
   bindActiveSheet();
@@ -267,7 +271,7 @@ function applyHiddenAndFreeze() {
   for (r = 0; r < ROWS; r++) {
     tr = table.rows[r + 1];
     if (!tr) continue;
-    tr.classList.toggle("sheet-hidden", !!hiddenRows[r]);
+    tr.classList.toggle("sheet-hidden", rowHidden(r));
     for (c = 0; c < COLS; c++) {
       td = tr.cells[c + 1];
       if (td) td.classList.toggle("sheet-hidden", !!hiddenCols[c]);
@@ -317,7 +321,7 @@ function applyHiddenAndFreeze() {
   }
   var tops = [cellH], tacc = cellH;
   for (r = 0; r < (freeze.rows || 0); r++) {
-    if (!hiddenRows[r]) tacc += cellH;
+    if (!rowHidden(r)) tacc += cellH;
     tops.push(tacc);
   }
 
@@ -354,7 +358,7 @@ function applyHiddenAndFreeze() {
   for (r = 0; r < ROWS; r++) {
     tr = table.rows[r + 1];
     if (!tr) continue;
-    var fr = r < (freeze.rows || 0) && !hiddenRows[r];
+    var fr = r < (freeze.rows || 0) && !rowHidden(r);
     var topVal = fr ? tops[r] : null;
     setSticky(tr.cells[0], topVal, 0, fr ? 5 : 3);
     for (c = 0; c < COLS; c++) {
