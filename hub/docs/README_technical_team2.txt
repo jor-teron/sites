@@ -967,6 +967,20 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   + curl 200 including shared/vendor/pdfjs/pdf.min.js, grep for RELEASE /
   RA2. No Puppeteer, Playwright, or jsdom.
 
+### 1.58 3D Builder, release TD1
+
+- New apps/media/3d-builder (Media, section '3D', row added after 3D Viewer in media-apps.csv).
+  Local three.js r170 in vendor/three (LandCraft's unmodified build + official OrbitControls and
+  TransformControls; import map, no CDN). Renders on demand only; pixelRatio cap 1.5; no shadows.
+- Viewport with grid and axes, orbit/pan/zoom, Perspective/Front/Top/Side + Frame (F). Add box,
+  sphere, cylinder, cone, plane, torus (sit on the grid, offset so they do not overlap). Select,
+  Move/Rotate/Scale gizmo (W/E/R), snap 0.5 / 15° / 0.1. Properties, outliner, rename dialog,
+  Duplicate (Ctrl+D), Delete. Undo/redo snapshot stack (cap 100). Autosave key 3dbuilder.scene
+  (.h3d JSON, format version 1); New / Save / Open. Theme Auto/Light/Dark (3dbuilder.theme), Auto
+  follows sites-hub.theme. In-app dialogs only.
+- RELEASE/title/?v= TD1. Details: apps/media/3d-builder/NOTES.md.
+  Note: section 1.58 is the next free number on main after Read Aloud RA2 (1.57).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

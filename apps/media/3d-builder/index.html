@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>3D Builder TD1</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="3d-builder_icon.png">
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('3dbuilder.theme') || '{}');
+        var m = s.theme || 'auto';
+        var auto = false, t = '';
+        try {
+          auto = localStorage.getItem('sites-hub.themeAuto') === '1';
+          t = localStorage.getItem('sites-hub.theme') || '';
+        } catch (e) { /* blocked */ }
+        var dark;
+        if (m === 'dark' || m === 'light') dark = m === 'dark';
+        else if (!auto && (t === 'dark' || t === 'light')) dark = t === 'dark';
+        else dark = !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        var el = document.documentElement;
+        el.classList.add(dark ? 'dark' : 'light');
+        el.dataset.theme = dark ? 'dark' : 'light';
+        el.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) { /* ok */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="tb_base.css?v=TD1">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/build/three.module.min.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-header">
+      <h1>3D Builder</h1>
+      <div class="header-actions">
+        <button type="button" id="newBtn" class="btn secondary-btn" title="New scene">New</button>
+        <button type="button" id="openBtn" class="btn secondary-btn" title="Open a .h3d project">Open</button>
+        <button type="button" id="saveBtn" class="btn secondary-btn" title="Save to this device as .h3d">Save</button>
+        <input type="file" id="fileInput" accept=".h3d,application/json" hidden>
+        <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+          <button type="button" data-v="auto">Auto</button>
+          <button type="button" data-v="light">Light</button>
+          <button type="button" data-v="dark">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="toolbar" id="toolbar">
+      <div class="add-wrap">
+        <button type="button" id="addBtn" class="btn primary-btn" aria-haspopup="menu" aria-expanded="false" title="Add a shape">Add</button>
+        <div class="add-menu" id="addMenu" role="menu" hidden>
+          <button type="button" role="menuitem" data-type="box">Box</button>
+          <button type="button" role="menuitem" data-type="sphere">Sphere</button>
+          <button type="button" role="menuitem" data-type="cylinder">Cylinder</button>
+          <button type="button" role="menuitem" data-type="cone">Cone</button>
+          <button type="button" role="menuitem" data-type="plane">Plane</button>
+          <button type="button" role="menuitem" data-type="torus">Torus</button>
+        </div>
+      </div>
+      <div class="seg" id="modeSeg" role="group" aria-label="Transform">
+        <button type="button" data-v="translate" title="Move (W)">Move</button>
+        <button type="button" data-v="rotate" title="Rotate (E)">Rotate</button>
+        <button type="button" data-v="scale" title="Scale (R)">Scale</button>
+      </div>
+      <button type="button" id="snapBtn" class="btn secondary-btn" aria-pressed="false" title="Snap: 0.5 units, 15°, 0.1 scale">Snap</button>
+      <div class="seg" id="viewSeg" role="group" aria-label="View">
+        <button type="button" data-v="perspective">Perspective</button>
+        <button type="button" data-v="front">Front</button>
+        <button type="button" data-v="top">Top</button>
+        <button type="button" data-v="side">Side</button>
+      </div>
+      <button type="button" id="frameBtn" class="btn secondary-btn" title="Frame selected (F)">Frame</button>
+      <button type="button" id="undoBtn" class="btn secondary-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button type="button" id="redoBtn" class="btn secondary-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
+      <button type="button" id="listToggle" class="btn secondary-btn panel-toggle" aria-label="Objects">Objects</button>
+      <button type="button" id="propsToggle" class="btn secondary-btn panel-toggle" aria-label="Properties">Props</button>
+    </div>
+
+    <main class="workspace">
+      <div class="panel-overlay" id="panelOverlay" hidden></div>
+      <aside class="panel panel-left" id="listPanel">
+        <h2>Objects</h2>
+        <ul id="objectList" class="object-list"></ul>
+        <p class="empty-list" id="listEmpty">No objects yet. Tap Add to place a shape.</p>
+      </aside>
+      <div class="viewport-wrap" id="viewportWrap">
+        <div id="viewport" class="viewport" role="application" aria-label="3D viewport"></div>
+      </div>
+      <aside class="panel panel-right" id="propsPanel">
+        <h2>Properties</h2>
+        <p class="empty-props" id="propsEmpty">Select an object to edit it.</p>
+        <form id="propsForm" class="props-form" hidden>
+          <label class="field field-name">
+            <span>Name</span>
+            <input type="text" id="propName" maxlength="80" autocomplete="off" spellcheck="false">
+          </label>
+          <fieldset>
+            <legend>Position</legend>
+            <div class="vec3">
+              <label>X <input type="number" id="propPx" step="0.01"></label>
+              <label>Y <input type="number" id="propPy" step="0.01"></label>
+              <label>Z <input type="number" id="propPz" step="0.01"></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Rotation (°)</legend>
+            <div class="vec3">
+              <label>X <input type="number" id="propRx" step="0.1"></label>
+              <label>Y <input type="number" id="propRy" step="0.1"></label>
+              <label>Z <input type="number" id="propRz" step="0.1"></label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Scale</legend>
+            <div class="vec3">
+              <label>X <input type="number" id="propSx" step="0.01" min="0.01"></label>
+              <label>Y <input type="number" id="propSy" step="0.01" min="0.01"></label>
+              <label>Z <input type="number" id="propSz" step="0.01" min="0.01"></label>
+            </div>
+          </fieldset>
+          <label class="field field-color">
+            <span>Colour</span>
+            <span class="color-row">
+              <input type="color" id="propColor" title="Colour">
+              <input type="text" id="propHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Colour hex">
+            </span>
+          </label>
+          <div class="prop-acts">
+            <button type="button" id="renameBtn" class="btn secondary-btn">Rename</button>
+            <button type="button" id="dupBtn" class="btn secondary-btn" title="Duplicate (Ctrl+D)">Duplicate</button>
+            <button type="button" id="delBtn" class="btn danger-btn" title="Delete (Del)">Delete</button>
+          </div>
+        </form>
+      </aside>
+    </main>
+    <footer class="status" id="status">Ready</footer>
+  </div>
+
+  <div id="dlg" class="dlg" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody"></div>
+      <div class="acts" id="dlgActs"></div>
+    </div>
+  </div>
+
+  <script type="module" src="tb_main.js?v=TD1"></script>
+</body>
+</html>

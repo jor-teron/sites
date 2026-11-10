@@ -14,4 +14,5 @@ Music Player,    music-player/,    , , Audio, Play music from a folder on this d
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
 Video Editor,   video-editor/,    , , Video, Cut and export a video: in and out marks - cut or keep a selection - undo and redo
 3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
+3D Builder,      3d-builder/,      , , 3D, Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d
 News,            news/,            , , Read, Latest headlines from Google News India in story cards
