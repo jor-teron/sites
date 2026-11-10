@@ -80,6 +80,7 @@
         '</div>' +
         '<div class="sd-actions">' +
           '<button type="button" class="primary" id="sd-check">Check</button>' +
+          '<button type="button" id="sd-print">Print</button>' +
         '</div>' +
         '</div>' +
       '</div>';
@@ -137,6 +138,7 @@
     if (bd) bd.addEventListener('keydown', onKey);
     var check = document.getElementById('sd-check');
     if (check) check.addEventListener('click', doCheck);
+    document.getElementById('sd-print').addEventListener('click', function () { SD_PRINT.open(level); });
 
     var go = document.getElementById('sd-go'), inp = document.getElementById('sd-level');
     if (go) go.addEventListener('click', goLevel);

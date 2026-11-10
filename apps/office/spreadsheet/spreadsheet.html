@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- legacy: <title>Spreadsheet</title> -->
-  <title>Spreadsheet SS1</title>
+  <title>Spreadsheet SH12</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css">
+  <link rel="stylesheet" href="spreadsheet.css?v=SH12">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-colour.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css">
-  <link rel="stylesheet" href="spreadsheet_page.css">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH12">
+  <link rel="stylesheet" href="spreadsheet_page.css?v=SH12">
 </head>
 <body>
   <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS by ../shared/office-ribbon.js) -->
@@ -57,8 +57,25 @@
         <button type="button" class="tool-btn" id="btn-bold" data-icon="bold" title="Bold (Ctrl/⌘+B)" aria-label="Bold"></button>
         <button type="button" class="tool-btn" id="btn-italic" data-icon="italic" title="Italic (Ctrl/⌘+I)" aria-label="Italic"></button>
         <button type="button" class="tool-btn" id="btn-under" data-icon="underline" title="Underline (Ctrl/⌘+U)" aria-label="Underline"></button>
+        <select id="font-size-sel" title="Font size" aria-label="Font size"></select>
+        <button type="button" id="btn-wrap" title="Wrap text">Wrap</button>
+        <button type="button" id="btn-painter" title="Format painter (double-click to keep it on)">Painter</button>
       </div>
       <div class="of-group tool-group">
+        <select id="bd-sel" title="Borders" aria-label="Borders">
+          <option value="">Borders</option>
+          <option value="all">All</option>
+          <option value="outside">Outside</option>
+          <option value="inside">Inside</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="none">No border</option>
+        </select>
+        <button type="button" id="btn-merge" title="Merge the selected cells">Merge</button>
+        <button type="button" id="btn-unmerge" title="Unmerge cells in the selection">Unmerge</button>
+        <button type="button" id="btn-cf" title="Conditional formatting">Highlight</button>
       </div>
       <div class="of-group tool-group" role="group" aria-label="Alignment">
         <button type="button" class="tool-btn" data-align="left" data-icon="alignLeft" title="Align left" aria-label="Align left"></button>
@@ -73,6 +90,10 @@
           <option value="thousands">1,000</option>
           <option value="percent">%</option>
           <option value="currency">₹ Currency</option>
+          <option value="date">Date (YYYY-MM-DD)</option>
+          <option value="datedmy">Date (DD/MM/YYYY)</option>
+          <option value="time">Time (HH:MM)</option>
+          <option value="datetime">Date and time</option>
         </select>
       </div>
       <div class="of-group tool-group">
@@ -95,6 +116,13 @@
       <div class="of-group tool-group">
         <button type="button" id="btn-col-ins" title="Insert column left of the selection">+ Col</button>
         <button type="button" id="btn-col-del" title="Delete selected column(s)">− Col</button>
+      </div>
+      <div class="of-group tool-group" role="group" aria-label="Charts">
+        <span class="of-group-label">Chart</span>
+        <button type="button" id="btn-chart-col" title="Column chart from the selection">Column</button>
+        <button type="button" id="btn-chart-bar" title="Bar chart from the selection">Bar</button>
+        <button type="button" id="btn-chart-line" title="Line chart from the selection">Line</button>
+        <button type="button" id="btn-chart-pie" title="Pie chart from the first series in the selection">Pie</button>
       </div>
       <span class="of-note">Fill: drag the cell corner, or Ctrl/⌘+D down, Ctrl/⌘+R right</span>
     </div>
@@ -126,19 +154,87 @@
     </div>
     <div class="of-panel" role="tabpanel" id="of-panel-data" data-tab="data" hidden>
       <div class="of-group tool-group">
+        <button type="button" id="btn-find" title="Find and replace (Ctrl/⌘+F)">Find</button>
+      </div>
+      <div class="of-group tool-group">
         <button type="button" id="btn-sort-asc" title="Sort A→Z by the active column">Sort A→Z</button>
         <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
+        <button type="button" id="btn-sort-more" title="Sort by more than one column, with an optional header row">Sort…</button>
+      </div>
+      <div class="of-group tool-group">
+        <button type="button" id="btn-filter" title="Show filter arrows on the header row of the used area or selection">Filter</button>
+        <button type="button" id="btn-filter-clear" title="Clear filter choices (keeps the arrows)">Clear filter</button>
+      </div>
+      <div class="of-group tool-group">
+        <button type="button" id="btn-valid" title="Set a dropdown list for the selected cells">Data validation</button>
+        <button type="button" id="btn-dups" title="Remove duplicate rows from the selection">Remove duplicates</button>
+      </div>
+    </div>
+    <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
+      <div class="of-group tool-group" role="group" aria-label="Freeze panes">
+        <span class="of-group-label">Freeze</span>
+        <button type="button" id="btn-freeze-top" title="Keep the top row visible while scrolling">Top row</button>
+        <button type="button" id="btn-freeze-first" title="Keep the first column visible while scrolling">First column</button>
+        <button type="button" id="btn-freeze-panes" title="Freeze rows above and columns to the left of the active cell">Panes</button>
+        <button type="button" id="btn-unfreeze" title="Unfreeze panes">Unfreeze</button>
+      </div>
+      <div class="of-group tool-group" role="group" aria-label="Hide rows and columns">
+        <span class="of-group-label">Hide</span>
+        <button type="button" id="btn-hide-rows" title="Hide the selected rows">Hide rows</button>
+        <button type="button" id="btn-hide-cols" title="Hide the selected columns">Hide columns</button>
+        <button type="button" id="btn-unhide" title="Unhide rows and columns in the selection">Unhide</button>
+        <button type="button" id="btn-unhide-all" title="Unhide every hidden row and column on this sheet">Unhide all</button>
       </div>
     </div>
   </nav>
 
   <!-- Formula bar: its own row -->
   <div class="toolbar sheet-formula-row" id="sheet-formula-row">
+    <button type="button" class="sheet-fx-btn" id="btn-fx" title="Insert function" aria-label="Insert function" aria-haspopup="dialog">fx</button>
     <span class="eq-mark">=</span>
-    <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar">
+    <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar" autocomplete="off">
   </div>
-  <div id="status" class="status"></div>
+  <div id="fx-hint" class="fx-hint" hidden></div>
+  <div id="fx-picker" class="fx-picker" hidden role="dialog" aria-label="Function picker">
+    <div class="fx-picker-head">
+      <strong>Insert function</strong>
+      <button type="button" class="fx-picker-close" data-fx-close="1" title="Close" aria-label="Close">×</button>
+    </div>
+    <input id="fx-picker-q" type="search" placeholder="Search functions" aria-label="Search functions" autocomplete="off">
+    <div id="fx-picker-list" class="fx-picker-list"></div>
+  </div>
+  <div id="data-find" class="data-panel" hidden role="dialog" aria-label="Find and replace">
+    <div class="fx-picker-head">
+      <strong>Find and replace</strong>
+      <button type="button" class="fx-picker-close" data-find-close="1" title="Close" aria-label="Close">×</button>
+    </div>
+    <label class="data-field">Find <input id="data-find-q" type="text" autocomplete="off"></label>
+    <label class="data-field">Replace with <input id="data-find-r" type="text" autocomplete="off"></label>
+    <label class="data-check"><input type="checkbox" id="data-find-case"> Match case</label>
+    <div class="data-scope">
+      <label class="data-check"><input type="radio" name="data-find-scope" value="sheet" checked> This sheet</label>
+      <label class="data-check"><input type="radio" name="data-find-scope" value="book"> All sheets</label>
+    </div>
+    <div class="data-actions">
+      <button type="button" id="data-find-next">Find next</button>
+      <button type="button" id="data-find-rep">Replace</button>
+      <button type="button" id="data-find-all">Replace all</button>
+    </div>
+  </div>
+  <div id="data-sort" class="data-panel" hidden role="dialog" aria-label="Sort"></div>
+  <div id="data-dups" class="data-panel" hidden role="dialog" aria-label="Remove duplicates"></div>
+  <div id="data-valid" class="data-panel" hidden role="dialog" aria-label="Data validation"></div>
+  <div id="data-filter" class="data-panel data-filter-menu" hidden role="dialog" aria-label="Filter"></div>
+  <button type="button" id="data-valid-arrow" class="data-valid-arrow" hidden title="Pick a value" aria-label="Pick a value" aria-haspopup="listbox">▾</button>
+  <div id="data-valid-list" class="data-panel" hidden role="listbox" aria-label="Allowed values"></div>
+  <div id="style-cf" class="data-panel" hidden role="dialog" aria-label="Conditional formatting"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
+  <div class="sheet-footer" id="sheet-footer">
+    <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Sheets"></div>
+    <button type="button" class="sheet-tab-add" id="btn-sheet-add" title="Add sheet" aria-label="Add sheet">+</button>
+    <div class="sheet-stats" id="sheet-stats" hidden></div>
+    <div id="status" class="status"></div>
+  </div>
   <script src="../shared/office-icons.js"></script>
   <script src="../shared/office-dialog.js"></script>
   <script src="../shared/office-page.js"></script>
@@ -151,31 +247,36 @@
   <script src="../shared/office-colour.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="spreadsheet_config.js"></script>
-  <script src="spreadsheet_formula.js"></script>
-  <script src="spreadsheet_functions.js"></script>
-  <script src="spreadsheet_refs.js"></script>
-  <script src="spreadsheet_state.js"></script>
-  <script src="spreadsheet_storage.js"></script>
-  <script src="spreadsheet_files.js"></script>
-  <script src="spreadsheet_grid.js"></script>
-  <script src="spreadsheet_edit.js"></script>
-  <script src="spreadsheet_fill.js"></script>
-  <script src="spreadsheet_toolbar.js"></script>
-  <script src="spreadsheet_settings.js"></script>
-  <script src="spreadsheet_page.js"></script>
-  <script src="spreadsheet_ribbon.js"></script>
-  <script src="spreadsheet_logic.js"></script>
-  <script src="spreadsheet_format.js"></script>
-  <script src="spreadsheet_undo.js"></script>
-  <script src="spreadsheet_select.js"></script>
-  <script src="spreadsheet_clipboard.js"></script>
-  <script src="spreadsheet_rows.js"></script>
-  <script src="spreadsheet_sort.js"></script>
-  <script src="spreadsheet_resize.js"></script>
-  <script src="spreadsheet_keys.js"></script>
-  <script src="spreadsheet_xlsx.js"></script>
-  <script src="spreadsheet_hub.js"></script>
-  <script src="spreadsheet_quick.js"></script>
+  <script src="spreadsheet_config.js?v=SH12"></script>
+  <script src="spreadsheet_formula.js?v=SH12"></script>
+  <script src="spreadsheet_functions.js?v=SH12"></script>
+  <script src="spreadsheet_fx.js?v=SH12"></script>
+  <script src="spreadsheet_refs.js?v=SH12"></script>
+  <script src="spreadsheet_state.js?v=SH12"></script>
+  <script src="spreadsheet_storage.js?v=SH12"></script>
+  <script src="spreadsheet_files.js?v=SH12"></script>
+  <script src="spreadsheet_grid.js?v=SH12"></script>
+  <script src="spreadsheet_edit.js?v=SH12"></script>
+  <script src="spreadsheet_fill.js?v=SH12"></script>
+  <script src="spreadsheet_toolbar.js?v=SH12"></script>
+  <script src="spreadsheet_settings.js?v=SH12"></script>
+  <script src="spreadsheet_page.js?v=SH12"></script>
+  <script src="spreadsheet_ribbon.js?v=SH12"></script>
+  <script src="spreadsheet_logic.js?v=SH12"></script>
+  <script src="spreadsheet_format.js?v=SH12"></script>
+  <script src="spreadsheet_style.js?v=SH12"></script>
+  <script src="spreadsheet_charts.js?v=SH12"></script>
+  <script src="spreadsheet_undo.js?v=SH12"></script>
+  <script src="spreadsheet_select.js?v=SH12"></script>
+  <script src="spreadsheet_clipboard.js?v=SH12"></script>
+  <script src="spreadsheet_rows.js?v=SH12"></script>
+  <script src="spreadsheet_sheets.js?v=SH12"></script>
+  <script src="spreadsheet_sort.js?v=SH12"></script>
+  <script src="spreadsheet_data.js?v=SH12"></script>
+  <script src="spreadsheet_resize.js?v=SH12"></script>
+  <script src="spreadsheet_keys.js?v=SH12"></script>
+  <script src="spreadsheet_xlsx.js?v=SH12"></script>
+  <script src="spreadsheet_hub.js?v=SH12"></script>
+  <script src="spreadsheet_quick.js?v=SH12"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 /*
  * spreadsheet_files.js
- * Files: CSV export / import (parser), download helper, print.
+ * Files: CSV export / import of the active sheet (parser), download helper, print (active sheet; hidden rows/cols skipped).
  */
 
 /**
@@ -29,7 +29,9 @@ function exportCsv() {
     }
     lines.push(row.join(","));
   }
-  downloadText(CFG.csv.exportName, lines.join("\n"));
+  var name = (workbook && workbook.sheets[workbook.active] && workbook.sheets[workbook.active].name) || "sheet";
+  name = String(name).replace(/[\\\/:*?"<>|]/g, "_") + ".csv";
+  downloadText(name || CFG.csv.exportName, lines.join("\n"));
 }
 
 /**
