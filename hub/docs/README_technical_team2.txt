@@ -1318,7 +1318,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Tests: `node --check` on changed JS, `test-bs5-helpers.js` + new `test-bs6-helpers.js` (display, lookup, inbound, clear, delete impact, schema 5→6 repair), static curl smoke (200 + BS6). No Puppeteer / Playwright / jsdom.
 
 
-### 1.66 Base reports, summaries and charts: `apps/office/base/` (Office), release BS7
+### 1.75 Base reports, summaries and charts: `apps/office/base/` (Office), release BS7
 - Why: BS6 linked tables together, but there was still no way to group records, total them, print a report, or see a simple chart — the next step planned to Jor after links.
 - New `modules/base-report.js` (pure group/aggregate helpers + Report tab UI + SVG bar/pie, no chart library). A report groups by one field and an optional second field (including a `ref`, a `lookup`, or a “Link ▸ field” path). Dates can be bucketed by day / month / year. Aggregates: Count, plus Sum / Average / Min / Max of Number, Currency and Auto-number ID (and lookups of those). Two group-by levels produce subtotals and a grand total. Empty groups are “(blank)”. A row with several links is counted in each linked group.
 - The report runs over the currently visible rows (active query + search). Saved reports live in `BASE.db.reports` (same IndexedDB record), in the Report tab picker and the File menu. Save / Rename / Delete are undoable until Base is closed. Deleting a table drops its reports (still not undoable).
