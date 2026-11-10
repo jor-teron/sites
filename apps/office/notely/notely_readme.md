@@ -50,7 +50,7 @@ Shown briefly in the toolbar:
 - "That does not look like a text file."
 - "Could not read that file."
 - "Opened <name>" when it worked.
-- If storage is blocked (private mode), typing still works but nothing is saved.
+- If storage is blocked (private mode) or full, typing still works. A card stays up ("Couldn't save — storage full" or "Couldn't save — storage blocked") until a save works. Closing the tab retries a save that had failed.
 
 ## 7. Screen sizes
 - One toolbar row on desktops.
@@ -89,3 +89,9 @@ Shown briefly in the toolbar:
 ## 12. Related apps
 - Notepad: the older, simpler notes page (Notely imports its text once).
 - Draftly: documents with formatting and pages.
+
+## HO2
+
+- A failed autosave is no longer silent. The card in section 6 stays until the notes are stored.
+- "Open with Notely" asks with an in-app dialog (Enter confirms, Esc cancels) instead of the browser's confirm box. The parked Clear button does the same, if it is ever wired back in.
+- An empty or blocked store does not wipe text the browser had already put back in the box.

@@ -182,13 +182,30 @@ Draftly.export.makeDocxBlob = function makeDocxBlob(bodyHtml, hfData) {
   });
 };
 
+/* Try fn(). If the html-docx fallback is missing, load vendor/html-docx.js and try once more.
+   The real DOCX writer (draftly-docxgen.js) does not need that file. */
+Draftly.export.withDocx = function withDocx(fn) {
+  function once() { return fn(); }
+  try {
+    return Promise.resolve(once());
+  } catch (e) {
+    /* (before HO2) html-docx.js was already loaded, so this throw did not happen on a normal export. */
+    if (typeof htmlDocx !== 'undefined' || !Draftly.vendor || !/html-docx-js missing/.test(String(e && e.message || ''))) {
+      return Promise.reject(e);
+    }
+    return Draftly.vendor.ensureDocx().then(once);
+  }
+};
+
 /* Build a DOCX blob from the joined HTML and download it. */
 Draftly.export.exportDocx = function exportDocx() {
   var cfg = Draftly.config;
   if (Draftly.editor) Draftly.editor.saveSelection();
 
-  try {
-    var blob = Draftly.export.makeDocxBlob(Draftly.export.docxHtml());
+  /* (before HO2) the try/catch called makeDocxBlob directly (html-docx already on the page). */
+  Draftly.export.withDocx(function () {
+    return Draftly.export.makeDocxBlob(Draftly.export.docxHtml());
+  }).then(function (blob) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
@@ -199,10 +216,11 @@ Draftly.export.exportDocx = function exportDocx() {
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, cfg.docxUrlRevokeMs);
     if (Draftly.ui) Draftly.ui.showToast('DOCX exported successfully');
-  } catch (e) {
+  }).catch(function () {
     if (Draftly.ui) Draftly.ui.showToast('Failed to export DOCX');
-  }
-  if (Draftly.editor) Draftly.editor.restoreSelection();
+  }).then(function () {
+    if (Draftly.editor) Draftly.editor.restoreSelection();
+  });
 };
 
 /* File menu: Print / Export DOCX / Export PDF, and Ctrl+P. */

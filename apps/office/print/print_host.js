@@ -251,13 +251,20 @@ function acceptFile(name, mime, blob) {
 /*
   Clear button in the history heading. Empties the list and IndexedDB.
 */
-function clearHistory() {
+async function clearHistory() {
   if (!fileHistory.length) {
     return;
   }
-  if (!window.confirm('Clear all ' + fileHistory.length + ' files from this station?')) {
-    return;
-  }
+  /* (before HO2) if (!window.confirm('Clear all ' + fileHistory.length + ' files from this station?')) return; */
+  const ask = window.OfficeDialog && OfficeDialog.confirm
+    ? OfficeDialog.confirm({
+      title: 'Clear files?',
+      message: 'Clear all ' + fileHistory.length + ' files from this station?',
+      okLabel: 'Clear',
+      danger: true
+    })
+    : Promise.resolve(false);
+  if (!await ask) return;
   fileHistory = [];
   Object.keys(sessionBlobs).forEach(function (id) {
     delete sessionBlobs[id];

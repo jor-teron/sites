@@ -51,3 +51,24 @@
 body.dark .dlg-error { color: #ff8a8a; }
 body.dark .dlg-backdrop { background: rgba(0, 0, 0, 0.5); }
 @media print { .dlg-backdrop { display: none !important; } }
+
+/* HO2: native <dialog> so confirm/alert/prompt sit above any other open dialog. */
+dialog.dlg-modal {
+  border: none;
+  padding: 0;
+  margin: auto;
+  background: transparent;
+  color: inherit;
+  width: min(360px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  overflow: visible;
+}
+dialog.dlg-modal .dlg { width: 100%; max-height: calc(100vh - 32px); }
+dialog.dlg-modal::backdrop {
+  background: rgba(20, 20, 40, 0.38);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+body.dark dialog.dlg-modal::backdrop { background: rgba(0, 0, 0, 0.5); }
+@media print { dialog.dlg-modal { display: none !important; } }

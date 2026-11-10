@@ -71,8 +71,15 @@
     p.src = f; p.corners = f.a4 ? [[0, 0], [1, 0], [1, 1], [0, 1]] : null; p.rot = 0;
     process(p); edit(p);
   }
-  function remove(p) {
-    if (!confirm('Delete page ' + (PS.pages.indexOf(p) + 1) + '?')) return;
+  function ask(message, okLabel) {
+    /* (before HO2) confirm(message) */
+    if (window.OfficeDialog && OfficeDialog.confirm) {
+      return OfficeDialog.confirm({ title: 'Paper Scan', message: message, okLabel: okLabel || 'OK', danger: true });
+    }
+    return Promise.resolve(false);
+  }
+  async function remove(p) {
+    if (!await ask('Delete page ' + (PS.pages.indexOf(p) + 1) + '?', 'Delete')) return;
     PS.pages = PS.pages.filter((x) => x !== p); lastPdf = null;
     PS.store.del(p.id); saveOrder(); PS.list.render(); sizeLine();
   }
@@ -114,7 +121,8 @@
   const act = (fn) => async () => { try { const f = await makePdf(); if (f) await fn(f); } catch (e) { PS.ui.status('PDF failed: ' + e.message); } };
 
   async function newScan() {
-    if (PS.pages.length && !confirm('Start a new scan? All ' + PS.pages.length + ' page(s) will be removed.')) return;
+    /* (before HO2) if (PS.pages.length && !confirm('Start a new scan? ...')) return; */
+    if (PS.pages.length && !await ask('Start a new scan? All ' + PS.pages.length + ' page(s) will be removed.', 'New scan')) return;
     PS.pages = []; lastPdf = null; await PS.store.clear(); PS.list.render(); sizeLine();
   }
 

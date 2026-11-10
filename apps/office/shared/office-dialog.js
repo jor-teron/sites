@@ -3,13 +3,17 @@
  * Small modal dialogs shared by the Office apps (Draftly, Spreadsheet). No window.prompt / confirm.
  *   OfficeDialog.prompt({title, label, value, okLabel, emptyError}) → Promise<string|null>
  *   OfficeDialog.confirm({title, message, okLabel, danger})         → Promise<boolean>
+ *   OfficeDialog.alert({title, message, okLabel})                   → Promise<boolean>   (HO2)
  *   OfficeDialog.form({title, message, fields:[{key,label,type,value,min,max,step,options}], okLabel,
  *     (type:'select' + options:[{value,label}] or ['a','b'] gives a dropdown; added for Base BS2)
  *                      validate(values) → error text | ""})        → Promise<object|null>
  * Keys: Enter = OK (except when Cancel has focus), Esc or a backdrop click = cancel,
  * Tab stays inside the dialog. A prompt selects its text and refuses an empty value.
  * A danger confirm has a red OK and starts with Cancel focused.
- * One dialog at a time; opening another cancels the first.
+ * One Office dialog at a time; opening another cancels the first.
+ * HO2: the box is a <dialog> opened with showModal(), so it sits above any other open <dialog>.
+ * Text is set with textContent only.
+ * (before HO2) the box was a div.dlg-backdrop appended to document.body (not the top layer).
  * Styles: office-dialog.css (colours come from the app's CSS variables, with fallbacks).
  * Generalised from Draftly's draftly-dialog.js (Draftly.dialog is now an alias of this).
  */
@@ -27,18 +31,19 @@ window.OfficeDialog = OfficeDialog;
     return n;
   }
 
-  function cancelValue(kind) { return kind === 'confirm' ? false : null; }
+  function cancelValue(kind) { return (kind === 'confirm' || kind === 'alert') ? false : null; }
 
-  /* Build and show one dialog. kind: 'prompt' | 'confirm' | 'form'. Resolves with the result. */
+  /* Build and show one dialog. kind: 'prompt' | 'confirm' | 'alert' | 'form'. Resolves with the result. */
   function open(kind, o) {
     if (current) current.close(cancelValue(current.kind));
     o = o || {};
     return new Promise(function (resolve) {
-      var back = el('div', 'dlg-backdrop');
+      /* (before HO2) var back = el('div', 'dlg-backdrop'); document.body.appendChild(back); */
+      var host = el('dialog', 'dlg-modal');
       var box = el('div', 'dlg');
-      box.setAttribute('role', kind === 'confirm' ? 'alertdialog' : 'dialog');
+      box.setAttribute('role', (kind === 'confirm' || kind === 'alert') ? 'alertdialog' : 'dialog');
       box.setAttribute('aria-modal', 'true');
-      var title = el('div', 'dlg-title', o.title || (kind === 'confirm' ? 'Are you sure?' : 'Enter a value'));
+      var title = el('div', 'dlg-title', o.title || (kind === 'confirm' ? 'Are you sure?' : (kind === 'alert' ? 'Notice' : 'Enter a value')));
       title.id = 'dlgTitle'; box.setAttribute('aria-labelledby', 'dlgTitle');
       box.appendChild(title);
       var input = null, err = null, inputs = [];
@@ -88,20 +93,30 @@ window.OfficeDialog = OfficeDialog;
         box.appendChild(err);
       }
       var row = el('div', 'dlg-actions');
-      var cancel = el('button', 'dlg-btn dlg-cancel', 'Cancel'); cancel.type = 'button';
+      var cancel = null;
+      if (kind !== 'alert') {
+        cancel = el('button', 'dlg-btn dlg-cancel', 'Cancel'); cancel.type = 'button';
+        row.appendChild(cancel);
+      }
       var ok = el('button', 'dlg-btn dlg-ok' + (o.danger ? ' dlg-danger' : ''), o.okLabel || 'OK'); ok.type = 'button';
-      row.appendChild(cancel); row.appendChild(ok);
+      row.appendChild(ok);
       box.appendChild(row);
-      back.appendChild(box);
+      host.appendChild(box);
       var before = document.activeElement;
-      document.body.appendChild(back);
+      document.body.appendChild(host);
+      if (typeof host.showModal === 'function') {
+        try { host.showModal(); } catch (e) { host.setAttribute('open', ''); }
+      } else {
+        host.setAttribute('open', '');
+      }
 
       var done = false;
       function close(result) {
         if (done) return;
         done = true; current = null;
         document.removeEventListener('keydown', onKey, true);
-        back.remove();
+        try { if (host.close) host.close(); } catch (e) {}
+        host.remove();
         try { if (before && before.focus && document.contains(before)) before.focus({ preventScroll: true }); } catch (e) {}
         resolve(result);
       }
@@ -110,7 +125,7 @@ window.OfficeDialog = OfficeDialog;
         if (focusEl) { focusEl.focus(); if (focusEl.select) focusEl.select(); }
       }
       function accept() {
-        if (kind === 'confirm') { close(true); return; }
+        if (kind === 'confirm' || kind === 'alert') { close(true); return; }
         if (kind === 'prompt') {
           var v = input.value.trim();
           if (!v) { showErr(o.emptyError || 'Please enter a name.', input); return; }
@@ -142,20 +157,22 @@ window.OfficeDialog = OfficeDialog;
       }
       document.addEventListener('keydown', onKey, true);
       ok.addEventListener('click', accept);
-      cancel.addEventListener('click', cancelIt);
-      back.addEventListener('mousedown', function (e) { if (e.target === back) { e.preventDefault(); cancelIt(); } });
+      if (cancel) cancel.addEventListener('click', cancelIt);
+      host.addEventListener('cancel', function (e) { e.preventDefault(); cancelIt(); });
+      host.addEventListener('mousedown', function (e) { if (e.target === host) { e.preventDefault(); cancelIt(); } });
       box.addEventListener('focusout', function () {
-        setTimeout(function () { if (!done && !box.contains(document.activeElement)) (input || (o.danger ? cancel : ok)).focus(); }, 0);
+        setTimeout(function () { if (!done && !box.contains(document.activeElement)) (input || (o.danger && cancel ? cancel : ok)).focus(); }, 0);
       });
       inputs.forEach(function (i) { i.addEventListener('input', function () { if (err) err.hidden = true; }); });
       current = { kind: kind, close: function (r) { close(r); } };
       if (input) { input.focus(); if (input.select) input.select(); }
-      else (o.danger ? cancel : ok).focus();
+      else (o.danger && cancel ? cancel : ok).focus();
     });
   }
 
   D.prompt = function (o) { return open('prompt', o); };
   D.confirm = function (o) { return open('confirm', o); };
+  D.alert = function (o) { return open('alert', o); };
   D.form = function (o) { return open('form', o); };
   D.isOpen = function () { return !!current; };
 })();

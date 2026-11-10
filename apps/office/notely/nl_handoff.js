@@ -13,9 +13,14 @@ NL.handoff = (function () {
     try { d = JSON.parse(raw); } catch (_) { return; }
     if (!d || typeof d.text !== 'string' || !(Date.now() - (+d.t || 0) < MAX_AGE)) return;
     const name = String(d.name || 'file.txt').slice(0, 200);
-    if (NL.editor.value.trim() && NL.editor.value !== d.text &&
-      !window.confirm('Open "' + name + '" in Notely?\nIt replaces your current notes (Ctrl+Z may bring them back).')) return;
-    NL.files.load(new File([d.text], name, { type: 'text/plain' }));
+    const go = () => NL.files.load(new File([d.text], name, { type: 'text/plain' }));
+    if (!(NL.editor.value.trim() && NL.editor.value !== d.text)) { go(); return; }
+    const msg = 'Open "' + name + '" in Notely?\nIt replaces your current notes (Ctrl+Z may bring them back).';
+    /* (before HO2) if (!window.confirm(msg)) return; */
+    const ask = window.OfficeDialog && OfficeDialog.confirm
+      ? OfficeDialog.confirm({ title: 'Replace notes?', message: msg, okLabel: 'Open', danger: true })
+      : Promise.resolve(false);
+    ask.then((ok) => { if (ok) go(); });
   }
   function init() {
     take();

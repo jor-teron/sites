@@ -54,12 +54,36 @@
     });
   }
 
+  function loadJsQR() {
+    if (typeof jsQR === 'function') return Promise.resolve();
+    if (loadJsQR.pending) return loadJsQR.pending;
+    /* (before HO2) vendor/jsQR.js was a script tag on page open. */
+    loadJsQR.pending = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'vendor/jsQR.js';
+      s.onload = () => resolve();
+      s.onerror = () => { loadJsQR.pending = null; reject(new Error('jsQR')); };
+      document.head.appendChild(s);
+    });
+    return loadJsQR.pending;
+  }
+
   async function standalone(file) {
-    if (!window.SharedLink) { alert('Send needs shared/link — reload the page.'); return; }
+    /* (before HO2) if (!window.SharedLink) { alert('Send needs shared/link — reload the page.'); return; } */
+    if (!window.SharedLink) {
+      if (window.OfficeDialog && OfficeDialog.alert) await OfficeDialog.alert({ title: 'Paper Scan', message: 'Send needs shared/link — reload the page.' });
+      else PS.ui.status('Send needs shared/link — reload the page.');
+      return;
+    }
     if (!SharedLink.connected) {
       let code = '';
       try { code = localStorage.getItem('shared-link-join-code') || ''; } catch (_) { /* blocked */ }
-      if (!code || !SharedLink.everConnected(code)) code = window.SharedLinkScan ? (await SharedLinkScan.ask({ title: 'Send PDF to the Hub' })) || '' : '';
+      if (!code || !SharedLink.everConnected(code)) {
+        if (window.SharedLinkScan) {
+          try { await loadJsQR(); } catch (_) { /* type the code if the scanner cannot load */ }
+          code = (await SharedLinkScan.ask({ title: 'Send PDF to the Hub' })) || '';
+        } else code = '';
+      }
       if (!code) return;
       PS.ui.status('Connecting to Hub ' + code + '…');
       if (SharedLink.role !== 'join' || SharedLink.code !== code) await SharedLink.join({ prefix: 'jtsites-', code });
@@ -80,7 +104,13 @@
 
   async function viaHub(file) {
     const list = hubDevices.filter((d) => d.online && !d.legacy && !d.pad);
-    if (!list.length) { alert('No device is connected to the Hub. Scan the Hub QR with a phone first.'); return; }
+    /* (before HO2) if (!list.length) { alert('No device is connected to the Hub. Scan the Hub QR with a phone first.'); return; } */
+    if (!list.length) {
+      const message = 'No device is connected to the Hub. Scan the Hub QR with a phone first.';
+      if (window.OfficeDialog && OfficeDialog.alert) await OfficeDialog.alert({ title: 'Paper Scan', message: message });
+      else PS.ui.status(message);
+      return;
+    }
     const to = list.length === 1 ? list[0].id : await choose('Send to', list.map((d) => ({ label: '📱 ' + d.name, value: d.id })));
     if (!to) return;
     window.parent.postMessage({ sharedLink: 'sendFile', blob: file, name: file.name, type: file.type, app: '', to }, '*');

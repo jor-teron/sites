@@ -29,7 +29,7 @@ IndexedDB `paper-scan` / `pages` (original photo + processed JPEG + corners, rot
 
 ## Errors
 - Non-photo files are skipped with a note. Unreadable photo → message on the status line, page stays so it can be retaken.
-- Corners in a line → "drag them apart". Hub code wrong → "Hub not found" banner with Retry (SharedLink). No device connected (in Hub) → alert.
+- Corners in a line → "drag them apart". Hub code wrong → "Hub not found" banner with Retry (SharedLink). No device connected (in Hub) → an in-app dialog (HO2), not the browser alert.
 
 ## Manual test (browser)
 1. Open `apps/office/paper-scan/paper-scan.html` on a phone → 📷 Camera, shoot a page → editor opens; drag corners onto the paper edges → ✓ Done → thumbnail is flat and white.
@@ -44,3 +44,7 @@ IndexedDB `paper-scan` / `pages` (original photo + processed JPEG + corners, rot
 - Auto edge detection works best with light paper on a darker background; low contrast falls back to the centred A4 crop.
 - The editor photo stays unrotated; the mini-preview (bottom-right) shows the rotated result.
 - Very large photos (>20 MP) may be slow on old phones; pages are processed one at a time.
+
+## HO2
+
+Delete page and New scan ask with an in-app dialog (Enter confirms, Esc cancels, the OK button is red). Send shows the same kind of dialog when the link code is missing or no phone is connected. The QR reader (`vendor/jsQR.js`) loads the first time you scan a code, not when the page opens. The PDF writer was already Paper Scan's own small script, so it stays as it is.

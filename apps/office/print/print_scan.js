@@ -137,9 +137,24 @@ const PrintScan = (function () {
     timer = setTimeout(frame, SCAN_EVERY_MS);
   }
 
+  /* HO2: vendor/jsQR.js is fetched the first time the scanner opens, not with the page. */
+  function loadJsQR() {
+    if (typeof jsQR === 'function') return Promise.resolve();
+    if (loadJsQR.pending) return loadJsQR.pending;
+    loadJsQR.pending = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'vendor/jsQR.js';
+      s.onload = function () { resolve(); };
+      s.onerror = function () { loadJsQR.pending = null; reject(new Error('jsQR')); };
+      document.head.appendChild(s);
+    });
+    return loadJsQR.pending;
+  }
+
   /* Open the rear camera and start scanning. */
   async function start(videoEl, msgEl, codeCallback) {
     stop();
+    try { await loadJsQR(); } catch (err) { /* BarcodeDetector may still read the QR. */ }
     video = videoEl;
     msg = msgEl;
     onCode = codeCallback;

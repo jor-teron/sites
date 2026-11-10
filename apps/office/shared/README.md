@@ -5,7 +5,8 @@ Plain scripts, no build, work from `file://`. Each app keeps its own storage key
 
 - `office-ribbon.css` / `office-ribbon.js`: Draftly-style ribbon (36px top row with File + tabs,
   one scrolling row of `.of-group`s per tab, File dropdown). Tabs are data `{id, label}`.
-- `office-dialog.css` / `office-dialog.js`: `OfficeDialog.prompt / confirm / form` modal dialogs.
+- `office-dialog.css` / `office-dialog.js`: `OfficeDialog.prompt / confirm / alert / form` modal dialogs.
+  HO2 opens them with `<dialog>.showModal()` so they sit above other dialogs.
 - `office-page.js`: paper sizes, margin presets (Normal / Narrow / Wide), `clampMargins`,
   `pageRule` (@page text), `inject` (style tag), `customMarginsDialog`.
 
@@ -17,9 +18,11 @@ set them on `body` so dark/light overrides flow through.
   `OfficeNotify.show({icon, title, text, onClick, timeoutMs})` -> `{close(), update(text)}`. Inside the Hub it shows a
   Hub notification card (`HubNotify.notice`); standalone a small local card (bottom-right, ~5 s, max 3). Plain text gets
   an icon from its wording and the app name as title. `OfficeToast` stays as an alias.
+  HO2: `saveProblem(key, err)` / `saveOk(key)` keep one sticky card ("Couldn't save — storage full" or
+  "Couldn't save — storage blocked") until the next save works. That card stays in the app, even inside the Hub.
 - `office-theme.css` / `office-theme.js`: `OfficeTheme.isDark(mode)` (light / dark / auto),
-  `apply(dark, {darkClass, lightClass, key})` (body classes + per-app storage key), `watch(fn)`, `modes`.
-  Theme colours stay in each app's CSS.
+  `apply(dark, {darkClass, lightClass, key})` (body classes + per-app storage key), `watch(fn)`, `watchHub(fn)`, `modes`.
+  Theme colours stay in each app's CSS. HO2: Auto inside the Hub follows `sites-hub.theme`; standalone Auto follows the device.
 - `office-settings.css` / `office-settings.js`: `OfficeSettings.create({key, defaults, sections, migrate,
   validate, gearBtn, onChange, onReset, confirm, toast})` (`toast` = optional message fn; default OfficeNotify). Builds the slide-in panel (switch / select /
   external / about rows), one JSON localStorage key per app. Draftly: `draftly_settings`
@@ -46,3 +49,19 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 ## HO1 — Quick Access Toolbar + Hub title-bar helper
 
 `office-quick.js/.css`: `OfficeQuick.register({app, undo, redo, canUndo, canRedo, save, canSave, print, undoKey, tabs, activeTab, onTab, mount, before, fallback})` draws Undo | Redo | Save | Print before the ribbon tabs, routes Ctrl/Cmd+Z/Y/Shift+Z/S/P, shows the "✓ Saved" tick. `office-hubbar.js`: `HubTitleBar.set/update/clear/onClick/onHello` (Hub contract H49, `hubTitleBar` / `hubTitleBarHello` / `hubTitleBarClick`, v:1). In-app bar hides only after the Hub's hello. Base: Undo/Redo disabled until it has history.
+
+## HO2 — Office fixes
+
+Dialogs, save notices, and Auto theme (see above). No vendor file was moved or deleted.
+
+Follow-up: these vendor files are byte-for-byte copies. A later release can point the apps at one copy.
+
+| bytes | copies |
+| --- | --- |
+| 1133660 | `apps/office/ocr/vendor/pdf.worker.min.js`, `shared/vendor/pdfjs/pdf.worker.min.js` |
+| 377116 | `apps/office/ocr/vendor/pdf.min.js`, `shared/vendor/pdfjs/pdf.min.js` |
+| 364463 | `apps/office/draftly/vendor/jspdf.umd.min.js`, `apps/lab/sketchbook/vendor/jspdf.umd.min.js` |
+| 257127 | `apps/office/paper-scan/vendor/jsQR.js`, `apps/office/print/vendor/jsQR.js`, `apps/connectivity/filedrop/vendor/jsQR.js`, `apps/connectivity/pooh-chat/vendor/jsQR.js`, `apps/media/photo-editor-v2/vendor/jsQR.js`, `hub/controller/vendor/jsQR.js`, `phone/vendor/jsQR.js` |
+| 97630 | `apps/office/ocr/vendor/jszip.min.js`, `apps/connectivity/filedrop/vendor/jszip.min.js`, `shared/vendor/jszip.min.js` |
+| 92865 | `apps/office/print/vendor/peerjs.min.js`, `shared/vendor/peerjs.min.js` |
+| 56694 | `apps/office/print/vendor/qrcode.js`, `apps/office/ocr/vendor/qrcode.js`, `apps/connectivity/filedrop/vendor/qrcode.js`, `shared/vendor/qrcode.js` |

@@ -207,3 +207,9 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 - Inside a table cell: no nested tables (rows -> lines, cells -> tabs), block tags become line breaks.
 - One undo step per paste; "Paste as text" chip swaps the paste for plain text, still one step. Pages reflow after paste.
 - Tests: `/tmp/mm4t/df16.js` (32 checks) http + file://.
+
+## HO2 — save notice, Hub theme, lighter open
+
+- If a document cannot be saved (disk full, private mode, IndexedDB blocked), a card stays on screen: "Couldn't save — storage full" or "Couldn't save — storage blocked". It stays until a later save works. One card, not a new one every keystroke.
+- Settings → Theme → Auto follows the Hub's light/dark when Draftly is inside the Hub, and the device's light/dark setting when you open Draftly on its own. It updates when the Hub theme changes.
+- PDF and DOCX libraries (jsPDF, html2canvas, html-docx) load the first time you export, from the same files in `vendor/`. Opening Draftly no longer loads them. The normal DOCX download still uses Draftly's own writer; html-docx loads only if that writer fails.

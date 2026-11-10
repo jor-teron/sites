@@ -224,7 +224,8 @@ Draftly.docs.bind = function bind() {
     }, cfg.flowDebounceMs);
     clearTimeout(Draftly.app.inputTimer);
     Draftly.app.inputTimer = setTimeout(function () {
-      if (Draftly.app.ready && (!Draftly.settings || Draftly.settings.autosave())) Draftly.storage.save();
+      /* (before HO2) Draftly.storage.save();  — rejection was unhandled, so a full disk failed silently */
+      if (Draftly.app.ready && (!Draftly.settings || Draftly.settings.autosave())) Draftly.storage.save().catch(function () {});
     }, cfg.inputDebounceMs);
   });
 

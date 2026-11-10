@@ -92,9 +92,10 @@ function initSheetSettings() {
     onChange: function (k) { sheetApplySetting(k); },
     onReset: function () { sheetApplySetting(); },
     confirm: function (msg) {
+      /* (before HO2) : window.confirm(msg) */
       return typeof OfficeDialog !== "undefined" && OfficeDialog.confirm
         ? OfficeDialog.confirm({ title: "Reset settings?", message: msg, okLabel: "Reset" })
-        : window.confirm(msg);
+        : Promise.resolve(false);
     },
     toast: function (m) { OfficeNotify.show(m); }
   });

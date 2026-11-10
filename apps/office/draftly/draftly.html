@@ -339,13 +339,17 @@
   <div class="pop-menu wc-pop" id="wordCountPop" role="dialog" aria-label="Word count" hidden></div>
 
 
-  <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download. -->
-  <!-- DF8 Settings panel: built by ../shared/office-settings.js from modules/draftly-settings.js -->
-
-  <script src="../shared/office-icons.js"></script>
+  <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download.
+       HO2: loaded on first export by modules/draftly-vendor.js, not on page open.
+       (before HO2)
   <script src="vendor/html-docx.js"></script>
   <script src="vendor/jspdf.umd.min.js"></script>
   <script src="vendor/html2canvas.min.js"></script>
+  -->
+  <!-- DF8 Settings panel: built by ../shared/office-settings.js from modules/draftly-settings.js -->
+
+  <script src="../shared/office-icons.js"></script>
+  <script src="modules/draftly-vendor.js"></script>
 
   <!-- Modules. Order matters. app.js boots last. -->
   <script src="../shared/office-dialog.js"></script>

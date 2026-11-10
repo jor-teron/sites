@@ -538,20 +538,27 @@ Draftly.mergeUi = { previewOn: false };
       console.warn('draftly merge export:', e);
       toast('Export failed: ' + ((e && e.message) || e));
     }
-    function finish() {
-      finished = true;
-      var out, fname;
-      try {
-        if (fmt === 'zip') { out = Draftly.zip.build(entries); fname = M.cleanName(name, 'merge') + ' (merged).zip'; }
-        else {
-          var hf = hfOn ? { head: Draftly.hf.data.head.map(function (t) { return M.mergeText(t, null, map); }),
-                            foot: Draftly.hf.data.foot.map(function (t) { return M.mergeText(t, null, map); }) } : null;
-          out = X.makeDocxBlob(pieces.join(PB), hf); fname = M.cleanName(name, 'merge') + ' (merged).docx';
-        }
-      } catch (e) { fail(e); return; }
+    function deliver(out, fname) {
       pm.close();
       download(out, fname);
       toast('Exported ' + plural(n, 'document') + ' to ' + fname);
+    }
+    function finish() {
+      finished = true;
+      var fname;
+      try {
+        if (fmt === 'zip') {
+          deliver(Draftly.zip.build(entries), M.cleanName(name, 'merge') + ' (merged).zip');
+          return;
+        }
+        var hf = hfOn ? { head: Draftly.hf.data.head.map(function (t) { return M.mergeText(t, null, map); }),
+                          foot: Draftly.hf.data.foot.map(function (t) { return M.mergeText(t, null, map); }) } : null;
+        fname = M.cleanName(name, 'merge') + ' (merged).docx';
+        /* (before HO2) out = X.makeDocxBlob(pieces.join(PB), hf); then download immediately. */
+        Draftly.export.withDocx(function () { return X.makeDocxBlob(pieces.join(PB), hf); }).then(function (out) {
+          deliver(out, fname);
+        }).catch(fail);
+      } catch (e) { fail(e); }
     }
     function next() {
       if (cancelled) { finished = true; pm.close(); toast('Export cancelled'); return; }
@@ -560,8 +567,10 @@ Draftly.mergeUi = { previewOn: false };
       try {
         var body = X.docxHtml(M.mergeHtml(base, idx));
         if (fmt === 'combined') { pieces.push(body); step(); return; }
-        var blob = X.makeDocxBlob(body, hfFor(idx));
-        blob.arrayBuffer().then(function (ab) {
+        /* (before HO2) var blob = X.makeDocxBlob(body, hfFor(idx)); blob.arrayBuffer()... */
+        Draftly.export.withDocx(function () { return X.makeDocxBlob(body, hfFor(idx)); }).then(function (blob) {
+          return blob.arrayBuffer();
+        }).then(function (ab) {
           entries.push({ name: names[idx] + '.docx', data: new Uint8Array(ab) });
           step();
         }).catch(fail);

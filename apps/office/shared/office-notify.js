@@ -56,6 +56,29 @@ var OfficeNotify = (function () {
     } catch (e) { /* cross-origin or no Hub: local card */ }
     return local(o);
   }
-  return { show: show, notice: show };
+  /* HO2: one sticky card per key until saveOk. Stays in the app (not the Hub toast,
+     which can disappear on its own) so a failed autosave stays visible. */
+  var sticky = {};
+  function isQuota(err) {
+    if (!err) return false;
+    var name = String(err.name || '');
+    var msg = String(err.message || err);
+    return name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED' || err.code === 22 || err.code === 1014 || /quota|exceeded/i.test(name + ' ' + msg);
+  }
+  function saveProblem(key, err) {
+    var text = isQuota(err) ? "Couldn't save — storage full" : "Couldn't save — storage blocked";
+    var cur = sticky[key];
+    if (cur) { cur.update(text); return cur; }
+    cur = local({ icon: '⚠️', title: appName() || 'Save', text: text, timeoutMs: 0 });
+    sticky[key] = cur;
+    return cur;
+  }
+  function saveOk(key) {
+    var cur = sticky[key];
+    if (!cur) return;
+    delete sticky[key];
+    cur.close();
+  }
+  return { show: show, notice: show, saveProblem: saveProblem, saveOk: saveOk, isQuota: isQuota };
 })();
 var OfficeToast = OfficeNotify; /* SH1 name, kept for old callers */

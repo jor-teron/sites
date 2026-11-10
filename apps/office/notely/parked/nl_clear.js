@@ -6,7 +6,13 @@ NL.clear = (function () {
   function hide() { clearTimeout(timer); bar.hidden = true; kept = null; }
   function clear() {
     if (!NL.editor.value) return;
-    if (!window.confirm('Clear all text?')) return;
+    /* (before HO2) if (!window.confirm('Clear all text?')) return; */
+    const ask = window.OfficeDialog && OfficeDialog.confirm
+      ? OfficeDialog.confirm({ title: 'Clear all text?', message: 'Clear all text?', okLabel: 'Clear', danger: true })
+      : Promise.resolve(false);
+    ask.then((ok) => { if (ok) doClear(); });
+  }
+  function doClear() {
     kept = NL.editor.value;
     NL.editor.replaceAll('');
     bar.hidden = false;
