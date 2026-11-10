@@ -24,6 +24,7 @@ Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls
 Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
 Connect 4,        connect-4/, , , Puzzle, Drop red and yellow discs to line up four - play a friend or the computer
+Sweet Swap,        sweet-swap/,   sweet-swap/sweet-swap_icon.png, , Puzzle, Swap colourful candy shapes to match three and chain cascades across score challenges
 Unblock,           unblock/,      unblock/unblock_icon.png, , Puzzle, Sliding block puzzle: move blocks to free the red one
 Snake & Ladder,    snake-ladder/,  , , Puzzle, Classic snakes and ladders board game - roll the dice and race to 100
 Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
@@ -33,6 +34,7 @@ Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buil
 Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
 Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
 Garden Guard,      garden-guard/, garden-guard/garden-guard_icon.png, , Strategy, Grow a garden defence across five lawns with sun makers and frosty shooters
+Breakout,          breakout/,      breakout/breakout_icon.png, , Arcade, Clear brick layouts with a paddle and ball - catch powers and survive endless levels
 Star Pinball,      pinball/,       , , Arcade, Original space pinball: ramp - spinner - drop targets and missions from Cadet to Admiral
 Osmos OSM1c,      osmos/,        osmos/assets/cell-icon.svg, , Arcade, Calm glow cell survival: absorb smaller cells and grow through seeded levels
 Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
@@ -68,6 +70,7 @@ Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk
 Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 Rock Paper Scissors,   rps/,     , , Arcade, Rock paper scissors against the computer
 Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
+Minesweeper,       minesweeper/,   minesweeper/minesweeper_icon.png, , Puzzle, Clear the minefield with safe first openings - flags and three board sizes
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
