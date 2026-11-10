@@ -30,7 +30,7 @@ var Path = require(path.join(app, 'rm_sftp_path.js'));
 var Client = require(path.join(app, 'rm_sftp_client.js'));
 var Xfer = require(path.join(app, 'rm_sftp_xfer.js'));
 
-assertEq(C.RELEASE, 'RM3', 'release tag is RM3');
+assert(/^RM\d+$/.test(C.RELEASE), 'release tag is RMn');
 assertEq(C.TWO_PANE_MIN, 900, 'two-pane breakpoint is 900px');
 assert(C.SFTP_DEFAULT_MAX === 100 * 1024 * 1024, 'default max is 100 MB');
 assert(C.DELETE_FOLDER && /everything/.test(C.DELETE_FOLDER), 'folder delete confirm is recursive');

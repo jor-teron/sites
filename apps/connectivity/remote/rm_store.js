@@ -43,15 +43,17 @@
   }
 
   /**
-   * What tapping a row should do in RM1: always a toast, never a navigation to another app.
-   * SSH and VNC share one message; SFTP and FTP have their own release tags.
+   * What tapping a row should do: open a session for SFTP or SSH, otherwise a toast.
+   * Never a navigation to another app. VNC and unknown protocols share one "later" message;
+   * FTP has its own parked-release tag.
    */
   function tapAction(conn) {
     /* Protocol id on the row, or empty if the caller passed nothing. */
     var p = conn && conn.protocol ? String(conn.protocol) : '';
     if (p === 'sftp') return { action: 'sftp' };
+    if (p === 'ssh') return { action: 'ssh' };
     if (p === 'ftp') return { action: 'toast', message: C.TOAST_FTP };
-    /* SSH, VNC, and any unknown protocol get the honest "later" toast. */
+    /* VNC, and any unknown protocol, get the honest "later" toast. */
     return { action: 'toast', message: C.TOAST_VIEWER_LATER };
   }
 

@@ -1,4 +1,4 @@
-/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM3 */
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM6 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -365,7 +365,8 @@ label.field textarea { min-height: 72px; resize: vertical; }
 /* --- RM2: session tabs, SFTP browse, connect sheet --- */
 
 #view-list[hidden],
-#view-sftp[hidden] { display: none; }
+#view-sftp[hidden],
+#view-ssh[hidden] { display: none; }
 
 .tabs {
   display: flex;
@@ -607,4 +608,145 @@ label.check input {
 
 @media (prefers-reduced-motion: reduce) {
   .progress-bar { transition: none; }
+}
+
+
+/* --- RM6: SSH terminal pane, key bar, overflow menu, host-key dialog --- */
+
+.app.wide {
+  max-width: none;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  padding-bottom: 8px;
+}
+
+#view-ssh {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ssh-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+#ssh-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ssh-size {
+  flex: 0 0 auto;
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+
+.ssh-sessions {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ssh-term-host {
+  position: absolute;
+  inset: 0;
+}
+
+.ssh-term-host[hidden] { display: none; }
+
+.ssh-term {
+  position: absolute;
+  inset: 6px 0 0 8px;
+}
+
+.ssh-term .xterm { height: 100%; }
+
+.ssh-term .xterm-viewport,
+.ssh-term .xterm-scrollable-element { background-color: transparent !important; }
+
+.ssh-keys[hidden] { display: none; }
+
+.ssh-keys {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+  flex: none;
+}
+
+.ssh-keys button {
+  flex: 0 0 auto;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--surface-2);
+  font-weight: 700;
+}
+
+.ssh-keys button.on {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+#ssh-menu {
+  position: absolute;
+  z-index: 8;
+  min-width: 180px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--surface-2);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px #0003;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  animation: pop 0.2s ease-out;
+}
+
+#ssh-menu[hidden] { display: none; }
+
+#ssh-menu button {
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+#ssh-menu button:hover { background: var(--surface-2); }
+
+#connect-token-wrap[hidden] { display: none; }
+
+#hostkey-text,
+#hostkey-fp {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+#hostkey-fp,
+.mono {
+  font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ssh-menu { animation: none; }
 }

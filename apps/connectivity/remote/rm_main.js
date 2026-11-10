@@ -1,4 +1,4 @@
-/* Remote — rm_main.js: start the RM3 connections list, tabs, SFTP browse and transfers once the page has loaded. */
+/* Remote — rm_main.js: start the RM6 connections list, tabs, SFTP browse and transfers, and the SSH terminal, once the page has loaded. */
 (function (root) {
   'use strict';
 
@@ -8,6 +8,7 @@
   var Tabs = root.RMTabs;
   var UI = root.RMUI;
   var SftpView = root.RMSftpView;
+  var SshView = root.RMSshView;
 
   /* Bind the store to localStorage, with an in-memory fallback if it is blocked. */
   function storage() {
@@ -31,23 +32,39 @@
 
   /* Start the UI after the DOM is ready. */
   function start() {
+    /* One storage object shared by the connections list and the SSH known-hosts / font store. */
+    var mem = storage();
     /* Saved connections (no passwords). */
-    var store = Store.make(storage());
+    var store = Store.make(mem);
     /* Remmina-style tab list; the Connections tab is always first. */
     var tabs = Tabs.make();
-    /* Filled after UI.init so the open-connection callback can call into the SFTP view. */
+    /* Filled after UI.init so the open-connection callback can call into the session views. */
     var sftp = null;
+    var ssh = null;
     var ui = UI.init({
       store: store,
       tabs: tabs,
-      onOpen: function (conn) { if (sftp) sftp.startConnect(conn); },
-      onShowSession: function (tab) { if (sftp) sftp.showSession(tab); }
+      onOpen: function (conn) {
+        if (conn && conn.protocol === 'ssh') { if (ssh) ssh.startConnect(conn); }
+        else if (sftp) sftp.startConnect(conn);
+      },
+      onShowSession: function (tab) {
+        if (tab && tab.protocol === 'ssh') { if (ssh) ssh.showSession(tab); }
+        else if (sftp) sftp.showSession(tab);
+      }
     });
     sftp = SftpView.init({
       store: store,
       tabs: tabs,
       toast: ui.toast,
       pageProtocol: ui.pageProtocol
+    });
+    ssh = SshView.init({
+      store: store,
+      tabs: tabs,
+      toast: ui.toast,
+      pageProtocol: ui.pageProtocol,
+      storage: mem
     });
     /* Redraw the tab strip and the visible pane whenever a tab is opened, selected or closed. */
     tabs.onChange(function () {

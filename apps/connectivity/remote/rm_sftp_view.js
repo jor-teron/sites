@@ -1,4 +1,4 @@
-/* Remote — rm_sftp_view.js: SFTP connect sheet, folder browse, transfers and file management (RM3). */
+/* Remote — rm_sftp_view.js: SFTP connect sheet, folder browse, transfers and file management (RM3, still used in RM6). */
 (function (root) {
   'use strict';
 
@@ -77,7 +77,7 @@
 
     /* Open the connect sheet for a saved SFTP connection. */
     function startConnect(conn) {
-      if (!conn) return;
+      if (!conn || conn.protocol !== 'sftp') return;
       /* Re-focus an already-open session instead of asking for the password again. */
       var existing = tabs.findByConn(conn.id);
       if (existing) {
@@ -88,6 +88,8 @@
       opening = false;
       $('connect-title').textContent = 'Connect to ' + conn.name;
       $('connect-note').textContent = C.SFTP_SECURITY_NOTE;
+      var wrap = $('connect-token-wrap');
+      if (wrap) wrap.hidden = false;
       var r = relayUrl(conn);
       $('connect-relay').textContent = r.ok ? r.url : (conn.relay || '(no relay URL)');
       $('c-pass').value = '';
@@ -108,6 +110,7 @@
 
     /* Hide the connect sheet and forget the typed password. */
     function closeConnect() {
+      if (!pending) return;
       if ($('connect').open) $('connect').close();
       $('c-pass').value = '';
       pending = null;
@@ -125,7 +128,7 @@
     /* Submit the connect sheet: open the relay, then add a tab and browse the start folder. */
     function submitConnect(ev) {
       if (ev) ev.preventDefault();
-      if (opening || !pending) return;
+      if (opening || !pending || pending.protocol !== 'sftp') return;
       var conn = pending;
       var r = relayUrl(conn);
       if (!r.ok) { connectError(r.reason); return; }

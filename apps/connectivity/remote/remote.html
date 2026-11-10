@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <!--
-  Remote — RM3: connections list, Remmina-style tabs, SFTP browse, transfers and file management.
+  Remote — RM6: connections list, Remmina-style tabs, SFTP browse/transfers, and an SSH terminal.
   SFTP talks JSON over a WebSocket to hub/relay/sftp_relay.py (Remote has its own client; it does
-  not import shared/fs). Read/write are one binary frame per file, up to the relay max. Passwords
-  are never stored. A relay token is stored only if you choose to.
-  SSH, VNC and FTP rows still show an honest "coming" toast. The app is standalone.
-  Styles: rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_tabs.js, rm_sftp_path.js,
-  rm_sftp_client.js, rm_sftp_xfer.js, rm_sftp_view.js, rm_ui.js, rm_main.js.
-  Connections are stored in localStorage 'remote-conns-v1'.
+  not import shared/fs). SSH talks through a websockify TCP relay (port 8022); encryption runs in
+  this page using vendor/ssh-lib.min.js, so the relay never sees the password. Passwords are never
+  stored. A relay token (SFTP only) is stored only if you choose to. VNC and FTP rows still show
+  an honest "coming" toast. The app is standalone and does not import the SSH or VNC apps.
+  Styles: vendor/xterm.css, rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_tabs.js,
+  rm_sftp_path.js, rm_sftp_client.js, rm_sftp_xfer.js, rm_sftp_view.js, rm_ssh_known.js,
+  rm_ssh_client.js, rm_ssh_term.js, rm_ssh_view.js, rm_ui.js, rm_main.js.
+  Connections are stored in localStorage 'remote-conns-v1'. SSH fingerprints use 'remote-known-hosts-v1'.
 -->
 <html lang="en">
 <head>
@@ -17,6 +19,7 @@
   <title>Remote</title>
   <link rel="icon" href="rm_icon.svg">
   <script>try{var t=localStorage.getItem('sites-hub.theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+  <link rel="stylesheet" href="vendor/xterm.css">
   <link rel="stylesheet" href="rm_base.css">
 </head>
 <body>
@@ -25,14 +28,14 @@
       <a class="back jelly" href="../connectivity.html">Back</a>
       <img src="rm_icon.svg" alt="">
       <h1>Remote</h1>
-      <span class="tag">RM3</span>
+      <span class="tag">RM6</span>
       <button type="button" id="btn-add" class="jelly">Add</button>
     </header>
 
     <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
 
     <section id="view-list">
-      <p class="hint">One list for SSH, VNC, SFTP and FTP. SFTP can browse, transfer and manage files. SSH, VNC and FTP viewers arrive later.</p>
+      <p class="hint">One list for SSH, VNC, SFTP and FTP. SFTP can browse, transfer and manage files. SSH opens a terminal. VNC and FTP viewers arrive later.</p>
       <p class="hint warn" id="security-note">This SFTP relay logs in for you and sees the password and files. Run it only on your own machine, LAN or VPN.</p>
 
       <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
@@ -82,6 +85,28 @@
         </div>
       </div>
     </section>
+
+    <section id="view-ssh" class="ssh" hidden>
+      <div class="ssh-bar">
+        <p id="ssh-status" class="hint"></p>
+        <span id="ssh-size" class="ssh-size"></span>
+        <button type="button" id="ssh-btn-more" class="more jelly" aria-label="SSH actions" aria-haspopup="menu">⋯</button>
+      </div>
+      <div id="ssh-sessions" class="ssh-sessions"></div>
+      <div id="ssh-keys" class="ssh-keys" hidden>
+        <button type="button" class="jelly" data-k="esc">Esc</button>
+        <button type="button" class="jelly" data-k="tab">Tab</button>
+        <button type="button" class="jelly" data-k="ctrl" id="ssh-k-ctrl">Ctrl</button>
+        <button type="button" class="jelly" data-k="alt" id="ssh-k-alt">Alt</button>
+        <button type="button" class="jelly" data-k="left" aria-label="Left">←</button>
+        <button type="button" class="jelly" data-k="up" aria-label="Up">↑</button>
+        <button type="button" class="jelly" data-k="down" aria-label="Down">↓</button>
+        <button type="button" class="jelly" data-k="right" aria-label="Right">→</button>
+        <button type="button" class="jelly" data-k="|">|</button>
+        <button type="button" class="jelly" data-k="/">/</button>
+        <button type="button" class="jelly" data-k="-">-</button>
+      </div>
+    </section>
   </div>
 
   <dialog id="edit">
@@ -101,8 +126,8 @@
       <label class="field">User<input id="f-user" name="user" maxlength="64" placeholder="optional" autocomplete="username" spellcheck="false"></label>
       <label class="field">Start folder<input id="f-folder" name="folder" maxlength="255" placeholder="optional, e.g. projects or /var/www" autocomplete="off" spellcheck="false"></label>
       <p class="hint">SFTP only. Sent as the relay start folder (root). Leave empty for the account home.</p>
-      <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8023 or wss://host:8023" autocomplete="off" spellcheck="false"></label>
-      <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SFTP uses the relay on port 8023.</p>
+      <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8022 or wss://host:8022" autocomplete="off" spellcheck="false"></label>
+      <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SSH uses the relay on port 8022, SFTP on 8023.</p>
       <label class="field">Relay token<input id="f-token" name="token" maxlength="200" placeholder="optional, or enter it when you connect" autocomplete="off" spellcheck="false"></label>
       <p class="hint">Saved on this device only if you fill it in here. You can also enter it when you connect and tick Remember.</p>
       <label class="field">Group<input id="f-group" name="group" maxlength="60" placeholder="optional, e.g. Home" autocomplete="off"></label>
@@ -121,8 +146,10 @@
       <p id="connect-note" class="hint warn"></p>
       <p class="hint">Relay: <span id="connect-relay"></span></p>
       <label class="field">Password<input id="c-pass" name="password" type="password" autocomplete="current-password"></label>
-      <label class="field">Relay token<input id="c-token" name="token" maxlength="200" autocomplete="off" spellcheck="false"></label>
-      <label class="check"><input id="c-remember" type="checkbox"> Remember this token on this connection</label>
+      <div id="connect-token-wrap">
+        <label class="field">Relay token<input id="c-token" name="token" maxlength="200" autocomplete="off" spellcheck="false"></label>
+        <label class="check"><input id="c-remember" type="checkbox"> Remember this token on this connection</label>
+      </div>
       <p id="connect-err" class="form-err" hidden></p>
       <div class="row">
         <button type="button" id="btn-connect-cancel" class="ghost jelly">Cancel</button>
@@ -174,8 +201,42 @@
 
   <div id="entry-menu" hidden role="menu" aria-label="File actions"></div>
 
+  <dialog id="hostkey">
+    <h2 id="hostkey-title">Trust this host?</h2>
+    <p id="hostkey-text" class="hint"></p>
+    <p id="hostkey-fp" class="mono"></p>
+    <div class="row">
+      <button type="button" id="hostkey-no" class="ghost jelly">Cancel</button>
+      <button type="button" id="hostkey-yes" class="jelly">Trust and connect</button>
+    </div>
+  </dialog>
+
+  <dialog id="ssh-paste">
+    <form id="ssh-paste-form">
+      <h2>Paste</h2>
+      <p class="hint">The browser did not allow reading the clipboard. Paste the text here:</p>
+      <label class="field">Text<textarea id="ssh-paste-text" rows="4" autocomplete="off" spellcheck="false"></textarea></label>
+      <div class="row">
+        <button type="button" id="ssh-paste-cancel" class="ghost jelly">Cancel</button>
+        <button type="submit" id="ssh-paste-ok" class="jelly">Send</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="ssh-menu" hidden role="menu" aria-label="SSH actions">
+    <button type="button" id="ssh-menu-copy" role="menuitem" class="jelly">Copy</button>
+    <button type="button" id="ssh-menu-paste" role="menuitem" class="jelly">Paste</button>
+    <button type="button" id="ssh-menu-font-minus" role="menuitem" class="jelly">Font −</button>
+    <button type="button" id="ssh-menu-font-plus" role="menuitem" class="jelly">Font +</button>
+    <button type="button" id="ssh-menu-keys" role="menuitem" class="jelly">Show keys</button>
+    <button type="button" id="ssh-menu-disc" role="menuitem" class="jelly">Disconnect</button>
+  </div>
+
   <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
+  <script src="vendor/xterm.min.js"></script>
+  <script src="vendor/xterm-addon-fit.min.js"></script>
+  <script src="vendor/ssh-lib.min.js"></script>
   <script src="rm_config.js"></script>
   <script src="rm_url.js"></script>
   <script src="rm_store.js"></script>
@@ -184,6 +245,10 @@
   <script src="rm_sftp_client.js"></script>
   <script src="rm_sftp_xfer.js"></script>
   <script src="rm_sftp_view.js"></script>
+  <script src="rm_ssh_known.js"></script>
+  <script src="rm_ssh_client.js"></script>
+  <script src="rm_ssh_term.js"></script>
+  <script src="rm_ssh_view.js"></script>
   <script src="rm_ui.js"></script>
   <script src="rm_main.js"></script>
 </body>

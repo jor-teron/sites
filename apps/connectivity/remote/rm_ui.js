@@ -1,4 +1,4 @@
-/* Remote — rm_ui.js: DOM for the RM3 connections list, session tabs, editor, toast and overflow menu. */
+/* Remote — rm_ui.js: DOM for the RM6 connections list, session tabs, editor, toast and overflow menu. */
 (function (root) {
   'use strict';
 
@@ -118,7 +118,7 @@
       row.appendChild(more);
       row.addEventListener('click', function () {
         var a = store.tapAction(conn);
-        if (a.action === 'sftp' && opts.onOpen) opts.onOpen(conn);
+        if ((a.action === 'sftp' || a.action === 'ssh') && opts.onOpen) opts.onOpen(conn);
         else toast(a.message);
       });
       row.addEventListener('keydown', function (e) {
@@ -199,9 +199,14 @@
     /* Show the connections list or the active session view. Sessions stay alive while hidden. */
     function showPane() {
       var onList = !opts.tabs || opts.tabs.isConnections();
+      var tab = opts.tabs ? opts.tabs.current() : null;
+      var isSftp = !onList && tab && tab.protocol === 'sftp';
+      var isSsh = !onList && tab && tab.protocol === 'ssh';
       if ($('view-list')) $('view-list').hidden = !onList;
-      if ($('view-sftp')) $('view-sftp').hidden = onList;
-      if (!onList && opts.onShowSession) opts.onShowSession(opts.tabs.current());
+      if ($('view-sftp')) $('view-sftp').hidden = !isSftp;
+      if ($('view-ssh')) $('view-ssh').hidden = !isSsh;
+      if ($('app')) $('app').classList.toggle('wide', !!isSsh);
+      if (!onList && opts.onShowSession) opts.onShowSession(tab);
     }
 
     /* Close a session tab. Confirm only if a transfer is running (hook for RM3). */
@@ -279,7 +284,7 @@
       var hint = $('relay-hint');
       var norm = Url.normalizeRelay(raw, pageProtocol());
       if (!raw.trim()) {
-        hint.textContent = 'Optional. Accepts ws:// or wss://, or a bare host.';
+        hint.textContent = 'Optional. Accepts ws:// or wss://, or a bare host. SSH uses port 8022, SFTP uses 8023.';
         hint.className = 'hint';
         return;
       }
