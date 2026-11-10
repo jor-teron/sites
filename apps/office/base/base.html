@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base BS4</title>
-  <!-- BS1-BS4 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <title>Base BS5</title>
+  <!-- BS1-BS5 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
-  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="base.css?v=BS5">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -84,7 +84,7 @@
         <button type="button" id="btn-sort-clear" title="Back to entry order">Clear sort</button>
       </div>
       <div class="of-group tool-group" aria-label="Totals">
-        <button type="button" id="btn-totals" title="Sum / Avg / Count for Number fields">Totals row</button>
+        <button type="button" id="btn-totals" title="Sum / Avg / Count for Number and Currency fields">Totals row</button>
       </div>
     </div>
   </nav>
@@ -101,19 +101,23 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js"></script>
+  <script src="modules/base-quick.js?v=BS5"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-store.js"></script>
-  <script src="modules/base-csv.js"></script>
-  <script src="modules/base-grid.js"></script>
-  <script src="modules/base-form.js"></script>
-  <script src="modules/base-query.js"></script>
-  <script src="modules/base-delete.js"></script>
-  <script src="modules/base-ui.js"></script>
-  <script src="modules/base_hub.js"></script>
+  <script src="modules/base-types.js?v=BS5"></script>
+  <script src="modules/base-history.js?v=BS5"></script>
+  <script src="modules/base-store.js?v=BS5"></script>
+  <script src="modules/base-pics.js?v=BS5"></script>
+  <script src="modules/base-csv.js?v=BS5"></script>
+  <script src="modules/base-grid.js?v=BS5"></script>
+  <script src="modules/base-form.js?v=BS5"></script>
+  <script src="modules/base-fields.js?v=BS5"></script>
+  <script src="modules/base-query.js?v=BS5"></script>
+  <script src="modules/base-delete.js?v=BS5"></script>
+  <script src="modules/base-ui.js?v=BS5"></script>
+  <script src="modules/base_hub.js?v=BS5"></script>
 </body>
 </html>

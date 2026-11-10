@@ -824,6 +824,17 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.59 Base undo, field types and rules: `apps/office/base/` (Office), release BS5
+- Why: BS4 left Quick Access Undo/Redo disabled; fields were only Text / Number / Date / Yes-No, with no required, default, unique or auto-number ID.
+- New modules (under `apps/office/base/modules/` only): `base-types.js` (types, format, convert, validate, auto-number; no DOM), `base-history.js` (in-memory undo stack, ~100 steps, JSON snapshots of BASE.db), `base-pics.js` (resize to 800 px long side, WebP or JPEG, blobs in an IndexedDB `pics` store), `base-fields.js` (Add field / Fields… dialogs and the grid/form commit path).
+- Undo/Redo: Ctrl+Z / Ctrl+Y and the HO1 Quick Access buttons. Covers cell edits (one step from first change to blur), add/delete record, field add/rename/retype/delete, table rename, CSV import. Not persisted. Deleting a whole table still cannot be undone (dialog text + `BaseHistory.clear()`). Inside a text field, Ctrl+Z stays the browser's own undo (`undoKey`).
+- New types: Choice (dropdown, options one per line), Email, Phone, Link (↗, `rel=noopener noreferrer`, new tab; `javascript:` / `data:` refused), Currency ₹ (number in the record, en-IN grouping on screen, plain number in CSV), Long text (first line in the grid, textarea in the form), Picture (thumbnail / large, not exported to CSV — a note is shown), Auto-number ID (read-only, never reused; optional on New table, addable later and fills 1, 2, 3… in current order; one per table).
+- Field rules in Fields… / Add field: Required, Default, Unique. Unique violations are not saved (in-app card + invalid mark). Required empty is saved but marked. Email / Phone / Link format warnings do not block. Import reports offending rows.
+- Retype: a preview of how many values would be lost, then an in-app confirm. Currency counts in the totals row; Choice has = and ≠ in the query builder.
+- Data: existing BS4 records in IndexedDB `office-base` load unchanged. `schema: 5` is stored; first open writes `db-backup` (same key as BS3 repair) and migrates in place. IndexedDB version 2 adds the `pics` store; the main `db` record never holds blobs.
+- `<title>Base BS5</title>`, `BASE_VERSION = "BS5"`, Base's own css/js `?v=BS5`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, a static curl smoke test (200 + BS5), and pure-helper Node tests for validation, auto-number and the undo stack (no Puppeteer / Playwright / jsdom).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

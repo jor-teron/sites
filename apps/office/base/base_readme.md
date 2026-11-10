@@ -3,9 +3,12 @@
 Small database app (like a light LibreOffice Base / Access). Plain HTML/CSS/JS, no build, works from `file://`.
 Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, notify cards, theme, settings, hover, collapse).
 
-Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base'),
-`base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view), `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs), `base-ui.js` (ribbon, settings,
-commands, boot), `base_hub.js` (Hub title-bar bridge, same v:1 protocol as Spreadsheet).
+Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 5, 'pics' store),
+`base-types.js` (field types, validation, conversion, auto-number), `base-history.js` (in-memory undo/redo),
+`base-pics.js` (picture resize + blob store), `base-fields.js` (Fields / Add field dialogs and edit commit),
+`base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view),
+`base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs),
+`base-ui.js` (ribbon, settings, commands, boot), `base_hub.js` (Hub title-bar bridge, same v:1 protocol as Spreadsheet).
 
 ## Releases
 
@@ -44,4 +47,13 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 - Delete record: a dialog with a red outline shows how many records and a preview of the record. Type DELETE (or the count) to enable "Delete record".
 - Wrong or empty text keeps the button disabled; Cancel, Esc or a tap outside keep the data. Deletes are saved straight away.
 - The Delete and Backspace keys never delete records; they only edit text inside a cell.
-- No Undo yet (Undo/Redo is a later release); the Quick Access Undo/Redo stay disabled in Base.
+
+## BS5 (undo, field types and rules)
+- **Undo / Redo** (Ctrl+Z / Ctrl+Y, and the Quick Access buttons) for cell edits, add/delete record, field add/rename/retype/delete, table rename, and CSV import. About 100 steps, kept in memory only (lost when you close Base). Deleting a whole table still cannot be undone — the dialog says so, and the undo stack is cleared.
+- **New field types:** Choice (dropdown, options edited in Fields…), Email, Phone, Link (↗ opens in a new tab, `rel=noopener`), Currency ₹ (stored as a number, shown with Indian grouping), Long text (first line in the grid, textarea in the form), Picture (resized to a 800 px long side, WebP or JPEG, stored as a blob in IndexedDB, thumbnail in the grid).
+- **Field rules** in Fields… / Add field: Required, Default value, Unique (checked on edit, add and import; the cell is marked and an in-app card explains the problem; unique violations are not saved). Email, Phone and Link get a light format warning but are not blocked.
+- **Auto-number ID:** a read-only counter that never reuses a deleted number. Optional when you create a table from a template, and addable later (existing records are numbered 1, 2, 3… in their current order). A table may have only one ID field.
+- Changing a field's type shows how many values would be lost, then asks you to confirm. Queries, sort, search, totals and CSV handle the new types (Currency is included in totals and exported as a plain number; Choice supports = and ≠; Picture columns are left out of CSV, with a note).
+- Existing BS4 databases in IndexedDB `office-base` load unchanged. A schema version (5) is stored; the first BS5 open writes a backup and migrates in place.
+
+**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. Shared Office files were not edited.

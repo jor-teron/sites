@@ -1,5 +1,5 @@
 /*
- * base.css  (BS1, BS3: warning banner + recovery dialog, BS4: ⋯ menus + typed delete dialogs)
+ * base.css  (BS1, BS3: warning banner + recovery dialog, BS4: ⋯ menus + typed delete dialogs, BS5: new field types + Fields dialog)
  * Base look: dark default + body.base-light, mapped onto the shared --of-* variables.
  * Big tap targets, jelly/bouncy press effects. Shared ribbon/tools/menu look comes from ../shared/.
  */
@@ -127,3 +127,47 @@ body.in-hub .of-topbar { display: none; }
 .base-del-prev-list dt { color: var(--muted); }
 .base-del-prev-list dd { margin: 0; word-break: break-word; }
 @media print { .base-more-menu, .base-del-back { display: none !important; } }
+
+/* BS5: new field types, invalid marks, Fields dialog, pictures */
+.base-grid td .base-cell { display: flex; align-items: center; min-height: 36px; width: 100%; min-width: 110px; box-sizing: border-box; }
+.base-grid td .base-cell input, .base-grid td .base-cell select, .base-grid td .base-cell textarea {
+  width: 100%; min-width: 0; box-sizing: border-box; min-height: 36px; padding: 6px 10px; border: 0; background: transparent; outline: none; font: inherit; color: inherit;
+}
+.base-grid td .base-cell input:focus, .base-grid td .base-cell select:focus, .base-grid td .base-cell textarea:focus { box-shadow: inset 0 0 0 2px var(--sel); }
+.base-grid td .base-cell input[type=checkbox] { min-width: 0; width: 22px; height: 22px; margin: 7px 10px; accent-color: var(--sel); }
+.base-cell-long textarea.base-long { resize: none; line-height: 1.4; overflow: hidden; white-space: nowrap; }
+.base-cell-long.in-form textarea.base-long { min-height: 140px; white-space: pre-wrap; overflow: auto; resize: vertical; }
+.base-id { opacity: .8; cursor: default; }
+.base-choice { min-height: 36px; }
+.base-link-out { flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 32px; min-height: 32px; margin-right: 4px; border-radius: 8px; color: var(--sel); text-decoration: none; font-weight: 700; }
+.base-link-out:hover { background: var(--hover); }
+.base-link-out:not([href]) { opacity: .35; pointer-events: none; }
+.base-pic-cell { gap: 8px; padding: 4px 8px; flex-wrap: wrap; }
+.base-thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; background: var(--btn); border: 1px solid var(--border); }
+.base-pic-lg { width: 100%; max-width: 360px; max-height: 280px; object-fit: contain; border-radius: 10px; background: var(--cell); border: 1px solid var(--border); }
+.base-pic-ph { color: var(--muted); font-size: 12px; }
+.base-pic-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.base-pic-btn { min-height: 32px; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--btn); cursor: pointer; font-size: 13px; }
+.base-pic-btn:hover { background: var(--hover); }
+.base-form .base-cell { margin-bottom: 4px; }
+.base-form .base-cell input:not([type=checkbox]):not([type=file]), .base-form .base-cell select, .base-form .base-cell textarea {
+  width: 100%; box-sizing: border-box; min-height: 46px; font-size: 17px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--cell);
+}
+.base-form .base-cell textarea { min-height: 140px; }
+.base-form label.base-req::after { content: ""; }
+.base-invalid, .base-cell.base-invalid, .base-grid td:has(.base-invalid) { box-shadow: inset 0 0 0 2px #e5484d; border-radius: 4px; }
+.base-warn-cell, .base-cell.base-warn-cell { box-shadow: inset 0 0 0 2px #c9952c; border-radius: 4px; }
+.base-f-back .base-f-dlg { width: min(520px, 100%); max-height: min(88vh, 760px); overflow: auto; background: var(--panel); color: var(--text); border-color: var(--border); }
+.base-f-body { display: flex; flex-direction: column; gap: 10px; max-height: 58vh; overflow: auto; padding-right: 2px; }
+.base-f-card { padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--cell); }
+.base-f-lab { display: flex; flex-direction: column; gap: 4px; margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.base-f-lab .dlg-input, .base-f-options { background: var(--panel); color: var(--text); border-color: var(--border); width: 100%; box-sizing: border-box; }
+.base-f-options { min-height: 72px; resize: vertical; font: inherit; }
+.base-f-rules { display: flex; gap: 16px; flex-wrap: wrap; margin: 4px 0; }
+.base-f-check { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
+.base-f-check input { width: 18px; height: 18px; accent-color: var(--sel); }
+.base-f-next, .base-f-note, .base-f-hint { font-size: 12px; color: var(--muted); margin: 4px 0; }
+.base-f-dlg .dlg-message, .base-f-dlg .dlg-label { color: var(--muted); }
+.base-f-dlg .dlg-btn { height: 38px; background: var(--btn); color: var(--text); border-color: var(--border); }
+.base-f-dlg .dlg-ok { background: var(--sel); color: #fff; border-color: transparent; }
+@media print { .base-pic-actions, .base-f-back, .base-link-out { display: none !important; } .base-thumb, .base-pic-lg { border: 1px solid #ccc; } }
