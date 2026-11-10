@@ -1,6 +1,8 @@
 /* Agent — app/gui/imageviewer.js: AG20 full-screen picture viewer for the Image page (replaces the AG14 #imgView dialog).
    HR.imgviewer.open(items, index, opt): items = [{rec, url}] in gallery order; opt.fname(rec) -> download name,
    opt.onDownload(rec, name), opt.onDelete(rec) -> Promise (viewer then shows the next picture, closes when none left).
+   AG42: onDelete resolves to the fresh [{rec, url}] list (new object URLs). The viewer rebuilds from that list
+   (next picture, or the previous one if the last was deleted, or closes when none are left). Delete asks HR.confirm.
    A <dialog id="imgView"> filling the viewport, dark backdrop, image object-fit:contain. Top: 'n / total' and ✕.
    Bottom bar: prompt (two lines, ellipsis), ⬇ Download, 🗑 Delete. Keys: ← / → browse, Esc closes (native dialog).
    Phone: swipe left / right (pointer events, 50 px threshold) and big ‹ › side buttons. No wrap: ‹ hides on the first
@@ -19,8 +21,33 @@ HR.imgviewer = (function () {
   }
   function go(n) { var j = i + n; if (j < 0 || j >= items.length) return; i = j; show(n); }
   function del() {
-    var it = items[i]; if (!it || !o.onDelete || !confirm('Delete this picture?')) return;
-    o.onDelete(it.rec).then(function () { items.splice(i, 1); if (i >= items.length) i = items.length - 1; if (i < 0) dlg.close(); else show(0); });
+    var it = items[i]; if (!it || !o.onDelete) return;
+    var at = i, next = items[i + 1], prev = items[i - 1];
+    var nextId = next && next.rec ? next.rec.id : null, prevId = prev && prev.rec ? prev.rec.id : null;
+    // (before AG42) var it = items[i]; if (!it || !o.onDelete || !confirm('Delete this picture?')) return;
+    // (before AG42) o.onDelete(it.rec).then(function () { items.splice(i, 1); if (i >= items.length) i = items.length - 1; if (i < 0) dlg.close(); else show(0); });
+    return HR.confirm('Delete this picture?', { danger: true }).then(function (yes) {
+      if (!yes) { try { dlg.focus(); } catch (e) {} return; }
+      return o.onDelete(it.rec).then(function (fresh) {
+        if (!Array.isArray(fresh)) {
+          /* Refresh did not hand back new URLs (it failed before revoking the old ones). Dropping the
+             deleted picture from this list is safe then. A successful gallery() always returns an array. */
+          items.splice(at, 1);
+          if (at >= items.length) at = items.length - 1;
+          if (at < 0 || !items.length) { dlg.close(); return; }
+          i = at; show(0); try { dlg.focus(); } catch (e2) {} return;
+        }
+        items = fresh.slice();
+        if (!items.length) { dlg.close(); return; }
+        var j = -1;
+        if (nextId != null) j = items.findIndex(function (x) { return x.rec && x.rec.id === nextId; });
+        if (j < 0 && prevId != null) j = items.findIndex(function (x) { return x.rec && x.rec.id === prevId; });
+        if (j < 0) j = at >= items.length ? items.length - 1 : at;
+        i = j < 0 ? 0 : j;
+        show(0);
+        try { dlg.focus(); } catch (e3) {}
+      });
+    });
   }
   function init() {
     dlg = $('imgView'); img = $('ivImg');

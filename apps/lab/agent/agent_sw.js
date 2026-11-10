@@ -12,7 +12,9 @@
    AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
    AG30: VER agent-ag30 so install precaches usage.html (the Usage page) and the files it links.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag40', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+var FILES = 'agent-files', VER = 'agent-ag42', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+/* AG42 Legacy: VER = 'agent-ag40'. AG42 adds app/gui/confirm.js (agent.html and image.html src=; install precaches it with the shell list). */
+// (before AG42) var FILES = 'agent-files', VER = 'agent-ag40', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];
 /* AG37 Legacy: VER = 'agent-ag36', PAGES without providers.html. AG37 adds providers.html and app/api/ (own runtime). */
 /* AG38 Legacy: VER = 'agent-ag37'. AG38 adds app/gui/setnav.js; usage.html is now a redirect to Settings › Usage. */
 /* AG39 Legacy: VER = 'agent-ag38'. AG39: top bar, folder name chip, rates, image usage (image.html loads fs.js + usage.js). */

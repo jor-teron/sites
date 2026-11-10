@@ -149,13 +149,16 @@ HR.imgpage = (function () {
       gl = l;
       urls.forEach(URL.revokeObjectURL); urls = [];
       var g = $('imgGrid'); g.innerHTML = ''; $('imgEmpty').hidden = l.length > 0;
+      var fresh = [];
       l.forEach(function (r) {
-        var u = URL.createObjectURL(r.blob); urls.push(u);
+        var u = URL.createObjectURL(r.blob); urls.push(u); fresh.push({ rec: r, url: u });
         var b = document.createElement('button'); b.type = 'button'; b.className = 'ig-th'; b.title = r.prompt;
         var i = document.createElement('img'); i.src = u; i.alt = r.prompt; i.loading = 'lazy'; b.appendChild(i);
         b.onclick = function () { view(r); }; g.appendChild(b);
       });
-    }).catch(function () { $('imgEmpty').hidden = false; });
+      /* (before AG42) gallery() revoked the old object URLs and resolved to undefined, so an open viewer kept dead URLs. */
+      return fresh;
+    }).catch(function () { $('imgEmpty').hidden = false; return null; });
   }
   /* AG17: download name from the prompt; AG21: '[model]_[prompt]' */
   var done = {}, gl = [];
@@ -174,8 +177,9 @@ HR.imgpage = (function () {
   }
   function view(r) {   /* AG20: full-screen viewer, gallery order */
     var items = gl.map(function (x, k) { return { rec: x, url: urls[k] }; });
+    // (before AG42) onDelete: function (x) { return HR.imgstore.del(x.id).then(function () { return gallery(); }); }
     HR.imgviewer.open(items, gl.indexOf(r), { fname: fname, onDownload: function (x, fn) { done[fn.replace(/\.\w+$/, '')] = x.id; },
-      onDelete: function (x) { return HR.imgstore.del(x.id).then(function () { return gallery(); }); } });
+      onDelete: function (x) { return HR.imgstore.del(x.id).then(gallery); } });   /* AG42: gallery() resolves to the fresh {rec, url} list */
   }
   function init() {
     $('imgGo').onclick = go;
