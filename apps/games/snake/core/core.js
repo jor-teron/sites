@@ -19,7 +19,7 @@ window.SN = window.SN || {};
     dpad: $('dpad'), dpadToggle: $('dpad-toggle'),
   };
   SN.ctx = SN.el.canvas.getContext('2d');
-  $('help').textContent = SN.TX.help;
+  $('help-line').textContent = SN.TX.help;
 
   // Match a key event against a binding list by KeyboardEvent.code OR .key.
   SN.isKey = (list, e) => list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
@@ -31,7 +31,7 @@ window.SN = window.SN || {};
   SN.BEST_KEY = CFG.bestKey;
   SN.APP = CFG.APP || { name: 'Snake', version: '' };
   SN.WRAP_START = CFG.WRAP_WALLS !== undefined ? !!CFG.WRAP_WALLS : !!(CFG.start && CFG.start.wrap);
-  if (SN.APP.name) document.title = SN.APP.name + ' SNR1a';   // release label (title only)
+  if (SN.APP.name) document.title = SN.APP.name + ' • SNK-T1';   // release label (title only)
 
   SN.OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
   SN.DELTA = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
@@ -58,7 +58,8 @@ window.SN = window.SN || {};
     canvas.style.width = V.W + 'px';
     canvas.style.height = V.H + 'px';
     SN.ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
-    V.cell = Math.floor(Math.min(V.W / SN.COLS, V.H / SN.ROWS));
+    const padX = 16, padY = 56;
+    V.cell = Math.floor(Math.min((V.W - padX) / SN.COLS, (V.H - padY) / SN.ROWS));
     V.ox = Math.floor((V.W - V.cell * SN.COLS) / 2);
     V.oy = Math.floor((V.H - V.cell * SN.ROWS) / 2);
   };

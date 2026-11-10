@@ -2,10 +2,10 @@
  * spreadsheet_rows.js
  * Insert / delete rows and columns at the selection (one per selected row / column).
  * The sheet size stays fixed: inserting pushes the last row / column out, so it is refused
- * when that row / column has data. Formula refs are adjusted; refs to deleted cells → #REF!.
+ * when that row / column has data. Formula refs are adjusted on every sheet; refs to the
+ * changed sheet from other sheets move too; refs to deleted cells → #REF!.
+ * Hidden flags and freeze panes on this sheet shift with the rows / columns.
  */
-function blankCell() { return { formula: "", value: "", style: defaultStyle() }; }
-
 function lineHasData(axis, k) {
   var i, n = axis === "r" ? COLS : ROWS;
   for (i = 0; i < n; i++) {
@@ -15,11 +15,28 @@ function lineHasData(axis, k) {
   return false;
 }
 
+/* Adjust formulas on every sheet that point at the active (changed) sheet. */
 function adjustAll(axis, at, delta) {
-  var r, c;
-  for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
-    cells[r][c].formula = adjustRefs(cells[r][c].formula, axis, at, delta);
+  var si, r, c, sh, target = workbook.active;
+  for (si = 0; si < workbook.sheets.length; si++) {
+    sh = workbook.sheets[si];
+    for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
+      sh.cells[r][c].formula = adjustRefs(sh.cells[r][c].formula, axis, at, delta, target, si);
+    }
   }
+}
+
+function shiftFlags(flags, at, delta, fill) {
+  if (delta > 0) { flags.splice(at, 0, fill); flags.pop(); }
+  else { flags.splice(at, 1); flags.push(fill); }
+}
+
+function shiftFreeze(axis, at, delta) {
+  var key = axis === "r" ? "rows" : "cols";
+  var n = freeze[key] || 0;
+  if (!n) return;
+  if (delta > 0) { if (at < n) freeze[key] = n + 1; }
+  else if (at < n) freeze[key] = n - 1;
 }
 
 /* axis "r" | "c", delta 1 = insert, -1 = delete */
@@ -35,6 +52,7 @@ function changeLines(axis, delta) {
     if (axis === "r") {
       if (delta > 0) { cells.splice(at, 0, cells.pop()); cells[at] = cells[at].map(blankCell); }
       else { cells.splice(at, 1); cells.push(cells[0].map(blankCell)); }
+      shiftFlags(hiddenRows, at, delta, false);
     } else {
       for (r = 0; r < ROWS; r++) {
         if (delta > 0) { cells[r].pop(); cells[r].splice(at, 0, blankCell()); }
@@ -42,10 +60,12 @@ function changeLines(axis, delta) {
       }
       if (delta > 0) { colWidths.splice(at, 0, null); colWidths.length = COLS; }
       else { colWidths.splice(at, 1); colWidths.push(null); }
+      shiftFlags(hiddenCols, at, delta, false);
     }
+    shiftFreeze(axis, at, delta);
     adjustAll(axis, at, delta);
   }
-  if (axis === "c" && typeof applyWidths === "function") applyWidths();
+  if (typeof applyWidths === "function") applyWidths();
   afterChange();
   highlightSel();
 }

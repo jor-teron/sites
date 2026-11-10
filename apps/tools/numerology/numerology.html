@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!-- NU1 Numerology: Life Path and name numbers, profiles, Pythagorean/Chaldean, timing, compatibility, name checker. Logic: nu_calc.js, numerology.js. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Numerology · NU1</title>
+  <link rel="icon" href="numerology_icon.svg">
+  <link rel="stylesheet" href="numerology.css?v=NU1">
+  <script>try{var s=JSON.parse(localStorage.getItem('numerology-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <header id="top" hidden>
+    <h1>Numerology</h1>
+    <button type="button" class="prof" id="profBtn" aria-haspopup="dialog" aria-label="Choose profile"></button>
+  </header>
+  <main>
+    <section class="pane on" id="pane-first">
+      <h2 class="welcome">Numerology</h2>
+      <p class="lead">Find the traditional numbers from your name and date of birth.</p>
+      <label for="firstName">Your full name</label>
+      <input id="firstName" class="field" maxlength="80" autocomplete="name" placeholder="e.g. Anita Sharma">
+      <label for="firstDob">Date of birth</label>
+      <input id="firstDob" class="field" type="date" min="1800-01-01">
+      <p class="err" id="firstErr"></p>
+      <button type="button" class="btn lg" id="firstGo">See my numbers</button>
+      <p class="note center">Traditional readings, for fun — not facts. Everything stays on this device.</p>
+    </section>
+    <section class="pane" id="pane-main"></section>
+    <section class="pane" id="pane-compare">
+      <button type="button" class="back" id="cmpBack">Back</button>
+      <h2>Compare two people</h2>
+      <p class="note">This looks at their Life Path numbers only — the main number from each date of birth.</p>
+      <div class="row">
+        <select id="mA" aria-label="First person"></select>
+        <span class="amp">&amp;</span>
+        <select id="mB" aria-label="Second person"></select>
+      </div>
+      <div id="matchOut"></div>
+    </section>
+    <section class="pane" id="pane-name">
+      <button type="button" class="back" id="nameBack">Back</button>
+      <h2>Check a name</h2>
+      <p class="note">Type a name or spelling to see its name number. Nothing is saved.</p>
+      <label for="nameIn">Name or spelling</label>
+      <input id="nameIn" class="field" maxlength="80" autocomplete="off" placeholder="Type a name">
+      <div id="nameOut"></div>
+    </section>
+    <section class="pane" id="pane-set">
+      <button type="button" class="back" id="setBack">Back</button>
+      <h2>Theme</h2>
+      <div class="seg" id="themeSeg"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div>
+      <h2>Letter values</h2>
+      <div class="seg" id="sysSeg"><button type="button" data-v="pythagorean">Western</button><button type="button" data-v="chaldean">Chaldean</button></div>
+      <p class="note">Western (Pythagorean) is the usual 1–9 letter values, and is the default. Chaldean is a 1–8 system often used in India. This only changes numbers taken from a name.</p>
+      <h2>People saved here</h2>
+      <ul id="profList"></ul>
+      <button type="button" class="btn" id="addBtn2">Add someone</button>
+      <p class="note">Readings are traditional meanings from numerology, shown for fun. They are not facts or predictions. Everything stays on this device.</p>
+      <p class="note small">Release <span id="rel"></span></p>
+    </section>
+  </main>
+  <nav id="more" hidden>
+    <button type="button" data-view="compare">Compare</button>
+    <button type="button" data-view="name">Check a name</button>
+    <button type="button" data-view="set">Settings</button>
+  </nav>
+  <footer class="note">Traditional readings, for fun · not facts</footer>
+</div>
+<div id="dlg" class="dlg" hidden><div class="box" role="dialog" aria-modal="true"><div id="dlgBody"></div><div class="acts" id="dlgActs"></div></div></div>
+<script src="nu_calc.js?v=NU1"></script>
+<script src="numerology.js?v=NU1"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-/* PDF Viewer — pv_render.js: continuous scroll + IntersectionObserver render. PV1 */
+/* PDF Viewer — pv_render.js: continuous scroll + IntersectionObserver render. PV1 + PV2 text layer hook */
 (function (root) {
   'use strict';
 
@@ -9,6 +9,7 @@
     var pagesEl = opts.pagesEl;
     var onPageChange = opts.onPageChange || function () {};
     var onStatus = opts.onStatus || function () {};
+    var onPageRendered = opts.onPageRendered || function () {};
 
     var state = {
       doc: null,
@@ -65,6 +66,7 @@
         slot.canvas.parentNode.removeChild(slot.canvas);
       }
       slot.canvas = null;
+      if (root.PVTextLayer) root.PVTextLayer.remove(slot);
       slot.rendered = false;
       slot.renderedScale = 0;
       slot.el.classList.remove('is-rendered');
@@ -175,6 +177,14 @@
       slot.renderedScale = state.scale;
       slot.el.appendChild(canvas);
       slot.el.classList.add('is-rendered');
+      try {
+        var ret = onPageRendered(slot);
+        if (ret && typeof ret.then === 'function') {
+          ret.catch(function (err) { console.warn('[pv2] text layer', err); });
+        }
+      } catch (err) {
+        console.warn('[pv2] text layer', err);
+      }
     }
 
     function scheduleVisible() {
@@ -236,7 +246,10 @@
           pageNum: i,
           task: null,
           rendered: false,
-          renderedScale: 0
+          renderedScale: 0,
+          textLayer: null,
+          textTask: null,
+          textSource: null
         });
       }
     }
@@ -393,6 +406,7 @@
       getCurrentPage: function () { return state.currentPage; },
       getNumPages: function () { return state.numPages; },
       getDoc: function () { return state.doc; },
+      getSlot: function (n) { return state.slots[(n | 0) - 1] || null; },
       destroy: function () {
         viewer.removeEventListener('scroll', onScroll);
         window.removeEventListener('resize', onResize);
