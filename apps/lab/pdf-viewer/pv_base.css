@@ -197,3 +197,119 @@ body {
 .status.busy {
   color: var(--accent);
 }
+
+/* PV2: find bar + in-app dialog */
+.find-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--surface-2);
+  z-index: 6;
+}
+
+.find-bar[hidden] {
+  display: none !important;
+}
+
+.find-bar input[type="search"] {
+  flex: 1 1 160px;
+  min-width: 120px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--surface-2);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+
+.find-bar input[type="search"]:focus {
+  border-color: var(--accent);
+}
+
+.find-count {
+  min-width: 64px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--mute);
+}
+
+.pv-dialog {
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 18px 18px 14px;
+  max-width: 28rem;
+  width: calc(100% - 32px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.pv-dialog::backdrop {
+  background: rgba(2, 6, 23, 0.62);
+}
+
+.pv-dialog h2 {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.pv-dialog-body {
+  font-size: 0.95rem;
+  color: var(--mute);
+  line-height: 1.45;
+}
+
+.pv-dialog-body p {
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.pv-dialog-body progress {
+  display: block;
+  width: 100%;
+  height: 12px;
+  margin: 8px 0 4px;
+  accent-color: var(--accent);
+}
+
+.pv-dialog-body .ocr-lang {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pv-dialog-body .ocr-lang select {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--surface-2);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.pv-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ocr-hint {
+  font-size: 0.85rem;
+  color: var(--mute);
+}

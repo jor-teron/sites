@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base BS4</title>
-  <!-- BS1-BS4 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <title>Base BS9</title>
+  <!-- BS1-BS9 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
-  <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="base.css?v=BS9">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -27,16 +27,26 @@
   <!-- File menu: shared look (../shared/office-tools.css) -->
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
     <button type="button" class="file-item" role="menuitem" id="btn-new-table" data-icon="fileNew"><span>New table</span></button>
-    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import CSV</span>
-      <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
+    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import…</span>
+      <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hbase,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </label>
+    <button type="button" class="file-item" role="menuitem" id="btn-backup"><span>Backup…</span></button>
+    <label class="file-item" role="menuitem"><span>Restore backup…</span>
+      <input id="file-restore" type="file" accept=".hbase,.json,application/json" hidden>
     </label>
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx"><span>Export Excel…</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-send-sheet"><span>Send to Spreadsheet</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
     <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <div class="file-sep" role="separator"></div>
     <div class="base-recent-title" id="file-queries-title" hidden>Saved queries</div>
     <div id="file-queries"></div>
+    <div class="base-recent-title" id="file-reports-title" hidden>Saved reports</div>
+    <div id="file-reports"></div>
+    <div class="base-recent-title" id="file-views-title" hidden>Saved views</div>
+    <div id="file-views"></div>
     <div class="base-recent-title">Tables</div>
     <div id="file-tables"></div>
   </div>
@@ -75,16 +85,53 @@
         <button type="button" id="btn-query-sql" title="Show the query as SQL (read-only)">Show as SQL</button>
       </div>
     </div>
+    <div class="of-panel" role="tabpanel" id="of-panel-report" data-tab="report" hidden>
+      <div class="of-group tool-group" aria-label="Report">
+        <button type="button" id="btn-report" title="Open the report builder">Report…</button>
+        <button type="button" id="btn-report-clear" title="Back to the grid">Show all</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Saved reports">
+        <select id="report-pick" title="Run a saved report" aria-label="Saved reports"></select>
+        <button type="button" id="btn-report-save" title="Save the report">Save…</button>
+        <button type="button" id="btn-report-rename" title="Rename saved report">Rename</button>
+        <button type="button" id="btn-report-delete" title="Delete saved report">Delete</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Chart and print">
+        <button type="button" id="btn-report-bar" title="Bar chart of this report">Bar</button>
+        <button type="button" id="btn-report-pie" title="Pie chart of this report">Pie</button>
+        <button type="button" id="btn-report-print" title="Print this report (Save as PDF in the print window)">Print report</button>
+      </div>
+    </div>
     <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
       <div class="of-group tool-group" aria-label="View">
         <button type="button" id="btn-view-grid" class="base-view-btn" title="Grid view">Grid</button>
         <button type="button" id="btn-view-form" class="base-view-btn" title="Form view (one record)">Form</button>
+        <button type="button" id="btn-view-gallery" class="base-view-btn" title="Gallery of cards (picture + a few fields)">Gallery</button>
+        <button type="button" id="btn-view-calendar" class="base-view-btn" title="Month calendar by a date field">Calendar</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Saved views">
+        <select id="view-pick" title="Apply a saved view" aria-label="Saved views"></select>
+        <button type="button" id="btn-view-save" title="Save the current filters, columns and colours as a view">Save…</button>
+        <button type="button" id="btn-view-rename" title="Rename saved view">Rename</button>
+        <button type="button" id="btn-view-delete" title="Delete saved view">Delete</button>
+      </div>
+      <div class="of-group tool-group" aria-label="Columns">
+        <button type="button" id="btn-columns" title="Show, hide and reorder columns">Columns…</button>
+        <label class="base-freeze-lab">Freeze
+          <select id="view-freeze" title="Freeze the first columns so they stay visible when you scroll" aria-label="Freeze columns">
+            <option value="0">None</option>
+            <option value="1">1 column</option>
+            <option value="2">2 columns</option>
+          </select>
+        </label>
+        <button type="button" id="btn-colours" title="Colour a row or cell when a field matches a rule">Colours…</button>
       </div>
       <div class="of-group tool-group" aria-label="Sort">
         <button type="button" id="btn-sort-clear" title="Back to entry order">Clear sort</button>
+        <button type="button" id="btn-filters-clear" title="Clear header filters">Clear filters</button>
       </div>
       <div class="of-group tool-group" aria-label="Totals">
-        <button type="button" id="btn-totals" title="Sum / Avg / Count for Number fields">Totals row</button>
+        <button type="button" id="btn-totals" title="Sum / Avg / Min / Max / Count for Number and Currency fields under the grid">Summary row</button>
       </div>
     </div>
   </nav>
@@ -92,8 +139,13 @@
   <div id="status" class="base-status" aria-live="polite"></div>
   <main id="base-main" class="base-main">
     <div id="query-wrap" class="base-query-wrap" hidden></div>
+    <div id="report-wrap" class="base-report-wrap" hidden></div>
+    <div id="report-out" class="base-report-out" hidden></div>
     <div id="grid-wrap" class="base-grid-wrap"></div>
     <div id="form-wrap" class="base-form-wrap" hidden></div>
+    <div id="gallery-wrap" class="base-gallery-wrap" hidden></div>
+    <div id="cal-wrap" class="base-cal-wrap" hidden></div>
+    <div id="related-wrap" class="base-related-wrap" hidden></div>
   </main>
 
   <script src="../shared/office-icons.js"></script>
@@ -101,19 +153,27 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js"></script>
+  <script src="modules/base-quick.js?v=BS9"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-store.js"></script>
-  <script src="modules/base-csv.js"></script>
-  <script src="modules/base-grid.js"></script>
-  <script src="modules/base-form.js"></script>
-  <script src="modules/base-query.js"></script>
-  <script src="modules/base-delete.js"></script>
-  <script src="modules/base-ui.js"></script>
-  <script src="modules/base_hub.js"></script>
+  <script src="modules/base-types.js?v=BS9"></script>
+  <script src="modules/base-history.js?v=BS9"></script>
+  <script src="modules/base-store.js?v=BS9"></script>
+  <script src="modules/base-links.js?v=BS9"></script>
+  <script src="modules/base-pics.js?v=BS9"></script>
+  <script src="modules/base-csv.js?v=BS9"></script>
+  <script src="modules/base-files.js?v=BS9"></script>
+  <script src="modules/base-grid.js?v=BS9"></script>
+  <script src="modules/base-form.js?v=BS9"></script>
+  <script src="modules/base-fields.js?v=BS9"></script>
+  <script src="modules/base-query.js?v=BS9"></script>
+  <script src="modules/base-view.js?v=BS9"></script>
+  <script src="modules/base-report.js?v=BS9"></script>
+  <script src="modules/base-delete.js?v=BS9"></script>
+  <script src="modules/base-ui.js?v=BS9"></script>
+  <script src="modules/base_hub.js?v=BS9"></script>
 </body>
 </html>
