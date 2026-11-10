@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#204f3c">
-<title>Camping Checklist CC-1a</title>
+<title>Camping Checklist CC-1b</title>
 <link rel="icon" href="camping-checklist_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.camping-checklist.theme"></script>
 <link rel="stylesheet" href="ui/camping.css">
@@ -21,16 +21,39 @@
   <p>Practical lists for trails, tents and changing skies.</p></div>
   <a href="../survival-outdoors/">Survival &amp; Outdoors ↗</a></div>
   <p class="notice">Adapt to your route and local rules. Weights are estimates per unit, including worn gear and consumables — not just your pack. Must-have labels are a starting point, not a safety guarantee.</p>
+  <details id="planner-panel" class="panel no-print">
+    <summary>Build a list for your trip</summary>
+    <form id="planner-form">
+      <div class="plan-fields"><label>Days<input id="days" type="number" min="1" max="30" value="2" required></label>
+      <label>People<input id="people" type="number" min="1" max="20" value="1" required></label>
+      <label>Expected weather<select id="weather"><option value="hot">Hot</option><option value="mild" selected>Mild</option><option value="cold">Cold</option><option value="rain">Rain / monsoon</option><option value="snow">Snow</option></select></label></div>
+      <fieldset><legend>Activities</legend><div id="activities" class="activity-options"></div></fieldset>
+      <p class="muted">Uses shared tents for 2 people. All quantities and weights are editable in the generated list.</p>
+      <button class="primary" type="submit">Generate My list</button>
+    </form>
+  </details>
   <section class="toolbar" aria-label="Choose a packing list">
     <label>Template or My lists<select id="lists"></select></label>
     <button id="duplicate">Copy to My lists</button><button id="rename">Rename</button>
-    <button id="reset">Reset ticks</button><button id="add">+ Add item</button>
+    <button id="delete-list">Delete list</button><button id="reset">Reset ticks</button><button id="add">+ Add item</button>
   </section>
   <section id="summary" aria-live="polite"></section>
+  <div class="toolbar no-print" aria-label="Export and print"><button id="print">Print list</button><button id="export">Export / copy</button><button id="import">Import JSON</button>
+    <label class="check"><input id="print-tips" type="checkbox">Include tips in print</label></div>
   <div id="groups"></div>
+  <section id="departure" class="panel"><h2>Before you leave</h2><div id="before"></div><p><strong>India emergency: 112.</strong> Save local rescue numbers too. No signal? Leave a route and return time with a trusted person before setting out.</p></section>
+  <details class="panel" id="guide"><summary>Leave No Trace &amp; India trip notes</summary><ol id="lnt"></ol>
+    <h3>Adapt to the place</h3>
+    <p><strong>Monsoon:</strong> Check flood and landslide alerts. Avoid swollen streams, gullies and exposed ridges during lightning. Use dry liners; inspect for leeches and mosquito bites.</p>
+    <p><strong>Himalayan treks:</strong> Cold gear alone does not make high altitude safe. Plan gradual ascent and acclimatisation with trained local guidance. Do not ascend with altitude-illness symptoms; descend and get medical help if worsening. Snow, glaciers and avalanche terrain require specialist skills and equipment.</p>
+    <p><strong>Hot plains:</strong> Start early, use shade and avoid midday exertion. Water needs vary with heat and effort. Do not force excessive drinking. Stop and seek help for confusion, collapse or heat illness.</p>
+    <p><strong>Water:</strong> Treat natural sources even if clear. Boil at a rolling boil for 1 minute, or 3 minutes above about 2,000 m; alternatively filter then disinfect according to product instructions. Treatment does not remove chemical pollution or salt. Avoid suspect sources.</p>
+    <p><strong>Beach:</strong> Camp only where permitted, well above high tide. Check tides, currents and weather; do not rely on an app checklist for swimming safety.</p>
+    <p class="muted">Learning references (internet needed): <a href="https://lnt.org/why/7-principles/" target="_blank" rel="noopener">Leave No Trace: seven principles</a> · <a href="https://www.nps.gov/subjects/healthandsafety/backcountry-health.htm" target="_blank" rel="noopener">NPS: backcountry health</a> · <a href="https://www.nps.gov/articles/000/arches-hike-planning.htm" target="_blank" rel="noopener">NPS: hot-weather hiking</a> · <a href="https://112.gov.in/" target="_blank" rel="noopener">India ERSS 112</a>. This is a plain-language educational summary, not a substitute for local rules or professional advice.</p>
+  </details>
   <p id="status" role="status"></p>
 </main>
-<footer>CC-1a · Metric units · <span id="offline">Preparing offline copy…</span></footer>
+<footer>CC-1b · Metric units · <span id="offline">Preparing offline copy…</span></footer>
 </div>
 <dialog id="editor">
 <form id="item-form">
@@ -40,6 +63,8 @@
   <div class="fields"><label>Weight per unit (g)<input id="item-grams" type="number" min="0" max="100000" step="1" required></label>
   <label>Quantity<input id="item-qty" type="number" min="1" max="10000" value="1" required></label></div>
   <label class="check"><input id="item-must" type="checkbox" checked>Must-have</label>
+  <label>Why you need it (optional)<input id="item-tip" maxlength="300"></label>
+  <label>Care / packing note (optional)<input id="item-care" maxlength="300"></label>
   <div class="actions"><button type="button" data-close>Cancel</button><button class="primary" type="submit">Save item</button></div>
 </form>
 </dialog>
@@ -48,8 +73,15 @@
 <p>Auto follows your Hub theme. All lists stay on this device. No account or connection needed after the first offline download.</p>
 <button data-close>Done</button>
 </dialog>
+<dialog id="transfer-dialog"><h2 id="transfer-title">Export / copy</h2>
+<label>List data<textarea id="transfer-text" rows="10" spellcheck="false" aria-describedby="transfer-help"></textarea></label>
+<p id="transfer-help">Exports stay on this device. Copy text and choose who to share it with yourself. Only JSON exports can be imported.</p>
+<div id="export-actions" class="actions"><button id="copy-text">Copy text</button><button id="save-text">Save .txt</button><button id="save-json">Save .json</button></div>
+<div id="import-actions"><label>Choose a JSON export<input id="import-file" type="file" accept=".json,application/json"></label><button id="do-import">Add imported list</button></div>
+<p id="transfer-status" role="status"></p><button data-close>Done</button></dialog>
+<div id="print-sheet"></div>
 <noscript>Enable JavaScript to use the offline checklist.</noscript>
 <script src="../shared/learn-hubbar.js"></script>
-<script src="core/data.js"></script><script src="core/model.js"></script><script src="ui/app.js"></script>
+<script src="core/data.js"></script><script src="core/model.js"></script><script src="core/learning.js"></script><script src="ui/app.js"></script>
 </body>
 </html>

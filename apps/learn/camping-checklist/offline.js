@@ -1,7 +1,7 @@
 /* App-scoped offline shell. Does not change or unregister the Hub service worker. */
-const CACHE = 'camping-checklist-1a';
+const CACHE = 'camping-checklist-1b';
 const FILES = ['./', 'index.html', 'camping-checklist.html', 'camping-checklist_icon.png',
-  'ui/camping.css', 'ui/app.js', 'core/data.js', 'core/model.js',
+  'ui/camping.css', 'ui/app.js', 'core/data.js', 'core/model.js', 'core/learning.js',
   '../shared/learn-hubbar.js', '../../../shared/theme/hub_theme.js'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
