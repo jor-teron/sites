@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Hindi Letters HL-1a</title><link rel="icon" href="hindi-letters_icon.png">
+<title>Hindi Letters HL-1b</title><link rel="icon" href="hindi-letters_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.hindi-letters.theme"></script>
 <link rel="stylesheet" href="ui/hindi.css">
 </head>
 <body>
 <div id="app" class="lrn">
 <header class="lrn-head"><a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1>Hindi Letters <span lang="hi">अक्षर सीखें</span></h1><button id="settings">Settings</button></header>
-<nav id="modes" aria-label="Activities"><button data-mode="chart" aria-pressed="true">Letters</button></nav>
+<nav id="modes" aria-label="Activities"><button data-mode="chart" aria-pressed="true">Letters</button><button data-mode="matras">Matras</button><button data-mode="joins">Joined letters</button><button data-mode="numbers">Numbers</button><button data-mode="words">Words</button></nav>
 <div class="status"><span id="progress"></span><span id="voice-note" role="status"></span></div>
 <main id="content"></main>
 </div>
@@ -20,5 +20,5 @@
 <button data-close="preferences">Done</button></dialog>
 <noscript>Hindi Letters needs JavaScript to show the chart and tracing practice.</noscript>
 <script src="../shared/learn-hubbar.js"></script><script src="core/alphabet.js"></script><script src="core/logic.js"></script>
-<script src="ui/audio.js"></script><script src="ui/trace.js"></script><script src="ui/app.js"></script>
+<script src="ui/audio.js"></script><script src="ui/trace.js"></script><script src="core/lessons.js"></script><script src="core/words.js"></script><script src="ui/app.js"></script><script src="ui/lessons.js"></script>
 </body></html>

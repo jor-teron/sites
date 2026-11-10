@@ -18,3 +18,9 @@ Offline-first Learn app. Open `hindi-letters.html` (or the one-hop `index.html`)
 Serve repository root on **8834**, then `node apps/learn/hindi-letters/tests/browser.cjs`. Uses `/usr/bin/google-chrome` and puppeteer-core from `/workspace/gg-test/node_modules`, overridable with `HL_PUPPETEER`. Chrome tests validate saved trace stars, a scripted glyph trace, pointer input, themes and desktop/390×844/844×390 layouts. Screenshots are written outside the repo to `/workspace/hl-*.png`.
 
 HL-1a validation: 3 Node tests and 20 Chrome checks passed; zero console errors. Screenshots visually reviewed: Devanagari letters, matras, word and icon render correctly on this machine. The headless machine has no Hindi speech voice; native voice playback needs a device with one installed. No real-phone or educator review yet.
+
+## HL-1b
+
+33-consonant barakhadi explorer (429 generated combinations), five half-letter examples, six conjuncts, numerals १–१० and **200 distinct picture words** in eight themes: fruits 25, animals 25, family 22, colours 14, body 25, home 30, nature 34, food 25. Search accepts Hindi or English. Short इ is explained in Unicode logical order, not misleading visual-order concatenation. Rare syllable combinations are labelled as practice forms, not everyday words. ङ/ञ and ऋ forms may be uncommon but compose correctly.
+
+Data self-check: reviewed Hindi spellings, nasal signs, gender-specific meanings and kinship relationships; word duplicates checked after NFC normalization. 7 Node tests passed, including all 429 matra compositions and conjunct decompositions. 35 Chrome checks passed with zero console errors; additional phone screenshots for all four learning views were visually checked. A stub tests hi-IN voice selection and the audio-off path, not native speech quality.

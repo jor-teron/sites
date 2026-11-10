@@ -40,6 +40,36 @@ const p=require(process.env.HL_PUPPETEER || '/workspace/gg-test/node_modules/pup
     await page.evaluate(()=>{localStorage.setItem('sites-hub.theme','dark'); window.dispatchEvent(new Event('storage'));});
     ok(await page.evaluate(()=>document.documentElement.dataset.theme==='dark'),'follows Hub');
     await page.reload({waitUntil:'networkidle0'}); ok(await page.evaluate(()=>Object.keys(Hindi.progress.traced).length===1),'resume stored progress');
+    if(await page.$('[data-mode="matras"]')) {
+      await page.click('[data-mode="matras"]');
+      ok(await page.$$eval('.study-card',es=>es.length===13),'13 matra forms');
+      await page.select('#consonant','क');
+      ok(await page.$$eval('.study-card .glyph',es=>es[2].textContent==='कि'),'pre-base i renders in logical order');
+      await page.click('.study-card:nth-child(3)');
+      ok((await page.$eval('#matra-hint',e=>e.textContent)).includes('AFTER'),'matra hint');
+      for(const mode of ['matras','joins','numbers','words']) {
+        await page.click('[data-mode="'+mode+'"]');
+        for(const [width,height] of [[390,844],[844,390]]) {
+          await page.setViewport({width,height,deviceScaleFactor:1,hasTouch:true});
+          ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),mode+' phone width');
+          await page.screenshot({path:'/workspace/hl-'+mode+'-'+width+'.png'});
+        }
+      }
+      ok(await page.$$eval('.picture-card',es=>es.length===200),'200 picture cards');
+      await page.select('#word-theme','fruits'); ok(await page.$$eval('.picture-card',es=>es.length===25),'fruit filter');
+      await page.type('#word-search','mango'); ok(await page.$$eval('.picture-card',es=>es.length===1 && es[0].textContent.includes('आम')),'English search');
+      // Exercise speech selection without requiring an installed headless voice.
+      const speech=await page.evaluate(()=>{
+        const calls=[]; speechSynthesis.getVoices=()=>[{lang:'en-US',name:'English'},{lang:'hi-IN',name:'Hindi'}];
+        speechSynthesis.speak=u=>calls.push({lang:u.lang,text:u.text,voice:u.voice.lang});
+        // SpeechSynthesisUtterance.voice requires a native voice object; stub utterance for unit integration.
+        window.SpeechSynthesisUtterance=class {constructor(text){this.text=text;}};
+        speechSynthesis.dispatchEvent(new Event('voiceschanged')); Hindi.speak('आम');
+        Hindi.prefs.audio=false; Hindi.speak('क'); Hindi.prefs.audio=true;
+        return calls;
+      });
+      ok(speech.length===1 && speech[0].lang==='hi-IN' && speech[0].text==='आम','Hindi voice + audio off');
+    }
     ok(errors.length===0,errors.join('\n')); console.log('HL browser: '+checks+' checks passed; zero console errors.');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
