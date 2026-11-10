@@ -1,4 +1,4 @@
-/* Node tests for Sun Position SP1/SP2 (sp_calc.js).
+/* Node tests for Sun Position SP1–SP3 (sp_calc.js).
    Run: node test_sp_calc.js
    No DOM, no jsdom, no browser.
    Times and angles are checked against the NOAA Solar Calculator method
@@ -265,6 +265,34 @@ ok('Delhi panel tilt is between 15° and 40° (near latitude 29°)', panelDel.ti
 var panelSyd = Sp.bestPanel(-33.869, 151.209, 2026); /* Sydney */
 ok('Sydney panel faces north', panelSyd.facing === 'north', JSON.stringify(panelSyd));
 ok('Sydney panel tilt is between 15° and 45°', panelSyd.tilt >= 15 && panelSyd.tilt <= 45, String(panelSyd.tilt));
+
+
+/* ---- SP3 moon (Meeus 47) ---- */
+/* Example 47.a, Astronomical Algorithms: 1992-04-12 0h TT. Apparent λ ≈ 133.1627°, β ≈ −3.2291°, Δ ≈ 368409.7 km. */
+var gMeeus = Sp.moonGeocentric(Sp.julianDay(1992, 4, 12, 0));
+approx('Meeus 1992-04-12 moon longitude', gMeeus.lon, 133.163, 0.05, 'deg');
+approx('Meeus 1992-04-12 moon latitude', gMeeus.lat, -3.229, 0.05, 'deg');
+approx('Meeus 1992-04-12 moon distance', gMeeus.distanceKm, 368410, 50, 'km');
+
+var full260103 = Sp.moonPosition(DELHI.lat, DELHI.lon, Date.UTC(2026, 0, 3, 10, 3, 0));
+ok('2026-01-03 10:03 UT is a full moon', full260103.phaseName === 'Full' && full260103.illumination > 0.95, full260103.phaseName + ' ' + full260103.illumination);
+var new260118 = Sp.moonPosition(DELHI.lat, DELHI.lon, Date.UTC(2026, 0, 18, 19, 52, 0));
+ok('2026-01-18 19:52 UT is a new moon', new260118.phaseName === 'New' && new260118.illumination < 0.05, new260118.phaseName + ' ' + new260118.illumination);
+
+var evMoon = Sp.moonEvents(DELHI.lat, DELHI.lon, 2026, 11, 10, DELHI.tz);
+ok('Delhi 2026-11-10 has a moonrise and a moonset', !!(evMoon.moonrise && evMoon.moonset), JSON.stringify({ r: evMoon.moonrise, s: evMoon.moonset, p: evMoon.polar }));
+approxTime('Delhi 2026-11-10 moonrise IST', evMoon.moonrise, DELHI.tz, 7, 37, 8);
+approxTime('Delhi 2026-11-10 moonset IST', evMoon.moonset, DELHI.tz, 17, 54, 8);
+var pMoonUp = Sp.moonPosition(DELHI.lat, DELHI.lon, evMoon.moonrise);
+approx('Moon apparent elevation at rise is near the horizon', pMoonUp.elevationApp, 0, 0.6, 'deg');
+
+var evMoonLon = Sp.moonEvents(LONDON.lat, LONDON.lon, 2026, 6, 21, LONDON.tz);
+ok('London 2026-06-21 has moonrise or moonset (not polar)', evMoonLon.polar == null && (evMoonLon.moonrise || evMoonLon.moonset));
+
+/* WMM2025: Delhi declination is a little east of north in 2026. */
+var Wmm = require('./sp_wmm.js');
+var declDel = Wmm.declination(DELHI.lat, DELHI.lon, 0, 2026.86);
+ok('WMM Delhi 2026 declination is a small east value', declDel > 0 && declDel < 3, String(declDel));
 
 if (fails.length) {
   console.log('\nFAILED ' + fails.length + ' tests:');

@@ -1515,6 +1515,27 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   No Puppeteer, Playwright or jsdom.
 - RELEASE/title/?v= SP2. Details: apps/tools/sun-position/sun-position_readme.md.
 
+### 1.86 Sun Position point, moon and alerts, release SP3
+
+- apps/tools/sun-position only. Point tab added (Now | Plan | Point). Phone mode uses
+  DeviceOrientation (webkitCompassHeading, deviceorientationabsolute, or 360-alpha), plus
+  the iOS permission request on a user tap. Magnetic heading is corrected to true north
+  with a copy of Compass WMM2025 (sp_wmm.js; Lab compass files are not edited). Camera /
+  back-of-phone elevation comes from beta and gamma. An arrow and short text guide you to
+  the sun; the heading-up dial also marks the moon and sunrise/sunset directions. No
+  compass: north-up marks still show. Orientation updates are throttled (~12 Hz), not a
+  render loop.
+- Moon in sp_calc.js (Meeus ch. 47 main terms, nutation, topocentric parallax): azimuth,
+  elevation, phase name and illumination, moonrise/moonset by scanning the local day.
+  Tested against AA example 47.a (1992-04-12), the 2026-01-03 full moon and 2026-01-18
+  new moon, and Delhi 2026-11-10 rise/set.
+- Optional alerts while the app is open: 15 minutes before sunrise, sunset or golden hour.
+  Notification API when allowed, otherwise (or as well) an in-app banner. Preference stored
+  in sun-position-v1.alerts. Nothing is sent when the tab is in the background.
+- Tested with `node --check`, `node test_sp_calc.js`, and a static serve + curl smoke test.
+  No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= SP3. Details: apps/tools/sun-position/sun-position_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

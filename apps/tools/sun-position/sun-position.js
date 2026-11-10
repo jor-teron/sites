@@ -1,8 +1,8 @@
-/* SP2 Sun Position — offline. SP1 place, dial and times, plus shadow tool, year chart,
-   sun-path diagram, best fixed-panel tilt, and PNG save. Auto theme follows the Hub. */
+/* SP3 Sun Position — offline. SP2 plan tools, plus point-at-the-sun (device heading and tilt,
+   WMM true north), moon position/phase/rise, and in-app or Notification alerts. */
 (function () {
   'use strict';
-  var RELEASE = 'SP2';
+  var RELEASE = 'SP3';
   var KEY = 'sun-position-v1';
   var DEFAULT_PLACE = { id: 'diphu', name: 'Diphu', lat: 25.843, lon: 93.432, tz: 'Asia/Kolkata' };
   var $ = function (id) { return document.getElementById(id); };
@@ -16,6 +16,7 @@
     if (!Array.isArray(s.places)) s.places = [];
     if (!s.currentPlace) s.currentPlace = DEFAULT_PLACE;
     if (!(s.shadowH > 0)) s.shadowH = 1.8;
+    if (s.alerts !== true) s.alerts = false;
     return s;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* full/blocked */ } }
@@ -693,14 +694,21 @@
   }
 
   function setTab(v) {
-    tab = v === 'plan' ? 'plan' : 'now';
+    tab = (v === 'plan' || v === 'point') ? v : 'now';
     $('pane-now').classList.toggle('on', tab === 'now');
     $('pane-plan').classList.toggle('on', tab === 'plan');
+    $('pane-point').classList.toggle('on', tab === 'point');
     var b = $('tabs').querySelectorAll('button'), i;
     for (i = 0; i < b.length; i++) b[i].classList.toggle('on', b[i].getAttribute('data-v') === tab);
     if (tab === 'plan') {
       planDrawnKey = null;
       render();
+    }
+    if (tab === 'point') {
+      renderPoint();
+      if (!(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function')) {
+        startPointing();
+      }
     }
   }
 
@@ -787,6 +795,300 @@
     );
   }
 
+
+  /* ---- SP3 pointing, moon, alerts ---- */
+  var headingMag = null, headingTrue = null, phoneEl = null, pointStarted = false, usingAbs = false, noSensor = false;
+  var lastPointMs = 0, pointRoseReady = false, moonCache = null, notified = {}, bannerTimer = null;
+
+  function buildPointRose() {
+    if (pointRoseReady) return;
+    var rose = $('pointRose');
+    if (!rose) return;
+    function add(tag, at, text) {
+      var e = document.createElementNS(NS, tag);
+      for (var k in at) e.setAttribute(k, at[k]);
+      if (text != null) e.textContent = text;
+      rose.appendChild(e);
+      return e;
+    }
+    add('circle', { r: '152', 'class': 'face' });
+    add('circle', { r: String(R), 'class': 'horizon' });
+    var d, a, r1;
+    for (d = 0; d < 360; d += 10) {
+      r1 = d % 90 === 0 ? 126 : 132;
+      a = d * Math.PI / 180;
+      add('line', {
+        x1: (Math.sin(a) * r1).toFixed(2), y1: (-Math.cos(a) * r1).toFixed(2),
+        x2: (Math.sin(a) * 146).toFixed(2), y2: (-Math.cos(a) * 146).toFixed(2),
+        'class': 'tk' + (d % 90 === 0 ? ' m' : '')
+      });
+    }
+    var labs = [[0, 'N'], [90, 'E'], [180, 'S'], [270, 'W']];
+    for (d = 0; d < labs.length; d++) {
+      a = labs[d][0] * Math.PI / 180;
+      add('text', { x: (Math.sin(a) * 114).toFixed(1), y: (-Math.cos(a) * 114).toFixed(1), 'class': 'lb' }, labs[d][1]);
+    }
+    add('circle', { id: 'mkSun', r: '10', 'class': 'mk-sun', cx: '0', cy: String(-R), hidden: 'hidden' });
+    add('circle', { id: 'mkMoon', r: '8', 'class': 'mk-moon', cx: '0', cy: String(-R + 16), hidden: 'hidden' });
+    add('path', { id: 'mkRise', 'class': 'mk-rise', d: '' });
+    add('path', { id: 'mkSet', 'class': 'mk-set', d: '' });
+    add('text', { id: 'mkRiseLab', 'class': 'mk-lab', x: '0', y: '0' }, 'rise');
+    add('text', { id: 'mkSetLab', 'class': 'mk-lab', x: '0', y: '0' }, 'set');
+    pointRoseReady = true;
+  }
+
+  function markerAt(az, r) {
+    var a = az * Math.PI / 180;
+    return { x: Math.sin(a) * r, y: -Math.cos(a) * r };
+  }
+  function arrowPath(az, r) {
+    var a = az * Math.PI / 180;
+    var x = Math.sin(a) * r, y = -Math.cos(a) * r;
+    var x1 = Math.sin(a - 0.14) * (r - 12), y1 = -Math.cos(a - 0.14) * (r - 12);
+    var x2 = Math.sin(a + 0.14) * (r - 12), y2 = -Math.cos(a + 0.14) * (r - 12);
+    return 'M' + x.toFixed(1) + ' ' + y.toFixed(1) + ' L' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' L' + x2.toFixed(1) + ' ' + y2.toFixed(1) + ' Z';
+  }
+
+  function declinationNow() {
+    var W = window.SpWmm;
+    if (!W || !W.declination) return 0;
+    var pl = place(), d = new Date();
+    var yr = d.getFullYear() + (d - new Date(d.getFullYear(), 0, 1)) / 31557600000;
+    try { return W.declination(pl.lat, pl.lon, 0, yr); } catch (e) { return 0; }
+  }
+  function trueHeading() {
+    if (headingMag == null) return null;
+    return Sp.norm360(headingMag + declinationNow());
+  }
+  function screenAngle() {
+    if (window.screen && screen.orientation && typeof screen.orientation.angle === 'number') return screen.orientation.angle;
+    return typeof window.orientation === 'number' ? window.orientation : 0;
+  }
+  function feedHeading(h) {
+    headingMag = Sp.norm360(h);
+    headingTrue = trueHeading();
+  }
+  function cameraElevation(beta, gamma) {
+    var b = (beta || 0) * Math.PI / 180, g = (gamma || 0) * Math.PI / 180;
+    var s = -Math.cos(b) * Math.cos(g);
+    if (s > 1) s = 1;
+    if (s < -1) s = -1;
+    return Math.asin(s) * 180 / Math.PI;
+  }
+  function onAbs(e) {
+    if (e.alpha != null) {
+      usingAbs = true;
+      feedHeading(360 - e.alpha + screenAngle());
+    }
+    if (e.beta != null) phoneEl = cameraElevation(e.beta, e.gamma);
+    schedulePoint();
+  }
+  function onOri(e) {
+    if (!usingAbs) {
+      if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+        feedHeading(e.webkitCompassHeading + screenAngle());
+      } else if (e.absolute && e.alpha != null) {
+        feedHeading(360 - e.alpha + screenAngle());
+      }
+    }
+    if (e.beta != null) phoneEl = cameraElevation(e.beta, e.gamma);
+    schedulePoint();
+  }
+  function schedulePoint() {
+    var now = Date.now();
+    if (now - lastPointMs < 80) return;
+    lastPointMs = now;
+    if (tab === 'point') renderPoint();
+  }
+
+  function startPointing() {
+    if (pointStarted) { if (tab === 'point') renderPoint(); return; }
+    function go() {
+      pointStarted = true;
+      $('pointStart').hidden = true;
+      if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onAbs);
+      window.addEventListener('deviceorientation', onOri);
+      setTimeout(function () {
+        if (headingMag == null) {
+          noSensor = true;
+          $('pointMsg').textContent = 'No compass sensor on this device. Laptops usually have none, and some browsers block sensors off the Hub. You can still see the moon and the sunrise and sunset directions below. Open this on a phone through the Hub (https) to point at the sun.';
+          renderPoint();
+        }
+      }, 2500);
+    }
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(function (r) {
+        if (r !== 'granted') {
+          $('pointMsg').textContent = 'Motion permission was denied. Allow it in Settings, then try Start pointing again.';
+          return;
+        }
+        go();
+      }).catch(function (err) {
+        $('pointMsg').textContent = 'Could not ask for motion permission: ' + (err && err.message || err);
+      });
+      return;
+    }
+    if (!window.DeviceOrientationEvent) {
+      noSensor = true;
+      $('pointStart').hidden = true;
+      $('pointMsg').textContent = 'No compass sensor on this device. You can still see the moon and the sunrise and sunset directions below.';
+      renderPoint();
+      return;
+    }
+    go();
+  }
+
+  function getMoonEvents(pl, c) {
+    var k = pl.lat + ',' + pl.lon + ',' + c.y + '-' + c.m + '-' + c.d + ',' + displayTz();
+    if (moonCache && moonCache.k === k) return moonCache.ev;
+    var ev = Sp.moonEvents(pl.lat, pl.lon, c.y, c.m, c.d, displayTz());
+    moonCache = { k: k, ev: ev };
+    return ev;
+  }
+
+  function renderPoint() {
+    buildPointRose();
+    var instant = new Date();
+    var pl = place();
+    var sun = Sp.position(pl.lat, pl.lon, instant);
+    var moon = Sp.moonPosition(pl.lat, pl.lon, instant);
+    var c = Sp.civilDateInTz(instant, displayTz());
+    var ev = Sp.dayEvents(pl.lat, pl.lon, c.y, c.m, c.d);
+    var mev = getMoonEvents(pl, c);
+    var head = noSensor ? 0 : trueHeading();
+    var headingUp = !noSensor && head != null;
+    $('pointRose').setAttribute('transform', headingUp ? 'rotate(' + (-head).toFixed(2) + ')' : 'rotate(0)');
+
+    function placeMark(id, az, r, hide) {
+      var el = $(id);
+      if (!el) return;
+      if (hide || az == null) { el.setAttribute('hidden', ''); return; }
+      el.removeAttribute('hidden');
+      var p = markerAt(az, r);
+      el.setAttribute('cx', p.x.toFixed(1));
+      el.setAttribute('cy', p.y.toFixed(1));
+    }
+    placeMark('mkSun', sun.azimuth, sun.elevationApp >= 0 ? (1 - Math.min(sun.elevationApp, 90) / 90) * R : R, false);
+    if (sun.elevationApp < 0) $('mkSun').classList.add('down'); else $('mkSun').classList.remove('down');
+    placeMark('mkMoon', moon.azimuth, moon.elevationApp >= 0 ? (1 - Math.min(moon.elevationApp, 90) / 90) * R : R + 8, false);
+    if (ev.sunrise) {
+      var raz = Sp.position(pl.lat, pl.lon, ev.sunrise).azimuth;
+      $('mkRise').setAttribute('d', arrowPath(raz, R + 8));
+      var rp = markerAt(raz, R + 20);
+      $('mkRiseLab').setAttribute('x', rp.x.toFixed(1));
+      $('mkRiseLab').setAttribute('y', rp.y.toFixed(1));
+      $('mkRiseLab').textContent = 'rise';
+    }
+    if (ev.sunset) {
+      var saz = Sp.position(pl.lat, pl.lon, ev.sunset).azimuth;
+      $('mkSet').setAttribute('d', arrowPath(saz, R + 8));
+      var sp = markerAt(saz, R + 20);
+      $('mkSetLab').setAttribute('x', sp.x.toFixed(1));
+      $('mkSetLab').setAttribute('y', sp.y.toFixed(1));
+      $('mkSetLab').textContent = 'set';
+    }
+
+    var guide = $('guideOut'), deg = $('pointDeg');
+    if (noSensor || head == null) {
+      guide.textContent = noSensor ? 'Directions are shown with north at the top.' : 'Waiting for the compass…';
+      deg.textContent = '';
+    } else {
+      var dAz = ((sun.azimuth - head + 540) % 360) - 180;
+      var sunEl = sun.elevationApp;
+      var needEl = phoneEl == null ? null : sunEl - phoneEl;
+      var parts = [], onAz = Math.abs(dAz) < 8, onEl = needEl == null || Math.abs(needEl) < 8;
+      if (Math.abs(dAz) >= 8) parts.push(dAz > 0 ? 'Turn right ' + Math.round(Math.abs(dAz)) + '°' : 'Turn left ' + Math.round(Math.abs(dAz)) + '°');
+      if (needEl != null && Math.abs(needEl) >= 8) {
+        parts.push(needEl > 0 ? 'Tilt up ' + Math.round(Math.abs(needEl)) + '°' : 'Tilt down ' + Math.round(Math.abs(needEl)) + '°');
+      }
+      if (onAz && onEl) {
+        guide.textContent = sunEl >= 0 ? 'On the sun' : 'On the sun’s direction (it is below the horizon)';
+        guide.className = 'guide on';
+      } else {
+        guide.textContent = parts.length ? parts.join(' · ') : 'On the sun';
+        guide.className = 'guide';
+      }
+      var hdg = Math.round(head); if (hdg === 360) hdg = 0;
+      deg.textContent = 'Facing ' + hdg + '° ' + Sp.cardinal(head) + (phoneEl == null ? '' : ' · phone tilt ' + Math.round(phoneEl) + '°');
+    }
+
+    var moonTxt = '';
+    if (moon.elevationApp >= 0) moonTxt = Math.round(moon.elevationApp) + '° up, ' + Math.round(moon.azimuth) + '° ' + Sp.cardinal(moon.azimuth);
+    else moonTxt = Math.round(Math.abs(moon.elevationApp)) + '° down, ' + Math.round(moon.azimuth) + '° ' + Sp.cardinal(moon.azimuth);
+    moonTxt += ' · ' + moon.phaseName + ', ' + Math.round(moon.illumination * 100) + '% lit';
+    $('moonPos').textContent = moonTxt;
+    var rows = '';
+    function addRow(k, v) { rows += '<li><span class="k">' + esc(k) + '</span><span class="v">' + esc(v) + '</span></li>'; }
+    if (mev.polar === 'up') addRow('Tonight', 'The moon does not set');
+    else if (mev.polar === 'down') addRow('Tonight', 'The moon does not rise');
+    else {
+      addRow('Moonrise', mev.moonrise ? fmtClock(mev.moonrise) : '—');
+      addRow('Moonset', mev.moonset ? fmtClock(mev.moonset) : '—');
+    }
+    $('moonTimes').innerHTML = rows;
+    markSeg($('alertSeg'), st.alerts ? 'on' : 'off');
+    updateAlertNote();
+  }
+
+  function showBanner(msg) {
+    var b = $('banner');
+    b.textContent = msg;
+    b.hidden = false;
+    if (bannerTimer) clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { b.hidden = true; }, 20000);
+  }
+  function updateAlertNote() {
+    var el = $('alertNote');
+    if (!el) return;
+    if (!st.alerts) { el.textContent = 'Alerts are off.'; return; }
+    if (!('Notification' in window)) { el.textContent = 'You will see a banner in this tab (this browser has no notification permission).'; return; }
+    if (Notification.permission === 'granted') el.textContent = 'A system notification and a banner will appear, only while this app is open.';
+    else if (Notification.permission === 'denied') el.textContent = 'This browser blocked notifications, so you will see a banner in this tab instead.';
+    else el.textContent = 'You will see a banner in this tab. You can also allow system notifications when asked.';
+  }
+  function setAlerts(on) {
+    st.alerts = !!on; save();
+    markSeg($('alertSeg'), st.alerts ? 'on' : 'off');
+    updateAlertNote();
+    if (st.alerts && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(function () { updateAlertNote(); });
+    }
+  }
+  function tickAlerts() {
+    if (!st.alerts) return;
+    if (document.visibilityState && document.visibilityState !== 'visible') return;
+    var now = new Date();
+    var pl = place();
+    var c = Sp.civilDateInTz(now, displayTz());
+    var ev = Sp.dayEvents(pl.lat, pl.lon, c.y, c.m, c.d);
+    /* Also look at tomorrow for events just after midnight. */
+    var nxt = new Date(Date.UTC(c.y, c.m - 1, c.d + 1));
+    var ev2 = Sp.dayEvents(pl.lat, pl.lon, nxt.getUTCFullYear(), nxt.getUTCMonth() + 1, nxt.getUTCDate());
+    var items = [
+      { key: 'sunrise', date: ev.sunrise, msg: 'Sunrise in 15 minutes' },
+      { key: 'sunset', date: ev.sunset, msg: 'Sunset in 15 minutes' },
+      { key: 'goldM', date: ev.goldenMorning && ev.goldenMorning.start, msg: 'Morning golden hour starts in 15 minutes' },
+      { key: 'goldE', date: ev.goldenEvening && ev.goldenEvening.start, msg: 'Evening golden hour starts in 15 minutes' },
+      { key: 'sunrise2', date: ev2.sunrise, msg: 'Sunrise in 15 minutes' },
+      { key: 'goldM2', date: ev2.goldenMorning && ev2.goldenMorning.start, msg: 'Morning golden hour starts in 15 minutes' }
+    ];
+    var i, it, dt, id, iso;
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      if (!it.date) continue;
+      dt = it.date.getTime() - now.getTime();
+      if (dt <= 0 || dt > 15 * 60000) continue;
+      iso = Sp.isoDateInTz(it.date, displayTz());
+      id = it.key + '-' + iso;
+      if (notified[id]) continue;
+      notified[id] = 1;
+      showBanner(it.msg);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try { new Notification('Sun Position', { body: it.msg }); } catch (e) { /* blocked */ }
+      }
+    }
+  }
+
   /* ---- events ---- */
   $('placeBtn').onclick = openPlace;
   $('setBtn').onclick = openSettings;
@@ -801,6 +1103,12 @@
     st.shadowH = v; save(); render();
   };
   $('savePic').onclick = openSavePic;
+  $('pointStart').onclick = startPointing;
+  $('alertSeg').onclick = function (e) {
+    var v = e.target.getAttribute && e.target.getAttribute('data-v');
+    if (v === 'on' || v === 'off') setAlerts(v === 'on');
+  };
+  $('banner').onclick = function () { $('banner').hidden = true; };
   $('dateIn').onchange = function () {
     var v = $('dateIn').value;
     var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
@@ -839,8 +1147,10 @@
   }
 
   buildRose();
+  buildPointRose();
   applyTheme();
   setLive(true);
+  setInterval(tickAlerts, 15000);
   render();
   firstVisit();
 })();
