@@ -7,11 +7,18 @@ export function occupied(arrows, except = -1) {
   return new Set(arrows.filter(a => a.id !== except).flatMap(a => a.cells.map(cellKey)));
 }
 export function route(arrow, arrows, n) {
+  if (arrow.lock !== undefined && arrows.some(a=>a.id===arrow.lock))
+    return {safe:false,steps:0,reason:'locked'};
   const taken = occupied(arrows, arrow.id), [dx,dy] = DIRS[arrow.dir];
+  let body=arrow.cells;
   const [hx,hy] = arrow.cells.at(-1);
   let steps = 0;
   for (let x=hx+dx,y=hy+dy; inside([x,y],n); x+=dx,y+=dy) {
     if (taken.has(cellKey([x,y]))) return {safe:false, steps, reason:'blocked'};
+    // Tail vacates first; entering any other own cell would fold the snake.
+    if (body.slice(1).some(c=>cellKey(c)===cellKey([x,y])))
+      return {safe:false,steps,reason:'self'};
+    body=[...body.slice(1),[x,y]];
     steps++;
   }
   return {safe:true, steps:steps+arrow.cells.length, reason:'clear'};
@@ -42,6 +49,7 @@ export function move(state, id, n) {
   const a = state.arrows.find(a => a.id === id);
   if (!a) return {changed:false};
   const result = route(a,state.arrows,n);
+  if (result.reason==='locked') return {...result,changed:false};
   state.history.push(clone({...state,history:undefined}));
   state.history = state.history.slice(-180);
   state.moves++;

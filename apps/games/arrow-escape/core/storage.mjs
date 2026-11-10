@@ -35,4 +35,5 @@ export function restore(level, saved) {
   } catch {return fresh(level);}
 }
 import {route} from './rules.mjs';
-const routeSafe=(a,s,n)=>route(a,s.arrows,n).safe;
+// A locked tap is not a bump; never use it to reconstruct a lost life.
+const routeSafe=(a,s,n)=>{const r=route(a,s.arrows,n);return r.safe||r.reason==='locked';};

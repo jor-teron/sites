@@ -13,6 +13,7 @@ async function boot(number=1){
   await page.goto(url);await ready();
   await page.evaluate(number=>{localStorage.setItem('arrow-escape.save.v1',JSON.stringify({version:1,progress:{unlocked:500,stars:{}},number}));},number);
   await page.reload();await ready();
+  assert.equal(await page.evaluate(()=>arrowEscape.level.number),number);checks++;
 }
 async function tap(id) {
   const cell=await page.$(`[data-id="${id}"] rect.hit:last-of-type`);assert.ok(cell);
@@ -40,11 +41,66 @@ try {
     assert.ok(await page.$eval('.stars',e=>e.textContent==='★★★'));checks++;
   }
   await boot(180);
-  const blocked=await page.evaluate(async()=>{const {route}=await import('./core/rules.mjs');const s=arrowEscape.state;return s.arrows.find(a=>!route(a,s.arrows,arrowEscape.level.n).safe)?.id;});
+  const blocked=await page.evaluate(async()=>{const {route}=await import('./core/rules.mjs');const s=arrowEscape.state;return s.arrows.find(a=>route(a,s.arrows,arrowEscape.level.n).reason==='blocked')?.id;});
   assert.notEqual(blocked,undefined);await tap(blocked);assert.equal(await page.evaluate(()=>arrowEscape.state.lives),2);checks++;
   await page.click('#undo');assert.equal(await page.evaluate(()=>arrowEscape.state.lives),3);checks++;
   await page.click('#hint');assert.equal(await page.evaluate(()=>arrowEscape.state.hints),1);checks++;
   await page.click('#hint');assert.equal(await page.evaluate(()=>arrowEscape.state.hints),1);checks++;
+  for(let i=0;i<3;i++)await tap(blocked);
+  assert.equal(await page.$eval('#modal-title',e=>e.textContent),'Out of lives');checks++;
+  await page.click('#recover');assert.equal(await page.evaluate(()=>arrowEscape.state.lives),1);checks++;
+  await tap(blocked);await page.click('#retry');
+  assert.equal(await page.evaluate(()=>arrowEscape.state.lives),3);checks++;
+  assert.equal(await page.evaluate(()=>arrowEscape.state.moves),0);checks++;
+  // Matching locks are free to inspect and undoing the key relocks them.
+  await boot(500);
+  const pair=await page.evaluate(()=>arrowEscape.state.arrows.find(a=>a.lock!==undefined));
+  assert.ok(pair);await tap(pair.id);
+  assert.equal(await page.evaluate(()=>arrowEscape.state.moves),0);checks++;
+  const prefix=await page.evaluate(async key=>{const {solve}=await import('./core/rules.mjs');const o=solve(arrowEscape.level);return o.slice(0,o.indexOf(key)+1);},pair.lock);
+  for(const id of prefix)await tap(id);
+  assert.equal(await page.$eval(`[data-id="${pair.id}"]`,g=>g.classList.contains('locked')),false);checks++;
+  await page.click('#undo');
+  assert.equal(await page.$eval(`[data-id="${pair.id}"]`,g=>g.classList.contains('locked')),true);checks++;
+  // Pause, all five themes, sound mute, help, daily and preserved campaign session.
+  const campaign=await page.evaluate(()=>arrowEscape.state);
+  await page.click('#pause');assert.equal(await page.$eval('#modal-title',e=>e.textContent),'Paused');checks++;
+  for(const theme of ['classic','wood','carbus','floor','stone']) {
+    await page.select('#board-theme',theme);
+    assert.equal(await page.$eval('html',e=>e.dataset.boardTheme),theme);checks++;
+  }
+  await page.reload();await ready();
+  assert.equal(await page.$eval('html',e=>e.dataset.boardTheme),'stone');checks++;
+  await page.click('#pause');
+  await page.click('#mute');assert.equal(await page.evaluate(()=>GameSettings.get('sfx')),false);checks++;
+  await page.click('#help');assert.ok((await page.$eval('#modal-body',e=>e.textContent)).includes('uncoils'));checks++;
+  await page.click('#help-back');await page.click('#daily');
+  assert.equal(await page.evaluate(()=>arrowEscape.mode),'daily');checks++;
+  let dailyOrder=await page.evaluate(async()=>{const {solve}=await import('./core/rules.mjs');return solve(arrowEscape.level);});
+  await tap(dailyOrder[0]);const dailyState=await page.evaluate(()=>arrowEscape.state);
+  await page.reload();await ready();assert.deepEqual(await page.evaluate(()=>arrowEscape.state),dailyState);checks++;
+  for(const id of dailyOrder.slice(1))await tap(id);
+  let streak=await page.evaluate(()=>JSON.parse(localStorage.getItem('arrow-escape.save.v1')).daily.streak);
+  assert.equal(streak,1);checks++;
+  await page.click('#replay');
+  dailyOrder=await page.evaluate(async()=>{const {solve}=await import('./core/rules.mjs');return solve(arrowEscape.level);});
+  for(const id of dailyOrder)await tap(id);
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('arrow-escape.save.v1')).daily.streak),1);checks++;
+  await page.click('#next');assert.equal(await page.evaluate(()=>arrowEscape.mode),'campaign');checks++;
+  assert.deepEqual(await page.evaluate(()=>arrowEscape.state),campaign);checks++;
+  await page.click('#pause');await page.select('#board-theme','classic');await page.click('#resume');
+  // Real (non-reduced) animation must be busy in flight, then persist completion.
+  await boot(1);await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'no-preference'}]);
+  const safeId=await page.evaluate(async()=>{const {solve}=await import('./core/rules.mjs');return solve(arrowEscape.level)[0];});
+  await page.click(`[data-id="${safeId}"] rect.hit:last-of-type`);
+  assert.equal(await page.evaluate(()=>arrowEscape.busy),true);checks++;
+  await page.waitForFunction(()=>!arrowEscape.busy);assert.equal(await page.evaluate(()=>arrowEscape.state.moves),1);checks++;
+  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+  // Locked level-select states on a clean progression.
+  await page.evaluate(()=>localStorage.setItem('arrow-escape.save.v1',JSON.stringify({version:1,progress:{unlocked:1,stars:{}},number:1})));
+  await page.reload();await ready();await page.click('#levels');
+  assert.equal(await page.$$eval('.level-cell:disabled',buttons=>buttons.length),49);checks++;
+  await page.click('#close');
   for(const viewport of [{width:390,height:844},{width:844,height:390}]) {
     await page.setViewport({...viewport,deviceScaleFactor:3});await boot(500);
     const layout=await page.evaluate(()=>{
@@ -62,5 +118,5 @@ try {
   await page.evaluate(()=>{localStorage.setItem('sites-hub.theme','light');dispatchEvent(new StorageEvent('storage',{key:'sites-hub.theme'}));});
   assert.equal(await page.$eval('html',e=>e.classList.contains('dark')),false);checks++;
   assert.deepEqual(errors,[]);checks++;
-  console.log(`Browser: ${checks} assertions passed; solved 1/245/500; 390x844 + 844x390 DPR3; no console errors.`);
+  console.log(`Browser: ${checks} assertions passed; solved 1/245/500 + daily twice; locks/undo, themes, pause, mute, help, resume, animation; 390x844 + 844x390 DPR3; no console errors.`);
 } finally {await browser.close();}

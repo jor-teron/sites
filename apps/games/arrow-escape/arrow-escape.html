@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Arrow Escape</title><link rel="icon" href="arrow-escape_icon.png">
+<title>Arrow Escape · ARW-1b</title><link rel="icon" href="arrow-escape_icon.png">
 <link rel="stylesheet" href="ui/style.css"></head><body>
 <div id="app">
 <header><a id="back" href="../../../desktop/desktop.html" aria-label="Back to Hub" title="Back to Hub">‹</a>
@@ -9,8 +9,8 @@
 <div class="hud"><strong id="level-label">Level 001</strong><span id="moves">0 moves</span><span id="lives" aria-label="Lives">♥ ♥ ♥</span></div>
 <main id="play"><div id="board-scroll" tabindex="0" aria-label="Puzzle board. Scroll large boards."><svg id="board" xmlns="http://www.w3.org/2000/svg" aria-label="Arrow puzzle"></svg></div></main>
 <p id="status" role="status" aria-live="polite">Tap an arrow whose path to the edge is clear.</p>
-<footer><button id="undo" title="Undo">↶ Undo</button><button id="hint" title="Hint">◇ Hint</button><button id="restart" title="Restart">↺ Retry</button></footer>
+<footer><button id="undo" title="Undo">↶ Undo</button><button id="hint" title="Hint">◇ Hint</button><button id="restart" title="Restart">↺ Retry</button><button id="pause" title="Pause and options" aria-label="Pause and options">Ⅱ</button></footer>
 </div>
-<dialog id="modal"><div class="modal-head"><h2 id="modal-title"></h2><button id="close" aria-label="Close">×</button></div><div id="modal-body"></div></dialog>
+<dialog id="modal" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button id="close" aria-label="Close">×</button></div><div id="modal-body"></div></dialog>
 <script src="../common/settings/games-settings.js"></script><script type="module" src="ui/app.mjs"></script>
 </body></html>
