@@ -210,6 +210,7 @@ Human Body Explorer,     human-body/,                , , Health, Tap body parts 
 Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
+Hindi Letters,           hindi-letters/,             , , Language, Hindi alphabet: trace letters - matras - picture words and gentle practice games
 English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali

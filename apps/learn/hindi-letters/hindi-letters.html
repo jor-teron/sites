@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hindi Letters HL-1a</title><link rel="icon" href="hindi-letters_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.hindi-letters.theme"></script>
+<link rel="stylesheet" href="ui/hindi.css">
+</head>
+<body>
+<div id="app" class="lrn">
+<header class="lrn-head"><a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1>Hindi Letters <span lang="hi">अक्षर सीखें</span></h1><button id="settings">Settings</button></header>
+<nav id="modes" aria-label="Activities"><button data-mode="chart" aria-pressed="true">Letters</button></nav>
+<div class="status"><span id="progress"></span><span id="voice-note" role="status"></span></div>
+<main id="content"></main>
+</div>
+<dialog id="letter-card" aria-labelledby="letter-title"><div class="card-head"><h2 id="letter-title">Letter</h2><button data-close="letter-card">Close</button></div><div id="letter-detail"></div></dialog>
+<dialog id="preferences" aria-labelledby="settings-title"><h2 id="settings-title">Learning settings</h2>
+<label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<label><input id="audio" type="checkbox"> Spoken Hindi audio</label><p>Speech uses your device's Hindi voice. No microphone is needed.</p>
+<button data-close="preferences">Done</button></dialog>
+<noscript>Hindi Letters needs JavaScript to show the chart and tracing practice.</noscript>
+<script src="../shared/learn-hubbar.js"></script><script src="core/alphabet.js"></script><script src="core/logic.js"></script>
+<script src="ui/audio.js"></script><script src="ui/trace.js"></script><script src="ui/app.js"></script>
+</body></html>
