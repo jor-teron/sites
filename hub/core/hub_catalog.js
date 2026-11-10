@@ -225,6 +225,7 @@ LLM Calculator,     llm-calc/,                    , , Legacy, Plan a tiny LLM: p
 name, path, icon, newtab, section, description
 First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
 Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
+Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian meal plates and see live nutrients with a balanced-plate guide
 Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 

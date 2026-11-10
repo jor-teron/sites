@@ -120,6 +120,7 @@ window.HUB_APP_INDEX = {
   "mail": ["Office", "apps/office/mail/", "Mail", "apps/office/mail/mail_icon.png", 0, "Simple Gmail client: read and send email after Google sign-in"],
   "first-aid": ["Learn", "apps/learn/first-aid/", "First Aid", "apps/learn/first-aid/first-aid_icon.png", 0, "First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds"],
   "human-body": ["Learn", "apps/learn/human-body/", "Human Body Explorer", "apps/learn/human-body/human-body_icon.png", 0, "Tap body parts outside and inside to learn their names and jobs - with quiz"],
+  "nutrition-plate": ["Learn", "apps/learn/nutrition-plate/", "Nutrition Plate", "apps/learn/nutrition-plate/nutrition-plate_icon.png", 0, "Build Indian meal plates and see live nutrients with a balanced-plate guide"],
   "water-kingdom": ["Learn", "apps/learn/water-kingdom/", "Water Kingdom", "apps/learn/water-kingdom/water-kingdom_icon.png", 0, "Picture book about water: meet Droppy - the water cycle and how to save water"],
   "animal-kingdom": ["Learn", "apps/learn/animal-kingdom/", "Animal Kingdom", "apps/learn/animal-kingdom/animal-kingdom_icon.png", 0, "Animal picture book: mammals - birds and reptiles with facts and search"],
   "english-basic": ["Learn", "apps/learn/english-basic/", "English Basic", "apps/learn/english-basic/english-basic_icon.png", 0, "English basics: alphabet - words - spelling - phrases - sentences and questions"],
