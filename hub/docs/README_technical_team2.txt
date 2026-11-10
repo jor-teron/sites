@@ -1186,7 +1186,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   re-renders the box, so the browser's typing undo for that box may start fresh. Not tried on a real phone.
 
 
-### 1.71 Hub Office Slides presenter tools, release SL7
+### 1.70 Hub Office Slides presenter tools, release SL7
 
 - `apps/office/slides/` only (plus this section). Branch `apps/sl7-slides` from `apps/sl6-slides` (e8e7c963).
   `apps/office/shared/` not edited. New `slides_present.js` (`SLPresent`): notes / transition / ink cleaning, timer
