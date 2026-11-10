@@ -69,3 +69,55 @@
 - Export still runs in real time and still depends on the browser's recorder
   (Chrome or Edge work more often than Safari). Canvas size is capped at a
   1280 px long side to stay light on a 4 GB Celeron.
+
+
+## VD3
+
+- Per-clip looks: brightness, contrast, saturation, greyscale, sepia and blur
+  sliders with Reset looks. The preview uses a CSS `filter` on the `<video>`.
+  Export and Save frame paint with `ctx.filter`. If the browser cannot do
+  that (Safari often cannot), export and the PNG go out without colour
+  filters and an in-app warning is shown; rotate, crop, speed and titles
+  still apply.
+- Per-clip transform: rotate 0/90/180/270, flip horizontal and vertical,
+  and a crop rectangle (handles on the preview on the Look tab, plus
+  numeric % inputs). Crop is in post-rotate/flip display space. Export
+  applies it with a `drawImage` source rect after the rotate/flip paint.
+- Output size: Auto (first clip after crop and rotate), 1280×720, 720×1280
+  or 1080×1080, still capped at a 1280 px long side, even dimensions.
+  Other clips are letterboxed into that frame.
+- Per-clip speed: 0.25 / 0.5 / 1 / 1.5 / 2× via `playbackRate` in preview
+  and export. Timeline durations are kept source time / speed. Audio pitch
+  is preserved where the browser supports `preservesPitch` (or the
+  moz/webkit prefixed form).
+- Per-clip volume 0–200% and mute. Preview uses `video.volume` (capped at
+  1) plus a GainNode in the existing AudioContext mix so 200% can be
+  heard on export and, after the element is hooked, in preview too.
+- Project-level text/title overlays: text, start, end, position presets
+  plus drag on the preview, size, colour, background box, fade in/out.
+  Shown as an HTML layer on the preview and drawn on the export canvas
+  and on Save frame.
+- Save the current frame as a PNG (button and P), with looks, transform
+  and overlays applied. `?` opens a keyboard-shortcut list. Toolbar
+  buttons use an Office-style hover tip (Photo Studio HPS6 approach):
+  mouse only, delay Off / 100 / 500 / 1000 ms (default 100), stored in
+  `video-editor-v1` `{tip}` — not part of undo or the project file.
+- Undo / Redo cover the new clip and overlay fields. Projects save them
+  with format version 3. Opening a VD2 project fills in defaults
+  (speed 1×, full crop, no overlays, Auto output).
+- RELEASE/title/?v= VD3. Tests: `node --check`, `node tests/vd1.test.cjs`,
+  `vd2.test.cjs`, `vd3.test.cjs` (pure helpers: speed-adjusted sequence
+  timing, crop/rotate output size, overlay visibility). No Puppeteer,
+  Playwright or jsdom.
+
+### VD3 limits
+
+- Fades between clips are still drawn only on export, not in the live
+  preview. Colour filters may be missing from export and from the PNG on
+  browsers that do not support `ctx.filter`.
+- Auto output follows the first clip's crop and rotate. Later clips are
+  letterboxed into that size (or into a fixed setting).
+- Export is still real-time and still capped at a 1280 px long side.
+  Project files still live only in this browser's IndexedDB.
+- Hover tips are mouse-only. Delete still cuts the In–Out selection;
+  removing a clip from the track is the Delete clip button.

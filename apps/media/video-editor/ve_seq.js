@@ -1,11 +1,15 @@
-/* Video Editor — ve_seq.js: clip sequence, split, reorder, project history. VD2
-   Pure helpers (no DOM). A clip is {id, fileId, name, duration, width, height, thumb, segments}. */
+/* Video Editor — ve_seq.js: clip sequence, split, reorder, project history. VD2+VD3
+   Pure helpers (no DOM). Timing is in playback time (kept source duration / speed). */
 (function (root) {
   'use strict';
 
   var E = root.VEEdits;
   if (!E && typeof require === 'function') {
     try { E = require('./ve_edits.js'); } catch (_) { /* ok */ }
+  }
+  var F = root.VEFx;
+  if (!F && typeof require === 'function') {
+    try { F = require('./ve_fx.js'); } catch (_) { /* ok */ }
   }
   var MAX_HISTORY = 40;
 
@@ -15,16 +19,7 @@
 
   function copyClip(c) {
     if (!c) return null;
-    return {
-      id: c.id,
-      fileId: c.fileId,
-      name: c.name || 'clip',
-      duration: Number(c.duration) || 0,
-      width: Number(c.width) || 0,
-      height: Number(c.height) || 0,
-      thumb: c.thumb || '',
-      segments: E.mergeNormalize(c.segments)
-    };
+    return F && F.migrateClip ? F.migrateClip(c) : c;
   }
 
   function copyClips(clips) {
@@ -32,19 +27,25 @@
   }
 
   function copyState(state) {
+    if (F && F.migrateState) return F.migrateState(state);
     state = state || {};
     var fade = Number(state.fade);
     if (fade !== 0.5 && fade !== 1) fade = 0;
-    return { fade: fade, clips: copyClips(state.clips) };
+    return { fade: fade, clips: copyClips(state.clips), overlays: [], outputSize: 'auto', version: 3 };
   }
 
   function clipKept(clip) {
     return clip ? E.keptDuration(clip.segments) : 0;
   }
 
+  function clipPlayDuration(clip) {
+    if (F && F.clipPlayDuration) return F.clipPlayDuration(clip);
+    return clipKept(clip);
+  }
+
   function sequenceDuration(clips) {
     var t = 0;
-    (clips || []).forEach(function (c) { t += clipKept(c); });
+    (clips || []).forEach(function (c) { t += clipPlayDuration(c); });
     return t;
   }
 
@@ -56,7 +57,7 @@
     var items = [];
     var t = 0;
     (clips || []).forEach(function (c, i) {
-      var d = clipKept(c);
+      var d = clipPlayDuration(c);
       items.push({ index: i, id: c.id, start: t, end: t + d, duration: d });
       t += d;
     });
@@ -75,12 +76,13 @@
     if (x >= layout.total) {
       var last = layout.items[layout.items.length - 1];
       var lastClip = clips[last.index];
+      var endSpeed = F && F.normalizeSpeed ? F.normalizeSpeed(lastClip.speed) : 1;
       return {
         index: last.index,
         clip: lastClip,
         item: last,
         localEdited: last.duration,
-        sourceTime: E.editedToSource(last.duration, lastClip.segments),
+        sourceTime: E.editedToSource(last.duration * endSpeed, lastClip.segments),
         atEnd: true
       };
     }
@@ -90,12 +92,13 @@
         var local = x - it.start;
         if (local < 0) local = 0;
         if (local > it.duration) local = it.duration;
+        var speed = F && F.normalizeSpeed ? F.normalizeSpeed(clips[i].speed) : 1;
         return {
           index: i,
           clip: clips[i],
           item: it,
           localEdited: local,
-          sourceTime: E.editedToSource(local, clips[i].segments),
+          sourceTime: E.editedToSource(local * speed, clips[i].segments),
           atEnd: false
         };
       }
@@ -107,7 +110,8 @@
     var layout = sequenceLayout(clips);
     var it = layout.items[clipIndex];
     if (!it || !clips[clipIndex]) return 0;
-    var local = E.sourceToEdited(sourceTime, clips[clipIndex].segments);
+    var speed = F && F.normalizeSpeed ? F.normalizeSpeed(clips[clipIndex].speed) : 1;
+    var local = E.sourceToEdited(sourceTime, clips[clipIndex].segments) / speed;
     return it.start + local;
   }
 
@@ -200,17 +204,27 @@
 
   function sameClip(a, b) {
     if (!a || !b) return false;
-    return a.id === b.id && a.fileId === b.fileId && a.name === b.name &&
+    var core = a.id === b.id && a.fileId === b.fileId && a.name === b.name &&
       a.duration === b.duration && E.sameSegs(a.segments, b.segments);
+    if (!core) return false;
+    if (F && F.sameClipFx) return F.sameClipFx(a, b);
+    return true;
   }
 
   function sameState(a, b) {
-    a = a || { fade: 0, clips: [] };
-    b = b || { fade: 0, clips: [] };
+    a = a || { fade: 0, clips: [], overlays: [], outputSize: 'auto' };
+    b = b || { fade: 0, clips: [], overlays: [], outputSize: 'auto' };
     if (Number(a.fade) !== Number(b.fade)) return false;
+    if ((a.outputSize || 'auto') !== (b.outputSize || 'auto')) return false;
     if ((a.clips || []).length !== (b.clips || []).length) return false;
     for (var i = 0; i < a.clips.length; i++) {
       if (!sameClip(a.clips[i], b.clips[i])) return false;
+    }
+    var oa = a.overlays || [];
+    var ob = b.overlays || [];
+    if (oa.length !== ob.length) return false;
+    for (var j = 0; j < oa.length; j++) {
+      if (F && F.sameOverlay && !F.sameOverlay(oa[j], ob[j])) return false;
     }
     return true;
   }
@@ -286,6 +300,7 @@
     copyClips: copyClips,
     copyState: copyState,
     clipKept: clipKept,
+    clipPlayDuration: clipPlayDuration,
     sequenceDuration: sequenceDuration,
     sequenceLayout: sequenceLayout,
     globalToLocal: globalToLocal,

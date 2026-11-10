@@ -1,13 +1,14 @@
-/* Video Editor — ve_export.js: canvas + audio-mix MediaRecorder export. VD2
-   Draws each playing <video> into a canvas (contain, letterbox) with optional
-   fade-through-black, captures canvas.captureStream() for video, and mixes
-   clip audio through one AudioContext + MediaStreamDestination. */
+/* Video Editor — ve_export.js: canvas + audio-mix MediaRecorder export. VD2+VD3
+   Draws each playing <video> into a canvas with filters, rotate/flip/crop,
+   fade-through-black and title overlays. canvas.captureStream() + AudioContext mix. */
 (function (root) {
   'use strict';
 
   var H = root.VEHelpers;
   var E = root.VEEdits;
   var S = root.VESeq;
+  var F = root.VEFx;
+  var D = root.VEDraw;
 
   function pickMime() {
     if (typeof MediaRecorder === 'undefined') return '';
@@ -29,11 +30,13 @@
   }
 
   function even(n) {
+    if (F && F.even) return F.even(n);
     n = Math.max(2, Math.round(n));
     return n % 2 ? n + 1 : n;
   }
 
-  function chooseSize(clips) {
+  function chooseSize(clips, setting) {
+    if (F && F.outputSize) return F.outputSize(clips, setting);
     var w = 0, h = 0;
     (clips || []).forEach(function (c) {
       if ((c.width || 0) > w) w = c.width;
@@ -144,7 +147,7 @@
         reject(new Error('MediaRecorder is not supported in this browser.'));
         return;
       }
-      var size = chooseSize(list);
+      var size = chooseSize(list, hooks.outputSize);
       canvas.width = size.width;
       canvas.height = size.height;
       var ctx = canvas.getContext('2d');
@@ -212,7 +215,14 @@
 
       function playUntil(player, clip, clipIndex, seg, globalBase) {
         var video = player.video;
-        var kept = S.clipKept(clip);
+        var speed = F && F.normalizeSpeed ? F.normalizeSpeed(clip.speed) : 1;
+        var playDur = S.clipPlayDuration ? S.clipPlayDuration(clip) : (S.clipKept(clip) / speed);
+        try { video.playbackRate = speed; } catch (_) { /* ok */ }
+        try {
+          video.preservesPitch = true;
+          video.mozPreservesPitch = true;
+          video.webkitPreservesPitch = true;
+        } catch (_) { /* ok */ }
         return new Promise(function (res, rej) {
           var running = true;
           function tick() {
@@ -224,11 +234,16 @@
               res('cancelled');
               return;
             }
-            var localEdited = E.sourceToEdited(video.currentTime, clip.segments);
-            var alpha = S.fadeAlpha(localEdited, kept, fade, clipIndex, list.length);
-            drawFrame(ctx, video, size.width, size.height, alpha);
-            setGain(player, alpha);
-            onProgress(globalBase + Math.max(0, Math.min(seg.end, video.currentTime) - seg.start), total);
+            var localPlay = E.sourceToEdited(video.currentTime, clip.segments) / speed;
+            var alpha = S.fadeAlpha(localPlay, playDur, fade, clipIndex, list.length);
+            var gTime = globalBase + Math.max(0, Math.min(seg.end, video.currentTime) - seg.start) / speed;
+            if (D && D.paintOutput) {
+              D.paintOutput(ctx, video, clip, hooks.overlays || [], gTime, size.width, size.height, alpha, hooks.filterOk !== false);
+            } else {
+              drawFrame(ctx, video, size.width, size.height, alpha);
+            }
+            setGain(player, F && F.audioGain ? F.audioGain(clip, alpha) : alpha);
+            onProgress(gTime, total);
             if (video.currentTime >= seg.end - 0.02 || video.ended) {
               try { video.pause(); } catch (_) { /* ok */ }
               cleanup();
@@ -291,7 +306,7 @@
               }
               onStatus('Recording… Export runs in real time.');
               var result = await playUntil(player, clip, i, seg, acc);
-              acc += seg.end - seg.start;
+              acc += (seg.end - seg.start) / (F && F.normalizeSpeed ? F.normalizeSpeed(clip.speed) : 1);
               if (result !== 'ok' || cancelled) break;
               setGain(player, 0);
               if ((s < segs.length - 1 || i < list.length - 1) && canPause() && recorder.state === 'recording') {

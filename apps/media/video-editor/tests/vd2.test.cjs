@@ -1,4 +1,4 @@
-/* Video Editor VD2 — pure sequence tests (no browser / no DOM). */
+/* Video Editor VD3 — sequence tests still pass at 1× speed (no browser / no DOM). */
 'use strict';
 
 var fs = require('fs');
@@ -134,9 +134,9 @@ assert(odd.width % 2 === 0 && odd.height % 2 === 0, 'export size is even');
 var html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 var base = fs.readFileSync(path.join(__dirname, '..', 've_base.css'), 'utf8');
 var main = fs.readFileSync(path.join(__dirname, '..', 've_main.js'), 'utf8');
-assert(/<title>Video Editor VD2<\/title>/.test(html), 'title VD2');
-assert((html.match(/\?v=VD2/g) || []).length >= 10, 'assets use ?v=VD2');
-assert(/var RELEASE = 'VD2'/.test(main), 'RELEASE VD2');
+assert(/<title>Video Editor VD3<\/title>/.test(html), 'title VD3');
+assert((html.match(/\?v=VD3/g) || []).length >= 13, 'assets use ?v=VD3');
+assert(/var RELEASE = 'VD3'/.test(main), 'RELEASE VD3');
 assert(/id="clipStrip"/.test(html), 'clip strip in html');
 assert(/id="seqTrack"/.test(html), 'sequence seek in html');
 assert(/id="projectsBtn"/.test(html), 'Projects button');

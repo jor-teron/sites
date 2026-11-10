@@ -870,6 +870,36 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   take a 1.54 (or later) section on their own branches.
 
 
+
+### 1.55 Video Editor looks, transform, speed, titles, release VD3
+
+- apps/media/video-editor only (local commit on apps/vd3-video-editor, from VD2
+  9f49bc36). Per-clip colour filters (brightness, contrast, saturation, greyscale,
+  sepia, blur) with reset; CSS filter on the preview <video>, ctx.filter on the
+  export canvas. If ctx.filter is missing (common on Safari) the export and the
+  PNG go out without colour filters and an in-app warning is shown; rotate, crop,
+  speed and titles still apply.
+- Per-clip transform: rotate 0/90/180/270, flip H/V, crop rectangle (handles on
+  the preview plus numeric % inputs) applied on export with a drawImage source
+  rect. Output size Auto (first clip after crop/rotate), 1280x720, 720x1280 or
+  1080x1080, long side still capped at 1280, even dimensions, others letterboxed.
+- Per-clip speed 0.25/0.5/1/1.5/2x (playbackRate in preview and export; timeline
+  durations are kept/speed; pitch preserved where the browser supports it).
+  Per-clip volume 0-200% and mute (GainNode in the existing AudioContext mix,
+  plus video.volume in the preview).
+- Project-level text/title overlays: text, start, end, position presets plus
+  drag, size, colour, background box, fade in/out. HTML layer on the preview;
+  drawn on the export canvas and on Save frame (PNG). Keyboard shortcut list
+  (?). Office-style hover tips on toolbar buttons (HPS6 approach: mouse only,
+  delay Off/100/500/1000 ms, default 100, stored in video-editor-v1 {tip}).
+- Undo/Redo cover the new fields. Project format version 3, with migration from
+  VD2 projects (default speed 1x, full crop, no overlays, Auto output).
+- RELEASE/title/?v= VD3. Tests: node --check, tests/vd1.test.cjs + vd2.test.cjs
+  + vd3.test.cjs (pure helpers: speed-adjusted sequence timing, crop/rotate
+  output size, overlay visibility). No Puppeteer / Playwright / jsdom.
+  Details: apps/media/video-editor/NOTES.md.
+  Note: section 1.55 is the next free number on main after VD2 (1.54).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
