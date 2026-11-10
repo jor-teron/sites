@@ -1,4 +1,4 @@
-/* Image Converter — ic_convert.js: decode (oriented), resize, encode, one file at a time. CI1 */
+/* Image Converter — ic_convert.js: decode (oriented), crop/rotate/watermark, resize, encode. CI2 */
 (function (root) {
   'use strict';
 
@@ -162,10 +162,71 @@
     return c;
   }
 
-  /* CI2 hooks: crop / rotate / flip / background / watermark applied here later. */
+  function applyRotateFlip(srcCanvas, rot, flipH, flipV) {
+    rot = ((Number(rot) || 0) % 360 + 360) % 360;
+    flipH = !!flipH;
+    flipV = !!flipV;
+    if (!rot && !flipH && !flipV) return srcCanvas;
+    var w = srcCanvas.width;
+    var h = srcCanvas.height;
+    var cw = (rot === 90 || rot === 270) ? h : w;
+    var ch = (rot === 90 || rot === 270) ? w : h;
+    var c = document.createElement('canvas');
+    c.width = cw;
+    c.height = ch;
+    var ctx = c.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not available');
+    ctx.translate(cw / 2, ch / 2);
+    ctx.rotate(rot * Math.PI / 180);
+    ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+    ctx.drawImage(srcCanvas, -w / 2, -h / 2);
+    return c;
+  }
+
+  function applyWatermark(ctx, width, height, wm) {
+    var Edit = root.ICEdit;
+    if (!wm || !Edit) return;
+    var opacity = Number(wm.opacity);
+    if (!isFinite(opacity)) opacity = 0.6;
+    if (opacity <= 0) return;
+    if (opacity > 1) opacity = 1;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    var padPct = wm.pad;
+    if (wm.logo && (wm.logo.width || wm.logo.naturalWidth)) {
+      var lw = wm.logo.width || wm.logo.naturalWidth;
+      var lh = wm.logo.height || wm.logo.naturalHeight;
+      var sz = Edit.watermarkSize(width, height, lw, lh, wm.scale);
+      var pos = Edit.watermarkPosition(width, height, sz.width, sz.height, wm.position, padPct);
+      ctx.drawImage(wm.logo, pos.x, pos.y, sz.width, sz.height);
+    } else if (wm.text) {
+      var scale = Number(wm.scale);
+      if (!isFinite(scale) || scale <= 0) scale = 6;
+      var fontPx = Math.max(10, Math.round(width * (scale / 100)));
+      ctx.font = '700 ' + fontPx + 'px system-ui, sans-serif';
+      ctx.textBaseline = 'top';
+      var text = String(wm.text);
+      var tw = ctx.measureText(text).width;
+      var th = fontPx * 1.2;
+      var posT = Edit.watermarkPosition(width, height, tw, th, wm.position, padPct);
+      ctx.lineWidth = Math.max(2, Math.round(fontPx / 12));
+      ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillStyle = wm.color || '#ffffff';
+      ctx.strokeText(text, posT.x, posT.y);
+      ctx.fillText(text, posT.x, posT.y);
+    }
+    ctx.restore();
+  }
+
+  /* CI2: rotate / flip, crop, background fill, resize, watermark. */
   function applyTransforms(srcCanvas, settings) {
-    var Hlp = H;
-    var size = Hlp.computeSize(srcCanvas.width, srcCanvas.height, settings.resize || 'none', {
+    settings = settings || {};
+    var Edit = root.ICEdit;
+    var work = applyRotateFlip(srcCanvas, settings.rotate, settings.flipH, settings.flipV);
+    var crop = Edit
+      ? Edit.resolveCrop(work.width, work.height, settings)
+      : { x: 0, y: 0, w: work.width, h: work.height };
+    var size = H.computeSize(crop.w, crop.h, settings.resize || 'none', {
       longest: settings.longest,
       percent: settings.percent,
       width: settings.width,
@@ -173,7 +234,23 @@
       keepAspect: settings.keepAspect !== false,
       noEnlarge: settings.noEnlarge !== false
     });
-    return drawResized(srcCanvas, size.width, size.height);
+    var out = document.createElement('canvas');
+    out.width = size.width;
+    out.height = size.height;
+    var ctx = out.getContext('2d');
+    if (!ctx) throw new Error('Canvas is not available');
+    var format = H.formatOf(settings.format) || 'jpeg';
+    var bg = settings.bg || '';
+    if (format === 'jpeg' || format === 'avif' || (bg && settings.fillBg !== false)) {
+      ctx.fillStyle = bg || '#ffffff';
+      ctx.fillRect(0, 0, out.width, out.height);
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(work, crop.x, crop.y, crop.w, crop.h, 0, 0, out.width, out.height);
+    if (settings.watermark) applyWatermark(ctx, out.width, out.height, settings.watermark);
+    if (work !== srcCanvas) dropCanvas(work);
+    return out;
   }
 
   function canvasToBlob(canvas, mime, quality) {

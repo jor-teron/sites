@@ -1637,6 +1637,31 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.53–1.89 are already taken on main, so this note is
   numbered 1.90.
 
+
+### 1.91 Image Converter presets and quick edits, release CI2
+
+- Presets and edits on `apps/media/image-converter/` (CI1). Branch
+  `apps/ci2-image-converter`. RELEASE / title / `?v=` = CI2.
+- One-tap presets: WhatsApp (JPG, longest side 1600, quality 80),
+  Instagram (JPG, 1080, 1:1 crop, quality 85), Email (JPG, 1280, under
+  200 KB), Indian form passport photo (413×531 px, 7:9 crop, under
+  40 KB, white background) and signature (300×80, under 30 KB, white
+  background). Users can save and delete their own presets in
+  localStorage (`image-converter-v1.customPresets`).
+- Crop to a ratio (1:1, 4:5, 16:9, passport 7:9) with a draggable box
+  on the selected photo. Other photos in the batch get a centred crop
+  of the same ratio. Rotate 90° and flip horizontal / vertical on the
+  selected photo (`ic_edit.js` crop and rotate math).
+- Text watermark or a logo image, with position, opacity, size and
+  colour. A background colour (default white) fills transparent pixels
+  when the output is JPG or AVIF.
+- New files: `ic_presets.js`, `ic_edit.js`, `tests/ci2.test.cjs`.
+  In-app dialogs only. No CDN.
+- Tested with `node --check` on every JS file, `node tests/ci1.test.cjs`
+  and `node tests/ci2.test.cjs` (preset data, crop / ratio / rotate
+  size, watermark placement), and a static curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
