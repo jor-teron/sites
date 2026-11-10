@@ -1391,6 +1391,29 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Limits: no searchable-PDF save; English only; engine needs http(s) (not file://);
   print still uses page images. Details: apps/lab/pdf-viewer/README.md.
 
+### 1.80 PDF Tools merge and split, release P2
+
+- apps/office/pdf-tools only (P1 organiser). Open or drop several PDFs into the same
+  grid; Add appends more. Pages are tagged with a colour badge and the source file
+  name when more than one file is open. Drag reorders across files. Duplicate
+  (Ctrl+D) and insert blank (B, size of the neighbour, else A4). Extract selected
+  pages (Ctrl+E). Split from the menu: single pages, ranges such as 1-3, 7, or
+  every N pages. One file is a PDF; several files go in a .zip. All output still
+  goes through PTSave.save. Undo covers add, duplicate and blank (200 steps).
+- New pdf-tools_util.js (pure, node-testable: range parser, split plans, names,
+  sizes) and pdf-tools_zip.js (stored method-0 zip, adapted from Draftly, no new
+  library). Own form dialog for Split. In-app dialogs only. No new vendor.
+  pdf-lib 1.17.1 and read-only shared/vendor/pdfjs as in P1.
+- RELEASE/title/?v= P2 on this app's own CSS/JS only (Team 2 Office convention
+  after NV2, same as SH8/Slides/Base). Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: split-by-range leaves out unlisted pages; zip is stored not deflated;
+  form fields / bookmarks may drop when pages are copied; no password save.
+  Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
+  Note: 1.53–1.79 are already taken on main, so this section is 1.80.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

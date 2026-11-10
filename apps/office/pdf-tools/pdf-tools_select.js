@@ -46,7 +46,7 @@ PT.Select = (() => {
     const g = document.createElement('div');
     g.className = 'ghost-drag';
     const p = S.pages[index(id)];
-    const url = PT.Thumbs.url(p.src);
+    const url = p && PT.Thumbs.url(p);
     g.innerHTML = (url ? '<img alt="" src="' + url + '"' + (p.rot ? ' style="transform:rotate(' + p.rot + 'deg)"' : '') + '>' : '') +
       (st.ids.length > 1 ? '<b>' + st.ids.length + '</b>' : '');
     document.body.appendChild(g);
