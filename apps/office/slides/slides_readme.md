@@ -1,11 +1,11 @@
-# Hub Office Slides (Office → Hub Office) — release SL8
+# Hub Office Slides (Office → Hub Office) — release SL9
 <!-- legacy: release SL7 · release SL6 · release SL5 · release SL4 · release SL3 · release SL2 -->
 
 A basic slide editor. Static, no build step, no libraries, works from `file://`. Built to stay light on a Celeron / 4 GB
 laptop: only the slide being edited is live (contenteditable title and body, plus any free text boxes, shapes and table
 cells), thumbnails are the same slide design scaled down (up to 9 bullets each), saving is debounced (400 ms) and one
 deck is one localStorage record. Pictures (SL3) are kept in IndexedDB, so the deck record stays small. SL5 stores
-formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries).
+formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). The .hslides format is unchanged. A tiny store-only zip helper lives in the app; deflated .pptx imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency).
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -106,6 +106,14 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
   The slide list shows a header you can collapse / expand, rename (or remove), and move as a block (▲ ▼, or drag the
   header). Up to 50 sections. Collapse is saved with the deck (not on the undo stack). Dragging a single slide into
   another group gives it that group’s section.
+- **PowerPoint export / import (SL9)**: File → Export .pptx… writes a 16:9 .pptx (text boxes with basic styling, shapes,
+  tables, pictures, notes, theme colours, a footer and slide numbers baked as text, and the hidden-slide flag). Named
+  sections, transitions and pen ink are left out (an in-app summary lists what was skipped). File → Import .pptx…
+  (or drop a .pptx file) opens a new deck with text, pictures, simple shapes / tables and notes. Unknown parts (charts,
+  SmartArt, video, animations and the like) are skipped and listed in a summary dialog. The package is a store-only zip
+  on export; a deflated file from PowerPoint lazy-loads the JSZip already in this repo.
+- **PNG export (SL9)**: File or ⋯ → Export PNG… asks This slide (one PNG) or All slides (ZIP). Pictures are drawn from
+  the slide model as SVG and rasterised at 1920 × 1080, one after another — not a screenshot of the editor.
 - **Layouts (SL3)**: seven layouts: Title, Title + Content (the default, the SL1 / SL2 slide), Two Columns, Section Header,
   Picture + Caption, Title Only, Blank. **▦ Layout** (or ⋯ → Layout…) changes the current slide; **▾** next to ＋ Slide
   (or ⋯ → New slide with layout…) adds a slide with a layout. ＋ Slide / Ctrl+Enter adds one with the current slide's
@@ -244,6 +252,7 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   Each slide may have `hide`, `foot` (`hide`|`show` or empty to inherit), `footer` (text override) and `sec` (section id).
   Older fmt 6 / 5 / 4 / 3 / no-fmt records open unchanged (footer off, no sections, no hidden slides; Light and Dark themes
   are unchanged). The .hslides file is version 6 (reads 1–6; version 7 and higher are refused).
+  SL9 does not bump the format: .pptx and PNG are export / import only.
 - Pictures: IndexedDB `hub-slides-pics`, store `pics`, key = content hash of the data URL, value `{ src, at }`. The deck
   record keeps only the key. If IndexedDB is missing or fails, the picture stays inside the record (`inl: true`, the
   data URL in `src`) — then localStorage can fill up sooner. On start (after 4 s) pictures that no deck uses any more and
@@ -257,8 +266,11 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_draw.js` (`SLDraw`, SL6): shape and table records, SVG paths, table row/column helpers, align / distribute / z-order / snap. No DOM (safe to test in Node).
 - `slides_present.js` (`SLPresent`, SL7): notes / transition / ink cleaning, timer format, BroadcastChannel envelope, presenter URL helpers. No DOM (safe to test in Node).
 - `slides_master.js` (`SLMaster`, SL8): master / footer / date / hide / section helpers. No DOM (safe to test in Node).
+- `slides_zip.js` (`SLZip`, SL9): tiny store-only ZIP pack / unpack (no deflate). `unpackSmart()` uses unpack first, then lazy-loads vendored JSZip for deflated packages. No DOM (safe to test in Node).
+- `slides_pptx.js` (`SLPptx`, SL9): build a {files} map from a deck and parse one back (regex / string XML, no DOM). Zip packing is left to SLZip.
+- `slides_png.js` (`SLPng`, SL9): `svgFor()` builds an SVG string from the model (Node-testable); `toPngBlob()` rasterises in a browser canvas.
 - `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load; SL6 fmt 5; SL7 fmt 6; SL8 fmt 7 and eight deck themes
-- `slides_file.js` (`SLFile`): .hslides export / import and checks (writes v6, reads v1–v6)
+- `slides_file.js` (`SLFile`): .hslides export / import and checks (writes v6, reads v1–v6; unchanged in SL9)
 - `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, contenteditable title / body / text boxes / shape text / table cells, Tab / Shift+Tab, layouts (placeholders),
   picture, text-box, shape and table select / move / resize / crop / arrange, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
   the thumbnails, the pickers, Present and Print
@@ -268,9 +280,9 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_print.js` (`SLPrint`, SL4, extended in SL7 / SL8): the print view (#print, one 16:9 page per slide, or A4 notes pages) and print / PDF; SL8 can include or skip hidden slides
 - `slides_hub.js` (`SLHub`, SL4): Hub app-bar bridge (tabs, deck name, File, Settings)
 - `slides_app.js`: top bar, ribbon, Format group + mini toolbar, Arrange group, Design (themes, master, hide, sections), Slide Show (Presenter view, notes, transitions), Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture, text-box, shape and table insert
-  (file / paste / drop), undo / redo; `window.Slides` (helpers for tests)
+  (file / paste / drop), undo / redo, SL9 File export / import .pptx and Export PNG; `window.Slides` (helpers for tests)
 
-## Limits (SL1 – SL8)
+## Limits (SL1 – SL9)
 - Long text can run past the bottom of the slide; it scrolls
   inside the slide but is not shrunk to fit.
 - Present (SL7 / SL8): transitions are CSS only (none / fade / push / wipe) and honour `prefers-reduced-motion`. Presenter view
@@ -282,6 +294,15 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - Themes use only fonts already on the machine (no web fonts). A per-slide background still overrides only the colour, not
   the font. Dragging a slide to a section boundary may attach it to the previous section. Collapse / expand is saved but
   is not an undo step. The footer sits in the bottom padding and can overlap a very low object. Not tried on a real phone.
+- PowerPoint (SL9): export uses one blank 16:9 layout and absolutely placed objects — not a real PowerPoint master or
+  placeholders. The footer and slide numbers are baked as a text box (they are not reconstructed as a master on import).
+  Sections, transitions and ink are skipped. WebP pictures may be stored as WebP (some apps will not open them). Import
+  is best-effort: charts, SmartArt, video, animations, WordArt, grouped shapes and unusual geometry are skipped (a
+  summary lists them). A deflated .pptx needs the vendored JSZip (if it cannot load, import stops with a message).
+  Export is an uncompressed zip, which PowerPoint and LibreOffice accept.
+- PNG (SL9): the picture is an SVG approximation of the slide (estimated wrapping, not a pixel-perfect editor
+  screenshot). Rasterising needs a browser canvas (the helper is tested in Node only as SVG). Hidden slides are included
+  in “all slides”. Not tried in every PowerPoint version or on a real phone.
 - App Undo / Redo covers pictures, text boxes, shapes and tables (add / move / resize / delete / style / arrange), formatting,
   layouts, backgrounds, the theme, notes, transitions (including Apply to all) and kept ink; typing uses the browser's undo inside each box. Applying a format from the ribbon
   re-renders the box, so the browser's typing undo for that box may start fresh; Ctrl+Z outside the box undoes the format.

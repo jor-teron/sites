@@ -12,7 +12,11 @@
   Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
   body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
   browser's print window; PDF = "Save as PDF" there, with an in-app hint).
-  SL8 (this release): more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a simple master
+  SL9 (this release): export and import a PowerPoint (.pptx) file (best-effort text, pictures, simple shapes / tables,
+  notes, theme colours, a baked footer, hidden flag), and export this slide or all slides as PNG (all in a zip). The
+  .hslides format is unchanged (version 6). A tiny store-only zip helper is vendored here; deflated imports lazy-load
+  JSZip already in the repo (no CDN).
+  Legacy (SL8): more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a simple master
   footer (text, slide numbers, date, skip on title slides, per-slide override), hide slide, and named sections in the
   slide list. .hslides version 6. No libraries.
   Legacy (SL7): speaker notes, Presenter view (second window or a one-screen fallback), pen and laser in Present,
@@ -29,11 +33,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Slides SL8</title><!-- legacy: <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
+  <title>Slides SL9</title><!-- legacy: <title>Slides SL8</title> · <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="slides.css?v=SL8">
+  <link rel="stylesheet" href="slides.css?v=SL9">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -245,7 +249,10 @@
     <button type="button" role="menuitem" data-a="rename">✎ Rename deck…</button>
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="import">⬆ Import .hslides…</button>
+    <button type="button" role="menuitem" data-a="importpptx">⬆ Import .pptx…</button>
     <button type="button" role="menuitem" data-a="export">⬇ Export .hslides</button>
+    <button type="button" role="menuitem" data-a="pptx">⬇ Export .pptx…</button>
+    <button type="button" role="menuitem" data-a="png">🖼 Export PNG…</button>
     <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
     <button type="button" role="menuitem" data-a="print">🖨 Print… <small>Ctrl+P</small></button>
     <button type="button" role="menuitem" data-a="printnotes">🖨 Print notes pages…</button>
@@ -277,12 +284,15 @@
     <button type="button" role="menuitem" data-a="showcur">▶ Present from this slide</button>
     <button type="button" role="menuitem" data-a="pv">🖥 Presenter view</button>
     <button type="button" role="menuitem" data-a="notes">📝 Speaker notes</button>
+    <button type="button" role="menuitem" data-a="pptx">⬇ Export .pptx…</button>
+    <button type="button" role="menuitem" data-a="png">🖼 Export PNG…</button>
     <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
     <button type="button" role="menuitem" data-a="printnotes">🖨 Print notes pages…</button>
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="del" class="danger-t">🗑 Delete slide…</button>
   </div>
   <input type="file" id="file-in" accept=".hslides,application/json,.json" hidden>
+  <input type="file" id="pptx-in" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
   <input type="file" id="pic-in" accept="image/*" hidden>
 
   <!-- settings + about -->
@@ -336,9 +346,10 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Slides</b> <span id="ver">SL8</span><!-- legacy: SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
+        <div><b>Hub Office Slides</b> <span id="ver">SL9</span><!-- legacy: SL8 · SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
             Export a deck as a .hslides file (open JSON, pictures inside) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
+          <p>SL9: export and import a PowerPoint (.pptx) file (best-effort), and export this slide or all slides as PNG (all in a zip). The .hslides format is unchanged.</p>
           <p>SL8: more deck themes (colours and fonts; the app itself stays Light / Dark), a footer with optional slide numbers and date, hide a slide from the show, and named sections in the slide list.</p>
           <!-- legacy (SL7): <p>SL7: speaker notes, Presenter view (notes, next slide and a timer in a second window), a pen and laser pointer while presenting, B / W to blank the screen, and simple slide transitions.</p> -->
           <!-- legacy (SL6): <p>SL6: shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill, outline and text inside; tables with a header row; and arrange (align, distribute, front / back, multi-select, snap guides).</p> --></div>
@@ -447,18 +458,21 @@
 <script src="../shared/office-ribbon.js"></script>
 <script src="../shared/office-hubbar.js"></script>
 <script src="../shared/office-quick.js"></script>
-<script src="slides_pics.js?v=SL8"></script>
-<script src="slides_text.js?v=SL8"></script>
-<script src="slides_draw.js?v=SL8"></script>
-<script src="slides_present.js?v=SL8"></script>
-<script src="slides_master.js?v=SL8"></script>
-<script src="slides_save.js?v=SL8"></script>
-<script src="slides_file.js?v=SL8"></script>
-<script src="slides_edit.js?v=SL8"></script>
-<script src="slides_show.js?v=SL8"></script>
-<script src="slides_list.js?v=SL8"></script>
-<script src="slides_print.js?v=SL8"></script>
-<script src="slides_hub.js?v=SL8"></script>
-<script src="slides_app.js?v=SL8"></script>
+<script src="slides_pics.js?v=SL9"></script>
+<script src="slides_text.js?v=SL9"></script>
+<script src="slides_draw.js?v=SL9"></script>
+<script src="slides_present.js?v=SL9"></script>
+<script src="slides_master.js?v=SL9"></script>
+<script src="slides_save.js?v=SL9"></script>
+<script src="slides_file.js?v=SL9"></script>
+<script src="slides_edit.js?v=SL9"></script>
+<script src="slides_show.js?v=SL9"></script>
+<script src="slides_list.js?v=SL9"></script>
+<script src="slides_print.js?v=SL9"></script>
+<script src="slides_zip.js?v=SL9"></script>
+<script src="slides_pptx.js?v=SL9"></script>
+<script src="slides_png.js?v=SL9"></script>
+<script src="slides_hub.js?v=SL9"></script>
+<script src="slides_app.js?v=SL9"></script>
 </body>
 </html>

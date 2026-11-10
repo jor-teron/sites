@@ -976,6 +976,41 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   on a real phone or a real printer.
 
 
+### 1.78 Hub Office Slides PowerPoint and PNG export, release SL9
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl9-slides` from `apps/sl8-slides` (10be31c0).
+  `apps/office/shared/` not edited. New helpers: `slides_zip.js` (`SLZip`, tiny store-only ZIP pack / unpack),
+  `slides_pptx.js` (`SLPptx`, build / parse a files map, regex XML, no DOM), `slides_png.js` (`SLPng`, `svgFor()`
+  is Node-testable; `toPngBlob()` needs a browser canvas). No CDN and no new dependency. Deflated .pptx imports
+  lazy-load JSZip already vendored at `shared/vendor/jszip.min.js` (fallback `apps/office/ocr/vendor/jszip.min.js`);
+  those vendor files were not edited.
+- Export .pptx: text boxes with basic styling (bold / italic / underline / strike, size, colour, highlight, bullets),
+  shapes, tables, pictures (from in-memory data URLs), notes, theme colours, footer and slide numbers baked as text,
+  hidden flag (`p:sld show="0"`). One blank 16:9 layout; objects absolutely placed. EMU = px × 9525 (960 × 540).
+  Sections, transitions and ink are skipped (an in-app summary lists them). WebP may stay WebP unless a converter is
+  passed. The package is an uncompressed zip (PowerPoint / LibreOffice accept it).
+- Import .pptx (best-effort): text, pictures, simple shapes / tables, notes. Theme is picked by nearest colour match.
+  Unknown parts (charts, SmartArt, video and the like) are skipped and listed in a summary dialog. Cap 500 slides.
+  A deflated package uses lazy JSZip; if it cannot load, import stops with a message.
+- Export PNG: File / ⋯ → Export PNG… asks This slide (one PNG) or All slides (ZIP, including hidden slides). Drawn
+  from the model as SVG, then rasterised at 1920 × 1080, one slide after another (light on a 4 GB Celeron). Not a
+  screenshot of the editor.
+- Format / compatibility: no bump. Deck record stays `fmt: 7`. .hslides stays `version: 6` (reads 1–6; higher refused).
+- Release id: `<title>Slides SL9</title>` (legacy SL8 · … comment), `VERSION = 'SL9'`, About SL9 (legacy comments),
+  `?v=SL9` on the app's own css / js (including the new zip / pptx / png helpers; shared office-*.css/js left
+  unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or apps/system edits.
+  slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; existing helper suites rerun
+  (`slides_text_test.js`, `slides_draw_test.js`, `slides_present_test.js`, `slides_master_test.js`,
+  `slides_file_test.js` — v6 write unchanged); new `slides_pptx_test.js` (store ZIP pack / unpack, PPTX XML
+  build → pack → unpack → parse round-trip of title styling, bullets, shape, table, text box, picture, notes,
+  hidden flag, theme colours and baked footer; sections warned; bad package error; `svgFor()` has title / footer).
+  Static curl smoke: 200 on slides.html / css / zip / pptx / png / app, body greps SL9. No Puppeteer, Playwright,
+  jsdom or headless browser.
+- Caveats: export is not a real PowerPoint master (footer is a text box and is not reconstructed as a master on
+  import). PNG wrapping is estimated, not pixel-perfect. Not tried in every PowerPoint version or on a real phone.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

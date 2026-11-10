@@ -19,10 +19,12 @@
      blocked or storage is memory-only), pen / laser / B / W / transitions during Present; undo covers notes,
      transitions and kept ink.
    SL8: more deck themes (colour + font; app chrome stays System / Light / Dark), master footer, hide slide, sections;
-     undo covers master, hide and section structure. */
+     undo covers master, hide and section structure.
+   SL9: File export / import .pptx (SLPptx + SLZip; deflated imports lazy-load vendored JSZip) and Export PNG
+     (this slide, or all slides in a zip). In-app summary dialogs. No .hslides format bump. */
 (function () {
   'use strict';
-  var VERSION = 'SL8';   /* legacy: 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  var VERSION = 'SL9';   /* legacy: 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -36,7 +38,7 @@
     return new Promise(function (res) {
       var d = $('dialog'), inp = $('dlg-in'), ul = $('dlg-list'), bs = $('dlg-btns');
       dlgPrevFocus = document.activeElement;
-      $('dlg-t').textContent = o.title || ''; $('dlg-m').textContent = o.msg || '';
+      $('dlg-t').textContent = o.title || ''; $('dlg-m').textContent = o.msg || ''; $('dlg-m').style.whiteSpace = /\n/.test(o.msg || '') ? 'pre-wrap' : '';
       inp.hidden = !o.input; if (o.input) { inp.value = o.input.value || ''; inp.placeholder = o.input.placeholder || ''; }
       ul.hidden = !o.list; ul.textContent = '';
       (o.list || []).forEach(function (it) {
@@ -298,9 +300,129 @@
     });
   }
   function importFile(file) {
+    if (isPptx(file)) { importPptxFile(file); return; }
     SLFile.read(file).then(function (r) {
       if (r.error) { dialog({ title: 'Could not import', msg: r.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] }); return; }
       importParsed(r).then(function (d) { toast('Imported “' + d.name + '” (' + d.slides.length + (d.slides.length === 1 ? ' slide)' : ' slides)') + (r.cut ? ', first 500 kept' : ''), 2600); });
+    });
+  }
+  function isPptx(file) {
+    var n = ((file && file.name) || '').toLowerCase();
+    var t = ((file && file.type) || '').toLowerCase();
+    return /\.pptx$/.test(n) || t.indexOf('presentationml') >= 0;
+  }
+  function readBuf(file) {
+    if (file && file.arrayBuffer) return file.arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(new Uint8Array(r.result)); };
+      r.onerror = function () { rej(new Error('Could not read the file.')); };
+      r.readAsArrayBuffer(file);
+    });
+  }
+  function downloadBlob(name, blob) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 1500);
+    return name;
+  }
+  function warnMsg(title, lead, warnings) {
+    var body = lead;
+    if (warnings && warnings.length) body += '\n\n' + warnings.join('\n');
+    return dialog({ title: title, msg: body, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+  }
+  function exportPptx() {
+    SLSave.flush();
+    var d = deck;
+    return SLPics.hydrate(d).then(function () {
+      var built = SLPptx.build(d);
+      var bytes = SLZip.pack(built.files);
+      var name = (SLFile.safeName(d.name) || 'slides') + '.pptx';
+      downloadBlob(name, new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }));
+      if (built.warnings && built.warnings.length) {
+        return warnMsg('Exported ' + name, 'The PowerPoint file was saved. Some parts were left out:', built.warnings);
+      }
+      toast('Exported ' + name);
+    }).catch(function (e) {
+      dialog({ title: 'Could not export PowerPoint', msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+    });
+  }
+  function importPptxFile(file) {
+    return readBuf(file).then(function (buf) {
+      return SLZip.unpackSmart(buf);
+    }).then(function (un) {
+      if (un.error) {
+        dialog({ title: 'Could not import PowerPoint', msg: un.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+        return;
+      }
+      var parsed = SLPptx.parse(un.files);
+      if (parsed.error) {
+        dialog({ title: 'Could not import PowerPoint', msg: parsed.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+        return;
+      }
+      var r = { deck: parsed.deck };
+      return importParsed(r).then(function (d) {
+        var lead = 'Imported “' + d.name + '” (' + d.slides.length + (d.slides.length === 1 ? ' slide)' : ' slides)') + '.';
+        if (parsed.warnings && parsed.warnings.length) {
+          return warnMsg('Imported with some parts skipped', lead + ' I skipped or simplified:', parsed.warnings);
+        }
+        toast(lead, 2600);
+      });
+    }).catch(function (e) {
+      dialog({ title: 'Could not import PowerPoint', msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+    });
+  }
+  function exportPng() {
+    closeMenus();
+    var n = deck.slides.length;
+    return dialog({
+      title: 'Export PNG',
+      msg: 'This slide as one PNG, or every slide (including hidden ones) in a zip. The picture is drawn from the slide — not a screenshot of the editor — at 1920 × 1080.',
+      buttons: [
+        { label: 'Cancel', v: false },
+        { label: 'This slide', v: 'one', cls: 'acc' },
+        { label: 'All slides (ZIP)', v: 'all' }
+      ]
+    }).then(function (v) {
+      if (v === 'one') return exportPngRange(deck.cur, deck.cur);
+      if (v === 'all') return exportPngRange(0, n - 1);
+    });
+  }
+  function exportPngRange(from, to) {
+    SLSave.flush();
+    var d = deck;
+    return SLPics.hydrate(d).then(function () {
+      var i = from, files = {}, one = from === to;
+      function next() {
+        if (i > to) {
+          if (one) {
+            var only = files[Object.keys(files)[0]];
+            downloadBlob(Object.keys(files)[0], new Blob([only], { type: 'image/png' }));
+            toast('Exported PNG');
+            return;
+          }
+          var zip = SLZip.pack(files);
+          var name = (SLFile.safeName(d.name) || 'slides') + '-png.zip';
+          downloadBlob(name, new Blob([zip], { type: 'application/zip' }));
+          toast('Exported ' + (to - from + 1) + ' PNGs');
+          return;
+        }
+        var n = i;
+        if (!one) status('Exporting slide ' + (n + 1) + ' / ' + d.slides.length + '…');
+        return SLPng.toPngBlob(SLPng.svgFor(d, n), 2).then(function (blob) { return blob.arrayBuffer(); }).then(function (buf) {
+          files[SLPng.fileName(d, n)] = new Uint8Array(buf);
+          i++;
+          return next();
+        });
+      }
+      return next();
+    }).then(function () {
+      /* leave the usual saved label; a toast already reported the export */
+    }).catch(function (e) {
+      dialog({ title: 'Could not export PNG', msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
     });
   }
 
@@ -684,7 +806,10 @@
     var b = e.target.closest('button'); if (!b) return; closeMenus();
     var a = b.dataset.a;
     if (a === 'new') newDeck(); else if (a === 'open') openDeck(); else if (a === 'rename') renameDeck();
-    else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); } else if (a === 'export') exportDeck(); else if (a === 'deldeck') deleteDeck();
+    else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); }
+    else if (a === 'importpptx') { $('pptx-in').value = ''; $('pptx-in').click(); }
+    else if (a === 'export') exportDeck(); else if (a === 'pptx') exportPptx(); else if (a === 'png') exportPng();
+    else if (a === 'deldeck') deleteDeck();
     else if (a === 'show0') present(true); else if (a === 'showcur') present(false);
     else if (a === 'print') printWithHidden(false, false); else if (a === 'printnotes') printNotes(); else if (a === 'pdf') exportPdf(); else if (a === 'settings') openSettings();
   });
@@ -704,7 +829,7 @@
     else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture(); else if (a === 'tbox') addTextBox();
     else if (a === 'shape') openShapePop($('b-shape') || $('b-more')); else if (a === 'table') openTablePop($('b-table') || $('b-more'));
     else if (a === 'undo') swap(undo, redo, 'Undo'); else if (a === 'redo') swap(redo, undo, 'Redo');
-    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pv') presentView(false); else if (a === 'notes') toggleNotes(); else if (a === 'master') openMaster(); else if (a === 'hide') toggleHide(); else if (a === 'sec') addSectionAt(); else if (a === 'pdf') exportPdf(); else if (a === 'printnotes') printNotes();
+    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pv') presentView(false); else if (a === 'notes') toggleNotes(); else if (a === 'master') openMaster(); else if (a === 'hide') toggleHide(); else if (a === 'sec') addSectionAt(); else if (a === 'pptx') exportPptx(); else if (a === 'png') exportPng(); else if (a === 'pdf') exportPdf(); else if (a === 'printnotes') printNotes();
   });
   /* SL4 ribbon buttons (the rest keep their SL1 - SL3 ids and handlers above) */
   $('b-name').onclick = renameDeck;
@@ -979,6 +1104,7 @@
   SLPrint.source(function () { return deck; });
   menuKeys($('menu-deck')); menuKeys($('menu-slide'));
   $('file-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importFile(f); });
+  $('pptx-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importPptxFile(f); });
   /* drop a .hslides file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
   addEventListener('dragover', function (e) { if (e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) e.preventDefault(); });
   addEventListener('drop', function (e) {
