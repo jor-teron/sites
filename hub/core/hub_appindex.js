@@ -129,6 +129,7 @@ window.HUB_APP_INDEX = {
   "guitar-chords": ["Learn", "apps/learn/guitar-chords/", "Guitar Chords", "apps/learn/guitar-chords/guitar-chords_icon.png", 0, "Learn guitar chords: finger charts - strum sound - chord change practice and quiz"],
   "tuner-metronome": ["Learn", "apps/learn/tuner-metronome/", "Tuner & Metronome", "apps/learn/tuner-metronome/tuner-metronome_icon.png", 0, "Microphone tuner for guitar and voice plus a metronome with tap tempo"],
   "periodic-table": ["Learn", "apps/learn/periodic-table/", "Periodic Table", "apps/learn/periodic-table/periodic-table_icon.png", 0, "All 118 chemical elements: search - element facts - colour by category and quizzes"],
+  "driving-school": ["Learn", "apps/learn/driving-school/", "Driving School", "apps/learn/driving-school/driving-school_icon.png", 0, "Learn car controls and practise driving with guided lessons and road skills"],
   "road-safety": ["Learn", "apps/learn/road-safety/", "Road Safety", "apps/learn/road-safety/road-safety_icon.png", 0, "Indian road signs - traffic lights - safe crossing game - road rules and quiz"],
   "myllm": ["Lab", "apps/lab/myllm/", "MyLLM", "apps/lab/myllm/myllm_icon.png", 0, "Plan and train a tiny character-level language model in your browser"],
   "story": ["Lab", "apps/lab/story/", "Story", "apps/lab/story/story_icon.png", 0, "Type a beginning and get a short story from a tiny on-device AI model"],
