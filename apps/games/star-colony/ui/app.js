@@ -17,6 +17,7 @@
   function resume() { $('overlay').hidden = true; paused = false; $('pause').textContent = 'Pause'; accum = 0; map.focus(); }
   function togglePause() {
     if (paused) { resume(); return; }
+    if (window.SCFx) { window.SCFx.pause(); return; }
     dialog('Colony paused', '<p>Your settlers and all resources are safe while paused.</p>', [['Resume', resume], ['Save', persist]]);
   }
   function makeBuildBar() {
@@ -33,17 +34,19 @@
     if (!selected) return;
     if (selected.kind === 'colonist') {
       const c = state.colonists.find(c => c.id === selected.id); if (!c) return;
+      if (window.SCFx) { $('details').innerHTML = window.SCFx.infoColonist(c); return; }
       $('details').innerHTML = '<h2>' + c.name + '</h2><p>' + (c.activity || 'Idle') + ' · Health ' + Math.round(c.health) + '</p><p>Oxygen ' + Math.round(c.air) + ' · Food ' + Math.round(c.food) + ' · Rest ' + Math.round(c.rest) + ' · Morale ' + Math.round(c.morale) + '</p>';
     } else {
       const b = SC.building(state, selected.id); if (!b) return;
       const job = state.jobs.find(j => j.target === b.id && j.kind === 'build');
       $('details').innerHTML = '<h2>' + SCData.buildings[b.type].name + '</h2><p>' + (b.ready ? (b.powered ? 'Powered / connected' : 'No power') : b.delivered ? 'Construction ' + Math.floor((job?.work || 0) / SCData.buildings[b.type].work * 100) + '%' : 'Waiting for a supply haul') + ' · Health ' + Math.round(b.health) + '</p><p>' + (b.type === 'dome' ? 'Oxygen: ' + b.oxygen.toFixed(0) + ' / 180 · Beds: 5' : b.type === 'battery' ? 'Stored: ' + b.charge.toFixed(0) + ' / 900' : b.type === 'storage' ? Object.entries(b.stock).map(([k, n]) => k + ' ' + Math.floor(n)).join(' · ') : 'Connect to the settlement with adjacent buildings or corridors.') + '</p>';
+      if (window.SCFx) $('details').innerHTML += window.SCFx.buildingExtra(b);
     }
   }
   function hud() {
     const r = SC.totals(state), p = state.power;
     $('resources').innerHTML = '<span>Day <b>' + (Math.floor(state.time / SCData.DAY) + 1) + '</b> ' + (SC.daylight(state) ? '☀ Daylight' : '☾ Night') + '</span><span>Settlers <b>' + state.colonists.length + '</b></span>' + Object.entries(r).map(([k, n]) => '<span>' + k + ' <b>' + Math.floor(n) + '</b></span>').join('') + '<span>Power <b>' + p.made.toFixed(0) + '/' + p.demand.toFixed(0) + '</b> · Battery ' + p.charge.toFixed(0) + '</span>';
-    inspect(); if (window.SCGrowthUI) window.SCGrowthUI.update(state);
+    inspect(); if (window.SCFx) window.SCFx.update(state); if (window.SCGrowthUI) window.SCGrowthUI.update(state);
   }
   function point(e) {
     const r = map.getBoundingClientRect(); return { x: (e.clientX - r.left - r.width / 2) / camera.zoom + camera.x, y: (e.clientY - r.top - r.height / 2) / camera.zoom + camera.y };
@@ -57,14 +60,15 @@
     } else {
       const c = state.colonists.find(c => Math.hypot(c.x - x, c.y - y) < .6);
       const b = state.buildings.find(b => b.x === x && b.y === y);
-      selected = c ? { id: c.id, kind: 'colonist' } : b ? { id: b.id, kind: 'building' } : null;
+      selected = b ? { id: b.id, kind: 'building' } : c ? { id: c.id, kind: 'colonist' } : null;
       if (!selected) $('details').innerHTML = '<h2>' + state.terrain[y * state.w + x] + '</h2><p>Tile ' + x + ', ' + y + ' · Choose a structure above to build.</p>';
     }
+    if (selected && window.SCFx) window.SCFx.tab('details');
     hud();
   }
   const pointers = new Map(); let origin = null, moved = false, pinch = 0;
   function distance() { const p = [...pointers.values()]; return p.length < 2 ? 0 : Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y); }
-  map.addEventListener('pointerdown', e => { map.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); origin = { x: e.clientX, y: e.clientY }; moved = false; pinch = distance(); window.SCFx?.unlock(); });
+  map.addEventListener('pointerdown', e => { map.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); origin = { x: e.clientX, y: e.clientY }; moved = pointers.size > 1; pinch = distance(); window.SCFx?.unlock(); });
   map.addEventListener('pointermove', e => {
     const old = pointers.get(e.pointerId); if (!old) return;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -78,7 +82,7 @@
   map.addEventListener('wheel', e => { e.preventDefault(); const p = point(e); camera.zoom = Math.max(.45, Math.min(3.2, camera.zoom * Math.exp(-e.deltaY * .001))); const after = point(e); camera.x += p.x - after.x; camera.y += p.y - after.y; boundCamera(); }, { passive: false });
   map.addEventListener('keydown', e => {
     const directions = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
-    if (directions[e.key]) { e.preventDefault(); const d = directions[e.key]; cursor.x = Math.max(0, Math.min(state.w - 1, cursor.x + d[0])); cursor.y = Math.max(0, Math.min(state.h - 1, cursor.y + d[1])); camera.x = (cursor.x + .5) * 28; camera.y = (cursor.y + .5) * 28; status('Tile cursor ' + cursor.x + ', ' + cursor.y); }
+    if (directions[e.key]) { e.preventDefault(); const d = directions[e.key]; cursor.x = Math.max(0, Math.min(state.w - 1, cursor.x + d[0])); cursor.y = Math.max(0, Math.min(state.h - 1, cursor.y + d[1])); camera.x = (cursor.x + .5) * 28; camera.y = (cursor.y + .5) * 28; selected = { kind: 'tile', ...cursor }; status('Tile cursor ' + cursor.x + ', ' + cursor.y); }
     if (e.key === 'Enter') select(cursor.x, cursor.y);
   });
   addEventListener('keydown', e => { if (e.target.matches('input,select,textarea')) return; if (e.key.toLowerCase() === 'p') togglePause(); if (e.key === 'Escape') { if (mode) { mode = null; updateBuild(); } else if ($('overlay').hidden) togglePause(); else resume(); } });
@@ -87,7 +91,7 @@
   $('plus').onclick = () => { camera.zoom = Math.min(3.2, camera.zoom * 1.2); };
   $('home').onclick = () => { camera.x = 20 * 28; camera.y = 15 * 28; camera.zoom = 1.4; };
   $('save').onclick = persist;
-  $('new').onclick = () => dialog('Start a new colony?', '<p>This replaces the local saved settlement.</p>', [['Keep colony', resume], ['New colony', () => { state = SC.create(Date.now()); if (SC.growth) SC.growth.init(state); selected = null; mode = null; makeBuildBar(); persist(); resume(); }]]);
+  $('new').onclick = () => dialog('Start a new colony?', '<p>This replaces the local saved settlement.</p>', [['Keep colony', resume], ['New colony', () => { state = SC.create(Date.now()); delete $('overlay').dataset.overShown; if (SC.growth) SC.growth.init(state); selected = null; mode = null; $('details').innerHTML = '<h2>Pelora landing</h2><p>Three settlers. One new beginning.</p>'; makeBuildBar(); persist(); resume(); }]]);
   document.addEventListener('visibilitychange', () => { if (document.hidden) { persist(); if (!paused) togglePause(); } });
   addEventListener('blur', () => { if (SCSettings.get('autoPause') && !paused) togglePause(); });
   addEventListener('pagehide', persist);
@@ -103,10 +107,10 @@
     if (now - drawAt >= 1000 / SCSettings.get('fpsLimit')) { SCRender.draw(map, state, camera, selected, mode, now / 1000); drawAt = now; }
     if (now - hudAt > 350) { hud(); hudAt = now; }
     if (now - saveAt > 12000) { persist(); saveAt = now; }
-    if (state.over && $('overlay').hidden) dialog('Colony lost', '<p>Days survived: ' + (state.time / SCData.DAY).toFixed(1) + ' · Structures built: ' + state.stats.built + ' · Settlers lost: ' + state.stats.lost + '</p>', [['New colony', () => $('new').click()], ['Inspect', resume]]);
+    if (state.over && !$('overlay').dataset.overShown && $('overlay').hidden) { $('overlay').dataset.overShown = '1'; dialog('Colony lost', '<p>Days survived: ' + (state.time / SCData.DAY).toFixed(1) + ' · Structures built: ' + state.stats.built + ' · Settlers lost: ' + state.stats.lost + '</p>', [['New colony', () => $('new').click()], ['Inspect', resume]]); }
     requestAnimationFrame(frame);
   }
-  /* A read-only integration surface; simulation is independently tested in Node. */
-  window.StarColony = { getState: () => state, camera, persist, select, setPaused: v => { paused = !!v; }, hud };
+  /* Local integration/test surface; simulation is independently tested in Node. */
+  window.StarColony = { getState: () => state, camera, persist, select, inspectColonist: id => { selected = { kind: 'colonist', id }; const c = state.colonists.find(c => c.id === id); if (c) { camera.x = (c.x + .5) * 28; camera.y = (c.y + .5) * 28; } hud(); }, setPaused: v => { paused = !!v; }, hud };
   hud(); requestAnimationFrame(frame);
 })();

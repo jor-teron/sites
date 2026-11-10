@@ -54,6 +54,26 @@ const pp = require(process.env.SC_PUPPETEER || '/workspace/sc-test/node_modules/
       assert.equal(await page.evaluate(() => StarColony.getState().colonists.length), 5);
       check('ship choice docks supplies and settlers', () => {});
     }
+    if (await page.$('#view')) {
+      await page.select('#view', 'power'); assert.equal(await page.evaluate(() => SCFx.getView()), 'power');
+      await page.select('#view', 'oxygen'); assert.equal(await page.evaluate(() => SCFx.getView()), 'oxygen');
+      await page.select('#view', 'normal'); check('power and oxygen overlays switch', () => {});
+      await page.click('[data-pane=crew]'); await page.click('#crew button');
+      assert.equal(await page.$$eval('#details meter', a => a.length), 5);
+      assert.ok((await page.$eval('#details', e => e.textContent)).includes('Skills:')); check('crew card shows needs and skills', () => {});
+      await page.evaluate(() => { StarColony.select(20, 15); StarColony.hud(); });
+      assert.ok((await page.$eval('#details', e => e.textContent)).includes('Network')); check('building card shows utilities and stock', () => {});
+      await page.click('#mute'); assert.equal(await page.$eval('#mute', e => e.getAttribute('aria-pressed')), 'true');
+      await page.click('#mute'); check('synthesized audio can be muted', () => {});
+      await page.evaluate(() => { const s = StarColony.getState(); SCGrowth.trigger(s, 'storm'); SCGrowth.trigger(s, 'meteor'); StarColony.hud(); });
+      await page.click('[data-pane=alerts]');
+      assert.ok((await page.$eval('#alerts', e => e.textContent)).includes('Meteor impact'));
+      assert.equal(await page.$eval('#warning', e => e.hidden), false); check('weather and meteor alerts render without exceptions', () => {});
+      await page.evaluate(() => { GameSettings.set('lowGraphics', true); });
+      await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+      assert.equal(await page.evaluate(() => SCFx.reduced()), true); check('low graphics and reduced motion honoured', () => {});
+      await page.evaluate(() => { GameSettings.set('lowGraphics', false); }); await page.emulateMediaFeatures([]);
+    }
     for (const [width, height] of [[390, 844], [844, 390]]) {
       await page.setViewport({ width, height, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
       await page.waitForFunction(() => { const c = document.getElementById('map'), r = c.getBoundingClientRect(); return Math.abs(c.width - r.width * 2) <= 1; });
@@ -63,10 +83,27 @@ const pp = require(process.env.SC_PUPPETEER || '/workspace/sc-test/node_modules/
       });
       check(width + 'x' + height + ' fits and is DPR-crisp with 40px build targets', () => { assert.equal(layout.overflow, false, JSON.stringify(layout)); assert.ok(layout.canvas && layout.crisp && layout.targets); });
       await page.tap('#plus'); await page.tap('#home'); check(width + 'x' + height + ' touch controls', () => {});
+      if (await page.$('#view')) {
+        const r = await page.$eval('#map', e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+        const x = r.x + r.w / 2, y = r.y + r.h / 2, client = await page.createCDPSession();
+        const before = await page.evaluate(() => StarColony.camera.zoom);
+        await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 20, y }, { x: x + 20, y }] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 50, y }, { x: x + 50, y }] });
+        await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        assert.ok(await page.evaluate(z => StarColony.camera.zoom > z, before));
+        await client.detach(); check(width + 'x' + height + ' two-finger pinch zoom', () => {});
+        await page.tap('#home');
+        const controls = await page.evaluate(() => [...document.querySelectorAll('header button,header a,header select,#map-tools button,#map-tools select,#side-tabs button')].every(e => { const r = e.getBoundingClientRect(); return r.width >= 40 && r.height >= 40; }));
+        assert.ok(controls); check(width + 'x' + height + ' all primary controls at least 40px', () => {});
+      }
     }
     if (await page.$('#help')) {
       await page.tap('#help'); assert.equal(await page.$eval('#dialog-title', e => e.textContent), 'How to play');
       await page.tap('#dialog-actions button'); check('How to play available', () => {});
+      await page.evaluate(() => { const s = StarColony.getState(); s.colonists.forEach(c => { c.health = 0; }); SC.step(s); });
+      await page.waitForFunction(() => !document.getElementById('overlay').hidden && document.getElementById('dialog-title').textContent === 'Colony lost');
+      assert.ok((await page.$eval('#dialog-body', e => e.textContent)).includes('Days survived'));
+      check('game-over summary opens when colony is lost', () => {});
     }
     check('no console errors or page exceptions', () => assert.deepEqual(errors, []));
     console.log(checks + ' browser checks passed');

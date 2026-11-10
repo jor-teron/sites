@@ -178,6 +178,7 @@
       for (const candidate of s.jobs) {
         if (candidate.worker) continue;
         const b = building(s, candidate.target); if (!b || (b.health <= 0 && candidate.kind !== 'repair')) continue;
+        if (['mine', 'farm', 'research'].includes(candidate.kind) && !b.powered) continue;
         if (candidate.kind === 'supply' && !nearestStore(s, c, store => Object.entries(D.buildings[b.type].cost).every(([k, v]) => store.stock[k] >= v))) continue;
         if (!findPath(s, { x: Math.round(c.x), y: Math.round(c.y) }, b)) continue;
         j = candidate; j.worker = c.id; c.job = j.id; c.destination = null; break;
@@ -189,6 +190,7 @@
     }
     const b = building(s, j.target);
     if (!b || (b.health <= 0 && j.kind !== 'repair')) { finish(s, c, j); return; }
+    if (['mine', 'farm', 'research'].includes(j.kind) && !b.powered) { clearJob(s, c); return; }
     let dest = b; c.activity = j.kind;
     if (j.kind === 'supply' && j.stage === 0) {
       dest = nearestStore(s, c, store => Object.entries(D.buildings[b.type].cost).every(([k, v]) => store.stock[k] >= v));
@@ -233,7 +235,7 @@
     const dt = D.STEP; s.time += dt;
     if (api.growth?.tick) api.growth.tick(s, dt);
     networks(s, dt); queueJobs(s);
-    for (const c of s.colonists) worker(s, c, dt);
+    for (const c of s.colonists) if (c.health > 0) worker(s, c, dt);
     for (const c of s.colonists.filter(c => c.health <= 0)) {
       const store = nearestStore(s, c);
       if (store && c.cargo) for (const [k, v] of Object.entries(c.cargo)) store.stock[k] += v;
@@ -255,6 +257,23 @@
     if (!Number.isFinite(s.time) || s.time < 0 || !Number.isInteger(s.seed) || !Array.isArray(s.alerts)) throw Error('Invalid colony state');
     for (const b of s.buildings) if (!D.buildings[b.type] || !Number.isInteger(b.x) || !Number.isInteger(b.y) || b.x < 0 || b.y < 0 || b.x >= s.w || b.y >= s.h || !b.stock || !b.output || !Number.isFinite(b.health)) throw Error('Invalid building');
     for (const c of s.colonists) if (!['x', 'y', 'health', 'air', 'food', 'rest', 'morale'].every(k => Number.isFinite(c[k]))) throw Error('Invalid colonist');
+    const number = (n, min = 0, max = Infinity) => Number.isFinite(n) && n >= min && n <= max;
+    if (!number(s.serial) || !s.stats || !s.power || !['born', 'lost', 'built', 'food', 'water', 'ore'].every(k => number(s.stats[k]))) throw Error('Invalid colony totals');
+    if (!s.terrain.every(t => ['regolith', 'ice', 'ore', 'rock'].includes(t))) throw Error('Invalid terrain');
+    const resourceBag = bag => bag && typeof bag === 'object' && !Array.isArray(bag) && Object.entries(bag).every(([k, n]) => D.resources.includes(k) && number(n));
+    const ids = new Set();
+    for (const b of s.buildings) {
+      if (!number(b.id) || ids.has(b.id) || !number(b.health, 0, 100) || !number(b.charge, 0, 900) || !number(b.oxygen, 0, 180) || !resourceBag(b.stock) || !resourceBag(b.output) || typeof b.ready !== 'boolean') throw Error('Invalid building contents');
+      if (!D.resources.every(k => number(b.stock[k]))) throw Error('Missing stored resource');
+      ids.add(b.id);
+    }
+    for (const c of s.colonists) {
+      if (!number(c.id) || ids.has(c.id) || !number(c.x, 0, s.w - 1) || !number(c.y, 0, s.h - 1) || typeof c.name !== 'string' || !['health','air','food','rest','morale'].every(k => number(c[k], 0, 100)) || (c.cargo && !resourceBag(c.cargo)) || !(c.path === null || Array.isArray(c.path))) throw Error('Invalid settler contents');
+      if (c.path?.some(p => !Number.isInteger(p.x) || !Number.isInteger(p.y) || p.x < 0 || p.y < 0 || p.x >= s.w || p.y >= s.h)) throw Error('Invalid saved path');
+      ids.add(c.id);
+    }
+    for (const j of s.jobs) if (!number(j.id) || !s.buildings.some(b => b.id === j.target) || !['build','supply','haul','mine','farm','research','repair'].includes(j.kind) || !number(j.work)) throw Error('Invalid saved job');
+    if (s.research && (!Array.isArray(s.research.done) || !number(s.research.points) || ![null,'solar','recycle','medbay','drones','domes'].includes(s.research.active))) throw Error('Invalid research');
     if (api.growth) api.growth.init(s);
     return s;
   }

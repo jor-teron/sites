@@ -25,8 +25,8 @@ window.SCRender = (() => {
         ctx.beginPath(); ctx.arc(x + 14, y + 15, 11, Math.PI, 0); ctx.lineTo(x + 25, y + 24); ctx.lineTo(x + 3, y + 24); ctx.fill();
         ctx.fillStyle = '#245467'; ctx.fillRect(x + 7, y + 14, 14, 6);
       } else if (b.type === 'solar') {
-        ctx.fillRect(x + 12, y + 8, 4, 18); ctx.fillStyle = '#648dbe'; ctx.fillRect(x + 2, y + 3, 24, 15);
-        ctx.strokeStyle = '#b1dcf0'; ctx.lineWidth = .7; ctx.strokeRect(x + 2, y + 3, 24, 15); ctx.beginPath(); ctx.moveTo(x + 14, y + 3); ctx.lineTo(x + 14, y + 18); ctx.moveTo(x + 2, y + 10); ctx.lineTo(x + 26, y + 10); ctx.stroke();
+        ctx.fillRect(x + 12, y + 8, 4, 18); ctx.save(); ctx.translate(x + 14, y + 10); if (!window.SCFx?.reduced()) ctx.rotate(Math.sin(s.time * .2 + b.id) * .22); ctx.translate(-x - 14, -y - 10); ctx.fillStyle = '#648dbe'; ctx.fillRect(x + 2, y + 3, 24, 15);
+        ctx.strokeStyle = '#b1dcf0'; ctx.lineWidth = .7; ctx.strokeRect(x + 2, y + 3, 24, 15); ctx.beginPath(); ctx.moveTo(x + 14, y + 3); ctx.lineTo(x + 14, y + 18); ctx.moveTo(x + 2, y + 10); ctx.lineTo(x + 26, y + 10); ctx.stroke(); ctx.restore();
       } else if (b.type === 'corridor') ctx.fillRect(x + 6, y + 6, 16, 16);
       else { ctx.fillRect(x + 3, y + 4, 22, 21); ctx.fillStyle = '#263f4e'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center'; ctx.fillText(SCData.buildings[b.type].glyph, x + 14, y + 20); }
       ctx.globalAlpha = 1;
@@ -34,9 +34,12 @@ window.SCRender = (() => {
       if (selected?.id === b.id) { ctx.strokeStyle = '#fff1a7'; ctx.lineWidth = 2; ctx.strokeRect(x, y, 28, 28); }
     }
     for (const c of s.colonists) {
+      const stride = c.path?.length && !window.SCFx?.reduced() ? Math.sin(s.time * 18 + c.id) * 3 : 0;
+      ctx.strokeStyle = '#bed3e1'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(c.x * z + 12, c.y * z + 17); ctx.lineTo(c.x * z + 11 + stride, c.y * z + 22); ctx.moveTo(c.x * z + 16, c.y * z + 17); ctx.lineTo(c.x * z + 17 - stride, c.y * z + 22); ctx.stroke();
       ctx.fillStyle = c.health < 35 ? '#ff8b8b' : '#f5eee2'; ctx.beginPath(); ctx.arc(c.x * z + 14, c.y * z + 14, 4, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#3f718c'; ctx.fillRect(c.x * z + 12, c.y * z + 12, 5, 2);
     }
+    if (selected?.kind === 'tile') { ctx.strokeStyle = '#fff1a7'; ctx.lineWidth = 2; ctx.strokeRect(selected.x * z, selected.y * z, z, z); }
     if (mode) { ctx.fillStyle = '#ffffde'; ctx.font = '12px system-ui'; ctx.textAlign = 'left'; ctx.fillText('Tap an empty tile to plan ' + SCData.buildings[mode].name, minX * z + 8, minY * z + 18); }
     if (window.SCFx) window.SCFx.draw(ctx, s, clock, selected);
   }

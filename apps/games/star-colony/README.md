@@ -1,4 +1,4 @@
-# Star Colony — SC-1b
+# Star Colony — SC-1c
 
 An original, offline colony simulation. Open `star-colony.html` or `index.html`.
 No downloads, external assets, copied art, accounts, or libraries are required.
@@ -31,7 +31,7 @@ SC-1a validation: 9 Node tests passed, including 20 full in-game days with all t
 settlers alive, finite state and bounded jobs. 13 browser checks passed, including
 1280×800, 390×844 and 844×390; no console/page errors.
 
-Catalog wiring is intentionally reserved for SC-1c. No shared code or build bump.
+At SC-1a, catalog wiring was reserved for SC-1c. No shared runtime code or build bump.
 
 
 ## SC-1b — events and growth
@@ -54,3 +54,43 @@ SC-1b validation: 19 Node tests (core + growth), plus legal 30-day autoplay:
 21 settlers, no deaths, all five discoveries and four milestones, bounded jobs,
 finite state. Browser: 15 checks including research/ship actions, both phone
 orientations and zero console/page errors. No real-phone test performed.
+
+
+## SC-1c — polished controls and visuals
+
+Original canvas suits, moving legs and work sparks; tracking solar panels,
+illuminated domes, night lights, wind particles and meteor streaks. Power and
+oxygen views show connections and reserves. Low graphics / reduced motion
+remove decorative motion without changing simulation outcomes.
+
+Inspect buildings on the map. Use Crew to select settlers (including overlapping
+settlers) and inspect needs, skills, health and work. Alerts and Goals have their
+own information tabs. Synthesized sounds obey the shared SFX and master volume;
+the local mute button persists separately. There is no music.
+
+Safe-area-aware portrait and landscape layouts, pinch zoom, scrolling build bar,
+40px+ primary targets, focus outlines and modal focus trapping. The How to play
+and Pause cards explain controls and keep time stopped. If the colony dies, its
+summary appears once and you can inspect the remains or start over.
+
+SC-1c validation: 25 Node tests and 27 headless Chrome checks passed on port 8828.
+This includes the 20-day core endurance and 30-day growth autoplay, all four event
+types, no NaN or stalled jobs, both phone viewports (390×844 and 844×390), actual
+two-finger touch zoom, all primary targets ≥40px, Auto Hub Light/Dark, needs and
+building cards, overlays, weather, mute, Help, game over and zero console errors.
+Headless screenshots were inspected; no real phone was used.
+
+Catalog wiring is added in SC-1c (six-column CSV, generated hub_catalog.js, manual
+hub_appindex.js row and Games Settings progress-prefix/README entry). `newtab` is
+empty / index value 0: Windowed by default. The catalog generator changed only
+the new game row; no unrelated VNC row was retained. The icon is 128×128 PNG,
+reproducible with `python3 apps/games/star-colony/assets/make_icon.py` (Pillow).
+
+### Scope and tuning notes
+
+This is deliberately a forgiving starter settlement, with renewable deposits,
+unlimited storage and free field repairs. Network links are direct cardinal
+adjacency; corridors are utilities, not sealed walkable rooms. Domes provide
+five arrival beds each, not a room-construction system. No demolition, combat,
+external art, multiplayer, service-worker changes or shared-runtime edits.
+All three releases stay local on `games/star-colony`; no push, PR or merge.
