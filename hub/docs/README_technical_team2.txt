@@ -1261,7 +1261,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   on a real phone or a real printer.
 
 
-### 1.78 Hub Office Slides PowerPoint and PNG export, release SL9
+### 1.72 Hub Office Slides PowerPoint and PNG export, release SL9
 
 - `apps/office/slides/` only (plus this section). Branch `apps/sl9-slides` from `apps/sl8-slides` (10be31c0).
   `apps/office/shared/` not edited. New helpers: `slides_zip.js` (`SLZip`, tiny store-only ZIP pack / unpack),
