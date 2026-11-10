@@ -1663,7 +1663,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   Puppeteer, Playwright or jsdom.
 
 
-### 1.86 Image Converter inspect and extras, release CI3
+### 1.92 Image Converter inspect and extras, release CI3
 
 - Inspect and extras on `apps/media/image-converter/` (CI1+CI2). Branch
   `apps/ci3-image-converter`. RELEASE / title / `?v=` = CI3.
