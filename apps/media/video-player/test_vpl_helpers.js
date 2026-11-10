@@ -1,4 +1,4 @@
-/* Node tests for Video Player VPL1 helpers (video-player_helpers.js).
+/* Node tests for Video Player VPL2 helpers (video-player_helpers.js).
    Run: node test_vpl_helpers.js
    No DOM, no jsdom, no browser. */
 'use strict';
@@ -75,8 +75,23 @@ eq('srt empty', VPL.srtToVtt(''), 'WEBVTT\n\n');
 eq('srt short ms padded', VPL.srtToVtt('00:00:01,5 --> 00:00:02,00\nHi\n').indexOf('00:00:01.500 --> 00:00:02.000') >= 0, true);
 ok('srt cue numbers kept', VPL.srtToVtt(srt).indexOf('\n1\n') >= 0);
 
-eq('RELEASE', VPL.RELEASE, 'VPL1');
-eq('VERSION', VPL.VERSION, 'VPL1');
+
+eq('parseTs hms', VPL.parseTs('01:02:03.250'), 3723.25);
+eq('parseTs comma', VPL.parseTs('00:00:01,500'), 1.5);
+eq('formatTs 0', VPL.formatTs(0), '00:00:00.000');
+eq('formatTs 3723.25', VPL.formatTs(3723.25), '01:02:03.250');
+eq('formatTs clamp', VPL.formatTs(-1), '00:00:00.000');
+
+var vttIn = 'WEBVTT\n\n00:00:01.000 --> 00:00:04.250\nHello, world\n';
+eq('shift 0 identity', VPL.shiftVtt(vttIn, 0), vttIn);
+ok('shift +1s start', VPL.shiftVtt(vttIn, 1).indexOf('00:00:02.000 --> 00:00:05.250') >= 0);
+ok('shift +0.1s', VPL.shiftVtt(vttIn, 0.1).indexOf('00:00:01.100 --> 00:00:04.350') >= 0);
+ok('shift -5s clamps', VPL.shiftVtt(vttIn, -5).indexOf('00:00:00.000 --> 00:00:00.000') >= 0);
+ok('shift keeps dialogue', VPL.shiftVtt(vttIn, 1).indexOf('Hello, world') >= 0);
+ok('shift srt then vtt', VPL.shiftVtt(VPL.srtToVtt('00:00:01,000 --> 00:00:02,000\nHi\n'), 0.5).indexOf('00:00:01.500 --> 00:00:02.500') >= 0);
+
+eq('RELEASE', VPL.RELEASE, 'VPL2');
+eq('VERSION', VPL.VERSION, 'VPL2');
 
 if (fails.length) {
   console.error('\nFAILED ' + fails.length);

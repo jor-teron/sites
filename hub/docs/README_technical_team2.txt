@@ -1561,6 +1561,28 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 
   Note: 1.53–1.86 are already taken on main, so this section is 1.87.
 
+### 1.88 Video Player, release VPL2
+
+- apps/media/video-player only (VPL1 player). Branch apps/vpl2-video-player.
+  Title / RELEASE / ?v= VPL2. The main control bar is unchanged. New controls
+  live in the ⋯ settings panel (and an Add to queue item on the Open menu).
+- Subtitle colour (white / yellow / cyan / black), background (off / dark / solid)
+  and position (top / middle / bottom, via VTT cue.line). Timing shift ±0.1 s
+  (clamped ±30 s) rewrites the VTT with shiftVtt() in video-player_helpers.js
+  and re-attaches the track.
+- Audio track picker is shown only when video.audioTracks has more than one
+  track (Safari and some Chromium builds). Other browsers hide the row.
+- The folder or file list is the queue. Add to queue appends more files.
+  Shuffle (a shuffled play order; the current file stays first) and repeat
+  one or all. A–B loop: Set A / Set B / Clear; playback jumps from B back to A.
+  Sleep timer 15 / 30 / 45 / 60 minutes pauses playback (and leaves full screen).
+- Settings (colour, background, position, shift, shuffle, repeat) are stored in
+  'video-player-v1'. A–B and the sleep timer are session-only and clear when
+  another file is loaded (sleep is not cleared on a new file).
+- Tested with `node --check`, `node test_vpl_helpers.js` (including parseTs,
+  formatTs, shiftVtt) and a static serve + curl smoke test. No Puppeteer,
+  Playwright or jsdom. Details: apps/media/video-player/video-player_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

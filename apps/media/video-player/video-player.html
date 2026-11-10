@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<!-- VPL1 Video Player: play local video files, folder list, resume, SRT/VTT, speed, PiP. Helpers: video-player_helpers.js. UI: video-player.js. -->
+<!-- VPL2 Video Player: play local video files, folder list, resume, SRT/VTT, speed, PiP. Helpers: video-player_helpers.js. UI: video-player.js. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Video Player · VPL1</title>
+  <title>Video Player · VPL2</title>
   <link rel="icon" href="video-player_icon.png">
-  <link rel="stylesheet" href="video-player.css?v=VPL1">
+  <link rel="stylesheet" href="video-player.css?v=VPL2">
   <script>try{var s=JSON.parse(localStorage.getItem('video-player-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
 </head>
 <body>
@@ -59,6 +59,7 @@
   <div id="openMenu" class="pop" hidden role="menu">
     <button type="button" role="menuitem" id="menuFile">Open file</button>
     <button type="button" role="menuitem" id="menuFolder">Open folder</button>
+    <button type="button" role="menuitem" id="menuAdd" hidden>Add to queue</button>
   </div>
 
   <div id="speedMenu" class="pop" hidden role="menu" aria-label="Playback speed">
@@ -93,6 +94,75 @@
       <button type="button" class="btn" id="btnLoadSub">Load subtitle…</button>
       <button type="button" class="btn" id="btnPip">Picture-in-picture</button>
     </div>
+
+    <h3>Subtitles</h3>
+    <div class="row"><span>Colour</span>
+      <div class="swatches" id="subColorSeg" role="group" aria-label="Subtitle colour">
+        <button type="button" data-v="#ffffff" aria-label="White"></button>
+        <button type="button" data-v="#ffe066" aria-label="Yellow"></button>
+        <button type="button" data-v="#7ee0ff" aria-label="Cyan"></button>
+        <button type="button" data-v="#111111" aria-label="Black"></button>
+      </div>
+    </div>
+    <div class="row"><span>Background</span>
+      <div class="seg" id="subBgSeg" role="group" aria-label="Subtitle background">
+        <button type="button" data-v="off">Off</button>
+        <button type="button" data-v="dark">Dark</button>
+        <button type="button" data-v="solid">Solid</button>
+      </div>
+    </div>
+    <div class="row"><span>Position</span>
+      <div class="seg" id="subPosSeg" role="group" aria-label="Subtitle position">
+        <button type="button" data-v="top">Top</button>
+        <button type="button" data-v="middle">Middle</button>
+        <button type="button" data-v="bottom">Bottom</button>
+      </div>
+    </div>
+    <div class="row"><span>Timing</span>
+      <div class="stepper">
+        <button type="button" id="shiftDown" aria-label="Shift earlier">−</button>
+        <span id="shiftVal">0.0 s</span>
+        <button type="button" id="shiftUp" aria-label="Shift later">+</button>
+      </div>
+    </div>
+    <div class="row" id="audioRow" hidden><span>Audio</span>
+      <select id="audioSel" aria-label="Audio track"></select>
+    </div>
+    <h3>Playback</h3>
+    <div class="row"><span>Shuffle</span>
+      <div class="seg" id="shuffleSeg" role="group" aria-label="Shuffle">
+        <button type="button" data-v="0">Off</button>
+        <button type="button" data-v="1">On</button>
+      </div>
+    </div>
+    <div class="row"><span>Repeat</span>
+      <div class="seg" id="repeatSeg" role="group" aria-label="Repeat">
+        <button type="button" data-v="off">Off</button>
+        <button type="button" data-v="one">One</button>
+        <button type="button" data-v="all">All</button>
+      </div>
+    </div>
+    <div class="row wrap">
+      <button type="button" class="btn" id="btnAddQueue">Add to queue</button>
+    </div>
+    <div class="row"><span>A–B loop</span>
+      <div class="stepper ab">
+        <button type="button" class="btn" id="btnSetA">Set A</button>
+        <button type="button" class="btn" id="btnSetB">Set B</button>
+        <button type="button" class="btn" id="btnClearAB">Clear</button>
+      </div>
+    </div>
+    <p class="note" id="abState">A–B is off</p>
+    <div class="row"><span>Sleep timer</span>
+      <div class="seg" id="sleepSeg" role="group" aria-label="Sleep timer">
+        <button type="button" data-v="0">Off</button>
+        <button type="button" data-v="15">15</button>
+        <button type="button" data-v="30">30</button>
+        <button type="button" data-v="45">45</button>
+        <button type="button" data-v="60">60</button>
+      </div>
+    </div>
+    <p class="note" id="sleepState" hidden></p>
     <h3>Keyboard</h3>
     <p class="keys"><kbd>Space</kbd> Play / pause · <kbd>←</kbd> <kbd>→</kbd> 10 seconds · <kbd>↑</kbd> <kbd>↓</kbd> Volume · <kbd>F</kbd> Full screen · <kbd>M</kbd> Mute</p>
     <p class="note">Release <span id="rel"></span>. Everything stays on this device.</p>
@@ -105,7 +175,7 @@
 <input type="file" id="inFolder" hidden webkitdirectory>
 <input type="file" id="inSub" hidden accept=".srt,.vtt,text/vtt">
 
-<script src="video-player_helpers.js?v=VPL1"></script>
-<script src="video-player.js?v=VPL1"></script>
+<script src="video-player_helpers.js?v=VPL2"></script>
+<script src="video-player.js?v=VPL2"></script>
 </body>
 </html>

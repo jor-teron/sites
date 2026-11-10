@@ -1,4 +1,4 @@
-/* Video Player VPL1 — local files, folder list, resume, SRT/VTT, speed, PiP.
+/* Video Player VPL2 — local files, folder list, resume, SRT/VTT, speed, PiP.
    Helpers live in video-player_helpers.js (VPL). In-app dialogs only. */
 (function () {
   'use strict';
@@ -9,7 +9,10 @@
   var items = [], subs = [], index = -1, objectUrl = '', subUrl = '';
   var seeking = false, hideTimer = 0, resumeTimer = 0, dialogOpen = false;
   var listOpen = false, menuOpen = false;
-  var settings = { theme: 'auto', subSize: 'm', volume: 1, muted: false, speed: 1, subOn: true };
+  var order = [], loopA = null, loopB = null, sleepUntil = 0, sleepTimer = 0, addMode = false;
+  var BG = { off: 'transparent', dark: 'rgba(0,0,0,.65)', solid: 'rgba(0,0,0,.95)' };
+  var settings = { theme: 'auto', subSize: 'm', volume: 1, muted: false, speed: 1, subOn: true,
+    subColor: '#ffffff', subBg: 'dark', subPos: 'bottom', subShift: 0, shuffle: false, repeat: 'off' };
 
   /* ---------- settings + resume ---------- */
   function loadSettings() {
@@ -22,6 +25,12 @@
         if (typeof s.muted === 'boolean') settings.muted = s.muted;
         if (typeof s.speed === 'number' && s.speed >= 0.5 && s.speed <= 2) settings.speed = s.speed;
         if (typeof s.subOn === 'boolean') settings.subOn = s.subOn;
+        if (s.subColor && /^#[0-9a-fA-F]{6}$/.test(s.subColor)) settings.subColor = s.subColor;
+        if (s.subBg === 'off' || s.subBg === 'dark' || s.subBg === 'solid') settings.subBg = s.subBg;
+        if (s.subPos === 'top' || s.subPos === 'middle' || s.subPos === 'bottom') settings.subPos = s.subPos;
+        if (typeof s.subShift === 'number' && isFinite(s.subShift)) settings.subShift = Math.round(s.subShift * 10) / 10;
+        if (typeof s.shuffle === 'boolean') settings.shuffle = s.shuffle;
+        if (s.repeat === 'off' || s.repeat === 'one' || s.repeat === 'all') settings.repeat = s.repeat;
       }
     } catch (e) { /* blocked or bad json */ }
   }
@@ -47,6 +56,146 @@
       b.classList.toggle('on', b.getAttribute('data-v') === settings.subSize);
     });
   }
+  function applyCueLook() {
+    app.style.setProperty('--cue-fg', settings.subColor || '#ffffff');
+    app.style.setProperty('--cue-bg', BG[settings.subBg] || BG.dark);
+    document.querySelectorAll('#subColorSeg button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-v').toLowerCase() === String(settings.subColor).toLowerCase());
+    });
+    document.querySelectorAll('#subBgSeg button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-v') === settings.subBg);
+    });
+    document.querySelectorAll('#subPosSeg button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-v') === settings.subPos);
+    });
+    applyCuePos();
+  }
+  function applyCuePos() {
+    var pos = settings.subPos || 'bottom';
+    var tracks = vid.textTracks;
+    for (var i = 0; i < tracks.length; i++) {
+      var cues = tracks[i].cues;
+      if (!cues) continue;
+      for (var j = 0; j < cues.length; j++) {
+        try {
+          if (pos === 'top') { cues[j].snapToLines = true; cues[j].line = 0; }
+          else if (pos === 'middle') { cues[j].snapToLines = false; cues[j].line = 50; }
+          else { cues[j].snapToLines = true; cues[j].line = 'auto'; }
+        } catch (e) { /* some browsers keep cues read-only */ }
+      }
+    }
+  }
+  function setShiftUi() {
+    var n = Math.round((settings.subShift || 0) * 10) / 10;
+    var sign = n > 0 ? '+' : '';
+    $('shiftVal').textContent = sign + n.toFixed(1) + ' s';
+  }
+  function changeShift(d) {
+    var n = Math.round(((settings.subShift || 0) + d) * 10) / 10;
+    if (n > 30) n = 30;
+    if (n < -30) n = -30;
+    settings.subShift = n;
+    saveSettings();
+    setShiftUi();
+    if (items[index]) bindSubs(items[index]);
+  }
+  function setPlayModeUi() {
+    document.querySelectorAll('#shuffleSeg button').forEach(function (b) {
+      b.classList.toggle('on', (b.getAttribute('data-v') === '1') === !!settings.shuffle);
+    });
+    document.querySelectorAll('#repeatSeg button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-v') === settings.repeat);
+    });
+    if ($('menuAdd')) $('menuAdd').hidden = !items.length;
+  }
+  function rebuildOrder() {
+    order = items.map(function (_, i) { return i; });
+    if (settings.shuffle && order.length > 1) {
+      var i, j, t;
+      for (i = order.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        t = order[i]; order[i] = order[j]; order[j] = t;
+      }
+      if (index >= 0) {
+        var p = order.indexOf(index);
+        if (p > 0) { order.splice(p, 1); order.unshift(index); }
+      }
+    }
+  }
+  function nextIndex() {
+    if (settings.repeat === 'one') return index;
+    if (!order.length) rebuildOrder();
+    var pos = order.indexOf(index);
+    if (pos < 0) pos = 0;
+    if (pos + 1 < order.length) return order[pos + 1];
+    if (settings.repeat === 'all' && order.length) return order[0];
+    return -1;
+  }
+  function setAbUi() {
+    var a = loopA == null ? '—' : VPL.formatTime(loopA);
+    var b = loopB == null ? '—' : VPL.formatTime(loopB);
+    var on = loopA != null && loopB != null && loopB > loopA;
+    $('abState').textContent = on ? ('Looping ' + a + ' – ' + b) : ('A ' + a + '  B ' + b + (loopA != null || loopB != null ? '' : '  (off)'));
+  }
+  function clearAb() { loopA = null; loopB = null; setAbUi(); }
+  function tickAb() {
+    if (loopA == null || loopB == null || loopB <= loopA) return;
+    if ((vid.currentTime || 0) >= loopB - 0.04) {
+      try { vid.currentTime = loopA; } catch (e) { /* ignore */ }
+    }
+  }
+  function setSleep(minutes) {
+    if (sleepTimer) { clearTimeout(sleepTimer); sleepTimer = 0; }
+    minutes = Number(minutes) || 0;
+    sleepUntil = minutes ? Date.now() + minutes * 60 * 1000 : 0;
+    document.querySelectorAll('#sleepSeg button').forEach(function (b) {
+      b.classList.toggle('on', Number(b.getAttribute('data-v')) === minutes);
+    });
+    if (!sleepUntil) { $('sleepState').hidden = true; return; }
+    tickSleep();
+  }
+  function tickSleep() {
+    if (!sleepUntil) return;
+    var left = sleepUntil - Date.now();
+    if (left <= 0) {
+      sleepUntil = 0;
+      if (sleepTimer) { clearTimeout(sleepTimer); sleepTimer = 0; }
+      document.querySelectorAll('#sleepSeg button').forEach(function (b) {
+        b.classList.toggle('on', b.getAttribute('data-v') === '0');
+      });
+      $('sleepState').hidden = true;
+      vid.pause();
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen();
+      dialog('Sleep timer', 'Playback was paused.');
+      return;
+    }
+    $('sleepState').hidden = false;
+    $('sleepState').textContent = 'Pauses in ' + VPL.formatTime(left / 1000);
+    sleepTimer = setTimeout(tickSleep, Math.min(1000, left));
+  }
+  function fillAudioTracks() {
+    var row = $('audioRow'), sel = $('audioSel');
+    var list = vid.audioTracks;
+    if (!list || list.length < 2) { row.hidden = true; sel.innerHTML = ''; return; }
+    row.hidden = false;
+    sel.innerHTML = '';
+    var i, t, opt, label;
+    for (i = 0; i < list.length; i++) {
+      t = list[i];
+      label = t.label || t.language || ('Track ' + (i + 1));
+      opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = label;
+      if (t.enabled) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+  function setAudioTrack(i) {
+    var list = vid.audioTracks;
+    if (!list) return;
+    for (var n = 0; n < list.length; n++) list[n].enabled = n === i;
+  }
+
   function rdResume() {
     try { var v = JSON.parse(localStorage.getItem(RESUME) || '{}'); return v && typeof v === 'object' ? v : {}; }
     catch (e) { return {}; }
@@ -204,7 +353,7 @@
     if (!item || !item.subFile) { setSubUi(); return Promise.resolve(); }
     return readText(item.subFile).then(function (text) {
       revokeSubOnly();
-      var vtt = VPL.srtToVtt(text);
+      var vtt = VPL.shiftVtt(VPL.srtToVtt(text), settings.subShift || 0);
       subUrl = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
       var tr = document.createElement('track');
       tr.kind = 'subtitles';
@@ -213,7 +362,7 @@
       tr.src = subUrl;
       tr.default = true;
       vid.appendChild(tr);
-      setTimeout(applySubMode, 0);
+      setTimeout(function () { applySubMode(); applyCuePos(); }, 0);
     }).catch(function () {
       dialog('Subtitles', 'That subtitle file could not be read.');
     });
@@ -228,6 +377,7 @@
       tracks[i].mode = settings.subOn ? 'showing' : 'hidden';
     }
     setSubUi();
+    applyCuePos();
   }
   function setSubUi() {
     var has = !!(items[index] && items[index].subFile) || vid.textTracks.length > 0;
@@ -248,10 +398,26 @@
       v.subFile = hit ? hit.file : null;
     });
   }
-  function ingest(fileList, play) {
+  function refreshListUi() {
+    app.classList.add('has-video');
+    $('btnList').hidden = items.length < 2;
+    if (items.length < 2) { listOpen = false; $('list').hidden = true; $('btnList').setAttribute('aria-pressed', 'false'); }
+    setPlayModeUi();
+    renderList();
+  }
+  function ingest(fileList, play, append) {
     var bag = collect(fileList);
     if (!bag.videos.length) {
       dialog('No videos', 'That selection did not contain a video this app can open (MP4, WebM, MKV, MOV, OGV or 3GP).');
+      return;
+    }
+    if (append && items.length) {
+      subs = subs.concat(bag.subs);
+      attachSubsToVideos(bag.videos, subs);
+      items = items.concat(bag.videos);
+      attachSubsToVideos(items, subs);
+      rebuildOrder();
+      refreshListUi();
       return;
     }
     flushResume();
@@ -259,10 +425,10 @@
     items = bag.videos;
     subs = bag.subs;
     attachSubsToVideos(items, subs);
-    app.classList.add('has-video');
-    $('btnList').hidden = items.length < 2;
-    if (items.length < 2) { listOpen = false; $('list').hidden = true; $('btnList').setAttribute('aria-pressed', 'false'); }
-    renderList();
+    index = -1;
+    clearAb();
+    rebuildOrder();
+    refreshListUi();
     load(0, play !== false);
   }
   function renderList() {
@@ -288,6 +454,7 @@
     flushResume();
     revokeUrls();
     index = i;
+    clearAb();
     showMsg('');
     $('now').textContent = it.name;
     renderList();
@@ -308,7 +475,15 @@
     bumpChrome();
   }
   function playNext() {
-    if (index + 1 < items.length) load(index + 1, true);
+    var n = nextIndex();
+    if (n < 0) return;
+    if (n === index) {
+      try { vid.currentTime = 0; } catch (e) { /* ignore */ }
+      var p = vid.play();
+      if (p && p.catch) p.catch(function () { /* blocked */ });
+      return;
+    }
+    load(n, true);
   }
 
   /* ---------- open / drop ---------- */
@@ -369,7 +544,7 @@
   /* ---------- events ---------- */
   function onPlay() { setPlayingUi(); }
   function onPause() { setPlayingUi(); flushResume(); }
-  function onTime() { setTimeUi(); if (!vid.paused) scheduleResume(); }
+  function onTime() { setTimeUi(); tickAb(); if (!vid.paused) scheduleResume(); }
   function onMeta() {
     setTimeUi();
     var it = items[index];
@@ -378,6 +553,8 @@
     if (rec && rec.pos > 2 && rec.pos < vid.duration - 5) {
       try { vid.currentTime = rec.pos; } catch (e) { /* ignore */ }
     }
+    fillAudioTracks();
+    applyCuePos();
   }
   function onEnded() {
     flushResume();
@@ -574,15 +751,60 @@
     $('btnMore').addEventListener('click', function (e) { e.stopPropagation(); togglePanel(); });
     $('panelClose').addEventListener('click', function () { togglePanel(false); });
     $('panel').addEventListener('click', function (e) { e.stopPropagation(); });
-    $('emptyFile').addEventListener('click', openFilePicker);
+    $('emptyFile').addEventListener('click', function () { addMode = false; openFilePicker(); });
     $('emptyFolder').addEventListener('click', openFolderPicker);
-    $('menuFile').addEventListener('click', openFilePicker);
+    $('menuFile').addEventListener('click', function () { addMode = false; openFilePicker(); });
     $('menuFolder').addEventListener('click', openFolderPicker);
     $('btnLoadSub').addEventListener('click', openSubPicker);
     $('btnPip').addEventListener('click', togglePip);
+    $('btnAddQueue').addEventListener('click', function () { addMode = true; openFilePicker(); });
+    $('menuAdd').addEventListener('click', function () { addMode = true; openFilePicker(); });
+    $('shiftDown').addEventListener('click', function () { changeShift(-0.1); });
+    $('shiftUp').addEventListener('click', function () { changeShift(0.1); });
+    $('subColorSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      settings.subColor = b.getAttribute('data-v'); saveSettings(); applyCueLook();
+    });
+    $('subBgSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      settings.subBg = b.getAttribute('data-v'); saveSettings(); applyCueLook();
+    });
+    $('subPosSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      settings.subPos = b.getAttribute('data-v'); saveSettings(); applyCueLook();
+    });
+    $('shuffleSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      settings.shuffle = b.getAttribute('data-v') === '1';
+      saveSettings(); rebuildOrder(); setPlayModeUi();
+    });
+    $('repeatSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      settings.repeat = b.getAttribute('data-v');
+      saveSettings(); setPlayModeUi();
+    });
+    $('btnSetA').addEventListener('click', function () { loopA = vid.currentTime || 0; setAbUi(); });
+    $('btnSetB').addEventListener('click', function () {
+      var t = vid.currentTime || 0;
+      if (loopA != null && t <= loopA) { dialog('A–B loop', 'Point B needs to be after point A.'); return; }
+      loopB = t; setAbUi();
+    });
+    $('btnClearAB').addEventListener('click', clearAb);
+    $('sleepSeg').addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      setSleep(Number(b.getAttribute('data-v')));
+    });
+    $('audioSel').addEventListener('change', function () { setAudioTrack(Number($('audioSel').value) || 0); });
+    if (vid.audioTracks && vid.audioTracks.addEventListener) {
+      vid.audioTracks.addEventListener('addtrack', fillAudioTracks);
+      vid.audioTracks.addEventListener('removetrack', fillAudioTracks);
+    }
+    if (vid.textTracks && vid.textTracks.addEventListener) {
+      vid.textTracks.addEventListener('addtrack', function () { applySubMode(); applyCuePos(); });
+    }
 
     $('inFile').addEventListener('change', function () {
-      if (this.files && this.files.length) ingest(this.files, true);
+      if (this.files && this.files.length) { ingest(this.files, true, addMode); addMode = false; }
     });
     $('inFolder').addEventListener('change', function () {
       if (this.files && this.files.length) ingest(this.files, true);
@@ -641,6 +863,11 @@
   loadSettings();
   applyTheme();
   applySubSize();
+  applyCueLook();
+  setShiftUi();
+  setPlayModeUi();
+  setAbUi();
+  setSleep(0);
   vid.volume = settings.volume;
   vid.muted = settings.muted;
   setVolUi();
