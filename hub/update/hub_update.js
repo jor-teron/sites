@@ -91,11 +91,16 @@
   //   document.body.appendChild(note);
   // }
   */
+  // H144: skip the Desktop "Leave site?" prompt on a deliberate Hub reload
+  function reloadNow() {
+    if (window.__hubAllowUnload) window.__hubAllowUnload();
+    location.reload();
+  }
   function apply(reg) {
     wanted = true;
     reg = reg || lastReg;
     if (reg && reg.waiting) reg.waiting.postMessage({ type: 'skip-waiting' });
-    else location.reload();
+    else reloadNow();
   }
   let lastReg = null;
   /** R23: a worker still installing → wait until it is installed (or failed); resolves reg. */
@@ -126,7 +131,7 @@
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!hadController || !wanted || reloading) return;   // first install / not asked: no reload
       reloading = true;
-      location.reload();
+      reloadNow();   // H144
     });
     regP = navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(watch).catch(() => null);
   }
@@ -182,7 +187,7 @@
           const keys = await caches.keys();
           await Promise.all(keys.filter((k) => k.indexOf('hub-shell-') === 0).map((k) => caches.delete(k)));
         }
-        setTimeout(() => location.reload(), opts.manual ? 1200 : 0);
+        setTimeout(reloadNow, opts.manual ? 1200 : 0);   // H144
         return { state: 'updated', version: nw.version, build: nw.build };
       }
       return { state: 'current', version: nw.version, build: nw.build || BUILD };
@@ -332,7 +337,7 @@
     }
     try { localStorage.removeItem('sites-hub.startList'); localStorage.removeItem(LAST); } catch (_) { /* blocked */ }
     try { const r = await regP; if (r) await r.unregister(); } catch (_) { /* none */ }
-    location.reload();
+    reloadNow();   // H144
   }
 
   const api = window.HubUpdate = { build: BUILD, check, version: () => running, refresh, clearCache,

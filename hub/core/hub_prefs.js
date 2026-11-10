@@ -60,6 +60,8 @@
  *   H63 Eye comfort keys eyeWarm / eyeMode / eyeFrom / eyeTo / eyeNow: read by hub/core/hub_eye.js (apply() calls HubEye.apply())
  *   H65 Computer break keys breakOn / breakWork / breakLen: read by hub/core/hub_break.js (apply() calls HubBreak.apply())
  *   (the busy meter keeps its own key sites-hub.trayMeter, hub_traymeter.js; Settings shows it in Hub bar)
+ *   H144: sites-hub.askClose '0' = do not ask before closing (default on; desktop/wm/wm_taskbar.js HubCloseGuard, Desktop only)
+ *         sites-hub.showFsBtn '0' = hide the taskbar fullscreen button (default on) → html.hub-fsbtn-off + __hubSyncFsBtn
  * Live: the 'storage' event (Settings runs in another document) and a
  * {type:'hub-prefs'} postMessage from a same-origin frame both re-apply everything.
  * API: window.HubPrefs.get(key), .apply(), .BAR (H52: [{ key, item, def }] the Hub bar switches), .barOn(key)
@@ -181,6 +183,9 @@
     if (window.HubEye) window.HubEye.apply();
     // H65: Computer break (hub_break.js, loaded after this file; it ticks every second while on)
     if (window.HubBreak) window.HubBreak.apply();
+    // H144: fullscreen button visibility (wm_taskbar.js; default on). The close prompt reads its key live.
+    root.classList.toggle('hub-fsbtn-off', get('showFsBtn') === '0');
+    if (window.__hubSyncFsBtn) window.__hubSyncFsBtn();
   }
 
   window.HubPrefs = { get, apply, BAR, barOn };   // H52: + BAR, barOn

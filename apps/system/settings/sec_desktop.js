@@ -18,6 +18,9 @@
  *   Work minutes 5..120 (key 'breakWork', '' = 25) and Break minutes 1..30 (key 'breakLen', '' = 5); a status line.
  *   The Hub's hub/core/hub_break.js runs the timer and draws the lock (both modes; synced in the Shared group).
  *   Turning it off is refused while a break runs (the lock covers Settings anyway).
+ * H144: "Ask before closing the Hub" (key 'askClose', default on, '0' = off; wm_taskbar.js HubCloseGuard, Desktop only,
+ *   not for a joined / ?join device) and "Show fullscreen button in taskbar" (key 'showFsBtn', default on, '0' = off;
+ *   #wm-fs, live via HubPrefs.apply).
  */
 (function () {
   'use strict';
@@ -76,6 +79,7 @@
         if (h) { h.HubOsMode.choose(); return; }
         // phone.html (Settings in its frame) / Settings on its own: just go there, in the whole tab
         const w = window.top;
+        try { if (w.__hubAllowUnload) w.__hubAllowUnload(); } catch (_) { /* ignore */ }   // H144
         try { w.location.assign(w === window ? new URL('../../../index.html?choose', location.href).href : new URL('index.html?choose', w.document.baseURI).href); }
         catch (_) { location.assign('../../../index.html?choose'); }
       });
@@ -96,6 +100,11 @@
       // H60b: Windowed is the default (off unless '1'); new windows step down-right so they don't cover each other
       const openMax = ui.switch('Open windows maximised', 'Off: new windows open in a window, each a little lower and to the right',
         S.get('openMax') === '1', (on) => S.set('openMax', on ? '1' : '0'));
+      // H144: leave confirmation (browser's own "Leave site?" text) and the taskbar fullscreen button
+      const askClose = ui.switch('Ask before closing the Hub', 'The browser asks you to confirm before this window or tab closes. It uses its own wording',
+        S.get('askClose') !== '0', (on) => S.set('askClose', on ? '' : '0'));
+      const showFs = ui.switch('Show fullscreen button in taskbar', 'A button on the right of the taskbar: one click hides the window bar; again or Esc leaves full screen',
+        S.get('showFsBtn') !== '0', (on) => S.set('showFsBtn', on ? '' : '0'));
       const hover = ui.switch('Open menu on hover', 'Point at Start to open the menu (Desktop mode)',
         S.get('startHover') !== '0', (on) => S.set('startHover', on ? '' : '0'));
       // H7: the Files icons on the Desktop-mode home screen (default on; off = just the wallpaper and the QR / link tiles)
@@ -232,10 +241,14 @@
       //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
       //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
       //   brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break   (before H129d)
-      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
-        homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
+      // pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
+      //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
+      //   brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break; H129d: + Switch to Phone | Touch, Choose mode…   (before H144)
+      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, askClose, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+        homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), showFs, barLink,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
-        brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break; H129d: + Switch to Phone | Touch, Choose mode…
+        brTitle, brSwitch, brWork, brLen, brStatus);   // H144: + ask before closing, fullscreen button
       showNow();
       if (sub === 'break') setTimeout(() => brTitle.scrollIntoView({ block: 'start' }), 50);   // H65: #desktop/break
     }

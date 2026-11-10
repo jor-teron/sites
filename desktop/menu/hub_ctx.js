@@ -85,7 +85,7 @@
     },
     extra: () => [
       { sep: true },
-      { label: 'Refresh Hub', icon: '\u21BB', action: () => location.reload() },
+      { label: 'Refresh Hub', icon: '\u21BB', action: () => { if (window.__hubAllowUnload) window.__hubAllowUnload(); location.reload(); } },   // H144
       { label: 'About', icon: '\u2139', action: () => openApp(SETTINGS, { hash: 'about' }) },
       { label: 'About Hub', icon: '\uD83D\uDCD6', action: () => window.open(new URL('hub/index.html', document.baseURI).href, '_blank', 'noopener') }   // H129e
     ]

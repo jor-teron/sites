@@ -141,7 +141,7 @@
       try { r = await HP.importData(await f.text()); } catch (_) { r = { ok: false }; }
       out.className = 'upd-out ' + (r.ok ? 'ok' : 'bad');
       out.textContent = r.ok ? 'Imported \u2014 reloading the Hub\u2026' : 'That file is not a Hub profile';
-      if (r.ok) setTimeout(() => hub.location.reload(), 400);
+      if (r.ok) setTimeout(() => { try { if (hub.__hubAllowUnload) hub.__hubAllowUnload(); } catch (_) {} hub.location.reload(); }, 400);
     });
     // H30.5: where
     const placesBox = ui.el('div', 'profile-places');
@@ -208,7 +208,7 @@
       out.className = 'upd-out ' + (r.applied ? 'ok' : 'bad');
       out.textContent = r.applied ? 'Loaded \u2014 reloading the Hub\u2026' : r.reason === 'no-file' ? 'No saved profile in the ticked places yet'
         : r.reason === 'permission' ? 'No access to the ticked places' : 'Could not load';
-      if (r.applied) setTimeout(() => hub.location.reload(), 400); else draw();
+      if (r.applied) setTimeout(() => { try { if (hub.__hubAllowUnload) hub.__hubAllowUnload(); } catch (_) {} hub.location.reload(); }, 400); else draw();
     });
     const off = HP.onChange(() => { if (card.isConnected) draw(); else off(); });
     draw();
@@ -289,7 +289,7 @@
         const fl = folderLine(u.folder, 'undo-folder');
         if (fl) sm.appendChild(fl);
         const rl = ui.el('button', 'big-btn', 'Reload Hub'); rl.type = 'button'; rl.id = 'undo-reload';
-        rl.addEventListener('click', () => hub.location.reload());
+        rl.addEventListener('click', () => { try { if (hub.__hubAllowUnload) hub.__hubAllowUnload(); } catch (_) {} hub.location.reload(); });
         sm.append(ui.el('p', 'opt-note', 'Reload the Hub to see every change.'), rl);
         out.appendChild(sm);
       }
@@ -402,7 +402,7 @@
           const fl = folderLine(res.folder, 'sync-folder');   // H29.3
           if (fl) sm.appendChild(fl);
           const rl = ui.el('button', 'big-btn', 'Reload Hub'); rl.type = 'button'; rl.id = 'sync-reload';
-          rl.addEventListener('click', () => hub.location.reload());
+          rl.addEventListener('click', () => { try { if (hub.__hubAllowUnload) hub.__hubAllowUnload(); } catch (_) {} hub.location.reload(); });
           // sm.append(ui.el('p', 'opt-note', 'Most changes show at once; reload the Hub to see every one.'), rl);   // (H29.2)
           sm.append(ui.el('p', 'opt-note', 'Most changes show at once; reload the Hub to see every one.' + (res.undo ? ' Undo puts back everything this sync changed.' : '')));
           const btns = ui.el('div', 'profile-btns sync-act');   // H29.3: Reload Hub + Undo

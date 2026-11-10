@@ -1035,7 +1035,7 @@
     if (done === String(savedAt)) return false;
     try { sessionStorage.setItem(RELOAD_GUARD, String(savedAt)); } catch (_) { /* blocked */ }
     if (window.HubProfile && window.HubProfile.noReload) return false;   // tests
-    setTimeout(() => location.reload(), 50);
+    setTimeout(() => { if (window.__hubAllowUnload) window.__hubAllowUnload(); location.reload(); }, 50);   // H144
     return true;
   }
 

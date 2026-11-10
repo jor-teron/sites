@@ -29,11 +29,13 @@
     if (!NAME[mode]) return false;
     if (!(await ask('Switch to ' + NAME[mode] + ' mode?', 'Open windows will close.', 'Switch'))) return false;
     put(mode);
+    if (window.__hubAllowUnload) window.__hubAllowUnload();   // H144
     location.assign(entry('?os=' + mode));
     return true;
   }
   async function choose() {
     if (!(await ask('Choose mode?', 'Open windows will close. The Desktop and Phone | Touch cards open, and the one you pick is saved.', 'Choose mode'))) return false;
+    if (window.__hubAllowUnload) window.__hubAllowUnload();   // H144
     location.assign(entry('?choose'));
     return true;
   }

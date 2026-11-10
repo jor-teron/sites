@@ -225,6 +225,7 @@
         flash(R ? 'Already joined to this Hub.' : 'That is this Hub’s own code.'); return;
       }
       try { sessionStorage.setItem('hub-join-try', c); } catch (_) { /* private mode */ }
+      if (window.__hubAllowUnload) window.__hubAllowUnload();   // H144
       location.replace(location.pathname + '?join=' + c);
     }
     form.addEventListener('submit', (e) => { e.preventDefault(); join(inp.value); });
