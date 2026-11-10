@@ -1339,6 +1339,16 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - `<title>Base BS8</title>`, `BASE_VERSION = "BS8"`, Base's own css/js `?v=BS8`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, `test-bs5` + `test-bs6` + `test-bs7` + new `test-bs8-helpers.js` (AND filters, checklist/blank, operators, multi-link, unique-value cap, column order, layout clamp, colour first-match, month cells, schema 7→8 repair), static curl smoke (200 + BS8). No Puppeteer / Playwright / jsdom.
 
+
+### 1.77 Base files and backup: `apps/office/base/` (Office), release BS9
+- Why: BS8 added everyday views and filters, but there was still no full backup of a Base (including pictures and links), no Excel round-trip, and no way to bring in a JSON or SQLite dump or pass the current view to Spreadsheet — the last step planned to Jor in this Base series.
+- New `modules/base-files.js`. A `.hbase` backup is JSON `{ magic: "hbase", version: 1, db, pics }` with picture blobs as Base64. File > Backup… / Restore backup… Restore asks in an in-app dialog: Replace everything (second confirm, clears the undo stack, not undoable) or Add as a copy (new table/row/picture ids, Link-to-record values remapped, names uniquified, undoable). `BasePics.exportAll` / `importAll` / `clearAll` support the picture part.
+- Excel import/export uses the Spreadsheet app's already-vendored SheetJS, lazy-loaded from `../spreadsheet/vendor/sheetjs/xlsx.full.min.js` (not copied, Spreadsheet files not edited). Import makes a new table per sheet (cap 20 sheets, 5 000 rows). Export Excel and Send to Spreadsheet write the current view's rows (query + header filters; pictures left out; links as display text).
+- Send to Spreadsheet: there is no Office hand-off convention (Spreadsheet only opens a file the user chooses; it has no sessionStorage / postMessage intake). Base downloads a workbook and explains that in an in-app dialog; if SheetJS cannot load, a CSV is saved instead.
+- Read-only JSON import (array of objects, named lists, or a Base-shaped `{tables}`) creates new tables; a `.hbase` JSON file still goes through Restore. Read-only SQLite import lazy-loads sql.js already vendored in DB Browser (`../../tools/db-browser/vendor/sqljs/`, not copied). The SQLite file is never written. A lone `file://` page may not load the wasm — serve the site. Schema stays at 8 (this release is files, not a new data shape).
+- `<title>Base BS9</title>`, `BASE_VERSION = "BS9"`, Base's own css/js `?v=BS9`. Shared Office files and Spreadsheet files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5` … `test-bs8` + new `test-bs9-helpers.js` (pack/parse, reject non-hbase, remap copy + links/pics, JSON shapes + row cap, AoA/SQL helpers, sheetAoA skips pictures), static curl smoke (200 + BS9). No Puppeteer / Playwright / jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
