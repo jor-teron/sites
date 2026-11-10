@@ -23,3 +23,4 @@ Altimeter,             altimeter/,          , , Weather, GPS altitude from your 
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
+Numerology,            numerology/,      numerology/numerology_icon.svg, , Fun, Life Path and name numbers from your birth date - traditional readings for fun

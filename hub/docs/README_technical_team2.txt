@@ -824,6 +824,30 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.62 Numerology app, release NU1
+
+- New apps/tools/numerology (Tools, section 'Fun', row added after Astrology in
+  apps/tools/tools-apps.csv). Offline, no libraries. First run asks only for a
+  full name and date of birth, then shows the numbers. Large tap targets and
+  plain-language labels (Life Path, Name / Heart / Outer / Birthday numbers).
+- localStorage 'numerology-v1' {profiles[{id,name,dob}], current, theme auto/light/dark,
+  system pythagorean|chaldean}. Auto follows sites-hub.theme. Add/edit/delete with
+  in-app dialogs only.
+- Core numbers, master 11/22/33 kept unreduced: Life Path (birth date; reduce month,
+  day and year separately then add), Name / Destiny (all letters), Heart / Soul Urge
+  (vowels; Y is a vowel unless it sits next to A,E,I,O,U), Outer / Personality
+  (consonants), Birthday (day of month). Timing: Personal Year/Month/Day for today
+  (calendar year from 1 January, plus birth month and day). Compatibility of two
+  Life Path numbers from a fixed table. Name checker for a spelling.
+- Letter values: Western/Pythagorean (default, 1–9) or Chaldean (1–8, often used in
+  India), remembered. Maths in nu_calc.js (pure, node-testable). Tested with
+  `node --check` on every JS file, `node test_nu_calc.js`, and a static serve + curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= NU1. Readings labelled traditional, for fun, not facts.
+  Details: apps/tools/numerology/numerology_readme.md.
+
+  Note: 1.53–1.61 were taken by parallel branches, so this section is 1.62.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
