@@ -575,3 +575,105 @@ header.app-header h1 {
 @media (prefers-reduced-motion: reduce) {
   .btn, .panel { transition: none; }
 }
+
+/* TD2: menus, outliner toggles, material sliders, scene box */
+
+.menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+.object-list .obj-item {
+  padding-left: calc(8px + var(--depth, 0) * 14px);
+}
+
+.obj-item.hidden-obj .obj-name { opacity: 0.5; text-decoration: line-through; }
+.obj-item.locked-obj .obj-name { font-style: italic; }
+
+.obj-tools {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.mini {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--mute);
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+.mini:hover, .mini.on {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.mini.on { color: var(--accent); }
+
+.scene-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 650;
+  min-height: 36px;
+}
+
+.chk input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.slide {
+  display: grid;
+  grid-template-columns: 76px 1fr 42px;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--mute);
+  min-height: 32px;
+}
+
+.slide input[type="range"] { width: 100%; }
+
+.slide span {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text);
+  font-weight: 650;
+}
+
+.tex-status {
+  font-size: 0.85rem;
+  color: var(--mute);
+  margin: 0 0 6px;
+}
+
+.multi-note {
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.obj-type { font-size: 0.68rem; }

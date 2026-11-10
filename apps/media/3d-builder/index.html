@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>3D Builder TD1</title>
+  <title>3D Builder TD2</title>
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="3d-builder_icon.png">
   <script>
@@ -27,7 +27,7 @@
       } catch (e) { /* ok */ }
     })();
   </script>
-  <link rel="stylesheet" href="tb_base.css?v=TD1">
+  <link rel="stylesheet" href="tb_base.css?v=TD2">
   <script type="importmap">
   {
     "imports": {
@@ -63,6 +63,10 @@
           <button type="button" role="menuitem" data-type="cone">Cone</button>
           <button type="button" role="menuitem" data-type="plane">Plane</button>
           <button type="button" role="menuitem" data-type="torus">Torus</button>
+          <div class="menu-sep" role="separator"></div>
+          <button type="button" role="menuitem" data-type="light-point">Point light</button>
+          <button type="button" role="menuitem" data-type="light-spot">Spot light</button>
+          <button type="button" role="menuitem" data-type="light-directional">Directional light</button>
         </div>
       </div>
       <div class="seg" id="modeSeg" role="group" aria-label="Transform">
@@ -70,7 +74,27 @@
         <button type="button" data-v="rotate" title="Rotate (E)">Rotate</button>
         <button type="button" data-v="scale" title="Scale (R)">Scale</button>
       </div>
-      <button type="button" id="snapBtn" class="btn secondary-btn" aria-pressed="false" title="Snap: 0.5 units, 15°, 0.1 scale">Snap</button>
+      <button type="button" id="snapBtn" class="btn secondary-btn" aria-pressed="false" title="Snap: 0.5 units, 15°, 0.1 scale, and to other objects">Snap</button>
+      <button type="button" id="groupBtn" class="btn secondary-btn" title="Group (Ctrl+G)">Group</button>
+      <button type="button" id="ungroupBtn" class="btn secondary-btn" title="Ungroup (Ctrl+Shift+G)">Ungroup</button>
+      <div class="add-wrap" id="alignWrap">
+        <button type="button" id="alignBtn" class="btn secondary-btn" aria-haspopup="menu" aria-expanded="false" title="Align or distribute selected objects">Align</button>
+        <div class="add-menu" id="alignMenu" role="menu" hidden>
+          <button type="button" role="menuitem" data-align="0,min">Align X left</button>
+          <button type="button" role="menuitem" data-align="0,center">Align X centre</button>
+          <button type="button" role="menuitem" data-align="0,max">Align X right</button>
+          <button type="button" role="menuitem" data-align="1,min">Align Y bottom</button>
+          <button type="button" role="menuitem" data-align="1,center">Align Y centre</button>
+          <button type="button" role="menuitem" data-align="1,max">Align Y top</button>
+          <button type="button" role="menuitem" data-align="2,min">Align Z back</button>
+          <button type="button" role="menuitem" data-align="2,center">Align Z centre</button>
+          <button type="button" role="menuitem" data-align="2,max">Align Z front</button>
+          <div class="menu-sep" role="separator"></div>
+          <button type="button" role="menuitem" data-align="0,distribute">Distribute X</button>
+          <button type="button" role="menuitem" data-align="1,distribute">Distribute Y</button>
+          <button type="button" role="menuitem" data-align="2,distribute">Distribute Z</button>
+        </div>
+      </div>
       <div class="seg" id="viewSeg" role="group" aria-label="View">
         <button type="button" data-v="perspective">Perspective</button>
         <button type="button" data-v="front">Front</button>
@@ -95,8 +119,22 @@
         <div id="viewport" class="viewport" role="application" aria-label="3D viewport"></div>
       </div>
       <aside class="panel panel-right" id="propsPanel">
+        <h2>Scene</h2>
+        <div class="scene-box" id="sceneBox">
+          <label class="chk">
+            <input type="checkbox" id="skyCustom"> Custom sky
+          </label>
+          <label class="field field-color">
+            <span>Sky colour</span>
+            <span class="color-row">
+              <input type="color" id="skyColor" title="Sky colour" value="#e8eef5">
+              <input type="text" id="skyHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Sky colour hex" value="#e8eef5">
+            </span>
+          </label>
+        </div>
         <h2>Properties</h2>
         <p class="empty-props" id="propsEmpty">Select an object to edit it.</p>
+        <p class="multi-note" id="multiNote" hidden></p>
         <form id="propsForm" class="props-form" hidden>
           <label class="field field-name">
             <span>Name</span>
@@ -118,7 +156,7 @@
               <label>Z <input type="number" id="propRz" step="0.1"></label>
             </div>
           </fieldset>
-          <fieldset>
+          <fieldset id="scaleFields">
             <legend>Scale</legend>
             <div class="vec3">
               <label>X <input type="number" id="propSx" step="0.01" min="0.01"></label>
@@ -133,6 +171,29 @@
               <input type="text" id="propHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Colour hex">
             </span>
           </label>
+          <fieldset id="matFields">
+            <legend>Material</legend>
+            <label class="slide">Roughness <input type="range" id="propRough" min="0" max="1" step="0.01" value="0.55"><span id="propRoughV">0.55</span></label>
+            <label class="slide">Metalness <input type="range" id="propMetal" min="0" max="1" step="0.01" value="0.12"><span id="propMetalV">0.12</span></label>
+            <label class="slide">Opacity <input type="range" id="propOpacity" min="0" max="1" step="0.01" value="1"><span id="propOpacityV">1.00</span></label>
+          </fieldset>
+          <fieldset id="texFields">
+            <legend>Texture</legend>
+            <p class="tex-status" id="texStatus">None</p>
+            <div class="prop-acts">
+              <button type="button" id="texImageBtn" class="btn secondary-btn">Image…</button>
+              <button type="button" id="texTextBtn" class="btn secondary-btn">Text…</button>
+              <button type="button" id="texClearBtn" class="btn secondary-btn">Clear</button>
+            </div>
+            <input type="file" id="texImageInput" accept="image/*" hidden>
+          </fieldset>
+          <fieldset id="lightFields" hidden>
+            <legend>Light</legend>
+            <label class="slide">Intensity <input type="range" id="propIntensity" min="0" max="8" step="0.05" value="1.5"><span id="propIntensityV">1.50</span></label>
+            <label class="slide" id="distRow">Distance <input type="range" id="propDistance" min="0" max="40" step="0.5" value="12"><span id="propDistanceV">12</span></label>
+            <label class="slide" id="angleRow" hidden>Angle <input type="range" id="propAngle" min="1" max="90" step="1" value="30"><span id="propAngleV">30°</span></label>
+            <label class="slide" id="penumbraRow" hidden>Penumbra <input type="range" id="propPenumbra" min="0" max="1" step="0.01" value="0.25"><span id="propPenumbraV">0.25</span></label>
+          </fieldset>
           <div class="prop-acts">
             <button type="button" id="renameBtn" class="btn secondary-btn">Rename</button>
             <button type="button" id="dupBtn" class="btn secondary-btn" title="Duplicate (Ctrl+D)">Duplicate</button>
@@ -152,6 +213,6 @@
     </div>
   </div>
 
-  <script type="module" src="tb_main.js?v=TD1"></script>
+  <script type="module" src="tb_main.js?v=TD2"></script>
 </body>
 </html>

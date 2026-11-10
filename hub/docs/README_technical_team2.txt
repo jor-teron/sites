@@ -981,6 +981,18 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - RELEASE/title/?v= TD1. Details: apps/media/3d-builder/NOTES.md.
   Note: section 1.58 is the next free number on main after Read Aloud RA2 (1.57).
 
+
+### 1.59 3D Builder, release TD2
+
+- apps/media/3d-builder only. .h3d format version 2 (migrates v1). Groups / ungroup
+  (Ctrl+G / Ctrl+Shift+G), hide and lock in the outliner, MeshStandardMaterial
+  roughness/metalness/opacity, user Point/Spot/Directional lights (default lights
+  kept), optional custom sky colour, text and image textures (images resized to
+  256 px, stored in project.textures; autosave IndexedDB + localStorage).
+  Multi-select (Shift/Ctrl), align and distribute, bounding-box object snap
+  (with grid snap). Undo/redo covers the new edits. RELEASE/title/?v= TD2.
+  Details: apps/media/3d-builder/NOTES.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
