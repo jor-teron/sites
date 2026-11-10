@@ -824,6 +824,28 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.53 Video Editor, release VD1
+
+- New apps/media/video-editor (Media, section 'Video', row added after Screen Recorder in
+  apps/media/media-apps.csv). Offline, no libraries, no ffmpeg.wasm. Name is "Video Editor"
+  until Jor picks one. Tile icon video-editor_icon.png (192 px).
+- Open via picker or drag and drop; preview with play/pause, 1/30 s frame step, seek,
+  current time. Timeline (source duration) has a playhead, In/Out dual handles (I / O,
+  tap chips to type a time) and hatched marks on removed ranges. Play skips the cuts.
+- Edit list of kept segments: Cut selection removes the In-Out range; Keep selection keeps
+  only that range (intersected with what is still left). Undo / Redo (buttons, Ctrl+Z / Ctrl+Y).
+  Keys: Space, Left, Right, I, O, Delete. In-app dialogs only.
+- Theme Auto / Light / Dark in the header (localStorage video-editor-v1 {theme}); Auto follows
+  sites-hub.theme / sites-hub.themeAuto live.
+- Export plays kept parts through captureStream + MediaRecorder (WebM vp9/vp8+opus, or MP4
+  when supported), with audio, in real time. Progress dialog with Cancel and a real-time note.
+  Download <original-name>_edited.webm (or .mp4). Full-viewport layout (VT2 approach).
+- RELEASE/title/?v= VD1. Tests: node --check, node tests/vd1.test.cjs (pure helpers). No
+  Puppeteer / Playwright / jsdom. Hub catalog not regenerated (Media tiles page reads the CSV;
+  the Hub flyout needs hub_appindex_gen.py --catalog-only from Main Builder).
+- Details: apps/media/video-editor/NOTES.md.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
