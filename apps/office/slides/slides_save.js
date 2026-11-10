@@ -2,13 +2,16 @@
      'slides-settings-v1'    = { theme:'system'|'light'|'dark' }   (default dark; 'system' follows the Hub's sites-hub.theme, else the OS)
      'slides-decks-v1'       = { current:'<id>', decks:[{ id, name, updated, count }] }   (the deck list, newest first)
      'slides-deck-v1:<id>'   = { id, name, created, updated, cur, fmt, theme, slides:[{ id, layout, title, body, body2, bg, pics }] }
-   body = bullet text, one bullet per line; a leading TAB = indented one level (the .hslides file uses {text, level}).
+   body / title are rich documents (SLText, SL5): { paragraphs:[{ runs:[{ text, b, i, u, size, color, hl }], level, align, list }] }.
+   A leading TAB in a legacy plain body = indented one level (the .hslides file uses paragraphs, or {text, level} in v1/v2).
    SL3: fmt = 3 (SL1 / SL2 records have none), theme = deck theme id (missing = 'light', the SL1 / SL2 look),
      layout (missing = 'tc', Title + Content), body2 (right column of Two Columns), bg ('#rrggbb' per-slide background
      override, '' = the theme's), pics = [{ id, key, x, y, w, h, iw, ih, fit:'cover'|'contain', inl }] in 960 x 540 design px.
      A picture's data URL lives in IndexedDB (slides_pics.js) under `key`; only pictures that could not be stored there
      (inl: true) carry `src` in this record. Missing fields = the old defaults, so SL1 / SL2 decks open unchanged.
      Legacy (SL1 / SL2): 'slides-deck-v1:<id>' = { id, name, created, updated, cur, slides:[{ id, title, body }] }
+   SL5: fmt = 4; title / body / body2 are documents (plain strings on an older record are migrated on load, nothing dropped);
+     tboxes = [{ id, x, y, w, h, doc }] free text boxes in 960 x 540 design px. Older fmt 3 / no-fmt records open unchanged.
    If storage is missing, full or throws, Slides keeps working in memory (SLSave.memOnly) and shows a banner
    (once, dismissable): changes then last only until the page closes (use Export). Saves never throw.
    Auto-save: SLSave.saveDeck(deck) is debounced 400 ms; flush() writes now (also on pagehide / hidden). */
@@ -62,28 +65,42 @@
     if (!key && !src) return null;
     var w = num(p.w, 8, 4000, 320), h = num(p.h, 8, 4000, 180);
     return { id: str(p.id, 20) || uid(), key: key, src: src, x: num(p.x, -4000, 4000, 0), y: num(p.y, -4000, 4000, 0), w: w, h: h,
-      iw: num(p.iw, 1, 20000, w) | 0, ih: num(p.ih, 1, 20000, h) | 0, fit: p.fit === 'contain' ? 'contain' : 'cover', inl: !!(p.inl || (src && !key)) };
+      iw: num(p.iw, 1, 20000, w) | 0, ih: num(p.ih, 1, 20000, h) | 0, fit: p.fit === 'contain' ? 'contain' : 'cover', z: isFinite(+p.z) ? Math.round(+p.z) : 0, inl: !!(p.inl || (src && !key)) };
   }
+  function bodyListFor(lay) { return (lay === 'title' || lay === 'sec' || lay === 'pic') ? 'none' : 'bullet'; }
   function cleanSlide(s) {
     s = s && typeof s === 'object' ? s : {};
     var pics = (Array.isArray(s.pics) ? s.pics : []).slice(0, 50).map(cleanPic).filter(Boolean);
-    return { id: str(s.id, 20) || uid(), layout: LAY_IDS.indexOf(s.layout) >= 0 ? s.layout : 'tc',
-      title: str(s.title, 300), body: str(s.body, 5000), body2: str(s.body2, 5000),
-      bg: typeof s.bg === 'string' && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg.toLowerCase() : '', pics: pics };
+    var layout = LAY_IDS.indexOf(s.layout) >= 0 ? s.layout : 'tc';
+    var bl = bodyListFor(layout);
+    var tboxes = SLText.cleanBoxes(s.texts || s.tboxes || s.textboxes);
+    tboxes.forEach(function (t) { if (!t.id) t.id = uid(); });
+    return { id: str(s.id, 20) || uid(), layout: layout,
+      title: SLText.fromFileTitle(s.title),
+      body: (typeof s.body === 'string' || s.body == null) ? SLText.fromPlain(s.body || '', { max: 5000, list: bl }) : SLText.clean(s.body, { max: 5000, list: bl }),
+      body2: (typeof s.body2 === 'string' || s.body2 == null) ? SLText.fromPlain(s.body2 || '', { max: 5000, list: 'bullet' }) : SLText.clean(s.body2, { max: 5000, list: 'bullet' }),
+      bg: typeof s.bg === 'string' && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg.toLowerCase() : '', pics: pics, texts: tboxes, tboxes: tboxes };
   }
-  /* a copy that shares the (immutable) picture data; used by Duplicate and Undo */
+  /* a deep copy of text / boxes; pictures share the (immutable) bitmap data. Used by Duplicate and Undo */
   function cloneSlide(s, newIds) {
-    var c = Object.assign({}, s, { pics: (s.pics || []).map(function (p) { var q = Object.assign({}, p); if (newIds) q.id = uid(); return q; }) });
+    var c = Object.assign({}, s, {
+      title: SLText.clone(s.title, { max: 300, list: 'none', single: true }),
+      body: SLText.clone(s.body, { max: 5000 }),
+      body2: SLText.clone(s.body2, { max: 5000 }),
+      pics: (s.pics || []).map(function (p) { var q = Object.assign({}, p); if (newIds) q.id = uid(); return q; }),
+      texts: (s.texts || s.tboxes || []).map(function (t) { var q = Object.assign({}, t, { doc: SLText.clone(t.doc, { max: 2000 }) }); if (newIds) q.id = uid(); return q; })
+    });
+    c.tboxes = c.texts;
     if (newIds) c.id = uid();
     return c;
   }
   /* what goes to localStorage: pictures stored in IndexedDB lose their (long) src */
   function slim(d) {
-    var o = Object.assign({}, d, { fmt: 3 });
+    var o = Object.assign({}, d, { fmt: 4 });
     o.slides = d.slides.map(function (s) {
       if (!s.pics || !s.pics.length) return s;
       return Object.assign({}, s, { pics: s.pics.map(function (p) {
-        var q = { id: p.id, key: p.key, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit };
+        var q = { id: p.id, key: p.key, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit }; if (p.z) q.z = p.z;
         if (p.inl || !p.key) { q.src = p.src; q.inl = true; }
         return q;
       }) });

@@ -1109,6 +1109,43 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Title / SHEET_VERSION / ?v=: SH12. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
 
+### 1.68 Hub Office Slides rich text, lists, free text boxes, release SL5
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl5-slides` from origin/main. `apps/office/shared/` not edited.
+  New `slides_text.js` (`SLText`): the rich-text model (paragraphs of runs `{ text, b, i, u, s, size, color, hl }` with
+  `level` / `align` / `list`), paste sanitising (plain text or a strict HTML allowlist, no DOM), `.hslides` v3 helpers.
+  Safe to load in Node.
+- Editor (SLEdit): title, body, body2 and free text boxes are contenteditable, kept in the model (not raw HTML). Tab /
+  Shift+Tab indent, Enter keeps the indent, Backspace at the start outdents, Enter on the title goes to the bullets (SL1–SL4
+  behaviour kept). Format from the Home Format group and a small floating mini toolbar on a selection: bold (Ctrl+B),
+  italic (Ctrl+I), underline (Ctrl+U), strikethrough, font size (preset list + grow / shrink, Ctrl+Shift+> / <), text colour,
+  highlight, align left / centre / right (Ctrl+L / E / R), list type bullet / numbered (1. 2. 3., a. b. c. at the next
+  level) / none, and Clear formatting. In-app colour popovers only (no alert / confirm / prompt).
+- Free text boxes: Insert → Text box (and ⋯) adds a box on any layout, including Blank. Click to select, drag / handles
+  to move / resize (same handle logic as pictures, Shift keeps the shape), Delete, arrow nudge, double-click or Enter to
+  edit, Esc ends editing. Boxes sit above pictures. 50 per slide max.
+- One renderer (`SLEdit.html` / `paint`) for the editor, thumbnails, Present and Print / PDF, so styling matches.
+- Undo / redo (SL3 stack): now also text-box add / move / resize / delete and formatting. Typing keeps the browser's own
+  undo inside the box.
+- Format / compatibility: deck record `fmt: 4`; title / body / body2 are documents; `texts` (also `tboxes`) hold the boxes.
+  SL1 / SL2 / SL3 records (plain strings, fmt 3 or none) migrate on load: one plain run per line, list none on Title /
+  Section Header / Picture + Caption captions, nothing dropped. .hslides `version: 3` (reads 1, 2 and 3; higher refused).
+  v3 keeps a string `title` and `{ text, level }` bullets; styled titles add `titleRuns` / `titleAlign`; bullets may add
+  `runs` / `align`; `list` / `list2` / `align` / `align2`; `texts:[{ x, y, w, h, bullets, list, align, fill, border, z }]`.
+  `textboxes` / `tboxes` aliases are accepted on import. Export writes v3.
+- Release id: `<title>Slides SL5</title>` (legacy SL4 · SL3 · SL2 comment), `VERSION = 'SL5'`, About SL5 (legacy comments),
+  `?v=SL5` on the app's own css / js (slides.css, slides_*.js including the new slides_text.js; shared office-*.css/js left unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51 (fromPlain
+  / plain, v1/v2/v3 field migrate, apply / merge / clear runs, numbered 1. 2. a. b., parseHtml sanitises script / img /
+  css urls, paste, nextSize, concat / equal, indent / list / align, colour / size checks, html markers, box cap, cross-para
+  apply); `slides_file_test.js` 27/27 (v1 and v2 parse, Title-layout captions stay un-bulleted, v3 write / reparse loses
+  nothing, titleRuns + texts, version 4 refused, document-shaped title and textboxes alias, raw SL1 / fmt-3 localStorage
+  migrate, cloneSlide is deep). Static curl smoke: 200 on slides.html / slides.css / slides_text.js / slides_edit.js /
+  slides_app.js, body greps SL5. No Puppeteer, Playwright, jsdom or headless browser.
+- Caveats: applying a format from the ribbon re-renders the box, so the browser's typing undo for that box may start
+  fresh (Ctrl+Z outside undoes the format). Paste drops fonts, tables and links on purpose. Numbered lists restart after
+  a non-numbered paragraph. Some browsers pause contenteditable undo after a format. Not tried on a real phone.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

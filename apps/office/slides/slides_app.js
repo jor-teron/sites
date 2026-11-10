@@ -10,10 +10,12 @@
    SL4: the Office ribbon (../shared/office-ribbon.js: File = the deck menu, Home / Insert / Design / Slide Show; the ⋯ menu
    at the end of the ribbon keeps every slide action for phones), the HO1 Quick Access bar (../shared/office-quick.js:
    Undo / Redo = this app undo, Save = SLSave.flush + ✓ Saved, Print = SLPrint; Ctrl+Z / Y / S / P; in the Hub title bar
-   after hubTitleBarHello), the Hub app bar (slides_hub.js) and Print / Export PDF (slides_print.js). */
+   after hubTitleBarHello), the Hub app bar (slides_hub.js) and Print / Export PDF (slides_print.js).
+   SL5: Format group on Home + mini toolbar (bold / italic / underline, size, colour, highlight, align, bullet / numbered
+   / none, clear), Insert text box, rich-text undo of formatting and of text-box add / move / resize / delete. */
 (function () {
   'use strict';
-  var VERSION = 'SL4';   /* legacy: 'SL3' · 'SL2' */
+  var VERSION = 'SL5';   /* legacy: 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -83,6 +85,7 @@
     if (ribbon && !$('menu-deck').hidden) ribbon.setFile(false);
     ['menu-deck', 'menu-slide'].forEach(function (id) { $(id).hidden = true; });
     $('b-deck').setAttribute('aria-expanded', 'false'); $('b-more').setAttribute('aria-expanded', 'false');
+    if (typeof closePops === 'function') closePops();
   }
   function openMenu(id, btn, alignRight) {
     var m = $(id), was = !m.hidden; closeMenus(); if (was) return;
@@ -180,7 +183,7 @@
   function delSlide() {
     if (deck.slides.length <= 1) { toast('A deck keeps at least one slide'); return; }
     var i = deck.cur, s = deck.slides[i];
-    confirmDanger('Delete slide ' + (i + 1) + '?', (s.title ? '“' + s.title + '” ' : 'This slide ') + 'and its text will be removed from “' + deck.name + '”.', 'Delete slide').then(function (ok) {
+    confirmDanger('Delete slide ' + (i + 1) + '?', (slideTitle(s) ? '“' + slideTitle(s) + '” ' : 'This slide ') + 'and its text will be removed from “' + deck.name + '”.', 'Delete slide').then(function (ok) {
       if (!ok) return;
       deck.slides.splice(i, 1); deck.cur = Math.min(i, deck.slides.length - 1);
       renderAll(); dirty(); toast('Slide deleted');
@@ -235,6 +238,7 @@
     closeMenus(); if (!$('settings').hidden) $('settings').hidden = true;
     SLSave.flush();
     SLEdit.select('');
+    if (SLEdit.endEdit) SLEdit.endEdit(false);
     SLShow.enter(deck.slides, fromStart ? 0 : deck.cur, deck.theme || 'light');
   }
   /* SL3: pictures are written into the file, so wait for them to be loaded from IndexedDB first */
@@ -258,8 +262,8 @@
   /* ---------- SL3 undo / redo (pictures, layout, background: per slide; theme: per deck) ---------- */
   var undo = [], redo = [];
   function slideById(id) { return deck.slides.filter(function (s) { return s.id === id; })[0]; }
-  function textOf(s) { return { title: s.title, body: s.body, body2: s.body2 }; }
-  function sameText(a, b) { return a.title === b.title && a.body === b.body && a.body2 === b.body2; }
+  function textOf(s) { return { title: SLText.clone(s.title), body: SLText.clone(s.body), body2: SLText.clone(s.body2) }; }
+  function sameText(a, b) { return SLText.equal(a.title, b.title) && SLText.equal(a.body, b.body) && SLText.equal(a.body2, b.body2); }
   /* e = { label, kind:'slide'|'theme', id, before (slide copy) | theme, after (text right after a layout change) } */
   function pushUndo(e) { undo.push(e); if (undo.length > 50) undo.shift(); redo = []; syncRibbon(); }
   function recordSlide(slide, before, label) { pushUndo({ label: label, kind: 'slide', id: slide.id, before: before, after: textOf(slide) }); }
@@ -273,16 +277,20 @@
     } else {
       var s = slideById(e.id), i = deck.slides.indexOf(s), now = SLSave.cloneSlide(s), b = e.before;
       to.push({ label: e.label, kind: 'slide', id: s.id, before: now, after: textOf(b) });
-      s.layout = b.layout; s.bg = b.bg; s.pics = b.pics.map(function (p) { return Object.assign({}, p); });
+      s.layout = b.layout; s.bg = b.bg;
+      s.pics = (b.pics || []).map(function (p) { return Object.assign({}, p); });
+      s.texts = (b.texts || b.tboxes || []).map(function (t) { return Object.assign({}, t, { doc: SLText.clone(t.doc) }); });
+      s.tboxes = s.texts;
       /* text comes back only when it was not edited since (a layout change can move text between boxes) */
-      if (e.after && sameText(e.after, s)) { s.title = b.title; s.body = b.body; s.body2 = b.body2; }
+      if (e.after && sameText(e.after, s)) { s.title = SLText.clone(b.title); s.body = SLText.clone(b.body); s.body2 = SLText.clone(b.body2); }
       if (i !== deck.cur) { SLSave.flush(); deck.cur = i; renderAll(); } else { SLList.update(i); showSlide(); }
     }
     dirty(); toast(verb + ': ' + e.label); syncRibbon(); return true;
   }
 
   /* ---------- SL3 layouts ---------- */
-  function hasText(t) { return String(t || '').replace(/\s+/g, '') !== ''; }
+  function hasText(t) { return window.SLText ? SLText.has(t) : String(t || '').replace(/\s+/g, '') !== ''; }
+  function slideTitle(s) { return SLText.plain(s && s.title, { single: true }); }
   /* keeps the text where it fits: the right column joins the left one when the new layout has one text box;
      text with no box in the new layout stays in the slide (hidden) and comes back with a layout that has the box */
   function setLayout(lay) {
@@ -290,14 +298,14 @@
     if (lay === old) return;
     var b = SLSave.cloneSlide(s), L = SLEdit.slots({ layout: lay });
     s.layout = lay;
-    if (!L.b2 && L.b && hasText(s.body2)) { s.body = hasText(s.body) ? s.body.replace(/\n+$/, '') + '\n' + s.body2 : s.body2; s.body2 = ''; }
+    if (!L.b2 && L.b && hasText(s.body2)) { s.body = SLText.concat(s.body, s.body2); s.body2 = SLText.empty('bullet'); }
     var hidden = (!L.t && hasText(s.title)) || (!L.b && hasText(s.body)) || (!L.b2 && hasText(s.body2));
     recordSlide(s, b, 'Layout');
     SLList.update(deck.cur); showSlide(); dirty();
     toast(hidden ? 'Layout: ' + layName(lay) + '. Some text is hidden by this layout (kept; pick another layout to see it)' : 'Layout: ' + layName(lay), hidden ? 3200 : 1600);
   }
   function layName(id) { var x = SLSave.LAYOUTS.filter(function (l) { return l[0] === id; })[0]; return x ? x[1] : id; }
-  var SAMPLE = { title: 'Title', body: 'First point\nSecond point\n\tDetail', body2: 'Other side\nMore', pics: [] };
+  var SAMPLE = { title: SLText.fromPlain('Title', { list: 'none', single: true }), body: SLText.fromPlain('First point\nSecond point\n\tDetail', { list: 'bullet' }), body2: SLText.fromPlain('Other side\nMore', { list: 'bullet' }), pics: [], texts: [], tboxes: [] };
   function tile(label, slide, th, on, v) {
     var b = document.createElement('button'); b.type = 'button'; b.className = 'tile' + (on ? ' on' : ''); b.dataset.v = v;
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -420,7 +428,7 @@
     if (!f && dt.items) { var it = [].slice.call(dt.items).filter(function (x) { return x.kind === 'file' && /^image\//.test(x.type); })[0]; f = it && it.getAsFile(); }
     if (!f) return;
     /* while typing, text on the clipboard wins (a copied web page often has both) */
-    var tg = e.target, typing = tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'INPUT');
+    var tg = e.target, typing = tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'INPUT' || tg.isContentEditable);
     if (typing && dt.types && [].indexOf.call(dt.types, 'text/plain') >= 0) return;
     e.preventDefault(); insertPicture(f);
   });
@@ -442,6 +450,109 @@
   $('settings').addEventListener('click', function (e) { if (e.target === $('settings')) closeSettings(); });
   $('settings').addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeSettings(); } });
 
+
+  /* ---------- SL5 text format + text boxes ---------- */
+  function addTextBox() {
+    if (SLShow.on()) return;
+    var box = SLEdit.addBox();
+    if (!box) { toast('A slide can have up to ' + SLText.MAX_BOX + ' text boxes'); return; }
+    toast('Text box added');
+  }
+  function bumpSize(dir) {
+    var m = SLEdit.marks(), base = 28;
+    if (m.slot === 'title') base = 44;
+    else if (m.slot && m.slot.indexOf('tb:') === 0) base = 24;
+    SLEdit.format({ size: SLText.nextSize(m.size || base, dir) }, 'Font size');
+  }
+  var TCOLS = ['#111827', '#ffffff', '#6b7280', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#2563eb', '#7c3aed', '#db2777', '#0891b2', '#000000'];
+  var HCOLS = ['#fef08a', '#bbf7d0', '#bae6fd', '#fbcfe8', '#e5e7eb', '#fed7aa', '#fca5a5'];
+  function fillPop(id, colors, autoLabel, anyId) {
+    var el = $(id); if (!el || el.dataset.ready) return el;
+    var h = '<button type="button" class="auto" data-c="" title="' + autoLabel + '">' + autoLabel + '</button>';
+    colors.forEach(function (c) { h += '<button type="button" data-c="' + c + '" style="background:' + c + '" title="' + c + '" aria-label="' + c + '"></button>'; });
+    h += '<label>Any <input type="color" id="' + anyId + '" aria-label="Any colour"></label>';
+    el.innerHTML = h; el.dataset.ready = '1'; return el;
+  }
+  function placePop(pop, btn) {
+    var r = btn.getBoundingClientRect();
+    pop.hidden = false;
+    var x = Math.max(6, Math.min(innerWidth - pop.offsetWidth - 6, r.left));
+    var y = r.bottom + 6; if (y + pop.offsetHeight > innerHeight - 6) y = Math.max(6, r.top - pop.offsetHeight - 6);
+    pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  }
+  function closePops() { var a = $('pop-color'), b = $('pop-hl'); if (a) a.hidden = true; if (b) b.hidden = true; }
+  function syncFmt() {
+    var m = SLEdit.marks();
+    function press(id, on) { var b = $(id); if (b) b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    press('f-b', !!m.b); press('f-i', !!m.i); press('f-u', !!m.u); press('f-s', !!m.s);
+    var lay = deck && deck.slides[deck.cur] ? (deck.slides[deck.cur].layout || 'tc') : 'tc';
+    var al = m.align || ((lay === 'title' && (m.slot === 'title' || m.slot === 'body')) ? 'center' : 'left');
+    press('f-left', al === 'left'); press('f-center', al === 'center'); press('f-right', al === 'right');
+    press('f-bullet', m.list === 'bullet'); press('f-number', m.list === 'number'); press('f-nolist', m.list === 'none' || !m.list);
+    var isTitle = m.slot === 'title';
+    ['f-bullet', 'f-number', 'f-nolist'].forEach(function (id) { if ($(id)) $(id).disabled = !m.on || isTitle; });
+    var sz = $('f-size'); if (sz && document.activeElement !== sz) sz.value = m.size ? String(m.size) : '';
+    var mini = $('mini-fmt'); if (!mini) return;
+    [].forEach.call(mini.querySelectorAll('[data-a]'), function (b) {
+      if (b.dataset.a === 'b' || b.dataset.a === 'i' || b.dataset.a === 'u' || b.dataset.a === 's') b.setAttribute('aria-pressed', m[b.dataset.a] ? 'true' : 'false');
+    });
+    var sel = window.getSelection && window.getSelection();
+    var show = m.on && sel && !sel.isCollapsed && sel.rangeCount && $('dialog').hidden && $('settings').hidden && $('pick').hidden;
+    if (!show || SLShow.on()) { mini.hidden = true; return; }
+    var r = sel.getRangeAt(0).getBoundingClientRect();
+    if (!r || (!r.width && !r.height)) { mini.hidden = true; return; }
+    mini.hidden = false;
+    var mw = mini.offsetWidth || 180;
+    mini.style.left = Math.max(6, Math.min(innerWidth - mw - 6, r.left + r.width / 2 - mw / 2)) + 'px';
+    mini.style.top = Math.max(6, r.top - 40) + 'px';
+  }
+  function wireFmt() {
+    fillPop('pop-color', TCOLS, 'Automatic', 'f-color-any');
+    fillPop('pop-hl', HCOLS, 'None', 'f-hl-any');
+    function keepSel(e) {
+      var t = e.target;
+      if (t.closest && t.closest('#fmt-group button, #mini-fmt button, .fmt-pop button')) e.preventDefault();
+    }
+    document.addEventListener('mousedown', keepSel);
+    function applyColor(which, c) {
+      var fmt = {}; fmt[which] = c; SLEdit.format(fmt, which === 'hl' ? 'Highlight' : 'Text colour'); closePops();
+    }
+    $('f-b').onclick = function () { SLEdit.format({ b: 'toggle' }, 'Bold'); };
+    $('f-i').onclick = function () { SLEdit.format({ i: 'toggle' }, 'Italic'); };
+    $('f-u').onclick = function () { SLEdit.format({ u: 'toggle' }, 'Underline'); };
+    if ($('f-s')) $('f-s').onclick = function () { SLEdit.format({ s: 'toggle' }, 'Strikethrough'); };
+    $('f-smaller').onclick = function () { bumpSize(-1); };
+    $('f-larger').onclick = function () { bumpSize(1); };
+    $('f-size').addEventListener('change', function () { if (this.value) SLEdit.format({ size: +this.value }, 'Font size'); });
+    $('f-color').onclick = function () { var p = $('pop-color'); if (!p.hidden) { closePops(); return; } closePops(); placePop(p, this); };
+    $('f-hl').onclick = function () { var p = $('pop-hl'); if (!p.hidden) { closePops(); return; } closePops(); placePop(p, this); };
+    $('pop-color').addEventListener('click', function (e) { var b = e.target.closest('button[data-c]'); if (b) applyColor('color', b.dataset.c); });
+    $('pop-hl').addEventListener('click', function (e) { var b = e.target.closest('button[data-c]'); if (b) applyColor('hl', b.dataset.c); });
+    $('pop-color').addEventListener('input', function (e) { if (e.target.id === 'f-color-any') applyColor('color', e.target.value); });
+    $('pop-hl').addEventListener('input', function (e) { if (e.target.id === 'f-hl-any') applyColor('hl', e.target.value); });
+    $('f-left').onclick = function () { SLEdit.para({ align: 'left' }, 'Align left'); };
+    $('f-center').onclick = function () { SLEdit.para({ align: 'center' }, 'Align centre'); };
+    $('f-right').onclick = function () { SLEdit.para({ align: 'right' }, 'Align right'); };
+    $('f-bullet').onclick = function () { SLEdit.para({ list: 'bullet' }, 'Bullets'); };
+    $('f-number').onclick = function () { SLEdit.para({ list: 'number' }, 'Numbered list'); };
+    $('f-nolist').onclick = function () { SLEdit.para({ list: 'none' }, 'No list'); };
+    if ($('f-ind')) $('f-ind').onclick = function () { SLEdit.para({ indent: 1 }, 'Indent'); };
+    if ($('f-outd')) $('f-outd').onclick = function () { SLEdit.para({ indent: -1 }, 'Outdent'); };
+    $('f-clear').onclick = function () { SLEdit.format({ clear: true }, 'Clear formatting'); };
+    $('mini-fmt').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var a = b.dataset.a;
+      if (a === 'b' || a === 'i' || a === 'u' || a === 's') { var o = {}; o[a] = 'toggle'; SLEdit.format(o, a === 'b' ? 'Bold' : a === 'i' ? 'Italic' : a === 'u' ? 'Underline' : 'Strikethrough'); }
+      else if (a === 'color') { closePops(); placePop($('pop-color'), b); }
+      else if (a === 'hl') { closePops(); placePop($('pop-hl'), b); }
+      else if (a === 'clear') SLEdit.format({ clear: true }, 'Clear formatting');
+    });
+    document.addEventListener('pointerdown', function (e) {
+      if (!e.target.closest('.fmt-pop') && !e.target.closest('#f-color') && !e.target.closest('#f-hl') && !e.target.closest('#mini-fmt [data-a=color]') && !e.target.closest('#mini-fmt [data-a=hl]')) closePops();
+    });
+    document.addEventListener('selectionchange', function () { if (!SLShow.on()) syncFmt(); });
+  }
+
   /* ---------- wiring ---------- */
   /* SL4: File (#b-deck) opens #menu-deck through the shared ribbon (legacy: openMenu('menu-deck', $('b-deck'), false)) */
   $('b-more').onclick = function () { openMenu('menu-slide', $('b-more'), true); };
@@ -462,11 +573,12 @@
   $('b-lay').onclick = function () { openPick('layout'); };
   $('b-theme').onclick = function () { openPick('theme'); };
   $('b-pic').onclick = pickPicture;
+  $('b-tbox').onclick = addTextBox;
   $('menu-slide').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return; closeMenus();
     var a = b.dataset.a;
     if (a === 'add') addSlide(); else if (a === 'dup') dupSlide(); else if (a === 'up') nudge(-1); else if (a === 'down') nudge(1); else if (a === 'del') delSlide();
-    else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture();
+    else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture(); else if (a === 'tbox') addTextBox();
     else if (a === 'undo') swap(undo, redo, 'Undo'); else if (a === 'redo') swap(redo, undo, 'Redo');
     else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pdf') exportPdf();
   });
@@ -519,10 +631,27 @@
     /* SL3: app undo / redo outside the text boxes (inside them the browser's own text undo works).
        SL4: routed by OfficeQuick (undoKey below); legacy SL3 handler here:
        if ((e.ctrlKey || e.metaKey) && !e.altKey && !typing && (z | y)) { e.preventDefault(); swap(redo | undo) } */
-    /* SL3: the selected picture: Delete / Backspace removes it (Undo brings it back), arrows nudge it, Esc drops the selection */
+    /* SL5 format shortcuts while typing in a box */
+    if (typing && (e.ctrlKey || e.metaKey) && !e.altKey) {
+      var k = e.key, low = k.length === 1 ? k.toLowerCase() : k;
+      if (low === 'b') { e.preventDefault(); SLEdit.format({ b: 'toggle' }, 'Bold'); return; }
+      if (low === 'i') { e.preventDefault(); SLEdit.format({ i: 'toggle' }, 'Italic'); return; }
+      if (low === 'u') { e.preventDefault(); SLEdit.format({ u: 'toggle' }, 'Underline'); return; }
+      if ((low === 'l' || low === 'L') && !e.shiftKey) { e.preventDefault(); SLEdit.para({ align: 'left' }, 'Align left'); return; }
+      if ((low === 'e' || low === 'E') && !e.shiftKey) { e.preventDefault(); SLEdit.para({ align: 'center' }, 'Align centre'); return; }
+      if ((low === 'r' || low === 'R') && !e.shiftKey) { e.preventDefault(); SLEdit.para({ align: 'right' }, 'Align right'); return; }
+      if (e.shiftKey && (k === '>' || k === '.' || e.code === 'Period' || e.key === 'Period')) { e.preventDefault(); bumpSize(1); return; }
+      if (e.shiftKey && (k === '<' || k === ',' || e.code === 'Comma' || e.key === 'Comma')) { e.preventDefault(); bumpSize(-1); return; }
+    }
+    /* SL3 / SL5: the selected picture or text box: Delete removes it, arrows nudge, Enter edits a text box, Esc drops the selection */
     var sp = SLEdit.selected();
-    if (sp && !typing && !menus && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); SLEdit.delPic(); toast('Picture deleted (Ctrl+Z brings it back)'); return; }
+    if (sp && !sp.editing && !typing && !menus && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        var kind = sp.kind === 'tbox' ? 'Text box' : 'Picture';
+        SLEdit.delObj(); toast(kind + ' deleted (Ctrl+Z brings it back)'); return;
+      }
+      if (e.key === 'Enter' && sp.kind === 'tbox') { e.preventDefault(); SLEdit.startEdit(sp.obj.id); return; }
       var st = e.shiftKey ? 10 : 1, mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
       if (mv) { e.preventDefault(); SLEdit.nudge(mv[0], mv[1]); return; }
       if (e.key === 'Escape') { e.preventDefault(); SLEdit.select(''); return; }
@@ -533,9 +662,9 @@
   });
 
   SLEdit.init({ onChange: function (s) { var i = deck.slides.indexOf(s); if (i >= 0) SLList.update(i); dirty(); },
-    /* SL3: a picture was added / moved / resized / cropped / deleted */
+    /* SL3 / SL5: a picture or text box was added / moved / resized / cropped / deleted, or text was formatted */
     onObj: function (s, before, label) { var i = deck.slides.indexOf(s); if (i < 0) return; recordSlide(s, before, label); SLList.update(i); dirty(); },
-    onPickPic: pickPicture });
+    onPickPic: pickPicture, onFmt: syncFmt });
   SLShow.init({ onExit: function (last) {
     /* back in the editor on the slide shown last */
     if (last !== deck.cur) select(last); else { SLList.reveal(); }
@@ -576,6 +705,7 @@
   });
   SLHub.init({ tabs: TABS, activeTab: activeTab, selectTab: selectTab, openFile: openFile, openSettings: openSettings,
     title: function () { return deck ? deck.name : 'Slides'; } });
+  wireFmt();
 
   /* ---------- start: the last deck, else the newest, else a first deck ---------- */
   (function boot() {
@@ -595,7 +725,8 @@
     /* legacy (SL1 / SL2): sync import. SL3: r.done = a promise for the new deck (pictures are stored first) */
     importText: function (t) { var r = SLFile.parse(t); if (!r.error) r.done = importParsed(r); return r; },
     setLayout: function (l) { setLayout(l); }, setTheme: function (t) { setTheme(t); }, setBg: function (c) { setBg(c); },
-    addSlide: function (l) { addSlide(l); }, insertPicture: insertPicture, undo: function () { return swap(undo, redo, 'Undo'); }, redo: function () { return swap(redo, undo, 'Redo'); },
+    addSlide: function (l) { addSlide(l); }, insertPicture: insertPicture, addTextBox: addTextBox,
+    undo: function () { return swap(undo, redo, 'Undo'); }, redo: function () { return swap(redo, undo, 'Redo'); },
     busy: function () { return busy; },
     /* SL4 */
     tab: activeTab, selectTab: selectTab, print: printDeck, exportPdf: exportPdf, canUndo: function () { return undo.length > 0; }, canRedo: function () { return redo.length > 0; }
