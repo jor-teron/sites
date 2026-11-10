@@ -720,7 +720,7 @@
     var nextClips = S.moveBy(st.clips, i, delta);
     if (S.sameState(st, { fade: st.fade, clips: nextClips })) return;
     commit({ fade: st.fade, clips: nextClips }, true);
-    seekGlobal(S.localToGlobal(S.findIndex(nextClips, selectedId), 
+    seekGlobal(S.localToGlobal(S.findIndex(nextClips, selectedId),
       (S.globalToLocal(globalTime, st.clips) || {}).sourceTime || 0, nextClips), false);
   }
 
@@ -1717,7 +1717,7 @@
     ev.preventDefault();
     var insert = insertIndexFromEvent(ev, strip);
     // Account for the hole left by the dragged clip: insert is a target index
-    // in the current visual list. After removal, if insert > from, subtract 1? 
+    // in the current visual list. After removal, if insert > from, subtract 1?
     // We show a gap at `insert` in the current (unmoved) list. On drop we
     // map to moveClip's `to` as: if insert > from, insert - 1, else insert.
     drag.insert = insert;

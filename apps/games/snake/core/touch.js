@@ -19,7 +19,7 @@ window.SN = window.SN || {};
     else game.clickStart(); // title / over → new game, pause → resume
   }
   window.addEventListener('pointerdown', (e) => {
-    if (e.target.closest && e.target.closest('.ui')) return;
+    if (e.target.closest && e.target.closest('.ui, #theme-settings')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (ptr) return;
     ptr = { id: e.pointerId, x0: e.clientX, y0: e.clientY, ax: e.clientX, ay: e.clientY, t0: performance.now(), swiped: false, maxMove: 0 };
@@ -43,7 +43,7 @@ window.SN = window.SN || {};
   window.addEventListener('pointercancel', (e) => endPtr(e, true));
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('dblclick', (e) => e.preventDefault());
-  document.addEventListener('touchmove', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', (e) => { if (e.target.closest && e.target.closest('#theme-settings')) return; if (e.cancelable) e.preventDefault(); }, { passive: false });
 
   // Optional on-screen D-pad (off by default; toggle saved in localStorage)
   const dpadEl = el.dpad;
