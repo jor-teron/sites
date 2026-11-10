@@ -32,6 +32,7 @@ Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon a
 Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buildings and fight enemies with physics weapons
 Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
 Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
+Garden Guard,      garden-guard/, garden-guard/garden-guard_icon.png, , Strategy, Grow a garden defence across five lawns with sun makers and frosty shooters
 Star Pinball,      pinball/,       , , Arcade, Original space pinball: ramp - spinner - drop targets and missions from Cadet to Admiral
 Osmos OSM1c,      osmos/,        osmos/assets/cell-icon.svg, , Arcade, Calm glow cell survival: absorb smaller cells and grow through seeded levels
 Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
