@@ -1084,7 +1084,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Formula hint under the formula bar while typing; fx button opens a searchable in-app function picker (inserts NAME().).
 - Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH9. Storage still sheet-v3. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
-### 1.80 Spreadsheet data tools, release SH10
+### 1.65 Spreadsheet data tools, release SH10
 
 - apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
 - Find and replace (this sheet or all sheets, optional match case). Replace edits stored cell text only, not a calculated result; undoable. Ctrl/Cmd+F and Ctrl/Cmd+H. In-app panel (no window.prompt).
