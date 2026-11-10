@@ -5,7 +5,8 @@
  * 'storage' event.
  * Keys: wallpaper, taskH, titleH, accent, theme, motion, wmMode, startHover, homeBtn (AH1-F1) (see hub/core/hub_prefs.js), trayMeter (hub_traymeter.js), showFiles (H7: hub_prefs.js / hub_drives.js), showTiles (H72: hub_prefs.js),
  *   hoverFocus (wm_windows.js), snapEdges + snapMagnet (wm_snap.js, hub/osk/osk_drag.js), workspaces (wm_workspaces.js), filesClick + filesThumbs (Files app), netThumbs (H122: Files on network drives),
- *   H52: bar* (Hub bar switches, hub_prefs.js; sec_hubbar.js) and updEvery (Auto update every N days, hub_update.js; sec_about.js).
+ *   H52: bar* (Hub bar switches, hub_prefs.js; sec_hubbar.js) and updEvery (Auto update every N days, hub_update.js; sec_about.js),
+ *   H144: askClose + showFsBtn (default on, '0' = off; sec_desktop.js; wm_taskbar.js HubCloseGuard / #wm-fs).
  * Also paints this app's own accent / theme so Settings matches the Hub.
  */
 window.SettingsStore = (function () {

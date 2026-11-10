@@ -132,6 +132,7 @@
     invites = [];
     changed();
     try { sessionStorage.setItem('hub-join-try', v.code); } catch (_) { /* private mode */ }
+    if (window.__hubAllowUnload) window.__hubAllowUnload();   // H144
     location.replace(location.pathname + '?join=' + v.code);   // same as 🎮 Devices › Join (hub_panels.js)
     return true;
   }

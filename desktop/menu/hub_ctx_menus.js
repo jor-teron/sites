@@ -29,7 +29,7 @@
       desk && { label: shown ? 'Restore windows' : 'Show desktop', icon: '\uD83D\uDDA5', disabled: !n || !sd, action: () => sd.click() },
       { label: 'Open Files', icon: '\uD83D\uDCC2', action: () => C.openApp(C.FILES) },
       { label: 'Settings (Wallpaper)', icon: '\uD83D\uDDBC', action: () => C.openApp(C.SETTINGS, { hash: 'wallpaper' }) },
-      { label: 'Refresh', icon: '\u21BB', action: () => location.reload() },
+      { label: 'Refresh', icon: '\u21BB', action: () => { if (window.__hubAllowUnload) window.__hubAllowUnload(); location.reload(); } },   // H144
       desk && { sep: true },
       desk && { label: 'Close all windows', icon: '\u2715', danger: true, disabled: !n, action: async () => {
         const ok = window.UiDialog

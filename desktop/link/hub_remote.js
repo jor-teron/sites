@@ -98,7 +98,7 @@
   /* ---------- manual Disconnect (button lives in the 🎮 popover: hub_linkstate.js) ---------- */
   function disconnect() {
     SharedLink.stop();   // bye + forget 'shared-link-join-code'
-    setTimeout(() => location.replace(location.pathname), 300);
+    setTimeout(() => { if (window.__hubAllowUnload) window.__hubAllowUnload(); location.replace(location.pathname); }, 300);   // H144
   }
 
   /* ---------- join ---------- */

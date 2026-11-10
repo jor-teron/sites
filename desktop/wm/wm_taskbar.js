@@ -37,10 +37,76 @@
  *   The empty-bar right-click menu gets "Hub bar settings".
  * - H52b: Pooh Chat / Devices / Update (the .header-right items placeTray moves) follow the same switches in
  *   Phone mode's top bar too; Update off + a build waiting → the dot on Home ▾ (#cat-btn) there (H52c: removed). wm.css.
+ * - H144: Ask before closing (sites-hub.askClose, default on, '0' = off; not for a joined / ?join device;
+ *   window.__hubAllowUnload() skips the prompt for a Hub reload). Fullscreen button #wm-fs on the right of
+ *   the bar, just before the clock (sites-hub.showFsBtn, default on, '0' = off; hidden when the browser has
+ *   no Fullscreen API). Settings → Desktop; live via HubPrefs.apply() → __hubSyncFsBtn.
  * Redraws on 'hub-wm-change' (wm_windows.js). Look in wm.css.
  */
 (function () {
   'use strict';
+
+  // H144: ask before closing the Desktop Hub. The handler reads the setting and join state live.
+  // Intentional Hub reloads / navigations call window.__hubAllowUnload() first so the prompt is skipped.
+  window.HubCloseGuard = (function () {
+    let skip = false;
+    function allow() { skip = true; }
+    function joined() {
+      try {
+        if (window.__hubRemote) return true;
+        if (window.HubMode && window.HubMode.joined) return true;
+        return /[?&]join=/.test((typeof location !== 'undefined' && location.search) || '');
+      } catch (_) { return false; }
+    }
+    function askOn() {
+      try { return localStorage.getItem('sites-hub.askClose') !== '0'; } catch (_) { return true; }
+    }
+    function shouldPrompt() { return askOn() && !joined() && !skip; }
+    function onBeforeUnload(e) {
+      if (!shouldPrompt()) return;
+      e.preventDefault();
+      e.returnValue = '';
+    }
+    window.addEventListener('beforeunload', onBeforeUnload);
+    window.__hubAllowUnload = allow;
+    return { allow: allow, joined: joined, askOn: askOn, shouldPrompt: shouldPrompt, onBeforeUnload: onBeforeUnload };
+  })();
+
+  // H144: taskbar fullscreen toggle (API used by the button below and by tests)
+  const FS_ENTER = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4"/></svg>';
+  const FS_EXIT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h4V4M20 8h-4V4M4 16h4v4M20 16h-4v4"/></svg>';
+  window.HubFullscreen = {
+    showOn: function () { try { return localStorage.getItem('sites-hub.showFsBtn') !== '0'; } catch (_) { return true; } },
+    supported: function (doc) { doc = doc || document; return !!(doc.fullscreenEnabled || doc.webkitFullscreenEnabled); },
+    isOn: function (doc) { doc = doc || document; return !!(doc.fullscreenElement || doc.webkitFullscreenElement); },
+    label: function (on) { return on ? 'Exit full screen' : 'Full screen'; },
+    shouldShow: function (doc) { return this.showOn() && this.supported(doc || document); },
+    toggle: function (doc) {
+      doc = doc || document;
+      if (this.isOn(doc)) {
+        const x = doc.exitFullscreen || doc.webkitExitFullscreen;
+        if (x) x.call(doc);
+        return 'exit';
+      }
+      const el = doc.documentElement;
+      const r = el && (el.requestFullscreen || el.webkitRequestFullscreen);
+      if (r) r.call(el);
+      return 'enter';
+    },
+    paint: function (btn, doc) {
+      if (!btn) return;
+      doc = doc || document;
+      const on = this.isOn(doc);
+      btn.hidden = !this.shouldShow(doc);
+      const t = this.label(on);
+      btn.title = t;
+      btn.setAttribute('aria-label', t);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.classList.toggle('on', on);
+      btn.innerHTML = on ? FS_EXIT : FS_ENTER;
+    }
+  };
+
   const catBtn = document.getElementById('cat-btn');
   const menu = document.getElementById('menu');
   if (!catBtn || !menu || !window.HubWM) return;
@@ -82,7 +148,22 @@
   searchBtn.setAttribute('aria-label', 'Search');
   searchBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 20 20"/></svg>';
   // bar.append(start, showDesk, tasks, tray, clock);   // before H48b
-  bar.append(start, showDesk, searchBtn, tasks, tray, clock);
+  // bar.append(start, showDesk, searchBtn, tasks, tray, clock);   // H48b   (before H144)
+  // H144: fullscreen button on the right, just before the clock
+  const fsBtn = document.createElement('button');
+  fsBtn.type = 'button';
+  fsBtn.id = 'wm-fs';
+  window.HubFullscreen.paint(fsBtn);
+  fsBtn.addEventListener('click', () => {
+    if (window.CtxMenu) CtxMenu.close();
+    if (menu.classList.contains('open')) catBtn.click();
+    window.HubFullscreen.toggle();
+  });
+  const paintFs = () => window.HubFullscreen.paint(fsBtn);
+  document.addEventListener('fullscreenchange', paintFs);
+  document.addEventListener('webkitfullscreenchange', paintFs);
+  window.__hubSyncFsBtn = paintFs;
+  bar.append(start, showDesk, searchBtn, tasks, tray, fsBtn, clock);
   document.body.appendChild(bar);
 
   // Old top bar items ↔ tray
