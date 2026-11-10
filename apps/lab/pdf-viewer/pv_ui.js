@@ -1,4 +1,4 @@
-/* PDF Viewer — pv_ui.js: toolbar, page box, zoom label, status, keyboard. PV1 */
+/* PDF Viewer — pv_ui.js: toolbar, page box, zoom label, status, keyboard. PV1 + PV2 */
 (function (root) {
   'use strict';
 
@@ -138,6 +138,7 @@
     function bindKeyboard() {
       window.addEventListener('keydown', function (e) {
         if (!renderer || !renderer.getDoc()) return;
+        if (root.PVDlg && root.PVDlg.isOpen()) return;
         if (isTypingTarget(e.target)) return;
 
         var page = renderer.getCurrentPage();
