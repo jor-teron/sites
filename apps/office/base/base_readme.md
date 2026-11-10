@@ -3,9 +3,9 @@
 Small database app (like a light LibreOffice Base / Access). Plain HTML/CSS/JS, no build, works from `file://`.
 Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, notify cards, theme, settings, hover, collapse).
 
-Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 5, 'pics' store),
+Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 7, 'pics' store),
 `base-types.js` (field types, validation, conversion, auto-number), `base-history.js` (in-memory undo/redo),
-`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard),
+`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard), `base-report.js` (BS7: group-by reports, summary, SVG charts, print),
 `base-fields.js` (Fields / Add field dialogs and edit commit),
 `base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view),
 `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs),
@@ -66,4 +66,12 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 - CSV export writes the linked records' display text (several names joined with “; ”), not raw ids. Picture columns are still left out.
 - Existing BS5 databases load unchanged. Schema becomes 6; the first BS6 open writes a backup and migrates in place.
 
-**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a URL-type Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. A Link to record whose table (or record) was removed shows as “(missing)” until you clear or repick it. Lookups only follow one link (they don't chain). CSV import still creates a new table and cannot rebuild links from names. Shared Office files were not edited.
+## BS7 (reports, summaries and charts)
+- **Report tab:** group records by a field (including a Link to record, a Lookup, or a “Link ▸ field” path). One optional second group-by gives subtotals plus a grand total. Dates can be bucketed by day, month or year. Empty values show as “(blank)”.
+- **Aggregates:** Count of records, plus Sum / Average / Min / Max of Number, Currency and Auto-number ID fields (and lookups of those). The report uses the rows you can already see (the active query and the search box).
+- **Saved reports** live in the same IndexedDB record (`BASE.db.reports`), listed in the Report tab picker and the File menu. Save / Rename / Delete are undoable (Ctrl+Z) until you close Base. Deleting a table drops its reports (that still cannot be undone).
+- **Charts:** simple bar and pie charts drawn as SVG (no chart library). A bar chart shows up to 12 groups; a pie chart shows up to 8 slices plus “Other”. File > Print (and Print report / the Quick Access print button) opens the browser print window — use Save as PDF there. There is no PDF library.
+- **Summary row** under the grid (View tab, was Totals) also shows Min and Max.
+- Existing BS6 databases load unchanged. Schema becomes 7; the first BS7 open writes a backup and migrates in place.
+
+**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a URL-type Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. A Link to record whose table (or record) was removed shows as “(missing)” until you clear or repick it. Lookups only follow one link (they don't chain). CSV import still creates a new table and cannot rebuild links from names. A report that groups by a multi-link field counts the row in each linked group. Charts have no animation and cap the number of bars or slices. Print quality depends on the browser's print window. Shared Office files were not edited.

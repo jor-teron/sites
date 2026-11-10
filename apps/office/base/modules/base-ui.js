@@ -1,5 +1,5 @@
 /*
- * base-ui.js  (BS1–BS6: undo, field types, rules, auto-number ID, links between tables)
+ * base-ui.js  (BS1–BS7: undo, field types, rules, auto-number ID, links between tables, reports and charts)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
  * Field editing uses BaseFields.add / .edit (rules, Choice options, retype preview).
@@ -8,8 +8,8 @@
  *   (office-dialog look, no alert/confirm): "Download raw data" (JSON file of what was loaded) and
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
-var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS6";
+var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
+var BASE_VERSION = "BS7";
 var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };
@@ -45,10 +45,13 @@ var BaseUI = (function () {
       b.textContent = x.name; b.addEventListener("click", function () { ribbonSetFile(false); switchTable(x.id); }); ft.appendChild(b);
     });
     $("grid-wrap").hidden = BASE.view !== "grid"; $("form-wrap").hidden = BASE.view !== "form";
+    var rw = $("related-wrap"); if (rw && BASE.view === "report") rw.hidden = true;
     $("btn-view-grid").classList.toggle("on", BASE.view === "grid"); $("btn-view-form").classList.toggle("on", BASE.view === "form");
     $("btn-totals").classList.toggle("on", !!BASE.totals);
-    if (BASE.view === "grid") BaseGrid.render(); else BaseForm.render();
+    if (BASE.view === "grid") BaseGrid.render();
+    else if (BASE.view === "form") BaseForm.render();
     if (typeof BaseQuery !== "undefined") BaseQuery.renderPicker();
+    if (typeof BaseReport !== "undefined") BaseReport.render();
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.sendTitle) BASE_HUB.sendTitle();
     try { if (typeof OfficeQuick !== "undefined" && OfficeQuick.refresh) OfficeQuick.refresh(); } catch (e) {}
   }
@@ -95,7 +98,11 @@ var BaseUI = (function () {
   function deleteRow() { return BaseDelete.records(); }   /* BS4: typed DELETE confirm, no one-tap delete */
   function addField() { return BaseFields.add(); }
   function editFields() { return BaseFields.edit(); }
-  function setView(v) { BASE.view = v; render(); }
+  function setView(v) {
+    BASE.view = v;
+    if (v !== "report" && BASE.report) BASE.report = null;
+    render();
+  }
   function importFile(file) {
     var rd = new FileReader();
     rd.onload = function () { try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Import CSV"); } catch (e) {} var t = BaseCsv.importText(uniqueName(file.name.replace(/\.[^.]+$/, "")), String(rd.result)); if (!t) return toast("That CSV is empty"); BASE.sort = null; render(); toast("Imported " + t.rows.length + " records"); };
@@ -132,7 +139,7 @@ var BaseUI = (function () {
         if (!ok) { back.hidden = false; dl.focus(); return; }
         back.remove();
         BaseStore.reset(function () {
-          BASE.view = "grid";
+          BASE.view = "grid"; BASE.report = null;
           try { render(); } catch (e) { $("grid-wrap").textContent = ""; renderEmpty($("grid-wrap")); }
           toast("Base was reset");
         });
@@ -193,7 +200,7 @@ function initBaseSettings() {
   function menu(id, fn) { $(id).addEventListener("click", function () { ribbonSetFile(false); fn(); }); }
   menu("btn-new-table", BaseUI.newTable);
   menu("btn-export", function () { var t = BaseStore.table(); if (t) BaseCsv.exportTable(t); });
-  menu("btn-print", function () { window.print(); });
+  menu("btn-print", function () { if (typeof BaseReport !== "undefined") BaseReport.print(); else window.print(); });
   menu("settingsMenuBtn", function () { BASE_SETTINGS.open(); });
   $("file-import").addEventListener("change", function (e) { var f = e.target.files[0]; ribbonSetFile(false); if (f) BaseUI.importFile(f); e.target.value = ""; });
   $("table-sel").addEventListener("change", function (e) { BaseUI.switchTable(e.target.value); });
@@ -218,6 +225,15 @@ function initBaseSettings() {
   $("btn-query-delete").addEventListener("click", BaseQuery.remove);
   $("btn-query-sql").addEventListener("click", function () { BaseQuery.open(); BaseQuery.toggleSql(); });
   $("query-pick").addEventListener("change", function (e) { if (e.target.value) BaseQuery.pick(e.target.value); });
+  $("btn-report").addEventListener("click", BaseReport.open);
+  $("btn-report-clear").addEventListener("click", BaseReport.clear);
+  $("btn-report-save").addEventListener("click", BaseReport.save);
+  $("btn-report-rename").addEventListener("click", BaseReport.rename);
+  $("btn-report-delete").addEventListener("click", BaseReport.remove);
+  $("btn-report-bar").addEventListener("click", function () { BaseReport.setChart("bar"); });
+  $("btn-report-pie").addEventListener("click", function () { BaseReport.setChart("pie"); });
+  $("btn-report-print").addEventListener("click", BaseReport.print);
+  $("report-pick").addEventListener("change", function (e) { if (e.target.value) BaseReport.pick(e.target.value); });
   $("btn-sort-clear").addEventListener("click", function () { BASE.sort = null; BaseUI.render(); });
   var st = null;
   $("search").addEventListener("input", function (e) { clearTimeout(st); st = setTimeout(function () { BASE.search = e.target.value; BaseUI.render(); }, 150); });

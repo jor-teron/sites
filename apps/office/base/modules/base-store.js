@@ -1,9 +1,9 @@
 /*
- * base-store.js  (BS1, BS3: safe start, BS5: schema 5 + pictures store, BS6: schema 6 + ref/lookup)
+ * base-store.js  (BS1, BS3: safe start, BS5: schema 5 + pictures store, BS6: schema 6 + ref/lookup, BS7: schema 7 + reports)
  * Data model + IndexedDB storage for Base. Whole database kept in memory (small) and saved as ONE
  * record ('db') in IndexedDB 'office-base'; falls back to memory-only with an in-app banner.
  *   BASE.db = { schema, tables: [{ id, name, fields: [{id, name, type, required?, unique?, def?, options?, next?}],
- *               rows: [{id, v: {fieldId: value}}] }], current, queries }
+ *               rows: [{id, v: {fieldId: value}}] }], current, queries, reports }
  *   Types: text | number | date | bool | choice | email | phone | link | currency | long | picture | id | ref | lookup.
  *   ref fields keep { to, multi?, display? }; lookup fields keep { via, src }. Values of a ref are a
  *   row-id string or an array of ids (multi).
@@ -18,15 +18,17 @@
  *   (same 'db-backup' key as a repair). IndexedDB version is 2 (adds the 'pics' store).
  * BS6: schema 6 (link-to-record + lookup). Existing schema 5 (and older) databases migrate in place
  *   after the same backup; row values and earlier field types are left as they are.
+ * BS7: schema 7 (saved reports). Existing schema 6 (and older) databases migrate in place after the
+ *   same backup; tables, queries and links are left as they are. Reports live in BASE.db.reports.
  * API: BaseStore.load(cb), BaseStore.save() (debounced autosave), BaseStore.saveNow(), BaseStore.newTable(name, fields),
  *      BaseStore.table(), BaseStore.templates, BaseStore.uid(), BaseStore.repair(raw), BaseStore.raw(),
  *      BaseStore.reset(cb), BaseStore.warn(msg), BaseStore.idb(), BaseStore.addIdField(t),
  *      BaseStore.newRow(t), SCHEMA
  */
-var BASE = { db: { schema: 6, tables: [], current: null, queries: [] }, query: null, totals: false, memOnly: false, sort: null, view: "grid", formIndex: 0, selRow: null, search: "" };
+var BASE = { db: { schema: 7, tables: [], current: null, queries: [], reports: [] }, query: null, report: null, totals: false, memOnly: false, sort: null, view: "grid", formIndex: 0, selRow: null, search: "" };
 
 var BaseStore = (function () {
-  var DB_NAME = "office-base", STORE = "kv", PICS = "pics", DB_VER = 2, SCHEMA = 6, TIMEOUT = 1500, idb = null, saveT = null, rawData = null;
+  var DB_NAME = "office-base", STORE = "kv", PICS = "pics", DB_VER = 2, SCHEMA = 7, TIMEOUT = 1500, idb = null, saveT = null, rawData = null;
   function types() { return (typeof BaseTypes !== "undefined" && BaseTypes.TYPES) || { text: 1, number: 1, date: 1, bool: 1 }; }
   function uid() { return Math.random().toString(36).slice(2, 9); }
   function toast(m) { try { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 3000); } catch (e) {} }
@@ -78,7 +80,7 @@ var BaseStore = (function () {
       r.onblocked = function () { finish(false, "is blocked by another Base tab"); };
     } catch (e) { finish(false, "not available"); }
   }
-  function emptyDb() { return { schema: SCHEMA, tables: [], current: null, queries: [] }; }
+  function emptyDb() { return { schema: SCHEMA, tables: [], current: null, queries: [], reports: [] }; }
   function load(cb) {
     var done = false, t = null;
     function finish(val) {
@@ -91,7 +93,7 @@ var BaseStore = (function () {
           warn("Some saved data was damaged and has been repaired (" + res.fixed + " fix" + (res.fixed > 1 ? "es" : "") + "). A copy of the original was kept as a backup.");
           try { if (idb) idb.transaction(STORE, "readwrite").objectStore(STORE).put(val, "db-backup"); } catch (e) {}
         }
-        /* BS5/BS6: bump schema in place, after a backup, without calling it "damaged". */
+        /* BS5/BS6/BS7: bump schema in place, after a backup, without calling it "damaged". */
         if (res.migrated) {
           try { if (idb && !res.fixed) idb.transaction(STORE, "readwrite").objectStore(STORE).put(val, "db-backup"); } catch (e) {}
           saveNow();
@@ -212,6 +214,27 @@ var BaseStore = (function () {
         if (c.join !== "and" && c.join !== "or") { if (c.join !== undefined) fixed++; c.join = "and"; }
         out.queries.push(c);
       });
+      var rs = raw.reports;
+      if (rs != null && !Array.isArray(rs)) { fixed++; rs = []; }
+      (rs || []).forEach(function (r) {
+        if (!isObj(r) || !str(r.id)) { fixed++; return; }
+        var c; try { c = JSON.parse(JSON.stringify(r)); } catch (e) { fixed++; return; }
+        c.id = str(c.id);
+        c.name = str(c.name).trim() || "Report";
+        c.table = str(c.table);
+        c.groupBy = str(c.groupBy);
+        c.groupBy2 = str(c.groupBy2);
+        if (c.bucket !== "month" && c.bucket !== "year") c.bucket = "value";
+        if (c.bucket2 !== "month" && c.bucket2 !== "year") c.bucket2 = "value";
+        if (c.chart !== "bar" && c.chart !== "pie") c.chart = "none";
+        c.chartFn = str(c.chartFn) || "count";
+        c.chartField = str(c.chartField);
+        if (!Array.isArray(c.aggs)) { if (c.aggs !== undefined) fixed++; c.aggs = [{ field: "", fn: "count" }]; }
+        var okfn = { count: 1, sum: 1, avg: 1, min: 1, max: 1 };
+        c.aggs = c.aggs.filter(function (a) { return isObj(a) && okfn[a.fn] ? (a.field = str(a.field), a.fn = str(a.fn), true) : (fixed++, false); });
+        if (!c.aggs.length) c.aggs = [{ field: "", fn: "count" }];
+        out.reports.push(c);
+      });
       out.schema = SCHEMA;
     } catch (e) { fixed++; }
     return { db: out, fixed: fixed, migrated: migrated };
@@ -229,7 +252,7 @@ var BaseStore = (function () {
   /* Clear the saved record (if storage works) and empty memory; cb() then renders the templates screen. */
   function reset(cb) {
     clearTimeout(saveT);
-    BASE.db = emptyDb(); BASE.query = null; BASE.sort = null; BASE.selRow = null; BASE.formIndex = 0; BASE.search = "";
+    BASE.db = emptyDb(); BASE.query = null; BASE.report = null; BASE.sort = null; BASE.selRow = null; BASE.formIndex = 0; BASE.search = "";
     rawData = null;
     try { if (typeof BaseHistory !== "undefined") BaseHistory.clear(); } catch (e) {}
     var called = false; function done() { if (!called) { called = true; try { if (typeof BasePics !== "undefined") BasePics.gc(); } catch (e) {} cb && cb(); } }

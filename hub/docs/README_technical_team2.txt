@@ -845,6 +845,17 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - `<title>Base BS6</title>`, `BASE_VERSION = "BS6"`, Base's own css/js `?v=BS6`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, `test-bs5-helpers.js` + new `test-bs6-helpers.js` (display, lookup, inbound, clear, delete impact, schema 5→6 repair), static curl smoke (200 + BS6). No Puppeteer / Playwright / jsdom.
 
+
+### 1.66 Base reports, summaries and charts: `apps/office/base/` (Office), release BS7
+- Why: BS6 linked tables together, but there was still no way to group records, total them, print a report, or see a simple chart — the next step planned to Jor after links.
+- New `modules/base-report.js` (pure group/aggregate helpers + Report tab UI + SVG bar/pie, no chart library). A report groups by one field and an optional second field (including a `ref`, a `lookup`, or a “Link ▸ field” path). Dates can be bucketed by day / month / year. Aggregates: Count, plus Sum / Average / Min / Max of Number, Currency and Auto-number ID (and lookups of those). Two group-by levels produce subtotals and a grand total. Empty groups are “(blank)”. A row with several links is counted in each linked group.
+- The report runs over the currently visible rows (active query + search). Saved reports live in `BASE.db.reports` (same IndexedDB record), in the Report tab picker and the File menu. Save / Rename / Delete are undoable until Base is closed. Deleting a table drops its reports (still not undoable).
+- Charts are SVG (bar: top 12; pie: top 8 + Other). File > Print, the Report tab “Print report” button and Quick Access print open the browser print window when a report is active (`body.base-print-report` + `@media print`); use Save as PDF there. No PDF library.
+- The grid totals row (View → Summary row) also shows Min and Max.
+- Data: `schema: 7`. Existing schema 6 (and older) records in IndexedDB `office-base` load unchanged; first open writes `db-backup` and migrates in place. Repair validates reports. IndexedDB version stays 2.
+- `<title>Base BS7</title>`, `BASE_VERSION = "BS7"`, Base's own css/js `?v=BS7`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5-helpers.js` + `test-bs6-helpers.js` + new `test-bs7-helpers.js` (group-by, aggregates, date buckets, two-level subtotals, link/multi-link, chart series, schema 6→7 repair), static curl smoke (200 + BS7). No Puppeteer / Playwright / jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
