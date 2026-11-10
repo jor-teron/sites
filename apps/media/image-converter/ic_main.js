@@ -1,8 +1,8 @@
-/* Image Converter — ic_main.js: boot theme, dialogs, UI. CI2 */
+/* Image Converter — ic_main.js: boot theme, dialogs, UI. CI3 */
 (function () {
   'use strict';
 
-  var RELEASE = 'CI2';
+  var RELEASE = 'CI3';
 
   function boot() {
     if (window.ICTheme) ICTheme.boot();

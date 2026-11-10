@@ -1,4 +1,4 @@
-/* Image Converter — ic_exif.js: JPEG EXIF walk (orientation now; tags for CI3). CI1 */
+/* Image Converter — ic_exif.js: JPEG EXIF parse, describe, and a minimal writer. CI3 */
 (function (root) {
   'use strict';
 
@@ -224,6 +224,363 @@
     return { width: w, height: h };
   }
 
+  function valOf(ifd, tag) {
+    return tagVal(ifd, tag);
+  }
+
+  function rationalNum(v) {
+    if (v && typeof v === 'object' && !Array.isArray(v) && v.num != null) {
+      return v.den ? v.num / v.den : 0;
+    }
+    return Number(v) || 0;
+  }
+
+  function dmsToDec(arr, ref) {
+    if (arr == null) return null;
+    var a = Array.isArray(arr) ? arr : [arr];
+    var d = rationalNum(a[0]);
+    var m = rationalNum(a.length > 1 ? a[1] : 0);
+    var s = rationalNum(a.length > 2 ? a[2] : 0);
+    var dec = d + m / 60 + s / 3600;
+    if (ref === 'S' || ref === 'W') dec = -Math.abs(dec);
+    return dec;
+  }
+
+  function decToDms(dec) {
+    var neg = Number(dec) < 0;
+    var x = Math.abs(Number(dec) || 0);
+    var d = Math.floor(x);
+    var minF = (x - d) * 60;
+    var m = Math.floor(minF);
+    var s = (minF - m) * 60;
+    return {
+      neg: neg,
+      rats: [
+        { num: d, den: 1 },
+        { num: m, den: 1 },
+        { num: Math.round(s * 1000), den: 1000 }
+      ]
+    };
+  }
+
+  function hemi(latOrLon, kind) {
+    if (kind === 'lat') return latOrLon < 0 ? 'S' : 'N';
+    return latOrLon < 0 ? 'W' : 'E';
+  }
+
+  function formatCoord(dec, kind) {
+    if (dec == null || !isFinite(dec)) return '';
+    var h = hemi(dec, kind);
+    return Math.abs(dec).toFixed(5) + '° ' + h;
+  }
+
+  function formatGpsText(lat, lon) {
+    if (lat == null || lon == null) return '';
+    return formatCoord(lat, 'lat') + ', ' + formatCoord(lon, 'lon');
+  }
+
+  function formatExifDate(raw) {
+    var s = String(raw || '').trim();
+    var m = s.match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return s;
+    return m[1] + '-' + m[2] + '-' + m[3] + ' ' + m[4] + ':' + m[5] + ':' + m[6];
+  }
+
+  function toExifDate(value) {
+    if (!value) return '';
+    if (value instanceof Date && isFinite(value.getTime())) {
+      function z(n) { n = String(n); return n.length < 2 ? '0' + n : n; }
+      return value.getFullYear() + ':' + z(value.getMonth() + 1) + ':' + z(value.getDate()) +
+        ' ' + z(value.getHours()) + ':' + z(value.getMinutes()) + ':' + z(value.getSeconds());
+    }
+    var s = String(value).trim();
+    if (/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}/.test(s)) return s.slice(0, 19);
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if (m) return m[1] + ':' + m[2] + ':' + m[3] + ' ' + m[4] + ':' + m[5] + ':' + m[6];
+    return '';
+  }
+
+  /**
+   * Friendly summary of a parseJpeg() result (or of JPEG bytes).
+   */
+  function describe(input) {
+    var parsed = input && input.isJpeg ? input : (input ? parseJpeg(input) : null);
+    if (!parsed) return null;
+    var ex = parsed.exif || {};
+    var ifd0 = ex.ifd0 || {};
+    var exif = ex.exif || {};
+    var gps = ex.gps || {};
+    var make = valOf(ifd0, 0x010F);
+    var model = valOf(ifd0, 0x0110);
+    make = typeof make === 'string' ? make.trim() : '';
+    model = typeof model === 'string' ? model.trim() : '';
+    var camera = [make, model].filter(Boolean).join(' ');
+    if (model && make && model.indexOf(make) === 0) camera = model;
+    var dateRaw = valOf(exif, 0x9003) || valOf(ifd0, 0x0132) || valOf(exif, 0x9004) || '';
+    if (typeof dateRaw !== 'string') dateRaw = '';
+    var latRef = valOf(gps, 0x0001);
+    var lonRef = valOf(gps, 0x0003);
+    var lat = dmsToDec(valOf(gps, 0x0002), typeof latRef === 'string' ? latRef.charAt(0) : latRef);
+    var lon = dmsToDec(valOf(gps, 0x0004), typeof lonRef === 'string' ? lonRef.charAt(0) : lonRef);
+    var hasGps = lat != null && lon != null && isFinite(lat) && isFinite(lon);
+    var alt = null;
+    if (hasGps && valOf(gps, 0x0006) != null) {
+      alt = rationalNum(valOf(gps, 0x0006));
+      if (valOf(gps, 0x0005) === 1) alt = -alt;
+    }
+    return {
+      make: make,
+      model: model,
+      camera: camera,
+      dateRaw: String(dateRaw || '').trim(),
+      date: formatExifDate(dateRaw),
+      orientation: parsed.orientation || 1,
+      width: parsed.width || 0,
+      height: parsed.height || 0,
+      hasGps: hasGps,
+      gps: hasGps ? { lat: lat, lon: lon, alt: alt, text: formatGpsText(lat, lon) } : null,
+      iso: valOf(exif, 0x8827),
+      parsed: parsed
+    };
+  }
+
+  function pushBytes(arr, bytes) {
+    for (var i = 0; i < bytes.length; i++) arr.push(bytes[i] & 0xFF);
+  }
+
+  function le16(n) { return [n & 0xFF, (n >> 8) & 0xFF]; }
+  function le32(n) {
+    n = n >>> 0;
+    return [n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF, (n >> 24) & 0xFF];
+  }
+
+  function packAscii(s) {
+    var str = String(s == null ? '' : s);
+    var out = [];
+    for (var i = 0; i < str.length; i++) out.push(str.charCodeAt(i) & 0xFF);
+    out.push(0);
+    return out;
+  }
+
+  function packAsciiFixed(s, len) {
+    var out = packAscii(s);
+    while (out.length < len) out.push(0);
+    if (out.length > len) {
+      out = out.slice(0, len);
+      out[len - 1] = 0;
+    }
+    return out;
+  }
+
+  function packRats(rats) {
+    var out = [];
+    for (var i = 0; i < rats.length; i++) {
+      pushBytes(out, le32(rats[i].num >>> 0));
+      pushBytes(out, le32(rats[i].den >>> 0));
+    }
+    return out;
+  }
+
+  /**
+   * Build a TIFF Exif payload (including the "Exif\0\0" header) from
+   * { date, make, model, gps?: {lat, lon, alt} }.
+   * Returns null when there is nothing to write.
+   */
+  function buildExifPayload(opts) {
+    opts = opts || {};
+    var date = toExifDate(opts.date);
+    var make = opts.make ? String(opts.make).slice(0, 64) : '';
+    var model = opts.model ? String(opts.model).slice(0, 64) : '';
+    var gps = opts.gps && isFinite(Number(opts.gps.lat)) && isFinite(Number(opts.gps.lon)) ? opts.gps : null;
+    if (!date && !make && !model && !gps) return null;
+
+    function tag(list, id, type, bytes) {
+      list.push({ tag: id, type: type, count: type === 2 ? bytes.length : (type === 5 ? bytes.length / 8 : (type === 1 || type === 7 ? bytes.length : (type === 3 ? 1 : 1))), bytes: bytes });
+    }
+    /* Fix counts properly per type after we know bytes. */
+    function add(list, id, type, bytes, count) {
+      list.push({ tag: id, type: type, count: count, bytes: bytes });
+    }
+
+    var ifd0 = [];
+    var exif = [];
+    var gpsIfd = [];
+
+    if (make) add(ifd0, 0x010F, 2, packAscii(make), packAscii(make).length);
+    if (model) add(ifd0, 0x0110, 2, packAscii(model), packAscii(model).length);
+    if (date) add(ifd0, 0x0132, 2, packAsciiFixed(date, 20), 20);
+    add(ifd0, 0x0112, 3, le16(1).concat([0, 0]), 1); /* already-oriented output */
+
+    if (date) {
+      add(exif, 0x9000, 7, [0x30, 0x32, 0x33, 0x30], 4); /* ExifVersion 0230 */
+      add(exif, 0x9003, 2, packAsciiFixed(date, 20), 20);
+      add(exif, 0x9004, 2, packAsciiFixed(date, 20), 20);
+    }
+
+    if (gps) {
+      add(gpsIfd, 0x0000, 1, [2, 3, 0, 0], 4);
+      var lat = decToDms(gps.lat);
+      var lon = decToDms(gps.lon);
+      add(gpsIfd, 0x0001, 2, packAscii(lat.neg ? 'S' : 'N'), 2);
+      add(gpsIfd, 0x0002, 5, packRats(lat.rats), 3);
+      add(gpsIfd, 0x0003, 2, packAscii(lon.neg ? 'W' : 'E'), 2);
+      add(gpsIfd, 0x0004, 5, packRats(lon.rats), 3);
+      if (gps.alt != null && isFinite(Number(gps.alt))) {
+        var alt = Number(gps.alt);
+        add(gpsIfd, 0x0005, 1, [alt < 0 ? 1 : 0, 0, 0, 0], 1);
+        add(gpsIfd, 0x0006, 5, packRats([{ num: Math.round(Math.abs(alt) * 100), den: 100 }]), 1);
+      }
+    }
+
+    /* Pointers are added after we know offsets. */
+    function ifdSize(tags) { return 2 + tags.length * 12 + 4; }
+    function heapSize(tags) {
+      var n = 0;
+      for (var i = 0; i < tags.length; i++) if (tags[i].bytes.length > 4) n += tags[i].bytes.length;
+      return n;
+    }
+
+    var tiffHeader = 8;
+    var off = tiffHeader;
+    var ifd0Off = off;
+    off += ifdSize(ifd0) + 12 * ((exif.length ? 1 : 0) + (gpsIfd.length ? 1 : 0)); /* extra pointer tags */
+    /* Recount: we will push ExifOffset / GPSOffset onto ifd0 before sizing. */
+    /* Rebuild offsets properly below. */
+
+    if (exif.length) add(ifd0, 0x8769, 4, [0, 0, 0, 0], 1); /* placeholder */
+    if (gpsIfd.length) add(ifd0, 0x8825, 4, [0, 0, 0, 0], 1);
+
+    off = tiffHeader;
+    ifd0Off = off;
+    var ifd0Heap = heapSize(ifd0);
+    off += ifdSize(ifd0) + ifd0Heap;
+    var exifOff = 0;
+    var exifHeap = 0;
+    if (exif.length) {
+      exifOff = off;
+      exifHeap = heapSize(exif);
+      off += ifdSize(exif) + exifHeap;
+    }
+    var gpsOff = 0;
+    if (gpsIfd.length) {
+      gpsOff = off;
+    }
+
+    /* Fill pointer values (4-byte longs, inline). */
+    for (var i = 0; i < ifd0.length; i++) {
+      if (ifd0[i].tag === 0x8769) ifd0[i].bytes = le32(exifOff);
+      if (ifd0[i].tag === 0x8825) ifd0[i].bytes = le32(gpsOff);
+    }
+
+    function writeIfd(tags, baseOff) {
+      var bytes = [];
+      /* sort tags as most cameras do */
+      tags = tags.slice().sort(function (a, b) { return a.tag - b.tag; });
+      pushBytes(bytes, le16(tags.length));
+      var heap = [];
+      var heapOff = baseOff + ifdSize(tags);
+      for (var t = 0; t < tags.length; t++) {
+        var g = tags[t];
+        pushBytes(bytes, le16(g.tag));
+        pushBytes(bytes, le16(g.type));
+        pushBytes(bytes, le32(g.count));
+        if (g.bytes.length <= 4) {
+          var inline = g.bytes.slice();
+          while (inline.length < 4) inline.push(0);
+          pushBytes(bytes, inline);
+        } else {
+          pushBytes(bytes, le32(heapOff));
+          pushBytes(heap, g.bytes);
+          heapOff += g.bytes.length;
+        }
+      }
+      pushBytes(bytes, le32(0)); /* next IFD */
+      pushBytes(bytes, heap);
+      return bytes;
+    }
+
+    var out = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
+    pushBytes(out, [0x49, 0x49, 0x2A, 0x00]);
+    pushBytes(out, le32(ifd0Off));
+    pushBytes(out, writeIfd(ifd0, ifd0Off));
+    if (exif.length) pushBytes(out, writeIfd(exif, exifOff));
+    if (gpsIfd.length) pushBytes(out, writeIfd(gpsIfd, gpsOff));
+    return new Uint8Array(out);
+  }
+
+  /**
+   * Return a new JPEG with existing Exif APP1 removed and, if payload is
+   * given, a new APP1 inserted right after SOI. Other segments are kept.
+   */
+  function spliceApp1(u8, payload) {
+    if (!isJpeg(u8)) throw new Error('not a jpeg');
+    var out = [0xFF, 0xD8];
+    if (payload && payload.length) {
+      var len = payload.length + 2;
+      if (len > 0xFFFF) throw new Error('EXIF is too large');
+      out.push(0xFF, 0xE1, (len >> 8) & 0xFF, len & 0xFF);
+      pushBytes(out, payload);
+    }
+    var i = 2;
+    var n = u8.length;
+    while (i < n) {
+      if (u8[i] !== 0xFF) {
+        for (; i < n; i++) out.push(u8[i]);
+        break;
+      }
+      var marker = u8[i + 1];
+      if (marker === 0xDA || marker === 0xD9) {
+        for (; i < n; i++) out.push(u8[i]);
+        break;
+      }
+      if (marker === 0x00 || marker === 0xFF) { out.push(u8[i]); i += 1; continue; }
+      if ((marker >= 0xD0 && marker <= 0xD7) || marker === 0x01) {
+        out.push(u8[i], u8[i + 1]);
+        i += 2;
+        continue;
+      }
+      if (i + 3 >= n) { out.push(u8[i], u8[i + 1]); break; }
+      var seglen = (u8[i + 2] << 8) | u8[i + 3];
+      var isExif = false;
+      if (marker === 0xE1 && i + 9 < n) {
+        isExif = u8[i + 4] === 0x45 && u8[i + 5] === 0x78 && u8[i + 6] === 0x69 && u8[i + 7] === 0x66;
+      }
+      if (isExif) {
+        i += 2 + seglen;
+        continue;
+      }
+      for (var j = 0; j < 2 + seglen && i + j < n; j++) out.push(u8[i + j]);
+      i += 2 + seglen;
+    }
+    return new Uint8Array(out);
+  }
+
+  /**
+   * Write a minimal EXIF block into a JPEG. Only date, camera (make/model)
+   * and GPS are supported. Other original tags (MakerNote, lens, ICC, preview
+   * thumbnail) are not copied. Pass an empty opts object to strip EXIF.
+   * Returns a new Uint8Array.
+   */
+  function writeJpegExif(u8, opts) {
+    var payload = buildExifPayload(opts || {});
+    return spliceApp1(u8, payload);
+  }
+
+  function keepFromDescribe(info, keep) {
+    keep = keep || {};
+    if (!info) return {};
+    var opts = {};
+    if (keep.date && info.dateRaw) opts.date = info.dateRaw;
+    if (keep.camera) {
+      if (info.make) opts.make = info.make;
+      if (info.model) opts.model = info.model;
+    }
+    if (keep.gps && info.gps) {
+      opts.gps = { lat: info.gps.lat, lon: info.gps.lon, alt: info.gps.alt };
+    }
+    return opts;
+  }
+
   var api = {
     isJpeg: isJpeg,
     parseJpeg: parseJpeg,
@@ -231,7 +588,16 @@
     jpegDimensions: jpegDimensions,
     sizeAfterOrientation: sizeAfterOrientation,
     applyOrientation: applyOrientation,
-    tagVal: tagVal
+    tagVal: tagVal,
+    describe: describe,
+    formatExifDate: formatExifDate,
+    toExifDate: toExifDate,
+    formatGpsText: formatGpsText,
+    dmsToDec: dmsToDec,
+    decToDms: decToDms,
+    buildExifPayload: buildExifPayload,
+    writeJpegExif: writeJpegExif,
+    keepFromDescribe: keepFromDescribe
   };
 
   root.ICExif = api;

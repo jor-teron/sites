@@ -1,4 +1,4 @@
-/* Image Converter — layout, theme, list, dialogs. CI2 */
+/* Image Converter — layout, theme, list, dialogs. CI3 */
 
 :root,
 html[data-theme="light"],
@@ -587,4 +587,52 @@ select:focus-visible {
 
 @media (max-width: 419px), (max-height: 420px) {
   .preview-stage, .preview-stage canvas { max-height: 120px; height: 120px; }
+}
+
+/* CI3: photo info, icon set, data URL */
+.warn-note { color: var(--warn); }
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin: 6px 0 10px;
+}
+.info-table th, .info-table td {
+  text-align: left;
+  padding: 4px 8px 4px 0;
+  vertical-align: top;
+}
+.info-table th {
+  color: var(--mute);
+  font-weight: 600;
+  width: 7em;
+  white-space: nowrap;
+}
+.privacy-warn {
+  background: var(--accent-soft);
+  border: 1px solid var(--warn);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  margin: 8px 0;
+}
+.size-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 8px 0;
+}
+#dataUrlOut {
+  display: block;
+  width: 100%;
+  min-height: 88px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: 0.78rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  resize: vertical;
 }

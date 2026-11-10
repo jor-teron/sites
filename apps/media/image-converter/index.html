@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Image Converter CI2</title>
+  <title>Image Converter CI3</title>
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="image-converter_icon.png">
   <script>
@@ -27,7 +27,7 @@
       } catch (e) { /* ok */ }
     })();
   </script>
-  <link rel="stylesheet" href="image-converter.css?v=CI2">
+  <link rel="stylesheet" href="image-converter.css?v=CI3">
 </head>
 <body>
   <div class="app" id="app">
@@ -50,6 +50,7 @@
           <button type="button" class="btn secondary-btn" id="addFolderBtn">Add folder</button>
           <button type="button" class="btn primary-btn" id="convertBtn">Convert</button>
           <button type="button" class="btn secondary-btn" id="zipBtn">Download zip</button>
+          <button type="button" class="btn secondary-btn" id="iconSetBtn">Icon set</button>
           <button type="button" class="btn text-btn" id="clearBtn">Clear list</button>
         </div>
         <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/bmp,image/svg+xml,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.svg" multiple hidden>
@@ -169,7 +170,16 @@
             <label class="lab" for="wmColor">Colour</label>
             <input type="color" id="wmColor" value="#ffffff">
           </div>
-          <p class="note">Location and camera data are removed. Photos are turned the right way up. Nothing is uploaded — this runs on your device.</p>
+          <h2>Photo info</h2>
+          <p class="hint">When saving as JPG you can write a few original fields back in. Maker notes, lens data and thumbnails are not copied.</p>
+          <div class="field wrap-row">
+            <label class="chk"><input type="checkbox" id="keepDate"> Keep date</label>
+            <label class="chk"><input type="checkbox" id="keepCamera"> Keep camera</label>
+            <label class="chk"><input type="checkbox" id="keepGps"> Keep location (GPS)</label>
+          </div>
+          <p class="note warn-note">GPS is off by default. Only turn it on if you want the new file to say where the photo was taken.</p>
+          <p class="note">Location and camera data are stripped unless you choose to keep them. Photos are turned the right way up. Nothing is uploaded — this runs on your device.</p>
+          <p class="note">iPhone HEIC photos are not supported, because opening them offline needs a heavy library. Convert them to JPG on the phone first.</p>
         </form>
 
         <div class="preview-box">
@@ -180,6 +190,8 @@
             <button type="button" class="btn secondary-btn" id="flipHBtn" title="Flip horizontally">Flip H</button>
             <button type="button" class="btn secondary-btn" id="flipVBtn" title="Flip vertically">Flip V</button>
             <button type="button" class="btn secondary-btn" id="resetEditBtn" title="Reset rotate, flip and crop for this photo">Reset edits</button>
+            <button type="button" class="btn secondary-btn" id="infoBtn" title="Show camera, date and GPS from the original file">Photo info</button>
+            <button type="button" class="btn secondary-btn" id="copyDataBtn" title="Copy a data URL of this photo">Copy data URL</button>
           </div>
           <div class="field">
             <span class="label">Crop</span>
@@ -213,7 +225,7 @@
         <label for="fileInput" class="drop-zone" id="dropZone">
           <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
           <span>Choose photos, a folder, or drag them here</span>
-          <span class="hint">JPG, PNG and WebP, plus AVIF when this browser can write it. One photo is converted at a time so a large batch stays light.</span>
+          <span class="hint">JPG, PNG, WebP and SVG, plus AVIF when this browser can write it. A GIF uses its first frame. iPhone HEIC is not supported. One photo is converted at a time so a large batch stays light.</span>
         </label>
         <div class="list-wrap hidden" id="listWrap">
           <ul class="file-list" id="fileList"></ul>
@@ -233,15 +245,16 @@
     </div>
   </div>
 
-  <script src="ic_helpers.js?v=CI2"></script>
-  <script src="ic_zip.js?v=CI2"></script>
-  <script src="ic_exif.js?v=CI2"></script>
-  <script src="ic_theme.js?v=CI2"></script>
-  <script src="ic_dlg.js?v=CI2"></script>
-  <script src="ic_presets.js?v=CI2"></script>
-  <script src="ic_edit.js?v=CI2"></script>
-  <script src="ic_convert.js?v=CI2"></script>
-  <script src="ic_ui.js?v=CI2"></script>
-  <script src="ic_main.js?v=CI2"></script>
+  <script src="ic_helpers.js?v=CI3"></script>
+  <script src="ic_zip.js?v=CI3"></script>
+  <script src="ic_ico.js?v=CI3"></script>
+  <script src="ic_exif.js?v=CI3"></script>
+  <script src="ic_theme.js?v=CI3"></script>
+  <script src="ic_dlg.js?v=CI3"></script>
+  <script src="ic_presets.js?v=CI3"></script>
+  <script src="ic_edit.js?v=CI3"></script>
+  <script src="ic_convert.js?v=CI3"></script>
+  <script src="ic_ui.js?v=CI3"></script>
+  <script src="ic_main.js?v=CI3"></script>
 </body>
 </html>
