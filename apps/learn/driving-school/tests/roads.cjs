@@ -56,3 +56,9 @@ test('fault cooldown and severity are deterministic; score never negative', () =
   assert(r.l.faults.every(f => ['minor', 'serious'].includes(f.severity)));
   assert.equal(D.roadLessons().length, 7); assert.equal(D.roadLessons('right')[0].spawn[1], 63.5);
 });
+test('parking needs real reverse travel, complete stop, alignment, neutral and handbrake', () => {
+  const def = D.roadLessons()[5], l = D.lesson(def), w = D.world(); l.gate = def.gates.length;
+  const c = D.car({ x:104, y:45 }); D.updateRoadLesson(l,c,w,1/60); assert(!l.done);
+  l.reverseDistance = 4; D.updateRoadLesson(l,c,w,1/60); assert(l.done);
+  l.done = false; c.heading = .5; D.updateRoadLesson(l,c,w,1/60); assert(!l.done);
+});

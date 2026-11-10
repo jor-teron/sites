@@ -74,6 +74,7 @@
   }
   function updateRoadLesson(l, c, w, dt) {
     l.elapsed += dt; l.distance = c.distance;
+    if (c.gear === -1) l.reverseDistance = (l.reverseDistance || 0) + Math.abs(c.v) * dt;
     if (c.distance > 3) l.phase = 1;
     if (l.def.needsStop && !w.stopSatisfied) l.phase = 0;
     if (l.def.needsWait && w.waitDwell < 1) l.phase = 0;
@@ -84,7 +85,7 @@
       if (p) {
         const dx = Math.abs(c.x - p.x), dy = Math.abs(c.y - p.y);
         const aligned = Math.abs(wrap(c.heading - p.heading)) < .2;
-        l.done = dx < p.width / 2 - .8 && dy < p.height / 2 - .6 && aligned && Math.abs(c.v) < .1 && c.handbrake && c.gear === 0;
+        l.done = (l.reverseDistance || 0) >= 3 && dx < p.width / 2 - .8 && dy < p.height / 2 - .6 && aligned && Math.abs(c.v) < .1 && c.handbrake && c.gear === 0;
       } else l.done = (!l.def.needsStop || w.stopSatisfied) && (!l.def.needsWait || w.waitDwell >= 1);
     }
     l.score = Math.max(0, 100 - l.faults.reduce((n, f) => n + (f.severity === 'serious' ? 25 : 5), 0));

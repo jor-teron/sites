@@ -42,3 +42,14 @@ test('lesson cannot complete without moving; scoring clamps and faults persist',
 test('six original lessons have actionable cards and target guides', () => {
   assert.equal(D.basics.length, 6); for (const d of D.basics) { assert(d.cards.length >= 2); assert(d.gates.length > 0); }
 });
+test('automatic keeps neutral until D or R is selected and never reverses from brake', () => {
+  const c = D.car({ auto:true, handbrake:false }); D.start(c); drive(c,{ throttle:.7 },2);
+  assert.equal(c.gear,0); assert.equal(c.v,0);
+  D.shift(c,1); drive(c,{ throttle:.7 },5); assert(c.v > 3);
+  drive(c,{ brake:1 },4); assert.equal(c.v,0); assert(c.gear > 0);
+  D.shift(c,0); D.shift(c,-1); drive(c,{ throttle:.5 },4); assert(c.v < -1);
+});
+test('manual high-gear launch bogs and stalls; reverse launch drives backwards', () => {
+  const c = D.car({ handbrake:false }); D.start(c); D.shift(c,5); drive(c,{ throttle:.5 },3); assert(c.stalled);
+  const r = D.car({ handbrake:false }); D.start(r); D.shift(r,-1); drive(r,{ throttle:.6 },5); assert(r.v < -1); assert(r.engine);
+});

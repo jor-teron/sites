@@ -53,3 +53,32 @@ rear vehicles but cannot replace looking around or a real car's mirrors.
 The road network is a deliberately compact practice map, not a replica of any
 city. AI follows procedural routes; there is no realistic crash damage. Fault
 cooldowns avoid dozens of duplicate reports from one ongoing mistake.
+
+## DS-1c
+Mock route combines STOP, indicated turns, lane discipline, zebra crossing,
+traffic signals, roundabout and a return to parallel parking. Complete all rings
+and finish parked, or use End test for an incomplete report. A practice pass needs
+no serious faults and at most ten minor faults; this is NOT an official licence
+assessment. Report lists every minor/serious fault. Parking also requires at least
+3 m of actual reversing. The last test report is saved locally.
+
+The 20-question signs quiz deliberately reuses Road Safety's existing procedural
+Indian sign artwork (`../road-safety/core/signs.js`) rather than duplicate it.
+Engine, indicator and horn (B) use Web Audio synthesis; Sound on / Muted is saved.
+Sound starts only after a user gesture. Pause/help/quiz stop the simulation and
+engine audio; keyboard state is cleared on blur, visibility changes and modals.
+Landscape 844×390 fits the wheel, pedals and >=44 px gear/switch buttons; portrait
+has a wider-view hint and can scroll. Canvas uses device pixel ratio up to 3.
+How to drive explains the controls, practical sequence and simulator limitations.
+
+| Additional key | Meaning |
+| --- | --- |
+| `learn.driving-school.quiz-best` | highest signs quiz score out of 20 |
+| `learn.driving-school.test-last` | last mock report with completion and faults |
+
+Pure unit tests (no server/browser):
+`node --test apps/learn/driving-school/tests/basics.cjs apps/learn/driving-school/tests/roads.cjs apps/learn/driving-school/tests/exam.cjs`
+
+The AI and physics are deliberately simplified. Real vehicle behavior, sightlines,
+clutch bite, hazard perception and local regulations need supervised real-world
+instruction. No real phone or actual driving test has been used for validation.

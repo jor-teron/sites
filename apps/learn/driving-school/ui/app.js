@@ -3,11 +3,12 @@
   const D = window.DS, $ = id => document.getElementById(id), PRE = 'learn.driving-school.';
   function read(k, fallback) { try { return JSON.parse(localStorage.getItem(PRE + k)) ?? fallback; } catch (_) { return fallback; } }
   function write(k, v) { try { localStorage.setItem(PRE + k, JSON.stringify(v)); } catch (_) { /* storage unavailable */ } }
-  const prefs = Object.assign({ auto: false, side: 'left' }, read('settings', {})), best = read('best', {});
-  let s, last = 0, mirrorTime = 0;
+  const prefs = Object.assign({ auto: false, side: 'left', muted: false }, read('settings', {})), best = read('best', {});
+  let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0;
+  function notice(text) { noticeText = text; noticeUntil = performance.now() + 3000; }
   const keys = new Set(), held = { throttle: 0, brake: 0, clutch: 0, steer: 0 };
   const wheel = $('wheel'), list = $('lessons');
-  const definitions = () => D.basics.concat(D.roadLessons(prefs.side));
+  const definitions = () => D.basics.concat(D.roadLessons(prefs.side), [D.mockDefinition(prefs.side)]);
   function options() {
     list.replaceChildren(...definitions().map(def => {
       const opt = document.createElement('option'); opt.value = def.id;
@@ -18,13 +19,13 @@
   function reset() {
     const def = definitions().find(d => d.id === list.value) || D.basics[0];
     s = D.session(def, prefs); keys.clear(); Object.keys(held).forEach(k => held[k] = 0);
-    $('lesson-name').textContent = def.name; write('last', def.id); mirrorTime = 0;
+    $('end-test').hidden = !def.mock; $('lesson-name').textContent = def.name; write('last', def.id); mirrorTime = 0;
   }
   list.value = read('last', 'start'); reset();
   list.onchange = reset; $('retry').onclick = reset;
-  $('engine').onclick = () => D.start(s.c);
-  $('up').onclick = () => D.shift(s.c, s.c.gear + 1);
-  $('down').onclick = () => D.shift(s.c, s.c.gear - 1);
+  $('engine').onclick = () => { if (!D.start(s.c)) notice(s.c.message); };
+  $('up').onclick = () => { if (!D.shift(s.c, s.c.gear + 1)) notice(s.c.message); };
+  $('down').onclick = () => { if (!D.shift(s.c, s.c.gear - 1)) notice(s.c.message); };
   $('park').onclick = () => { s.c.handbrake = !s.c.handbrake; };
   function indicator(side) { s.c.indicator = s.c.indicator === side ? '' : side; }
   $('left').onclick = () => indicator('left'); $('right').onclick = () => indicator('right');
@@ -32,6 +33,20 @@
   function clearInput() { keys.clear(); Object.keys(held).forEach(k => held[k] = 0); }
   function pause() { s.paused = true; clearInput(); if (!$('pause-card').open) $('pause-card').showModal(); }
   $('pause').onclick = pause;
+  D.sound.mute(prefs.muted);
+  function muteLabel() { $('mute').textContent = prefs.muted ? 'Muted' : 'Sound on'; $('mute').setAttribute('aria-pressed', prefs.muted); }
+  muteLabel();
+  $('mute').onclick = () => { prefs.muted = !prefs.muted; D.sound.mute(prefs.muted); write('settings', prefs); muteLabel(); };
+  $('horn').onclick = () => D.sound.horn();
+  window.addEventListener('pointerdown', D.sound.unlock, { passive: true });
+  window.addEventListener('keydown', D.sound.unlock);
+  function modalOpen() { s.paused = true; clearInput(); }
+  for (const id of ['help-card','quiz-card','report-card']) $(id).addEventListener('close', () => { s.paused = false; clearInput(); });
+  $('help').onclick = () => { modalOpen(); $('help-card').showModal(); };
+  $('close-help').onclick = () => $('help-card').close();
+  $('quiz').onclick = () => { modalOpen(); D.showQuiz($('quiz-card'), read('quiz-best', 0), v => write('quiz-best', v)); };
+  function report() { modalOpen(); const r = D.testReport(s.l.faults, s.l.done, s.l.elapsed); write('test-last', r); D.showReport($('report-card'), r); }
+  $('end-test').onclick = report;
   $('resume').onclick = () => { $('pause-card').close(); s.paused = false; };
   $('pause-card').addEventListener('cancel', () => { s.paused = false; });
   $('settings').onclick = () => {
@@ -58,7 +73,7 @@
   }
   HubTheme.onChange(syncTheme); window.addEventListener('storage', syncTheme); window.addEventListener('focus', syncTheme);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme); syncTheme();
-  const actions = { Enter: 'engine', q: 'down', e: 'up', h: 'park', z: 'left', x: 'right', m: 'look' };
+  const actions = { Enter: 'engine', q: 'down', e: 'up', h: 'park', z: 'left', x: 'right', m: 'look', b: 'horn' };
   const driving = ['w', 's', 'a', 'd', 'c', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
   window.addEventListener('keydown', e => {
     if (e.target.matches('select,input,textarea') || s.paused) return;
@@ -90,12 +105,13 @@
     D.tick(s, input(), dt);
     if (s.l.done && !s.saved) { best[s.l.def.id] = Math.max(best[s.l.def.id] || 0, s.l.score); write('best', best); s.saved = true; const id = list.value; options(); list.value = id; }
     $('speed').textContent = Math.round(Math.abs(s.c.v) * 3.6);
+    $('rpm-meter').value = s.c.rpm;
     $('rpm').textContent = Math.round(s.c.rpm / 100) * 100 + ' RPM';
-    $('gear').textContent = s.c.gear === -1 ? 'R' : s.c.gear || 'N';
+    $('gear').textContent = s.c.gear === -1 ? 'R' : s.c.gear ? (s.c.auto ? 'D' : '') + s.c.gear : 'N';
     $('lamps').textContent = (s.c.handbrake ? 'Ⓟ PARK · ' : '') + (s.c.stalled ? 'STALL · ' : '') + (s.c.indicator === 'left' ? '◀ LEFT' : s.c.indicator === 'right' ? 'RIGHT ▶' : 'Signals off');
-    $('hint').textContent = D.hint(s.l, s.c);
-    $('progress').textContent = (s.l.def.finish || 'Follow the guide.') + ' · ' + (s.l.def.gates.length > 1 ? s.l.gate + '/' + s.l.def.gates.length + ' rings · ' : '') + Math.floor(s.l.elapsed) + ' s';
-    $('score').textContent = 'Score ' + s.l.score + '/100 · Best ' + (best[s.l.def.id] ?? '—');
+    $('hint').textContent = noticeUntil > performance.now() ? noticeText : D.hint(s.l, s.c);
+    $('progress').textContent = (s.l.def.finish || 'Follow the guide.') + ' · ' + (s.l.def.gates.length > 1 ? s.l.gate + '/' + s.l.def.gates.length + ' rings · ' : '') + Math.floor(s.l.elapsed) + ' s · clutch ' + Math.round(s.c.clutch * 100) + '%';
+    $('score').textContent = ' · Score ' + s.l.score + '/100 · Best ' + (best[s.l.def.id] ?? '—');
     $('park').setAttribute('aria-pressed', s.c.handbrake);
     $('left').setAttribute('aria-pressed', s.c.indicator === 'left'); $('right').setAttribute('aria-pressed', s.c.indicator === 'right');
     wheel.style.transform = 'rotate(' + s.c.steer * 65 + 'deg)'; wheel.setAttribute('aria-valuenow', Math.round(s.c.steer * 100));
@@ -106,6 +122,8 @@
       const back = s.w.cars.filter(ai => { const dx = ai.x - s.c.x, dy = ai.y - s.c.y; return dx * Math.cos(s.c.heading) + dy * Math.sin(s.c.heading) < 0 && Math.hypot(dx, dy) < 30; });
       $('mirror').textContent = 'REAR · ' + back.length + ' vehicle(s) nearby · check blind spots';
     }
+    D.sound.update(s.c, s.paused || s.l.done);
+    if (s.l.def.mock && s.l.done && !s.reported) { s.reported = true; report(); }
     D.draw($('road'), s, prefs);
   }
   function frame(t) { let dt = Math.min(.1, (t - (last || t)) / 1000); last = t; while (dt > 0) { const step = Math.min(dt, 1 / 60); update(step); dt -= step; } requestAnimationFrame(frame); }

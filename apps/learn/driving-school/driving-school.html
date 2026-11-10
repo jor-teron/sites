@@ -2,29 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Driving School DS-1b</title>
+<title>Driving School DS-1c</title>
 <link rel="icon" href="driving-school_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.driving-school.theme"></script>
 <link rel="stylesheet" href="ui/driving.css">
 </head>
 <body>
 <div id="app" class="lrn">
-<header class="lrn-head"><h1><span class="lrn-here">Driving School</span></h1><button id="settings">Settings</button></header>
-<div class="toolbar"><label>Lesson <select id="lessons" aria-label="Lesson"></select></label><button id="retry">Retry</button><button id="engine">Start engine</button><button id="pause">Pause</button></div>
+<header class="lrn-head"><h1><span class="lrn-here">Driving School</span></h1><button id="quiz">Signs quiz</button><button id="help">How to drive</button><button id="mute" aria-pressed="false">Sound on</button><button id="settings">Settings</button></header>
+<div class="toolbar"><label>Lesson <select id="lessons" aria-label="Lesson"></select></label><button id="retry">Retry</button><button id="engine">Start engine</button><button id="pause">Pause</button><button id="end-test" hidden>End test</button></div>
 <main>
 <section class="world"><canvas id="road" aria-label="Driving practice ground. Use the steering and pedal controls below."></canvas><div id="mirror" aria-label="Rear view mirror">REAR · clear practice lot</div><p id="rotate">Landscape gives a wider view. All controls still work in portrait.</p></section>
-<aside><div class="dash"><strong><span id="speed">0</span> <small>km/h</small></strong><span id="rpm">0 RPM</span><strong id="gear">N</strong><span id="lamps">PARK</span></div>
+<aside><div class="dash"><strong><span id="speed">0</span> <small>km/h</small></strong><span id="rpm">0 RPM</span><strong id="gear">N</strong><span id="lamps">PARK</span><meter id="rpm-meter" min="0" max="6500" low="1200" high="5000" optimum="2500" value="0" aria-label="Engine RPM"></meter></div>
 <div class="instructor"><strong id="lesson-name"></strong><p id="hint" aria-live="polite"></p><span id="progress"></span><p id="score"></p><p id="fault" aria-live="polite"></p></div>
 <div class="touch"><div id="wheel" role="slider" tabindex="0" aria-label="Steering wheel" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><span>◉</span><small>STEER</small></div><div class="pedals"><button data-hold="clutch">Clutch</button><button data-hold="brake">Brake</button><button data-hold="throttle">Accelerate</button></div></div>
-<div class="switches"><button id="down">Gear −</button><button id="up">Gear +</button><button id="park">Handbrake</button><button id="left">◀ Signal</button><button id="right">Signal ▶</button><button id="look">Check mirrors</button></div>
+<div class="switches"><button id="down">Gear −</button><button id="up">Gear +</button><button id="park">Handbrake</button><button id="left">◀ Signal</button><button id="right">Signal ▶</button><button id="look">Mirrors</button><button id="horn">Horn</button></div>
 </aside>
 </main>
 <p class="disclaimer">Practice concepts only — not real driving instruction. Train with a qualified instructor in a real car.</p>
 </div>
 <dialog id="preferences"><h2>Driving settings</h2><label>Transmission <select id="transmission"><option value="manual">Manual · 5 speed</option><option value="auto">Automatic</option></select></label><label>Road side <select id="side"><option value="left">Left-hand traffic · India · RHD</option><option value="right">Right-hand traffic · LHD</option></select></label><label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label><p>W / ↑ accelerator · S / ↓ or Space brake · A/D or ←/→ steer · C clutch · Q/E gears · H handbrake · Z/X indicators. Enter starts engine. M checks mirrors.</p><button id="close-settings">Done</button></dialog>
 <dialog id="pause-card"><h2>Practice paused</h2><p>Take your time. The car and lesson clock are stopped.</p><button id="resume">Resume</button></dialog>
+<dialog id="help-card"><h2>How to drive</h2>
+<p>This is a conceptual practice simulator, not professional instruction. Never use it while driving. Use a qualified instructor for a real car; rules and test criteria vary by location.</p>
+<ol><li>Adjust settings: India uses LEFT-hand traffic and a RIGHT-hand-drive seat. Choose Manual or Automatic. You are looking down on the car; its headlights point forward.</li>
+<li>Manual start: handbrake on; hold Clutch (C), start engine (Enter), select first (E), check Mirrors (M) and all around. Release handbrake (H). Add gentle accelerator (W) and release clutch. The clutch gauge shows the bite point. A stall needs brake, clutch down, neutral, restart.</li>
+<li>Accelerate in a straight line, ease off W, clutch down, select the next gear, release clutch. First gear is for moving off. Look ahead through turns and reduce speed before steering.</li>
+<li>To stop: release accelerator, apply brake (S/Space) progressively. Hold clutch near walking speed so the engine does not stall. At rest select neutral and apply handbrake.</li>
+<li>For reverse: stop completely, clutch down, Q to R, check behind and blind spots. Use light throttle. Steering reverses its effect on the direction of the nose while backing.</li>
+<li>Automatic: choose a forward gear with Gear + (E) or R via Gear − (Q) from N. No clutch needed. It shifts forward gears only. Always stop before changing direction.</li>
+<li>Touch: drag the steering wheel sideways; release to centre. Hold accelerator/brake/clutch. Gear and signal buttons latch. Keyboard arrows steer/accelerate/brake; Z/X signals, B horn. Indicators do not cancel automatically.</li>
+<li>Follow the blue rings in order. Move-off and braking lessons finish in a blue stop box. Parking needs full alignment inside the bay, neutral and handbrake. Retry resets only the current attempt; best scores stay saved.</li>
+<li>Town limit is 30 km/h. Stop fully at STOP. Red means stop before the line. Amber: do not begin entering. Give way to pedestrians and traffic already on the roundabout. Signal BEFORE turning, cancel after.</li>
+<li>Mock test: follow the whole route then parallel park. End test shows an incomplete report. Any serious fault fails the practice test; at most 10 minor faults pass. These are practice thresholds, not official licence rules.</li></ol>
+<p><a href="../road-safety/road-safety.html">Road Safety — more signs and road rules</a></p><button id="close-help">Back to practice</button></dialog>
+<dialog id="quiz-card" aria-label="Road signs quiz"></dialog><dialog id="report-card" aria-label="Mock test report"></dialog>
 <noscript>Driving School requires JavaScript.</noscript>
 <script src="../shared/learn-hubbar.js"></script>
-<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/town.js"></script><script src="core/rules.js"></script><script src="core/session.js"></script>
-<script src="ui/town-render.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script>
+<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/town.js"></script><script src="core/rules.js"></script><script src="core/exam.js"></script><script src="core/session.js"></script>
+<script src="ui/town-render.js"></script><script src="ui/render.js"></script><script src="../road-safety/core/signs.js"></script><script src="ui/exam-ui.js"></script><script src="ui/audio.js"></script><script src="ui/app.js"></script>
 </body></html>

@@ -15,6 +15,7 @@
       s.c.x = D.clamp(s.c.x, 3, maxX); s.c.y = D.clamp(s.c.y, 3, maxY); s.c.v = 0;
     }
     if (s.w) {
+      if (s.c.stalls > s.l.stallCount) { D.penalize(s.l, 'stall', 'Engine stalled: use clutch and gentle throttle.', 5); s.l.stallCount = s.c.stalls; }
       D.updateWorld(s.w, s.c, dt); D.checkRules(s.w, s.c, s.l, dt);
       D.updateRoadLesson(s.l, s.c, s.w, dt);
     } else D.updateLesson(s.l, s.c, dt);

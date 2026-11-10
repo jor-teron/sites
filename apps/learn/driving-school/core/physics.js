@@ -52,7 +52,7 @@
     const freeRPM = 900 + throttle * 4200;
     let desired = c.gear ? freeRPM * (1 - coupling) + wheelRPM * coupling : freeRPM;
     // A slipping clutch can transfer enough torque to move off with modest throttle.
-    if (throttle > .15) desired = Math.max(desired, 800 + throttle * 1800);
+    if (throttle > .15 && c.gear <= 2) desired = Math.max(desired, 800 + throttle * 1800);
     if (c.auto) desired = Math.max(desired, 900);
     c.rpm = c.engine ? c.rpm + (desired - c.rpm) * Math.min(1, dt * 7) : 0;
     if (c.engine && !c.auto && c.gear && coupling > .8 && c.rpm < 650) {
@@ -61,7 +61,7 @@
     }
     const direction = Math.sign(c.gear), oldV = c.v;
     const maxSpeed = c.gear === -1 ? 5 : [0, 9, 16, 23, 31, 40][c.gear];
-    const thrust = c.engine && c.gear && !c.handbrake ? direction * throttle * coupling * (c.gear <= 1 ? 3.3 : 2.5) * Math.max(0, 1 - speed / maxSpeed) : 0;
+    const thrust = c.engine && c.gear && !c.handbrake ? direction * throttle * coupling * (c.gear === -1 ? 3 : [0, 3.3, 2.5, 2, 1.6, 1.3][c.gear]) * Math.max(0, 1 - speed / maxSpeed) : 0;
     const drag = speed > .01 ? .12 + speed * .025 : 0;
     const retard = brake * 6.5 + (c.handbrake ? 9 : 0) + drag;
     c.v += thrust * dt;
