@@ -41,6 +41,19 @@ const pp = require(process.env.SC_PUPPETEER || '/workspace/sc-test/node_modules/
     assert.notEqual(await page.evaluate(() => StarColony.camera.x), camera.x);
     await page.mouse.wheel({ deltaY: -100 });
     await page.waitForFunction(z => StarColony.camera.zoom > z, {}, camera.zoom); check('pan and wheel zoom', () => {});
+    if (await page.$('#research')) {
+      await page.click('#research');
+      assert.equal(await page.$eval('#dialog-title', e => e.textContent), 'Discoveries');
+      await page.click('#dialog-actions button');
+      assert.equal(await page.evaluate(() => StarColony.getState().research.active), 'solar');
+      check('research card selects available discovery', () => {});
+      await page.evaluate(() => { StarColony.setPaused(true); SC.place(StarColony.getState(), 'lab', 17, 16); SC.advance(StarColony.getState(), 600); StarColony.hud(); });
+      await page.click('#ship');
+      assert.equal(await page.$eval('#dialog-title', e => e.textContent), 'Supply ship in orbit');
+      await page.click('#dialog-actions button');
+      assert.equal(await page.evaluate(() => StarColony.getState().colonists.length), 5);
+      check('ship choice docks supplies and settlers', () => {});
+    }
     for (const [width, height] of [[390, 844], [844, 390]]) {
       await page.setViewport({ width, height, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
       await page.waitForFunction(() => { const c = document.getElementById('map'), r = c.getBoundingClientRect(); return Math.abs(c.width - r.width * 2) <= 1; });

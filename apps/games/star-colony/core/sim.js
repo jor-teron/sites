@@ -23,7 +23,7 @@
   function create(seed = 4627) {
     const s = { version: 1, w: D.W, h: D.H, seed: seed >>> 0, time: 0, serial: 0,
       terrain: [], buildings: [], colonists: [], jobs: [], alerts: [], power: {},
-      stats: { born: 3, lost: 0, built: 0, food: 0, water: 0, ore: 0 }, over: false };
+      stats: { born: 3, lost: 0, built: 0, food: 0, water: 0, ore: 0, foodUsed: 0, waterUsed: 0 }, over: false };
     for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
       const n = random(s);
       s.terrain.push(n < .12 ? 'rock' : n < .19 ? 'ice' : n < .27 ? 'ore' : 'regolith');
@@ -40,6 +40,7 @@
     addBuilding(s, 'battery', 21, 14, true); addBuilding(s, 'corridor', 21, 15, true);
     ['Ari', 'Neri', 'Sol'].forEach(n => addColonist(s, n));
     notice(s, 'Welcome to Pelora. Adjacent buildings share power and oxygen. Expand with corridors.');
+    if (api.growth) api.growth.init(s);
     networks(s, D.STEP); return s;
   }
   function totals(s) {
@@ -52,6 +53,7 @@
   function withdraw(s, key, amount, network) {
     const list = stores(s, network);
     if (list.reduce((n, b) => n + (b.stock[key] || 0), 0) + 1e-8 < amount) return false;
+    if (key === 'water') s.stats.waterUsed = (s.stats.waterUsed || 0) + amount;
     for (const b of list) { const n = Math.min(b.stock[key] || 0, amount); b.stock[key] -= n; amount -= n; }
     return true;
   }
@@ -69,7 +71,8 @@
   }
   /* Connected cardinal tiles carry utilities; no invisible global oxygen or power. */
   function networks(s, dt) {
-    const live = s.buildings.filter(b => b.ready && b.health > 0), byPos = new Map(live.map(b => [b.y * s.w + b.x, b]));
+    s.buildings.forEach(b => { b.network = -1; b.powered = false; });
+    const live = s.buildings.filter(b => b.ready && b.health > 0 && !(b.offlineUntil > s.time)), byPos = new Map(live.map(b => [b.y * s.w + b.x, b]));
     live.forEach(b => { b.network = -1; b.powered = false; });
     let net = 0, made = 0, demand = 0, served = 0, charge = 0, capacity = 0;
     for (const first of live) {
@@ -134,7 +137,7 @@
       c.destination = { x: dest.x, y: dest.y };
     }
     if (!c.path) return -1;
-    let distance = 1.7 * dt;
+    let distance = 1.7 * dt * (1 + (c.cargo ? (c.skills?.haul || 0) * .12 : 0));
     while (c.path.length && distance > 0) {
       const node = c.path[0], dx = node.x - c.x, dy = node.y - c.y, len = Math.hypot(dx, dy);
       if (len <= distance) { c.x = node.x; c.y = node.y; distance -= len; c.path.shift(); }
@@ -155,7 +158,7 @@
     c.air = clamp(c.air - .14 * dt); c.food = clamp(c.food - .085 * dt); c.rest = clamp(c.rest - .065 * dt);
     if (shelter && shelter.oxygen > .12) { const take = Math.min(2.5 * dt, 100 - c.air, shelter.oxygen); c.air += take; shelter.oxygen -= take; c.rest = clamp(c.rest + 2 * dt); }
     const store = nearestStore(s, c, b => b.stock.food >= 1);
-    if (c.food < 65 && store && Math.hypot(store.x - c.x, store.y - c.y) < .75) { store.stock.food--; c.food = clamp(c.food + 45); }
+    if (c.food < 65 && store && Math.hypot(store.x - c.x, store.y - c.y) < .75) { store.stock.food--; s.stats.foodUsed = (s.stats.foodUsed || 0) + 1; c.food = clamp(c.food + 45); }
     c.morale = clamp(c.morale + ((c.air > 35 && c.food > 35 && c.rest > 30) ? .03 : -.15) * dt);
     c.health = clamp(c.health + ((c.air <= 0 ? -.8 : c.food <= 0 ? -.35 : c.rest <= 0 ? -.08 : .08) * dt));
     if (c.air < 28 || c.rest < 22) c.recovering = true;
@@ -169,12 +172,12 @@
   }
   function worker(s, c, dt) {
     if (need(s, c, dt)) return;
-    if (api.growth?.needs) api.growth.needs(s, c, dt);
+    if (api.growth?.needs && api.growth.needs(s, c, dt)) return;
     let j = s.jobs.find(j => j.id === c.job);
     if (!j) {
       for (const candidate of s.jobs) {
         if (candidate.worker) continue;
-        const b = building(s, candidate.target); if (!b || b.health <= 0) continue;
+        const b = building(s, candidate.target); if (!b || (b.health <= 0 && candidate.kind !== 'repair')) continue;
         if (candidate.kind === 'supply' && !nearestStore(s, c, store => Object.entries(D.buildings[b.type].cost).every(([k, v]) => store.stock[k] >= v))) continue;
         if (!findPath(s, { x: Math.round(c.x), y: Math.round(c.y) }, b)) continue;
         j = candidate; j.worker = c.id; c.job = j.id; c.destination = null; break;
@@ -185,7 +188,7 @@
       c.activity = 'Rest'; if (dome) navigate(s, c, dome, dt); return;
     }
     const b = building(s, j.target);
-    if (!b || b.health <= 0) { finish(s, c, j); return; }
+    if (!b || (b.health <= 0 && j.kind !== 'repair')) { finish(s, c, j); return; }
     let dest = b; c.activity = j.kind;
     if (j.kind === 'supply' && j.stage === 0) {
       dest = nearestStore(s, c, store => Object.entries(D.buildings[b.type].cost).every(([k, v]) => store.stock[k] >= v));
@@ -200,12 +203,12 @@
       if (j.stage === 0) {
         c.cargo = { ...D.buildings[b.type].cost }; Object.entries(c.cargo).forEach(([k, v]) => { dest.stock[k] -= v; });
         j.stage = 1; c.destination = null;
-      } else { b.delivered = true; c.cargo = null; finish(s, c, j); }
+      } else { b.delivered = true; c.cargo = null; if (api.growth?.skill) api.growth.skill(c, 'haul', 6); finish(s, c, j); }
     } else if (j.kind === 'haul') {
       if (!j.stage) {
         c.cargo = {}; for (const [k, v] of Object.entries(b.output)) { c.cargo[k] = Math.floor(v); b.output[k] -= c.cargo[k]; }
         j.stage = 1; c.destination = null;
-      } else { for (const [k, v] of Object.entries(c.cargo || {})) dest.stock[k] += v; c.cargo = null; finish(s, c, j); }
+      } else { for (const [k, v] of Object.entries(c.cargo || {})) dest.stock[k] += v; c.cargo = null; if (api.growth?.skill) api.growth.skill(c, 'haul', 6); finish(s, c, j); }
     } else {
       const speed = api.growth?.workSpeed ? api.growth.workSpeed(s, c, j.kind) : 1;
       j.work += dt * speed;
@@ -239,7 +242,7 @@
       clearJob(s, c); s.stats.lost++; notice(s, c.name + ' was lost.', 'danger');
     }
     s.colonists = s.colonists.filter(c => c.health > 0);
-    s.jobs = s.jobs.filter(j => { const b = building(s, j.target); return b && b.health > 0 && !(j.kind === 'supply' && b.delivered); });
+    s.jobs = s.jobs.filter(j => { const b = building(s, j.target); return b && (b.health > 0 || j.kind === 'repair') && !(j.kind === 'supply' && b.delivered); });
     if (!s.colonists.length) { s.over = true; notice(s, 'The colony is silent. All colonists were lost.', 'danger'); }
   }
   function advance(s, seconds) { const n = Math.floor(seconds / D.STEP); for (let i = 0; i < n && !s.over; i++) step(s); return s; }
@@ -252,6 +255,7 @@
     if (!Number.isFinite(s.time) || s.time < 0 || !Number.isInteger(s.seed) || !Array.isArray(s.alerts)) throw Error('Invalid colony state');
     for (const b of s.buildings) if (!D.buildings[b.type] || !Number.isInteger(b.x) || !Number.isInteger(b.y) || b.x < 0 || b.y < 0 || b.x >= s.w || b.y >= s.h || !b.stock || !b.output || !Number.isFinite(b.health)) throw Error('Invalid building');
     for (const c of s.colonists) if (!['x', 'y', 'health', 'air', 'food', 'rest', 'morale'].every(k => Number.isFinite(c[k]))) throw Error('Invalid colonist');
+    if (api.growth) api.growth.init(s);
     return s;
   }
   const api = { D, create, random, notice, addBuilding, addColonist, totals, stores, withdraw, place, networks,

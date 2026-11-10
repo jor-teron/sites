@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Star Colony · SC-1a</title><link rel="stylesheet" href="ui/style.css"></head>
+<title>Star Colony · SC-1b</title><link rel="stylesheet" href="ui/style.css"></head>
 <body><main id="app">
-<header><a class="back" href="../games.html" aria-label="Back to Games">‹</a><h1>Star Colony <small id="release">SC-1a</small></h1><button id="pause">Pause</button><select id="speed" aria-label="Simulation speed"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select><span id="gear"></span></header>
+<header><a class="back" href="../games.html" aria-label="Back to Games">‹</a><h1>Star Colony <small id="release">SC-1b</small></h1><button id="pause">Pause</button><select id="speed" aria-label="Simulation speed"><option value="1">1×</option><option value="2">2×</option><option value="3">3×</option></select><span id="gear"></span></header>
 <section id="resources" aria-label="Colony resources"></section>
 <nav id="build" aria-label="Build a structure"></nav>
 <section id="world"><canvas id="map" tabindex="0" aria-label="Colony map. Drag to pan. Wheel or pinch to zoom. Arrow keys move the tile cursor; Enter selects or builds." role="application"></canvas><div id="map-tools"><button id="minus" aria-label="Zoom out">−</button><button id="home" aria-label="Centre colony">⌂</button><button id="plus" aria-label="Zoom in">+</button></div></section>
 <aside id="sidebar"><section id="details"><h2>Pelora landing</h2><p>Three settlers. One new beginning.</p><p>Select a structure to inspect it. Adjacent structures share utilities. Drag to pan; pinch or wheel to zoom.</p></section></aside>
 <footer><span id="status" role="status">Ready · auto-saves locally</span><button id="save">Save</button><button id="new">New colony</button></footer>
 </main><div id="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1"><h2 id="dialog-title"></h2><div id="dialog-body"></div><div id="dialog-actions"></div></section></div>
-<script src="../common/settings/games-settings.js"></script><script src="core/data.js"></script><script src="core/path.js"></script><script src="core/sim.js"></script><script src="ui/settings.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script>
+<script src="../common/settings/games-settings.js"></script><script src="core/data.js"></script><script src="core/path.js"></script><script src="core/sim.js"></script><script src="core/growth.js"></script><script src="ui/growth.js"></script><script src="ui/settings.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script>
 </body></html>

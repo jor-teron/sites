@@ -1,4 +1,4 @@
-# Star Colony — SC-1a
+# Star Colony — SC-1b
 
 An original, offline colony simulation. Open `star-colony.html` or `index.html`.
 No downloads, external assets, copied art, accounts, or libraries are required.
@@ -32,3 +32,25 @@ settlers alive, finite state and bounded jobs. 13 browser checks passed, includi
 1280×800, 390×844 and 844×390; no console/page errors.
 
 Catalog wiring is intentionally reserved for SC-1c. No shared code or build bump.
+
+
+## SC-1b — events and growth
+
+A warning precedes dust fronts, meteors, equipment faults and spore illness.
+Repairs are field work (no resource cost); wrecked structures remain repairable.
+Ships wait safely in orbit until you choose Pantry, Water or Materials. Every
+three days after docking, up to two new settlers can arrive if you have beds.
+
+Build a Discovery Lab and select a discovery with Research. Points come from
+actual colonist work, not elapsed time. Prism Solar → Closed Water Loop → Gentle
+Care → Woven Shells; Cargo Wings branches from Prism Solar. Hauler Nests launch
+one physical hauling drone each. Skills grow through use and affect work speed;
+hauling skill also improves carrying speed. A powered Care Station cures illness.
+Goals track 10/20 settlers, all research and five consecutive days whose production
+covers actual consumption with no power or resource shortages. Saves from SC-1a
+upgrade without discarding the settlement.
+
+SC-1b validation: 19 Node tests (core + growth), plus legal 30-day autoplay:
+21 settlers, no deaths, all five discoveries and four milestones, bounded jobs,
+finite state. Browser: 15 checks including research/ship actions, both phone
+orientations and zero console/page errors. No real-phone test performed.
