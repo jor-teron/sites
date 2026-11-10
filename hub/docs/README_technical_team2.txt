@@ -824,8 +824,150 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.53 Video Editor, release VD1
 
-### 1.55 3D Builder, release TD1
+- New apps/media/video-editor (Media, section 'Video', row added after Screen Recorder in
+  apps/media/media-apps.csv). Offline, no libraries, no ffmpeg.wasm. Name is "Video Editor"
+  until Jor picks one. Tile icon video-editor_icon.png (192 px).
+- Open via picker or drag and drop; preview with play/pause, 1/30 s frame step, seek,
+  current time. Timeline (source duration) has a playhead, In/Out dual handles (I / O,
+  tap chips to type a time) and hatched marks on removed ranges. Play skips the cuts.
+- Edit list of kept segments: Cut selection removes the In-Out range; Keep selection keeps
+  only that range (intersected with what is still left). Undo / Redo (buttons, Ctrl+Z / Ctrl+Y).
+  Keys: Space, Left, Right, I, O, Delete. In-app dialogs only.
+- Theme Auto / Light / Dark in the header (localStorage video-editor-v1 {theme}); Auto follows
+  sites-hub.theme / sites-hub.themeAuto live.
+- Export plays kept parts through captureStream + MediaRecorder (WebM vp9/vp8+opus, or MP4
+  when supported), with audio, in real time. Progress dialog with Cancel and a real-time note.
+  Download <original-name>_edited.webm (or .mp4). Full-viewport layout (VT2 approach).
+- RELEASE/title/?v= VD1. Tests: node --check, node tests/vd1.test.cjs (pure helpers). No
+  Puppeteer / Playwright / jsdom. Hub catalog not regenerated (Media tiles page reads the CSV;
+  the Hub flyout needs hub_appindex_gen.py --catalog-only from Main Builder).
+- Details: apps/media/video-editor/NOTES.md.
+
+
+### 1.54 Video Editor join and arrange, release VD2
+
+- apps/media/video-editor only. Several clips on one track (add via picker or drop); each block is
+  sized by kept duration, with the file name and a thumbnail grabbed on load. Drag to reorder,
+  move-left / move-right, Split at the playhead (S), Delete clip. Each clip keeps its own VD1
+  cut/keep list; In/Out marks apply to the selected clip.
+- Preview plays the whole sequence, skipping cuts, with a global time display and seek bar.
+  Optional fade through black between clips (Off / 0.5 s / 1 s), drawn at export inside the kept
+  ends (sequence length unchanged; fade capped at half a short clip).
+- Export draws frames to a canvas (drawImage + canvas.captureStream) and mixes audio through one
+  AudioContext + MediaStreamDestination (createMediaElementSource once per clip element), then
+  MediaRecorder (WebM vp9/vp8+opus, or MP4 when supported). Real-time progress dialog with Cancel.
+  Download <first-clip-name>_edited.webm (or .mp4). Canvas long side capped at 1280 px.
+- Undo / Redo cover add, delete, split, reorder, cut/keep and fade. Projects in IndexedDB
+  `videoeditor` (stores `files`, `projects`): list / open / rename / delete (in-app confirm),
+  autosave, storage-used line and a warning when space is low or a quota error happens.
+  localStorage video-editor-v1 also holds currentProjectId.
+- RELEASE/title/?v= VD2 (legacy VD1 noted in comments / NOTES). Tests: node --check,
+  tests/vd1.test.cjs + tests/vd2.test.cjs (pure helpers: sequence timing, split, reorder).
+  No Puppeteer / Playwright / jsdom. Details: apps/media/video-editor/NOTES.md.
+  Note: 1.54 is the next free number on this branch after 1.53 (VD1). RA1 and TD1 may also
+  take a 1.54 (or later) section on their own branches.
+
+
+
+### 1.55 Video Editor looks, transform, speed, titles, release VD3
+
+- apps/media/video-editor only (local commit on apps/vd3-video-editor, from VD2
+  9f49bc36). Per-clip colour filters (brightness, contrast, saturation, greyscale,
+  sepia, blur) with reset; CSS filter on the preview <video>, ctx.filter on the
+  export canvas. If ctx.filter is missing (common on Safari) the export and the
+  PNG go out without colour filters and an in-app warning is shown; rotate, crop,
+  speed and titles still apply.
+- Per-clip transform: rotate 0/90/180/270, flip H/V, crop rectangle (handles on
+  the preview plus numeric % inputs) applied on export with a drawImage source
+  rect. Output size Auto (first clip after crop/rotate), 1280x720, 720x1280 or
+  1080x1080, long side still capped at 1280, even dimensions, others letterboxed.
+- Per-clip speed 0.25/0.5/1/1.5/2x (playbackRate in preview and export; timeline
+  durations are kept/speed; pitch preserved where the browser supports it).
+  Per-clip volume 0-200% and mute (GainNode in the existing AudioContext mix,
+  plus video.volume in the preview).
+- Project-level text/title overlays: text, start, end, position presets plus
+  drag, size, colour, background box, fade in/out. HTML layer on the preview;
+  drawn on the export canvas and on Save frame (PNG). Keyboard shortcut list
+  (?). Office-style hover tips on toolbar buttons (HPS6 approach: mouse only,
+  delay Off/100/500/1000 ms, default 100, stored in video-editor-v1 {tip}).
+- Undo/Redo cover the new fields. Project format version 3, with migration from
+  VD2 projects (default speed 1x, full crop, no overlays, Auto output).
+- RELEASE/title/?v= VD3. Tests: node --check, tests/vd1.test.cjs + vd2.test.cjs
+  + vd3.test.cjs (pure helpers: speed-adjusted sequence timing, crop/rotate
+  output size, overlay visibility). No Puppeteer / Playwright / jsdom.
+  Details: apps/media/video-editor/NOTES.md.
+  Note: section 1.55 is the next free number on main after VD2 (1.54).
+
+### 1.56 Read Aloud, release RA1
+
+Standalone Tools app. Jor asked for a reader inside the Hub (for News), then
+for it to be a standalone app, not a News-app button. Built by Hub Apps
+Builder 2 after "do RA1". Local commit only at the time of writing.
+
+Shipped in this file set (RA1):
+- Path: apps/tools/read-aloud/. Tile in apps/tools/tools-apps.csv (Language),
+  icon read-aloud/read-aloud_icon.svg. tools.html is CSV-driven and was not
+  changed. Hub catalog / hub_appindex.js was not regenerated (Hub-owned).
+- News source: same tabs as the News app (India, Assam, user places from
+  news.places, World / Sports / Tech / Business, Saved). Includes
+  apps/media/news/news_store.js and news_feed.js (they do not boot UI).
+  Shares the news.* cache. Refresh may write the shared cache. Does not
+  write News settings, seen, Saved, or places. "Only new stories" reads
+  news.seen but does not mark stories seen.
+- Spoken form: "<source>, <time ago>, <headline>". Current item highlighted
+  and scrolled into view. Open link in a new tab. Tap an item to start there.
+- Text source: paste, or open a .txt / .md file (FileReader, basic markdown
+  stripped). Sentence-by-sentence highlight; tap a sentence to start there.
+- Player: play / pause, previous, next, stop. Keys: Space, left / right,
+  Esc to stop (ignored while typing). Position remembered per source
+  (readaloud.pos.*). One utterance per item or sentence.
+- Settings: voice (en-IN if available, else English, else first), speed
+  0.75x-2x (default 1), pitch 0.5-1.5, only-new toggle, theme Auto / Light /
+  Dark (Auto follows the Hub via shared/theme/hub_theme.js, live). Voice test.
+- In-app dialogs only. Light: vanilla JS, no CDN, browser speechSynthesis.
+- Tests: node --check on every JS file, a Node sentence-splitter helper
+  check (no DOM), static serve + curl 200, grep for RELEASE / RA1.
+  No Puppeteer, Playwright, or jsdom.
+
+Later, if Jor wants them: RA2 could add PDF and web-page reading, plus a
+sleep timer. Full article text is still a maybe (publishers often block it).
+
+Doc section 1.56 is the next free number on main after Video Editor VD3.
+
+### 1.57 Read Aloud PDF, web page, sleep timer, release RA2
+Built by Hub Apps Builder 2 after "RA2 code", on top of RA1 (section 1.56),
+branch apps/ra2-read-aloud. Local commit only at the time of writing.
+
+- Release id RA2 in <title>, RELEASE, and ?v=RA2 on the app's own css/js.
+- PDF source: open a .pdf from the device; text extracted page by page with
+  Mozilla pdf.js 3.11.174 (legacy UMD, Apache-2.0) from shared/vendor/pdfjs
+  (the same copy PDF Tools uses; referenced by relative path, not copied into
+  this app). Loaded lazily only when a PDF is opened. Page indicator and Go
+  to page. Scanned PDFs with no text layer show an in-app message and point
+  to the Office OCR app. OCR is out of scope.
+- Web source: paste a URL, fetch through api.allorigins.win (raw, then /get),
+  the News HTML-capable relay. feedrapp.info is RSS-only and is not used.
+  Extract readable text with regex/string parsing (prefer <article>, else
+  p/h1-h3 in main or body; strip nav, footer, aside, script, style). Title
+  is shown and read. Clear in-app error if the relay fails or the site
+  blocks it. This often fails.
+- News "Read article": tries the story link (Google News redirects are
+  resolved when possible). On failure, an in-app message is shown and the
+  headline is read instead.
+- Sleep timer: Off, 5/10/15/30/60 minutes, or end of the current item, with
+  a countdown chip in the player bar (also in Settings). Stops after the
+  current sentence when time is up.
+- Word count and estimated reading time (~160 wpm, scaled by speed) for
+  Text, PDF and Web. Last source tab and per-source position remembered
+  (PDF file is not stored; reopen it after a reload).
+- Tests: node --check on every JS file, ra_helpers_test.js (sentence split,
+  word count, HTML-to-text, Google URL decode; no DOM / jsdom), static serve
+  + curl 200 including shared/vendor/pdfjs/pdf.min.js, grep for RELEASE /
+  RA2. No Puppeteer, Playwright, or jsdom.
+
+### 1.58 3D Builder, release TD1
 
 - New apps/media/3d-builder (Media, section '3D', row added after 3D Viewer in media-apps.csv).
   Local three.js r170 in vendor/three (LandCraft's unmodified build + official OrbitControls and
@@ -837,7 +979,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   (.h3d JSON, format version 1); New / Save / Open. Theme Auto/Light/Dark (3dbuilder.theme), Auto
   follows sites-hub.theme. In-app dialogs only.
 - RELEASE/title/?v= TD1. Details: apps/media/3d-builder/NOTES.md.
-  Note: 1.53 is Video Editor VD1 on branch apps/vd1-video-editor; 1.54 is reserved for RA1.
+  Note: section 1.58 is the next free number on main after Read Aloud RA2 (1.57).
 
 
 ### 1.60 3D Builder, release TD2
