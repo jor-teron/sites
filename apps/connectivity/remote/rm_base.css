@@ -1,4 +1,4 @@
-/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM4 */
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM7 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -91,32 +91,59 @@ a { color: var(--accent); }
 
 header.top {
   display: flex;
-  flex-wrap: wrap;
+  /* (before RM7) flex-wrap: wrap; */
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--gap);
+  gap: 8px;
+  flex: 0 0 auto;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bg);
+  min-width: 0;
+  padding: 2px 0;
 }
 
 header.top img {
-  width: 40px;
-  height: 40px;
+  /* (before RM7) width: 40px; */
+  /* (before RM7) height: 40px; */
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
 }
 
 header.top h1 {
-  flex: 1;
+  /* (before RM7) flex: 1; */
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--accent);
   letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 header.top .tag {
+  flex: 0 0 auto;
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--mute);
   border: 1px solid var(--surface-2);
   border-radius: 999px;
   padding: 4px 10px;
+}
+
+header.top #btn-add { flex: 0 0 auto; }
+
+/* Tabs live in the header and scroll sideways when several sessions are open. */
+header.top .tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .back {
@@ -222,6 +249,10 @@ button, .btn {
   box-shadow: 0 1px 6px #0001;
   animation: pop 0.3s ease-out;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
 .conn-body { flex: 1; min-width: 0; }
@@ -270,8 +301,15 @@ button, .btn {
 #empty { padding: 28px 8px; text-align: center; }
 
 #menu {
-  position: absolute;
-  z-index: 8;
+  /* (before RM7) position: absolute; */
+  /* (before RM7) z-index: 8; */
+  position: fixed;
+  z-index: 2147483000;
+  inset: auto;
+  margin: 0;
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   min-width: 160px;
   background: var(--surface);
   color: var(--text);
@@ -426,7 +464,9 @@ label.field textarea { min-height: 72px; resize: vertical; }
   flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  overflow: hidden;
+  /* (before RM7) overflow: hidden; */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .crumbs {
@@ -563,8 +603,15 @@ label.check input {
 #sftp-progress-text { flex: 1 1 140px; margin: 0; }
 
 #entry-menu {
-  position: absolute;
-  z-index: 8;
+  /* (before RM7) position: absolute; */
+  /* (before RM7) z-index: 8; */
+  position: fixed;
+  z-index: 2147483000;
+  inset: auto;
+  margin: 0;
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   min-width: 180px;
   background: var(--surface);
   color: var(--text);
@@ -711,8 +758,15 @@ label.check input {
 }
 
 #ssh-menu {
-  position: absolute;
-  z-index: 8;
+  /* (before RM7) position: absolute; */
+  /* (before RM7) z-index: 8; */
+  position: fixed;
+  z-index: 2147483000;
+  inset: auto;
+  margin: 0;
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   min-width: 180px;
   background: var(--surface);
   color: var(--text);
@@ -818,8 +872,15 @@ label.check input {
 }
 
 #vnc-menu {
-  position: absolute;
-  z-index: 8;
+  /* (before RM7) position: absolute; */
+  /* (before RM7) z-index: 8; */
+  position: fixed;
+  z-index: 2147483000;
+  inset: auto;
+  margin: 0;
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
   min-width: 200px;
   max-height: min(80vh, 560px);
   overflow-y: auto;
@@ -854,3 +915,14 @@ label.check input {
 }
 
 #field-url[hidden], #field-host[hidden], #field-relay[hidden], #field-token[hidden], #field-folder[hidden], #field-vnc[hidden] { display: none; }
+
+/* RM7: one header row on a phone. The tabs keep the spare width and scroll; the label is not crushed. */
+@media (max-width: 520px) {
+  header.top { gap: 6px; }
+  header.top img { width: 28px; height: 28px; }
+  header.top h1 { font-size: 1rem; }
+  header.top .tag { padding: 2px 6px; }
+  header.top #btn-add { padding: 8px 12px; }
+}
+
+#confirm-text[hidden] { display: none; }

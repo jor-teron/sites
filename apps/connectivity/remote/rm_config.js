@@ -1,4 +1,4 @@
-/* Remote — rm_config.js: every constant for the RM4 connections list, SFTP browse and transfers, the SSH terminal, WebDAV, and the VNC viewer, each one commented. */
+/* Remote — rm_config.js: every constant for the RM7 connections list, SFTP browse and transfers, the SSH terminal, WebDAV, and the VNC viewer, each one commented. */
 (function (root) {
   'use strict';
 
@@ -7,7 +7,8 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Remote',
     /* Release tag shown next to the title. */
-    RELEASE: 'RM4',
+    /* (before RM7) RELEASE: 'RM4', */
+    RELEASE: 'RM7',
     /* localStorage key for the saved connections list. Passwords are never stored under this key. */
     LS_CONNS: 'remote-conns-v1',
     /* Shared Hub theme key — read only, never written by this app. */
@@ -56,6 +57,8 @@
     PORT_MAX: 65535,
     /* How long a toast stays visible, in milliseconds. */
     TOAST_MS: 2800,
+    /* How long a finger must stay on a connection row before the actions menu opens. */
+    LONG_PRESS_MS: 500,
     /* File name used when exporting the connections list as JSON. */
     EXPORT_FILENAME: 'remote-connections.json',
     /* Heading used for connections that have no group, only when at least one named group exists. */

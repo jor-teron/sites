@@ -1,4 +1,4 @@
-/* Remote — rm_ui.js: DOM for the RM4 connections list, session tabs, editor, toast and overflow menu. */
+/* Remote — rm_ui.js: DOM for the RM7 connections list, session tabs, editor, toast and overflow menu. */
 (function (root) {
   'use strict';
 
@@ -9,6 +9,147 @@
   /* Short getElementById helper used everywhere in this file. */
   function $(id) {
     return document.getElementById(id);
+  }
+
+  /**
+   * Where an overflow menu should sit in the visible window.
+   * anchor and view are viewport coordinates (the same space as getBoundingClientRect
+   * and position:fixed). size is the menu's width and height.
+   * The menu opens under the anchor and flips above it when the bottom would fall
+   * outside the window, then shifts in from the edges. Document scroll is not added:
+   * a Hub window clips anything painted past the iframe.
+   */
+  function placeMenuBox(anchor, size, view) {
+    var margin = 8;
+    var gap = 4;
+    var w = size && size.w ? size.w : 0;
+    var h = size && size.h ? size.h : 0;
+    var vw = view && view.w ? view.w : 0;
+    var vh = view && view.h ? view.h : 0;
+    anchor = anchor || { left: margin, right: margin, top: margin, bottom: margin };
+    var top = anchor.bottom + gap;
+    var left = anchor.right - w;
+    if (top + h > vh - margin) top = anchor.top - gap - h;
+    if (top + h > vh - margin) top = vh - margin - h;
+    if (top < margin) top = margin;
+    if (left + w > vw - margin) left = vw - margin - w;
+    if (left < margin) left = margin;
+    return { top: top, left: left };
+  }
+
+  /* Viewport rect of an element, for placeMenuBox. */
+  function anchorRect(el) {
+    var r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  }
+
+  /* A point in the viewport (right-click or long-press). The menu opens beside it. */
+  function anchorPoint(x, y) {
+    return { left: x, top: y, right: x, bottom: y };
+  }
+
+  /* Show a menu in the top layer when the browser supports popover, and always un-hide it. */
+  function showFloat(el) {
+    if (!el) return;
+    el.hidden = false;
+    el.classList.add('is-open');
+    if (typeof el.showPopover === 'function') {
+      try {
+        if (!el.matches(':popover-open')) el.showPopover();
+      } catch (e) { /* already open, or this browser has no top layer */ }
+    }
+  }
+
+  /* Hide a menu and leave the top layer. */
+  function hideFloat(el) {
+    if (!el) return;
+    if (typeof el.hidePopover === 'function') {
+      try {
+        if (el.matches(':popover-open')) el.hidePopover();
+      } catch (e) { /* already hidden */ }
+    }
+    el.classList.remove('is-open');
+    el.hidden = true;
+  }
+
+  /* Pin a shown menu to the visible window. Call after showFloat so the size is real. */
+  function placeMenu(el, anchor) {
+    if (!el) return { top: 0, left: 0 };
+    var box = placeMenuBox(anchor, { w: el.offsetWidth, h: el.offsetHeight }, {
+      w: window.innerWidth,
+      h: window.innerHeight
+    });
+    el.style.top = box.top + 'px';
+    el.style.left = box.left + 'px';
+    return box;
+  }
+
+  /* Resolver for the in-app confirm card, or null. */
+  var confirmWait = null;
+
+  /* Ask with the in-app card. Resolves true for the OK button, false for Cancel or Escape. */
+  function confirmAsk(o) {
+    o = o || {};
+    var dlg = document.getElementById('confirm-dlg');
+    if (!dlg || typeof dlg.showModal !== 'function') return Promise.resolve(false);
+    return new Promise(function (resolve) {
+      if (confirmWait) {
+        var prev = confirmWait;
+        confirmWait = null;
+        prev(false);
+      }
+      confirmWait = resolve;
+      var title = document.getElementById('confirm-title');
+      var text = document.getElementById('confirm-text');
+      var ok = document.getElementById('confirm-ok');
+      if (title) title.textContent = o.title || 'Are you sure?';
+      if (text) {
+        text.textContent = o.text || '';
+        text.hidden = !o.text;
+      }
+      if (ok) {
+        ok.textContent = o.ok || 'OK';
+        ok.classList.toggle('danger', !!o.danger);
+      }
+      if (!dlg.open) dlg.showModal();
+      setTimeout(function () {
+        var cancel = document.getElementById('confirm-cancel');
+        if (cancel) cancel.focus();
+      }, 0);
+    });
+  }
+
+  /* Close the confirm card and answer the waiting caller. */
+  function finishConfirm(yes) {
+    var fn = confirmWait;
+    confirmWait = null;
+    var dlg = document.getElementById('confirm-dlg');
+    if (dlg && dlg.open) dlg.close();
+    if (fn) fn(!!yes);
+  }
+
+  /* Wire the confirm card once. Safe to call again. */
+  function wireConfirm() {
+    if (wireConfirm.done || typeof document === 'undefined') return;
+    var dlg = document.getElementById('confirm-dlg');
+    var cancel = document.getElementById('confirm-cancel');
+    var ok = document.getElementById('confirm-ok');
+    if (!dlg || !cancel || !ok) return;
+    wireConfirm.done = true;
+    cancel.addEventListener('click', function (e) {
+      e.preventDefault();
+      finishConfirm(false);
+    });
+    ok.addEventListener('click', function (e) {
+      e.preventDefault();
+      finishConfirm(true);
+    });
+    dlg.addEventListener('close', function () {
+      if (!confirmWait) return;
+      var fn = confirmWait;
+      confirmWait = null;
+      fn(false);
+    });
   }
 
   /* Apply the Hub theme (sites-hub.theme) or fall back to the system color scheme. */
@@ -108,6 +249,10 @@
       more.setAttribute('aria-label', 'Actions for ' + conn.name);
       more.setAttribute('aria-haspopup', 'menu');
       more.textContent = '\u22EF';
+      /* (before RM7) more.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleMenu(more, conn);
+      }); */
       more.addEventListener('click', function (e) {
         e.stopPropagation();
         toggleMenu(more, conn);
@@ -116,7 +261,52 @@
       row.appendChild(badge);
       row.appendChild(body);
       row.appendChild(more);
-      row.addEventListener('click', function () {
+
+      /* Long-press opens the same menu as the ⋯ button. A short tap still opens the session. */
+      var hold = null;
+      var holdX = 0;
+      var holdY = 0;
+      var suppressClick = false;
+      function clearHold() {
+        if (hold) { clearTimeout(hold); hold = null; }
+      }
+      row.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0) return;
+        if (e.target.closest && e.target.closest('button')) return;
+        holdX = e.clientX;
+        holdY = e.clientY;
+        clearHold();
+        hold = setTimeout(function () {
+          hold = null;
+          suppressClick = true;
+          armSwallow();
+          openMenu(conn, anchorPoint(holdX, holdY));
+        }, C.LONG_PRESS_MS || 500);
+      });
+      row.addEventListener('pointermove', function (e) {
+        if (!hold) return;
+        if (Math.hypot(e.clientX - holdX, e.clientY - holdY) > 10) clearHold();
+      });
+      row.addEventListener('pointerup', clearHold);
+      row.addEventListener('pointercancel', clearHold);
+      row.addEventListener('contextmenu', function (e) {
+        /* Shift keeps the browser menu (the Hub's escape hatch). */
+        if (e.shiftKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        clearHold();
+        suppressClick = true;
+        armSwallow();
+        openMenu(conn, anchorPoint(e.clientX, e.clientY));
+      });
+
+      row.addEventListener('click', function (e) {
+        if (suppressClick) {
+          suppressClick = false;
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         var a = store.tapAction(conn);
         if ((a.action === 'sftp' || a.action === 'ssh' || a.action === 'webdav' || a.action === 'vnc') && opts.onOpen) opts.onOpen(conn);
         else toast(a.message);
@@ -130,27 +320,53 @@
       return row;
     }
 
+    /* Clicks that belong to the gesture which opened the menu (long-press / right-click). */
+    var swallowUntil = 0;
+    function armSwallow() { swallowUntil = Date.now() + 350; }
+
     /* Hide the overflow menu. */
     function closeMenu() {
-      var m = $('menu');
-      m.hidden = true;
+      /* (before RM7) var m = $('menu'); m.hidden = true; menuFor = null; */
+      hideFloat($('menu'));
       menuFor = null;
     }
 
+    /*
+     * RM7: the menu used to be position:absolute at window.scrollY + the button bottom.
+     * A Hub window clips its iframe, and a saved row sits low in that short frame, so
+     * Edit / Duplicate / Delete opened below the fold and could not be clicked.
+     * The menu is now position:fixed to the visible window and flips upward when it
+     * would not fit. It is also a manual popover so it paints above tabs and dialogs.
+     */
+    function openMenu(conn, anchor) {
+      var m = $('menu');
+      menuFor = conn.id;
+      m.dataset.id = conn.id;
+      m.style.top = '0px';
+      m.style.left = '0px';
+      showFloat(m);
+      placeMenu(m, anchor);
+    }
+
     /* Open or toggle the overflow menu under a row's ⋯ button. */
+    /* (before RM7)
     function toggleMenu(btn, conn) {
       var m = $('menu');
       if (menuFor === conn.id && !m.hidden) { closeMenu(); return; }
       menuFor = conn.id;
       m.hidden = false;
       m.dataset.id = conn.id;
-      /* Place the menu just under the button, kept on screen. */
       var r = btn.getBoundingClientRect();
       m.style.top = (window.scrollY + r.bottom + 4) + 'px';
-      /* Measure after it is shown so offsetWidth is correct. */
       var left = window.scrollX + r.right - m.offsetWidth;
       var maxLeft = window.scrollX + window.innerWidth - m.offsetWidth - 8;
       m.style.left = Math.max(8, Math.min(left, maxLeft)) + 'px';
+    }
+    */
+    function toggleMenu(btn, conn) {
+      var m = $('menu');
+      if (menuFor === conn.id && !m.hidden) { closeMenu(); return; }
+      openMenu(conn, anchorRect(btn));
     }
 
     /* Draw the Remmina-style tab strip: Connections first, then open sessions. */
@@ -216,7 +432,13 @@
       if (!opts.tabs) return;
       var r = opts.tabs.close(id);
       if (!r.ok && r.reason === 'busy') {
-        if (confirm(C.TAB_CLOSE_BUSY)) opts.tabs.close(id, { confirmed: true });
+        /* (before RM7) if (confirm(C.TAB_CLOSE_BUSY)) opts.tabs.close(id, { confirmed: true }); */
+        confirmAsk({ title: C.TAB_CLOSE_BUSY, ok: 'Close', danger: true }).then(function (yes) {
+          if (yes && opts.tabs) opts.tabs.close(id, { confirmed: true });
+          renderTabs();
+          showPane();
+        });
+        return;
       }
       renderTabs();
       showPane();
@@ -410,20 +632,35 @@
         return;
       }
       closeEditor();
+      if (opts.tabs) {
+        opts.tabs.list().forEach(function (t) {
+          if (t.connId === r.id) t.name = r.name;
+        });
+      }
       render();
       toast('Saved ' + r.name);
     }
 
-    /* Confirm and delete a connection. */
+    /* Confirm and delete a connection. The card is in-app: a Hub window blocks confirm(). */
     function onDelete(id) {
       var c = store.get(id);
       if (!c) return;
+      closeMenu();
+      /* (before RM7)
       if (!confirm('Delete "' + c.name + '"?')) return;
       store.remove(id);
       closeMenu();
       closeEditor();
       render();
       toast('Deleted ' + c.name);
+      */
+      confirmAsk({ title: 'Delete "' + c.name + '"?', ok: 'Delete', danger: true }).then(function (yes) {
+        if (!yes || !store.get(id)) return;
+        store.remove(id);
+        closeEditor();
+        render();
+        toast('Deleted ' + c.name);
+      });
     }
 
     /* Duplicate a connection and refresh the list. */
@@ -488,14 +725,29 @@
     $('menu-dup').addEventListener('click', function () { onDuplicate($('menu').dataset.id); });
     $('menu-del').addEventListener('click', function () { onDelete($('menu').dataset.id); });
     document.addEventListener('click', function (e) {
+      if (Date.now() < swallowUntil) {
+        swallowUntil = 0;
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+    }, true);
+    document.addEventListener('click', function (e) {
       if ($('menu').hidden) return;
       if (!e.target.closest('#menu') && !e.target.closest('.more')) closeMenu();
     });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       closeMenu();
+      /* A dialog handles its own Escape. Don't also close the editor behind a confirm card. */
+      if (e.target && e.target.closest && e.target.closest('dialog')) return;
       if ($('edit').open) closeEditor();
     });
+    window.addEventListener('scroll', function () { closeMenu(); }, true);
+    window.addEventListener('resize', function () {
+      if ($('menu') && !$('menu').hidden) closeMenu();
+    });
+    wireConfirm();
     window.addEventListener('storage', function (e) {
       if (e.key === C.LS_CONNS) render();
       if (e.key === C.HUB_THEME_KEY) applyTheme();
@@ -509,7 +761,17 @@
   }
 
   /* Public API, also exported for Node tests (init itself needs a document). */
-  var api = { init: init, applyTheme: applyTheme };
+  var api = {
+    init: init,
+    applyTheme: applyTheme,
+    placeMenuBox: placeMenuBox,
+    placeMenu: placeMenu,
+    showFloat: showFloat,
+    hideFloat: hideFloat,
+    anchorRect: anchorRect,
+    anchorPoint: anchorPoint,
+    confirm: confirmAsk
+  };
   root.RMUI = api;
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = api;

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <!--
-  Remote — RM4: connections list, Remmina-style tabs, SFTP browse/transfers, an SSH terminal, WebDAV, and a VNC viewer.
+  Remote — RM7: connections list, Remmina-style tabs, SFTP browse/transfers, an SSH terminal, WebDAV, and a VNC viewer.
+  RM7: saved-connection Edit / Duplicate / Delete work inside a Hub window (in-app dialogs,
+  a menu that stays on screen), and the tabs sit in the top bar. (before RM7) the tag said RM4.
   SFTP talks JSON over a WebSocket to hub/relay/sftp_relay.py (Remote has its own client; it does
   not import shared/fs). SSH talks through a websockify TCP relay (port 8022); encryption runs in
   this page using vendor/ssh-lib.min.js, so the relay never sees the password. VNC uses the same
@@ -26,14 +28,17 @@
 <body>
   <div class="app" id="app">
     <header class="top">
-      <a class="back jelly" href="../connectivity.html">Back</a>
+      <!-- (before RM7) <a class="back jelly" href="../connectivity.html">Back</a> -->
       <img src="rm_icon.svg" alt="">
       <h1>Remote</h1>
-      <span class="tag">RM4</span>
+      <!-- (before RM7) <span class="tag">RM4</span> -->
+      <span class="tag">RM7</span>
+      <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
       <button type="button" id="btn-add" class="jelly">Add</button>
     </header>
-
-    <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
+    <!-- (before RM7) the tabs row sat under the header, on its own line:
+    <nav class="tabs" aria-label="Sessions"></nav>
+    -->
 
     <section id="view-list">
       <p class="hint">One list for SSH, VNC, SFTP, WebDAV and FTP. SFTP and WebDAV can browse, transfer and manage files. SSH opens a terminal. VNC opens a desktop viewer. FTP is parked.</p>
@@ -53,6 +58,7 @@
 
     <section id="view-sftp" class="sftp" hidden>
       <div class="sftp-bar">
+        <button type="button" id="sftp-edit" class="ghost jelly">Edit</button>
         <button type="button" id="sftp-up" class="ghost jelly">Up</button>
         <button type="button" id="sftp-refresh" class="ghost jelly">Refresh</button>
         <button type="button" id="sftp-upload" class="jelly">Upload</button>
@@ -91,6 +97,7 @@
       <div class="ssh-bar">
         <p id="ssh-status" class="hint"></p>
         <span id="ssh-size" class="ssh-size"></span>
+        <button type="button" id="ssh-btn-edit" class="ghost jelly">Edit</button>
         <button type="button" id="ssh-btn-more" class="more jelly" aria-label="SSH actions" aria-haspopup="menu">⋯</button>
       </div>
       <div id="ssh-sessions" class="ssh-sessions"></div>
@@ -113,6 +120,7 @@
       <div class="vnc-bar">
         <p id="vnc-status" class="hint"></p>
         <button type="button" id="vnc-btn-kbd" class="ghost jelly" hidden>Keyboard</button>
+        <button type="button" id="vnc-btn-edit" class="ghost jelly">Edit</button>
         <button type="button" id="vnc-btn-more" class="more jelly" aria-label="VNC actions" aria-haspopup="menu">⋯</button>
       </div>
       <div id="vnc-sessions" class="vnc-sessions"></div>
@@ -223,13 +231,13 @@
     </div>
   </dialog>
 
-  <div id="menu" hidden role="menu" aria-label="Connection actions">
+  <div id="menu" hidden role="menu" popover="manual" aria-label="Connection actions">
     <button type="button" id="menu-edit" role="menuitem" class="jelly">Edit</button>
     <button type="button" id="menu-dup" role="menuitem" class="jelly">Duplicate</button>
     <button type="button" id="menu-del" role="menuitem" class="jelly danger-text">Delete</button>
   </div>
 
-  <div id="entry-menu" hidden role="menu" aria-label="File actions"></div>
+  <div id="entry-menu" hidden role="menu" popover="manual" aria-label="File actions"></div>
 
   <dialog id="hostkey">
     <h2 id="hostkey-title">Trust this host?</h2>
@@ -253,7 +261,7 @@
     </form>
   </dialog>
 
-  <div id="ssh-menu" hidden role="menu" aria-label="SSH actions">
+  <div id="ssh-menu" hidden role="menu" popover="manual" aria-label="SSH actions">
     <button type="button" id="ssh-menu-copy" role="menuitem" class="jelly">Copy</button>
     <button type="button" id="ssh-menu-paste" role="menuitem" class="jelly">Paste</button>
     <button type="button" id="ssh-menu-font-minus" role="menuitem" class="jelly">Font −</button>
@@ -274,7 +282,7 @@
     </form>
   </dialog>
 
-  <div id="vnc-menu" hidden role="menu" aria-label="VNC actions">
+  <div id="vnc-menu" hidden role="menu" popover="manual" aria-label="VNC actions">
     <button type="button" id="vnc-menu-scale" role="menuitem" class="jelly">Scale: fit</button>
     <button type="button" id="vnc-menu-view" role="menuitem" class="jelly">View only: off</button>
     <button type="button" id="vnc-menu-cad" role="menuitem" class="jelly">Ctrl+Alt+Del</button>
@@ -288,6 +296,15 @@
     <button type="button" id="vnc-menu-c-plus" role="menuitem" class="jelly">Compression +</button>
     <button type="button" id="vnc-menu-disc" role="menuitem" class="jelly">Disconnect</button>
   </div>
+
+  <dialog id="confirm-dlg">
+    <h2 id="confirm-title">Are you sure?</h2>
+    <p id="confirm-text" class="hint" hidden></p>
+    <div class="row">
+      <button type="button" id="confirm-cancel" class="ghost jelly">Cancel</button>
+      <button type="button" id="confirm-ok" class="jelly">OK</button>
+    </div>
+  </dialog>
 
   <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
