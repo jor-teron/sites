@@ -1,9 +1,9 @@
 /*
- * base-store.js  (BS1, BS3: safe start, BS5: schema 5 + pictures store, BS6: schema 6 + ref/lookup, BS7: schema 7 + reports)
+ * base-store.js  (BS1, BS3: safe start, BS5: schema 5 + pictures store, BS6: schema 6 + ref/lookup, BS7: schema 7 + reports, BS8: schema 8 + views)
  * Data model + IndexedDB storage for Base. Whole database kept in memory (small) and saved as ONE
  * record ('db') in IndexedDB 'office-base'; falls back to memory-only with an in-app banner.
  *   BASE.db = { schema, tables: [{ id, name, fields: [{id, name, type, required?, unique?, def?, options?, next?}],
- *               rows: [{id, v: {fieldId: value}}] }], current, queries, reports }
+ *               rows: [{id, v: {fieldId: value}}] }], current, queries, reports, views }
  *   Types: text | number | date | bool | choice | email | phone | link | currency | long | picture | id | ref | lookup.
  *   ref fields keep { to, multi?, display? }; lookup fields keep { via, src }. Values of a ref are a
  *   row-id string or an array of ids (multi).
@@ -20,15 +20,17 @@
  *   after the same backup; row values and earlier field types are left as they are.
  * BS7: schema 7 (saved reports). Existing schema 6 (and older) databases migrate in place after the
  *   same backup; tables, queries and links are left as they are. Reports live in BASE.db.reports.
+ * BS8: schema 8 (saved views + per-table layout: filters, columns, widths, freeze, colours).
+ *   Existing schema 7 (and older) databases migrate in place after the same backup.
  * API: BaseStore.load(cb), BaseStore.save() (debounced autosave), BaseStore.saveNow(), BaseStore.newTable(name, fields),
  *      BaseStore.table(), BaseStore.templates, BaseStore.uid(), BaseStore.repair(raw), BaseStore.raw(),
  *      BaseStore.reset(cb), BaseStore.warn(msg), BaseStore.idb(), BaseStore.addIdField(t),
  *      BaseStore.newRow(t), SCHEMA
  */
-var BASE = { db: { schema: 7, tables: [], current: null, queries: [], reports: [] }, query: null, report: null, totals: false, memOnly: false, sort: null, view: "grid", formIndex: 0, selRow: null, search: "" };
+var BASE = { db: { schema: 8, tables: [], current: null, queries: [], reports: [], views: [] }, query: null, report: null, totals: false, memOnly: false, sort: null, view: "grid", formIndex: 0, selRow: null, search: "" };
 
 var BaseStore = (function () {
-  var DB_NAME = "office-base", STORE = "kv", PICS = "pics", DB_VER = 2, SCHEMA = 7, TIMEOUT = 1500, idb = null, saveT = null, rawData = null;
+  var DB_NAME = "office-base", STORE = "kv", PICS = "pics", DB_VER = 2, SCHEMA = 8, TIMEOUT = 1500, idb = null, saveT = null, rawData = null;
   function types() { return (typeof BaseTypes !== "undefined" && BaseTypes.TYPES) || { text: 1, number: 1, date: 1, bool: 1 }; }
   function uid() { return Math.random().toString(36).slice(2, 9); }
   function toast(m) { try { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 3000); } catch (e) {} }
@@ -80,7 +82,7 @@ var BaseStore = (function () {
       r.onblocked = function () { finish(false, "is blocked by another Base tab"); };
     } catch (e) { finish(false, "not available"); }
   }
-  function emptyDb() { return { schema: SCHEMA, tables: [], current: null, queries: [], reports: [] }; }
+  function emptyDb() { return { schema: SCHEMA, tables: [], current: null, queries: [], reports: [], views: [] }; }
   function load(cb) {
     var done = false, t = null;
     function finish(val) {
@@ -93,7 +95,7 @@ var BaseStore = (function () {
           warn("Some saved data was damaged and has been repaired (" + res.fixed + " fix" + (res.fixed > 1 ? "es" : "") + "). A copy of the original was kept as a backup.");
           try { if (idb) idb.transaction(STORE, "readwrite").objectStore(STORE).put(val, "db-backup"); } catch (e) {}
         }
-        /* BS5/BS6/BS7: bump schema in place, after a backup, without calling it "damaged". */
+        /* BS5–BS8: bump schema in place, after a backup, without calling it "damaged". */
         if (res.migrated) {
           try { if (idb && !res.fixed) idb.transaction(STORE, "readwrite").objectStore(STORE).put(val, "db-backup"); } catch (e) {}
           saveNow();
@@ -198,6 +200,11 @@ var BaseStore = (function () {
           });
           nt.rows.push(nr);
         });
+        if (t.layout != null) {
+          if (typeof BaseView !== "undefined" && BaseView.normalize) nt.layout = BaseView.normalize(t.layout, nt);
+          else if (isObj(t.layout)) { try { nt.layout = JSON.parse(JSON.stringify(t.layout)); } catch (e) { fixed++; } }
+          else fixed++;
+        }
         out.tables.push(nt);
       });
       out.current = str(raw.current);
@@ -234,6 +241,30 @@ var BaseStore = (function () {
         c.aggs = c.aggs.filter(function (a) { return isObj(a) && okfn[a.fn] ? (a.field = str(a.field), a.fn = str(a.fn), true) : (fixed++, false); });
         if (!c.aggs.length) c.aggs = [{ field: "", fn: "count" }];
         out.reports.push(c);
+      });
+      var vs = raw.views;
+      if (vs != null && !Array.isArray(vs)) { fixed++; vs = []; }
+      (vs || []).forEach(function (v) {
+        if (!isObj(v) || !str(v.id)) { fixed++; return; }
+        var c; try { c = JSON.parse(JSON.stringify(v)); } catch (e) { fixed++; return; }
+        c.id = str(c.id);
+        c.name = str(c.name).trim() || "View";
+        c.table = str(c.table);
+        if (!Array.isArray(c.filters)) { if (c.filters !== undefined) fixed++; c.filters = []; }
+        if (c.sort != null && !isObj(c.sort)) { fixed++; c.sort = null; }
+        if (c.cols != null && !Array.isArray(c.cols)) { fixed++; c.cols = []; }
+        if (c.widths != null && !isObj(c.widths)) { fixed++; c.widths = {}; }
+        c.freeze = c.freeze === 1 || c.freeze === 2 ? c.freeze : 0;
+        if (!Array.isArray(c.colors)) { if (c.colors !== undefined) fixed++; c.colors = []; }
+        if (c.mode !== "gallery" && c.mode !== "calendar") c.mode = "grid";
+        if (typeof BaseView !== "undefined" && BaseView.normalize) {
+          var tb = out.tables.filter(function (x) { return x.id === c.table; })[0] || { fields: [] };
+          var n = BaseView.normalize(c, tb);
+          c.filters = n.filters; c.sort = n.sort; c.cols = n.cols; c.widths = n.widths;
+          c.freeze = n.freeze; c.colors = n.colors; c.mode = n.mode;
+          c.galleryPic = n.galleryPic; c.galleryFields = n.galleryFields; c.calendarField = n.calendarField;
+        }
+        out.views.push(c);
       });
       out.schema = SCHEMA;
     } catch (e) { fixed++; }

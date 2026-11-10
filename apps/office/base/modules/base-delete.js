@@ -138,6 +138,7 @@ var BaseDelete = (function () {
       BASE.selRow = null; BASE.sort = null; BASE.formIndex = 0;
       if (BASE.query && BASE.query.table === t.id) BASE.query = null;
       try { if (typeof BaseReport !== "undefined") BaseReport.dropForTable(t.id); } catch (e) {}
+      try { if (typeof BaseView !== "undefined") BaseView.dropForTable(t.id); } catch (e) {}
       try { if (typeof BaseHistory !== "undefined") BaseHistory.clear(); } catch (e) {}
       BaseStore.saveNow(); BaseUI.render(); toast("Table “" + t.name + "” deleted");
       try { if (typeof BasePics !== "undefined") BasePics.gc(); } catch (e) {}
