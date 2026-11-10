@@ -1,4 +1,4 @@
-/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+/* Hub Office Slides SL1–SL8 (themes, master/footer, hide, sections) — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
 :root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
 :root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
 *{box-sizing:border-box}
@@ -66,10 +66,15 @@ body.in-hub #top{display:none}
 #drop-line{position:absolute;left:8px;right:8px;height:3px;border-radius:2px;background:var(--hot);pointer-events:none;z-index:5}
 #drop-line.v{width:3px;height:auto;top:8px;bottom:8px;left:auto;right:auto}
 /* stage: the 16:9 slide scales to fit */
+#work{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px}
 #stage{flex:1;min-width:0;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
 #fit{position:relative;flex:none}
 #slide{position:absolute;left:0;top:0;transform-origin:0 0}
 #pos{flex:none;height:16px}
+#notes{flex:none;display:flex;flex-direction:column;min-height:0;height:132px;border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+#notes[hidden]{display:none!important}
+.notes-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 10px 0;font-size:12px;color:var(--mut);font-weight:600}
+#notes-in{flex:1;min-height:0;width:100%;border:0;resize:none;padding:6px 10px 8px;background:transparent;color:var(--fg);font:14px/1.4 system-ui,sans-serif;outline:none}
 /* slide design (960 x 540 design pixels; thumbnails reuse it scaled down).
    SL3: every colour and font comes from a deck theme (CSS variables on .slide: th-light is the SL1 / SL2 look, so old
    decks look the same), the layout class (lay-*) places the placeholders, and the editor (textareas) and the static
@@ -77,7 +82,33 @@ body.in-hub #top{display:none}
    SL3 ships Light (the defaults below) and Dark; a new theme is one more .slide.th-<id> rule + an SLSave.THEMES entry. */
 .slide{--s-bg:#fff;--s-tc:#111827;--s-fg:#1f2430;--s-acc:#f97316;--s-mut:#6b7280;--s-ph:#9aa3ae;--s-em:#b6bcc6;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
 .slide.th-dark{--s-bg:#16181d;--s-tc:#f3f4f6;--s-fg:#d1d5db;--s-acc:#60a5fa;--s-mut:#9aa3ae;--s-ph:#6b7280;--s-em:#4b5563}
-.slide{width:960px;height:540px;background:var(--s-bg);color:var(--s-fg);border-radius:4px;box-shadow:0 4px 18px var(--shade),0 0 0 1px var(--line);display:flex;flex-direction:column;padding:44px 64px 40px;overflow:hidden;font-family:var(--s-fb)}
+.slide.th-ocean{--s-bg:#f0f9ff;--s-tc:#0c4a6e;--s-fg:#0f172a;--s-acc:#0369a1;--s-mut:#4b6b80;--s-ph:#7aa0b5;--s-em:#bae6fd;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.slide.th-forest{--s-bg:#f4f7ef;--s-tc:#1a2e14;--s-fg:#243022;--s-acc:#3f6b3a;--s-mut:#5c6d56;--s-ph:#8a9a84;--s-em:#d5e0c8;--s-ft:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-fb:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-tw:700;--s-line:3px}
+.slide.th-sunset{--s-bg:#fff7ed;--s-tc:#7c2d12;--s-fg:#431407;--s-acc:#c2410c;--s-mut:#9a6248;--s-ph:#c4a090;--s-em:#fed7aa;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.slide.th-slate{--s-bg:#f4f5f7;--s-tc:#0f172a;--s-fg:#1e293b;--s-acc:#334155;--s-mut:#64748b;--s-ph:#94a3b8;--s-em:#cbd5e1;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.slide.th-paper{--s-bg:#faf6ee;--s-tc:#1c1917;--s-fg:#292524;--s-acc:#9a3412;--s-mut:#78716c;--s-ph:#a8a29e;--s-em:#e7e5e4;--s-ft:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-fb:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-tw:700;--s-line:3px}
+.slide.th-midnight{--s-bg:#0b1220;--s-tc:#f8fafc;--s-fg:#e2e8f0;--s-acc:#fbbf24;--s-mut:#94a3b8;--s-ph:#64748b;--s-em:#1e293b;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.s-foot{position:absolute;left:48px;right:48px;bottom:12px;display:flex;align-items:baseline;gap:16px;font:500 14px/1.2 var(--s-fb);color:var(--s-mut);pointer-events:none;z-index:6;min-height:18px}
+.s-foot[hidden]{display:none!important}
+.s-foot .s-foot-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-foot .s-foot-date,.s-foot .s-foot-num{flex:none;font-variant-numeric:tabular-nums}
+.s-foot .s-foot-num{margin-left:auto}
+.th-swatches{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.th-swatches button{width:22px;height:22px;padding:0;border-radius:11px;border:1px solid var(--line);cursor:pointer;background:var(--card)}
+.th-swatches button[aria-pressed=true]{box-shadow:0 0 0 2px var(--acc)}
+.th.hide-slide{opacity:.45}
+.th.hide-slide .mini-s{outline:1px dashed var(--mut)}
+.th .hid-badge{position:absolute;right:4px;top:4px;z-index:3;font:600 9px/1 system-ui,sans-serif;background:var(--card);color:var(--mut);border-radius:3px;padding:2px 4px;border:1px solid var(--line)}
+.sec{display:flex;align-items:center;gap:4px;padding:4px 6px 2px;margin:4px 0 0;position:relative;flex:none}
+.sec-fold{width:22px;height:22px;border:0;background:none;color:var(--fg);cursor:pointer;border-radius:6px;padding:0;font-size:12px}
+.sec-name{flex:1;min-width:0;border:0;background:none;color:var(--fg);font:600 12px system-ui,sans-serif;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 0}
+.sec-n{font:12px/1 system-ui,sans-serif;color:var(--mut);flex:none}
+.sec-up,.sec-down{width:20px;height:20px;border:0;background:none;color:var(--mut);cursor:pointer;border-radius:5px;padding:0;font-size:11px}
+.sec-fold:hover,.sec-name:hover,.sec-up:hover,.sec-down:hover{background:var(--of-hover,color-mix(in srgb,var(--fg) 8%,transparent))}
+.sec.lifted{opacity:.35}
+#master .set-row input[type=text],#master .set-row input[type=date],#master .set-row select{height:28px;max-width:220px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);padding:0 8px}
+#master .row{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.slide{position:relative;width:960px;height:540px;background:var(--s-bg);color:var(--s-fg);border-radius:4px;box-shadow:0 4px 18px var(--shade),0 0 0 1px var(--line);display:flex;flex-direction:column;padding:44px 64px 40px;overflow:hidden;font-family:var(--s-fb)}
 .s-title,.sv .t{flex:none;font:var(--s-tw) 44px/1.18 var(--s-ft);color:var(--s-tc);padding:4px 0 10px;margin:0 0 14px;border-bottom:var(--s-line) solid var(--s-acc);min-height:66px;overflow:hidden}
 .s-title{width:100%;border-top:0;border-left:0;border-right:0;outline:none;resize:none;background:transparent;display:block}
 .s-cols{flex:1;min-height:0;display:flex;gap:48px}
@@ -85,28 +116,42 @@ body.in-hub #top{display:none}
 .s-body{position:absolute;inset:0;margin:0;border:0;outline:none;resize:none;background:transparent;font:400 28px/1.4 var(--s-fb);padding:2px 0 0 40px;white-space:pre-wrap;overflow-wrap:break-word;word-wrap:break-word;tab-size:7;-moz-tab-size:7;overflow-y:auto;scrollbar-width:none;color:var(--s-fg);letter-spacing:normal}
 .s-body::-webkit-scrollbar{display:none}
 .s-title::placeholder,.s-body::placeholder{color:var(--s-ph)}
-.s-mirror{color:transparent;pointer-events:none;overflow:hidden;user-select:none}
-.s-mirror .ln{min-height:1.4em}
-.s-mirror .d{position:relative}
-.s-mirror .d::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
-.s-mirror .ln.l1 .d::before{width:8px;height:8px;top:.58em;left:-26px;background:transparent;border:2px solid var(--s-mut)}
-textarea.s-title:focus,textarea.s-body:focus{background:transparent}
+/* SL5: contenteditable boxes (legacy SL1–SL4: textareas + a transparent .s-mirror for the dots) */
+ .s-ed{outline:none;caret-color:currentColor}
+.s-title.s-ed{position:relative;overflow:hidden;overflow-y:auto}
+.s-ed.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none;position:absolute;left:0;right:8px;top:4px;white-space:pre-wrap}
+.s-body.s-ed.empty::before{left:40px;top:2px}
+.s-body-wrap.plain .s-body.s-ed.empty::before,.s-body.s-ed.empty:not(.has-list)::before{left:0}
+.s-ed .p,.sv .t .p,.sv .b .p,.tbox-in .p,.shp-in .p,.cell-in .p{position:relative;min-height:1.4em;margin:0}
+.r.b{font-weight:700}
+.r.i{font-style:italic}
+.r.u{text-decoration:underline}
+.r.s{text-decoration:line-through}
+.r.u.s{text-decoration:underline line-through}
+.s-ed:focus{background:transparent}
 .s-body:focus{box-shadow:none}
 /* static slide view (.sv): thumbnails and Present use the same renderer (SLEdit.html) and design */
 .mini-in .slide,.mini-in.slide{box-shadow:none;border-radius:0}
 .sv .t{white-space:nowrap;text-overflow:ellipsis}
 .sv .t.empty{color:var(--s-em)}
 .sv .b{flex:1;min-width:0;font:400 28px/1.4 var(--s-fb);color:var(--s-fg);padding:2px 0 0 40px}
-.sv .b div{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
-.sv .b div::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
-.sv .b div.l1{padding-left:48px}
-.sv .b div.l1::before{left:22px;width:8px;height:8px;background:transparent;border:2px solid var(--s-mut)}
-.sv .b div.e::before,.sv .b.plain div::before{display:none}
+.sv .b .p,.s-ed.s-body .p{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
+.s-ed.s-body .p{white-space:pre-wrap;overflow:visible;text-overflow:clip}
+/* SL5 list markers (editor, thumbnails, Present, Print): bullet dots or 1. 2. / a. b. */
+.s-ed .p.l1,.sv .b .p.l1,.tbox-in .p.l1,.shp-in .p.l1,.cell-in .p.l1{padding-left:48px}
+.s-ed .p.l2,.sv .b .p.l2,.tbox-in .p.l2,.shp-in .p.l2,.cell-in .p.l2{padding-left:96px}
+.s-ed .p.bullet::before,.sv .b .p.bullet::before,.tbox-in .p.bullet::before,.shp-in .p.bullet::before,.cell-in .p.bullet::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
+.s-ed .p.l1.bullet::before,.sv .b .p.l1.bullet::before,.tbox-in .p.l1.bullet::before,.shp-in .p.l1.bullet::before,.cell-in .p.l1.bullet::before{left:22px;width:8px;height:8px;top:.58em;background:transparent;border:2px solid var(--s-mut)}
+.s-ed .p.l2.bullet::before,.sv .b .p.l2.bullet::before,.tbox-in .p.l2.bullet::before,.shp-in .p.l2.bullet::before,.cell-in .p.l2.bullet::before{left:70px;width:6px;height:6px;top:.62em;background:var(--s-mut);border:0;border-radius:50%}
+.s-ed .p.number::before,.sv .b .p.number::before,.tbox-in .p.number::before,.shp-in .p.number::before,.cell-in .p.number::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}
+.s-ed .p.l1.number::before,.sv .b .p.l1.number::before,.tbox-in .p.l1.number::before,.shp-in .p.l1.number::before,.cell-in .p.l1.number::before{left:0;width:40px}
+.s-ed .p.l2.number::before,.sv .b .p.l2.number::before,.tbox-in .p.l2.number::before,.shp-in .p.l2.number::before,.cell-in .p.l2.number::before{left:48px;width:40px}
+.s-ed .p.none::before,.sv .b .p.none::before,.sv .t .p::before,.tbox-in .p.none::before,.shp-in .p.none::before,.cell-in .p.none::before{content:none;display:none}
 /* Present (.pv): long titles and bullets wrap like in the editor */
 .pv .t{white-space:normal;overflow-wrap:break-word}
-.pv .b div{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
-/* plain text placeholders (subtitle, section text, caption): no dots, no indent */
-.s-body-wrap.plain .s-body,.sv .b.plain{padding-left:0}
+.pv .b .p{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
+/* plain text placeholders (subtitle, section text, caption): no gutter unless the box has a list */
+.s-body-wrap.plain .s-body:not(.has-list),.sv .b.plain:not(.has-list){padding-left:0}
 /* SL3 layouts. Title */
 .slide.lay-title{justify-content:center}
 .lay-title .s-title,.lay-title .t{font-size:56px;text-align:center;border-bottom:0;margin:0;padding:4px 0 6px;min-height:76px}
@@ -130,15 +175,59 @@ textarea.s-title:focus,textarea.s-body:focus{background:transparent}
 #slide .s-picph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--s-ph);border-radius:10px;background:color-mix(in srgb,var(--s-ph) 10%,transparent);color:var(--s-ph);font:500 26px/1.3 var(--s-fb);cursor:pointer;padding:0}
 #slide .s-picph small{font-size:18px}
 #slide .s-picph:hover{border-color:var(--s-acc);color:var(--s-acc)}
-/* pictures (design px, above the text) */
-.pics{position:absolute;inset:0;pointer-events:none;z-index:2}
+/* pictures, text boxes, shapes and tables share one layer so z-order works across types (SL6) */
+.objs{position:absolute;inset:0;pointer-events:none;z-index:2}
+.pics,.tboxes,.shapes,.tables,.sellayer,.guides{position:absolute;inset:0;pointer-events:none}
 .pic{position:absolute;overflow:hidden}
 .pic img{display:block;width:100%;height:100%;-webkit-user-drag:none;user-select:none;pointer-events:none}
 .pic.miss{background:repeating-linear-gradient(45deg,rgba(156,163,175,.25) 0 10px,transparent 10px 20px);outline:1px dashed #9ca3af}
 #pics .pic{pointer-events:auto;cursor:move;touch-action:none}
 #pics .pic.sel{outline:var(--ol,2px) solid #2563eb}
-.selbox{position:absolute;pointer-events:none}
+/* SL5 free text boxes */
+.tbox{position:absolute;overflow:hidden;box-sizing:border-box;background:transparent}
+#tboxes .tbox{pointer-events:auto;cursor:move;touch-action:none}
+#tboxes .tbox.sel{outline:var(--ol,2px) solid #2563eb}
+#tboxes .tbox.editing{cursor:text;touch-action:auto;outline:var(--ol,2px) solid #2563eb}
+.tbox-in,.shp-in,.cell-in{width:100%;height:100%;overflow:auto;padding:8px 14px;font:400 24px/1.35 var(--s-fb);color:var(--s-fg);outline:none;scrollbar-width:none;box-sizing:border-box;cursor:inherit}
+.tbox-in::-webkit-scrollbar,.shp-in::-webkit-scrollbar,.cell-in::-webkit-scrollbar{display:none}
+.tbox-in.has-list,.shp-in.has-list,.cell-in.has-list{padding-left:48px}
+.tbox-in.empty::before,.shp-in.empty::before,.cell-in.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none}
+#tbbar,#shpbar,#tblbar,#arrbar{flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.sw-lbl{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}
+.sw-lbl select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 4px}
+/* SL6 shapes */
+.shp{position:absolute;box-sizing:border-box;overflow:visible}
+#shapes .shp{pointer-events:auto;cursor:move;touch-action:none}
+#shapes .shp.sel{outline:var(--ol,2px) solid #2563eb}
+#shapes .shp.editing{cursor:text;touch-action:auto;outline:var(--ol,2px) solid #2563eb}
+.shp svg{display:block;width:100%;height:100%;pointer-events:none;overflow:visible}
+.shp-in{position:absolute;inset:0;padding:12px 16px;font:400 20px/1.35 var(--s-fb);text-align:center;background:transparent}
+.shp.line .shp-in,.shp.arrow .shp-in{display:none}
+/* SL6 tables */
+.tbl{position:absolute;box-sizing:border-box;overflow:hidden;background:transparent}
+#tables .tbl{pointer-events:auto;cursor:move;touch-action:none}
+#tables .tbl.sel{outline:var(--ol,2px) solid #2563eb}
+#tables .tbl.editing{cursor:default;touch-action:auto}
+.tbl table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed;box-sizing:border-box}
+.tbl td{padding:0;vertical-align:top;word-break:break-word;position:relative}
+.tbl td.cell-sel{outline:var(--ol,2px) solid #2563eb;outline-offset:-2px}
+.cell-in{padding:6px 8px;font:400 16px/1.3 var(--s-fb);min-height:100%;cursor:inherit}
+.tbl.editing .cell-in[contenteditable="true"]{cursor:text;touch-action:auto}
+.selbox{position:absolute;pointer-events:none;z-index:1000}
 .selbox .h{position:absolute;width:var(--hs,14px);height:var(--hs,14px);margin:calc(var(--hs,14px) / -2) 0 0 calc(var(--hs,14px) / -2);background:#fff;border:var(--ol,2px) solid #2563eb;border-radius:50%;pointer-events:auto;touch-action:none;box-sizing:border-box}
+.selbox.multi{outline:var(--ol,2px) dashed #2563eb;outline-offset:2px}
+.guides .g{position:absolute;background:#f97316;pointer-events:none;z-index:1001}
+.guides .g.x{top:0;bottom:0;width:2px;margin-left:-1px}
+.guides .g.y{left:0;right:0;height:2px;margin-top:-1px}
+.shape-pop{width:268px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.shape-pop button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);cursor:pointer;font-size:11px;line-height:1.2}
+.shape-pop button:hover,.shape-pop button:focus-visible{border-color:var(--acc);outline:none}
+.shape-pop button svg{width:36px;height:24px;display:block}
+.table-pop{width:196px;padding:8px}
+.table-pop .tg{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+.table-pop .tg button{width:18px;height:18px;padding:0;border:1px solid var(--line);background:var(--bg);border-radius:2px;cursor:pointer}
+.table-pop .tg button.on,.table-pop .tg button:hover{background:color-mix(in srgb,var(--acc) 35%,var(--bg));border-color:var(--acc)}
+.table-pop .tg-lab{font-size:12px;color:var(--mut);margin-top:6px;text-align:center}
 .h-nw{left:0;top:0;cursor:nwse-resize}.h-n{left:50%;top:0;cursor:ns-resize}.h-ne{left:100%;top:0;cursor:nesw-resize}.h-e{left:100%;top:50%;cursor:ew-resize}
 .h-se{left:100%;top:100%;cursor:nwse-resize}.h-s{left:50%;top:100%;cursor:ns-resize}.h-sw{left:0;top:100%;cursor:nesw-resize}.h-w{left:0;top:50%;cursor:ew-resize}
 #picbar{flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
@@ -210,18 +299,54 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border:1px solid var(--l
 #toast.show{opacity:1}
 /* SL2 Present: black, the slide letterboxed in the middle; counter + buttons fade after 2 s idle (cursor too) */
 #show{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;outline:none;overflow:hidden;cursor:default}
+#show-main{position:relative;flex:1;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;align-self:stretch}
 #show-fit{position:relative;flex:none;overflow:hidden}
-#show-slide{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none;pointer-events:none}
-#show-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa3ae;font:400 clamp(15px,2.4vw,22px)/1.4 system-ui,sans-serif;text-align:center;padding:20px}
+#show-zoom{position:relative;width:100%;height:100%;overflow:hidden}
+#show-slide,#show-slide-old{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none;pointer-events:none}
+#show-ink{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3}
+#show-laser{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:radial-gradient(circle,#ef4444 0 28%,rgba(239,68,68,.4) 42%,transparent 70%);pointer-events:none;z-index:4;filter:drop-shadow(0 0 6px #ef4444)}
+#show-blank{position:absolute;inset:0;z-index:8}
+#show-blank.black{background:#000}
+#show-blank.white{background:#fff}
+#show-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa3ae;font:400 clamp(15px,2.4vw,22px)/1.4 system-ui,sans-serif;text-align:center;padding:20px;z-index:5}
 #show-end p{margin:0}
+.show-layer.tr-fade{transition:opacity .4s ease}
+.show-layer.tr-push{transition:transform .4s ease}
+.show-layer.tr-wipe{transition:clip-path .4s ease}
+@media (prefers-reduced-motion:reduce){
+  .show-layer.tr-fade,.show-layer.tr-push,.show-layer.tr-wipe{transition:none!important}
+}
 .show-ui{transition:opacity .35s}
 #show.idle .show-ui{opacity:0;pointer-events:none}
 #show.idle{cursor:none}
-#show-count{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:4px 10px;border-radius:12px;background:rgba(0,0,0,.55);color:#e5e7eb;font:600 13px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none}
-.show-ctl{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px}
+#show.tool-laser{cursor:none}
+#show-count{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:4px 10px;border-radius:12px;background:rgba(0,0,0,.55);color:#e5e7eb;font:600 13px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none;z-index:9}
+.show-ctl{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px;z-index:9}
 .show-ctl button{width:40px;height:40px;border-radius:20px;border:1px solid rgba(255,255,255,.18);background:rgba(20,20,20,.6);color:#f3f4f6;font:400 22px/1 system-ui,sans-serif;cursor:pointer;padding:0}
 .show-ctl button:disabled{opacity:.35;cursor:default}
 .show-ctl button:hover:not(:disabled){background:rgba(60,60,60,.8)}
+#show-tools{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:18px;background:rgba(20,20,20,.7);border:1px solid rgba(255,255,255,.14);z-index:9;flex-wrap:wrap;max-width:calc(100% - 160px);justify-content:center}
+#show-tools button{height:28px;padding:0 9px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#f3f4f6;font:500 12px system-ui,sans-serif;cursor:pointer}
+#show-tools button[aria-pressed=true]{background:var(--acc,#2563eb);border-color:transparent}
+.pen-cols{display:inline-flex;gap:3px;align-items:center}
+.pen-cols button{width:16px;height:16px;padding:0;border-radius:8px;border:1px solid rgba(255,255,255,.4)!important}
+.pen-cols button.on{box-shadow:0 0 0 2px #fff}
+#show-aside{display:none;flex-direction:column;width:min(360px,34vw);flex:none;background:#16181d;color:#e5e7eb;padding:14px 14px 72px;min-height:0;align-self:stretch;overflow:auto;z-index:7;border-left:1px solid #2b3037}
+#show.presenter{align-items:stretch;justify-content:stretch}
+#show.presenter #show-aside{display:flex}
+#show.presenter #show-main{flex:1}
+#show.presenter #show-tools,#show.presenter .show-ctl,#show.presenter #show-count{opacity:1}
+#show.presenter.idle .show-ui{opacity:1;pointer-events:auto}
+#show.presenter.idle{cursor:default}
+.pv-label{font:600 11px/1 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#9aa3ae;margin:8px 0 6px}
+#show-next-fit{position:relative;width:100%;padding-top:56.25%;overflow:hidden;background:#000;border-radius:6px}
+#show-next-slide{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none}
+#show-timer{display:flex;align-items:center;gap:8px;margin:10px 0}
+#show-time{font:700 28px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#f3f4f6}
+#show-timer .mini{height:26px;padding:0 8px;font-size:12px;background:#1c1f24;color:#e5e7eb;border-color:#2b3037}
+#show-notes{flex:1;min-height:80px;margin:0;white-space:pre-wrap;overflow:auto;font:15px/1.45 system-ui,sans-serif;color:#e5e7eb}
+#of-ribbon #b-trans{height:26px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);font:12px system-ui,sans-serif}
+#b-notes[aria-pressed=true]{background:var(--acc);color:#fff}
 html.presenting #app>*:not(#show){visibility:hidden}
 /* phones / narrow windows: the slide list becomes a strip on top */
 @media (max-width:760px){
@@ -238,11 +363,38 @@ html.presenting #app>*:not(#show){visibility:hidden}
   .th .mini-s{width:112px;height:63px}
   #warn{margin:0 8px 6px}
   #stage{justify-content:flex-start;padding-top:10px}
+  #notes{height:96px}
+  .sec{flex-direction:column;align-items:flex-start;min-width:72px;padding:2px 4px}
+  .sec-up,.sec-down{display:none}
+
+  #show.presenter #show-aside{width:min(280px,42vw);padding:8px 8px 64px}
+  #show-time{font-size:20px}
 }
+
 /* legacy (SL3) phone top bar: @media (max-width:1000px){#b-lay .lbl,#b-pic .lbl,#b-theme .lbl{display:none}}
    @media (max-width:480px){#b-lay,#b-theme,#b-add .lbl{display:none}} @media (max-width:380px){#b-up,#b-down{display:none}}
    SL4: every ribbon control stays; the row scrolls sideways and ⋯ (sticky) has them all too. */
 @media (max-width:480px){#of-ribbon #b-add .lbl,#of-ribbon #b-pic .lbl,#of-ribbon #b-show .lbl,#of-ribbon #r-show0 .lbl{display:none}}
+
+/* SL5 Format group, colour popovers, mini toolbar */
+#of-ribbon .fmt{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:2px}
+#of-ribbon .fmt select{height:26px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);font:12px system-ui,sans-serif;max-width:68px;margin:0 2px}
+#of-ribbon .fmt button[aria-pressed=true]{background:var(--acc);color:#fff}
+#f-color{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+#f-left,#f-right,#f-center{letter-spacing:-.04em;font-weight:700}
+.fmt-pop{position:fixed;z-index:35;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 8px 30px rgba(0,0,0,.3);display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:232px}
+.fmt-pop[hidden]{display:none!important}
+.fmt-pop button{width:22px;height:22px;border-radius:11px;border:1px solid var(--line);padding:0;cursor:pointer;background:var(--card)}
+.fmt-pop button.auto{width:auto;padding:0 8px;border-radius:11px;font-size:12px;color:var(--fg)}
+.fmt-pop button.on{box-shadow:0 0 0 2px var(--acc)}
+.fmt-pop label{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}
+.fmt-pop input[type=color]{width:28px;height:22px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--card);cursor:pointer}
+.mini-fmt{position:fixed;z-index:34;display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.mini-fmt[hidden]{display:none!important}
+.mini-fmt button{height:28px;min-width:28px;border:0;background:none;color:var(--fg);border-radius:6px;cursor:pointer;font:600 13px system-ui,sans-serif}
+.mini-fmt button[aria-pressed=true]{background:var(--acc);color:#fff}
+.mini-fmt button:hover{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+@media (max-width:760px){#of-ribbon .fmt select{max-width:52px}}
 /* SL4 print / PDF: only the print view (slides_print.js), one 960 x 540 page per slide = 10in x 5.625in at 96 px/in */
 #print{display:none}
 @media print{
@@ -254,4 +406,15 @@ html.presenting #app>*:not(#show){visibility:hidden}
   #print .pp:last-child{break-after:auto;page-break-after:auto}
   #print .slide{position:absolute;left:0;top:0;border-radius:0;box-shadow:none}
   #print,#print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html.notes-print #print .pp{width:auto;height:auto;min-height:0;overflow:visible;padding:0 0 16px}
+  html.notes-print #print .pp.notes{display:flex;flex-direction:column;gap:12px}
+  html.notes-print #print .np-slide{width:160mm;height:90mm;overflow:hidden;position:relative;margin:0 auto;background:#fff;box-shadow:0 0 0 1px #ccc}
+  html.notes-print #print .np-slide .slide{position:absolute;left:0;top:0;border-radius:0;box-shadow:none}
+  html.notes-print #print .np-meta{font:600 12px system-ui,sans-serif;color:#6b7280}
+  html.notes-print #print .np-notes{font:14px/1.45 system-ui,sans-serif;white-space:pre-wrap;overflow-wrap:break-word;color:#111}
 }
+
+
+/* aliases if a list class is written in the long form */
+.s-ed .p.bullets::before,.sv .b .p.bullets::before,.tbox-in .p.bullets::before,.shp-in .p.bullets::before,.cell-in .p.bullets::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
+.s-ed .p.numbers::before,.sv .b .p.numbers::before,.tbox-in .p.numbers::before,.shp-in .p.numbers::before,.cell-in .p.numbers::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!-- Redirect entry point to numerology.html (keeps ?query and #hash). NU1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open Numerology" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Numerology</title>
+  <link rel="canonical" href="numerology.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#161410;color:#a89f90}html.dark a{color:#e0b34a}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('numerology.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=numerology.html"></noscript>
+</head>
+<body><noscript><p><a href="numerology.html">Open Numerology</a></p></noscript></body>
+</html>

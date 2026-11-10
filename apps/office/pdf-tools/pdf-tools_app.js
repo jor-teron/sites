@@ -7,26 +7,57 @@
   PT.Load.init();
   PT.Thumbs.init();
   PT.Select.init();
+  PT.Images.init();
+  PT.Sign.init();
+  const _preview = PT.Images.preview.bind(PT.Images);
+  PT.Images.preview = (id) => { PT.Sign.setPreviewId(id); return _preview(id); };
 
   $('b-all').addEventListener('click', PT.Select.all);
   $('b-rl').addEventListener('click', () => PT.Edit.rotate(-90));
   $('b-rr').addEventListener('click', () => PT.Edit.rotate(90));
   $('b-del').addEventListener('click', () => PT.Edit.remove());
+  $('b-dup').addEventListener('click', PT.Edit.duplicate);
+  $('b-blank').addEventListener('click', PT.Edit.insertBlank);
   $('b-undo').addEventListener('click', PT.Edit.undo);
   $('b-redo').addEventListener('click', PT.Edit.redo);
   $('b-save').addEventListener('click', () => PT.Edit.save());
+  $('m-extract').addEventListener('click', () => { PT.menu(false); PT.Edit.extract(); });
+  $('m-split').addEventListener('click', () => { PT.menu(false); PT.Edit.split(); });
+  $('m-images').addEventListener('click', () => PT.Images.pick());
+  $('m-export').addEventListener('click', () => { PT.menu(false); PT.Images.exportPages(); });
+  $('m-stamp').addEventListener('click', () => { PT.menu(false); PT.Stamp.dialog(); });
+  $('m-crop').addEventListener('click', () => { PT.menu(false); PT.Stamp.cropDialog(); });
+  $('m-form').addEventListener('click', () => { PT.menu(false); PT.Sign.formDialog(); });
+  $('m-ann').addEventListener('click', () => { PT.menu(false); PT.Sign.openSelected(); });
 
   addEventListener('keydown', (e) => {
+    if (PT.$('sigpad') && !PT.$('sigpad').hidden) {
+      if (e.key === 'Escape') { e.preventDefault(); PT.$('sigpad-cancel').click(); }
+      return;
+    }
     if (PT.dialogOpen) { if (e.key === 'Escape') $('dlg-no').hidden ? $('dlg-yes').click() : $('dlg-no').click(); return; }
-    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (e.target.closest && e.target.closest('input, textarea, select')) return;
+    if (PT.Sign && PT.Sign.isOpen()) {
+      if (e.key === 'Escape') { e.preventDefault(); return; }
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); PT.Sign.delSel(); }
+      return;
+    }
+    if (PT.Images && PT.Images.isOpen()) {
+      if (e.key === 'Escape') { e.preventDefault(); PT.Images.close(); }
+      return;
+    }
     const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (mod && k === 'o') { e.preventDefault(); PT.Load.pick(); return; }
     if (e.key === 'Escape') { PT.menu(false); PT.Select.none(); return; }
+    if (e.key === 'Enter' && PT.S.sel.size === 1) { PT.Images.preview([...PT.S.sel][0]); return; }
     if (!PT.S.doc) return;
     if (mod && k === 'z' && !e.shiftKey) { e.preventDefault(); PT.Edit.undo(); }
     else if (mod && (k === 'y' || (k === 'z' && e.shiftKey))) { e.preventDefault(); PT.Edit.redo(); }
     else if (mod && k === 'a') { e.preventDefault(); PT.Select.all(); }
     else if (mod && k === 's') { e.preventDefault(); PT.Edit.save(); }
+    else if (mod && k === 'd') { e.preventDefault(); PT.Edit.duplicate(); }
+    else if (mod && k === 'e') { e.preventDefault(); PT.Edit.extract(); }
+    else if (!mod && k === 'b') PT.Edit.insertBlank();
     else if (!mod && k === 'r') PT.Edit.rotate(e.shiftKey ? -90 : 90);
     else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); PT.Edit.remove(); }
   });

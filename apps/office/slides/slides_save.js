@@ -2,13 +2,23 @@
      'slides-settings-v1'    = { theme:'system'|'light'|'dark' }   (default dark; 'system' follows the Hub's sites-hub.theme, else the OS)
      'slides-decks-v1'       = { current:'<id>', decks:[{ id, name, updated, count }] }   (the deck list, newest first)
      'slides-deck-v1:<id>'   = { id, name, created, updated, cur, fmt, theme, slides:[{ id, layout, title, body, body2, bg, pics }] }
-   body = bullet text, one bullet per line; a leading TAB = indented one level (the .hslides file uses {text, level}).
+   body / title are rich documents (SLText, SL5): { paragraphs:[{ runs:[{ text, b, i, u, size, color, hl }], level, align, list }] }.
+   A leading TAB in a legacy plain body = indented one level (the .hslides file uses paragraphs, or {text, level} in v1/v2).
    SL3: fmt = 3 (SL1 / SL2 records have none), theme = deck theme id (missing = 'light', the SL1 / SL2 look),
      layout (missing = 'tc', Title + Content), body2 (right column of Two Columns), bg ('#rrggbb' per-slide background
      override, '' = the theme's), pics = [{ id, key, x, y, w, h, iw, ih, fit:'cover'|'contain', inl }] in 960 x 540 design px.
      A picture's data URL lives in IndexedDB (slides_pics.js) under `key`; only pictures that could not be stored there
      (inl: true) carry `src` in this record. Missing fields = the old defaults, so SL1 / SL2 decks open unchanged.
      Legacy (SL1 / SL2): 'slides-deck-v1:<id>' = { id, name, created, updated, cur, slides:[{ id, title, body }] }
+   SL5: fmt = 4; title / body / body2 are documents (plain strings on an older record are migrated on load, nothing dropped);
+     tboxes = [{ id, x, y, w, h, doc }] free text boxes in 960 x 540 design px. Older fmt 3 / no-fmt records open unchanged.
+   SL6: fmt = 5; shapes = [{ id, kind, x, y, w, h, fill, stroke, sw, flip, doc, z }];
+     tables = [{ id, x, y, w, h, header, border, bw, fill, hfill, cells:[[{doc}]], z }]. Older fmt 4 / 3 / no-fmt records open unchanged.
+   SL7: fmt = 6; notes (plain text), trans = none|fade|push|wipe, ink = kept pen strokes (only when the presenter chose Keep ink).
+     Older fmt 5 / 4 / 3 / no-fmt records open unchanged (empty notes, trans none, no ink).
+   SL8: fmt = 7; more deck themes (colour + font sets; the app chrome stays System / Light / Dark); master = { footer, number, date, when, skipTitle };
+     per-slide hide, foot (''|hide|show), footer override, sec (section id); deck.sections = [{ id, name, fold }].
+     Older fmt 6 / 5 / 4 / 3 / no-fmt records open unchanged (Light/Dark themes kept, master off, no sections, no hidden slides).
    If storage is missing, full or throws, Slides keeps working in memory (SLSave.memOnly) and shows a banner
    (once, dismissable): changes then last only until the page closes (use Export). Saves never throw.
    Auto-save: SLSave.saveDeck(deck) is debounced 400 ms; flush() writes now (also on pagehide / hidden). */
@@ -51,7 +61,8 @@
     ['pic', 'Picture + Caption'], ['to', 'Title Only'], ['blank', 'Blank']];
   /* SL3 ships two deck themes. To add one: an entry here + a .slide.th-<id> rule in slides.css (the CSS variables
      --s-bg --s-tc --s-fg --s-acc --s-mut --s-ph --s-em --s-ft --s-fb --s-tw --s-line). Unknown ids load as 'light'. */
-  var THEMES = [['light', 'Light'], ['dark', 'Dark']];
+  var THEMES = [['light', 'Light'], ['dark', 'Dark'], ['ocean', 'Ocean'], ['forest', 'Forest'],
+    ['sunset', 'Sunset'], ['slate', 'Slate'], ['paper', 'Paper'], ['midnight', 'Midnight']];
   function ids(a) { return a.map(function (x) { return x[0]; }); }
   var LAY_IDS = ids(LAYOUTS), THEME_IDS = ids(THEMES);
   function num(x, lo, hi, d) { x = +x; return isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x * 10) / 10)) : d; }
@@ -62,28 +73,61 @@
     if (!key && !src) return null;
     var w = num(p.w, 8, 4000, 320), h = num(p.h, 8, 4000, 180);
     return { id: str(p.id, 20) || uid(), key: key, src: src, x: num(p.x, -4000, 4000, 0), y: num(p.y, -4000, 4000, 0), w: w, h: h,
-      iw: num(p.iw, 1, 20000, w) | 0, ih: num(p.ih, 1, 20000, h) | 0, fit: p.fit === 'contain' ? 'contain' : 'cover', inl: !!(p.inl || (src && !key)) };
+      iw: num(p.iw, 1, 20000, w) | 0, ih: num(p.ih, 1, 20000, h) | 0, fit: p.fit === 'contain' ? 'contain' : 'cover', z: isFinite(+p.z) ? Math.round(+p.z) : 0, inl: !!(p.inl || (src && !key)) };
   }
+  function bodyListFor(lay) { return (lay === 'title' || lay === 'sec' || lay === 'pic') ? 'none' : 'bullet'; }
   function cleanSlide(s) {
     s = s && typeof s === 'object' ? s : {};
     var pics = (Array.isArray(s.pics) ? s.pics : []).slice(0, 50).map(cleanPic).filter(Boolean);
-    return { id: str(s.id, 20) || uid(), layout: LAY_IDS.indexOf(s.layout) >= 0 ? s.layout : 'tc',
-      title: str(s.title, 300), body: str(s.body, 5000), body2: str(s.body2, 5000),
-      bg: typeof s.bg === 'string' && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg.toLowerCase() : '', pics: pics };
+    var layout = LAY_IDS.indexOf(s.layout) >= 0 ? s.layout : 'tc';
+    var bl = bodyListFor(layout);
+    var tboxes = SLText.cleanBoxes(s.texts || s.tboxes || s.textboxes);
+    tboxes.forEach(function (t) { if (!t.id) t.id = uid(); });
+    var shapes = (window.SLDraw ? SLDraw.cleanShapes(s.shapes) : []).map(function (sh) { if (!sh.id) sh.id = uid(); return sh; });
+    var tables = (window.SLDraw ? SLDraw.cleanTables(s.tables) : []).map(function (tb) { if (!tb.id) tb.id = uid(); return tb; });
+    return { id: str(s.id, 20) || uid(), layout: layout,
+      title: SLText.fromFileTitle(s.title),
+      body: (typeof s.body === 'string' || s.body == null) ? SLText.fromPlain(s.body || '', { max: 5000, list: bl }) : SLText.clean(s.body, { max: 5000, list: bl }),
+      body2: (typeof s.body2 === 'string' || s.body2 == null) ? SLText.fromPlain(s.body2 || '', { max: 5000, list: 'bullet' }) : SLText.clean(s.body2, { max: 5000, list: 'bullet' }),
+      bg: typeof s.bg === 'string' && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg.toLowerCase() : '', pics: pics, texts: tboxes, tboxes: tboxes,
+      shapes: shapes, tables: tables,
+      notes: window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || '').slice(0, 4000),
+      trans: window.SLPresent ? SLPresent.cleanTrans(s.trans || s.transition) : 'none',
+      ink: window.SLPresent ? SLPresent.cleanInk(s.ink) : [],
+      hide: !!s.hide,
+      foot: window.SLMaster ? SLMaster.cleanFoot(s.foot) : (s.foot === 'hide' || s.foot === 'show' ? s.foot : ''),
+      footer: window.SLMaster ? SLMaster.cleanFooterText(s.footer) : String(s.footer || '').slice(0, 200),
+      sec: typeof s.sec === 'string' ? s.sec.slice(0, 20) : '' };
   }
-  /* a copy that shares the (immutable) picture data; used by Duplicate and Undo */
+  /* a deep copy of text / boxes; pictures share the (immutable) bitmap data. Used by Duplicate and Undo */
   function cloneSlide(s, newIds) {
-    var c = Object.assign({}, s, { pics: (s.pics || []).map(function (p) { var q = Object.assign({}, p); if (newIds) q.id = uid(); return q; }) });
+    var c = Object.assign({}, s, {
+      title: SLText.clone(s.title, { max: 300, list: 'none', single: true }),
+      body: SLText.clone(s.body, { max: 5000 }),
+      body2: SLText.clone(s.body2, { max: 5000 }),
+      pics: (s.pics || []).map(function (p) { var q = Object.assign({}, p); if (newIds) q.id = uid(); return q; }),
+      texts: (s.texts || s.tboxes || []).map(function (t) { var q = Object.assign({}, t, { doc: SLText.clone(t.doc, { max: 2000 }) }); if (newIds) q.id = uid(); return q; }),
+      shapes: (s.shapes || []).map(function (sh) { var q = window.SLDraw ? SLDraw.cloneShape(sh, newIds) : Object.assign({}, sh); if (newIds) q.id = uid(); else if (!q.id && sh.id) q.id = sh.id; return q; }),
+      tables: (s.tables || []).map(function (tb) { var q = window.SLDraw ? SLDraw.cloneTable(tb, newIds) : Object.assign({}, tb); if (newIds) q.id = uid(); else if (!q.id && tb.id) q.id = tb.id; return q; }),
+      notes: window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || ''),
+      trans: window.SLPresent ? SLPresent.cleanTrans(s.trans) : (s.trans || 'none'),
+      ink: window.SLPresent ? SLPresent.cloneInk(s.ink) : (s.ink ? JSON.parse(JSON.stringify(s.ink)) : []),
+      hide: !!s.hide,
+      foot: window.SLMaster ? SLMaster.cleanFoot(s.foot) : (s.foot || ''),
+      footer: window.SLMaster ? SLMaster.cleanFooterText(s.footer) : String(s.footer || ''),
+      sec: typeof s.sec === 'string' ? s.sec : ''
+    });
+    c.tboxes = c.texts;
     if (newIds) c.id = uid();
     return c;
   }
   /* what goes to localStorage: pictures stored in IndexedDB lose their (long) src */
   function slim(d) {
-    var o = Object.assign({}, d, { fmt: 3 });
+    var o = Object.assign({}, d, { fmt: 7 });
     o.slides = d.slides.map(function (s) {
       if (!s.pics || !s.pics.length) return s;
       return Object.assign({}, s, { pics: s.pics.map(function (p) {
-        var q = { id: p.id, key: p.key, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit };
+        var q = { id: p.id, key: p.key, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit }; if (p.z) q.z = p.z;
         if (p.inl || !p.key) { q.src = p.src; q.inl = true; }
         return q;
       }) });
@@ -94,13 +138,17 @@
     d = d && typeof d === 'object' ? d : {};
     var out = { id: str(d.id, 20) || id || uid(), name: str(d.name, 80).trim() || 'Untitled deck',
       created: +d.created || Date.now(), updated: +d.updated || Date.now(), cur: 0,
-      theme: THEME_IDS.indexOf(d.theme) >= 0 ? d.theme : 'light', slides: [] };
+      theme: THEME_IDS.indexOf(d.theme) >= 0 ? d.theme : 'light',
+      master: window.SLMaster ? SLMaster.cleanMaster(d.master) : { footer: '', number: false, date: false, when: '', skipTitle: true },
+      sections: window.SLMaster ? SLMaster.cleanSections(d.sections) : [],
+      slides: [] };
     var seen = {};
     (Array.isArray(d.slides) ? d.slides : []).slice(0, 500).forEach(function (s) {
       var c = cleanSlide(s); if (seen[c.id]) c.id = uid(); seen[c.id] = 1; out.slides.push(c);
     });
     if (!out.slides.length) out.slides.push(cleanSlide({}));
     out.cur = Math.max(0, Math.min(out.slides.length - 1, d.cur | 0));
+    if (window.SLMaster) out.sections = SLMaster.normalize(out);
     return out;
   }
   function index() {
@@ -144,7 +192,7 @@
   Object.assign(SL, {
     KEYS: { SET: SET, IDX: IDX, DECK: DK },
     uid: uid, cleanDeck: cleanDeck, cleanSlide: cleanSlide, cleanPic: cleanPic, cloneSlide: cloneSlide,
-    LAYOUTS: LAYOUTS, THEMES: THEMES,
+    LAYOUTS: LAYOUTS, THEMES: THEMES, THEME_IDS: THEME_IDS,
     /* every picture key used by any saved deck (start-up clean-up of the picture store) */
     picKeys: function () {
       var keep = {};
@@ -158,8 +206,9 @@
     list: function () { return index().decks; },
     currentId: function () { return index().current; },
     load: function (id) { var d = rd(DK + id); return d ? cleanDeck(d, id) : null; },
-    newDeck: function (name, slides, theme) {
-      var d = cleanDeck({ id: uid(), name: name, slides: slides || [{}], theme: theme });
+    newDeck: function (name, slides, theme, extra) {
+      extra = extra || {};
+      var d = cleanDeck({ id: uid(), name: name, slides: slides || [{}], theme: theme, master: extra.master, sections: extra.sections });
       pending = d; flush(); return d;
     },
     saveDeck: function (d) { pending = d; clearTimeout(t); t = setTimeout(flush, 400); },
