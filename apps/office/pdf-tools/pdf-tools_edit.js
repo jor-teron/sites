@@ -216,8 +216,9 @@ PT.Edit = (() => {
   }
 
   function reset() { undo = []; redo = []; ver = 0; savedAt = 0; }
+  function touch() { ver = Date.now() + Math.random(); PT.refresh(); }
   return {
-    rotate, remove, move, save, reset, selected, duplicate, insertBlank, append, extract, split,
+    rotate, remove, move, save, reset, touch, selected, duplicate, insertBlank, append, extract, split,
     undo: () => step(undo, redo, 'Undo'), redo: () => step(redo, undo, 'Redo'),
     canUndo: () => undo.length > 0, canRedo: () => redo.length > 0,
     dirty: () => ver !== savedAt,

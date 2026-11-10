@@ -25,7 +25,7 @@ const PTSave = {
   },
 
   /* Build a PDF from the current sources + page list with pdf-lib.
-     Pages from PDFs are copied (text and quality kept). Blank pages are new. */
+     Pages from PDFs are copied (text and quality kept). Blank pages are new. Images are embedded (JPG/PNG). */
   async build(sources, pages) {
     const { PDFDocument, degrees } = PDFLib;
     const out = await PDFDocument.create();
@@ -44,6 +44,16 @@ const PTSave = {
         const w = src.width || PTUtil.PAPER.a4.w;
         const h = src.height || PTUtil.PAPER.a4.h;
         const pg = out.addPage([w, h]);
+        if (p.rot) pg.setRotation(degrees((((p.rot % 360) + 360) % 360)));
+      } else if (src.kind === 'image') {
+        const L = src.layout || PTUtil.imagePageLayout(src.width || 1, src.height || 1, { paper: 'fit', marginMm: 0 });
+        const pg = out.addPage([L.pageW, L.pageH]);
+        try {
+          const pic = src.mime === 'image/png' ? await out.embedPng(src.bytes) : await out.embedJpg(src.bytes);
+          pg.drawImage(pic, { x: L.x, y: L.y, width: L.w, height: L.h });
+        } catch (err) {
+          throw new Error('Could not embed ' + (src.name || 'image') + ': ' + (err && err.message || err));
+        }
         if (p.rot) pg.setRotation(degrees((((p.rot % 360) + 360) % 360)));
       } else if (src.kind === 'pdf') {
         const lib = await libOf(src);

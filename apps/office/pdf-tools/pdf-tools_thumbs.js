@@ -4,6 +4,7 @@
  * one at a time, and cells that scroll away before their turn are skipped, so 100+ page
  * files stay responsive. Each source page is rendered once; rotation is a CSS transform.
  * P2: colour source badges when more than one file is in the grid; blank pages skip render.
+ * P3: image pages use the source thumbnail, no pdf.js render.
  */
 PT.Thumbs = (() => {
   const { S } = PT;
@@ -27,6 +28,7 @@ PT.Thumbs = (() => {
     io.observe(el);
     const src = PT.sourceOf(p);
     if (src && src.kind === 'blank') markBlank(el, p);
+    else if (src && src.kind === 'image' && src.thumb) setImg(el, src.thumb);
     else if (urls.has(keyOf(p))) setImg(el, urls.get(keyOf(p)));
     return el;
   }
@@ -99,7 +101,7 @@ PT.Thumbs = (() => {
       if (!p) continue;
       const src = PT.sourceOf(p);
       const key = keyOf(p);
-      if (src && src.kind === 'blank') continue;
+      if (src && src.kind !== 'pdf') continue;
       if (e.isIntersecting) {
         near.add(key);
         if (!urls.has(key)) queue.push(key);
@@ -144,6 +146,7 @@ PT.Thumbs = (() => {
       if (p.rot && !badge) { badge = document.createElement('span'); badge.className = 'rot'; el.appendChild(badge); }
       if (badge) { if (p.rot) badge.textContent = p.rot + '°'; else badge.remove(); }
       if (src && src.kind === 'blank') markBlank(el, p);
+      else if (src && src.kind === 'image' && (src.thumb || urls.has(keyOf(p)))) setImg(el, src.thumb || urls.get(keyOf(p)));
       else if (urls.has(keyOf(p))) setImg(el, urls.get(keyOf(p)));
       syncBadge(el, p);
       frag.push(el);
@@ -172,5 +175,11 @@ PT.Thumbs = (() => {
     PT.on('closing', reset);
     PT.on('changed', render);
   }
-  return { init, render, cellOf: (id) => cells.get(id), url: (p) => urls.get(keyOf(p)), rendered: () => urls.size };
+  function url(p) {
+    if (!p) return null;
+    if (urls.has(keyOf(p))) return urls.get(keyOf(p));
+    const src = PT.sourceOf(p);
+    return (src && src.thumb) || null;
+  }
+  return { init, render, cellOf: (id) => cells.get(id), url, rendered: () => urls.size };
 })();

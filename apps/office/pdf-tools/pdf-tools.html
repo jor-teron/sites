@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!--
-  PDF Tools — P2 merge and split. Page shell only.
+  PDF Tools — P3 images ↔ PDF. Page shell only.
   Styles: pdf-tools.css. Modules: pdf-tools_ui.js (state, theme, menu, dialog, cards via ../shared/office-notify.js),
   pdf-tools_load.js (open, add, drop, errors), pdf-tools_thumbs.js (lazy thumbnail grid, source badges),
   pdf-tools_select.js (selection + drag reorder), pdf-tools_edit.js (rotate, delete, duplicate, blank, extract, split, undo/redo),
-  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_zip.js (stored zip), pdf-tools_util.js (pure helpers),
+  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_zip.js (stored zip), pdf-tools_util.js (pure helpers), pdf-tools_images.js (add images, export, preview),
   pdf-tools_app.js (wiring, keys).
   pdf.js is read from the Hub's shared/vendor/pdfjs (read-only); pdf-lib is vendored in ./vendor.
   Everything stays on the device. Actions are a rail on the RIGHT (right-handed).
@@ -14,10 +14,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>PDF Tools P2</title>
+  <title>PDF Tools P3</title>
   <link rel="icon" href="pdf-tools_icon.png">
   <script>try{var m=(JSON.parse(localStorage.getItem('pdf-tools-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
-  <link rel="stylesheet" href="pdf-tools.css?v=P2">
+  <link rel="stylesheet" href="pdf-tools.css?v=P3">
   <link rel="stylesheet" href="../shared/office-notify.css">
 </head>
 <body>
@@ -29,13 +29,13 @@
 
   <main id="stage">
     <div id="empty" class="empty">
-      <p class="big">Open PDFs to reorder, rotate, merge or split pages.</p>
+      <p class="big">Open PDFs or images to reorder, merge, split or export pages.</p>
       <p>Tap <b>Open</b> or drop files here. Nothing is uploaded.</p>
       <button type="button" id="empty-open" class="pill">Open PDF</button>
     </div>
     <div id="grid" class="grid" hidden role="listbox" aria-multiselectable="true" aria-label="Pages"></div>
     <div id="busy" class="busy" hidden><span class="spin"></span><span id="busy-text">Opening…</span></div>
-    <div id="drop" class="drop" hidden>Drop PDF to open</div>
+    <div id="drop" class="drop" hidden>Drop PDF or images to open</div>
   </main>
 
   <nav id="rail" aria-label="Actions">
@@ -60,8 +60,10 @@
     <div class="mrow"><span>Theme</span>
       <div class="seg" id="theme-seg"><button type="button" data-v="system">System</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div>
     </div>
+    <button type="button" class="mi" id="m-images">Add images</button>
     <button type="button" class="mi" id="m-extract" data-need="sel">Extract selected</button>
     <button type="button" class="mi" id="m-split" data-need="doc">Split…</button>
+    <button type="button" class="mi" id="m-export" data-need="doc">Export as images…</button>
     <button type="button" class="mi" id="m-close" data-need="doc">Close file</button>
     <button type="button" class="mi" id="m-about">About</button>
   </div>
@@ -78,19 +80,27 @@
   </div>
   <input type="file" id="file" accept="application/pdf,.pdf" multiple hidden>
   <input type="file" id="file-add" accept="application/pdf,.pdf" multiple hidden>
+  <input type="file" id="file-images" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple hidden>
+
+  <div id="preview" class="preview" hidden>
+    <button type="button" id="preview-close" class="pill ghost">Close</button>
+    <div id="preview-stage" class="preview-stage"></div>
+    <p id="preview-cap" class="preview-cap"></p>
+  </div>
 </div>
 
 <script src="../../../shared/vendor/pdfjs/pdf.min.js"></script>
 <script src="vendor/pdf-lib.min.js"></script>
 <script src="../shared/office-notify.js"></script>
-<script src="pdf-tools_util.js?v=P2"></script>
-<script src="pdf-tools_zip.js?v=P2"></script>
-<script src="pdf-tools_ui.js?v=P2"></script>
-<script src="pdf-tools_save.js?v=P2"></script>
-<script src="pdf-tools_load.js?v=P2"></script>
-<script src="pdf-tools_thumbs.js?v=P2"></script>
-<script src="pdf-tools_edit.js?v=P2"></script>
-<script src="pdf-tools_select.js?v=P2"></script>
-<script src="pdf-tools_app.js?v=P2"></script>
+<script src="pdf-tools_util.js?v=P3"></script>
+<script src="pdf-tools_zip.js?v=P3"></script>
+<script src="pdf-tools_ui.js?v=P3"></script>
+<script src="pdf-tools_save.js?v=P3"></script>
+<script src="pdf-tools_load.js?v=P3"></script>
+<script src="pdf-tools_thumbs.js?v=P3"></script>
+<script src="pdf-tools_edit.js?v=P3"></script>
+<script src="pdf-tools_select.js?v=P3"></script>
+<script src="pdf-tools_images.js?v=P3"></script>
+<script src="pdf-tools_app.js?v=P3"></script>
 </body>
 </html>

@@ -1414,6 +1414,24 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 
   Note: 1.53–1.79 are already taken on main, so this section is 1.80.
 
+### 1.81 PDF Tools images to and from PDF, release P3
+
+- apps/office/pdf-tools only, on top of P2. Add JPG/PNG as pages (menu or drop)
+  with A4, Letter or fit-to-image, 0/10/20 mm margins, portrait or landscape.
+  Images are centred and contained. Export selected or all pages as PNG or JPG
+  (pdf.js render for PDF pages, long side capped at 1600 px; several files go
+  in a .zip). Double-click (or Enter) opens a zoomed preview at the same cap.
+  All output still goes through PTSave.save. In-app dialogs only.
+- New pdf-tools_images.js. Layout maths in pdf-tools_util.js (node-tested).
+  No new library; pdf-lib embedJpg/embedPng; stored zip from P2. Last paper,
+  margin, orientation and export format are kept in pdf-tools-settings-v1.
+- RELEASE/title/?v= P3 on this app's own CSS/JS only. Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: JPG/PNG only; unusual (e.g. CMYK) JPEGs may fail on save; export is
+  not full resolution; a plain click no longer toggles a single page off (so
+  double-click preview can work). Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

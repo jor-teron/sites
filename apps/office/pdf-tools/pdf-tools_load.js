@@ -100,7 +100,7 @@ PT.Load = (() => {
 
   function close(silent) {
     if (S.doc) PT.emit('closing');
-    S.sources.forEach((s) => { if (s.pdf && s.pdf.destroy) s.pdf.destroy(); });
+    S.sources.forEach((s) => { if (s.pdf && s.pdf.destroy) s.pdf.destroy(); if (s.thumb) URL.revokeObjectURL(s.thumb); });
     S.sources = [];
     S.doc = null; S.pages = []; S.sel.clear(); S.anchor = null;
     PT.Edit.reset();
@@ -124,8 +124,15 @@ PT.Load = (() => {
     addEventListener('drop', (e) => {
       if (!isFile(e)) return;
       e.preventDefault(); depth = 0; PT.$('drop').hidden = true;
-      const files = e.dataTransfer.files;
-      ingest(files, !S.doc);
+      const files = Array.from(e.dataTransfer.files || []);
+      const pdfs = files.filter((x) => /pdf$/i.test(x.type) || /\.pdf$/i.test(x.name));
+      const images = files.filter(PTUtil.isImageFile);
+      const go = async () => {
+        if (pdfs.length) await ingest(pdfs, !S.doc);
+        if (images.length) await PT.Images.addFiles(images);
+        if (!pdfs.length && !images.length && files[0]) await ingest(files, !S.doc);
+      };
+      go();
     });
     PT.$('m-close').addEventListener('click', async () => {
       PT.menu(false);
