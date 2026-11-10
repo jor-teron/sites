@@ -824,6 +824,82 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.53 Video Editor, release VD1
+
+- New apps/media/video-editor (Media, section 'Video', row added after Screen Recorder in
+  apps/media/media-apps.csv). Offline, no libraries, no ffmpeg.wasm. Name is "Video Editor"
+  until Jor picks one. Tile icon video-editor_icon.png (192 px).
+- Open via picker or drag and drop; preview with play/pause, 1/30 s frame step, seek,
+  current time. Timeline (source duration) has a playhead, In/Out dual handles (I / O,
+  tap chips to type a time) and hatched marks on removed ranges. Play skips the cuts.
+- Edit list of kept segments: Cut selection removes the In-Out range; Keep selection keeps
+  only that range (intersected with what is still left). Undo / Redo (buttons, Ctrl+Z / Ctrl+Y).
+  Keys: Space, Left, Right, I, O, Delete. In-app dialogs only.
+- Theme Auto / Light / Dark in the header (localStorage video-editor-v1 {theme}); Auto follows
+  sites-hub.theme / sites-hub.themeAuto live.
+- Export plays kept parts through captureStream + MediaRecorder (WebM vp9/vp8+opus, or MP4
+  when supported), with audio, in real time. Progress dialog with Cancel and a real-time note.
+  Download <original-name>_edited.webm (or .mp4). Full-viewport layout (VT2 approach).
+- RELEASE/title/?v= VD1. Tests: node --check, node tests/vd1.test.cjs (pure helpers). No
+  Puppeteer / Playwright / jsdom. Hub catalog not regenerated (Media tiles page reads the CSV;
+  the Hub flyout needs hub_appindex_gen.py --catalog-only from Main Builder).
+- Details: apps/media/video-editor/NOTES.md.
+
+
+### 1.54 Video Editor join and arrange, release VD2
+
+- apps/media/video-editor only. Several clips on one track (add via picker or drop); each block is
+  sized by kept duration, with the file name and a thumbnail grabbed on load. Drag to reorder,
+  move-left / move-right, Split at the playhead (S), Delete clip. Each clip keeps its own VD1
+  cut/keep list; In/Out marks apply to the selected clip.
+- Preview plays the whole sequence, skipping cuts, with a global time display and seek bar.
+  Optional fade through black between clips (Off / 0.5 s / 1 s), drawn at export inside the kept
+  ends (sequence length unchanged; fade capped at half a short clip).
+- Export draws frames to a canvas (drawImage + canvas.captureStream) and mixes audio through one
+  AudioContext + MediaStreamDestination (createMediaElementSource once per clip element), then
+  MediaRecorder (WebM vp9/vp8+opus, or MP4 when supported). Real-time progress dialog with Cancel.
+  Download <first-clip-name>_edited.webm (or .mp4). Canvas long side capped at 1280 px.
+- Undo / Redo cover add, delete, split, reorder, cut/keep and fade. Projects in IndexedDB
+  `videoeditor` (stores `files`, `projects`): list / open / rename / delete (in-app confirm),
+  autosave, storage-used line and a warning when space is low or a quota error happens.
+  localStorage video-editor-v1 also holds currentProjectId.
+- RELEASE/title/?v= VD2 (legacy VD1 noted in comments / NOTES). Tests: node --check,
+  tests/vd1.test.cjs + tests/vd2.test.cjs (pure helpers: sequence timing, split, reorder).
+  No Puppeteer / Playwright / jsdom. Details: apps/media/video-editor/NOTES.md.
+  Note: 1.54 is the next free number on this branch after 1.53 (VD1). RA1 and TD1 may also
+  take a 1.54 (or later) section on their own branches.
+
+
+
+### 1.55 Video Editor looks, transform, speed, titles, release VD3
+
+- apps/media/video-editor only (local commit on apps/vd3-video-editor, from VD2
+  9f49bc36). Per-clip colour filters (brightness, contrast, saturation, greyscale,
+  sepia, blur) with reset; CSS filter on the preview <video>, ctx.filter on the
+  export canvas. If ctx.filter is missing (common on Safari) the export and the
+  PNG go out without colour filters and an in-app warning is shown; rotate, crop,
+  speed and titles still apply.
+- Per-clip transform: rotate 0/90/180/270, flip H/V, crop rectangle (handles on
+  the preview plus numeric % inputs) applied on export with a drawImage source
+  rect. Output size Auto (first clip after crop/rotate), 1280x720, 720x1280 or
+  1080x1080, long side still capped at 1280, even dimensions, others letterboxed.
+- Per-clip speed 0.25/0.5/1/1.5/2x (playbackRate in preview and export; timeline
+  durations are kept/speed; pitch preserved where the browser supports it).
+  Per-clip volume 0-200% and mute (GainNode in the existing AudioContext mix,
+  plus video.volume in the preview).
+- Project-level text/title overlays: text, start, end, position presets plus
+  drag, size, colour, background box, fade in/out. HTML layer on the preview;
+  drawn on the export canvas and on Save frame (PNG). Keyboard shortcut list
+  (?). Office-style hover tips on toolbar buttons (HPS6 approach: mouse only,
+  delay Off/100/500/1000 ms, default 100, stored in video-editor-v1 {tip}).
+- Undo/Redo cover the new fields. Project format version 3, with migration from
+  VD2 projects (default speed 1x, full crop, no overlays, Auto output).
+- RELEASE/title/?v= VD3. Tests: node --check, tests/vd1.test.cjs + vd2.test.cjs
+  + vd3.test.cjs (pure helpers: speed-adjusted sequence timing, crop/rotate
+  output size, overlay visibility). No Puppeteer / Playwright / jsdom.
+  Details: apps/media/video-editor/NOTES.md.
+  Note: section 1.55 is the next free number on main after VD2 (1.54).
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
