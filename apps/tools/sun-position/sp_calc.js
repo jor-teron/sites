@@ -4,7 +4,8 @@
    Sunrise and sunset use a 90.833° zenith (sun radius + average refraction).
    Polar day and night return null rise/set and polar: 'day' or 'night'.
    Golden hour is elevation -4° to 6°; blue hour is -6° to -4°.
-   SP2: year daylight series, solstices/equinoxes, monthly sun-path samples, best fixed-panel tilt. */
+   SP2: year daylight series, solstices/equinoxes, monthly sun-path samples, best fixed-panel tilt.
+   SP3: moon position, phase, illumination, moonrise and moonset. */
 (function (root) {
   'use strict';
 
@@ -576,6 +577,212 @@
     };
   }
 
+
+  /* ---- Moon (Meeus, Astronomical Algorithms ch. 47, main terms; node-testable) ---- */
+  /* Periodic terms: [D, M, Mp, F, lon 1e-6 deg, dist 0.001 km, lat 1e-6 deg]. M terms need the E factor. */
+  var MOON_LR = [
+    [0,0,1,0,6288774,-20905355],[2,0,-1,0,1274027,-3699111],[2,0,0,0,658314,-2955968],
+    [0,0,2,0,213618,-569925],[0,1,0,0,-185116,48888],[0,0,0,2,-114332,-3149],
+    [2,0,-2,0,58793,246158],[2,-1,-1,0,57066,-152138],[2,0,1,0,53322,-170733],
+    [2,-1,0,0,45758,-204586],[0,1,-1,0,-40923,-129620],[1,0,0,0,-34720,108743],
+    [0,1,1,0,-30383,104755],[2,0,0,-2,15327,10321],[0,0,1,2,-12528,0],
+    [0,0,1,-2,10980,79661],[4,0,-1,0,10675,-34782],[0,0,3,0,10034,-23210],
+    [4,0,-2,0,8548,-21636],[2,1,-1,0,-7888,24208],[2,1,0,0,-6766,30824],
+    [1,0,-1,0,-5163,-8379],[1,1,0,0,4987,-16675],[2,-1,1,0,4036,-12831],
+    [2,0,2,0,3994,-10445],[4,0,0,0,3861,-11650],[2,0,-3,0,3665,14403],
+    [0,1,-2,0,-2689,-7003],[2,0,-1,2,-2602,0],[2,-1,-2,0,2390,10056],
+    [1,0,1,0,-2348,6322],[2,-2,0,0,2236,-9884],[0,1,2,0,-2120,5751],
+    [0,2,0,0,-2069,0],[2,-2,-1,0,2048,-4950],[2,0,1,-2,-1773,4130],
+    [2,0,0,2,-1595,0],[4,-1,-1,0,1215,-3958],[0,0,2,2,-1110,0],
+    [3,0,-1,0,-892,3258],[2,1,1,0,-810,2616],[4,-1,-2,0,759,-1897],
+    [0,2,-1,0,-713,-2217],[2,2,-1,0,-700,2450],[2,1,-2,0,691,0],
+    [2,-1,0,-2,596,0],[4,0,1,0,549,-1423],[0,0,4,0,537,-1117],
+    [4,-1,0,0,520,-1571],[1,0,-2,0,-487,-1739],[2,1,0,-2,-399,0],
+    [0,0,2,-2,-381,0],[1,1,1,0,351,0],[3,0,-2,0,-340,0],
+    [4,0,-3,0,330,0],[2,-1,2,0,327,0],[0,2,1,0,-323,1165],
+    [1,1,-1,0,299,0],[2,0,3,0,294,0],[2,0,-1,-2,0,8752]
+  ];
+  var MOON_B = [
+    [0,0,0,1,5128122],[0,0,1,1,280602],[0,0,1,-1,277693],[2,0,0,-1,173237],
+    [2,0,-1,1,55413],[2,0,-1,-1,46271],[2,0,0,1,32573],[0,0,2,1,17198],
+    [2,0,1,-1,9266],[0,0,2,-1,8822],[2,-1,0,-1,8216],[2,0,-2,-1,4324],
+    [2,0,1,1,4200],[2,1,0,-1,-3359],[2,-1,-1,1,2463],[2,-1,0,1,2211],
+    [2,-1,-1,-1,2065],[0,1,-1,-1,-1870],[4,0,-1,-1,1828],[0,1,0,1,-1794],
+    [0,0,0,3,-1749],[0,1,-1,1,-1565],[1,0,0,1,-1491],[0,1,1,1,-1475],
+    [0,1,1,-1,-1410],[0,1,0,-1,-1344],[1,0,0,-1,-1335],[0,0,3,1,1107],
+    [4,0,0,-1,1021],[4,0,-1,1,833],[0,0,2,3,777],[4,0,-2,1,671],
+    [2,0,0,-3,607],[2,0,2,-1,596],[2,-1,1,-1,491],[2,0,-2,1,-451],
+    [0,0,3,-1,439],[2,0,2,1,422],[2,0,-3,-1,421],[2,1,-1,1,-366],
+    [2,1,0,1,-351],[4,0,0,1,331],[2,-1,1,1,315],[2,-2,0,-1,302],
+    [0,0,1,3,-283],[2,1,1,-1,-229],[1,1,0,-1,223],[1,1,0,1,223],
+    [0,1,-2,-1,-220],[2,1,-1,-1,-220],[1,0,1,1,-185],[2,-1,-2,-1,181],
+    [0,1,2,1,-177],[4,0,-2,-1,176],[4,-1,-1,-1,166],[1,0,1,-1,-164],
+    [4,0,1,-1,132],[1,0,-1,-1,-119],[4,-1,0,-1,115],[2,-2,0,1,107]
+  ];
+
+  function normDeg(d) { return ((d % 360) + 360) % 360; }
+
+  function moonGeocentric(jd) {
+    var T = julianCentury(jd);
+    var Lp = 218.3164477 + 481267.88123421 * T - 0.0015786 * T * T + T * T * T / 538841 - T * T * T * T / 65194000;
+    var D  = 297.8501921 + 445267.1114034 * T - 0.0018819 * T * T + T * T * T / 545868 - T * T * T * T / 113065000;
+    var M  = 357.5291092 + 35999.0502909 * T - 0.0001536 * T * T + T * T * T / 24490000;
+    var Mp = 134.9633964 + 477198.8675055 * T + 0.0087414 * T * T + T * T * T / 69699 - T * T * T * T / 14712000;
+    var F  = 93.2720950 + 483202.0175233 * T - 0.0036539 * T * T - T * T * T / 3526000 + T * T * T * T / 863310000;
+    var E = 1 - 0.002516 * T - 0.0000074 * T * T;
+    var sl = 0, sr = 0, sb = 0, i, t, arg, fE;
+    for (i = 0; i < MOON_LR.length; i++) {
+      t = MOON_LR[i];
+      arg = t[0] * D + t[1] * M + t[2] * Mp + t[3] * F;
+      fE = 1;
+      if (Math.abs(t[1]) === 1) fE = E;
+      else if (Math.abs(t[1]) === 2) fE = E * E;
+      sl += t[4] * fE * sind(arg);
+      sr += t[5] * fE * cosd(arg);
+    }
+    for (i = 0; i < MOON_B.length; i++) {
+      t = MOON_B[i];
+      arg = t[0] * D + t[1] * M + t[2] * Mp + t[3] * F;
+      fE = 1;
+      if (Math.abs(t[1]) === 1) fE = E;
+      else if (Math.abs(t[1]) === 2) fE = E * E;
+      sb += t[4] * fE * sind(arg);
+    }
+    var lon = Lp + sl / 1000000;
+    var lat = sb / 1000000;
+    var dist = 385000.56 + sr / 1000; /* km */
+    /* Light-time / aberration not applied; add nutation in longitude. */
+    var Omega = 125.04452 - 1934.136261 * T;
+    var Ls = 280.4665 + 36000.7698 * T;
+    var dpsi = (-17.20 * sind(Omega) - 1.32 * sind(2 * Ls) - 0.23 * sind(2 * Lp) + 0.21 * sind(2 * Omega)) / 3600;
+    var deps = (9.20 * cosd(Omega) + 0.57 * cosd(2 * Ls) + 0.10 * cosd(2 * Lp) - 0.09 * cosd(2 * Omega)) / 3600;
+    var eps = meanObliquity(T) + deps;
+    var lam = lon + dpsi;
+    var beta = lat;
+    var ra = norm360(deg(Math.atan2(sind(lam) * cosd(eps) - tand(beta) * sind(eps), cosd(lam))));
+    var dec = deg(Math.asin(sind(beta) * cosd(eps) + cosd(beta) * sind(eps) * sind(lam)));
+    var hp = deg(Math.asin(Math.min(1, 6378.14 / dist))); /* horizontal parallax, deg */
+    return {
+      lon: normDeg(lam), lat: beta, distanceKm: dist, ra: ra, dec: dec,
+      parallax: hp, nutationLon: dpsi, obliquity: eps, meanElongation: normDeg(D)
+    };
+  }
+
+  function greenwichSidereal(jd) {
+    var T = julianCentury(jd);
+    return norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - T * T * T / 38710000);
+  }
+
+  /* Moon (and generic equatorial) topocentric azimuth / elevation at a UTC instant. */
+  function moonPosition(lat, lon, when) {
+    var ms = when instanceof Date ? when.getTime() : when;
+    var dt = new Date(ms);
+    var hourUtc = dt.getUTCHours() + dt.getUTCMinutes() / 60 + dt.getUTCSeconds() / 3600 + dt.getUTCMilliseconds() / 3600000;
+    var jd = julianDay(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate(), hourUtc);
+    var g = moonGeocentric(jd);
+    var lst = norm360(greenwichSidereal(jd) + lon + (g.nutationLon || 0) * cosd(g.obliquity));
+    var ha = lst - g.ra;
+    var csz = sind(lat) * sind(g.dec) + cosd(lat) * cosd(g.dec) * cosd(ha);
+    if (csz > 1) csz = 1;
+    if (csz < -1) csz = -1;
+    var zenith = deg(Math.acos(csz));
+    var elev = 90 - zenith;
+    /* Topocentric: subtract horizontal parallax in altitude, then add refraction. */
+    var elevTopo = elev - g.parallax * cosd(elev);
+    var elevApp = elevTopo + refraction(elevTopo);
+    var azDenom = cosd(lat) * sind(zenith);
+    var azimuth;
+    if (Math.abs(azDenom) > 0.001) {
+      var azCos = (sind(lat) * cosd(zenith) - sind(g.dec)) / azDenom;
+      if (azCos < -1) azCos = -1;
+      if (azCos > 1) azCos = 1;
+      azimuth = 180 - deg(Math.acos(azCos));
+      if (ha > 0) azimuth = -azimuth;
+    } else {
+      azimuth = lat > 0 ? 180 : 0;
+    }
+    azimuth = norm360(azimuth);
+    var ph = moonPhaseAt(jd, g);
+    return {
+      azimuth: azimuth,
+      elevation: elevTopo,
+      elevationApp: elevApp,
+      ra: g.ra,
+      dec: g.dec,
+      distanceKm: g.distanceKm,
+      parallax: g.parallax,
+      lon: g.lon,
+      lat: g.lat,
+      illumination: ph.illumination,
+      phaseAngle: ph.phaseAngle,
+      waxing: ph.waxing,
+      phaseName: ph.phaseName
+    };
+  }
+
+  function moonPhaseAt(jd, g) {
+    if (!g) g = moonGeocentric(jd);
+    var t = julianCentury(jd);
+    var sunLon = sunApparentLong(t);
+    var Rkm = sunRadVector(t) * 149597870.7;
+    var psi = deg(Math.acos(Math.max(-1, Math.min(1, cosd(g.lat) * cosd(g.lon - sunLon)))));
+    var i = deg(Math.atan2(Rkm * sind(psi), g.distanceKm - Rkm * cosd(psi)));
+    var k = (1 + Math.cos(i * RAD)) / 2;
+    if (k < 0) k = 0;
+    if (k > 1) k = 1;
+    var elong = normDeg(g.lon - sunLon);
+    var waxing = elong < 180;
+    var name;
+    if (k < 0.04) name = 'New';
+    else if (k < 0.46) name = waxing ? 'Waxing crescent' : 'Waning crescent';
+    else if (k < 0.54) name = waxing ? 'First quarter' : 'Last quarter';
+    else if (k < 0.96) name = waxing ? 'Waxing gibbous' : 'Waning gibbous';
+    else name = 'Full';
+    return { illumination: k, phaseAngle: i, waxing: waxing, phaseName: name, elongation: elong };
+  }
+
+  /* Rise/set: the topocentric apparent altitude of the Moon's limb crosses the horizon.
+     Target geometric topocentric elevation ≈ -0.5667° (refraction); we search apparent elevation = 0
+     after applying parallax + refraction, which is close to the usual almanac convention. */
+  function moonEvents(lat, lon, y, m, d, tz) {
+    var start = wallToUtcMs(y, m, d, 0, 0, 0, tz);
+    var nxt = new Date(Date.UTC(y, m - 1, d + 1));
+    var end = wallToUtcMs(nxt.getUTCFullYear(), nxt.getUTCMonth() + 1, nxt.getUTCDate(), 0, 0, 0, tz);
+    if (!(end > start)) end = start + 24 * 3600000;
+    /* Pad a little so a crossing just after midnight is not missed. */
+    var from = start - 30 * 60000, to = end + 30 * 60000;
+    var step = 10 * 60000;
+    var rise = null, set = null, transit = null, maxEl = -90;
+    var prevT = from, prevEl, pos, t, el, den, frac, cross;
+    pos = moonPosition(lat, lon, prevT);
+    prevEl = pos.elevationApp;
+    for (t = from + step; t <= to; t += step) {
+      pos = moonPosition(lat, lon, t);
+      el = pos.elevationApp;
+      if (el > maxEl) { maxEl = el; transit = t; }
+      if (prevEl < 0 && el >= 0 && !rise) {
+        den = el - prevEl;
+        frac = den === 0 ? 0 : (0 - prevEl) / den;
+        cross = prevT + frac * (t - prevT);
+        if (cross >= start && cross < end) rise = new Date(cross);
+      }
+      if (prevEl >= 0 && el < 0 && !set) {
+        den = el - prevEl;
+        frac = den === 0 ? 0 : (0 - prevEl) / den;
+        cross = prevT + frac * (t - prevT);
+        if (cross >= start && cross < end) set = new Date(cross);
+      }
+      prevT = t; prevEl = el;
+    }
+    /* Second pass if the first crossing was skipped because we already stored one of the other kind only. */
+    return {
+      moonrise: rise,
+      moonset: set,
+      transit: transit ? new Date(transit) : null,
+      polar: (!rise && !set) ? (maxEl >= 0 ? 'up' : 'down') : null
+    };
+  }
+
   var api = {
     julianDay: julianDay,
     julianCentury: julianCentury,
@@ -606,7 +813,12 @@
     yearDaylight: yearDaylight,
     solsticesEquinoxes: solsticesEquinoxes,
     sunPathDiagram: sunPathDiagram,
-    bestPanel: bestPanel
+    bestPanel: bestPanel,
+    moonGeocentric: moonGeocentric,
+    moonPosition: moonPosition,
+    moonPhaseAt: moonPhaseAt,
+    moonEvents: moonEvents,
+    greenwichSidereal: greenwichSidereal
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.SpCalc = api;
 })(this);

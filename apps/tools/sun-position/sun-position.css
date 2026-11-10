@@ -1,4 +1,4 @@
-/* SP2 Sun Position — one accent, flat light/dark, large tap targets */
+/* SP3 Sun Position — one accent, flat light/dark, large tap targets */
 :root{--bg:#f4f1eb;--fg:#1c1915;--card:#fffdf8;--mut:#6b6560;--acc:#c47b12;--line:#e5dfd4;--sun:#e8a020;--arc:#e8c46a}
 html.dark{--bg:#141820;--fg:#efe8dc;--card:#1c222c;--mut:#9aa3ad;--acc:#e8a63a;--line:#2c3440;--sun:#f0b429;--arc:#8a6a28}
 *{box-sizing:border-box}
@@ -95,3 +95,25 @@ button:focus-visible,.field:focus-visible,#timeSl:focus-visible{outline:3px soli
 #pathSvg .lb{fill:var(--fg);font:600 14px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}
 #dial .shadow{stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}
 #dial .shadow-head{fill:var(--mut)}
+
+#pointWrap{display:flex;flex-direction:column;align-items:center;margin:0 0 12px}
+#pointDial{width:min(100%,340px);height:auto}
+#pointDial .face{fill:var(--card);stroke:var(--line);stroke-width:2}
+#pointDial .tk{stroke:var(--line);stroke-width:1}
+#pointDial .tk.m{stroke:var(--mut);stroke-width:1.5}
+#pointDial .lb{fill:var(--fg);font:600 14px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}
+#pointDial .horizon{fill:none;stroke:var(--line);stroke-width:1.2}
+#pointDial .notch{fill:var(--acc)}
+#pointDial .mk-sun{fill:var(--sun);stroke:var(--bg);stroke-width:2}
+#pointDial .mk-moon{fill:#c9d2dc;stroke:var(--bg);stroke-width:2}
+html.dark #pointDial .mk-moon{fill:#d5dde6}
+#pointDial .mk-rise,#pointDial .mk-set{fill:var(--mut)}
+#pointDial .mk-lab{fill:var(--mut);font:9px system-ui,sans-serif;text-anchor:middle}
+.guide{font-size:22px;font-weight:700;text-align:center;margin:8px 0 0;min-height:2.4em;color:var(--acc)}
+.guide.on{color:var(--acc)}
+#pointStart[hidden]{display:none}
+.banner{position:fixed;left:12px;right:12px;top:12px;z-index:12;background:var(--acc);color:#fff;border-radius:14px;padding:12px 14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+html.dark .banner{color:#141820}
+.banner[hidden]{display:none}
+
+#pointDial .mk-sun.down{opacity:.5}
