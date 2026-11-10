@@ -1030,7 +1030,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `hub_catalog.js` / `hub_appindex.js` before it shows in the Hub menu.
 - Section 1.61 is the next free number on main after 3D Builder TD3 (1.60).
 
-### 1.83 Password Manager, release PW2
+### 1.62 Password Manager, release PW2
 
 - Backup and health on `apps/tools/password-manager/` (PW1 vault). Branch
   `apps/pw2-password-manager`. RELEASE / title / `?v=` = PW2.
@@ -1061,8 +1061,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   (plus CSV / health / merge, including crypto round-trips, backup wrap,
   v1→v2 migrate, rekey headers, RFC-style CSV fixtures, newest-wins merge),
   and a static curl smoke test. No Puppeteer, Playwright or jsdom.
-- 1.73–1.82 are reserved for in-flight Team 2 branches, so this note is
-  numbered 1.83.
+- Section 1.62 is the next free number on main after Password Manager PW1 (1.61).
 
 
 ## 2. Releases (PR → what)
