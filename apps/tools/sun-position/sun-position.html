@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!-- SP3 Sun Position: SP2 plan tools, plus point-at-the-sun, moon times and in-app alerts. Logic: sp_calc.js, sp_wmm.js, sun-position.js. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Sun Position · SP3</title>
+  <link rel="icon" href="sun-position_icon.svg">
+  <link rel="stylesheet" href="sun-position.css?v=SP3">
+  <script>try{var s=JSON.parse(localStorage.getItem('sun-position-v1')||'{}'),m=s.theme||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <h1>Sun Position</h1>
+    <button type="button" class="place" id="placeBtn" aria-haspopup="dialog" aria-label="Choose place">Place</button>
+    <button type="button" class="iconbtn" id="setBtn" aria-label="Settings">⚙</button>
+  </header>
+    <nav id="tabs">
+    <button type="button" data-v="now" class="on">Now</button>
+    <button type="button" data-v="plan">Plan</button>
+    <button type="button" data-v="point">Point</button>
+  </nav>
+  <div class="whenbar">
+    <div class="whenrow">
+      <label class="sr" for="dateIn">Date</label>
+      <input type="date" id="dateIn" class="field">
+      <button type="button" class="btn" id="nowBtn">Now</button>
+    </div>
+    <label class="sr" for="timeSl">Time of day</label>
+    <input type="range" id="timeSl" min="0" max="1439" step="1" value="720">
+    <div class="slider-lab" id="timeLab"></div>
+  </div>
+  <main>
+    <section class="pane on" id="pane-now">
+      <div id="dialWrap">
+        <svg id="dial" viewBox="-160 -160 320 320" role="img" aria-label="Sun compass">
+          <g id="rose"></g>
+          <path id="arc" class="arc" d="" fill="none"></path>
+          <g id="shadowG" hidden>
+            <line id="shadowLine" class="shadow" x1="0" y1="0" x2="0" y2="0"></line>
+            <path id="shadowHead" class="shadow-head" d=""></path>
+          </g>
+          <g id="sunG" transform="translate(0,0)">
+            <circle class="sun" r="11"></circle>
+          </g>
+        </svg>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="big" id="azOut">—</div><div class="lab">Direction</div></div>
+        <div class="stat"><div class="big" id="elOut">—</div><div class="lab">Height</div></div>
+      </div>
+      <p class="when" id="whenOut"></p>
+      <p class="polar" id="polarOut" hidden></p>
+      <ul class="times" id="times"></ul>
+    </section>
+    <section class="pane" id="pane-plan">
+      <div class="cardblock">
+        <h2>Shadow</h2>
+        <p class="note">Height of a wall, pole or person, and the shadow at the date and time above.</p>
+        <label for="shadowH">Height</label>
+        <div class="whenrow">
+          <input type="number" id="shadowH" class="field" min="0" step="0.1" value="1.8">
+          <span class="unit">metres</span>
+        </div>
+        <p class="shadowout" id="shadowOut"></p>
+      </div>
+      <div class="cardblock">
+        <h2>Year</h2>
+        <p class="note" id="yearCap"></p>
+        <div class="svgwrap">
+          <svg id="yearSvg" viewBox="0 0 360 230" role="img" aria-label="Sunrise and sunset through the year"></svg>
+        </div>
+      </div>
+      <div class="cardblock">
+        <h2>Sun path</h2>
+        <p class="note">The sun's track on the 21st of each month, with clock-hour lines. Centre is straight up, the rim is the horizon.</p>
+        <div class="svgwrap">
+          <svg id="pathSvg" viewBox="-160 -160 320 320" role="img" aria-label="Sun path diagram"></svg>
+        </div>
+        <p class="shadowout" id="panelOut"></p>
+      </div>
+      <button type="button" class="btn lg" id="savePic">Save picture</button>
+    </section>
+    <section class="pane" id="pane-point">
+      <p class="note" id="pointMsg">Hold the phone up, as if taking a photo of the sky, and follow the arrow.</p>
+      <button type="button" class="btn lg" id="pointStart">Start pointing</button>
+      <div id="pointWrap">
+        <svg id="pointDial" viewBox="-160 -160 320 320" role="img" aria-label="Pointing compass">
+          <g id="pointRose"></g>
+          <polygon id="fwdNotch" class="notch" points="-8,-152 8,-152 0,-138"></polygon>
+        </svg>
+        <p class="guide" id="guideOut"></p>
+        <p class="when" id="pointDeg"></p>
+      </div>
+      <div class="cardblock">
+        <h2>Moon</h2>
+        <p class="shadowout" id="moonPos"></p>
+        <ul class="times" id="moonTimes"></ul>
+      </div>
+      <div class="cardblock">
+        <h2>Alerts</h2>
+        <p class="note">While this app is open, we can tell you 15 minutes before sunrise, sunset or golden hour.</p>
+        <div class="seg" id="alertSeg"><button type="button" data-v="off">Off</button><button type="button" data-v="on">On</button></div>
+        <p class="note" id="alertNote"></p>
+      </div>
+    </section>
+  </main>
+  <p class="note center" id="tzNote"></p>
+</div>
+<div id="banner" class="banner" hidden></div>
+<div id="dlg" class="dlg" hidden><div class="box" role="dialog" aria-modal="true"><div id="dlgBody"></div><div class="acts" id="dlgActs"></div></div></div>
+<script src="sp_calc.js?v=SP3"></script>
+<script src="sp_cities.js?v=SP3"></script>
+<script src="sp_wmm.js?v=SP3"></script>
+<script src="sun-position.js?v=SP3"></script>
+</body>
+</html>
