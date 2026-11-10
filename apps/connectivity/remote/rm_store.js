@@ -55,8 +55,9 @@
     if (p === 'sftp') return { action: 'sftp' };
     if (p === 'ssh') return { action: 'ssh' };
     if (p === 'webdav') return { action: 'webdav' };
+    if (p === 'vnc') return { action: 'vnc' };
     if (p === 'ftp') return { action: 'toast', message: C.TOAST_FTP };
-    /* VNC, and any unknown protocol, get the honest "later" toast. */
+    /* Any unknown protocol gets the honest "later" toast. */
     return { action: 'toast', message: C.TOAST_VIEWER_LATER };
   }
 
@@ -131,6 +132,15 @@
     if (token && protocol !== 'webdav') out.token = token;
     if (folder) out.folder = folder;
     if (davUrl && protocol === 'webdav') out.url = davUrl;
+    /* Optional slow-network settings, stored only on VNC rows. */
+    if (protocol === 'vnc') {
+      var qDef = typeof C.VNC_QUALITY_DEFAULT === 'number' ? C.VNC_QUALITY_DEFAULT : 6;
+      var cDef = typeof C.VNC_COMPRESSION_DEFAULT === 'number' ? C.VNC_COMPRESSION_DEFAULT : 2;
+      var qn = parseInt(h.quality, 10);
+      var cn = parseInt(h.compression, 10);
+      out.quality = isNaN(qn) ? qDef : Math.max(0, Math.min(9, qn));
+      out.compression = isNaN(cn) ? cDef : Math.max(0, Math.min(9, cn));
+    }
     return out;
   }
 
@@ -226,7 +236,9 @@
         folder: c.folder,
         url: c.url,
         group: c.group,
-        notes: c.notes
+        notes: c.notes,
+        quality: c.quality,
+        compression: c.compression
       });
     }
 
@@ -264,7 +276,9 @@
           folder: raw.folder,
           url: raw.url,
           group: raw.group,
-          notes: raw.notes
+          notes: raw.notes,
+          quality: raw.quality,
+          compression: raw.compression
         });
         if (typeof r === 'string') skipped += 1; else added += 1;
       });

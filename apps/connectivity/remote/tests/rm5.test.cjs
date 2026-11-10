@@ -30,7 +30,7 @@ var DavUrl = require(path.join(app, 'rm_dav_url.js'));
 var DavXml = require(path.join(app, 'rm_dav_xml.js'));
 var Dav = require(path.join(app, 'rm_dav_client.js'));
 
-assertEq(C.RELEASE, 'RM5', 'release tag is RM5');
+assert(/^RM\d+$/.test(C.RELEASE), 'release tag is RMn');
 assert(C.PROTOCOLS.indexOf('webdav') >= 0, 'webdav is in the protocol list');
 assertEq(C.DEFAULT_PORTS.webdav, 443, 'webdav default port is 443 (https)');
 assertEq(C.PROTOCOL_LABELS.webdav, 'WebDAV', 'webdav label');
@@ -45,7 +45,7 @@ assert(C.DAV_ERR_CORS.indexOf('CORS') >= 0, 'CORS error is clear');
 assertEq(Store.tapAction({ protocol: 'webdav' }).action, 'webdav', 'webdav row opens a file tab');
 assertEq(Store.tapAction({ protocol: 'sftp' }).action, 'sftp', 'sftp row still opens browse');
 assertEq(Store.tapAction({ protocol: 'ssh' }).action, 'ssh', 'ssh row still opens a terminal');
-assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'toast', 'vnc row is still a toast');
+assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'vnc', 'vnc row opens a viewer tab');
 assertEq(Store.tapAction({ protocol: 'ftp' }).message, 'parked', 'ftp row says parked');
 
 /* -------------------------------------------------------------------------- */

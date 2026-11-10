@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <!--
-  Remote — RM5: connections list, Remmina-style tabs, SFTP browse/transfers, an SSH terminal, and WebDAV.
+  Remote — RM4: connections list, Remmina-style tabs, SFTP browse/transfers, an SSH terminal, WebDAV, and a VNC viewer.
   SFTP talks JSON over a WebSocket to hub/relay/sftp_relay.py (Remote has its own client; it does
   not import shared/fs). SSH talks through a websockify TCP relay (port 8022); encryption runs in
-  this page using vendor/ssh-lib.min.js, so the relay never sees the password. WebDAV talks to the
-  server with fetch (CORS required; no relay). Passwords are never stored. A relay token (SFTP only)
-  is stored only if you choose to. VNC still shows an honest "coming" toast; FTP is parked. The app
-  is standalone and does not import the SSH or VNC apps.
+  this page using vendor/ssh-lib.min.js, so the relay never sees the password. VNC uses the same
+  relay (?token=HOST:PORT, default 5900) and this app's own noVNC copy in vendor/novnc/. WebDAV talks
+  to the server with fetch (CORS required; no relay). Passwords are never stored. A relay token (SFTP only)
+  is stored only if you choose to. FTP is parked. The app is standalone and does not import the SSH or VNC apps.
   Styles: vendor/xterm.css, rm_base.css. Modules: rm_config.js, rm_url.js, rm_dav_url.js, rm_dav_xml.js,
-  rm_dav_client.js, rm_store.js, rm_tabs.js, rm_sftp_path.js, rm_sftp_client.js, rm_sftp_xfer.js,
-  rm_sftp_view.js, rm_ssh_known.js, rm_ssh_client.js, rm_ssh_term.js, rm_ssh_view.js, rm_ui.js, rm_main.js.
+  rm_dav_client.js, rm_vnc_client.js, rm_store.js, rm_tabs.js, rm_sftp_path.js, rm_sftp_client.js, rm_sftp_xfer.js,
+  rm_sftp_view.js, rm_ssh_known.js, rm_ssh_client.js, rm_ssh_term.js, rm_ssh_view.js, rm_vnc_view.js, rm_ui.js, rm_main.js.
   Connections are stored in localStorage 'remote-conns-v1'. SSH fingerprints use 'remote-known-hosts-v1'.
 -->
 <html lang="en">
@@ -29,14 +29,14 @@
       <a class="back jelly" href="../connectivity.html">Back</a>
       <img src="rm_icon.svg" alt="">
       <h1>Remote</h1>
-      <span class="tag">RM5</span>
+      <span class="tag">RM4</span>
       <button type="button" id="btn-add" class="jelly">Add</button>
     </header>
 
     <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
 
     <section id="view-list">
-      <p class="hint">One list for SSH, VNC, SFTP, WebDAV and FTP. SFTP and WebDAV can browse, transfer and manage files. SSH opens a terminal. VNC arrives later; FTP is parked.</p>
+      <p class="hint">One list for SSH, VNC, SFTP, WebDAV and FTP. SFTP and WebDAV can browse, transfer and manage files. SSH opens a terminal. VNC opens a desktop viewer. FTP is parked.</p>
       <p class="hint warn" id="security-note">This SFTP relay logs in for you and sees the password and files. Run it only on your own machine, LAN or VPN.</p>
 
       <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
@@ -108,6 +108,16 @@
         <button type="button" class="jelly" data-k="-">-</button>
       </div>
     </section>
+
+    <section id="view-vnc" class="vnc" hidden>
+      <div class="vnc-bar">
+        <p id="vnc-status" class="hint"></p>
+        <button type="button" id="vnc-btn-kbd" class="ghost jelly" hidden>Keyboard</button>
+        <button type="button" id="vnc-btn-more" class="more jelly" aria-label="VNC actions" aria-haspopup="menu">⋯</button>
+      </div>
+      <div id="vnc-sessions" class="vnc-sessions"></div>
+      <input id="vnc-kbd" class="vnc-kbd" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
+    </section>
   </div>
 
   <dialog id="edit">
@@ -132,11 +142,19 @@
       </div>
       <label class="field">Port<input id="f-port" name="port" type="number" min="1" max="65535" value="22" inputmode="numeric"></label>
       <label class="field">User<input id="f-user" name="user" maxlength="64" placeholder="optional" autocomplete="username" spellcheck="false"></label>
-      <label class="field">Start folder<input id="f-folder" name="folder" maxlength="255" placeholder="optional, e.g. projects or /var/www" autocomplete="off" spellcheck="false"></label>
-      <p id="folder-hint" class="hint">SFTP only. Sent as the relay start folder (root). Leave empty for the account home.</p>
+      <div id="field-folder">
+        <label class="field">Start folder<input id="f-folder" name="folder" maxlength="255" placeholder="optional, e.g. projects or /var/www" autocomplete="off" spellcheck="false"></label>
+        <p id="folder-hint" class="hint">SFTP only. Sent as the relay start folder (root). Leave empty for the account home.</p>
+      </div>
+      <div id="field-vnc" hidden>
+        <label class="field">Quality (0=low, 9=high)<input id="f-quality" name="quality" type="number" min="0" max="9" value="6" inputmode="numeric"></label>
+        <label class="field">Compression (0=off, 9=max)<input id="f-compression" name="compression" type="number" min="0" max="9" value="2" inputmode="numeric"></label>
+        <button type="button" id="btn-vnc-lowbw" class="ghost jelly">Low bandwidth</button>
+        <p class="hint">Saved on this connection. Low bandwidth sets quality 0 and compression 9.</p>
+      </div>
       <div id="field-relay">
         <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8022 or wss://host:8022" autocomplete="off" spellcheck="false"></label>
-        <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SSH uses the relay on port 8022, SFTP on 8023.</p>
+        <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SSH and VNC use the relay on port 8022, SFTP on 8023.</p>
       </div>
       <div id="field-token">
         <label class="field">Relay token<input id="f-token" name="token" maxlength="200" placeholder="optional, or enter it when you connect" autocomplete="off" spellcheck="false"></label>
@@ -244,6 +262,33 @@
     <button type="button" id="ssh-menu-disc" role="menuitem" class="jelly">Disconnect</button>
   </div>
 
+  <dialog id="vnc-clip">
+    <form id="vnc-clip-form">
+      <h2>Send clipboard</h2>
+      <p class="hint">The browser did not allow reading the clipboard. Paste the text to send:</p>
+      <label class="field">Text<textarea id="vnc-clip-text" rows="4" autocomplete="off" spellcheck="false"></textarea></label>
+      <div class="row">
+        <button type="button" id="vnc-clip-cancel" class="ghost jelly">Cancel</button>
+        <button type="submit" id="vnc-clip-ok" class="jelly">Send</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="vnc-menu" hidden role="menu" aria-label="VNC actions">
+    <button type="button" id="vnc-menu-scale" role="menuitem" class="jelly">Scale: fit</button>
+    <button type="button" id="vnc-menu-view" role="menuitem" class="jelly">View only: off</button>
+    <button type="button" id="vnc-menu-cad" role="menuitem" class="jelly">Ctrl+Alt+Del</button>
+    <button type="button" id="vnc-menu-clip" role="menuitem" class="jelly">Send clipboard</button>
+    <button type="button" id="vnc-menu-kbd" role="menuitem" class="jelly">Keyboard</button>
+    <button type="button" id="vnc-menu-full" role="menuitem" class="jelly">Fullscreen</button>
+    <button type="button" id="vnc-menu-low" role="menuitem" class="jelly">Low bandwidth</button>
+    <button type="button" id="vnc-menu-q-minus" role="menuitem" class="jelly">Quality −</button>
+    <button type="button" id="vnc-menu-q-plus" role="menuitem" class="jelly">Quality +</button>
+    <button type="button" id="vnc-menu-c-minus" role="menuitem" class="jelly">Compression −</button>
+    <button type="button" id="vnc-menu-c-plus" role="menuitem" class="jelly">Compression +</button>
+    <button type="button" id="vnc-menu-disc" role="menuitem" class="jelly">Disconnect</button>
+  </div>
+
   <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
   <script src="vendor/xterm.min.js"></script>
@@ -264,6 +309,8 @@
   <script src="rm_ssh_client.js"></script>
   <script src="rm_ssh_term.js"></script>
   <script src="rm_ssh_view.js"></script>
+  <script src="rm_vnc_client.js"></script>
+  <script src="rm_vnc_view.js"></script>
   <script src="rm_ui.js"></script>
   <script src="rm_main.js"></script>
 </body>

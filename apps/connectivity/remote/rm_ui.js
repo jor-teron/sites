@@ -1,4 +1,4 @@
-/* Remote — rm_ui.js: DOM for the RM5 connections list, session tabs, editor, toast and overflow menu. */
+/* Remote — rm_ui.js: DOM for the RM4 connections list, session tabs, editor, toast and overflow menu. */
 (function (root) {
   'use strict';
 
@@ -118,7 +118,7 @@
       row.appendChild(more);
       row.addEventListener('click', function () {
         var a = store.tapAction(conn);
-        if ((a.action === 'sftp' || a.action === 'ssh' || a.action === 'webdav') && opts.onOpen) opts.onOpen(conn);
+        if ((a.action === 'sftp' || a.action === 'ssh' || a.action === 'webdav' || a.action === 'vnc') && opts.onOpen) opts.onOpen(conn);
         else toast(a.message);
       });
       row.addEventListener('keydown', function (e) {
@@ -202,10 +202,12 @@
       var tab = opts.tabs ? opts.tabs.current() : null;
       var isFiles = !onList && tab && (tab.protocol === 'sftp' || tab.protocol === 'webdav');
       var isSsh = !onList && tab && tab.protocol === 'ssh';
+      var isVnc = !onList && tab && tab.protocol === 'vnc';
       if ($('view-list')) $('view-list').hidden = !onList;
       if ($('view-sftp')) $('view-sftp').hidden = !isFiles;
       if ($('view-ssh')) $('view-ssh').hidden = !isSsh;
-      if ($('app')) $('app').classList.toggle('wide', !!isSsh);
+      if ($('view-vnc')) $('view-vnc').hidden = !isVnc;
+      if ($('app')) $('app').classList.toggle('wide', !!(isSsh || isVnc));
       if (!onList && opts.onShowSession) opts.onShowSession(tab);
     }
 
@@ -236,6 +238,8 @@
       f.elements.group.value = conn && conn.group ? conn.group : '';
       f.elements.notes.value = conn && conn.notes ? conn.notes : '';
       if (f.elements.url) f.elements.url.value = conn && conn.url ? conn.url : '';
+      if (f.elements.quality) f.elements.quality.value = String(conn && typeof conn.quality === 'number' ? conn.quality : (C.VNC_QUALITY_DEFAULT || 6));
+      if (f.elements.compression) f.elements.compression.value = String(conn && typeof conn.compression === 'number' ? conn.compression : (C.VNC_COMPRESSION_DEFAULT || 2));
       portProtocol = proto;
       portEdited = !!(conn && String(conn.port) !== String(C.DEFAULT_PORTS[proto]));
       $('edit-title').textContent = conn && conn.id ? 'Edit connection' : 'Add connection';
@@ -278,6 +282,8 @@
         url: f.elements.url ? f.elements.url.value : '',
         group: f.elements.group.value,
         notes: f.elements.notes.value,
+        quality: f.elements.quality ? f.elements.quality.value : '',
+        compression: f.elements.compression ? f.elements.compression.value : '',
         _relayNorm: norm
       };
     }
@@ -288,7 +294,7 @@
       var hint = $('relay-hint');
       var norm = Url.normalizeRelay(raw, pageProtocol());
       if (!raw.trim()) {
-        hint.textContent = 'Optional. Accepts ws:// or wss://, or a bare host. SSH uses port 8022, SFTP uses 8023.';
+        hint.textContent = 'Optional. Accepts ws:// or wss://, or a bare host. SSH and VNC use port 8022, SFTP uses 8023.';
         hint.className = 'hint';
         return;
       }
@@ -306,14 +312,27 @@
       hint.className = 'hint';
     }
 
+
+    /* Fill the VNC quality and compression fields with the Low-bandwidth preset. */
+    function applyLowBandwidthPreset() {
+      var pset = { quality: C.VNC_QUALITY_LOW, compression: C.VNC_COMPRESSION_LOW };
+      if (typeof pset.quality !== 'number') pset.quality = 0;
+      if (typeof pset.compression !== 'number') pset.compression = 9;
+      if ($('f-quality')) $('f-quality').value = String(pset.quality);
+      if ($('f-compression')) $('f-compression').value = String(pset.compression);
+    }
+
     /* Show or hide URL / host / relay fields so the editor matches the chosen protocol. */
     function updateProtocolFields() {
       var proto = $('edit-form').elements.protocol.value;
       var isDav = proto === 'webdav';
+      var isVnc = proto === 'vnc';
       if ($('field-url')) $('field-url').hidden = !isDav;
       if ($('field-host')) $('field-host').hidden = isDav;
       if ($('field-relay')) $('field-relay').hidden = isDav;
-      if ($('field-token')) $('field-token').hidden = isDav;
+      if ($('field-token')) $('field-token').hidden = isDav || isVnc;
+      if ($('field-vnc')) $('field-vnc').hidden = !isVnc;
+      if ($('field-folder')) $('field-folder').hidden = isVnc;
       if ($('folder-hint')) {
         $('folder-hint').textContent = isDav
           ? 'WebDAV only. A folder under the base URL. Leave empty for the base URL itself.'
@@ -460,6 +479,7 @@
     $('f-port').addEventListener('input', function () { portEdited = true; });
     $('f-relay').addEventListener('input', updateRelayHint);
     if ($('f-url')) $('f-url').addEventListener('input', updateUrlHint);
+    if ($('btn-vnc-lowbw')) $('btn-vnc-lowbw').addEventListener('click', function (e) { e.preventDefault(); applyLowBandwidthPreset(); });
     $('menu-edit').addEventListener('click', function () {
       var id = $('menu').dataset.id;
       closeMenu();

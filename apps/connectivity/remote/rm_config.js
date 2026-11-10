@@ -1,4 +1,4 @@
-/* Remote — rm_config.js: every constant for the RM5 connections list, SFTP browse and transfers, the SSH terminal, and WebDAV, each one commented. */
+/* Remote — rm_config.js: every constant for the RM4 connections list, SFTP browse and transfers, the SSH terminal, WebDAV, and the VNC viewer, each one commented. */
 (function (root) {
   'use strict';
 
@@ -7,7 +7,7 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Remote',
     /* Release tag shown next to the title. */
-    RELEASE: 'RM5',
+    RELEASE: 'RM4',
     /* localStorage key for the saved connections list. Passwords are never stored under this key. */
     LS_CONNS: 'remote-conns-v1',
     /* Shared Hub theme key — read only, never written by this app. */
@@ -32,7 +32,7 @@
       webdav: 'WebDAV',
       ftp: 'FTP'
     },
-    /* Toast shown when a VNC row is tapped. The VNC viewer arrives in a later RM release, in this app. */
+    /* Toast shown when an unknown / parked-viewer protocol is tapped. VNC no longer uses this. */
     TOAST_VIEWER_LATER: 'viewer coming in a later RM release',
     /* Kept for older tests and copy; RM2 opens an SFTP tab instead of this toast. */
     TOAST_SFTP: 'coming in RM2',
@@ -175,7 +175,37 @@
     /* Shown when an https page is given an http:// WebDAV URL. */
     DAV_ERR_MIXED: 'This https page cannot use an http:// WebDAV server. Use https://, or open the Hub over http on your LAN.',
     /* Short note drawn on the WebDAV connect sheet and in the README. */
-    DAV_SECURITY_NOTE: 'The browser talks to the server directly. The password is sent as HTTP Basic authentication — use https. The server must allow this page with CORS. There is no relay.'
+    DAV_SECURITY_NOTE: 'The browser talks to the server directly. The password is sent as HTTP Basic authentication — use https. The server must allow this page with CORS. There is no relay.',
+    /* Default Tight/JPEG quality (0 = lowest, 9 = highest). Matches noVNC's own default. */
+    VNC_QUALITY_DEFAULT: 6,
+    /* Default Tight compression (0 = off, 9 = strongest). Matches noVNC's own default. */
+    VNC_COMPRESSION_DEFAULT: 2,
+    /* Quality used by the Low-bandwidth preset. */
+    VNC_QUALITY_LOW: 0,
+    /* Compression used by the Low-bandwidth preset. */
+    VNC_COMPRESSION_LOW: 9,
+    /* Path of this app's noVNC RFB module, resolved against the page URL. */
+    VNC_RFB_HREF: 'vendor/novnc/core/rfb.js',
+    /* Suffix appended to VNC relay errors so the user can find setup steps. */
+    VNC_README_HINT: ' See the README for how to run the VNC / SSH relay.',
+    /* Shown when the connection has no relay URL. */
+    VNC_ERR_RELAY_URL: 'Add a Relay URL on this connection first (ws://192.168.x.x:8022 on a LAN, or wss:// on https). See the README for how to run the VNC / SSH relay.',
+    /* Shown when the WebSocket to the relay never opens, or the session never starts. */
+    VNC_ERR_REACH_RELAY: "Can't reach the VNC relay or the VNC server. Is start-relay running on port 8022? Check the URL and allowlist.txt. From an https page the relay must be wss://.",
+    /* Shown when the relay is up but the target is refused (allowlist or the TCP open failed). */
+    VNC_ERR_ALLOW: 'This host is not in the relay allowlist (apps/connectivity/ssh/relay/allowlist.txt), or the relay could not open it.',
+    /* Shown when VNC authentication fails. */
+    VNC_ERR_AUTH: 'Login failed. Check the password.',
+    /* Shown when an https page is given a ws:// relay. */
+    VNC_ERR_WS_ON_HTTPS: 'This https page cannot use a ws:// relay. Use wss://, or open the Hub over http on your LAN.',
+    /* Shown when the noVNC module fails to load. */
+    VNC_ERR_LIB: 'The VNC viewer failed to load.',
+    /* Shown after a clean disconnect. */
+    VNC_ERR_CLOSED_CLEAN: 'Disconnected.',
+    /* Shown when a live session drops. */
+    VNC_ERR_CLOSED: 'Connection lost.',
+    /* Short security note drawn on the VNC connect sheet and in the README. */
+    VNC_SECURITY_NOTE: 'This relay forwards the VNC session as plain bytes. It can see the screen and, on most servers, the password. Run it only on your own machine, LAN or VPN.'
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */

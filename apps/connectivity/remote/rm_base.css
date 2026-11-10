@@ -1,4 +1,4 @@
-/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM5 */
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM4 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -755,4 +755,102 @@ label.check input {
   #ssh-menu { animation: none; }
 }
 
-#field-url[hidden], #field-host[hidden], #field-relay[hidden], #field-token[hidden] { display: none; }
+
+#view-vnc[hidden] { display: none; }
+
+#view-vnc {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vnc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+#vnc-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vnc-sessions {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.vnc-screen {
+  position: absolute;
+  inset: 0;
+}
+
+.vnc-screen[hidden] { display: none; }
+
+.vnc-screen > div {
+  width: 100%;
+  height: 100%;
+}
+
+#vnc-btn-kbd[hidden] { display: none; }
+
+.vnc-kbd {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+#vnc-menu {
+  position: absolute;
+  z-index: 8;
+  min-width: 200px;
+  max-height: min(80vh, 560px);
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--surface-2);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px #0003;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  animation: pop 0.2s ease-out;
+}
+
+#vnc-menu[hidden] { display: none; }
+
+#vnc-menu button {
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 10px;
+  font-weight: 600;
+  min-height: 48px;
+}
+
+#vnc-menu button:hover { background: var(--surface-2); }
+
+#field-vnc .jelly { margin-top: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #vnc-menu { animation: none; }
+}
+
+#field-url[hidden], #field-host[hidden], #field-relay[hidden], #field-token[hidden], #field-folder[hidden], #field-vnc[hidden] { display: none; }

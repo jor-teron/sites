@@ -56,8 +56,8 @@ assertEq(C.DEFAULT_PORTS.ssh, 22, 'ssh default port still 22');
 assertEq(Store.tapAction({ protocol: 'ssh' }).action, 'ssh', 'ssh row opens a terminal');
 assert(Store.tapAction({ protocol: 'ssh' }).message === undefined, 'ssh row is not a toast');
 assertEq(Store.tapAction({ protocol: 'sftp' }).action, 'sftp', 'sftp row still opens browse');
-assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'toast', 'vnc row is still a toast');
-assertEq(Store.tapAction({ protocol: 'vnc' }).message, C.TOAST_VIEWER_LATER, 'vnc toast text');
+assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'vnc', 'vnc row opens a viewer tab');
+assert(Store.tapAction({ protocol: 'vnc' }).message === undefined, 'vnc row is not a toast');
 assertEq(Store.tapAction({ protocol: 'ftp' }).action, 'toast', 'ftp row is still a toast');
 assertEq(Store.tapAction({ protocol: 'spice' }).action, 'toast', 'unknown protocol is a toast');
 
