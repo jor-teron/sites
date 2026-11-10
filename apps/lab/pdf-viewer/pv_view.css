@@ -126,3 +126,48 @@
 #print-root {
   display: none;
 }
+
+/* PV2: invisible selectable text layer (native pdf.js + OCR boxes) */
+.page-slot canvas {
+  position: relative;
+  z-index: 1;
+}
+
+.textLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  line-height: 1;
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: var(--accent);
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.textLayer span,
+.textLayer br {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.textLayer ::selection,
+.textLayer span::selection {
+  background: rgba(56, 189, 248, 0.35);
+  color: transparent;
+}
+
+.textLayer span.hl {
+  background: rgba(250, 204, 21, 0.38);
+}
+
+.textLayer span.hl-current {
+  background: rgba(251, 146, 60, 0.5);
+}

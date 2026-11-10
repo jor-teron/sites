@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Viewer</title>
-  <link rel="stylesheet" href="pv_base.css">
-  <link rel="stylesheet" href="pv_view.css">
+  <title>PDF Viewer PV2</title>
+  <link rel="stylesheet" href="pv_base.css?v=PV2">
+  <link rel="stylesheet" href="pv_view.css?v=PV2">
 </head>
 <body>
   <div class="app">
@@ -31,9 +31,19 @@
         <button type="button" class="btn" id="zoom-in-btn" title="Zoom in">Zoom +</button>
         <button type="button" class="btn" id="fit-btn" title="Fit width">Fit</button>
 
+        <button type="button" class="btn" id="find-btn" title="Find text (Ctrl+F)">Find</button>
+        <button type="button" class="btn" id="ocr-btn" title="OCR scanned pages">OCR</button>
         <button type="button" class="btn" id="print-btn" title="Print all pages">Print</button>
       </div>
     </header>
+
+    <div class="find-bar" id="find-bar" hidden>
+      <input type="search" id="find-input" placeholder="Find in document" aria-label="Find in document" autocomplete="off">
+      <span class="find-count" id="find-count"></span>
+      <button type="button" class="btn" id="find-prev-btn" title="Previous match">Prev</button>
+      <button type="button" class="btn" id="find-next-btn" title="Next match">Next</button>
+      <button type="button" class="btn" id="find-close-btn" title="Close find">Close</button>
+    </div>
 
     <div class="viewer-wrap">
       <main class="viewer" id="viewer">
@@ -51,12 +61,23 @@
 
   <div id="print-root" aria-hidden="true"></div>
 
-  <script src="vendor/pdfjs/pdf.min.js"></script>
-  <script src="pv_helpers.js"></script>
-  <script src="pv_load.js"></script>
-  <script src="pv_render.js"></script>
-  <script src="pv_ui.js"></script>
-  <script src="pv_print.js"></script>
-  <script src="pv_main.js"></script>
+  <dialog id="pv-dialog" class="pv-dialog" aria-labelledby="pv-dialog-title">
+    <h2 id="pv-dialog-title"></h2>
+    <div id="pv-dialog-body" class="pv-dialog-body"></div>
+    <div id="pv-dialog-actions" class="pv-dialog-actions"></div>
+  </dialog>
+
+  <script src="vendor/pdfjs/pdf.min.js?v=PV2"></script>
+  <script src="pv_helpers.js?v=PV2"></script>
+  <script src="pv_ocr_math.js?v=PV2"></script>
+  <script src="pv_load.js?v=PV2"></script>
+  <script src="pv_dlg.js?v=PV2"></script>
+  <script src="pv_textlayer.js?v=PV2"></script>
+  <script src="pv_ocr.js?v=PV2"></script>
+  <script src="pv_find.js?v=PV2"></script>
+  <script src="pv_render.js?v=PV2"></script>
+  <script src="pv_ui.js?v=PV2"></script>
+  <script src="pv_print.js?v=PV2"></script>
+  <script src="pv_main.js?v=PV2"></script>
 </body>
 </html>
