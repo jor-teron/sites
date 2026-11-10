@@ -5,6 +5,7 @@
  * H48c: the 6th item (description) is there only when the app's CSV row has one (optional last column).
  */
 window.HUB_APP_INDEX = {
+  "arrow-escape": ["Games", "apps/games/arrow-escape/", "Arrow Escape", "apps/games/arrow-escape/arrow-escape_icon.png", 0, "Clear the grid by sending arrows out in the right order"],
   "minesweeper": ["Games", "apps/games/minesweeper/", "Minesweeper", "apps/games/minesweeper/minesweeper_icon.png", 0, "Clear the minefield with safe first openings - flags and three board sizes"],
   "2048": ["Games", "apps/games/2048/", "2048", "apps/games/2048/2048_icon.png", 0, "Slide number tiles and merge matching pairs to reach the 2048 tile"],
   "tv": ["Favorite", "tv/", "TV", "tv/tv_icon.png", 0, "Live TV player for free IPTV channels from M3U playlists - remote and touch"],
