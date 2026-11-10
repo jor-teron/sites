@@ -1,14 +1,15 @@
-/* 3D Builder — tb_ui.js: toolbar, panels, keyboard, file, history glue. TD2 */
+/* 3D Builder — tb_ui.js: toolbar, panels, keyboard, file, history glue. TD3 */
 
 import { createScene } from './tb_scene.js';
 import { createHistory } from './tb_history.js';
 import * as Theme from './tb_theme.js';
 import * as Dlg from './tb_dlg.js';
 import {
-  SHAPE_TYPES, LIGHT_TYPES, TYPE_LABELS, makeId,
+  SHAPE_TYPES, LIGHT_TYPES, TYPE_LABELS, makeId, MAX_MODEL_BYTES,
   loadAutosaveAsync, saveAutosaveAsync, downloadH3d, parseProject, roundN, makeProject
 } from './tb_io.js';
 import { resizeImageToDataURL } from './tb_tex.js';
+import { downloadBlob, downloadDataURL } from './tb_export.js';
 
 function $(id) { return document.getElementById(id); }
 
@@ -677,7 +678,100 @@ export function boot() {
     });
   }
 
+
+  if ($('importBtn') && $('importInput')) {
+    $('importBtn').addEventListener('click', function () { $('importInput').click(); });
+    $('importInput').addEventListener('change', function () {
+      const f = $('importInput').files && $('importInput').files[0];
+      $('importInput').value = '';
+      if (!f) return;
+      if (f.size > MAX_MODEL_BYTES) {
+        Dlg.message('Import', 'That file is larger than 8 MB, which is too heavy for this app.');
+        return;
+      }
+      const name = f.name || 'model.glb';
+      const isJson = /\.gltf$/i.test(name) || (f.type && f.type.indexOf('json') >= 0);
+      const reader = new FileReader();
+      reader.onload = function () {
+        const data = reader.result;
+        Dlg.open({
+          title: 'Importing',
+          text: 'Reading ' + name + '…',
+          dismissable: false,
+          actions: []
+        });
+        scene.importModel(data, name).then(function () {
+          Dlg.close();
+          commit();
+          refreshAll();
+        }).catch(function (err) {
+          Dlg.message('Could not import', (err && err.message) || 'This file could not be opened. Try a self-contained .glb.');
+        });
+      };
+      reader.onerror = function () { Dlg.message('Could not import', 'The file could not be read.'); };
+      if (isJson) reader.readAsText(f);
+      else reader.readAsArrayBuffer(f);
+    });
+  }
+
+  function offerDownload(title, note, doSave) {
+    Dlg.open({
+      title: title,
+      text: note,
+      actions: [
+        { label: 'Cancel', cls: 'secondary-btn' },
+        { label: 'Download', cls: 'primary-btn', fn: function () { doSave(); } }
+      ]
+    });
+  }
+
+  if ($('exportBtn')) {
+    $('exportBtn').addEventListener('click', function () {
+      Dlg.open({
+        title: 'Export',
+        html: '<p>Save the scene for other apps, or a picture of the current view. Use Save for a .h3d project you can open here again.</p>' +
+          '<div class="prop-acts" id="exportChoices">' +
+          '<button type="button" class="btn secondary-btn" data-fmt="glb">glTF (.glb)</button>' +
+          '<button type="button" class="btn secondary-btn" data-fmt="obj">Wavefront (.obj)</button>' +
+          '<button type="button" class="btn secondary-btn" data-fmt="stl">STL (.stl)</button>' +
+          '<button type="button" class="btn secondary-btn" data-fmt="png">PNG screenshot</button>' +
+          '</div>',
+        actions: [{ label: 'Cancel', cls: 'secondary-btn' }],
+        onOpen: function () {
+          const box = $('exportChoices');
+          if (!box) return;
+          box.addEventListener('click', function (e) {
+            const b = e.target.closest('button[data-fmt]');
+            if (!b) return;
+            const fmt = b.getAttribute('data-fmt');
+            if (fmt === 'png') {
+              const url = scene.capturePNG();
+              offerDownload('Screenshot ready', 'A PNG of the current view is ready to save on this device.', function () {
+                downloadDataURL(url, 'view.png');
+              });
+              return;
+            }
+            Dlg.open({
+              title: 'Exporting',
+              text: 'Preparing scene.' + fmt + '…',
+              dismissable: false,
+              actions: []
+            });
+            scene.exportScene(fmt).then(function (blob) {
+              offerDownload('Export ready', 'scene.' + fmt + ' is ready to save on this device.', function () {
+                downloadBlob(blob, 'scene.' + fmt);
+              });
+            }).catch(function (err) {
+              Dlg.message('Export failed', (err && err.message) || 'Could not export that format.');
+            });
+          });
+        }
+      });
+    });
+  }
+
   document.addEventListener('keydown', function (e) {
+
     if (Dlg.isOpen()) return;
     if (inField(e.target)) {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'y' || e.key === 'Z')) {

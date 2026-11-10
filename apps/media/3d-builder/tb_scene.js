@@ -1,4 +1,4 @@
-/* 3D Builder — tb_scene.js: viewport, primitives, groups, lights, pick, gizmo. TD2
+/* 3D Builder — tb_scene.js: viewport, primitives, groups, lights, pick, gizmo, import/export. TD3
    Renders on demand only (no continuous loop). three.js r170, local vendor. */
 
 import * as THREE from 'three';
@@ -8,10 +8,12 @@ import {
   SHAPE_TYPES, LIGHT_TYPES, DEFAULT_COLOR, DEFAULT_LIGHT_COLOR, DEFAULT_MATERIAL,
   SNAP, PLACE_STEP, sitHeight, defaultRotationDeg, nextName, nextOffset,
   radToDeg, degToRad, roundN, makeProject, parseColorOr, makeId,
-  isShapeType, isLightType, normalizeMaterial, normalizeTexture, normalizeLight
+  isShapeType, isLightType, normalizeMaterial, normalizeTexture, normalizeLight,
+  MAX_MODEL_BYTES
 } from './tb_io.js';
 import { snapBoxes, OBJECT_SNAP_THRESHOLD, alignItems as alignItemsFn, distributeItems as distributeItemsFn } from './tb_align.js';
 import { makeTextTexture, textureFromDataURL } from './tb_tex.js';
+import { parseGLTF, exportGLB, exportOBJ, exportSTL, arrayBufferToDataURL, decodeModelPayload } from './tb_export.js';
 
 const SEG = { sphereW: 24, sphereH: 16, cyl: 24, torusR: 12, torusT: 24 };
 
@@ -112,6 +114,7 @@ export function createScene(viewportEl, hooks) {
   let skyCustom = false;
   let skyColor = '#e8eef5';
   let textureStore = {};
+  let modelStore = {};
   let dragStarts = null;
   let pivotStartInv = null;
   const raycaster = new THREE.Raycaster();
@@ -273,6 +276,7 @@ export function createScene(viewportEl, hooks) {
       rec.angle = L.angle;
       rec.penumbra = L.penumbra;
     }
+    if (type === 'model') rec.modelId = node.userData.modelId || null;
     return rec;
   }
 
@@ -442,8 +446,80 @@ export function createScene(viewportEl, hooks) {
     return root;
   }
 
+  function clearModelChildren(root) {
+    const keep = [];
+    root.children.slice().forEach(function (ch) {
+      if (ch.userData && ch.userData.placeholder) {
+        root.remove(ch);
+        if (ch.geometry && !isSharedGeo(ch.geometry)) ch.geometry.dispose();
+        if (ch.material) ch.material.dispose();
+      }
+    });
+  }
+
+  function isSharedGeo(geo) {
+    if (!geo) return false;
+    for (const k in geometries) {
+      if (geometries[k] === geo) return true;
+    }
+    return false;
+  }
+
+  function addPlaceholder(root) {
+    const ph = new THREE.Mesh(
+      geometries.box,
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, wireframe: true, roughness: 0.8 })
+    );
+    ph.userData.placeholder = true;
+    root.add(ph);
+  }
+
+  function fillModel(root, dataURL) {
+    if (!dataURL) return;
+    let data;
+    try { data = decodeModelPayload(dataURL); } catch (e) { return; }
+    parseGLTF(data, '').then(function (gltf) {
+      if (!root.parent && root !== objects) return;
+      clearModelChildren(root);
+      /* Drop previous loaded scene, keep wrapper transform. */
+      root.children.slice().forEach(function (ch) {
+        if (ch.userData && ch.userData.placeholder) return;
+        if (ch.userData && ch.userData.helper) return;
+        root.remove(ch);
+        ch.traverse(function (n) {
+          if (n.geometry && !isSharedGeo(n.geometry)) n.geometry.dispose();
+        });
+      });
+      const src = gltf.scene || (gltf.scenes && gltf.scenes[0]);
+      if (src) root.add(src);
+      requestRender();
+    }).catch(function () { /* leave placeholder */ });
+  }
+
+  function makeModel(rec) {
+    const g = new THREE.Group();
+    g.userData = {
+      id: rec.id || makeId(),
+      type: 'model',
+      name: rec.name || nextName('model', names()),
+      color: parseColorOr(rec.color, '#94a3b8'),
+      locked: !!rec.locked,
+      editable: true,
+      modelId: rec.modelId || null
+    };
+    g.name = g.userData.name;
+    g.visible = rec.visible !== false;
+    g.position.set(rec.position[0], rec.position[1], rec.position[2]);
+    g.rotation.set(degToRad(rec.rotation[0]), degToRad(rec.rotation[1]), degToRad(rec.rotation[2]));
+    g.scale.set(rec.scale[0], rec.scale[1], rec.scale[2]);
+    addPlaceholder(g);
+    if (rec.modelId && modelStore[rec.modelId]) fillModel(g, modelStore[rec.modelId].dataURL);
+    return g;
+  }
+
   function makeNode(rec) {
     if (rec.type === 'group') return makeGroup(rec);
+    if (rec.type === 'model') return makeModel(rec);
     if (isLightType(rec.type)) return makeLight(rec);
     return makeMesh(rec);
   }
@@ -555,12 +631,11 @@ export function createScene(viewportEl, hooks) {
 
   function disposeNode(node) {
     node.traverse(function (ch) {
+      if (ch.geometry && !isSharedGeo(ch.geometry)) ch.geometry.dispose();
       if (ch.material) {
         disposeMap(ch);
-        if (ch.material.dispose && ch.geometry !== geometries[ch.userData && ch.userData.type]) {
-          /* shared geo kept */
-        }
-        if (ch.material && ch.material.dispose) ch.material.dispose();
+        const mats = Array.isArray(ch.material) ? ch.material : [ch.material];
+        mats.forEach(function (m) { if (m && m.dispose) m.dispose(); });
       }
     });
   }
@@ -625,7 +700,8 @@ export function createScene(viewportEl, hooks) {
     return makeProject(list, {
       skyCustom: skyCustom,
       sky: skyColor,
-      textures: textureStore
+      textures: textureStore,
+      models: modelStore
     });
   }
 
@@ -663,6 +739,13 @@ export function createScene(viewportEl, hooks) {
       Object.keys(project.textures).forEach(function (k) {
         const t = project.textures[k];
         if (t && t.dataURL) textureStore[k] = { dataURL: t.dataURL };
+      });
+    }
+    modelStore = {};
+    if (project.models && typeof project.models === 'object') {
+      Object.keys(project.models).forEach(function (k) {
+        const m = project.models[k];
+        if (m && m.dataURL) modelStore[k] = { dataURL: m.dataURL, name: m.name || '' };
       });
     }
     skyCustom = !!project.skyCustom;
@@ -1128,6 +1211,117 @@ export function createScene(viewportEl, hooks) {
     try { return !!(renderer.getContext()); } catch (e) { return false; }
   }
 
+
+  function buildExportGroup() {
+    const g = new THREE.Group();
+    function copyNode(node, destParent) {
+      if (!node || (node.userData && node.userData.helper) || (node.userData && node.userData.placeholder)) return;
+      if (node.name === '__pivot') return;
+      if (node.isLight) {
+        destParent.add(node.clone());
+        return;
+      }
+      if (node.isMesh) {
+        destParent.add(node.clone());
+        return;
+      }
+      const c = new THREE.Group();
+      c.name = node.name || '';
+      c.position.copy(node.position);
+      c.quaternion.copy(node.quaternion);
+      c.scale.copy(node.scale);
+      c.visible = node.visible;
+      destParent.add(c);
+      node.children.forEach(function (ch) { copyNode(ch, c); });
+    }
+    objects.children.forEach(function (n) { copyNode(n, g); });
+    /* A little light so exported files are not black in other viewers. */
+    const h = new THREE.HemisphereLight(0xe8f0ff, 0x3d4a3a, 1.0);
+    const d = new THREE.DirectionalLight(0xffffff, 1.0);
+    d.position.set(6, 10, 4);
+    g.add(h);
+    g.add(d);
+    return g;
+  }
+
+  function exportScene(format) {
+    const root = buildExportGroup();
+    if (format === 'glb') return exportGLB(root);
+    if (format === 'obj') {
+      try { return Promise.resolve(exportOBJ(root)); }
+      catch (e) { return Promise.reject(e); }
+    }
+    if (format === 'stl') {
+      try { return Promise.resolve(exportSTL(root)); }
+      catch (e) { return Promise.reject(e); }
+    }
+    return Promise.reject(new Error('Unknown export format.'));
+  }
+
+  function capturePNG() {
+    const helper = transform.getHelper();
+    const hVis = helper ? helper.visible : false;
+    const bVis = boxHelper.visible;
+    if (helper) helper.visible = false;
+    boxHelper.visible = false;
+    renderer.render(scene, camera);
+    const url = renderer.domElement.toDataURL('image/png');
+    if (helper) helper.visible = hVis;
+    boxHelper.visible = bVis;
+    requestRender();
+    return url;
+  }
+
+  function sitAndPlace(node) {
+    node.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(node);
+    if (!box.isEmpty()) {
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z, 0.0001);
+      if (maxDim > 8) node.scale.multiplyScalar(2 / maxDim);
+      else if (maxDim < 0.25) node.scale.multiplyScalar(1 / maxDim);
+      node.updateMatrixWorld(true);
+      box.setFromObject(node);
+      node.position.y += -box.min.y;
+    }
+    const off = nextOffset(occupiedXZ(), PLACE_STEP);
+    node.position.x += off[0];
+    node.position.z += off[1];
+  }
+
+  function importModel(data, filename) {
+    return parseGLTF(data, '').then(function (gltf) {
+      const src = gltf.scene || (gltf.scenes && gltf.scenes[0]);
+      if (!src) return Promise.reject(new Error('That file has no scene.'));
+      const modelId = makeId();
+      let stored = null;
+      if (data instanceof ArrayBuffer) {
+        stored = { dataURL: arrayBufferToDataURL(data, 'model/gltf-binary'), name: filename || 'model.glb' };
+      } else if (typeof data === 'string') {
+        stored = { dataURL: 'data:model/gltf+json;base64,' + btoa(unescape(encodeURIComponent(data))), name: filename || 'model.gltf' };
+      }
+      if (stored) modelStore[modelId] = stored;
+      const wrap = new THREE.Group();
+      wrap.userData = {
+        id: makeId(),
+        type: 'model',
+        name: nextName('model', names()),
+        color: '#94a3b8',
+        locked: false,
+        editable: true,
+        modelId: stored ? modelId : null
+      };
+      wrap.name = wrap.userData.name;
+      wrap.add(src);
+      sitAndPlace(wrap);
+      objects.add(wrap);
+      setSelection([wrap]);
+      emit('change');
+      requestRender();
+      return wrap;
+    });
+  }
+
   applySnap();
   setTheme('light');
   requestRender();
@@ -1164,6 +1358,9 @@ export function createScene(viewportEl, hooks) {
     setSky: setSky,
     getSky: getSky,
     putTexture: putTexture,
+    exportScene: exportScene,
+    capturePNG: capturePNG,
+    importModel: importModel,
     requestRender: requestRender,
     resize: resize,
     webglOk: webglOk,

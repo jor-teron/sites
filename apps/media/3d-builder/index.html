@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>3D Builder TD2</title>
+  <title>3D Builder TD3</title>
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="3d-builder_icon.png">
   <script>
@@ -27,7 +27,7 @@
       } catch (e) { /* ok */ }
     })();
   </script>
-  <link rel="stylesheet" href="tb_base.css?v=TD2">
+  <link rel="stylesheet" href="tb_base.css?v=TD3">
   <script type="importmap">
   {
     "imports": {
@@ -44,7 +44,10 @@
         <button type="button" id="newBtn" class="btn secondary-btn" title="New scene">New</button>
         <button type="button" id="openBtn" class="btn secondary-btn" title="Open a .h3d project">Open</button>
         <button type="button" id="saveBtn" class="btn secondary-btn" title="Save to this device as .h3d">Save</button>
+        <button type="button" id="importBtn" class="btn secondary-btn" title="Import a .glb or .gltf model">Import</button>
+        <button type="button" id="exportBtn" class="btn secondary-btn" title="Export GLB, OBJ, STL or a PNG screenshot">Export</button>
         <input type="file" id="fileInput" accept=".h3d,application/json" hidden>
+        <input type="file" id="importInput" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden>
         <div class="seg" id="themeSeg" role="group" aria-label="Theme">
           <button type="button" data-v="auto">Auto</button>
           <button type="button" data-v="light">Light</button>
@@ -213,6 +216,6 @@
     </div>
   </div>
 
-  <script type="module" src="tb_main.js?v=TD2"></script>
+  <script type="module" src="tb_main.js?v=TD3"></script>
 </body>
 </html>

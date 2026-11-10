@@ -1,8 +1,8 @@
-/* 3D Builder — tb_io.js: .h3d format v2, placement helpers, autosave. TD2 */
+/* 3D Builder — tb_io.js: .h3d format v3, placement helpers, autosave. TD3 */
 
-export const RELEASE = 'TD2';
+export const RELEASE = 'TD3';
 export const FORMAT = 'h3d';
-export const FORMAT_VERSION = 2;
+export const FORMAT_VERSION = 3;
 export const FORMAT_VERSION_MIN = 1;
 export const STORAGE_KEY = '3dbuilder.scene';
 export const IDB_NAME = '3dbuilder';
@@ -11,7 +11,8 @@ export const IDB_STORE = 'kv';
 export const SHAPE_TYPES = ['box', 'sphere', 'cylinder', 'cone', 'plane', 'torus'];
 export const LIGHT_TYPES = ['light-point', 'light-spot', 'light-directional'];
 export const TYPES = SHAPE_TYPES.slice();
-export const ALL_TYPES = SHAPE_TYPES.concat(['group'], LIGHT_TYPES);
+export const ALL_TYPES = SHAPE_TYPES.concat(['group', 'model'], LIGHT_TYPES);
+export const MAX_MODEL_BYTES = 8 * 1024 * 1024;
 
 export const TYPE_LABELS = {
   box: 'Box',
@@ -21,6 +22,7 @@ export const TYPE_LABELS = {
   plane: 'Plane',
   torus: 'Torus',
   group: 'Group',
+  model: 'Model',
   'light-point': 'Point light',
   'light-spot': 'Spot light',
   'light-directional': 'Directional light'
@@ -65,7 +67,7 @@ export function isLightType(type) { return LIGHT_TYPES.indexOf(type) >= 0; }
 export function sitHeight(type) {
   if (type === 'plane') return 0;
   if (type === 'torus') return 0.2;
-  if (isLightType(type) || type === 'group') return 2;
+  if (isLightType(type) || type === 'group' || type === 'model') return 2;
   return 0.5;
 }
 
@@ -229,6 +231,9 @@ export function normalizeObject(raw) {
     rec.angle = L.angle;
     rec.penumbra = L.penumbra;
   }
+  if (type === 'model') {
+    rec.modelId = (typeof raw.modelId === 'string' && raw.modelId) ? raw.modelId : null;
+  }
   return rec;
 }
 
@@ -243,13 +248,23 @@ export function makeProject(objects, extras) {
       }
     });
   }
+  const models = {};
+  if (extras.models && typeof extras.models === 'object') {
+    Object.keys(extras.models).forEach(function (k) {
+      const m = extras.models[k];
+      if (m && typeof m.dataURL === 'string' && m.dataURL.indexOf('data:') === 0) {
+        models[k] = { dataURL: m.dataURL, name: typeof m.name === 'string' ? m.name : '' };
+      }
+    });
+  }
   return {
     format: FORMAT,
     version: FORMAT_VERSION,
     skyCustom: !!extras.skyCustom,
     sky: extras.skyCustom ? parseColorOr(extras.sky, '#e8eef5') : null,
     objects: objects || [],
-    textures: textures
+    textures: textures,
+    models: models
   };
 }
 
@@ -284,12 +299,24 @@ function normalizeTexturesMap(raw) {
   return textures;
 }
 
+function normalizeModelsMap(raw) {
+  const models = {};
+  if (!raw || typeof raw !== 'object') return models;
+  Object.keys(raw).forEach(function (k) {
+    const m = raw[k];
+    if (m && typeof m.dataURL === 'string' && m.dataURL.indexOf('data:') === 0) {
+      models[k] = { dataURL: m.dataURL, name: typeof m.name === 'string' ? m.name : '' };
+    }
+  });
+  return models;
+}
+
 /** Accept .h3d v1 or v2 and return a v2 project. */
 export function migrateProject(data) {
   if (!data || typeof data !== 'object') return { ok: false, error: 'Not a project file.' };
   if (data.format !== FORMAT) return { ok: false, error: 'This is not a .h3d project.' };
   const v = data.version;
-  if (v !== 1 && v !== 2) {
+  if (v !== 1 && v !== 2 && v !== 3) {
     return { ok: false, error: 'Unsupported .h3d version (' + v + ').' };
   }
   if (!Array.isArray(data.objects)) return { ok: false, error: 'The project has no object list.' };
@@ -303,7 +330,8 @@ export function migrateProject(data) {
   const extras = {
     skyCustom: v >= 2 && !!data.skyCustom,
     sky: data.sky,
-    textures: v >= 2 ? normalizeTexturesMap(data.textures) : {}
+    textures: v >= 2 ? normalizeTexturesMap(data.textures) : {},
+    models: v >= 3 ? normalizeModelsMap(data.models) : {}
   };
   return { ok: true, project: makeProject(objects, extras), fromVersion: v };
 }
@@ -400,7 +428,7 @@ export function saveAutosave(project) {
     return true;
   } catch (e) {
     try {
-      const slim = makeProject(project.objects, { skyCustom: project.skyCustom, sky: project.sky, textures: {} });
+      const slim = makeProject(project.objects, { skyCustom: project.skyCustom, sky: project.sky, textures: {}, models: {} });
       localStorage.setItem(STORAGE_KEY, stringifyProject(slim));
       return true;
     } catch (e2) {

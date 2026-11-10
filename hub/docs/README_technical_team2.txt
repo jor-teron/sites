@@ -993,6 +993,16 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   (with grid snap). Undo/redo covers the new edits. RELEASE/title/?v= TD2.
   Details: apps/media/3d-builder/NOTES.md.
 
+
+### 1.60 3D Builder, release TD3
+
+- apps/media/3d-builder only. Export .glb / .obj / .stl via official three.js r170
+  GLTFExporter, OBJExporter and STLExporter (local vendor copies, plus GLTFLoader
+  and BufferGeometryUtils). Import self-contained .glb/.gltf (wrapped as one
+  object, stored in project.models). PNG screenshot of the view. .h3d format
+  version 3 (migrates v1 and v2). In-app Download dialogs only. 8 MB import cap.
+  RELEASE/title/?v= TD3. Details: apps/media/3d-builder/NOTES.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
