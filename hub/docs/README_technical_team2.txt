@@ -824,6 +824,38 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.90 Invoice Maker, release INV1
+
+- New Office app at `apps/office/invoice-maker/` (Office → Hub Office, after Spreadsheet).
+  Branch `apps/inv1-invoice-maker`. RELEASE / title / `?v=` = INV1.
+- GST tax invoices, quotes / estimates, receipts and bills of supply, all offline on
+  this device. Business profile (name, address, GSTIN, phone, email, logo, signature,
+  bank / UPI) and a client list are saved in localStorage (`invoice-maker-v1`).
+- Auto numbering with a prefix and financial-year reset, e.g. `INV/2026-27/001`
+  (year starts 1 April). Line items: description, HSN/SAC, qty, unit, rate, discount
+  (rupees) and GST % (0 / 5 / 12 / 18 / 28). CGST+SGST when the place of supply is
+  the same state as the business, otherwise IGST. Optional round-off to the nearest
+  rupee, and the total in Indian words (lakh / crore). Notes, terms and a due date.
+- Live A4 preview with Classic / Modern / Minimal templates and an accent colour.
+  Print uses a print stylesheet. Save as PDF lazy-loads the jsPDF already vendored
+  in Draftly (`apps/office/draftly/vendor/jspdf.umd.min.js`); if that fails, Print
+  can still save as PDF from the browser dialog. An optional UPI QR lazy-loads
+  `shared/vendor/qrcode.js` when a UPI ID is saved.
+- History with search, Paid / Unpaid, duplicate, edit and delete (in-app confirm).
+  JSON backup export / import, and a CSV of the history. Auto / Light / Dark theme:
+  Auto follows `sites-hub.theme`, else the device. In-app dialogs only
+  (`apps/office/shared/office-dialog.js`, not modified).
+- New files: `index.html`, `invoice-maker.html/.css/.js`, `inv_calc.js`,
+  `test_inv_calc.js`, `invoice-maker_readme.md`, `invoice-maker_icon.svg`.
+  A row was added to `apps/office/office-apps.csv`. `apps/office/shared/` was not
+  edited. Main Builder still needs to regenerate `hub_catalog.js` /
+  `hub_appindex.js` after this is on main.
+- Tested with `node --check` on every JS file, `node test_inv_calc.js` (GST split,
+  totals and round-off, amount in words, FY numbering), and a static curl smoke
+  test. No Puppeteer, Playwright or jsdom.
+- 1.53–1.89 are reserved for in-flight Team 2 branches, so this note is numbered 1.90.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
