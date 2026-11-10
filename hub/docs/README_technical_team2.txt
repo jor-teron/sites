@@ -1092,7 +1092,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Storage still sheet-v3; filters and validations are optional fields, so older v3 files still open. Title / SHEET_VERSION / ?v=: SH10. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
 
-### 1.81 Spreadsheet formatting, release SH11
+### 1.66 Spreadsheet formatting, release SH11
 
 - apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
 - Merge / unmerge (top-left keeps the value; undoable), borders (all / outside / inside / sides / none), font size, wrap text, format painter (double-click to keep it on; Esc cancels).
