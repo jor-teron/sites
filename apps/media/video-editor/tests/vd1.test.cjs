@@ -1,4 +1,4 @@
-/* Video Editor VD2 — pure helper tests (no browser / no DOM). */
+/* Video Editor VD3 — pure helper tests (no browser / no DOM). */
 'use strict';
 
 var fs = require('fs');
@@ -120,9 +120,9 @@ assert(/object-fit:\s*contain/.test(base), 'video object-fit contain');
 assert(/min-width:\s*900px/.test(base) && /orientation:\s*landscape/.test(base),
   'wide landscape side-panel media query');
 assert(/max-height:\s*420px/.test(base), 'short landscape compact query');
-assert(/<title>Video Editor VD2<\/title>/.test(html), 'title has VD2');
-assert(/\?v=VD2/.test(html), 'assets use ?v=VD2');
-assert(/var RELEASE = 'VD2'/.test(main), 'RELEASE constant VD2');
+assert(/<title>Video Editor VD3<\/title>/.test(html), 'title has VD3');
+assert(/\?v=VD3/.test(html), 'assets use ?v=VD3');
+assert(/var RELEASE = 'VD3'/.test(main), 'RELEASE constant VD3');
 assert(/class="app"/.test(html), 'html uses .app shell');
 assert(/id="themeSeg"/.test(html), 'theme Auto/Light/Dark');
 assert(/id="dlg"/.test(html), 'in-app dialog');
@@ -131,8 +131,8 @@ assert(/playhead/.test(range) && /playhead/.test(html), 'playhead on timeline');
 assert(/min-height:\s*48px/.test(range), 'time-chip 48px target');
 assert(!/\balert\s*\(/.test(html), 'no alert in html');
 
-['ve_helpers.js', 've_edits.js', 've_seq.js', 've_theme.js', 've_dlg.js', 've_range.js',
-  've_store.js', 've_export.js', 've_ui.js', 've_main.js'].forEach(function (f) {
+['ve_helpers.js', 've_edits.js', 've_fx.js', 've_seq.js', 've_theme.js', 've_dlg.js', 've_range.js',
+  've_store.js', 've_draw.js', 've_export.js', 've_tip.js', 've_ui.js', 've_main.js'].forEach(function (f) {
   var src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
   assert(!/\balert\s*\(/.test(src), f + ' has no alert(');
   assert(!/\bconfirm\s*\(/.test(src), f + ' has no confirm(');

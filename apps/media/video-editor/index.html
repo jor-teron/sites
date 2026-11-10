@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Video Editor VD2</title>
+  <title>Video Editor VD3</title>
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="video-editor_icon.png">
   <script>
@@ -27,8 +27,8 @@
       } catch (e) { /* ok */ }
     })();
   </script>
-  <link rel="stylesheet" href="ve_base.css?v=VD2">
-  <link rel="stylesheet" href="ve_range.css?v=VD2">
+  <link rel="stylesheet" href="ve_base.css?v=VD3">
+  <link rel="stylesheet" href="ve_range.css?v=VD3">
 </head>
 <body>
   <div class="app" id="app">
@@ -36,7 +36,9 @@
       <h1>Video Editor</h1>
       <div class="header-actions">
         <span class="save-state" id="saveState" hidden></span>
-        <button type="button" class="header-btn" id="projectsBtn">Projects</button>
+        <button type="button" class="header-btn" id="helpBtn" title="Keyboard shortcuts (?)">?</button>
+        <button type="button" class="header-btn" id="settingsBtn" title="Settings">Settings</button>
+        <button type="button" class="header-btn" id="projectsBtn" title="Open, rename or delete projects">Projects</button>
         <div class="seg" id="themeSeg" role="group" aria-label="Theme">
           <button type="button" data-v="auto">Auto</button>
           <button type="button" data-v="light">Light</button>
@@ -58,7 +60,22 @@
       <section class="editor-stage hidden" id="editorSection">
         <div class="video-area">
           <div class="video-frame" id="videoFrame">
-            <canvas id="exportCanvas" class="hidden" aria-hidden="true"></canvas>
+            <div class="preview-stage" id="previewStage">
+              <canvas id="exportCanvas" class="hidden" aria-hidden="true"></canvas>
+              <div class="overlay-layer" id="overlayLayer"></div>
+              <div class="crop-layer hidden" id="cropLayer">
+                <div class="crop-rect" id="cropRect">
+                  <span class="crop-h" data-h="nw"></span>
+                  <span class="crop-h" data-h="n"></span>
+                  <span class="crop-h" data-h="ne"></span>
+                  <span class="crop-h" data-h="e"></span>
+                  <span class="crop-h" data-h="se"></span>
+                  <span class="crop-h" data-h="s"></span>
+                  <span class="crop-h" data-h="sw"></span>
+                  <span class="crop-h" data-h="w"></span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -90,9 +107,104 @@
             <button type="button" id="moveLeftBtn" class="btn secondary-btn icon-btn" aria-label="Move clip left" title="Move left">&#8249;&#8249;</button>
             <button type="button" id="moveRightBtn" class="btn secondary-btn icon-btn" aria-label="Move clip right" title="Move right">&#8250;&#8250;</button>
             <div class="seg fade-seg" id="fadeSeg" role="group" aria-label="Fade between clips">
-              <button type="button" data-v="0">Fade off</button>
-              <button type="button" data-v="0.5">0.5s</button>
-              <button type="button" data-v="1">1s</button>
+              <button type="button" data-v="0" title="No fade between clips">Fade off</button>
+              <button type="button" data-v="0.5" title="0.5 second fade through black">0.5s</button>
+              <button type="button" data-v="1" title="1 second fade through black">1s</button>
+            </div>
+            <label class="out-label">Output
+              <select id="outputSize" class="out-select" title="Export frame size" aria-label="Output size">
+                <option value="auto">Auto</option>
+                <option value="1280x720">1280×720</option>
+                <option value="720x1280">720×1280</option>
+                <option value="1080x1080">1080×1080</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="adj-tabs" id="adjTabs" role="tablist">
+            <button type="button" class="on" data-tab="look" role="tab">Look</button>
+            <button type="button" data-tab="motion" role="tab">Speed &amp; audio</button>
+            <button type="button" data-tab="titles" role="tab">Titles</button>
+          </div>
+
+          <div class="adj-panel" id="adjLook" data-panel="look">
+            <div class="slider-grid" id="filterGrid">
+              <label>Brightness <input type="range" id="fxBrightness" min="0" max="200" value="100"><span id="fxBrightnessV">100%</span></label>
+              <label>Contrast <input type="range" id="fxContrast" min="0" max="200" value="100"><span id="fxContrastV">100%</span></label>
+              <label>Saturation <input type="range" id="fxSaturation" min="0" max="200" value="100"><span id="fxSaturationV">100%</span></label>
+              <label>Greyscale <input type="range" id="fxGreyscale" min="0" max="100" value="0"><span id="fxGreyscaleV">0%</span></label>
+              <label>Sepia <input type="range" id="fxSepia" min="0" max="100" value="0"><span id="fxSepiaV">0%</span></label>
+              <label>Blur <input type="range" id="fxBlur" min="0" max="20" value="0" step="0.5"><span id="fxBlurV">0</span></label>
+            </div>
+            <div class="adj-row">
+              <button type="button" id="resetLooksBtn" class="btn secondary-btn" title="Reset brightness, contrast, saturation, greyscale, sepia and blur">Reset looks</button>
+              <button type="button" id="rotLeftBtn" class="btn secondary-btn" title="Rotate 90° left">Rotate left</button>
+              <button type="button" id="rotRightBtn" class="btn secondary-btn" title="Rotate 90° right">Rotate right</button>
+              <button type="button" id="flipHBtn" class="btn secondary-btn" title="Flip horizontally">Flip H</button>
+              <button type="button" id="flipVBtn" class="btn secondary-btn" title="Flip vertically">Flip V</button>
+              <button type="button" id="resetXformBtn" class="btn secondary-btn" title="Reset rotate, flip and crop">Reset transform</button>
+            </div>
+            <div class="adj-row crop-nums">
+              <span>Crop %</span>
+              <label>X <input type="number" id="cropX" min="0" max="98" step="1" value="0"></label>
+              <label>Y <input type="number" id="cropY" min="0" max="98" step="1" value="0"></label>
+              <label>W <input type="number" id="cropW" min="2" max="100" step="1" value="100"></label>
+              <label>H <input type="number" id="cropH" min="2" max="100" step="1" value="100"></label>
+            </div>
+          </div>
+
+          <div class="adj-panel hidden" id="adjMotion" data-panel="motion">
+            <div class="adj-row">
+              <span>Speed</span>
+              <div class="seg" id="speedSeg" role="group" aria-label="Clip speed">
+                <button type="button" data-v="0.25" title="Quarter speed">0.25×</button>
+                <button type="button" data-v="0.5" title="Half speed">0.5×</button>
+                <button type="button" data-v="1" class="on" title="Normal speed">1×</button>
+                <button type="button" data-v="1.5" title="One and a half speed">1.5×</button>
+                <button type="button" data-v="2" title="Double speed">2×</button>
+              </div>
+            </div>
+            <div class="slider-grid">
+              <label>Volume <input type="range" id="fxVolume" min="0" max="200" value="100"><span id="fxVolumeV">100%</span></label>
+            </div>
+            <label class="chk"><input type="checkbox" id="fxMute"> Mute this clip</label>
+          </div>
+
+          <div class="adj-panel hidden" id="adjTitles" data-panel="titles">
+            <div class="adj-row">
+              <button type="button" id="addTitleBtn" class="btn secondary-btn" title="Add a title overlay">Add title</button>
+              <button type="button" id="deleteTitleBtn" class="btn secondary-btn" title="Delete the selected title" disabled>Delete title</button>
+            </div>
+            <ul class="title-list" id="titleList"></ul>
+            <div id="titleEditor" class="title-editor hidden">
+              <label>Text <textarea id="titleText" rows="2" maxlength="200"></textarea></label>
+              <div class="adj-row">
+                <label>Start <input type="text" id="titleStart" class="time-field" inputmode="decimal"></label>
+                <label>End <input type="text" id="titleEnd" class="time-field" inputmode="decimal"></label>
+                <button type="button" id="titleStartHere" class="btn secondary-btn" title="Set start to the playhead">Start here</button>
+                <button type="button" id="titleEndHere" class="btn secondary-btn" title="Set end to the playhead">End here</button>
+              </div>
+              <div class="adj-row">
+                <span>Position</span>
+                <div class="seg wrap-seg" id="titlePos" role="group" aria-label="Title position">
+                  <button type="button" data-v="center">Centre</button>
+                  <button type="button" data-v="top">Top</button>
+                  <button type="button" data-v="bottom">Bottom</button>
+                  <button type="button" data-v="top-left">Top left</button>
+                  <button type="button" data-v="top-right">Top right</button>
+                  <button type="button" data-v="bottom-left">Bottom left</button>
+                  <button type="button" data-v="bottom-right">Bottom right</button>
+                </div>
+              </div>
+              <div class="slider-grid">
+                <label>Size <input type="range" id="titleSize" min="4" max="25" value="8"><span id="titleSizeV">8%</span></label>
+                <label>Fade in <input type="range" id="titleFadeIn" min="0" max="20" value="3" step="1"><span id="titleFadeInV">0.3s</span></label>
+                <label>Fade out <input type="range" id="titleFadeOut" min="0" max="20" value="3" step="1"><span id="titleFadeOutV">0.3s</span></label>
+              </div>
+              <div class="adj-row">
+                <label>Colour <input type="color" id="titleColor" value="#ffffff"></label>
+                <label class="chk"><input type="checkbox" id="titleBox" checked> Background box</label>
+              </div>
             </div>
           </div>
 
@@ -122,8 +234,9 @@
             <button type="button" id="keepBtn" class="btn secondary-btn" title="Keep only the In–Out range">Keep</button>
             <button type="button" id="undoBtn" class="btn secondary-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
             <button type="button" id="redoBtn" class="btn secondary-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
-            <button type="button" id="exportBtn" class="btn primary-btn">Export</button>
-            <button type="button" id="resetBtn" class="btn text-btn">New project</button>
+            <button type="button" id="snapBtn" class="btn secondary-btn" title="Save the current frame as a PNG (P)">Save frame</button>
+            <button type="button" id="exportBtn" class="btn primary-btn" title="Export the edited video">Export</button>
+            <button type="button" id="resetBtn" class="btn text-btn" title="Start a new project">New project</button>
           </div>
         </aside>
       </section>
@@ -138,15 +251,18 @@
     </div>
   </div>
 
-  <script src="ve_helpers.js?v=VD2"></script>
-  <script src="ve_edits.js?v=VD2"></script>
-  <script src="ve_seq.js?v=VD2"></script>
-  <script src="ve_theme.js?v=VD2"></script>
-  <script src="ve_dlg.js?v=VD2"></script>
-  <script src="ve_range.js?v=VD2"></script>
-  <script src="ve_store.js?v=VD2"></script>
-  <script src="ve_export.js?v=VD2"></script>
-  <script src="ve_ui.js?v=VD2"></script>
-  <script src="ve_main.js?v=VD2"></script>
+  <script src="ve_helpers.js?v=VD3"></script>
+  <script src="ve_edits.js?v=VD3"></script>
+  <script src="ve_fx.js?v=VD3"></script>
+  <script src="ve_seq.js?v=VD3"></script>
+  <script src="ve_theme.js?v=VD3"></script>
+  <script src="ve_dlg.js?v=VD3"></script>
+  <script src="ve_range.js?v=VD3"></script>
+  <script src="ve_store.js?v=VD3"></script>
+  <script src="ve_draw.js?v=VD3"></script>
+  <script src="ve_export.js?v=VD3"></script>
+  <script src="ve_tip.js?v=VD3"></script>
+  <script src="ve_ui.js?v=VD3"></script>
+  <script src="ve_main.js?v=VD3"></script>
 </body>
 </html>
