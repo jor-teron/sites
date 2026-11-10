@@ -1101,7 +1101,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Title / SHEET_VERSION / ?v=: SH11. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
 
-### 1.82 Spreadsheet charts, release SH12
+### 1.67 Spreadsheet charts, release SH12
 
 - apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
 - Column, bar, line and pie charts from the selected range (or the used area), drawn on a canvas with no libraries. Move / resize, save as PNG, delete with an in-app confirm. At most 8 charts per sheet. Undo covers add / delete / move / resize. Charts are redrawn from current cell values.
