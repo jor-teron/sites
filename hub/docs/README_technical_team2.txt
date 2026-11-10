@@ -824,6 +824,24 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.63 PDF Viewer OCR, release PV2
+
+- apps/lab/pdf-viewer only (current PV1 viewer, not pdf-viewer-old, not system/hub).
+  Scanned / image-only pages get an invisible selectable text layer so Find and
+  copy work. Native pdf.js text layer is used when a page already has 20+ letters
+  or digits; those pages are not OCR'd automatically.
+- OCR action (this page / pages without text / all pages) with progress and Cancel.
+  Auto-detects empty pages after open and offers OCR; never starts on its own.
+  In-app dialogs only. Copy all OCR text and Save as .txt. Language list is only
+  the traineddata already in the repo (English). IndexedDB cache `pdfviewer-ocr`
+  per document fingerprint + page + lang.
+- Reuses apps/office/ocr/vendor (tesseract.js 5.1.1 + eng.traineddata) by relative
+  path, lazy-loaded on first use, no CDN and no second copy of the wasm / model.
+  One page at a time, render scale capped at 2× / 2048 px, worker terminated when
+  the job ends. RELEASE/title/?v= PV2.
+- Limits: no searchable-PDF save; English only; engine needs http(s) (not file://);
+  print still uses page images. Details: apps/lab/pdf-viewer/README.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
