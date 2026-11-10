@@ -1225,7 +1225,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   phone.
 
 
-### 1.77 Hub Office Slides themes, masters, hide and sections, release SL8
+### 1.71 Hub Office Slides themes, masters, hide and sections, release SL8
 
 - `apps/office/slides/` only (plus this section). Branch `apps/sl8-slides` from `apps/sl7-slides` (e341d842).
   `apps/office/shared/` not edited. New `slides_master.js` (`SLMaster`): master / footer / date / hide / section
