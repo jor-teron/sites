@@ -1,8 +1,8 @@
-/* SP1 Sun Position — offline. Place (GPS, city list, lat/lon, saved), NOAA dial and times,
-   date picker + time slider, IST or the place's own time zone. Auto theme follows the Hub. */
+/* SP2 Sun Position — offline. SP1 place, dial and times, plus shadow tool, year chart,
+   sun-path diagram, best fixed-panel tilt, and PNG save. Auto theme follows the Hub. */
 (function () {
   'use strict';
-  var RELEASE = 'SP1';
+  var RELEASE = 'SP2';
   var KEY = 'sun-position-v1';
   var DEFAULT_PLACE = { id: 'diphu', name: 'Diphu', lat: 25.843, lon: 93.432, tz: 'Asia/Kolkata' };
   var $ = function (id) { return document.getElementById(id); };
@@ -15,6 +15,7 @@
     if (s.tzMode !== 'place') s.tzMode = 'ist';
     if (!Array.isArray(s.places)) s.places = [];
     if (!s.currentPlace) s.currentPlace = DEFAULT_PLACE;
+    if (!(s.shadowH > 0)) s.shadowH = 1.8;
     return s;
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* full/blocked */ } }
@@ -25,6 +26,9 @@
   var viewDate = null; /* {y,m,d} in the display time zone, or null = today */
   var viewMin = null;  /* minutes from local midnight, or null = now */
   var locBusy = false;
+  var tab = 'now';
+  var yearCache = null;
+  var panelCache = null;
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -200,7 +204,29 @@
     if (sunC) {
       if (up) sunC.classList.remove('down'); else sunC.classList.add('down');
     }
+
     $('arc').setAttribute('d', arcPath(Sp.dayPath(pl.lat, pl.lon, c.y, c.m, c.d, 8)));
+
+    /* Shadow bearing on the dial (ground direction, opposite the sun). */
+    var sh = up ? Sp.shadow(st.shadowH || 0, pos.elevationApp) : null;
+    var sg = $('shadowG');
+    if (sg) {
+      if (sh && st.shadowH > 0) {
+        var shAz = Sp.shadowAzimuth(pos.azimuth);
+        var a = shAz * Math.PI / 180;
+        var len = R + 6;
+        var x2 = Math.sin(a) * len, y2 = -Math.cos(a) * len;
+        $('shadowLine').setAttribute('x2', x2.toFixed(1));
+        $('shadowLine').setAttribute('y2', y2.toFixed(1));
+        var hx = Math.sin(a) * (len + 9), hy = -Math.cos(a) * (len + 9);
+        var lx = Math.sin(a - 0.18) * (len - 1), ly = -Math.cos(a - 0.18) * (len - 1);
+        var rx = Math.sin(a + 0.18) * (len - 1), ry = -Math.cos(a + 0.18) * (len - 1);
+        $('shadowHead').setAttribute('d', 'M' + hx.toFixed(1) + ' ' + hy.toFixed(1) + ' L' + lx.toFixed(1) + ' ' + ly.toFixed(1) + ' L' + rx.toFixed(1) + ' ' + ry.toFixed(1) + ' Z');
+        sg.removeAttribute('hidden');
+      } else {
+        sg.setAttribute('hidden', '');
+      }
+    }
 
     var az = Math.round(pos.azimuth);
     if (az === 360) az = 0;
@@ -245,6 +271,7 @@
     $('timeSl').value = String(mins);
     $('timeLab').textContent = pad2(Math.floor(mins / 60)) + ':' + pad2(mins % 60) + (live ? ' · live' : '');
     $('tzNote').textContent = 'Times in ' + tzLabel() + ' · Release ' + RELEASE;
+    renderPlan(pos, sh, instant);
   }
 
   function setLive(on) {
@@ -460,10 +487,320 @@
     for (i = 0; i < b.length; i++) b[i].classList.toggle('on', b[i].getAttribute('data-v') === v);
   }
 
+
+  /* ---- Plan tab (shadow, year, sun path, PNG) ---- */
+  function planKey() {
+    var pl = place(), c = chosenCivil();
+    return pl.lat + ',' + pl.lon + ',' + c.y + ',' + displayTz();
+  }
+  function planData() {
+    var k = planKey();
+    if (yearCache && yearCache.k === k) return yearCache;
+    var pl = place(), year = chosenCivil().y, tz = displayTz();
+    var series = Sp.yearDaylight(pl.lat, pl.lon, year, tz);
+    yearCache = {
+      k: k,
+      series: series,
+      marks: Sp.solsticesEquinoxes(series),
+      path: Sp.sunPathDiagram(pl.lat, pl.lon, year, tz)
+    };
+    return yearCache;
+  }
+  function fmtShort(day) {
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (!day) return '—';
+    return day.d + ' ' + months[day.m - 1];
+  }
+  function fmtLen(day) {
+    if (!day) return '—';
+    if (day.polar === 'day') return '24 hours';
+    if (day.polar === 'night') return 'no sunrise';
+    return Sp.formatDayLength(day.dayLengthMinutes);
+  }
+
+  function renderShadowText(pos, sh) {
+    var el = $('shadowOut');
+    if (!el) return;
+    var h = st.shadowH;
+    if (!(h > 0)) { el.textContent = 'Enter a height to see the shadow.'; return; }
+    if (!sh) { el.textContent = 'The sun is down, so there is no shadow.'; return; }
+    var dir = Sp.shadowAzimuth(pos.azimuth);
+    var az = Math.round(dir); if (az === 360) az = 0;
+    var len = sh.length;
+    var lenTxt = len >= 10 ? len.toFixed(1) : (len >= 1 ? len.toFixed(2) : len.toFixed(3));
+    el.textContent = 'Shadow ' + lenTxt + ' m long, towards ' + az + '° ' + Sp.cardinal(dir) + ' (' + sh.ratio.toFixed(2) + ' × the height).';
+  }
+
+  function drawYearChart() {
+    var svg = $('yearSvg');
+    if (!svg) return;
+    var data = planData(), series = data.series, marks = data.marks;
+    var padL = 28, padR = 8, padT = 14, padB = 22;
+    var W = 360, H = 230, pw = W - padL - padR, ph = H - padT - padB;
+    function xOf(doy, n) { return padL + ((doy - 1) / (n - 1)) * pw; }
+    function yOf(min) { return padT + (min / 1440) * ph; }
+    var n = series.length, i, d, risePts = [], setPts = [], bandParts = [], runR = [], runS = [];
+    function flushRun() {
+      var j, pth;
+      if (!runR.length) return;
+      pth = 'M' + runR[0][0].toFixed(1) + ' ' + runR[0][1].toFixed(1);
+      for (j = 1; j < runR.length; j++) pth += ' L' + runR[j][0].toFixed(1) + ' ' + runR[j][1].toFixed(1);
+      for (j = runS.length - 1; j >= 0; j--) pth += ' L' + runS[j][0].toFixed(1) + ' ' + runS[j][1].toFixed(1);
+      pth += ' Z';
+      bandParts.push(pth);
+      runR = []; runS = [];
+    }
+    for (i = 0; i < n; i++) {
+      d = series[i];
+      var x = xOf(d.doy, n);
+      var y0, y1;
+      if (d.polar === 'day') { y0 = yOf(0); y1 = yOf(1440); }
+      else if (d.polar === 'night' || d.sunriseMin == null || d.sunsetMin == null) { flushRun(); continue; }
+      else {
+        y0 = yOf(d.sunriseMin);
+        y1 = yOf(d.sunsetMin > 1440 ? 1440 : d.sunsetMin);
+        if (y1 < y0) y1 = yOf(1440);
+      }
+      risePts.push([x, y0]);
+      setPts.push([x, y1]);
+      runR.push([x, y0]);
+      runS.push([x, y1]);
+    }
+    flushRun();
+    var band = bandParts.join(' ');
+    function poly(pts) {
+      var s = '', j, gap = true;
+      for (j = 0; j < pts.length; j++) {
+        if (j && pts[j][0] - pts[j - 1][0] > (pw / (n - 1)) * 1.8) gap = true;
+        s += (gap ? 'M' : ' L') + pts[j][0].toFixed(1) + ' ' + pts[j][1].toFixed(1);
+        gap = false;
+      }
+      return s;
+    }
+    var hours = [0, 6, 12, 18, 24], ht = '', hi, y;
+    for (hi = 0; hi < hours.length; hi++) {
+      y = yOf(hours[hi] * 60);
+      ht += '<line class="axis" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '"></line>';
+      ht += '<text class="lbl" x="2" y="' + (y + 3).toFixed(1) + '">' + pad2(hours[hi] === 24 ? 0 : hours[hi]) + ':00</text>';
+    }
+    var months = ['J','F','M','A','M','J','J','A','S','O','N','D'], mi, md;
+    for (mi = 0; mi < 12; mi++) {
+      md = series.filter(function (s) { return s.m === mi + 1; })[0];
+      if (!md) continue;
+      ht += '<text class="lbl" text-anchor="middle" x="' + xOf(md.doy, n).toFixed(1) + '" y="' + (H - 6) + '">' + months[mi] + '</text>';
+    }
+    function mark(day, lab) {
+      if (!day) return '';
+      var x = xOf(day.doy, n);
+      return '<line class="mark" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (H - padB) + '"></line>' +
+        '<text class="marklab" x="' + x.toFixed(1) + '" y="' + (padT - 2) + '">' + lab + '</text>';
+    }
+    var marksHtml = mark(marks.march, 'Equinox') + mark(marks.june, 'Solstice') + mark(marks.september, 'Equinox') + mark(marks.december, 'Solstice');
+    svg.innerHTML = '<rect x="0" y="0" width="360" height="230" fill="none"></rect>' + ht +
+      '<path class="band" d="' + band + '"></path>' +
+      '<path class="rise" d="' + poly(risePts) + '"></path>' +
+      '<path class="set" d="' + poly(setPts) + '"></path>' + marksHtml;
+    var cap = $('yearCap');
+    if (cap) {
+      cap.textContent = chosenCivil().y + ': longest day ' + fmtShort(marks.longest) + ' (' + fmtLen(marks.longest) +
+        '), shortest ' + fmtShort(marks.shortest) + ' (' + fmtLen(marks.shortest) + ').';
+    }
+  }
+
+  function drawSunPath() {
+    var svg = $('pathSvg');
+    if (!svg) return;
+    var data = planData().path;
+    var NS = 'http://www.w3.org/2000/svg';
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    function add(tag, at, text) {
+      var e = document.createElementNS(NS, tag);
+      for (var k in at) e.setAttribute(k, at[k]);
+      if (text) e.textContent = text;
+      svg.appendChild(e);
+      return e;
+    }
+    add('circle', { r: 152, 'class': 'face' });
+    add('circle', { r: String(R), 'class': 'horizon' });
+    var labs = [[0, 'N'], [90, 'E'], [180, 'S'], [270, 'W']], i, a;
+    for (i = 0; i < labs.length; i++) {
+      a = labs[i][0] * Math.PI / 180;
+      add('text', { x: (Math.sin(a) * 114).toFixed(1), y: (-Math.cos(a) * 114).toFixed(1), 'class': 'lb' }, labs[i][1]);
+    }
+    function pathOf(points) {
+      var d = '', j, p, pt, started = false;
+      for (j = 0; j < points.length; j++) {
+        p = points[j];
+        if (p.elevation < 0) { started = false; continue; }
+        pt = polar(p.azimuth, p.elevation);
+        d += (started ? ' L' : 'M') + pt.x.toFixed(1) + ' ' + pt.y.toFixed(1);
+        started = true;
+      }
+      return d;
+    }
+    var m, d, cls;
+    for (m = 0; m < data.months.length; m++) {
+      d = pathOf(data.months[m].points);
+      if (!d) continue;
+      cls = (data.months[m].month >= 11 || data.months[m].month <= 2) ? 'month win' : 'month';
+      add('path', { d: d, 'class': cls });
+    }
+    var hour, pts, last, lbl, hp;
+    for (hour = 6; hour <= 18; hour++) {
+      pts = data.hours[hour] || [];
+      d = pathOf(pts);
+      if (d) add('path', { d: d, 'class': 'hour' });
+      /* label at the last above-horizon point */
+      last = null;
+      for (i = 0; i < pts.length; i++) if (pts[i].elevation >= 0) last = pts[i];
+      if (last) {
+        hp = polar(last.azimuth, Math.max(last.elevation, 2));
+        add('text', { x: hp.x.toFixed(1), y: (hp.y - 4).toFixed(1), 'class': 'hlbl' }, String(hour));
+      }
+    }
+  }
+
+  function renderPanel() {
+    var el = $('panelOut');
+    if (!el) return;
+    var pl = place(), year = chosenCivil().y;
+    var k = pl.lat + ',' + pl.lon + ',' + year;
+    var res;
+    if (panelCache && panelCache.k === k) res = panelCache.res;
+    else {
+      res = Sp.bestPanel(pl.lat, pl.lon, year);
+      panelCache = { k: k, res: res };
+    }
+    var face = res.facing === 'south' ? 'south' : 'north';
+    el.textContent = 'Best fixed solar panel for ' + year + ': tilt ' + res.tilt + '° from the ground, facing ' +
+      face + ' (' + Math.round(res.azimuth) + '°). This is a clear-sky geometric estimate, not a weather model.';
+  }
+
+  var planDrawnKey = null;
+  function renderPlan(pos, sh, instant) {
+    renderShadowText(pos, sh);
+    if (!$('shadowH').matches || document.activeElement !== $('shadowH')) {
+      if ($('shadowH') && String($('shadowH').value) !== String(st.shadowH)) $('shadowH').value = st.shadowH;
+    }
+    if (tab !== 'plan') return;
+    var k = planKey();
+    if (planDrawnKey !== k) {
+      drawYearChart();
+      drawSunPath();
+      renderPanel();
+      planDrawnKey = k;
+    }
+  }
+
+  function setTab(v) {
+    tab = v === 'plan' ? 'plan' : 'now';
+    $('pane-now').classList.toggle('on', tab === 'now');
+    $('pane-plan').classList.toggle('on', tab === 'plan');
+    var b = $('tabs').querySelectorAll('button'), i;
+    for (i = 0; i < b.length; i++) b[i].classList.toggle('on', b[i].getAttribute('data-v') === tab);
+    if (tab === 'plan') {
+      planDrawnKey = null;
+      render();
+    }
+  }
+
+  function cssVar(name, fallback) {
+    var s = getComputedStyle(document.documentElement).getPropertyValue(name);
+    return (s && s.trim()) || fallback;
+  }
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
+  }
+  function svgToPng(svg, w, h, filename, after) {
+    var clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width', String(w));
+    clone.setAttribute('height', String(h));
+    var bg = cssVar('--bg', '#f4f1eb'), fg = cssVar('--fg', '#1c1915'), acc = cssVar('--acc', '#c47b12');
+    var mut = cssVar('--mut', '#6b6560'), line = cssVar('--line', '#e5dfd4'), sun = cssVar('--sun', '#e8a020');
+    var arc = cssVar('--arc', '#e8c46a'), card = cssVar('--card', '#fffdf8');
+    var style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.textContent =
+      '.face{fill:' + card + ';stroke:' + line + ';stroke-width:2}' +
+      '.tk{stroke:' + line + ';stroke-width:1}.tk.m{stroke:' + mut + ';stroke-width:1.5}' +
+      '.lb{fill:' + fg + ';font:600 16px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}' +
+      '.horizon{fill:none;stroke:' + line + ';stroke-width:1.5}' +
+      '.arc{stroke:' + arc + ';stroke-width:6;stroke-linecap:round;stroke-linejoin:round;fill:none}' +
+      '.sun{fill:' + sun + ';stroke:' + bg + ';stroke-width:2}.sun.down{fill:' + mut + ';opacity:.55}' +
+      '.shadow{stroke:' + mut + ';stroke-width:2;stroke-dasharray:5 4;fill:none}' +
+      '.shadow-head{fill:' + mut + '}' +
+      '.band{fill:' + arc + ';opacity:.45}.rise{fill:none;stroke:' + acc + ';stroke-width:1.4}' +
+      '.set{fill:none;stroke:' + mut + ';stroke-width:1.4}' +
+      '.axis{stroke:' + line + ';stroke-width:1}.lbl{fill:' + mut + ';font:10px system-ui,sans-serif}' +
+      '.mark{stroke:' + acc + ';stroke-width:1;stroke-dasharray:2 2}.marklab{fill:' + fg + ';font:9px system-ui,sans-serif;text-anchor:middle}' +
+      '.month{fill:none;stroke:' + acc + ';stroke-width:1.2;opacity:.85}.month.win{stroke:' + mut + ';opacity:.7}' +
+      '.hour{fill:none;stroke:' + line + ';stroke-width:1}' +
+      '.hlbl{fill:' + mut + ';font:9px system-ui,sans-serif;text-anchor:middle}';
+    clone.insertBefore(style, clone.firstChild);
+    var xml = new XMLSerializer().serializeToString(clone);
+    var url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      if (!c.toBlob) { after('Saving pictures needs a newer browser.'); return; }
+      c.toBlob(function (b) {
+        if (!b) { after('Could not make the picture.'); return; }
+        downloadBlob(b, filename);
+        after();
+      }, 'image/png');
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); after('Could not draw the picture.'); };
+    img.src = url;
+  }
+
+  function openSavePic() {
+    dialog(
+      '<h2 style="margin-top:0">Save picture</h2>' +
+      '<p class="note">A PNG is saved on this device. The year and sun-path pictures use the current place and year.</p>' +
+      '<p class="err" id="picErr"></p>',
+      [
+        { label: 'Dial', fn: function () {
+          svgToPng($('dial'), 800, 800, 'sun-dial.png', function (err) { if (err) { $('picErr').textContent = err; return false; } });
+          return false;
+        } },
+        { label: 'Year chart', fn: function () {
+          if (planDrawnKey !== planKey()) { drawYearChart(); planDrawnKey = planKey(); }
+          svgToPng($('yearSvg'), 1080, 690, 'sun-year.png', function (err) { if (err) { $('picErr').textContent = err; return false; } });
+          return false;
+        } },
+        { label: 'Sun path', fn: function () {
+          if (planDrawnKey !== planKey()) { drawSunPath(); renderPanel(); planDrawnKey = planKey(); }
+          svgToPng($('pathSvg'), 800, 800, 'sun-path.png', function (err) { if (err) { $('picErr').textContent = err; return false; } });
+          return false;
+        } },
+        { label: 'Close', cls: 'ghost' }
+      ]
+    );
+  }
+
   /* ---- events ---- */
   $('placeBtn').onclick = openPlace;
   $('setBtn').onclick = openSettings;
+  $('tabs').onclick = function (e) {
+    var v = e.target.getAttribute && e.target.getAttribute('data-v');
+    if (v) setTab(v);
+  };
   $('nowBtn').onclick = function () { setLive(true); render(); };
+  $('shadowH').onchange = $('shadowH').oninput = function () {
+    var v = parseFloat($('shadowH').value);
+    if (!(v > 0) || v > 10000) return;
+    st.shadowH = v; save(); render();
+  };
+  $('savePic').onclick = openSavePic;
   $('dateIn').onchange = function () {
     var v = $('dateIn').value;
     var p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);

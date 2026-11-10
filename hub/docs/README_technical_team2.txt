@@ -848,6 +848,25 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 
   Note: 1.53–1.72 were taken by parallel branches, so this section is 1.73.
 
+### 1.74 Sun Position plan tools, release SP2
+
+- apps/tools/sun-position only. Plan tab added (Now | Plan). Date, time slider and Now stay
+  shared above both tabs. Shadow height is remembered in sun-position-v1.shadowH (metres).
+- Shadow: length and ground direction at the chosen instant (height / tan(elevation)); a
+  dashed arrow is drawn on the dial opposite the sun. No shadow when the sun is down.
+- Year chart (SVG): sunrise/sunset daylight band for the current place and year, solstices
+  and equinoxes marked, longest and shortest days named. Polar day and night leave gaps or
+  a full-height band.
+- Sun-path diagram (polar, same zenith-centre projection as the dial): monthly curves for
+  the 21st of each month and clock-hour lines, plus a best year-round fixed solar-panel
+  tilt and azimuth (clear-sky cosine of incidence, no weather model).
+- Save picture: in-app dialog writes the dial, year chart or sun path as a PNG (SVG drawn
+  onto a canvas, no new library).
+- Maths still in sp_calc.js (yearDaylight, solsticesEquinoxes, sunPathDiagram, bestPanel).
+  Tested with `node --check`, `node test_sp_calc.js`, and a static serve + curl smoke test.
+  No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= SP2. Details: apps/tools/sun-position/sun-position_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -3,7 +3,8 @@
    Azimuth is degrees clockwise from north. Elevation is degrees above the horizon.
    Sunrise and sunset use a 90.833° zenith (sun radius + average refraction).
    Polar day and night return null rise/set and polar: 'day' or 'night'.
-   Golden hour is elevation -4° to 6°; blue hour is -6° to -4°. */
+   Golden hour is elevation -4° to 6°; blue hour is -6° to -4°.
+   SP2: year daylight series, solstices/equinoxes, monthly sun-path samples, best fixed-panel tilt. */
 (function (root) {
   'use strict';
 
@@ -395,6 +396,186 @@
     return out;
   }
 
+
+  function daysInYear(year) {
+    return (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+  }
+
+  function ymdFromDoy(year, doy) {
+    var ms = Date.UTC(year, 0, doy);
+    var d = new Date(ms);
+    return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), doy: doy };
+  }
+
+  function localMinutesFromDate(date, tz) {
+    if (!date) return null;
+    var fixed = typeof tz === 'number' ? tz : parseOffsetString(tz);
+    if (fixed != null) {
+      var s = new Date(date.getTime() + fixed * 60000);
+      return s.getUTCHours() * 60 + s.getUTCMinutes() + s.getUTCSeconds() / 60;
+    }
+    var p = zonedParts(date, tz);
+    return p.hourNum * 60 + (+p.minute) + (+p.second) / 60;
+  }
+
+  /* One entry per local civil day of the year, with sunrise/sunset as minutes from local midnight. */
+  function yearDaylight(lat, lon, year, tz) {
+    var n = daysInYear(year), out = [], i, ymd, ev, noonPos, riseMin, setMin, dec;
+    for (i = 1; i <= n; i++) {
+      ymd = ymdFromDoy(year, i);
+      ev = dayEvents(lat, lon, ymd.y, ymd.m, ymd.d);
+      noonPos = position(lat, lon, ev.solarNoon);
+      dec = noonPos.declination;
+      riseMin = ev.sunrise ? localMinutesFromDate(ev.sunrise, tz) : null;
+      setMin = ev.sunset ? localMinutesFromDate(ev.sunset, tz) : null;
+      /* Guard a DST or zone-edge wrap so sunset is after sunrise on the plot when possible. */
+      if (riseMin != null && setMin != null && setMin < riseMin) setMin += 1440;
+      out.push({
+        doy: i, y: ymd.y, m: ymd.m, d: ymd.d,
+        sunriseMin: riseMin,
+        sunsetMin: setMin,
+        dayLengthMinutes: ev.dayLengthMinutes,
+        polar: ev.polar,
+        declination: dec,
+        solarNoon: ev.solarNoon,
+        sunrise: ev.sunrise,
+        sunset: ev.sunset
+      });
+    }
+    return out;
+  }
+
+  function solsticesEquinoxes(series) {
+    if (!series || !series.length) return {};
+    var maxI = 0, minI = 0, i, a, b, eq = [];
+    for (i = 1; i < series.length; i++) {
+      if (series[i].declination > series[maxI].declination) maxI = i;
+      if (series[i].declination < series[minI].declination) minI = i;
+      a = series[i - 1].declination;
+      b = series[i].declination;
+      if (a <= 0 && b > 0) eq.push({ kind: 'march', day: series[i] });
+      if (a >= 0 && b < 0) eq.push({ kind: 'september', day: series[i] });
+    }
+    var maxDec = series[maxI], minDec = series[minI];
+    /* June solstice is the northern-maximum declination (around 21 June), December the minimum. */
+    return {
+      june: maxDec,
+      december: minDec,
+      march: (eq[0] && eq[0].kind === 'march' ? eq[0].day : (eq[0] ? eq[0].day : null)),
+      september: (function () {
+        var j;
+        for (j = 0; j < eq.length; j++) if (eq[j].kind === 'september') return eq[j].day;
+        return eq[1] ? eq[1].day : null;
+      })(),
+      longest: series.reduce(function (b, d) {
+        if (d.dayLengthMinutes == null) return b;
+        if (!b || d.dayLengthMinutes > b.dayLengthMinutes) return d;
+        return b;
+      }, null),
+      shortest: series.reduce(function (b, d) {
+        if (d.dayLengthMinutes == null) return b;
+        if (!b || d.dayLengthMinutes < b.dayLengthMinutes) return d;
+        return b;
+      }, null)
+    };
+  }
+
+  /* Polar sky samples: 21st of each month, and clock-hour lines, elevation apparent. */
+  function sunPathDiagram(lat, lon, year, tz) {
+    var months = [], hours = {}, h, m, ymd, ev, min, instant, pos, pts, step = 10;
+    for (m = 1; m <= 12; m++) {
+      ymd = { y: year, m: m, d: 21 };
+      ev = dayEvents(lat, lon, ymd.y, ymd.m, ymd.d);
+      pts = [];
+      for (min = 0; min < 1440; min += step) {
+        instant = new Date(wallToUtcMs(year, m, 21, Math.floor(min / 60), min % 60, 0, tz));
+        pos = position(lat, lon, instant);
+        pts.push({ min: min, azimuth: pos.azimuth, elevation: pos.elevationApp });
+      }
+      months.push({ month: m, polar: ev.polar, points: pts });
+    }
+    for (h = 0; h <= 23; h++) {
+      pts = [];
+      for (m = 1; m <= 12; m++) {
+        instant = new Date(wallToUtcMs(year, m, 21, h, 0, 0, tz));
+        pos = position(lat, lon, instant);
+        pts.push({ month: m, azimuth: pos.azimuth, elevation: pos.elevationApp });
+      }
+      hours[h] = pts;
+    }
+    return { months: months, hours: hours };
+  }
+
+  function sunVector(az, el) {
+    var e = el * RAD, a = az * RAD;
+    return { x: Math.cos(e) * Math.sin(a), y: Math.cos(e) * Math.cos(a), z: Math.sin(e) };
+  }
+
+  function panelNormal(tilt, azFace) {
+    var t = tilt * RAD, a = azFace * RAD;
+    return { x: Math.sin(t) * Math.sin(a), y: Math.sin(t) * Math.cos(a), z: Math.cos(t) };
+  }
+
+  /* Precompute unit sun vectors (sun up only) for a geometric year-round panel search. */
+  function panelSunSamples(lat, lon, year) {
+    var out = [], doy, ymd, ev, min, instant, pos, s;
+    var stepDay = daysInYear(year) === 366 ? 16 : 15;
+    for (doy = 8; doy <= daysInYear(year); doy += stepDay) {
+      ymd = ymdFromDoy(year, doy);
+      ev = dayEvents(lat, lon, ymd.y, ymd.m, ymd.d);
+      if (ev.polar === 'night') continue;
+      for (min = 0; min < 1440; min += 30) {
+        instant = new Date(Date.UTC(ymd.y, ymd.m - 1, ymd.d, 0, 0, 0) + (min - 12 * 60) * 60000);
+        pos = position(lat, lon, instant);
+        if (pos.elevationApp <= 0) continue;
+        s = sunVector(pos.azimuth, pos.elevationApp);
+        out.push(s);
+      }
+    }
+    return out;
+  }
+
+  function panelScoreSamples(samples, tilt, azFace) {
+    var n = panelNormal(tilt, azFace), score = 0, i, s, c;
+    for (i = 0; i < samples.length; i++) {
+      s = samples[i];
+      c = s.x * n.x + s.y * n.y + s.z * n.z;
+      if (c > 0) score += c;
+    }
+    return score;
+  }
+
+  /* Geometric year-round tilt and azimuth (clear-sky cosine of incidence). No weather. */
+  function bestPanel(lat, lon, year) {
+    var samples = panelSunSamples(lat, lon, year);
+    var facing = lat >= 0 ? 180 : 0;
+    var tilt, az, bestT = 0, bestAz = facing, bestS = -1, sc;
+    if (!samples.length) return { tilt: 0, azimuth: facing, facing: facing === 180 ? 'south' : 'north', score: 0 };
+    for (tilt = 0; tilt <= 90; tilt += 2) {
+      sc = panelScoreSamples(samples, tilt, facing);
+      if (sc > bestS) { bestS = sc; bestT = tilt; }
+    }
+    var t0 = Math.max(0, bestT - 2), t1 = Math.min(90, bestT + 2);
+    for (tilt = t0; tilt <= t1; tilt += 1) {
+      sc = panelScoreSamples(samples, tilt, facing);
+      if (sc > bestS) { bestS = sc; bestT = tilt; }
+    }
+    for (az = facing - 30; az <= facing + 30; az += 5) {
+      sc = panelScoreSamples(samples, bestT, norm360(az));
+      if (sc > bestS) { bestS = sc; bestAz = norm360(az); }
+    }
+    for (az = bestAz - 4; az <= bestAz + 4; az += 1) {
+      sc = panelScoreSamples(samples, bestT, norm360(az));
+      if (sc > bestS) { bestS = sc; bestAz = norm360(az); }
+    }
+    return {
+      tilt: bestT,
+      azimuth: bestAz,
+      facing: (bestAz > 90 && bestAz < 270) ? 'south' : 'north',
+      score: bestS
+    };
+  }
+
   var api = {
     julianDay: julianDay,
     julianCentury: julianCentury,
@@ -418,7 +599,14 @@
     dayPath: dayPath,
     norm360: norm360,
     parseOffsetString: parseOffsetString,
-    SUN_RISE_ZENITH: SUN_RISE_ZENITH
+    SUN_RISE_ZENITH: SUN_RISE_ZENITH,
+    daysInYear: daysInYear,
+    ymdFromDoy: ymdFromDoy,
+    localMinutesFromDate: localMinutesFromDate,
+    yearDaylight: yearDaylight,
+    solsticesEquinoxes: solsticesEquinoxes,
+    sunPathDiagram: sunPathDiagram,
+    bestPanel: bestPanel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.SpCalc = api;
 })(this);
