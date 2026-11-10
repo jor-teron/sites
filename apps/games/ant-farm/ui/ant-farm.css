@@ -1,10 +1,46 @@
-html,body{margin:0;height:100%;overflow:hidden;background:#1a130c;color:#ead9c0;font:13px system-ui,sans-serif;touch-action:none}
-canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
-#bar{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:rgba(30,20,10,.85);z-index:2}
-#bar b{letter-spacing:2px;color:#f3c77a}#ver{color:#9b8;font-size:11px}
-#back{color:#f3c77a;text-decoration:none;font-size:18px;padding:0 4px}
-select,button,input{font:inherit}select,button,#seed{background:#2b1f12;color:#ead9c0;border:1px solid #5a4226;border-radius:4px;padding:3px 6px}
-#seed{width:70px}button:hover{background:#3d2c19}
-#stats{position:fixed;left:0;right:0;bottom:0;z-index:2;padding:5px 8px;background:rgba(30,20,10,.85);color:#e8d2a8;pointer-events:none;white-space:nowrap;overflow:hidden}
-@media (max-width:600px){#bar{font-size:12px;gap:4px}#bar b{display:none}#stats{font-size:11px;white-space:normal}}
-#bar .gs-gear{width:28px!important;height:28px!important;font-size:17px!important;margin-left:auto}
+/* Ant Farm chrome (AF-4a). Farm art stays earthy; only the bars and page follow the theme. */
+:root, html.dark{
+  --af-bg:#1a130c; --af-bar:rgba(30,20,10,.92); --af-ink:#ead9c0; --af-muted:#9b8;
+  --af-accent:#f3c77a; --af-btn:#2b1f12; --af-bd:#5a4226; --af-hover:#3d2c19;
+  --af-panel:rgba(28,20,12,.96);
+}
+html.light{
+  --af-bg:#d9c4a4; --af-bar:rgba(247,238,222,.94); --af-ink:#3a2a18; --af-muted:#5a7a48;
+  --af-accent:#7a4e18; --af-btn:#f3e6d0; --af-bd:#c4a882; --af-hover:#e8d5b4;
+  --af-panel:rgba(255,250,240,.97);
+}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--af-bg);color:var(--af-ink);font:13px system-ui,sans-serif;touch-action:none}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:0}
+#bar{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:nowrap;gap:5px;align-items:center;
+  padding:5px 8px;padding-top:max(5px,env(safe-area-inset-top));background:var(--af-bar);z-index:2;
+  height:40px;box-sizing:border-box;min-width:0}
+#bar b{letter-spacing:1.4px;color:var(--af-accent);font-size:12px;flex:0 0 auto;white-space:nowrap}
+#ver{color:var(--af-muted);font-size:11px;flex:0 0 auto}
+#back{color:var(--af-accent);text-decoration:none;font-size:18px;padding:0 4px;flex:0 0 auto;line-height:1}
+select,button,input{font:inherit;color:var(--af-ink)}
+select,button,#seed,#moreBtn{background:var(--af-btn);color:var(--af-ink);border:1px solid var(--af-bd);border-radius:4px;padding:3px 6px}
+#seed{width:70px}button:hover,#moreBtn:hover{background:var(--af-hover)}
+#tool{min-width:4.6em;max-width:7.5em}
+.speed-wrap{display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;white-space:nowrap}
+#speed{width:72px;vertical-align:middle}
+#moreBtn{width:28px;height:28px;padding:0;font-size:16px;line-height:1;flex:0 0 auto;margin-left:auto}
+#stats{position:fixed;left:0;right:0;bottom:0;z-index:2;padding:5px 8px;padding-bottom:max(5px,env(safe-area-inset-bottom));
+  background:var(--af-bar);color:var(--af-ink);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#more{position:fixed;top:44px;right:8px;z-index:3;display:none;flex-direction:column;gap:8px;min-width:180px;
+  padding:10px;background:var(--af-panel);border:1px solid var(--af-bd);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#more.open{display:flex}
+#more label{display:flex;align-items:center;gap:6px}
+#more .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#bar .gs-gear{width:28px!important;height:28px!important;font-size:17px!important;margin-left:0;flex:0 0 auto}
+html.light #bar .gs-gear{background:rgba(80,50,20,.18)!important;color:var(--af-accent)!important}
+@media (max-width:600px){
+  #bar{font-size:12px;gap:4px;padding-left:6px;padding-right:6px}
+  #ver,.wide-only{display:none}
+  #bar b{display:block;letter-spacing:1px;font-size:11px}
+  #speed{width:64px}
+  #stats{font-size:11px;white-space:nowrap}
+}
+@media (min-width:601px){
+  #moreBtn{margin-left:4px}
+  .phone-reset{display:none}
+}
