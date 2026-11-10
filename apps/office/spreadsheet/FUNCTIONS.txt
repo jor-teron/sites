@@ -43,6 +43,12 @@ RANGES
   A1:C1     row
   A1:C5     block
 
+SHEET REFS (SH8)
+  Sheet2!A1           a cell on another sheet
+  Sheet2!A1:B5        a range on another sheet
+  'My Sheet'!A1       a name with a space (or other punctuation) must be quoted
+  Renaming a sheet updates these; deleting it turns them into #REF!
+
 ABSOLUTE REFS ($)
   $A$1      column and row fixed when copied / filled
   A$1       row fixed
@@ -58,7 +64,7 @@ GRID
 ERRORS
   #DIV/0!   division by zero
   #NUM!     number too large / not a number (e.g. 10^400, SQRT(-1))
-  #REF!     reference outside the sheet (e.g. A150)
+  #REF!     reference outside the sheet (e.g. A150), a deleted cell, or a missing sheet
   #LOOP!    circular reference (A1=B1, B1=A1)
   #ERR      formula not understood
 

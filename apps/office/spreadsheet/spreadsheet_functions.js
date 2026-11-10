@@ -68,7 +68,7 @@ function evalFunc(name, args) {
       list = rangeCells(args[i]);
       if (list) {
         for (a0 = 0; a0 < list.length; a0++) {
-          if (!isEmpty(list[a0].r, list[a0].c)) acc++;
+          if (!isEmpty(list[a0].r, list[a0].c, list[a0].si)) acc++;
         }
       } else {
         v = evalExpr(args[i]);
@@ -98,7 +98,7 @@ function evalFunc(name, args) {
 
   if (n === "ISBLANK") {
     list = rangeCells(args[0] || "");
-    if (list && list.length === 1) return isEmpty(list[0].r, list[0].c);
+    if (list && list.length === 1) return isEmpty(list[0].r, list[0].c, list[0].si);
     v = evalExpr(args[0] || "");
     return v === "" || v === null || v === undefined;
   }

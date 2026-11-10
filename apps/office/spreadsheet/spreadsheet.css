@@ -229,11 +229,13 @@ td.cell.selected .fill-handle { display: block; }
 /* Print / Save as PDF */
 @media print {
   body { background: #fff; color: #000; }
-  .toolbar, .status { display: none !important; }
+  .toolbar, .status, .sheet-footer { display: none !important; }
   .sheet-wrap {
     overflow: visible;
     height: auto;
   }
+  th, td.row-num, td.cell { position: static !important; top: auto !important; left: auto !important; }
+  tr.sheet-hidden, col.sheet-hidden, th.sheet-hidden, td.sheet-hidden { display: none !important; }
   table.sheet {
     font-size: 10px;
   }
@@ -245,3 +247,107 @@ td.cell.selected .fill-handle { display: block; }
   td.cell.selected { outline: none; }
   td.cell.sel-band { box-shadow: none; }
 }
+
+/* SH8: hidden rows / columns, freeze markers, sheet tabs */
+tr.sheet-hidden, col.sheet-hidden, th.sheet-hidden, td.sheet-hidden { display: none; }
+th.hide-mark-left, td.hide-mark-left { box-shadow: inset 3px 0 0 var(--sel); }
+th.hide-mark-right, td.hide-mark-right { box-shadow: inset -3px 0 0 var(--sel); }
+td.row-num.hide-mark-top { box-shadow: inset 0 3px 0 var(--sel); }
+td.row-num.hide-mark-bottom { box-shadow: inset 0 -3px 0 var(--sel); }
+td.cell.frozen-cell { background: var(--cell); }
+th.frozen-cell, td.row-num.frozen-cell { background: var(--head); }
+
+.sheet-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 28px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  padding: 0 6px;
+  overflow: hidden;
+}
+.sheet-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.sheet-tab {
+  flex: 0 0 auto;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 12px;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.sheet-tab:hover { background: var(--hover); }
+.sheet-tab.on {
+  background: var(--on);
+  color: var(--on-text, var(--text));
+  font-weight: 600;
+}
+.sheet-tab-add {
+  flex: 0 0 auto;
+  width: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.sheet-tab-add:hover { background: var(--hover); }
+.sheet-stats {
+  margin-left: auto;
+  padding: 4px 8px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.sheet-footer .status {
+  padding: 4px 8px;
+  margin-left: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sheet-stats:not([hidden]) + .status { margin-left: 0; }
+.sheet-footer .sheet-stats:not([hidden]) { margin-left: auto; }
+.sheet-tab-menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 160px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px var(--shadow);
+  padding: 4px 0;
+}
+.sheet-tab-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.sheet-tab-item:hover { background: var(--hover); }
+.sheet-tab-item:disabled { opacity: 0.4; cursor: default; }
+
+.of-ribbon .of-group-label { color: var(--muted); font-size: 11px; padding: 0 4px; }

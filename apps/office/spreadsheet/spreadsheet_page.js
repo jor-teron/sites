@@ -17,7 +17,11 @@ var pageSetup = Object.assign({}, PAGE_DEFAULTS);
 
 function loadPageSetup() {
   var raw, d;
-  try { raw = localStorage.getItem(PAGE_STORE_KEY); d = raw ? JSON.parse(raw) : null; } catch (e) { d = null; }
+  try {
+    raw = localStorage.getItem(PAGE_STORE_KEY);
+    if (!raw) raw = localStorage.getItem("sheet-v2-page");
+    d = raw ? JSON.parse(raw) : null;
+  } catch (e) { d = null; }
   pageSetup = Object.assign({}, PAGE_DEFAULTS, d || {});
   if (pageSetup.orientation !== "landscape") pageSetup.orientation = "portrait";
   if (!OfficePage.papers[pageSetup.paper]) pageSetup.paper = PAGE_DEFAULTS.paper;
