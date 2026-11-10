@@ -281,4 +281,4 @@ const BSFx = (() => {
 
   return { off, busy, time, hook, paint, playShot, setAmbient, kick, stop, add, clearView, drop, bindSettings, needLoop };
 })();
-window.BSFx = BSFx;
+if (typeof window !== 'undefined') window.BSFx = BSFx;

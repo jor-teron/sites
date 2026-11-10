@@ -1,5 +1,5 @@
 /*
- * Battleship — shared Games Settings bridge (SHIP-2b), same shape as tic-tac-toe/ui/settings.js.
+ * Battleship — shared Games Settings bridge (SHIP-2c), same shape as tic-tac-toe/ui/settings.js.
  * Reads window.GameSettings; if it did not load, every call falls back to fixed defaults.
  *
  * Used:     theme (light / dark; auto = Hub theme, else device), sfx + masterVolume (shot / hit / sunk / win sounds),

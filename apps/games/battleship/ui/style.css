@@ -1,5 +1,5 @@
 /*
- * Battleship — styles (SHIP-2b). Follows the shared theme (html.dark). Auto (System) is the default.
+ * Battleship — styles (SHIP-2c). Follows the shared theme (html.dark). Auto (System) is the default.
  * The two boards and the placement tray sit together as a centred cluster, so the tray no longer
  * floats to the far edge on a wide screen. Chips do not wrap mid-label. Short phone and landscape
  * layouts keep the grids as large as the chrome allows.
@@ -56,6 +56,18 @@ button.link { background: none; border-color: transparent; color: var(--muted); 
 .help-card ul { padding-left: 18px; margin-bottom: 12px; font-size: .9rem; line-height: 1.4; }
 .help-card li { margin-bottom: 5px; }
 
+
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; user-select: none; }
+.chk input { width: 1em; height: 1em; accent-color: var(--accent); }
+.dlg-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.stats-card { max-width: 560px; width: min(560px, 100%); }
+.stats-card p { margin: 0 0 8px; line-height: 1.4; font-size: .9rem; }
+.stats-note { color: var(--muted); font-size: .82rem !important; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: .8rem; margin: 8px 0 14px; }
+.stats-table th, .stats-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+.stats-table th { font-size: .72rem; color: var(--muted); font-weight: 600; }
+canvas:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* Wide / landscape: boards side by side, tray parked beside the grid (not at the screen edge). */
 .end-card { text-align: center; border: 1px solid var(--border); min-width: 240px; }
 .end-card h2 { font-size: 1.4rem; margin-bottom: 6px; }
@@ -76,6 +88,7 @@ button.link { background: none; border-color: transparent; color: var(--muted); 
   .chip { font-size: .66rem; padding: 1px 6px; max-width: 100%; overflow: hidden; }
   .toolbar button, .toolbar select { width: auto; flex: 1 1 calc(50% - 4px); padding: 4px 6px; font-size: .7rem; min-width: 0; max-width: 100%; }
   .toolbar select { flex-basis: 100%; }
+  .toolbar .chk { flex-basis: 100%; font-size: .66rem; padding: 3px 6px; }
   .toolbar button.link { flex-basis: auto; }
   .tray { max-width: 124px; gap: 4px; } .tray button { padding: 3px 5px; font-size: .66rem; }
   .fleet-list { margin-top: 2px; gap: 2px; }

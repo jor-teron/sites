@@ -1,5 +1,5 @@
 /*
- * Battleship — canvas renderer (SHIP-2a). A view is the big grid or the small one.
+ * Battleship — canvas renderer (SHIP-2c). A view is the big grid or the small one.
  * Draws a naval-chart frame, animated water, column letters and row numbers, the five
  * distinct ships (ui/ships.js), a drag/place ghost, misses, hits and the last-shot ring.
  * Water motion is driven by ui/fx.js and only advances while effects are playing
@@ -167,6 +167,14 @@ const BSRender = (() => {
         g.strokeStyle = C.ring; g.lineWidth = Math.max(2, cell * 0.08);
         const c = st.last;
         g.strokeRect(cx(c % N) + 1.5, cy(Math.floor(c / N)) + 1.5, cell - 3, cell - 3);
+      }
+      if (typeof st.cursor === 'number' && st.cursor >= 0) {
+        const c = st.cursor;
+        g.save();
+        g.strokeStyle = C.compass; g.lineWidth = Math.max(1.8, cell * 0.08);
+        g.setLineDash([cell * 0.28, cell * 0.16]);
+        g.strokeRect(cx(c % N) + 2, cy(Math.floor(c / N)) + 2, cell - 4, cell - 4);
+        g.restore();
       }
       if (window.BSFx) window.BSFx.paint(g, st.id || cv.id, { cx, cy, cell, px, ox: ox() });
       if (st.dim) { g.fillStyle = C.dim; g.fillRect(0, 0, px, px); }

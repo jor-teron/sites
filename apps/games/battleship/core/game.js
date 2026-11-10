@@ -1,67 +1,94 @@
 /*
- * Battleship — game controller (SHIP-2b). Wires rules, AI, renderer, sound, settings and the page.
- * Flow: place ships (drag or tap; Rotate; Random; Ready) → take turns firing one shot each → first
- * to sink the whole enemy fleet wins.
+ * Battleship — game controller (SHIP-2c). Wires rules, AI, renderer, sound, settings and the page.
+ * Flow: place ships (drag or tap; Rotate; Random; Ready) → take turns firing → first to sink the
+ * whole enemy fleet wins. Classic: one shot each turn. Salvo: one shot per ship still afloat at
+ * the start of the volley. Fleet is classic 5-4-3-3-2 or a smaller skirmish 4-3-2. An optional
+ * house rule forbids ships from touching, even at a corner.
  * Dragging lifts a ship off the board and shows a ghost on mouse and touch. A tap near the edge
  * no longer slides the ship — if it would hang off, the drop is refused.
  * vs CPU: you are Player 1 and fire first; the computer hides its fleet at random.
  * 2 players: one device. Between turns a full-screen cover hides both grids.
  * Cannon arcs, splash, explosions, fire, a radar sweep and a win card come from ui/fx.js.
- * Saves wins, mode and the game in progress (BS_CONFIG.storeKey).
+ * Saves wins, mode, rules, career stats and the game in progress (BS_CONFIG.storeKey).
+ * New game and a rules change ask first if a match is under way. Arrow keys move a cursor on
+ * the big grid; Enter or Space fires or places. The status line is aria-live.
  */
 (() => {
-  const R = BSRules, AI = BSAI, CFG = BS_CONFIG, S = BS_SETTINGS, N = R.N;
+  const R = BSRules, AI = BSAI, CFG = BS_CONFIG, S = BS_SETTINGS, ST = BSStats, N = R.N;
   const $ = (id) => document.getElementById(id);
   const other = (p) => 3 - p;
 
   function load() {
-    try { const s = JSON.parse(localStorage.getItem(CFG.storeKey)); if (s && s.score && s.score.cpu && s.score.pvp) return s; } catch (_) {}
-    return { score: { cpu: { 1: 0, 2: 0 }, pvp: { 1: 0, 2: 0 } }, mode: CFG.difficultyToLevel[S.get('difficulty')] || 'medium', game: null };
+    let raw = null;
+    try { raw = JSON.parse(localStorage.getItem(CFG.storeKey)); } catch (_) {}
+    return ST.loadState(raw, CFG.difficultyToLevel, S.get('difficulty'));
   }
   const saved = load();
   const save = () => { try { localStorage.setItem(CFG.storeKey, JSON.stringify(saved)); } catch (_) {} };
 
   let g, sel = 0, orient = 'h', hover = -1, flash = '', cpuTimer = 0, drag = null, fxLock = false, fxGen = 0, sinking = { 1: [], 2: [] };
+  let cursor = 0, kbOn = false, pending = null;
   const isCpu = () => saved.mode !== '2p';
   const tally = () => saved.score[isCpu() ? 'cpu' : 'pvp'];
   const who = (p) => (isCpu() ? (p === 1 ? 'You' : 'Computer') : CFG.names[p]);
   const viewer = () => (isCpu() ? 1 : g.phase === 'place' ? g.placer : g.phase === 'over' ? g.winner : g.turn);
   const canFire = () => g.phase === 'battle' && !g.cover && !g.shotDone && !fxLock && !(isCpu() && g.turn === 2);
+  const playModeOf = () => g.playMode || saved.playMode || 'classic';
+  const volleySize = (p) => (playModeOf() === 'salvo' ? R.salvoShots(g.b[p]) : 1);
+  const startVolley = (p) => { g.volley = volleySize(p); g.volleyLeft = g.volley; };
+  const dirty = () => {
+    if (!g || g.phase === 'over') return false;
+    if (g.phase === 'battle') return true;
+    return g.b[1].ships.some((s) => s.x >= 0) || g.b[2].ships.some((s) => s.x >= 0);
+  };
 
   function fresh() {
-    const b = { 1: R.newBoard(), 2: R.newBoard() };
+    const fleet = saved.fleet || 'classic', noTouch = !!saved.noTouch, playMode = saved.playMode || 'classic';
+    const b = { 1: R.newBoard(fleet, noTouch), 2: R.newBoard(fleet, noTouch) };
     if (isCpu()) R.randomFleet(b[2]);
     return { b, phase: 'place', placer: 1, turn: 1, winner: 0, stats: { 1: { s: 0, h: 0 }, 2: { s: 0, h: 0 } },
-      note: { 1: '', 2: '' }, last: { 1: -1, 2: -1 }, shotDone: false, cover: null };
+      note: { 1: '', 2: '' }, last: { 1: -1, 2: -1 }, shotDone: false, cover: null,
+      playMode, fleet, noTouch, volley: 1, volleyLeft: 1 };
   }
   function persist() {
     saved.game = Object.assign({}, g, { b: { 1: R.serialize(g.b[1]), 2: R.serialize(g.b[2]) } });
     save();
   }
-  function newGame() {
+  function applyNewGame() {
     clearTimeout(cpuTimer);
     if (drag) cancelDrag(false);
     fxGen++; fxLock = false; sinking = { 1: [], 2: [] };
     if (window.BSFx) BSFx.drop();
     const end = $('endCard'); if (end) end.hidden = true;
-    g = fresh(); sel = 0; orient = 'h'; hover = -1; flash = '';
+    hideConfirm();
+    g = fresh(); sel = 0; orient = 'h'; hover = -1; flash = ''; cursor = 0;
     persist(); refresh(); fit();
+  }
+  function newGame() { applyNewGame(); }
+  function requestNewGame() {
+    if (!dirty()) { applyNewGame(); return; }
+    askConfirm('Start a new game? The current match will be lost.', () => applyNewGame());
   }
   function restore() {
     const o = saved.game;
     try {
       if (o && o.b && o.stats && ['place', 'battle', 'over'].indexOf(o.phase) >= 0) {
-        g = Object.assign(fresh(), o, { b: { 1: R.deserialize(o.b[1]), 2: R.deserialize(o.b[2]) } });
+        const fleet = o.fleet || saved.fleet || 'classic';
+        g = Object.assign(fresh(), o, { b: { 1: R.deserialize(o.b[1], fleet), 2: R.deserialize(o.b[2], fleet) } });
+        if (g.playMode !== 'salvo') g.playMode = 'classic';
+        if (g.fleet !== 'skirmish') g.fleet = R.fleetIdOf(g.b[1].ships) || fleet;
+        g.noTouch = !!(g.b[1] && g.b[1].noTouch);
+        if (g.volleyLeft == null || g.volley == null) startVolley(g.turn);
         if (isCpu() && !R.allPlaced(g.b[2])) R.randomFleet(g.b[2]);
         sel = g.phase === 'place' ? nextUnplaced(-1) : -1; flash = '';
         if (!isCpu() && g.phase !== 'over') {
-          if (g.shotDone) { g.shotDone = false; g.turn = other(g.turn); }
+          if (g.shotDone) { g.shotDone = false; g.turn = other(g.turn); startVolley(g.turn); }
           if (!g.cover) g.cover = { p: g.phase === 'place' ? g.placer : g.turn, place: g.phase === 'place' };
         }
         refresh(); maybeCpu(); return;
       }
     } catch (_) { /* bad save: start fresh */ }
-    newGame();
+    applyNewGame();
   }
 
   // ---- drawing ----
@@ -83,17 +110,23 @@
   function refresh() {
     const v = viewer(), placing = g.phase === 'place';
     $('app').classList.toggle('placing', placing);
+    const cur = kbOn && !g.cover && (placing || canFire() || fxLock) ? cursor : -1;
     if (placing) {
-      big.set({ id: 'big', board: g.b[g.placer], showShips: true, sel, ghost: ghost(), last: -1, dim: false, sinking: [], pulse: false });
+      big.set({ id: 'big', board: g.b[g.placer], showShips: true, sel, ghost: ghost(), last: -1, dim: false, sinking: [], pulse: false, cursor: cur });
       $('bigCap').textContent = isCpu() ? 'Your fleet' : CFG.names[g.placer] + "'s fleet";
     } else {
       const over = g.phase === 'over';
-      big.set({ id: 'big', board: g.b[other(v)], showShips: over, sel: -1, ghost: null, last: g.last[v], dim: !over && !canFire() && !fxLock, sinking: sinking[other(v)], pulse: window.BSFx && !BSFx.off() });
-      mini.set({ id: 'mini', board: g.b[v], showShips: true, sel: -1, ghost: null, last: g.last[other(v)], dim: false, sinking: sinking[v], pulse: window.BSFx && !BSFx.off() });
+      big.set({ id: 'big', board: g.b[other(v)], showShips: over, sel: -1, ghost: null, last: g.last[v], dim: !over && !canFire() && !fxLock, sinking: sinking[other(v)], pulse: window.BSFx && !BSFx.off(), cursor: over ? -1 : cur });
+      mini.set({ id: 'mini', board: g.b[v], showShips: true, sel: -1, ghost: null, last: g.last[other(v)], dim: false, sinking: sinking[v], pulse: window.BSFx && !BSFx.off(), cursor: -1 });
       $('bigCap').textContent = over ? who(other(v)) + "'s fleet" : (isCpu() ? 'Enemy waters' : CFG.names[other(v)] + "'s waters");
       $('miniCap').textContent = (isCpu() ? 'Your' : CFG.names[v] + "'s") + ' fleet';
     }
-    tray(); fleets(); status(); cover(); ambient();
+    tray(); fleets(); status(); cover(); ambient(); liveGrid();
+  }
+  function liveGrid() {
+    const el = $('big'); if (!el) return;
+    const lab = R.label(cursor);
+    el.setAttribute('aria-label', g.phase === 'place' ? 'Your fleet grid, cursor ' + lab : 'Enemy waters, cursor ' + lab);
   }
   function tray() {
     const el = $('tray');
@@ -165,17 +198,20 @@
       if (drag) t = pre + 'drop the ' + b.ships[sel].name + ' on a square';
       else if (sel >= 0) t = pre + 'drag or tap a square for the ' + b.ships[sel].name + ' (' + b.ships[sel].size + ')';
       else t = R.allPlaced(b) ? pre + 'all ships placed – press Ready' : pre + 'pick a ship, then drag it onto the grid';
-      if (!flash && !drag) $('note').textContent = down + ' of ' + b.ships.length + ' placed. Ships can touch but not overlap.';
+      const rule = (g.noTouch || saved.noTouch) ? 'Ships may not touch, even at a corner.' : 'Ships can touch but not overlap.';
+      if (!flash && !drag) $('note').textContent = down + ' of ' + b.ships.length + ' placed. ' + rule;
     } else if (isCpu() && g.turn === 2) t = 'Computer is aiming…';
     else if (g.shotDone) t = 'Press Pass device and hand it to ' + CFG.names[other(g.turn)];
-    else t = (isCpu() ? 'Your turn' : CFG.names[g.turn] + "'s turn") + ': tap a square on the big grid to fire';
+    else {
+      t = (isCpu() ? 'Your turn' : CFG.names[g.turn] + "'s turn") + ': tap a square on the big grid to fire';
+      if (playModeOf() === 'salvo' && g.volley) t += ' – shot ' + (g.volley - (g.volleyLeft || 1) + 1) + ' of ' + g.volley;
+    }
     $('status').textContent = t.charAt(0).toUpperCase() + t.slice(1);
     if (g.phase !== 'place') $('note').textContent = [g.note[1], g.note[2]].filter(Boolean).join(' · ');
     const placing = g.phase === 'place';
     for (const p of [1, 2]) {
       const st = g.stats[p];
       $('lbl' + p).textContent = isCpu() ? who(p) : 'P' + p;
-      // During placement the "5 afloat" figure is meaningless (nobody has fired). Show placed count for you only.
       if (placing) {
         if (p === (isCpu() ? 1 : g.placer)) $('st' + p).textContent = g.b[p].ships.filter((s) => s.x >= 0).length + ' of ' + g.b[p].ships.length + ' placed';
         else $('st' + p).textContent = isCpu() ? 'waiting' : 'not placed yet';
@@ -185,12 +221,18 @@
       $('wl' + p).textContent = isCpu() ? who(p) : 'P' + p;
       $('win' + p).textContent = tally()[p];
     }
-    $('modeSel').value = saved.mode;
+    syncSelects();
     for (const id of ['rotBtn', 'randBtn', 'readyBtn']) $(id).hidden = !placing;
     $('readyBtn').disabled = !R.allPlaced(g.b[g.placer]);
     $('rotBtn').textContent = 'Rotate ↻ ' + (orient === 'h' ? 'across' : 'down');
     $('passBtn').hidden = isCpu() || g.phase !== 'battle';
     $('passBtn').disabled = !g.shotDone;
+  }
+  function syncSelects() {
+    if ($('modeSel')) $('modeSel').value = saved.mode;
+    if ($('playSel')) $('playSel').value = saved.playMode || 'classic';
+    if ($('fleetSel')) $('fleetSel').value = saved.fleet || 'classic';
+    if ($('touchChk')) $('touchChk').checked = !!saved.noTouch;
   }
   function cover() {
     const c = g.cover;
@@ -200,6 +242,62 @@
     $('coverMsg').textContent = 'Pass the device to ' + CFG.names[c.p] + '. ' + CFG.names[other(c.p)] + ', no peeking!' +
       (!c.place && g.note[other(c.p)] ? ' Last shot: ' + g.note[other(c.p)] + '.' : '');
     $('coverBtn').textContent = "I'm " + CFG.names[c.p] + ' – show my grids';
+  }
+
+  // ---- confirm + stats ----
+  function hideConfirm() { const el = $('confirmDlg'); if (el) el.hidden = true; pending = null; }
+  function askConfirm(msg, yes) {
+    pending = yes;
+    $('confirmMsg').textContent = msg;
+    $('confirmDlg').hidden = false;
+  }
+  function changeOption(key, value) {
+    if (saved[key] === value) return;
+    const apply = () => { saved[key] = value; save(); applyNewGame(); };
+    if (!dirty()) apply();
+    else askConfirm('Change the rules and start a new game? The current match will be lost.', apply);
+    syncSelects();
+  }
+  function fmtRow(row) {
+    if (!row || !row.games) return '—';
+    const avg = ST.avgShots(row);
+    const accP = Math.round(ST.accuracy(row) * 100);
+    const winP = Math.round((100 * row.wins) / row.games);
+    return row.games + ' games, ' + row.wins + ' wins (' + winP + '%), avg shots ' + (row.wins ? avg.toFixed(1) : '—') + ', ' + accP + '% hits, streak ' + row.streak + ' (best ' + row.best + ')';
+  }
+  function showStats() {
+    const el = $('statsBody'); if (!el) return;
+    el.textContent = '';
+    const add = (label, text) => {
+      const p = document.createElement('p');
+      const b = document.createElement('b'); b.textContent = label; p.appendChild(b);
+      p.appendChild(document.createTextNode(' ' + text));
+      el.appendChild(p);
+    };
+    add('Overall', fmtRow(saved.career.all));
+    const chips = 'You ' + saved.score.cpu[1] + '–' + saved.score.cpu[2] + ' vs CPU,  P1 ' + saved.score.pvp[1] + '–' + saved.score.pvp[2] + ' in 2-player (includes games from before detailed stats).';
+    const note = document.createElement('p'); note.className = 'stats-note'; note.textContent = chips; el.appendChild(note);
+    const rows = ST.rowsForView(saved.career);
+    if (rows.length) {
+      const table = document.createElement('table');
+      table.className = 'stats-table';
+      const head = document.createElement('tr');
+      ['Mode', 'Level', 'Games', 'Wins', 'Avg shots', 'Accuracy', 'Streak'].forEach((h) => { const th = document.createElement('th'); th.textContent = h; head.appendChild(th); });
+      table.appendChild(head);
+      const levelName = { easy: 'Easy', medium: 'Medium', hard: 'Hard', '2p': '2 players' };
+      rows.forEach((r) => {
+        const tr = document.createElement('tr');
+        const avg = r.row.wins ? ST.avgShots(r.row).toFixed(1) : '—';
+        const accP = Math.round(ST.accuracy(r.row) * 100) + '%';
+        [r.playMode === 'salvo' ? 'Salvo' : 'Classic', levelName[r.level], r.row.games, r.row.wins, avg, accP, r.row.streak + ' / ' + r.row.best]
+          .forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+        table.appendChild(tr);
+      });
+      el.appendChild(table);
+    } else {
+      const p = document.createElement('p'); p.textContent = 'Play a game to start a detailed record, broken down by Classic or Salvo and by level.'; el.appendChild(p);
+    }
+    $('statsDlg').hidden = false;
   }
 
   // ---- placing (exact bow, no silent slide) ----
@@ -226,7 +324,7 @@
     const from = sh.x >= 0 ? { x: sh.x, y: sh.y, o: sh.o } : null;
     const grabX = onShip && from ? (c % N) - sh.x : 0;
     const grabY = onShip && from ? Math.floor(c / N) - sh.y : 0;
-    if (from) R.unplace(b, i);                       // lift off the board so its old squares are free
+    if (from) R.unplace(b, i);
     sel = i; orient = from ? from.o : orient; hover = c;
     drag = { i, from, grabX, grabY, pointerId, startC: c, moved: false };
     try { $('big').setPointerCapture(pointerId); } catch (_) {}
@@ -242,7 +340,7 @@
     if (g.phase !== 'place') return;
     const b = g.b[g.placer], no = orient === 'h' ? 'v' : 'h';
     flash = '';
-    if (drag) {                                       // flip the ghost; grab offset swaps with the heading
+    if (drag) {
       const tmp = drag.grabX; drag.grabX = drag.grabY; drag.grabY = tmp;
       orient = no; refresh(); return;
     }
@@ -261,9 +359,9 @@
   function ready() {
     if (g.phase !== 'place' || !R.allPlaced(g.b[g.placer])) return;
     flash = '';
-    if (isCpu()) { g.phase = 'battle'; g.turn = 1; }
+    if (isCpu()) { g.phase = 'battle'; g.turn = 1; startVolley(1); }
     else if (g.placer === 1) { g.placer = 2; g.cover = { p: 2, place: true }; sel = 0; orient = 'h'; }
-    else { g.phase = 'battle'; g.turn = 1; g.cover = { p: 1 }; }
+    else { g.phase = 'battle'; g.turn = 1; g.cover = { p: 1 }; startVolley(1); }
     persist(); refresh(); fit();
   }
 
@@ -283,6 +381,12 @@
     if (r.res === 'hit') S.vibrate(youHit ? 40 : 20);
     else if (r.res === 'sunk') S.vibrate([60, 40, 60]);
     return r;
+  }
+  function endTurn(p) {
+    if (isCpu()) {
+      if (p === 1) { g.turn = 2; startVolley(2); persist(); refresh(); maybeCpu(); }
+      else { g.turn = 1; startVolley(1); persist(); refresh(); }
+    } else { g.shotDone = true; persist(); refresh(); }
   }
   async function fireSeq(p, c, viewId) {
     const tb = g.b[other(p)], peek = R.peek(tb, c);
@@ -308,8 +412,13 @@
     sinking[other(p)] = [];
     fxLock = false;
     if (applied && applied.win) { finish(p); return true; }
-    if (isCpu()) { if (p === 1) { g.turn = 2; persist(); refresh(); maybeCpu(); } else { g.turn = 1; persist(); refresh(); } }
-    else { g.shotDone = true; persist(); refresh(); }
+    g.volleyLeft = Math.max(0, (g.volleyLeft || 1) - 1);
+    if (g.volleyLeft > 0) {
+      persist(); refresh();
+      if (isCpu() && p === 2) maybeCpu();
+      return true;
+    }
+    endTurn(p);
     return true;
   }
   function fireAt(c) {
@@ -328,10 +437,11 @@
   }
   function pass() {
     if (!g.shotDone || fxLock) return;
-    g.shotDone = false; g.turn = other(g.turn); g.cover = { p: g.turn }; persist(); refresh(); fit();
+    g.shotDone = false; g.turn = other(g.turn); startVolley(g.turn); g.cover = { p: g.turn }; persist(); refresh(); fit();
   }
   function finish(p) {
     g.phase = 'over'; g.winner = p; g.cover = null; g.shotDone = false; tally()[p]++;
+    ST.record(saved.career, playModeOf(), saved.mode, { win: p === 1, shots: g.stats[1].s, hits: g.stats[1].h });
     const lose = isCpu() && p === 2;
     if (lose) { BSSound.lose(); S.vibrate(300); } else { BSSound.win(); S.vibrate([80, 40, 80, 40, 160]); }
     persist(); refresh(); fit(); showEnd(p);
@@ -350,6 +460,7 @@
   bigCv.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     const c = big.cellAt(e.clientX, e.clientY); if (c < 0) return;
+    cursor = c;
     if (g.phase === 'place') {
       const b = g.b[g.placer], j = R.occupancy(b)[c];
       if (j >= 0) startDrag(j, c, e.pointerId, true);
@@ -360,9 +471,9 @@
   bigCv.addEventListener('pointermove', (e) => {
     if (g.phase !== 'place') return;
     if (!drag && e.pointerType !== 'mouse') return;
-    const c = (drag ? big.cellAt(e.clientX, e.clientY) : big.cellAt(e.clientX, e.clientY));
+    const c = big.cellAt(e.clientX, e.clientY);
     if (drag && c >= 0 && c !== drag.startC) drag.moved = true;
-    if (c !== hover) { hover = c; refresh(); }
+    if (c !== hover) { hover = c; if (c >= 0) cursor = c; refresh(); }
   });
   function endPointer(e) {
     if (g.phase !== 'place' || !drag || e.pointerId !== drag.pointerId) {
@@ -372,7 +483,6 @@
     const c = big.cellAt(e.clientX, e.clientY);
     const from = drag.from;
     if (c >= 0 && dropAt(c)) { drag = null; hover = -1; refresh(); fit(); return; }
-    // Snap back if this ship was already on the board; a failed new drop stays in the tray.
     cancelDrag(!!from);
     refresh();
   }
@@ -384,16 +494,67 @@
   $('readyBtn').addEventListener('click', ready);
   $('passBtn').addEventListener('click', pass);
   $('coverBtn').addEventListener('click', () => { g.cover = null; persist(); refresh(); });
-  $('newBtn').addEventListener('click', newGame);
-  $('modeSel').addEventListener('change', (e) => { saved.mode = e.target.value; newGame(); });
+  $('newBtn').addEventListener('click', requestNewGame);
+  $('modeSel').addEventListener('change', (e) => changeOption('mode', e.target.value));
+  if ($('playSel')) $('playSel').addEventListener('change', (e) => changeOption('playMode', e.target.value));
+  if ($('fleetSel')) $('fleetSel').addEventListener('change', (e) => changeOption('fleet', e.target.value));
+  if ($('touchChk')) $('touchChk').addEventListener('change', (e) => changeOption('noTouch', !!e.target.checked));
   $('helpBtn').addEventListener('click', () => { $('help').hidden = false; });
   $('helpClose').addEventListener('click', () => { $('help').hidden = true; });
   $('help').addEventListener('click', (e) => { if (e.target.id === 'help') $('help').hidden = true; });
-  $('clearBtn').addEventListener('click', () => { const t = tally(); t[1] = t[2] = 0; save(); status(); });
+  if ($('statsBtn')) $('statsBtn').addEventListener('click', showStats);
+  if ($('statsClose')) $('statsClose').addEventListener('click', () => { $('statsDlg').hidden = true; });
+  if ($('statsDlg')) $('statsDlg').addEventListener('click', (e) => { if (e.target.id === 'statsDlg') $('statsDlg').hidden = true; });
+  if ($('confirmOk')) $('confirmOk').addEventListener('click', () => { const fn = pending; hideConfirm(); if (fn) fn(); syncSelects(); });
+  if ($('confirmCancel')) $('confirmCancel').addEventListener('click', () => { hideConfirm(); syncSelects(); refresh(); });
+  if ($('confirmDlg')) $('confirmDlg').addEventListener('click', (e) => { if (e.target.id === 'confirmDlg') { hideConfirm(); syncSelects(); refresh(); } });
+  $('clearBtn').addEventListener('click', () => {
+    askConfirm('Reset the win chips and the stats record?', () => {
+      const t = tally(); t[1] = t[2] = 0;
+      saved.score.cpu[1] = saved.score.cpu[2] = saved.score.pvp[1] = saved.score.pvp[2] = 0;
+      saved.career = { all: ST.emptyRow(), by: {} };
+      save(); status();
+    });
+  });
   document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'SELECT') return;
-    if (e.key === 'r' || e.key === 'R') rotate(); else if (e.key === 'n' || e.key === 'N') newGame();
-    else if (e.key === 'Escape') { if (drag) { cancelDrag(true); refresh(); } $('help').hidden = true; }
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+    const helpOpen = $('help') && !$('help').hidden;
+    const statsOpen = $('statsDlg') && !$('statsDlg').hidden;
+    const confOpen = $('confirmDlg') && !$('confirmDlg').hidden;
+    if (e.key === 'Escape') {
+      if (drag) { cancelDrag(true); refresh(); }
+      if (helpOpen) $('help').hidden = true;
+      if (statsOpen) $('statsDlg').hidden = true;
+      if (confOpen) { hideConfirm(); syncSelects(); refresh(); }
+      return;
+    }
+    if (helpOpen || statsOpen || confOpen || g.cover) return;
+    if (e.key === 'r' || e.key === 'R') { rotate(); return; }
+    if (e.key === 'n' || e.key === 'N') { requestNewGame(); return; }
+    const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], a: [-1, 0], d: [1, 0], w: [0, -1], s: [0, 1], A: [-1, 0], D: [1, 0], W: [0, -1], S: [0, 1] };
+    if (dirs[e.key]) {
+      e.preventDefault();
+      kbOn = true;
+      const x = Math.max(0, Math.min(N - 1, (cursor % N) + dirs[e.key][0]));
+      const y = Math.max(0, Math.min(N - 1, Math.floor(cursor / N) + dirs[e.key][1]));
+      cursor = R.idx(x, y);
+      if (g.phase === 'place') hover = cursor;
+      refresh();
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (g.phase === 'place') {
+        e.preventDefault();
+        kbOn = true;
+        if (sel < 0) { flash = 'Pick a ship, then place it on the grid'; refresh(); return; }
+        if (dropAt(cursor)) refresh();
+        else refresh();
+      } else if (canFire()) {
+        e.preventDefault();
+        kbOn = true;
+        fireAt(cursor);
+      }
+    }
   });
 
   // ---- theme + layout ----
@@ -435,18 +596,20 @@
   const gear = S.mountGear($('gearSlot'));
   if (!gear) $('gearSlot').remove();
   if (window.BSFx) BSFx.bindSettings();
-  if ($('endAgain')) $('endAgain').addEventListener('click', newGame);
+  if ($('endAgain')) $('endAgain').addEventListener('click', () => applyNewGame());
   if ($('endCard')) $('endCard').addEventListener('click', (e) => { if (e.target.id === 'endCard') $('endCard').hidden = true; });
 
   applyTheme(); restore(); fit();
   // for tests
   window.BSGame = {
     place: (i, x, y, o) => { if (g.phase !== 'place') return false; const ok = R.place(g.b[g.placer], i, x, y, o); if (ok) { sel = nextUnplaced(i); persist(); refresh(); } return ok; },
-    random: randomize, ready, rotate, pass, newGame,
+    random: randomize, ready, rotate, pass, newGame: requestNewGame, newGameNow: applyNewGame,
     fire: (x, y) => fireAt(R.idx(x, y)),
     reveal: () => { g.cover = null; refresh(); },
-    state: () => ({ phase: g.phase, placer: g.placer, turn: g.turn, winner: g.winner, mode: saved.mode, cover: !!g.cover, shotDone: g.shotDone,
-      stats: JSON.parse(JSON.stringify(g.stats)), afloat: { 1: R.shipsLeft(g.b[1]), 2: R.shipsLeft(g.b[2]) }, placed: g.b[g.placer].ships.filter((s) => s.x >= 0).length, sel, orient, wins: Object.assign({}, tally()) }),
+    setRules: (opts) => { if (opts.playMode) saved.playMode = opts.playMode; if (opts.fleet) saved.fleet = opts.fleet; if ('noTouch' in opts) saved.noTouch = !!opts.noTouch; if (opts.mode) saved.mode = opts.mode; save(); applyNewGame(); },
+    cursor: (c) => { if (c != null) { cursor = c; kbOn = true; refresh(); } return cursor; },
+    state: () => ({ phase: g.phase, placer: g.placer, turn: g.turn, winner: g.winner, mode: saved.mode, playMode: playModeOf(), fleet: g.fleet, noTouch: !!g.noTouch, cover: !!g.cover, shotDone: g.shotDone, volley: g.volley, volleyLeft: g.volleyLeft,
+      stats: JSON.parse(JSON.stringify(g.stats)), afloat: { 1: R.shipsLeft(g.b[1]), 2: R.shipsLeft(g.b[2]) }, placed: g.b[g.placer].ships.filter((s) => s.x >= 0).length, sel, orient, wins: Object.assign({}, tally()), career: JSON.parse(JSON.stringify(saved.career)) }),
     raw: () => g,
     waitFx: () => new Promise((r) => { const tick = () => { if (!fxLock && !(window.BSFx && BSFx.busy())) r(); else requestAnimationFrame(tick); }; tick(); }),
     waitTurn: () => new Promise((r) => { const tick = () => { if (g.phase !== 'battle' || (g.turn === 1 && !fxLock && !(window.BSFx && BSFx.busy()))) r(); else requestAnimationFrame(tick); }; tick(); }),

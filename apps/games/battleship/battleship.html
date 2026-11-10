@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
-  Battleship (SHIP-2b) — page. The classic paper game: hide ships on a 10 x 10 grid, take turns firing.
+  Battleship (SHIP-2c) — page. The classic paper game: hide ships on a 10 x 10 grid, take turns firing.
+  Classic or Salvo; classic 5-4-3-3-2 fleet or a smaller skirmish; optional no-touch house rule.
   Info / centred board cluster (grid + tray or both grids) / buttons. Short landscape keeps info + buttons on the left.
   Ships, water and the chart frame: ui/ships.js + ui/render.js. Rules: core/rules.js. Computer: core/ai.js.
   Sound: ui/sound.js. Shared settings (Auto theme is the default): ui/settings.js.
-  Drag-to-place, the fleet list, motion and saves: core/game.js. Effects: ui/fx.js. Classic scripts only (file:// works).
+  Drag-to-place, the fleet list, motion, modes, stats and saves: core/game.js. Effects: ui/fx.js.
+  Classic scripts only (file:// works).
 -->
 <html lang="en">
 <head>
@@ -18,7 +20,7 @@
   <div class="container" id="app">
     <div class="top" id="top">
       <h1 class="title">Battleship</h1>
-      <p class="status" id="status">Place your ships</p>
+      <p class="status" id="status" role="status" aria-live="polite">Place your ships</p>
       <p class="note" id="note"></p>
       <div class="score" id="score">
         <div class="chip" id="chip1"><b id="lbl1">You</b> <span id="st1">0 shots</span></div>
@@ -29,7 +31,7 @@
     <div class="stage" id="stage">
       <div class="cluster" id="cluster">
         <div class="board-col" id="bigCol">
-          <div class="wrap" id="bigWrap"><div class="cap" id="bigCap">Your fleet</div><canvas id="big" aria-label="Main grid"></canvas></div>
+          <div class="wrap" id="bigWrap"><div class="cap" id="bigCap">Your fleet</div><canvas id="big" tabindex="0" role="application" aria-label="Main grid"></canvas></div>
           <ul class="fleet-list" id="fleetBig" aria-label="Enemy fleet"></ul>
         </div>
         <div class="tray" id="tray" aria-label="Ships to place"></div>
@@ -45,12 +47,22 @@
       <button id="readyBtn" class="pl primary">Ready</button>
       <button id="passBtn" class="primary">Pass device</button>
       <button id="newBtn">New game</button>
-      <select id="modeSel" aria-label="Mode">
+      <select id="modeSel" aria-label="Opponent">
         <option value="easy">vs CPU Easy</option>
         <option value="medium">vs CPU Medium</option>
         <option value="hard">vs CPU Hard</option>
         <option value="2p">2 Players (pass the device)</option>
       </select>
+      <select id="playSel" aria-label="Play mode">
+        <option value="classic">Classic (one shot)</option>
+        <option value="salvo">Salvo (one shot per ship)</option>
+      </select>
+      <select id="fleetSel" aria-label="Fleet">
+        <option value="classic">Fleet 5-4-3-3-2</option>
+        <option value="skirmish">Skirmish 4-3-2</option>
+      </select>
+      <label class="chk" for="touchChk"><input type="checkbox" id="touchChk"> Ships may not touch</label>
+      <button id="statsBtn">Stats</button>
       <button id="helpBtn">How to play</button>
       <button id="clearBtn" class="link">Reset wins</button>
       <span id="gearSlot" class="gear-slot"></span>
@@ -70,19 +82,39 @@
       <button id="endAgain" class="primary">Play again</button>
     </div>
   </div>
+  <div class="help" id="confirmDlg" hidden>
+    <div class="help-card end-card" role="dialog" aria-label="Please confirm" aria-describedby="confirmMsg">
+      <h2>Please confirm</h2>
+      <p id="confirmMsg">Start a new game? The current match will be lost.</p>
+      <div class="dlg-actions">
+        <button id="confirmCancel">Cancel</button>
+        <button id="confirmOk" class="primary">Start new game</button>
+      </div>
+    </div>
+  </div>
+  <div class="help" id="statsDlg" hidden>
+    <div class="help-card stats-card" role="dialog" aria-label="Battleship stats">
+      <h2>Stats</h2>
+      <div id="statsBody"></div>
+      <button id="statsClose">Close</button>
+    </div>
+  </div>
   <div class="help" id="help" hidden>
     <div class="help-card" role="dialog" aria-label="How to play Battleship">
       <h2>How to play</h2>
       <ul>
-        <li>Each side hides 5 ships on its own 10 x 10 grid: Carrier 5, Battleship 4, Cruiser 3, Submarine 3 and Destroyer 2.</li>
+        <li>Each side hides a fleet on its own 10 x 10 grid. The classic fleet is Carrier 5, Battleship 4, Cruiser 3, Submarine 3 and Destroyer 2. Skirmish is a shorter game with Battleship 4, Cruiser 3 and Destroyer 2.</li>
         <li><b>Placing:</b> drag a ship from the tray (or a ship already on the grid) onto a square. A green ghost fits, a red one does not.
             Picking a ship up lifts it off the board. Tap a square to drop the selected ship with its front end there — it will not slide if it hangs off the edge.
-            <b>Rotate</b> turns it (across or down). <b>Random</b> places the whole fleet for you. Press <b>Ready</b> when every ship is down.</li>
-        <li><b>Firing:</b> take turns. Tap a square on the big grid (the other side's waters) to fire one shot.
+            <b>Rotate</b> turns it (across or down). <b>Random</b> places the whole fleet for you. Press <b>Ready</b> when every ship is down.
+            Ships may touch unless you tick <b>Ships may not touch</b>, which also forbids corner contact.</li>
+        <li><b>Firing:</b> in Classic you fire one shot, then it is the other side's turn. In Salvo you fire one shot for every ship you still have afloat, counted at the start of your volley.
+            Tap a square on the big grid (the other side's waters), or move with the arrow keys and press Enter or Space.
             A ringed dot is a miss; a mark on a ship is a hit. When every square of a ship is hit, it is sunk and listed as sunk.</li>
         <li>The small grid is your own fleet, with the other side's shots on it. The lists under the grids show which ships are still afloat.</li>
         <li><b>Goal:</b> sink the other side's whole fleet first.</li>
         <li><b>2 players:</b> hand the device over when asked. The screen is covered between turns so nobody sees the other fleet.</li>
+        <li><b>New game</b> or a change of opponent, mode, fleet or the touching rule asks you to confirm if a match is already under way. <b>Stats</b> keeps games, wins, average shots, accuracy and streaks by mode and level. Older saved wins still show on the chips.</li>
       </ul>
       <button id="helpClose">Got it</button>
     </div>
@@ -92,6 +124,7 @@
   <script src="core/config.js"></script>
   <script src="ui/settings.js"></script>
   <script src="core/rules.js"></script>
+  <script src="core/stats.js"></script>
   <script src="core/ai.js"></script>
   <script src="ui/sound.js"></script>
   <script src="ui/ships.js"></script>

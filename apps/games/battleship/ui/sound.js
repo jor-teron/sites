@@ -49,4 +49,4 @@ const BSSound = (() => {
     lose: () => [392, 330, 262].forEach((f, i) => beep(f, 260, 'triangle', 0.18, i * 0.2)),
   };
 })();
-window.BSSound = BSSound;
+if (typeof window !== 'undefined') window.BSSound = BSSound;
