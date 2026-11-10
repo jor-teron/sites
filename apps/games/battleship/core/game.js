@@ -1,11 +1,12 @@
 /*
- * Battleship — game controller (SHIP-1). Wires rules, AI, renderer, sound, settings and the page.
- * Flow: place ships (tap a ship in the tray, tap a square; Rotate; Random; Ready) → take turns firing
- * one shot each → first to sink the whole enemy fleet wins.
+ * Battleship — game controller (SHIP-2a). Wires rules, AI, renderer, sound, settings and the page.
+ * Flow: place ships (drag or tap; Rotate; Random; Ready) → take turns firing one shot each → first
+ * to sink the whole enemy fleet wins.
+ * Dragging lifts a ship off the board and shows a ghost on mouse and touch. A tap near the edge
+ * no longer slides the ship — if it would hang off, the drop is refused.
  * vs CPU: you are Player 1 and fire first; the computer hides its fleet at random.
- * 2 players: one device. Between turns (and between placing) a full-screen cover hides both grids
- * until the next player taps "I'm ready"; reloading mid-game also comes back behind the cover.
- * Keeps shots and accuracy per side. Saves wins, mode and the game in progress (BS_CONFIG.storeKey).
+ * 2 players: one device. Between turns a full-screen cover hides both grids.
+ * Saves wins, mode and the game in progress (BS_CONFIG.storeKey).
  */
 (() => {
   const R = BSRules, AI = BSAI, CFG = BS_CONFIG, S = BS_SETTINGS, N = R.N;
@@ -19,7 +20,7 @@
   const saved = load();
   const save = () => { try { localStorage.setItem(CFG.storeKey, JSON.stringify(saved)); } catch (_) {} };
 
-  let g, sel = 0, orient = 'h', hover = -1, flash = '', cpuTimer = 0;
+  let g, sel = 0, orient = 'h', hover = -1, flash = '', cpuTimer = 0, drag = null;
   const isCpu = () => saved.mode !== '2p';
   const tally = () => saved.score[isCpu() ? 'cpu' : 'pvp'];
   const who = (p) => (isCpu() ? (p === 1 ? 'You' : 'Computer') : CFG.names[p]);
@@ -38,8 +39,9 @@
   }
   function newGame() {
     clearTimeout(cpuTimer);
+    if (drag) cancelDrag(false);
     g = fresh(); sel = 0; orient = 'h'; hover = -1; flash = '';
-    persist(); refresh();
+    persist(); refresh(); fit();
   }
   function restore() {
     const o = saved.game;
@@ -50,7 +52,7 @@
         sel = g.phase === 'place' ? nextUnplaced(-1) : -1; flash = '';
         if (!isCpu() && g.phase !== 'over') {
           if (g.shotDone) { g.shotDone = false; g.turn = other(g.turn); }
-          if (!g.cover) g.cover = { p: g.phase === 'place' ? g.placer : g.turn, place: g.phase === 'place' };   // a reload never shows a fleet
+          if (!g.cover) g.cover = { p: g.phase === 'place' ? g.placer : g.turn, place: g.phase === 'place' };
         }
         refresh(); maybeCpu(); return;
       }
@@ -60,12 +62,19 @@
 
   // ---- drawing ----
   const big = BSRender.view($('big'), $('bigWrap')), mini = BSRender.view($('mini'), $('miniWrap'));
+
+  /** Bow cell for a ship given a pointer cell and a grab offset. No sliding. */
+  function bowAt(c, grabX, grabY) {
+    return { x: (c % N) - grabX, y: Math.floor(c / N) - grabY };
+  }
   function ghost() {
     if (g.phase !== 'place' || sel < 0 || hover < 0) return null;
-    const b = g.b[g.placer], sz = b.ships[sel].size;
-    let x = hover % N, y = Math.floor(hover / N);
-    if (orient === 'h') x = Math.min(x, N - sz); else y = Math.min(y, N - sz);
-    return { cells: R.cellsOf(sz, x, y, orient), ok: R.fits(b, sel, x, y, orient) };
+    const b = g.b[g.placer], sh = b.ships[sel];
+    const grabX = drag ? drag.grabX : 0, grabY = drag ? drag.grabY : 0;
+    const bow = bowAt(hover, grabX, grabY);
+    const ship = { name: sh.name, size: sh.size, x: bow.x, y: bow.y, o: orient };
+    const ok = R.fits(b, sel, bow.x, bow.y, orient);
+    return { ship, ok, cells: ok || (bow.x >= 0 && bow.y >= 0) ? R.cellsOf(sh.size, Math.max(0, bow.x), Math.max(0, bow.y), orient) : [] };
   }
   function refresh() {
     const v = viewer(), placing = g.phase === 'place';
@@ -77,10 +86,10 @@
       const over = g.phase === 'over';
       big.set({ board: g.b[other(v)], showShips: over, sel: -1, ghost: null, last: g.last[v], dim: !over && !canFire() });
       mini.set({ board: g.b[v], showShips: true, sel: -1, ghost: null, last: g.last[other(v)], dim: false });
-      $('bigCap').textContent = over ? who(other(v)) + "'s fleet (all shown)" : (isCpu() ? "Computer's waters – tap to fire" : CFG.names[other(v)] + "'s waters – tap to fire");
+      $('bigCap').textContent = over ? who(other(v)) + "'s fleet" : (isCpu() ? 'Enemy waters' : CFG.names[other(v)] + "'s waters");
       $('miniCap').textContent = (isCpu() ? 'Your' : CFG.names[v] + "'s") + ' fleet';
     }
-    tray(); status(); cover();
+    tray(); fleets(); status(); cover();
   }
   function tray() {
     const el = $('tray');
@@ -89,12 +98,40 @@
     el.textContent = '';
     b.ships.forEach((sh, i) => {
       const bt = document.createElement('button');
-      bt.className = (i === sel ? 'on ' : '') + (sh.x >= 0 ? 'done' : '');
-      bt.textContent = sh.name + ' ' + sh.size;
-      const bar = document.createElement('i'); bar.style.width = sh.size * 7 + 'px'; bt.appendChild(bar);
-      bt.addEventListener('click', () => { sel = i; if (sh.x >= 0) orient = sh.o; flash = ''; refresh(); });
+      const held = drag && drag.i === i;
+      bt.className = (i === sel ? 'on ' : '') + (sh.x >= 0 && !held ? 'done' : '') + (held ? 'held' : '');
+      const cv = document.createElement('canvas');
+      cv.width = 72; cv.height = 18; cv.setAttribute('aria-hidden', 'true');
+      BSRender.thumb(cv, sh.name, sh.size, 'h', false);
+      bt.appendChild(cv);
+      bt.appendChild(document.createTextNode(sh.name + ' ' + sh.size));
+      bt.addEventListener('click', (e) => {
+        if (drag) return;
+        sel = i; if (sh.x >= 0) orient = sh.o; flash = ''; refresh();
+        e.stopPropagation();
+      });
       el.appendChild(bt);
     });
+  }
+  function fleetList(el, board, hide) {
+    el.textContent = '';
+    if (hide) return;
+    board.ships.forEach((sh, j) => {
+      const li = document.createElement('li');
+      const sunk = R.isSunk(board, j);
+      li.className = sunk ? 'sunk' : 'afloat';
+      const cv = document.createElement('canvas');
+      cv.width = 40; cv.height = 12; cv.setAttribute('aria-hidden', 'true');
+      BSRender.thumb(cv, sh.name, sh.size, 'h', sunk);
+      li.appendChild(cv);
+      li.appendChild(document.createTextNode(sunk ? sh.name + ' sunk' : sh.name));
+      el.appendChild(li);
+    });
+  }
+  function fleets() {
+    const v = viewer(), placing = g.phase === 'place';
+    fleetList($('fleetBig'), placing ? g.b[g.placer] : g.b[other(v)], placing);
+    fleetList($('fleetMini'), placing ? g.b[g.placer] : g.b[v], placing);
   }
   const acc = (st) => (st.s ? Math.round((100 * st.h) / st.s) : 0);
   function status() {
@@ -105,23 +142,31 @@
       t = (isCpu() ? (g.winner === 1 ? 'You win!' : 'The computer wins!') : CFG.names[g.winner] + ' wins!') + ' ' + st.s + ' shots, ' + acc(st) + '% hits';
     } else if (flash) t = flash;
     else if (g.phase === 'place') {
-      const b = g.b[g.placer];
-      if (sel >= 0) t = pre + 'tap a square for the ' + b.ships[sel].name + ' (' + b.ships[sel].size + ')';
-      else t = R.allPlaced(b) ? pre + 'all ships placed – press Ready' : pre + 'pick a ship below';
+      const b = g.b[g.placer], down = b.ships.filter((s) => s.x >= 0).length;
+      if (drag) t = pre + 'drop the ' + b.ships[sel].name + ' on a square';
+      else if (sel >= 0) t = pre + 'drag or tap a square for the ' + b.ships[sel].name + ' (' + b.ships[sel].size + ')';
+      else t = R.allPlaced(b) ? pre + 'all ships placed – press Ready' : pre + 'pick a ship, then drag it onto the grid';
+      if (!flash && !drag) $('note').textContent = down + ' of ' + b.ships.length + ' placed. Ships can touch but not overlap.';
     } else if (isCpu() && g.turn === 2) t = 'Computer is aiming…';
     else if (g.shotDone) t = 'Press Pass device and hand it to ' + CFG.names[other(g.turn)];
     else t = (isCpu() ? 'Your turn' : CFG.names[g.turn] + "'s turn") + ': tap a square on the big grid to fire';
     $('status').textContent = t.charAt(0).toUpperCase() + t.slice(1);
-    $('note').textContent = g.phase === 'place' ? 'Ships can touch but not overlap. Tap a placed ship to move it.' : [g.note[1], g.note[2]].filter(Boolean).join(' · ');
+    if (g.phase !== 'place') $('note').textContent = [g.note[1], g.note[2]].filter(Boolean).join(' · ');
+    const placing = g.phase === 'place';
     for (const p of [1, 2]) {
       const st = g.stats[p];
       $('lbl' + p).textContent = isCpu() ? who(p) : 'P' + p;
-      $('st' + p).textContent = st.s + (st.s === 1 ? ' shot · ' : ' shots · ') + acc(st) + '% hit · ' + R.shipsLeft(g.b[p]) + ' afloat';
+      // During placement the "5 afloat" figure is meaningless (nobody has fired). Show placed count for you only.
+      if (placing) {
+        if (p === (isCpu() ? 1 : g.placer)) $('st' + p).textContent = g.b[p].ships.filter((s) => s.x >= 0).length + ' of ' + g.b[p].ships.length + ' placed';
+        else $('st' + p).textContent = isCpu() ? 'waiting' : 'not placed yet';
+      } else {
+        $('st' + p).textContent = st.s + (st.s === 1 ? ' shot · ' : ' shots · ') + acc(st) + '% hit';
+      }
       $('wl' + p).textContent = isCpu() ? who(p) : 'P' + p;
       $('win' + p).textContent = tally()[p];
     }
     $('modeSel').value = saved.mode;
-    const placing = g.phase === 'place';
     for (const id of ['rotBtn', 'randBtn', 'readyBtn']) $(id).hidden = !placing;
     $('readyBtn').disabled = !R.allPlaced(g.b[g.placer]);
     $('rotBtn').textContent = 'Rotate ↻ ' + (orient === 'h' ? 'across' : 'down');
@@ -138,34 +183,60 @@
     $('coverBtn').textContent = "I'm " + CFG.names[c.p] + ' – show my grids';
   }
 
-  // ---- placing ----
+  // ---- placing (exact bow, no silent slide) ----
   function nextUnplaced(from) {
     const sh = g.b[g.placer].ships;
     for (let k = 1; k <= sh.length; k++) { const i = (from + k + sh.length) % sh.length; if (sh[i].x < 0) return i; }
     return -1;
   }
-  function placeAt(c) {
-    const b = g.b[g.placer], j = R.occupancy(b)[c];
+  function dropAt(c) {
+    const b = g.b[g.placer];
+    if (sel < 0 || c < 0) return false;
+    const grabX = drag ? drag.grabX : 0, grabY = drag ? drag.grabY : 0;
+    const bow = bowAt(c, grabX, grabY);
     flash = '';
-    if (j >= 0) { if (j === sel) rotate(); else { sel = j; orient = b.ships[j].o; } refresh(); return; }
-    if (sel < 0) { flash = 'Pick a ship below, or tap a placed ship to move it'; refresh(); return; }
-    if (R.placeNear(b, sel, c % N, Math.floor(c / N), orient)) { BSSound.place(); sel = nextUnplaced(sel); persist(); }
-    else { BSSound.bad(); flash = "The " + b.ships[sel].name + " doesn't fit there"; }
-    refresh();
+    if (R.place(b, sel, bow.x, bow.y, orient)) {
+      BSSound.place(); sel = nextUnplaced(sel); persist(); return true;
+    }
+    BSSound.bad();
+    flash = "The " + b.ships[sel].name + " doesn't fit there";
+    return false;
+  }
+  function startDrag(i, c, pointerId, onShip) {
+    const b = g.b[g.placer], sh = b.ships[i];
+    const from = sh.x >= 0 ? { x: sh.x, y: sh.y, o: sh.o } : null;
+    const grabX = onShip && from ? (c % N) - sh.x : 0;
+    const grabY = onShip && from ? Math.floor(c / N) - sh.y : 0;
+    if (from) R.unplace(b, i);                       // lift off the board so its old squares are free
+    sel = i; orient = from ? from.o : orient; hover = c;
+    drag = { i, from, grabX, grabY, pointerId, startC: c, moved: false };
+    try { $('big').setPointerCapture(pointerId); } catch (_) {}
+    flash = ''; refresh();
+  }
+  function cancelDrag(restore) {
+    if (!drag) return;
+    const b = g.b[g.placer];
+    if (restore && drag.from) R.place(b, drag.i, drag.from.x, drag.from.y, drag.from.o);
+    drag = null; hover = -1;
   }
   function rotate() {
     if (g.phase !== 'place') return;
     const b = g.b[g.placer], no = orient === 'h' ? 'v' : 'h';
     flash = '';
+    if (drag) {                                       // flip the ghost; grab offset swaps with the heading
+      const tmp = drag.grabX; drag.grabX = drag.grabY; drag.grabY = tmp;
+      orient = no; refresh(); return;
+    }
     if (sel >= 0 && b.ships[sel].x >= 0) {
       const sh = b.ships[sel];
-      if (!R.placeNear(b, sel, sh.x, sh.y, no)) { BSSound.bad(); flash = 'No room to turn the ' + sh.name + ' there'; refresh(); return; }
+      if (!R.place(b, sel, sh.x, sh.y, no)) { BSSound.bad(); flash = 'No room to turn the ' + sh.name + ' there'; refresh(); return; }
       BSSound.place(); persist();
     }
     orient = no; refresh();
   }
   function randomize() {
     if (g.phase !== 'place') return;
+    cancelDrag(false);
     R.randomFleet(g.b[g.placer]); sel = -1; flash = ''; BSSound.place(); persist(); refresh();
   }
   function ready() {
@@ -174,7 +245,7 @@
     if (isCpu()) { g.phase = 'battle'; g.turn = 1; }
     else if (g.placer === 1) { g.placer = 2; g.cover = { p: 2, place: true }; sel = 0; orient = 'h'; }
     else { g.phase = 'battle'; g.turn = 1; g.cover = { p: 1 }; }
-    persist(); refresh();
+    persist(); refresh(); fit();
   }
 
   // ---- firing ----
@@ -207,13 +278,13 @@
   }
   function pass() {
     if (!g.shotDone) return;
-    g.shotDone = false; g.turn = other(g.turn); g.cover = { p: g.turn }; persist(); refresh();
+    g.shotDone = false; g.turn = other(g.turn); g.cover = { p: g.turn }; persist(); refresh(); fit();
   }
   function finish(p) {
     g.phase = 'over'; g.winner = p; g.cover = null; g.shotDone = false; tally()[p]++;
     const lose = isCpu() && p === 2;
     if (lose) { BSSound.lose(); S.vibrate(300); } else { BSSound.win(); S.vibrate([80, 40, 80, 40, 160]); }
-    persist(); refresh();
+    persist(); refresh(); fit();
   }
 
   // ---- input ----
@@ -221,13 +292,35 @@
   bigCv.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     const c = big.cellAt(e.clientX, e.clientY); if (c < 0) return;
-    if (g.phase === 'place') placeAt(c); else fireAt(c);
+    if (g.phase === 'place') {
+      const b = g.b[g.placer], j = R.occupancy(b)[c];
+      if (j >= 0) startDrag(j, c, e.pointerId, true);
+      else if (sel >= 0) startDrag(sel, c, e.pointerId, false);
+      else { flash = 'Pick a ship, then drag it onto the grid'; refresh(); }
+    } else fireAt(c);
   });
   bigCv.addEventListener('pointermove', (e) => {
-    if (e.pointerType !== 'mouse' || g.phase !== 'place') return;
-    const c = big.cellAt(e.clientX, e.clientY); if (c !== hover) { hover = c; refresh(); }
+    if (g.phase !== 'place') return;
+    if (!drag && e.pointerType !== 'mouse') return;
+    const c = (drag ? big.cellAt(e.clientX, e.clientY) : big.cellAt(e.clientX, e.clientY));
+    if (drag && c >= 0 && c !== drag.startC) drag.moved = true;
+    if (c !== hover) { hover = c; refresh(); }
   });
-  bigCv.addEventListener('pointerleave', () => { if (hover >= 0) { hover = -1; refresh(); } });
+  function endPointer(e) {
+    if (g.phase !== 'place' || !drag || e.pointerId !== drag.pointerId) {
+      if (!drag && hover >= 0 && e.type === 'pointerleave') { hover = -1; refresh(); }
+      return;
+    }
+    const c = big.cellAt(e.clientX, e.clientY);
+    const from = drag.from;
+    if (c >= 0 && dropAt(c)) { drag = null; hover = -1; refresh(); fit(); return; }
+    // Snap back if this ship was already on the board; a failed new drop stays in the tray.
+    cancelDrag(!!from);
+    refresh();
+  }
+  bigCv.addEventListener('pointerup', endPointer);
+  bigCv.addEventListener('pointercancel', endPointer);
+  bigCv.addEventListener('pointerleave', (e) => { if (!drag && hover >= 0) { hover = -1; refresh(); } });
   $('rotBtn').addEventListener('click', rotate);
   $('randBtn').addEventListener('click', randomize);
   $('readyBtn').addEventListener('click', ready);
@@ -241,16 +334,46 @@
   $('clearBtn').addEventListener('click', () => { const t = tally(); t[1] = t[2] = 0; save(); status(); });
   document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'SELECT') return;
-    if (e.key === 'r') rotate(); else if (e.key === 'n') newGame();
-    else if (e.key === 'Escape') $('help').hidden = true;
+    if (e.key === 'r' || e.key === 'R') rotate(); else if (e.key === 'n' || e.key === 'N') newGame();
+    else if (e.key === 'Escape') { if (drag) { cancelDrag(true); refresh(); } $('help').hidden = true; }
   });
 
   // ---- theme + layout ----
-  const fit = () => { big.resize(); mini.resize(); };
-  function applyTheme() { document.documentElement.classList.toggle('dark', S.isDark()); big.draw(); mini.draw(); }
+  function fit() {
+    const stage = $('stage'), cluster = $('cluster'), tray = $('tray');
+    if (!stage) return;
+    const placing = g && g.phase === 'place';
+    const landscape = window.matchMedia('(orientation: landscape)').matches;
+    const trayW = placing && (landscape || stage.clientWidth > stage.clientHeight) ? (tray.offsetWidth || 140) + 10 : 0;
+    const trayH = placing && trayW === 0 ? (tray.offsetHeight || 64) + 8 : 0;
+    const fleetH = placing ? 0 : (landscape || stage.clientWidth > stage.clientHeight ? 36 : 40);
+    const gap = 8;
+    const W = stage.clientWidth, H = stage.clientHeight;
+    if (placing) {
+      const box = Math.max(120, Math.floor(Math.min(W - trayW, H - trayH - 18)));
+      big.resize(box);
+    } else {
+      if (landscape || W > H) {
+        const cap = 16;
+        const boxB = Math.max(120, Math.floor(Math.min((W - gap) * 0.56, H - fleetH - cap)));
+        const boxM = Math.max(100, Math.floor(Math.min(W - gap - boxB, H - fleetH - cap)));
+        big.resize(boxB); mini.resize(boxM);
+      } else {
+        const cap = 18;
+        const inner = H - fleetH * 2 - gap - cap * 2 - 6;
+        const boxB = Math.max(120, Math.floor(Math.min(W, inner * 0.58)));
+        const boxM = Math.max(100, Math.floor(Math.min(W * 0.78, inner - boxB)));
+        big.resize(boxB); mini.resize(boxM);
+      }
+    }
+    const fb = $('fleetBig'), fm = $('fleetMini');
+    if (fb) fb.style.maxWidth = big.size() + 'px';
+    if (fm) fm.style.maxWidth = mini.size() + 'px';
+  }
+  function applyTheme() { document.documentElement.classList.toggle('dark', S.isDark()); big.draw(); mini.draw(); if (g) { tray(); fleets(); } }
   S.onChange((ch) => { if ('theme' in ch) applyTheme(); });
-  window.addEventListener('resize', fit);
-  if (window.ResizeObserver) { const ro = new ResizeObserver(fit); ro.observe($('bigWrap')); ro.observe($('miniWrap')); }
+  window.addEventListener('resize', () => { fit(); });
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => fit()); ro.observe($('stage')); }
   const gear = S.mountGear($('gearSlot'));
   if (!gear) $('gearSlot').remove();
 

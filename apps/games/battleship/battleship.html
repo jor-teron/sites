@@ -1,37 +1,46 @@
 <!DOCTYPE html>
 <!--
-  Battleship (SHIP-1) — page. The classic paper game: hide 5 ships on a 10 x 10 grid, take turns firing.
-  Info (status, shots, accuracy, wins) / grids / buttons: stacked in portrait; info + buttons on the left in short landscape.
-  Numbers + fleet: core/config.js. Rules (placing, firing, sunk, win): core/rules.js. Computer: core/ai.js.
-  Drawing (on change only): ui/render.js. Sound: ui/sound.js. Shared settings bridge: ui/settings.js.
-  Wiring, the pass-the-device screen and saves: core/game.js. Classic scripts only (file:// works).
+  Battleship (SHIP-2a) — page. The classic paper game: hide ships on a 10 x 10 grid, take turns firing.
+  Info / centred board cluster (grid + tray or both grids) / buttons. Short landscape keeps info + buttons on the left.
+  Ships, water and the chart frame: ui/ships.js + ui/render.js. Rules: core/rules.js. Computer: core/ai.js.
+  Sound: ui/sound.js. Shared settings (Auto theme is the default): ui/settings.js.
+  Drag-to-place, the fleet list and saves: core/game.js. Classic scripts only (file:// works).
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Battleship SHIP-1</title>
+  <title>Battleship</title>
+  <link rel="icon" type="image/svg+xml" href="battleship_icon.svg">
   <link rel="stylesheet" href="ui/style.css">
 </head>
 <body>
   <div class="container" id="app">
-    <div class="side side-info">
+    <div class="top" id="top">
       <h1 class="title">Battleship</h1>
       <p class="status" id="status">Place your ships</p>
       <p class="note" id="note"></p>
-      <div class="score">
-        <div class="chip"><b id="lbl1">You</b> <span id="st1">0 shots</span></div>
-        <div class="chip"><b id="lbl2">Computer</b> <span id="st2">0 shots</span></div>
-        <div class="chip">Wins <span id="wl1">You</span> <b id="win1">0</b> · <span id="wl2">Computer</span> <b id="win2">0</b></div>
+      <div class="score" id="score">
+        <div class="chip" id="chip1"><b id="lbl1">You</b> <span id="st1">0 shots</span></div>
+        <div class="chip" id="chip2"><b id="lbl2">Computer</b> <span id="st2">0 shots</span></div>
+        <div class="chip" id="chipWins">Wins <span id="wl1">You</span> <b id="win1">0</b> · <span id="wl2">Computer</span> <b id="win2">0</b></div>
       </div>
     </div>
-    <div class="boards" id="boards">
-      <div class="wrap" id="bigWrap"><div class="cap" id="bigCap">Your fleet</div><canvas id="big" aria-label="Main grid"></canvas></div>
-      <div class="tray" id="tray" aria-label="Ships to place"></div>
-      <div class="wrap" id="miniWrap"><div class="cap" id="miniCap">Your fleet</div><canvas id="mini" aria-label="Your fleet"></canvas></div>
+    <div class="stage" id="stage">
+      <div class="cluster" id="cluster">
+        <div class="board-col" id="bigCol">
+          <div class="wrap" id="bigWrap"><div class="cap" id="bigCap">Your fleet</div><canvas id="big" aria-label="Main grid"></canvas></div>
+          <ul class="fleet-list" id="fleetBig" aria-label="Enemy fleet"></ul>
+        </div>
+        <div class="tray" id="tray" aria-label="Ships to place"></div>
+        <div class="board-col" id="miniCol">
+          <div class="wrap" id="miniWrap"><div class="cap" id="miniCap">Your fleet</div><canvas id="mini" aria-label="Your fleet"></canvas></div>
+          <ul class="fleet-list" id="fleetMini" aria-label="Your fleet list"></ul>
+        </div>
+      </div>
     </div>
-    <div class="side side-btns" id="btns">
-      <button id="rotBtn" class="pl">Rotate ↻</button>
+    <div class="toolbar" id="btns">
+      <button id="rotBtn" class="pl">Rotate ↻ across</button>
       <button id="randBtn" class="pl">Random</button>
       <button id="readyBtn" class="pl primary">Ready</button>
       <button id="passBtn" class="primary">Pass device</button>
@@ -58,14 +67,14 @@
     <div class="help-card" role="dialog" aria-label="How to play Battleship">
       <h2>How to play</h2>
       <ul>
-        <li>Each side hides 5 ships on its own 10 x 10 grid: sizes 5, 4, 3, 3 and 2.</li>
-        <li><b>Placing:</b> pick a ship below the grid, then tap a square for its front end.
-            <b>Rotate</b> turns it (across or down). Tap a placed ship to pick it up again. Ships can touch but not overlap.
-            <b>Random</b> places the whole fleet for you. Press <b>Ready</b> when all 5 are down.</li>
+        <li>Each side hides 5 ships on its own 10 x 10 grid: Carrier 5, Battleship 4, Cruiser 3, Submarine 3 and Destroyer 2.</li>
+        <li><b>Placing:</b> drag a ship from the tray (or a ship already on the grid) onto a square. A green ghost fits, a red one does not.
+            Picking a ship up lifts it off the board. Tap a square to drop the selected ship with its front end there — it will not slide if it hangs off the edge.
+            <b>Rotate</b> turns it (across or down). <b>Random</b> places the whole fleet for you. Press <b>Ready</b> when every ship is down.</li>
         <li><b>Firing:</b> take turns. Tap a square on the big grid (the other side's waters) to fire one shot.
-            A dot is a miss, a red X is a hit. When every square of a ship is hit, it is sunk and shown.</li>
-        <li>The small grid is your own fleet, with the other side's shots on it.</li>
-        <li><b>Goal:</b> sink all 5 enemy ships first.</li>
+            A ringed dot is a miss; a mark on a ship is a hit. When every square of a ship is hit, it is sunk and listed as sunk.</li>
+        <li>The small grid is your own fleet, with the other side's shots on it. The lists under the grids show which ships are still afloat.</li>
+        <li><b>Goal:</b> sink the other side's whole fleet first.</li>
         <li><b>2 players:</b> hand the device over when asked. The screen is covered between turns so nobody sees the other fleet.</li>
       </ul>
       <button id="helpClose">Got it</button>
@@ -78,6 +87,7 @@
   <script src="core/rules.js"></script>
   <script src="core/ai.js"></script>
   <script src="ui/sound.js"></script>
+  <script src="ui/ships.js"></script>
   <script src="ui/render.js"></script>
   <script src="core/game.js"></script>
 </body>

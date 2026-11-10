@@ -1,5 +1,5 @@
 /*
- * Battleship — config (SHIP-1). All tunable numbers live here.
+ * Battleship — config (SHIP-2a). All tunable numbers live here.
  * The classic paper game: two 10 x 10 grids, a fleet of 5 ships (5, 4, 3, 3, 2), one shot per turn.
  * Coordinates: x = 0..9 (columns A..J), y = 0..9 (rows 1..10). Cell index = y * 10 + x.
  */

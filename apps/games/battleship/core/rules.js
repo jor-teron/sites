@@ -1,5 +1,5 @@
 /*
- * Battleship — rules (SHIP-1). Pure functions, no page code.
+ * Battleship — rules (SHIP-2a). Pure functions, no page code.
  * A board = { ships: [{ name, size, x, y, o }], shots: [100 x 0 none / 1 miss / 2 hit] }.
  * A ship sits at (x, y) and runs right ('h') or down ('v'); x = -1 means not placed yet.
  * Ships must fit on the grid and may not overlap (touching is allowed, as on paper).
@@ -31,7 +31,8 @@ const BSRules = (() => {
     if (!fits(b, i, x, y, o)) return false;
     Object.assign(b.ships[i], { x, y, o }); return true;
   }
-  /** Place with the bow on (x, y), slid back inside the grid if it would hang off the edge. */
+  /** Place with the bow on (x, y), slid back inside the grid if it would hang off the edge.
+   *  The SHIP-2a UI uses place() instead, so a tap near the edge is refused rather than slid. */
   function placeNear(b, i, x, y, o) {
     const sz = b.ships[i].size;
     if (o === 'h') x = Math.min(x, N - sz); else y = Math.min(y, N - sz);
