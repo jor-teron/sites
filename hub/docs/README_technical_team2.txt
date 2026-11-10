@@ -900,6 +900,42 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   Details: apps/media/video-editor/NOTES.md.
   Note: section 1.55 is the next free number on main after VD2 (1.54).
 
+### 1.56 Read Aloud, release RA1
+
+Standalone Tools app. Jor asked for a reader inside the Hub (for News), then
+for it to be a standalone app, not a News-app button. Built by Hub Apps
+Builder 2 after "do RA1". Local commit only at the time of writing.
+
+Shipped in this file set (RA1):
+- Path: apps/tools/read-aloud/. Tile in apps/tools/tools-apps.csv (Language),
+  icon read-aloud/read-aloud_icon.svg. tools.html is CSV-driven and was not
+  changed. Hub catalog / hub_appindex.js was not regenerated (Hub-owned).
+- News source: same tabs as the News app (India, Assam, user places from
+  news.places, World / Sports / Tech / Business, Saved). Includes
+  apps/media/news/news_store.js and news_feed.js (they do not boot UI).
+  Shares the news.* cache. Refresh may write the shared cache. Does not
+  write News settings, seen, Saved, or places. "Only new stories" reads
+  news.seen but does not mark stories seen.
+- Spoken form: "<source>, <time ago>, <headline>". Current item highlighted
+  and scrolled into view. Open link in a new tab. Tap an item to start there.
+- Text source: paste, or open a .txt / .md file (FileReader, basic markdown
+  stripped). Sentence-by-sentence highlight; tap a sentence to start there.
+- Player: play / pause, previous, next, stop. Keys: Space, left / right,
+  Esc to stop (ignored while typing). Position remembered per source
+  (readaloud.pos.*). One utterance per item or sentence.
+- Settings: voice (en-IN if available, else English, else first), speed
+  0.75x-2x (default 1), pitch 0.5-1.5, only-new toggle, theme Auto / Light /
+  Dark (Auto follows the Hub via shared/theme/hub_theme.js, live). Voice test.
+- In-app dialogs only. Light: vanilla JS, no CDN, browser speechSynthesis.
+- Tests: node --check on every JS file, a Node sentence-splitter helper
+  check (no DOM), static serve + curl 200, grep for RELEASE / RA1.
+  No Puppeteer, Playwright, or jsdom.
+
+Later, if Jor wants them: RA2 could add PDF and web-page reading, plus a
+sleep timer. Full article text is still a maybe (publishers often block it).
+
+Doc section 1.56 is the next free number on main after Video Editor VD3.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
