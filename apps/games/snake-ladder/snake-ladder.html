@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#244c43" />
+    <title>Snake &amp; Ladder</title>
+    <link rel="icon" href="assets/snake-ladder_icon.png" />
+    <link rel="stylesheet" href="ui/base.css" />
+    <link rel="stylesheet" href="ui/board.css" />
+    <link rel="stylesheet" href="ui/controls.css" />
+    <link rel="stylesheet" href="ui/screens.css" />
+  </head>
+  <body>
+    <header class="appbar">
+      <a class="brand" href="../games.html" aria-label="Back to Games"
+        ><img src="assets/snake-ladder_icon.png" alt="" width="36" height="36"
+      /></a>
+      <div>
+        <h1>Snake &amp; Ladder</h1>
+        <span class="eyebrow">A little luck. A big adventure.</span>
+      </div>
+      <button id="mute-toggle" type="button" aria-label="Mute sounds" aria-pressed="false">♪</button
+      ><button id="btn-help" type="button" aria-label="How to play">?</button>
+      <div id="gear"></div>
+    </header>
+    <main>
+      <section id="screen-lobby" class="screen lobby">
+        <div class="welcome">
+          <span class="eyebrow">THE CLASSIC FAMILY BOARD GAME</span>
+          <h2>Up the ladders.<br />Past the snakes.</h2>
+          <p>Pick a board and gather your players.<br />The first to reach square 100 wins.</p>
+          <div class="ornament" aria-hidden="true">① ━ 🪜 ━ ➊⓿⓿</div>
+        </div>
+        <div class="lobby-card">
+          <h2>Let's play</h2>
+          <div class="seed-row">
+            <label class="field"
+              >Board seed
+              <input id="seed-input" type="number" min="0" max="99" value="7" inputmode="numeric" /></label
+            ><button id="seed-random" type="button">Shuffle</button>
+          </div>
+          <fieldset class="seats">
+            <legend>Players</legend>
+            <div class="seat-row">
+              <label for="seat-0" class="seat-label p1"
+                ><span class="dot p1" aria-hidden="true"></span>Red</label
+              ><select id="seat-0" aria-label="Red seat">
+                <option value="human" selected>Human</option>
+                <option value="cpu">CPU</option>
+                <option value="off">Off</option></select
+              ><select id="level-0" aria-label="Red CPU level">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div class="seat-row">
+              <label for="seat-1" class="seat-label p2"
+                ><span class="dot p2" aria-hidden="true"></span>Green</label
+              ><select id="seat-1" aria-label="Green seat">
+                <option value="human">Human</option>
+                <option value="cpu" selected>CPU</option>
+                <option value="off">Off</option></select
+              ><select id="level-1" aria-label="Green CPU level">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div class="seat-row">
+              <label for="seat-2" class="seat-label p3"
+                ><span class="dot p3" aria-hidden="true"></span>Yellow</label
+              ><select id="seat-2" aria-label="Yellow seat">
+                <option value="human">Human</option>
+                <option value="cpu">CPU</option>
+                <option value="off" selected>Off</option></select
+              ><select id="level-2" aria-label="Yellow CPU level">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div class="seat-row">
+              <label for="seat-3" class="seat-label p4"
+                ><span class="dot p4" aria-hidden="true"></span>Purple</label
+              ><select id="seat-3" aria-label="Purple seat">
+                <option value="human">Human</option>
+                <option value="cpu">CPU</option>
+                <option value="off" selected>Off</option></select
+              ><select id="level-3" aria-label="Purple CPU level">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+          </fieldset>
+          <fieldset class="house-rules">
+            <legend>House rules</legend>
+            <label><input id="rule-exact" type="checkbox" checked /> Exact 100</label
+            ><label><input id="rule-again" type="checkbox" /> Six rolls again</label
+            ><label><input id="rule-start" type="checkbox" /> Six to start</label>
+          </fieldset>
+          <p id="lobby-error" role="alert"></p>
+          <p class="small">100 seeded boards · 9 ladders · 8 snakes</p>
+          <button id="btn-resume" type="button" hidden>Resume</button
+          ><button id="btn-start" class="primary" type="button">Start adventure →</button>
+        </div>
+      </section>
+      <section id="screen-play" class="screen hidden">
+        <div id="board-wrap">
+          <div class="board-caption"><span>↗ Climb ladders</span><span>Watch the snakes ↘</span></div>
+          <div class="board-rim">
+            <div id="board" tabindex="0" role="img" aria-label="Snakes and ladders board numbered 1 to 100">
+              <svg id="board-svg" viewBox="0 0 10 10" aria-hidden="true"></svg>
+            </div>
+          </div>
+          <div class="board-caption"><span>START AT 1</span><span>RACE TO 100 ✦</span></div>
+        </div>
+        <aside id="panel">
+          <header class="panel-top">
+            <div>
+              <span class="eyebrow">YOUR ADVENTURE</span>
+              <h2>Board <span id="panel-seed">07</span></h2>
+            </div>
+            <button id="btn-quit" type="button">Quit</button>
+          </header>
+          <div id="dice-box">
+            <div id="dice" class="dice" role="img" aria-label="Die">–</div>
+            <button id="btn-roll" class="primary" type="button">Roll</button>
+          </div>
+          <ul id="players"></ul>
+          <div class="log-title">THE JOURNEY</div>
+          <p id="turn-status" class="sr-only" role="status" aria-live="polite"></p>
+          <div
+            id="log"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+            aria-label="Game journey"
+          ></div>
+          <p id="save-note" class="small">Progress saved after every turn.</p>
+        </aside>
+      </section>
+      <section id="screen-result" class="screen hidden result">
+        <span class="trophy" aria-hidden="true">🏆</span>
+        <h2 id="result-title">Winner!</h2>
+        <p id="result-sub"></p>
+        <button id="btn-again" class="primary" type="button">Another adventure</button>
+      </section>
+    </main>
+    <dialog id="help" aria-labelledby="help-title">
+      <div class="help-head">
+        <h2 id="help-title">How to play</h2>
+        <button id="help-close" type="button" aria-label="Close help">✕</button>
+      </div>
+      <p>
+        Roll the die and follow the numbered path from <strong>1 to 100</strong>. Land at a ladder's foot to
+        climb. Land on a snake's head to slide down its body. Only one connector is used each turn.
+      </p>
+      <h3>Your table. Your rules.</h3>
+      <ul>
+        <li>
+          <strong>Exact 100</strong> (on by default): an overshoot stays put. With it off you stop at 100.
+        </li>
+        <li><strong>Six rolls again:</strong> enjoy another turn after any six.</li>
+        <li>
+          <strong>Six to start:</strong> wait at the gate until you roll six. That roll enters at square 1.
+        </li>
+      </ul>
+      <h3>Play together or with computers</h3>
+      <p>
+        Choose 2–4 active seats. Human seats take turns on this device; CPU seats roll automatically.
+        <strong>This is a game of chance:</strong> Easy / Medium / Hard change CPU pace and coaching detail
+        only. Everyone uses the same fair six-sided die.
+      </p>
+      <p>
+        Use the Roll button (or Space when the board has focus). Progress saves after each complete turn. Quit
+        or reload during a roll returns to the previous complete turn. Resume is on the welcome screen. CPU
+        players wait while the tab is hidden or help is open.
+      </p>
+      <label class="motion-option"
+        ><input id="motion-toggle" type="checkbox" checked /> Animate pawns and dice</label
+      >
+      <p class="small">
+        System reduced-motion always takes priority. This switch uses shared Game Settings → Low graphics. The
+        gear opens theme (Auto / Light / Dark) and volume; Auto follows the Hub, then your device.
+      </p>
+    </dialog>
+    <script src="../common/settings/games-settings.js"></script>
+    <script src="core/config.js"></script>
+    <script src="ui/settings.js"></script>
+    <script src="core/board.js"></script>
+    <script src="core/rules.js"></script>
+    <script src="core/ai.js"></script>
+    <script src="core/save.js"></script>
+    <script src="core/engine.js"></script>
+    <script src="ui/sound.js"></script>
+    <script src="ui/render.js"></script>
+    <script src="ui/ui.js"></script>
+    <script src="core/main.js"></script>
+  </body>
+</html>
