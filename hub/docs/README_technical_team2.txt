@@ -1496,7 +1496,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 
   Note: 1.53–1.83 are already taken on main, so this section is 1.84.
 
-### 1.74 Sun Position plan tools, release SP2
+### 1.85 Sun Position plan tools, release SP2
 
 - apps/tools/sun-position only. Plan tab added (Now | Plan). Date, time slider and Now stay
   shared above both tabs. Shadow height is remembered in sun-position-v1.shadowH (metres).
