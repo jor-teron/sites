@@ -12,6 +12,7 @@ function afterSheetOp() {
   else if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
   paintAll();
   if (typeof dataRenderFilterButtons === "function") dataRenderFilterButtons();
+  if (typeof renderCharts === "function") renderCharts();
   highlightSel();
   renderSheetTabs();
   saveStore();
@@ -67,6 +68,7 @@ function duplicateSheet(idx) {
   copy.validations = typeof cloneValidations === "function" ? cloneValidations(src.validations) : JSON.parse(JSON.stringify(src.validations || []));
   copy.merges = JSON.parse(JSON.stringify(src.merges || []));
   copy.condFormats = JSON.parse(JSON.stringify(src.condFormats || []));
+  copy.charts = JSON.parse(JSON.stringify(src.charts || []));
   workbook.sheets.splice(idx + 1, 0, copy);
   workbook.active = idx + 1;
   bindActiveSheet();

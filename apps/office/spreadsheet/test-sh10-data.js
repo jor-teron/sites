@@ -159,14 +159,14 @@ test("applyFilters hides non-matching rows and skips the header", function () {
   eq(ctx.rowHidden(1, 0), false);
 });
 
-test("sheet-v3 save keeps filters and validations (old files still load)", function () {
+test("sheet-v4 save keeps filters and validations (old files still load)", function () {
   ctx.emptyWorkbook();
   var s = ctx.workbook.sheets[0];
   s.cells[0][0].formula = "A"; s.cells[0][0].value = "A";
   s.filters = { on: true, r1: 0, r2: 2, c1: 0, c2: 0, cols: { 0: { blanks: true, values: ["A"] } } };
   s.validations = [{ r1: 0, r2: 5, c1: 1, c2: 1, source: "Yes, No" }];
   var raw = ctx.serializeWorkbook();
-  eq(raw.v, 3);
+  eq(raw.v, 4);
   eq(raw.sheets[0].filters.on, true);
   eq(raw.sheets[0].validations[0].source, "Yes, No");
   /* A v3 payload without the new fields still deserializes. */

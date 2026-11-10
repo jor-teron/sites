@@ -27,6 +27,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet_logic.js`: small orchestrator (after-change pipeline, start-up)
 - `spreadsheet_format.js`: number and date / time display formats
 - `spreadsheet_style.js`: SH11 merge, borders, font size, wrap, conditional formatting, format painter
+- `spreadsheet_charts.js`: SH12 column / bar / line / pie charts (canvas, no libraries)
 - `spreadsheet_undo.js`: undo / redo
 - `spreadsheet_select.js`: block selection (drag, Shift+click, Shift+arrows, select all)
 - `spreadsheet_clipboard.js`: copy / cut / paste, fill down / right
@@ -76,7 +77,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 Works inside the hub and responds to its phone D-pad, but the hub's key presses are synthetic: only shortcuts the app handles itself work (arrows move, Start = Enter, Select = Esc); browser actions such as the system clipboard don't, so a hub paste uses the app's internal copy.
 
 ## 5. Saved data
-localStorage key `sheet-v3` (workbook: sheets, active sheet, cells, styles, formats, widths, freeze, hidden). An older `sheet-v2` (or `sheet-v1`) save is copied into Sheet1 on first load and left in place as a backup; later loads use only `sheet-v3`. Page setup is `sheet-v3-page`, with `sheet-v2-page` as a fallback. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
+localStorage key `sheet-v4` (workbook: sheets, charts, active sheet, cells, styles, formats, widths, freeze, hidden, filters, validation, merges, conditional formats). An older `sheet-v3` / `sheet-v2` / `sheet-v1` save is migrated into v4 on first load and left in place as a backup; later loads use only `sheet-v4`. Page setup is `sheet-v4-page`, with `sheet-v3-page` then `sheet-v2-page` as fallbacks. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
 
 ## 6. Errors
 - In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#ERR` (formula not understood).
@@ -181,3 +182,12 @@ The grid is still 26 × 100. Storage is still `sheet-v3`; merges and conditional
 - **XLSX:** merged cells and number/date formats are written. Font, fill, borders and align are attached for libraries that support `cell.s`; SheetJS CE usually drops them. Styles always stay in the app's own save. CSV is values only, as before.
 - Title, `SHEET_VERSION` and `?v=` are SH11.
 - **Limits:** wrap preview can clip to a couple of lines; editing is still one line. Merges that include a hidden or filtered row can look odd. Colour scales use numeric values only. Conditional formatting is not written to XLSX. SheetJS CE typically does not persist font/fill/border styles on export.
+
+## SH12 — charts
+The grid is still 26 × 100.
+
+- **Insert a chart:** select a range (or click one cell to use the used area) and choose Column, Bar, Line or Pie on the Insert tab. The first row is treated as a header when it contains text; the first column is treated as labels when it is text. A pie chart uses the first series only. At most 8 charts on a sheet.
+- **Move and resize:** drag the title bar to move; drag a handle to resize (minimum 200 × 140). Delete (or the × on the chart) asks in an in-app confirm. PNG downloads the chart as an image. Adding, deleting, moving and resizing can be undone.
+- **Saving:** `sheet-v4`. A `sheet-v3` (or v2 / v1) save is migrated once and left in place. Charts are stored as type, range, title and position — they are redrawn from the current cell values when the file is opened.
+- Title, `SHEET_VERSION` and `?v=` are SH12.
+- **Limits:** charts are not written to XLSX or CSV. There are no trendlines, secondary axes, or chart styles beyond the four types. Labels longer than 8 characters are trimmed on the axis. A pie slice smaller than 4% of the total has no label. Charts sit over the grid (they are not in a cell) and print with the sheet but without the move bar.

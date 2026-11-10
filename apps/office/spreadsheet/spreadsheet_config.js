@@ -20,9 +20,10 @@ const SPREADSHEET_CONFIG = {
 
   // localStorage
   storage: {
-    key: "sheet-v3",                     // current save key (workbook: sheets + active)
-    legacyKey: "sheet-v2",               // older single-sheet save, migrated into Sheet1 (left in place)
-    legacyKey1: "sheet-v1",              // even older save, used if v3 and v2 are empty
+    key: "sheet-v4",                     // current save key (workbook: sheets + charts)
+    legacyKey: "sheet-v3",               // SH8–SH11 workbook, migrated (left in place)
+    legacyKey1: "sheet-v2",              // older single-sheet save
+    legacyKey2: "sheet-v1",              // even older save
   },
 
   // Workbook (SH8)
