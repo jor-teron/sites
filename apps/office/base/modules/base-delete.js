@@ -1,5 +1,5 @@
 /*
- * base-delete.js  (BS4 delete safety, BS5: undo for records)
+ * base-delete.js  (BS4 delete safety, BS5: undo for records, BS6: link guard)
  * Deleting a table and deleting records are both deliberately hard, and look clearly different.
  *   - No visible delete button beside the table, on rows or in the form view. Both deletes live in small
  *     "⋯" menus in the ribbon (Home > Table ⋯ and Home > Records ⋯), shown in danger red.
@@ -11,6 +11,8 @@
  *   - The Delete and Backspace keys never delete records: outside a text field they do nothing.
  *   - Record deletes are undoable (BaseHistory, Ctrl+Z) until you close Base. Deleting a whole
  *     table cannot be undone (the undo stack is cleared). Deletes save straight away (BaseStore.saveNow).
+ * BS6: if other records (or tables) link to what you are deleting, the dialog lists them and the
+ *     confirm button becomes “Clear links and delete…”. Cancel keeps everything.
  * Dialog uses the shared dlg-* look (../../shared/office-dialog.css), never alert/confirm.
  * API: BaseDelete.table(), BaseDelete.records(rows?), BaseDelete.menu(anchor, items), BaseDelete.isOpen()
  * DEPENDS: BASE, BaseStore, BaseUI (render, status), OfficeNotify (optional).
@@ -92,18 +94,45 @@ var BaseDelete = (function () {
     });
   }
 
+  function impactBox(imp) {
+    if (!imp || !imp.groups.length) return null;
+    var box = el("div", "base-del-links");
+    var who = imp.groups.map(function (g) {
+      return "“" + g.tableName + "” (" + g.fieldName + ")" + (g.n ? ", " + g.n + " record" + (g.n === 1 ? "" : "s") : "");
+    }).join("; ");
+    box.appendChild(el("div", "base-del-link-title", "Other records link here"));
+    box.appendChild(el("div", "base-del-link-body", who + ". Those links will be cleared if you continue. Cancel keeps everything."));
+    if (imp.groups.some(function (g) { return g.labels && g.labels.length; })) {
+      var ul = el("ul", "base-del-link-list");
+      imp.groups.forEach(function (g) {
+        (g.labels || []).slice(0, 6).forEach(function (lab) {
+          ul.appendChild(el("li", null, g.tableName + " · " + lab));
+        });
+        if (g.labels.length > 6) ul.appendChild(el("li", null, "… +" + (g.labels.length - 6) + " more"));
+      });
+      box.appendChild(ul);
+    }
+    return box;
+  }
   function deleteTable() {
     var t = BaseStore.table(); if (!t) return toast("No table to delete");
+    var wrap = el("div", "base-del-body");
     var body = el("div", "base-del-facts");
     [["Table", t.name], ["Records", String(t.rows.length)], ["Fields", String(t.fields.length)]].forEach(function (p) {
       var r = el("div", "base-del-fact"); r.appendChild(el("span", null, p[0])); r.appendChild(el("b", null, p[1])); body.appendChild(r);
     });
+    wrap.appendChild(body);
+    var imp = (typeof BaseLinks !== "undefined") ? BaseLinks.deleteImpact(t, null) : { count: 0, groups: [] };
+    var ib = impactBox(imp); if (ib) wrap.appendChild(ib);
+    var lead = "This permanently removes the table “" + t.name + "” with all " + plural(t.rows.length, "record") + " and " + plural(t.fields.length, "field") + ". Deleting a whole table cannot be undone.";
+    if (imp.count || imp.groups.length) lead = "Other tables have fields that link to “" + t.name + "”. " + lead + " Continuing will clear those links.";
     return typed({ kind: "table", icon: "🗑", title: "Delete whole table",
-      lead: "This permanently removes the table “" + t.name + "” with all " + plural(t.rows.length, "record") + " and " + plural(t.fields.length, "field") + ". Deleting a whole table cannot be undone.",
-      body: body, prompt: "Type the table name “" + t.name + "” to confirm", ok: "Delete table",
+      lead: lead,
+      body: wrap, prompt: "Type the table name “" + t.name + "” to confirm", ok: (imp.groups.length ? "Clear links and delete table" : "Delete table"),
       check: function (v) { return v.trim() === t.name; }
     }).then(function (yes) {
       if (!yes) return false;
+      if (imp.groups.length && typeof BaseLinks !== "undefined") BaseLinks.clearLinksTo(t.id);
       BASE.db.tables = BASE.db.tables.filter(function (x) { return x !== t; });
       BASE.db.current = BASE.db.tables[0] ? BASE.db.tables[0].id : null;
       BASE.selRow = null; BASE.sort = null; BASE.formIndex = 0;
@@ -133,14 +162,20 @@ var BaseDelete = (function () {
     });
     if (t.fields.length > 6) { list.appendChild(el("dt", null, "…")); list.appendChild(el("dd", null, "+" + (t.fields.length - 6) + " more fields")); }
     body.appendChild(list);
+    var wrap = el("div", "base-del-body"); wrap.appendChild(body);
+    var imp = (typeof BaseLinks !== "undefined") ? BaseLinks.deleteImpact(t, rows) : { count: 0, groups: [] };
+    var ib = impactBox(imp); if (ib) wrap.appendChild(ib);
+    var lead = "This removes " + (n > 1 ? "these " + n + " records" : "this record") + " from the table “" + t.name + "”. The table and its other records stay. You can Undo this afterwards (Ctrl+Z) until you close Base.";
+    if (imp.count) lead = (imp.count === 1 ? "1 other record links" : imp.count + " other records link") + " here. Those links will be cleared. " + lead;
     return typed({ kind: "record", icon: "⊖", title: n > 1 ? "Delete " + n + " records" : "Delete 1 record",
-      lead: "This removes " + (n > 1 ? "these " + n + " records" : "this record") + " from the table “" + t.name + "”. The table and its other records stay. You can Undo this afterwards (Ctrl+Z) until you close Base.",
-      body: body, prompt: "Type DELETE (or " + n + ") to confirm", ok: n > 1 ? "Delete " + n + " records" : "Delete record",
+      lead: lead,
+      body: wrap, prompt: "Type DELETE (or " + n + ") to confirm", ok: imp.count ? (n > 1 ? "Clear links and delete " + n + " records" : "Clear links and delete") : (n > 1 ? "Delete " + n + " records" : "Delete record"),
       check: function (v) { v = v.trim(); return v === "DELETE" || v === String(n); }
     }).then(function (yes) {
       if (!yes) return false;
       try { if (typeof BaseHistory !== "undefined") BaseHistory.push(n > 1 ? "Delete records" : "Delete record"); } catch (e) {}
       var ids = {}; rows.forEach(function (r) { ids[r.id] = 1; });
+      if (imp.count && typeof BaseLinks !== "undefined") BaseLinks.clearLinksTo(t.id, ids);
       t.rows = t.rows.filter(function (r) { return !ids[r.id]; });
       BASE.selRow = null; BaseStore.saveNow(); BaseUI.render(); toast(plural(n, "record") + " deleted");
       return true;

@@ -1,8 +1,9 @@
 /*
- * base-types.js  (BS5)
+ * base-types.js  (BS5, BS6: ref + lookup)
  * Field types, formatting, conversion, validation and auto-number helpers for Base.
  * No DOM. Safe to load in Node for helper tests.
- *   Types: text, number, date, bool (BS1) + choice, email, phone, link, currency, long, picture, id (BS5).
+ *   Types: text, number, date, bool (BS1) + choice, email, phone, link, currency, long, picture, id (BS5)
+ *   + ref (link to a record) and lookup (a column from the linked record) (BS6).
  * API: BaseTypes.TYPES, .ALL, .opts(), .label(type), .parseType(s), .isEmpty(f, v),
  *      .formatCurrency(v), .parseCurrency(s), .formatSearch(f, v), .hrefFor(v),
  *      .queryGroup(type), .sortType(type), .isNumeric(type),
@@ -14,7 +15,8 @@
 (function (root) {
   var TYPES = {
     text: 1, number: 1, date: 1, bool: 1,
-    choice: 1, email: 1, phone: 1, link: 1, currency: 1, long: 1, picture: 1, id: 1
+    choice: 1, email: 1, phone: 1, link: 1, currency: 1, long: 1, picture: 1, id: 1,
+    ref: 1, lookup: 1
   };
   var ALL = [
     { value: "text", label: "Text" },
@@ -28,7 +30,9 @@
     { value: "currency", label: "Currency (₹)" },
     { value: "long", label: "Long text" },
     { value: "picture", label: "Picture" },
-    { value: "id", label: "Auto-number ID" }
+    { value: "id", label: "Auto-number ID" },
+    { value: "ref", label: "Link to record" },
+    { value: "lookup", label: "Lookup" }
   ];
   var LABELS = {};
   ALL.forEach(function (o) { LABELS[o.value] = o.label; });
@@ -49,12 +53,15 @@
     if (/^long|^memo|^note/.test(s)) return "long";
     if (/^pic|^image|^photo/.test(s)) return "picture";
     if (/^id$|^auto|^serial/.test(s)) return "id";
+    if (/^ref|^record|^link.?to|^link to/.test(s)) return "ref";
+    if (/^look/.test(s)) return "lookup";
     return TYPES[s] ? s : null;
   }
   function isNumeric(t) { return t === "number" || t === "currency" || t === "id"; }
   function queryGroup(t) {
     if (t === "currency" || t === "id") return "number";
     if (t === "email" || t === "phone" || t === "link" || t === "long") return "text";
+    if (t === "lookup") return "text";
     if (TYPES[t]) return t;
     return "text";
   }
@@ -65,6 +72,11 @@
     if (t === "bool") return false;
     if (t === "number" || t === "currency" || t === "id") return v === "" || v == null || (typeof v === "number" && isNaN(v));
     if (t === "picture") return !v;
+    if (t === "ref") {
+      if (typeof BaseLinks !== "undefined") return BaseLinks.isEmpty(v);
+      return v == null || v === "" || (Array.isArray(v) && !v.length);
+    }
+    if (t === "lookup") return v == null || v === "" || (Array.isArray(v) && !v.length);
     return v == null || String(v).trim() === "";
   }
 
@@ -95,6 +107,8 @@
       return (n + " " + pretty).trim();
     }
     if (f.type === "long") return String(v == null ? "" : v);
+    if (f.type === "ref" && typeof BaseLinks !== "undefined") return BaseLinks.displayText(f, v);
+    if (f.type === "ref" && Array.isArray(v)) return v.join(" ");
     return String(v == null ? "" : v);
   }
 
@@ -111,6 +125,8 @@
   function defaultValue(f) {
     if (!f) return "";
     if (f.type === "id") return null;
+    if (f.type === "ref") return f.multi ? [] : "";
+    if (f.type === "lookup") return "";
     if (f.type === "bool") {
       if (f.def === true || f.def === "true" || /^yes$/i.test(String(f.def || ""))) return true;
       return false;
@@ -166,6 +182,15 @@
 
   function convert(v, fromType, toType) {
     if (fromType === toType) return { value: v, lost: false };
+    if (fromType === "lookup") return { value: toType === "bool" ? false : (toType === "ref" ? "" : ""), lost: false };
+    if (toType === "ref" || toType === "lookup") return { value: toType === "ref" ? "" : "", lost: !isEmpty({ type: fromType }, v) && toType === "ref" };
+    if (fromType === "ref") {
+      var txt = (typeof BaseLinks !== "undefined" && arguments[3]) ? BaseLinks.displayText(arguments[3], v) : (Array.isArray(v) ? v.join(", ") : str(v));
+      if (toType === "text" || toType === "long" || toType === "email" || toType === "phone" || toType === "link" || toType === "choice") {
+        return { value: txt, lost: false };
+      }
+      return { value: "", lost: !isEmpty({ type: "ref" }, v) };
+    }
     if (isEmpty({ type: fromType }, v) && toType !== "bool") return { value: toType === "bool" ? false : "", lost: false };
     if (toType === "picture") return { value: "", lost: !isEmpty({ type: fromType }, v) };
     if (fromType === "picture") return { value: "", lost: !!v };
@@ -201,7 +226,7 @@
       var v = r.v ? r.v[field.id] : "";
       if (isEmpty(field, v) && field.type !== "bool") return;
       total++;
-      var c = convert(v, field.type, toType);
+      var c = convert(v, field.type, toType, field);
       if (c.fill) { kept++; return; }
       if (c.lost) { lost++; if (samples.length < 3) samples.push(previewText(field, v)); }
       else kept++;
@@ -211,6 +236,11 @@
 
   function uniqueKey(f, v) {
     if (isNumeric(f.type)) return String(+v);
+    if (f.type === "ref") {
+      var a = (typeof BaseLinks !== "undefined" ? BaseLinks.ids(v) : (Array.isArray(v) ? v : (v ? [v] : []))).slice();
+      a.sort();
+      return a.join("\n");
+    }
     return String(v == null ? "" : v).trim().toLowerCase();
   }
   function isDup(table, field, value, rowId) {
@@ -232,6 +262,10 @@
     if (t === "phone") {
       var digits = s.replace(/\D/g, "");
       return digits.length >= 7 && digits.length <= 15 ? "" : "“" + field.name + "” does not look like a phone number.";
+    }
+    if (t === "ref" && typeof BaseLinks !== "undefined") {
+      var miss = BaseLinks.missingCount(field, value);
+      return miss ? (miss + " linked record" + (miss === 1 ? " is" : "s are") + " missing.") : "";
     }
     if (t === "link") {
       if (/^(javascript|data|vbscript):/i.test(s)) return "“" + field.name + "” is not a safe link.";
@@ -269,6 +303,11 @@
   function previewText(f, v) {
     if (f.type === "bool") return v ? "Yes" : "No";
     if (f.type === "picture") return v ? "(picture)" : "—";
+    if (f.type === "ref") {
+      if (typeof BaseLinks !== "undefined") return BaseLinks.displayText(f, v) || "—";
+      return (Array.isArray(v) ? v.join(", ") : str(v)) || "—";
+    }
+    if (f.type === "lookup") return str(v) || "—";
     if (f.type === "currency") return formatCurrency(v) || "—";
     if (f.type === "long") {
       var line = str(v).split(/\r?\n/)[0];

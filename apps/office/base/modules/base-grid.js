@@ -1,11 +1,12 @@
 /*
- * base-grid.js  (BS1, BS2: query filter + shown fields, Totals row, BS5: new field types)
+ * base-grid.js  (BS1, BS2, BS5, BS6: Link to record + Lookup cells)
  * Grid view: one control per cell (inline edit, autosave), header click sorts (asc -> desc -> off),
  * search box filters rows (any field contains text; pictures are skipped). Row number click selects
  * a row (for Records ⋯ > Delete record…, BS4).
  * BS5: Choice is a <select>, Currency shows ₹ en-IN when not editing, Long text is a one-line
  *   textarea, Picture is a thumbnail, Auto-number ID is read-only, Link has an open-in-new-tab
  *   button, invalid (required / unique) cells are marked. Totals include Currency.
+ * BS6: Link to record shows chips (pick / jump / clear); Lookup is read-only text from the linked record.
  * API: BaseGrid.render(), BaseGrid.visibleRows(t, ignoreSearch), BaseGrid.inputFor(field, value, onSet, mode, row)
  */
 var BaseGrid = (function () {
@@ -19,15 +20,31 @@ var BaseGrid = (function () {
   }
   function visibleRows(t, ignoreSearch) {
     var rows = typeof BaseQuery !== "undefined" ? BaseQuery.filter(t, t.rows.slice()) : t.rows.slice(), q = ignoreSearch ? "" : BASE.search.trim().toLowerCase(), s = BASE.sort;
+    var qf = typeof BaseLinks !== "undefined" ? BaseLinks.queryFields(t) : t.fields;
     if (q) rows = rows.filter(function (r) {
       return t.fields.some(function (f) {
         if (f.type === "picture") return false;
-        var v = T() ? BaseTypes.formatSearch(f, r.v[f.id]) : (f.type === "bool" ? (r.v[f.id] ? "yes" : "no") : String(r.v[f.id] == null ? "" : r.v[f.id]));
-        return v.toLowerCase().indexOf(q) >= 0;
+        var v;
+        if (f.type === "ref" && typeof BaseLinks !== "undefined") v = BaseLinks.displayText(f, r.v[f.id]);
+        else if (f.type === "lookup" && typeof BaseLinks !== "undefined") v = BaseLinks.lookupText(t, f, r);
+        else v = T() ? BaseTypes.formatSearch(f, r.v[f.id]) : (f.type === "bool" ? (r.v[f.id] ? "yes" : "no") : String(r.v[f.id] == null ? "" : r.v[f.id]));
+        return String(v || "").toLowerCase().indexOf(q) >= 0;
       });
     });
-    var f = s && t.fields.filter(function (x) { return x.id === s.field; })[0];
-    if (f) rows.sort(function (a, b) { return cmp(a.v[f.id], b.v[f.id], f.type) * s.dir; });
+    var f = s && qf.filter(function (x) { return x.id === s.field; })[0];
+    if (f) rows.sort(function (a, b) {
+      function val(r) {
+        if (f.type === "ref" && typeof BaseLinks !== "undefined") return BaseLinks.displayText(f, r.v[f.id]);
+        if (f.type === "lookup" && typeof BaseLinks !== "undefined") return BaseLinks.lookupValue(t, f, r);
+        if (f._via && typeof BaseLinks !== "undefined") { var vs = BaseLinks.resolve(t, f, r); return vs.length ? vs[0] : ""; }
+        return r.v[f.id];
+      }
+      var typ = (f.type === "lookup" || f._via) && typeof BaseLinks !== "undefined" ? BaseLinks.resolvedType(t, f) : f.type;
+      var va = val(a), vb = val(b);
+      if (Array.isArray(va)) va = va[0];
+      if (Array.isArray(vb)) vb = vb[0];
+      return cmp(va, vb, typ) * s.dir;
+    });
     return rows;
   }
 
@@ -65,6 +82,19 @@ function inputFor(f, val, onSet, mode, r) {
       }
     }
 
+    if (f.type === "ref" && r && typeof BaseLinks !== "undefined") return BaseLinks.control(t, f, r, mode);
+    if ((f.type === "lookup" || f._via) && r && typeof BaseLinks !== "undefined") {
+      if (f._via) {
+        var w = document.createElement("div"); w.className = "base-cell base-cell-lookup" + (mode === "form" ? " in-form" : "");
+        var vs = BaseLinks.resolve(t, f, r), txt = vs.map(function (x) {
+          return T() ? BaseTypes.previewText({ type: f.type, name: f.name }, x) : String(x == null ? "" : x);
+        }).filter(function (s) { return s && s !== "—"; }).join(", ") || "—";
+        var ro = document.createElement("input"); ro.type = "text"; ro.value = txt; ro.readOnly = true; ro.tabIndex = -1;
+        ro.className = "base-lookup"; ro.setAttribute("aria-readonly", "true");
+        w.appendChild(ro); return w;
+      }
+      return BaseLinks.lookupCell(t, f, r, mode);
+    }
     if (f.type === "bool") {
       var i = document.createElement("input"); i.type = "checkbox"; i.checked = !!val;
       hook(i, "change", function () { return i.checked; });
@@ -175,7 +205,7 @@ function inputFor(f, val, onSet, mode, r) {
   function render() {
     var wrap = document.getElementById("grid-wrap"), t = BaseStore.table();
     wrap.textContent = "";
-    if (!t) return BaseUI.renderEmpty(wrap);
+    if (!t) { try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {} return BaseUI.renderEmpty(wrap); }
     var tbl = document.createElement("table"); tbl.className = "base-grid";
     var hr = tbl.createTHead().insertRow(), th = document.createElement("th");
     th.className = "num"; th.textContent = "#"; hr.appendChild(th);
@@ -209,22 +239,28 @@ function inputFor(f, val, onSet, mode, r) {
         td.appendChild(inp);
       });
     });
-    if (BASE.totals) totals(tbl, cols, rows);
+    if (BASE.totals) totals(tbl, cols, rows, t);
     wrap.appendChild(tbl);
     var aq = typeof BaseQuery !== "undefined" && BaseQuery.active();
+    try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {}
     BaseUI.status(rows.length + " of " + t.rows.length + " records" + (aq ? " · query" + (aq.name ? " “" + aq.name + "”" : "") : "") + (BASE.memOnly ? " · memory only" : ""));
   }
   /* Totals row (BS2/BS5): Sum / Avg / Count for Number and Currency fields over the visible rows */
   function fmt(n) { return Math.round(n * 100) / 100 + ""; }
-  function totals(tbl, cols, rows) {
+  function totals(tbl, cols, rows, t) {
     var tr = tbl.createTFoot().insertRow(), c = tr.insertCell(); c.className = "num"; c.textContent = "Σ";
     cols.forEach(function (f) {
       var td = tr.insertCell(); td.className = "base-total";
-      var numeric = f.type === "number" || f.type === "currency";
+      var typ = (f.type === "lookup" || f._via) && typeof BaseLinks !== "undefined" ? BaseLinks.resolvedType(t, f) : f.type;
+      var numeric = typ === "number" || typ === "currency";
       if (!numeric) { if (f === cols[0]) td.textContent = rows.length + " records"; return; }
-      var v = rows.map(function (r) { return r.v[f.id]; }).filter(function (x) { return x !== "" && x != null && !isNaN(+x); }).map(Number);
+      var v = rows.map(function (r) {
+        if (f.type === "lookup" && typeof BaseLinks !== "undefined") return BaseLinks.lookupValue(t, f, r);
+        if (f._via && typeof BaseLinks !== "undefined") { var vs = BaseLinks.resolve(t, f, r); return vs[0]; }
+        return r.v[f.id];
+      }).filter(function (x) { return x !== "" && x != null && !Array.isArray(x) && !isNaN(+x); }).map(Number);
       var sum = v.reduce(function (a, b) { return a + b; }, 0);
-      var show = function (n) { return f.type === "currency" && T() ? BaseTypes.formatCurrency(n) : fmt(n); };
+      var show = function (n) { return typ === "currency" && T() ? BaseTypes.formatCurrency(n) : fmt(n); };
       [["Sum", v.length ? show(sum) : "–"], ["Avg", v.length ? show(sum / v.length) : "–"], ["Count", v.length]].forEach(function (p) { var d = document.createElement("div"); d.textContent = p[0] + ": " + p[1]; td.appendChild(d); });
     });
   }

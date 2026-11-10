@@ -177,12 +177,12 @@ test("repair upgrades a BS4 database without dropping tables or rows", function 
   var res = ctx.BaseStore.repair(raw);
   assert.strictEqual(res.fixed, 0);
   assert.strictEqual(res.migrated, true);
-  assert.strictEqual(res.db.schema, 5);
+  assert.strictEqual(res.db.schema, ctx.BaseStore.SCHEMA);
   assert.strictEqual(res.db.tables.length, 1);
   assert.strictEqual(res.db.tables[0].rows[0].v.a, 650);
   assert.strictEqual(res.db.tables[0].fields[1].type, "number");
   /* new props are preserved when already present */
-  raw.schema = 5;
+  raw.schema = ctx.BaseStore.SCHEMA;
   raw.tables[0].fields.push({ id: "c", name: "Kind", type: "choice", options: ["Food", "Bus"], required: true, unique: false, def: "Food" });
   raw.tables[0].rows[0].v.c = "Food";
   var res2 = ctx.BaseStore.repair(raw);
