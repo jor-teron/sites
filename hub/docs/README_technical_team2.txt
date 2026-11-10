@@ -824,6 +824,30 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
+### 1.73 Sun Position app, release SP1
+
+- New apps/tools/sun-position (Tools, section 'Time', row added after Calendar Maker in
+  apps/tools/tools-apps.csv). Offline, no libraries. Opens on Diphu; in-app place picker
+  for GPS, a compact city list (Indian state and UT capitals plus major world cities, each
+  with an IANA time zone), typed latitude and longitude, and saved places.
+- localStorage 'sun-position-v1' {theme auto/light/dark, tzMode ist|place, places[],
+  currentPlace, askedPlace}. Auto follows sites-hub.theme. Dialogs in-app only.
+- Times default to IST; "This place" uses the city's zone, or the zone saved with a GPS /
+  custom place (device zone or one you pick). Date picker and time slider; Now is a live
+  view refreshed every 15 seconds (no render loop).
+- Compass dial: N at the top, today's above-horizon arc, sun at azimuth and elevation
+  (centre = zenith, rim = horizon). Times list: sunrise, sunset, solar noon, day length,
+  first and last light (civil twilight), golden hour (elevation -4..6) and blue hour
+  (-6..-4). Polar day and night are labelled when the sun does not set or rise.
+- Maths in sp_calc.js (NOAA Solar Calculator / Meeus, pure, node-testable), official
+  rise/set at a 90.833° zenith. Tested with `node --check` on every JS file,
+  `node test_sp_calc.js` (Delhi, Guwahati, London, Tromsø, plus the 2003-10-17 Golden, CO
+  NOAA/NREL example), and a static serve + curl smoke test. No Puppeteer, Playwright or
+  jsdom.
+- RELEASE/title/?v= SP1. Details: apps/tools/sun-position/sun-position_readme.md.
+
+  Note: 1.53–1.72 were taken by parallel branches, so this section is 1.73.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
