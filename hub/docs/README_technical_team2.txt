@@ -994,7 +994,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   Details: apps/media/3d-builder/NOTES.md.
 
 
-### 1.61 3D Builder, release TD3
+### 1.60 3D Builder, release TD3
 
 - apps/media/3d-builder only. Export .glb / .obj / .stl via official three.js r170
   GLTFExporter, OBJExporter and STLExporter (local vendor copies, plus GLTFLoader
