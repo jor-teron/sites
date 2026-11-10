@@ -1340,7 +1340,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Tests: `node --check` on changed JS, `test-bs5` + `test-bs6` + `test-bs7` + new `test-bs8-helpers.js` (AND filters, checklist/blank, operators, multi-link, unique-value cap, column order, layout clamp, colour first-match, month cells, schema 7→8 repair), static curl smoke (200 + BS8). No Puppeteer / Playwright / jsdom.
 
 
-### 1.76 Base files and backup: `apps/office/base/` (Office), release BS9
+### 1.77 Base files and backup: `apps/office/base/` (Office), release BS9
 - Why: BS8 added everyday views and filters, but there was still no full backup of a Base (including pictures and links), no Excel round-trip, and no way to bring in a JSON or SQLite dump or pass the current view to Spreadsheet — the last step planned to Jor in this Base series.
 - New `modules/base-files.js`. A `.hbase` backup is JSON `{ magic: "hbase", version: 1, db, pics }` with picture blobs as Base64. File > Backup… / Restore backup… Restore asks in an in-app dialog: Replace everything (second confirm, clears the undo stack, not undoable) or Add as a copy (new table/row/picture ids, Link-to-record values remapped, names uniquified, undoable). `BasePics.exportAll` / `importAll` / `clearAll` support the picture part.
 - Excel import/export uses the Spreadsheet app's already-vendored SheetJS, lazy-loaded from `../spreadsheet/vendor/sheetjs/xlsx.full.min.js` (not copied, Spreadsheet files not edited). Import makes a new table per sheet (cap 20 sheets, 5 000 rows). Export Excel and Send to Spreadsheet write the current view's rows (query + header filters; pictures left out; links as display text).
