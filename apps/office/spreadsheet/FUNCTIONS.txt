@@ -5,6 +5,18 @@ CELL / TEXT
   A1 + B1               cell math (spaces allowed)
   A1 & B2               concatenate
   CONCAT(a, b, ...)     concatenate
+  LEN(text)
+  UPPER(text)
+  LOWER(text)
+  PROPER(text)
+  TRIM(text)
+  LEFT(text, n)
+  RIGHT(text, n)
+  MID(text, start, n)
+  FIND(find, within, [start])     case-sensitive, 1-based
+  SUBSTITUTE(text, old, new, [n])
+  TEXT(value, format)             0.00, 0%, yyyy-mm-dd, dd/mm/yyyy
+  TEXTJOIN(delim, ignore_empty, text, ...)
 
 MATH
   +  -  *  /  ^
@@ -15,28 +27,53 @@ MATH
   COUNT(range)          numbers only
   COUNTA(range)         non-empty cells
   ROUND(n, digits)
+  ROUNDUP(n, digits)    away from zero
+  ROUNDDOWN(n, digits)  toward zero
   ABS(n)
   INT(n)
   SQRT(n)
   MOD(n, d)
   POWER(n, p)
+  MEDIAN(range)
+  RANK(n, range, [order])   0 desc (default), 1 asc
+  RAND()
+  RANDBETWEEN(bottom, top)
 
 LOGIC
   IF(cond, then, else)
   ISBLANK(cell)
   IFERROR(value, fallback)
+  AND(cond, ...)
+  OR(cond, ...)
+  NOT(cond)
+  IFS(cond1, value1, ...)
+  SWITCH(expr, val1, result1, ..., [default])
+  TRUE  FALSE           literals (TRUE counts as 1, FALSE as 0 in math)
 
-TEXT
-  LEN(text)
-  UPPER(text)
-  LOWER(text)
-  TRIM(text)
-  LEFT(text, n)
-  RIGHT(text, n)
+LOOKUP
+  VLOOKUP(value, table, col, [approx])
+  HLOOKUP(value, table, row, [approx])
+  XLOOKUP(value, lookup, return, [if_not_found], [match_mode], [search_mode])
+  INDEX(range, row, [column])
+  MATCH(value, range, [type])          0 exact; 1 largest ≤ (default); -1 smallest ≥
+  SUMIF(range, criteria, [sum_range])
+  SUMIFS(sum_range, range1, crit1, ...)
+  COUNTIF(range, criteria)
+  COUNTIFS(range1, crit1, ...)
+  AVERAGEIF(range, criteria, [avg_range])
+  Criteria may be a value, ">10", "<>x", or a wildcard (* and ?; ~ escapes).
 
-DATE (optional)
+DATE
   TODAY()
   NOW()
+  DATE(year, month, day)
+  YEAR(date)  MONTH(date)  DAY(date)
+  WEEKDAY(date, [type])     1: Sun=1 (default); 2: Mon=1; 3: Mon=0
+  DATEDIF(start, end, unit) Y, M, D, YM, MD, YD
+  EDATE(start, months)
+  Dates are YYYY-MM-DD (same as TODAY). Serial numbers from 1 March 1900
+  match Excel; earlier serials may be a day off (Excel's 1900 leap-year bug
+  is not reproduced).
 
 RANGES
   A1:A10    column
@@ -54,7 +91,7 @@ ABSOLUTE REFS ($)
   A$1       row fixed
   $A1       column fixed
 
-COMPARE in IF
+COMPARE in IF (and in criteria)
   =  <>  <  >  <=  >=
 
 GRID
@@ -66,7 +103,13 @@ ERRORS
   #NUM!     number too large / not a number (e.g. 10^400, SQRT(-1))
   #REF!     reference outside the sheet (e.g. A150), a deleted cell, or a missing sheet
   #LOOP!    circular reference (A1=B1, B1=A1)
+  #N/A      lookup not found, or IFS/SWITCH with no match
+  #VALUE!   wrong type of argument (e.g. FIND with no match, a bad date)
   #ERR      formula not understood
+
+FORMULA HINT / PICKER (SH9)
+  While typing a formula, a hint under the formula bar shows the current
+  function and argument. The fx button opens a searchable function list.
 
 NUMBER FORMATS (toolbar list, display only)
   General · 0 · 0.00 · 1,000 · % · ₹ Currency
@@ -86,3 +129,4 @@ PRINT
 
 SOURCE
   Functions are implemented in spreadsheet_functions.js
+  The hint and picker are in spreadsheet_fx.js

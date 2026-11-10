@@ -837,6 +837,14 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Status bar: Average, Count and Sum for the numeric cells in the selection.
 - Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH8. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
+
+### 1.79 Spreadsheet more formulas, hint and function picker, release SH9
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- New functions: VLOOKUP, HLOOKUP, XLOOKUP, INDEX, MATCH; SUMIF, SUMIFS, COUNTIF, COUNTIFS, AVERAGEIF; AND, OR, NOT, IFS, SWITCH; MID, FIND, SUBSTITUTE, TEXT, PROPER, TEXTJOIN; DATE, YEAR, MONTH, DAY, WEEKDAY, DATEDIF, EDATE; ROUNDUP, ROUNDDOWN, MEDIAN, RANK, RAND, RANDBETWEEN. All work with Sheet2!A1-style ranges. New errors: #N/A, #VALUE!. TRUE / FALSE literals are accepted.
+- Formula hint under the formula bar while typing; fx button opens a searchable in-app function picker (inserts NAME().).
+- Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH9. Storage still sheet-v3. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -19,7 +19,9 @@ var ERR_DIV0 = "#DIV/0!";
 var ERR_NUM = "#NUM!";
 var ERR_REF = "#REF!";
 var ERR_LOOP = "#LOOP!";
-var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP];
+var ERR_NA = "#N/A";
+var ERR_VALUE = "#VALUE!";
+var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE];
 
 /* Thrown inside evaluation; evalFormula turns it into the cell's value */
 function CellError(value) { this.value = value; }
@@ -82,6 +84,7 @@ function evalExpr(expr) {
   if (s === "") return "";
 
   if (/^".*"$/.test(s)) return s.slice(1, -1);
+  if (/^(TRUE|FALSE)$/i.test(s)) return s.toUpperCase();
 
   bag = [];
   s = pullStrings(s, bag);
@@ -142,7 +145,9 @@ function evalExpr(expr) {
     var val = bag[parseInt(i, 10)];
     if (isErrorValue(val)) fail(val);
     var num = Number(val);
-    if (val !== "" && !isNaN(num)) return String(num);
+    /* Keep formatted text ("12.30", "25%") as a string; only coerce when
+       the canonical number text matches (so "10" can still be used in maths). */
+    if (val !== "" && !isNaN(num) && String(num) === val) return String(num);
     return JSON.stringify(val);
   });
 
@@ -164,7 +169,7 @@ function simpleMath(s) {
   var src = String(s).trim();
   if (src === "") return "";
   if (/^".*"$/.test(src)) return JSON.parse(src);
-  var toks = src.match(/(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?|[+\-*/^()]|\S/g) || [];
+  var toks = src.match(/(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?|[+\-*/^()]|TRUE|FALSE|\S/gi) || [];
   var pos = 0;
   function peek() { return toks[pos]; }
   function next() { return toks[pos++]; }
@@ -179,6 +184,8 @@ function simpleMath(s) {
     if (t === "(") { var v = sum(); if (next() !== ")") bad(); return v; }
     if (t === "-") return -power();
     if (t === "+") return power();
+    if (/^TRUE$/i.test(t)) return 1;
+    if (/^FALSE$/i.test(t)) return 0;
     if (/^(\d|\.\d)/.test(t)) { var n = Number(t); if (isNaN(n)) bad(); return num(n); }
     bad();
   }
