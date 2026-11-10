@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- legacy: <title>Spreadsheet</title> -->
-  <title>Spreadsheet SH10</title>
+  <title>Spreadsheet SH11</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css?v=SH10">
+  <link rel="stylesheet" href="spreadsheet.css?v=SH11">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-colour.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH10">
-  <link rel="stylesheet" href="spreadsheet_page.css?v=SH10">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH11">
+  <link rel="stylesheet" href="spreadsheet_page.css?v=SH11">
 </head>
 <body>
   <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS by ../shared/office-ribbon.js) -->
@@ -57,8 +57,25 @@
         <button type="button" class="tool-btn" id="btn-bold" data-icon="bold" title="Bold (Ctrl/⌘+B)" aria-label="Bold"></button>
         <button type="button" class="tool-btn" id="btn-italic" data-icon="italic" title="Italic (Ctrl/⌘+I)" aria-label="Italic"></button>
         <button type="button" class="tool-btn" id="btn-under" data-icon="underline" title="Underline (Ctrl/⌘+U)" aria-label="Underline"></button>
+        <select id="font-size-sel" title="Font size" aria-label="Font size"></select>
+        <button type="button" id="btn-wrap" title="Wrap text">Wrap</button>
+        <button type="button" id="btn-painter" title="Format painter (double-click to keep it on)">Painter</button>
       </div>
       <div class="of-group tool-group">
+        <select id="bd-sel" title="Borders" aria-label="Borders">
+          <option value="">Borders</option>
+          <option value="all">All</option>
+          <option value="outside">Outside</option>
+          <option value="inside">Inside</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="none">No border</option>
+        </select>
+        <button type="button" id="btn-merge" title="Merge the selected cells">Merge</button>
+        <button type="button" id="btn-unmerge" title="Unmerge cells in the selection">Unmerge</button>
+        <button type="button" id="btn-cf" title="Conditional formatting">Highlight</button>
       </div>
       <div class="of-group tool-group" role="group" aria-label="Alignment">
         <button type="button" class="tool-btn" data-align="left" data-icon="alignLeft" title="Align left" aria-label="Align left"></button>
@@ -73,6 +90,10 @@
           <option value="thousands">1,000</option>
           <option value="percent">%</option>
           <option value="currency">₹ Currency</option>
+          <option value="date">Date (YYYY-MM-DD)</option>
+          <option value="datedmy">Date (DD/MM/YYYY)</option>
+          <option value="time">Time (HH:MM)</option>
+          <option value="datetime">Date and time</option>
         </select>
       </div>
       <div class="of-group tool-group">
@@ -199,6 +220,7 @@
   <div id="data-filter" class="data-panel data-filter-menu" hidden role="dialog" aria-label="Filter"></div>
   <button type="button" id="data-valid-arrow" class="data-valid-arrow" hidden title="Pick a value" aria-label="Pick a value" aria-haspopup="listbox">▾</button>
   <div id="data-valid-list" class="data-panel" hidden role="listbox" aria-label="Allowed values"></div>
+  <div id="style-cf" class="data-panel" hidden role="dialog" aria-label="Conditional formatting"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
   <div class="sheet-footer" id="sheet-footer">
     <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Sheets"></div>
@@ -218,34 +240,35 @@
   <script src="../shared/office-colour.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="spreadsheet_config.js?v=SH10"></script>
-  <script src="spreadsheet_formula.js?v=SH10"></script>
-  <script src="spreadsheet_functions.js?v=SH10"></script>
-  <script src="spreadsheet_fx.js?v=SH10"></script>
-  <script src="spreadsheet_refs.js?v=SH10"></script>
-  <script src="spreadsheet_state.js?v=SH10"></script>
-  <script src="spreadsheet_storage.js?v=SH10"></script>
-  <script src="spreadsheet_files.js?v=SH10"></script>
-  <script src="spreadsheet_grid.js?v=SH10"></script>
-  <script src="spreadsheet_edit.js?v=SH10"></script>
-  <script src="spreadsheet_fill.js?v=SH10"></script>
-  <script src="spreadsheet_toolbar.js?v=SH10"></script>
-  <script src="spreadsheet_settings.js?v=SH10"></script>
-  <script src="spreadsheet_page.js?v=SH10"></script>
-  <script src="spreadsheet_ribbon.js?v=SH10"></script>
-  <script src="spreadsheet_logic.js?v=SH10"></script>
-  <script src="spreadsheet_format.js?v=SH10"></script>
-  <script src="spreadsheet_undo.js?v=SH10"></script>
-  <script src="spreadsheet_select.js?v=SH10"></script>
-  <script src="spreadsheet_clipboard.js?v=SH10"></script>
-  <script src="spreadsheet_rows.js?v=SH10"></script>
-  <script src="spreadsheet_sheets.js?v=SH10"></script>
-  <script src="spreadsheet_sort.js?v=SH10"></script>
-  <script src="spreadsheet_data.js?v=SH10"></script>
-  <script src="spreadsheet_resize.js?v=SH10"></script>
-  <script src="spreadsheet_keys.js?v=SH10"></script>
-  <script src="spreadsheet_xlsx.js?v=SH10"></script>
-  <script src="spreadsheet_hub.js?v=SH10"></script>
-  <script src="spreadsheet_quick.js?v=SH10"></script>
+  <script src="spreadsheet_config.js?v=SH11"></script>
+  <script src="spreadsheet_formula.js?v=SH11"></script>
+  <script src="spreadsheet_functions.js?v=SH11"></script>
+  <script src="spreadsheet_fx.js?v=SH11"></script>
+  <script src="spreadsheet_refs.js?v=SH11"></script>
+  <script src="spreadsheet_state.js?v=SH11"></script>
+  <script src="spreadsheet_storage.js?v=SH11"></script>
+  <script src="spreadsheet_files.js?v=SH11"></script>
+  <script src="spreadsheet_grid.js?v=SH11"></script>
+  <script src="spreadsheet_edit.js?v=SH11"></script>
+  <script src="spreadsheet_fill.js?v=SH11"></script>
+  <script src="spreadsheet_toolbar.js?v=SH11"></script>
+  <script src="spreadsheet_settings.js?v=SH11"></script>
+  <script src="spreadsheet_page.js?v=SH11"></script>
+  <script src="spreadsheet_ribbon.js?v=SH11"></script>
+  <script src="spreadsheet_logic.js?v=SH11"></script>
+  <script src="spreadsheet_format.js?v=SH11"></script>
+  <script src="spreadsheet_style.js?v=SH11"></script>
+  <script src="spreadsheet_undo.js?v=SH11"></script>
+  <script src="spreadsheet_select.js?v=SH11"></script>
+  <script src="spreadsheet_clipboard.js?v=SH11"></script>
+  <script src="spreadsheet_rows.js?v=SH11"></script>
+  <script src="spreadsheet_sheets.js?v=SH11"></script>
+  <script src="spreadsheet_sort.js?v=SH11"></script>
+  <script src="spreadsheet_data.js?v=SH11"></script>
+  <script src="spreadsheet_resize.js?v=SH11"></script>
+  <script src="spreadsheet_keys.js?v=SH11"></script>
+  <script src="spreadsheet_xlsx.js?v=SH11"></script>
+  <script src="spreadsheet_hub.js?v=SH11"></script>
+  <script src="spreadsheet_quick.js?v=SH11"></script>
 </body>
 </html>

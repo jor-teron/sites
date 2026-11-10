@@ -65,6 +65,8 @@ function duplicateSheet(idx) {
   copy.freeze = { rows: src.freeze.rows || 0, cols: src.freeze.cols || 0 };
   copy.filters = typeof cloneFilters === "function" ? cloneFilters(src.filters) : JSON.parse(JSON.stringify(src.filters || { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} }));
   copy.validations = typeof cloneValidations === "function" ? cloneValidations(src.validations) : JSON.parse(JSON.stringify(src.validations || []));
+  copy.merges = JSON.parse(JSON.stringify(src.merges || []));
+  copy.condFormats = JSON.parse(JSON.stringify(src.condFormats || []));
   workbook.sheets.splice(idx + 1, 0, copy);
   workbook.active = idx + 1;
   bindActiveSheet();

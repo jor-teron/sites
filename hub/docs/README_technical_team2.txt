@@ -1092,6 +1092,15 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Storage still sheet-v3; filters and validations are optional fields, so older v3 files still open. Title / SHEET_VERSION / ?v=: SH10. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
 
+### 1.66 Spreadsheet formatting, release SH11
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Merge / unmerge (top-left keeps the value; undoable), borders (all / outside / inside / sides / none), font size, wrap text, format painter (double-click to keep it on; Esc cancels).
+- Date / time display formats (YYYY-MM-DD, DD/MM/YYYY, HH:MM, date+time). Conditional formatting: colour scales (red-yellow-green or white-green) and highlight above / below a value, up to 20 rules per sheet, in-app panel.
+- XLSX export writes merged cells (!merges) and number/date formats (cell.z). Font/fill/border/align are attached as cell.s; SheetJS Community Edition usually does not write those, so they stay in the app's own sheet-v3 save (optional merges / condFormats fields; older v3 files still open). CSV is values only.
+- Title / SHEET_VERSION / ?v=: SH11. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

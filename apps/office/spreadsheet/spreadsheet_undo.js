@@ -30,7 +30,9 @@ function undoSnapshot() {
         freeze: { rows: sh.freeze.rows || 0, cols: sh.freeze.cols || 0 },
         sel: (sh.sel || [0, 0, 0, 0, "cell"]).slice(),
         filters: sh.filters ? JSON.parse(JSON.stringify(sh.filters)) : { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
-        validations: sh.validations ? JSON.parse(JSON.stringify(sh.validations)) : []
+        validations: sh.validations ? JSON.parse(JSON.stringify(sh.validations)) : [],
+        merges: sh.merges ? JSON.parse(JSON.stringify(sh.merges)) : [],
+        condFormats: sh.condFormats ? JSON.parse(JSON.stringify(sh.condFormats)) : []
       };
     })
   });
@@ -70,6 +72,8 @@ function undoRestore(snap) {
     sh.sel = src.sel || [0, 0, 0, 0, "cell"];
     sh.filters = src.filters ? JSON.parse(JSON.stringify(src.filters)) : { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };
     sh.validations = src.validations ? JSON.parse(JSON.stringify(src.validations)) : [];
+    sh.merges = src.merges ? JSON.parse(JSON.stringify(src.merges)) : [];
+    sh.condFormats = src.condFormats ? JSON.parse(JSON.stringify(src.condFormats)) : [];
     workbook.sheets.push(sh);
   }
   workbook.active = Math.max(0, Math.min(workbook.sheets.length - 1, d.active | 0));
