@@ -1,4 +1,4 @@
-/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes + SL5 rich text / lists / text boxes + SL6 shapes, tables, arrange — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes + SL5 rich text / lists / text boxes + SL6 shapes, tables, arrange + SL7 notes, presenter view, pen, transitions — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
 :root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
 :root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
 *{box-sizing:border-box}
@@ -66,10 +66,15 @@ body.in-hub #top{display:none}
 #drop-line{position:absolute;left:8px;right:8px;height:3px;border-radius:2px;background:var(--hot);pointer-events:none;z-index:5}
 #drop-line.v{width:3px;height:auto;top:8px;bottom:8px;left:auto;right:auto}
 /* stage: the 16:9 slide scales to fit */
+#work{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;gap:8px}
 #stage{flex:1;min-width:0;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
 #fit{position:relative;flex:none}
 #slide{position:absolute;left:0;top:0;transform-origin:0 0}
 #pos{flex:none;height:16px}
+#notes{flex:none;display:flex;flex-direction:column;min-height:0;height:132px;border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden}
+#notes[hidden]{display:none!important}
+.notes-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 10px 0;font-size:12px;color:var(--mut);font-weight:600}
+#notes-in{flex:1;min-height:0;width:100%;border:0;resize:none;padding:6px 10px 8px;background:transparent;color:var(--fg);font:14px/1.4 system-ui,sans-serif;outline:none}
 /* slide design (960 x 540 design pixels; thumbnails reuse it scaled down).
    SL3: every colour and font comes from a deck theme (CSS variables on .slide: th-light is the SL1 / SL2 look, so old
    decks look the same), the layout class (lay-*) places the placeholders, and the editor (textareas) and the static
@@ -268,18 +273,54 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border:1px solid var(--l
 #toast.show{opacity:1}
 /* SL2 Present: black, the slide letterboxed in the middle; counter + buttons fade after 2 s idle (cursor too) */
 #show{position:fixed;inset:0;z-index:60;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;outline:none;overflow:hidden;cursor:default}
+#show-main{position:relative;flex:1;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;align-self:stretch}
 #show-fit{position:relative;flex:none;overflow:hidden}
-#show-slide{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none;pointer-events:none}
-#show-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa3ae;font:400 clamp(15px,2.4vw,22px)/1.4 system-ui,sans-serif;text-align:center;padding:20px}
+#show-zoom{position:relative;width:100%;height:100%;overflow:hidden}
+#show-slide,#show-slide-old{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none;pointer-events:none}
+#show-ink{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3}
+#show-laser{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:radial-gradient(circle,#ef4444 0 28%,rgba(239,68,68,.4) 42%,transparent 70%);pointer-events:none;z-index:4;filter:drop-shadow(0 0 6px #ef4444)}
+#show-blank{position:absolute;inset:0;z-index:8}
+#show-blank.black{background:#000}
+#show-blank.white{background:#fff}
+#show-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa3ae;font:400 clamp(15px,2.4vw,22px)/1.4 system-ui,sans-serif;text-align:center;padding:20px;z-index:5}
 #show-end p{margin:0}
+.show-layer.tr-fade{transition:opacity .4s ease}
+.show-layer.tr-push{transition:transform .4s ease}
+.show-layer.tr-wipe{transition:clip-path .4s ease}
+@media (prefers-reduced-motion:reduce){
+  .show-layer.tr-fade,.show-layer.tr-push,.show-layer.tr-wipe{transition:none!important}
+}
 .show-ui{transition:opacity .35s}
 #show.idle .show-ui{opacity:0;pointer-events:none}
 #show.idle{cursor:none}
-#show-count{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:4px 10px;border-radius:12px;background:rgba(0,0,0,.55);color:#e5e7eb;font:600 13px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none}
-.show-ctl{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px}
+#show.tool-laser{cursor:none}
+#show-count{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));padding:4px 10px;border-radius:12px;background:rgba(0,0,0,.55);color:#e5e7eb;font:600 13px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none;z-index:9}
+.show-ctl{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));display:flex;gap:6px;z-index:9}
 .show-ctl button{width:40px;height:40px;border-radius:20px;border:1px solid rgba(255,255,255,.18);background:rgba(20,20,20,.6);color:#f3f4f6;font:400 22px/1 system-ui,sans-serif;cursor:pointer;padding:0}
 .show-ctl button:disabled{opacity:.35;cursor:default}
 .show-ctl button:hover:not(:disabled){background:rgba(60,60,60,.8)}
+#show-tools{position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:18px;background:rgba(20,20,20,.7);border:1px solid rgba(255,255,255,.14);z-index:9;flex-wrap:wrap;max-width:calc(100% - 160px);justify-content:center}
+#show-tools button{height:28px;padding:0 9px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#f3f4f6;font:500 12px system-ui,sans-serif;cursor:pointer}
+#show-tools button[aria-pressed=true]{background:var(--acc,#2563eb);border-color:transparent}
+.pen-cols{display:inline-flex;gap:3px;align-items:center}
+.pen-cols button{width:16px;height:16px;padding:0;border-radius:8px;border:1px solid rgba(255,255,255,.4)!important}
+.pen-cols button.on{box-shadow:0 0 0 2px #fff}
+#show-aside{display:none;flex-direction:column;width:min(360px,34vw);flex:none;background:#16181d;color:#e5e7eb;padding:14px 14px 72px;min-height:0;align-self:stretch;overflow:auto;z-index:7;border-left:1px solid #2b3037}
+#show.presenter{align-items:stretch;justify-content:stretch}
+#show.presenter #show-aside{display:flex}
+#show.presenter #show-main{flex:1}
+#show.presenter #show-tools,#show.presenter .show-ctl,#show.presenter #show-count{opacity:1}
+#show.presenter.idle .show-ui{opacity:1;pointer-events:auto}
+#show.presenter.idle{cursor:default}
+.pv-label{font:600 11px/1 system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#9aa3ae;margin:8px 0 6px}
+#show-next-fit{position:relative;width:100%;padding-top:56.25%;overflow:hidden;background:#000;border-radius:6px}
+#show-next-slide{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0;box-shadow:none}
+#show-timer{display:flex;align-items:center;gap:8px;margin:10px 0}
+#show-time{font:700 28px/1 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:#f3f4f6}
+#show-timer .mini{height:26px;padding:0 8px;font-size:12px;background:#1c1f24;color:#e5e7eb;border-color:#2b3037}
+#show-notes{flex:1;min-height:80px;margin:0;white-space:pre-wrap;overflow:auto;font:15px/1.45 system-ui,sans-serif;color:#e5e7eb}
+#of-ribbon #b-trans{height:26px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);font:12px system-ui,sans-serif}
+#b-notes[aria-pressed=true]{background:var(--acc);color:#fff}
 html.presenting #app>*:not(#show){visibility:hidden}
 /* phones / narrow windows: the slide list becomes a strip on top */
 @media (max-width:760px){
@@ -296,7 +337,11 @@ html.presenting #app>*:not(#show){visibility:hidden}
   .th .mini-s{width:112px;height:63px}
   #warn{margin:0 8px 6px}
   #stage{justify-content:flex-start;padding-top:10px}
+  #notes{height:96px}
+  #show.presenter #show-aside{width:min(280px,42vw);padding:8px 8px 64px}
+  #show-time{font-size:20px}
 }
+
 /* legacy (SL3) phone top bar: @media (max-width:1000px){#b-lay .lbl,#b-pic .lbl,#b-theme .lbl{display:none}}
    @media (max-width:480px){#b-lay,#b-theme,#b-add .lbl{display:none}} @media (max-width:380px){#b-up,#b-down{display:none}}
    SL4: every ribbon control stays; the row scrolls sideways and ⋯ (sticky) has them all too. */
@@ -332,7 +377,14 @@ html.presenting #app>*:not(#show){visibility:hidden}
   #print .pp:last-child{break-after:auto;page-break-after:auto}
   #print .slide{position:absolute;left:0;top:0;border-radius:0;box-shadow:none}
   #print,#print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html.notes-print #print .pp{width:auto;height:auto;min-height:0;overflow:visible;padding:0 0 16px}
+  html.notes-print #print .pp.notes{display:flex;flex-direction:column;gap:12px}
+  html.notes-print #print .np-slide{width:160mm;height:90mm;overflow:hidden;position:relative;margin:0 auto;background:#fff;box-shadow:0 0 0 1px #ccc}
+  html.notes-print #print .np-slide .slide{position:absolute;left:0;top:0;border-radius:0;box-shadow:none}
+  html.notes-print #print .np-meta{font:600 12px system-ui,sans-serif;color:#6b7280}
+  html.notes-print #print .np-notes{font:14px/1.45 system-ui,sans-serif;white-space:pre-wrap;overflow-wrap:break-word;color:#111}
 }
+
 
 /* aliases if a list class is written in the long form */
 .s-ed .p.bullets::before,.sv .b .p.bullets::before,.tbox-in .p.bullets::before,.shp-in .p.bullets::before,.cell-in .p.bullets::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}

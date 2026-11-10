@@ -12,10 +12,12 @@
   Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
   body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
   browser's print window; PDF = "Save as PDF" there, with an in-app hint).
-  SL6 (this release): shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill / outline
+  SL7 (this release): speaker notes, Presenter view (second window or a one-screen fallback), pen and laser in Present,
+  B / W blank screen, and CSS slide transitions (none / fade / push / wipe). .hslides version 5. No libraries.
+  Legacy (SL6): shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill / outline
   and SL5 text inside, tables (insert rows × cols, add / delete row or column, cell text, header row, borders), and arrange
   (bring forward / send backward / to front / to back, align, distribute, Shift multi-select, arrow nudge, snap guides to the
-  slide centre and edges). .hslides version 4. No libraries.
+  slide centre and edges). .hslides version 4.
   Legacy (SL5): rich text in the title, body, subtitle / caption and free text boxes (contenteditable, SLText model:
   runs + paragraphs, not raw HTML), numbered lists, a Format group on Home + a mini toolbar, Insert → Text box.
 -->
@@ -24,11 +26,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Slides SL6</title><!-- legacy: <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
+  <title>Slides SL7</title><!-- legacy: <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="slides.css?v=SL6">
+  <link rel="stylesheet" href="slides.css?v=SL7">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -112,13 +114,26 @@
     </div>
     <div class="of-panel" role="tabpanel" id="sl-panel-show" data-tab="show" aria-labelledby="sl-tab-show" hidden>
       <div class="of-group"><button type="button" id="r-show0" title="Present from the first slide (F5)">▶<span class="lbl"> From beginning</span></button>
-        <button type="button" id="b-show" title="Present from this slide (Shift+F5)" aria-label="Present from this slide">▶<span class="lbl"> From current slide</span></button></div>
+        <button type="button" id="b-show" title="Present from this slide (Shift+F5)" aria-label="Present from this slide">▶<span class="lbl"> From current slide</span></button>
+        <button type="button" id="b-pv" title="Presenter view: notes, next slide and a timer (F6). Opens a second window when the browser allows it.">🖥<span class="lbl"> Presenter view</span></button>
+        <button type="button" id="b-notes" title="Show or hide speaker notes under the slide" aria-pressed="false">📝<span class="lbl"> Notes</span></button></div>
+      <div class="of-group" role="group" aria-label="Transition">
+        <span class="of-group-label">Transition</span>
+        <select id="b-trans" title="Transition for this slide" aria-label="Slide transition">
+          <option value="none">None</option>
+          <option value="fade">Fade</option>
+          <option value="push">Push</option>
+          <option value="wipe">Wipe</option>
+        </select>
+        <button type="button" id="b-trans-all" title="Use this transition on every slide">Apply to all</button>
+      </div>
     </div>
     <button type="button" class="sq" id="b-more" title="All slide actions" aria-label="All slide actions" aria-haspopup="menu" aria-expanded="false">⋯</button>
   </nav>
   <div id="warn" role="alert" hidden><span id="warn-t"></span><button type="button" class="x" id="warn-x" aria-label="Hide warning">×</button></div>
   <div id="main">
     <nav id="list" aria-label="Slides" tabindex="0"><ol id="list-in"></ol></nav>
+    <div id="work">
     <section id="stage" aria-label="Slide" tabindex="-1">
       <div id="fit">
         <!-- SL3: the same placeholder order as the static renderer (SLEdit.html): picture placeholder, title, columns, pictures -->
@@ -207,6 +222,11 @@
       </div>
       <div id="pos" class="mut"></div>
     </section>
+    <div id="notes" hidden>
+      <div class="notes-bar"><label for="notes-in">Notes</label><span id="notes-slide" class="mut"></span></div>
+      <textarea id="notes-in" maxlength="4000" placeholder="Speaker notes for this slide (only you see these in Presenter view)" aria-label="Speaker notes for this slide"></textarea>
+    </div>
+    </div>
   </div>
 
   <!-- menus (in-app; Delete items are red and always ask first) -->
@@ -221,6 +241,7 @@
     <button type="button" role="menuitem" data-a="export">⬇ Export .hslides</button>
     <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
     <button type="button" role="menuitem" data-a="print">🖨 Print… <small>Ctrl+P</small></button>
+    <button type="button" role="menuitem" data-a="printnotes">🖨 Print notes pages…</button>
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="settings">⚙ Settings</button>
     <div class="sep"></div>
@@ -244,7 +265,10 @@
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="show0">▶ Present from start</button>
     <button type="button" role="menuitem" data-a="showcur">▶ Present from this slide</button>
+    <button type="button" role="menuitem" data-a="pv">🖥 Presenter view</button>
+    <button type="button" role="menuitem" data-a="notes">📝 Speaker notes</button>
     <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
+    <button type="button" role="menuitem" data-a="printnotes">🖨 Print notes pages…</button>
     <div class="sep"></div>
     <button type="button" role="menuitem" data-a="del" class="danger-t">🗑 Delete slide…</button>
   </div>
@@ -295,15 +319,18 @@
         <span>Number + <kbd>Enter</kbd> Go to that slide</span>
         <span>Tap right two-thirds / swipe left: next; tap left third / swipe right: previous</span>
         <span><kbd>Esc</kbd> End the show (back on the slide shown last)</span>
+        <span><kbd>F6</kbd> Presenter view from this slide (a second window, or one screen if the browser blocks it)</span>
+        <span><kbd>B</kbd> / <kbd>W</kbd> Black / white screen (press again to show the slide)</span>
+        <span>Pen, laser, eraser and Clear are on the toolbar during the show. Ink is not saved unless you choose Keep ink.</span>
       </div>
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Slides</b> <span id="ver">SL6</span><!-- legacy: SL5 · SL4 · SL3 · SL2 -->
+        <div><b>Hub Office Slides</b> <span id="ver">SL7</span><!-- legacy: SL6 · SL5 · SL4 · SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
             Export a deck as a .hslides file (open JSON, pictures inside) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
-          <p>SL6: shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill, outline and text inside; tables with a header row; and arrange (align, distribute, front / back, multi-select, snap guides).</p>
-          <!-- legacy (SL5): <p>SL5: rich text (bold, italic, underline, strikethrough, size, colour, highlight, alignment), numbered lists, and free text boxes you can put anywhere on a slide.</p> --></div>
+          <p>SL7: speaker notes, Presenter view (notes, next slide and a timer in a second window), a pen and laser pointer while presenting, B / W to blank the screen, and simple slide transitions.</p>
+          <!-- legacy (SL6): <p>SL6: shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill, outline and text inside; tables with a header row; and arrange (align, distribute, front / back, multi-select, snap guides).</p> --></div>
       </div>
     </div>
   </div>
@@ -333,13 +360,40 @@
 
   <!-- SL2 Present: full screen (Fullscreen API) or, where that is missing, a fixed black overlay -->
   <div id="show" role="dialog" aria-modal="true" aria-label="Slideshow" aria-roledescription="slideshow" tabindex="-1" hidden>
-    <div id="show-fit"><div id="show-slide" class="slide sv pv" aria-live="polite"></div></div>
-    <div id="show-end" hidden><p>End of slideshow, tap or press to exit</p></div>
+    <div id="show-main">
+      <div id="show-fit">
+        <div id="show-zoom">
+          <div id="show-slide-old" class="slide sv pv show-layer" hidden></div>
+          <div id="show-slide" class="slide sv pv show-layer" aria-live="polite"></div>
+          <canvas id="show-ink" width="960" height="540" aria-hidden="true"></canvas>
+          <div id="show-laser" hidden></div>
+        </div>
+      </div>
+      <div id="show-end" hidden><p>End of slideshow, tap or press to exit</p></div>
+      <div id="show-blank" hidden></div>
+    </div>
+    <aside id="show-aside" hidden>
+      <div class="pv-label">Next</div>
+      <div id="show-next-fit"><div id="show-next-slide" class="slide sv pv"></div></div>
+      <div id="show-timer"><span id="show-time">00:00</span>
+        <button type="button" class="mini" id="show-pause" title="Pause or resume the timer">Pause</button>
+        <button type="button" class="mini" id="show-reset" title="Reset the timer">Reset</button></div>
+      <div class="pv-label">Notes</div>
+      <pre id="show-notes"></pre>
+    </aside>
     <div id="show-count" class="show-ui" aria-hidden="true"></div>
     <div class="show-ctl show-ui">
       <button type="button" id="show-prev" aria-label="Previous slide" title="Previous (←)">‹</button>
       <button type="button" id="show-next" aria-label="Next slide" title="Next (→)">›</button>
       <button type="button" id="show-x" aria-label="End the slideshow" title="End the show (Esc)">✕</button>
+    </div>
+    <div id="show-tools" class="show-ui" role="toolbar" aria-label="Pointer and pen">
+      <button type="button" data-tool="laser" title="Laser pointer" aria-pressed="false">Laser</button>
+      <button type="button" data-tool="pen" title="Pen" aria-pressed="false">Pen</button>
+      <span class="pen-cols" aria-label="Pen colour"></span>
+      <button type="button" data-tool="erase" title="Eraser" aria-pressed="false">Eraser</button>
+      <button type="button" data-a="clear" title="Clear ink on this slide">Clear</button>
+      <button type="button" data-a="keep" title="Save this slide's ink with the deck (undoable)" aria-pressed="false">Keep ink</button>
     </div>
   </div>
 </div>
@@ -362,16 +416,17 @@
 <script src="../shared/office-ribbon.js"></script>
 <script src="../shared/office-hubbar.js"></script>
 <script src="../shared/office-quick.js"></script>
-<script src="slides_pics.js?v=SL6"></script>
-<script src="slides_text.js?v=SL6"></script>
-<script src="slides_draw.js?v=SL6"></script>
-<script src="slides_save.js?v=SL6"></script>
-<script src="slides_file.js?v=SL6"></script>
-<script src="slides_edit.js?v=SL6"></script>
-<script src="slides_show.js?v=SL6"></script>
-<script src="slides_list.js?v=SL6"></script>
-<script src="slides_print.js?v=SL6"></script>
-<script src="slides_hub.js?v=SL6"></script>
-<script src="slides_app.js?v=SL6"></script>
+<script src="slides_pics.js?v=SL7"></script>
+<script src="slides_text.js?v=SL7"></script>
+<script src="slides_draw.js?v=SL7"></script>
+<script src="slides_present.js?v=SL7"></script>
+<script src="slides_save.js?v=SL7"></script>
+<script src="slides_file.js?v=SL7"></script>
+<script src="slides_edit.js?v=SL7"></script>
+<script src="slides_show.js?v=SL7"></script>
+<script src="slides_list.js?v=SL7"></script>
+<script src="slides_print.js?v=SL7"></script>
+<script src="slides_hub.js?v=SL7"></script>
+<script src="slides_app.js?v=SL7"></script>
 </body>
 </html>

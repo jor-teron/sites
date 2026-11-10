@@ -901,6 +901,45 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   re-renders the box, so the browser's typing undo for that box may start fresh. Not tried on a real phone.
 
 
+### 1.71 Hub Office Slides presenter tools, release SL7
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl7-slides` from `apps/sl6-slides` (e8e7c963).
+  `apps/office/shared/` not edited. New `slides_present.js` (`SLPresent`): notes / transition / ink cleaning, timer
+  format, BroadcastChannel / postMessage envelope, presenter URL helpers. No DOM, safe to load in Node.
+- Speaker notes: a pane under the editor (Slide Show → Notes). Plain text, 4 000 characters, saved on the slide,
+  covered by app undo (blur or ~800 ms debounce). File / ⋯ → Print notes pages… prints an A4-ish page (scaled slide +
+  notes). Ordinary Print stays one 16:9 page per slide.
+- Presenter view: Slide Show → Presenter view, F6 (Shift+F6 from the start), or Alt+F5. Tries `window.open` of the same
+  app with `?pv=1&k=&d=`. The second window shows current + next slide, notes, a timer and the slide count. The original
+  window is the audience show. Sync is `BroadcastChannel` (`hub-slides-present`) or `postMessage` to opener / popup.
+  If the popup is blocked, or storage is memory-only, a one-screen Presenter layout is used (no separate audience).
+- Pen and laser during Present: Laser (glow, no ink), Pen (six colours), Eraser, Clear. Ink stays in memory unless
+  Keep ink is on, which writes `slide.ink` (undoable). B / W toggle a black or white blank; a click or next / previous
+  while blank shows the slide again without advancing.
+- Transitions: none / fade / push / wipe, per slide or Apply to all (asks first, one undo). CSS only, about 0.4 s.
+  `prefers-reduced-motion: reduce` forces none. Push / wipe come from the right going forward and from the left going back.
+- Format / compatibility: deck record `fmt: 6`; `notes`, `trans` and `ink` on each slide. SL1–SL6 records (fmt 5 / 4 / 3 /
+  none) open unchanged (empty notes, trans none, no ink). .hslides `version: 5` (reads 1–5; higher refused). v5 keeps the
+  v4 fields and adds optional `notes`, `transition` and packed `ink` (`pts` as `[x,y]` pairs). Export writes v5.
+- App undo / redo covers notes, transitions (including Apply to all) and kept ink, as well as the earlier SL3–SL6 slide
+  edits. Typing in the notes pane uses the same app undo (not a second browser stack for the stored value).
+- Release id: `<title>Slides SL7</title>` (legacy SL6 · SL5 · SL4 · SL3 · SL2 comment), `VERSION = 'SL7'`, About SL7
+  (legacy comments), `?v=SL7` on the app's own css / js (slides.css, slides_*.js including the new slides_present.js;
+  shared office-*.css/js left unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or
+  apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51
+  (unchanged SL5 helpers); `slides_draw_test.js` 55/55 (unchanged SL6 helpers); `slides_present_test.js` (notes cap,
+  trans aliases / reduced-motion, ink pack / addPoint, timer, envelope accept / reject, presentUrl); `slides_file_test.js`
+  (v1/v2 parse, v3 / v4 still open, v5 write / reparse of notes + transition + ink, version 6 refused, cloneSlide is
+  deep for notes). Static curl smoke: 200 on slides.html / slides.css / slides_present.js / slides_show.js / slides_app.js,
+  body greps SL7. No Puppeteer, Playwright, jsdom or headless browser.
+- Caveats: live pen ink is on the audience slide; the presenter preview updates ink at the end of a stroke, not live,
+  and does not show the laser. Ink is not shown in the editor. Presenter view needs a same-origin second window and a
+  saved deck (memory-only storage falls back to one screen). Transitions do not run when the system asks for reduced
+  motion. Popup / BroadcastChannel behaviour was not tried on a real second monitor in this build. Not tried on a real
+  phone.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

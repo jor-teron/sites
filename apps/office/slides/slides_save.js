@@ -14,6 +14,8 @@
      tboxes = [{ id, x, y, w, h, doc }] free text boxes in 960 x 540 design px. Older fmt 3 / no-fmt records open unchanged.
    SL6: fmt = 5; shapes = [{ id, kind, x, y, w, h, fill, stroke, sw, flip, doc, z }];
      tables = [{ id, x, y, w, h, header, border, bw, fill, hfill, cells:[[{doc}]], z }]. Older fmt 4 / 3 / no-fmt records open unchanged.
+   SL7: fmt = 6; notes (plain text), trans = none|fade|push|wipe, ink = kept pen strokes (only when the presenter chose Keep ink).
+     Older fmt 5 / 4 / 3 / no-fmt records open unchanged (empty notes, trans none, no ink).
    If storage is missing, full or throws, Slides keeps working in memory (SLSave.memOnly) and shows a banner
    (once, dismissable): changes then last only until the page closes (use Export). Saves never throw.
    Auto-save: SLSave.saveDeck(deck) is debounced 400 ms; flush() writes now (also on pagehide / hidden). */
@@ -84,7 +86,10 @@
       body: (typeof s.body === 'string' || s.body == null) ? SLText.fromPlain(s.body || '', { max: 5000, list: bl }) : SLText.clean(s.body, { max: 5000, list: bl }),
       body2: (typeof s.body2 === 'string' || s.body2 == null) ? SLText.fromPlain(s.body2 || '', { max: 5000, list: 'bullet' }) : SLText.clean(s.body2, { max: 5000, list: 'bullet' }),
       bg: typeof s.bg === 'string' && /^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg.toLowerCase() : '', pics: pics, texts: tboxes, tboxes: tboxes,
-      shapes: shapes, tables: tables };
+      shapes: shapes, tables: tables,
+      notes: window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || '').slice(0, 4000),
+      trans: window.SLPresent ? SLPresent.cleanTrans(s.trans || s.transition) : 'none',
+      ink: window.SLPresent ? SLPresent.cleanInk(s.ink) : [] };
   }
   /* a deep copy of text / boxes; pictures share the (immutable) bitmap data. Used by Duplicate and Undo */
   function cloneSlide(s, newIds) {
@@ -95,7 +100,10 @@
       pics: (s.pics || []).map(function (p) { var q = Object.assign({}, p); if (newIds) q.id = uid(); return q; }),
       texts: (s.texts || s.tboxes || []).map(function (t) { var q = Object.assign({}, t, { doc: SLText.clone(t.doc, { max: 2000 }) }); if (newIds) q.id = uid(); return q; }),
       shapes: (s.shapes || []).map(function (sh) { var q = window.SLDraw ? SLDraw.cloneShape(sh, newIds) : Object.assign({}, sh); if (newIds) q.id = uid(); else if (!q.id && sh.id) q.id = sh.id; return q; }),
-      tables: (s.tables || []).map(function (tb) { var q = window.SLDraw ? SLDraw.cloneTable(tb, newIds) : Object.assign({}, tb); if (newIds) q.id = uid(); else if (!q.id && tb.id) q.id = tb.id; return q; })
+      tables: (s.tables || []).map(function (tb) { var q = window.SLDraw ? SLDraw.cloneTable(tb, newIds) : Object.assign({}, tb); if (newIds) q.id = uid(); else if (!q.id && tb.id) q.id = tb.id; return q; }),
+      notes: window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || ''),
+      trans: window.SLPresent ? SLPresent.cleanTrans(s.trans) : (s.trans || 'none'),
+      ink: window.SLPresent ? SLPresent.cloneInk(s.ink) : (s.ink ? JSON.parse(JSON.stringify(s.ink)) : [])
     });
     c.tboxes = c.texts;
     if (newIds) c.id = uid();
@@ -103,7 +111,7 @@
   }
   /* what goes to localStorage: pictures stored in IndexedDB lose their (long) src */
   function slim(d) {
-    var o = Object.assign({}, d, { fmt: 5 });
+    var o = Object.assign({}, d, { fmt: 6 });
     o.slides = d.slides.map(function (s) {
       if (!s.pics || !s.pics.length) return s;
       return Object.assign({}, s, { pics: s.pics.map(function (p) {

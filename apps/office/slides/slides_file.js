@@ -16,7 +16,9 @@
    (aliases textboxes / tboxes still read). A higher version than 3 is refused by SL5.
    SL6 writes version 4 (and reads 1–4): adds shapes:[{ kind, x, y, w, h, fill, stroke, sw, flip, bullets, list, align, z }]
    and tables:[{ x, y, w, h, rows, cols, header, border, bw, fill, hfill, cells:[[{ text, runs, bullets, align, list }]], z }].
-   A higher version than 4 is refused. */
+   A higher version than 4 is refused by SL6.
+   SL7 writes version 5 (and reads 1–5): optional notes (plain text), transition (none|fade|push|wipe; alias trans),
+   and ink (kept pen strokes, only when saved). A higher version than 5 is refused. */
 (function () {
   'use strict';
   var MAX_BYTES = 40 * 1024 * 1024, MAX_SLIDES = 500, MAX_BULLETS = 200;   /* legacy (SL1 / SL2): MAX_BYTES = 5 MB */
@@ -38,7 +40,7 @@
   function toJSON(deck) {
     /* legacy (SL1 / SL2): version 1, slides: [{ title, bullets }]. SL3: version 2 + theme, layout, bullets2, background, pictures. */
     return {
-      format: 'hub-slides', version: 4, name: deck.name, created: iso(deck.created), updated: iso(deck.updated || Date.now()),
+      format: 'hub-slides', version: 5, name: deck.name, created: iso(deck.created), updated: iso(deck.updated || Date.now()),
       theme: deck.theme || 'light',
       slides: deck.slides.map(function (s) {
         var titleOut = SLText.titleOut(s.title);
@@ -77,6 +79,10 @@
           var tbs2 = (s.tables || []).map(function (tb) { return SLDraw.tableOut(tb); });
           if (tbs2.length) o.tables = tbs2;
         }
+        if (s.notes) o.notes = window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes);
+        var tr = window.SLPresent ? SLPresent.cleanTrans(s.trans) : (s.trans || 'none');
+        if (tr && tr !== 'none') o.transition = tr;
+        if (s.ink && s.ink.length && window.SLPresent) o.ink = SLPresent.inkOut(s.ink);
         return o;
       })
     };
@@ -88,7 +94,7 @@
     var j; try { j = JSON.parse(text.replace(/^\uFEFF/, '')); } catch (_) { return { error: 'This is not a Slides file (not valid JSON).' }; }
     if (!j || typeof j !== 'object' || Array.isArray(j)) return { error: 'This is not a Slides file.' };
     if (j.format !== 'hub-slides') return { error: 'This is not a Slides file (format is not "hub-slides").' };
-    if ((+j.version || 0) > 4) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
+    if ((+j.version || 0) > 5) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
     if (!Array.isArray(j.slides)) return { error: 'The file has no slides list.' };
     var slides = j.slides.slice(0, MAX_SLIDES).map(function (s) {
       s = s && typeof s === 'object' ? s : {};
@@ -98,7 +104,7 @@
       if (s.titleRuns || s.titleAlign) titleSrc = { text: typeof s.title === 'string' ? s.title : (s.title && s.title.text), runs: s.titleRuns || (s.title && s.title.runs), align: s.titleAlign || (s.title && s.title.align) };
       var o = { title: SLText.fromFileTitle(titleSrc), body: SLText.fromFileBullets(s.bullets != null ? s.bullets : s.body, { list: s.list || bl, max: 5000 }) };
       if (s.align) o.body = SLText.setAlign(o.body, s.align);
-      /* SL3 fields (version 2); SL5 rich runs / list / align / texts (version 3); SL6 shapes / tables (version 4). Missing or wrong → SLSave.cleanSlide defaults. */
+      /* SL3 fields (version 2); SL5 rich runs / list / align / texts (version 3); SL6 shapes / tables (version 4); SL7 notes / transition / ink (version 5). Missing or wrong → SLSave.cleanSlide defaults. */
       if (typeof s.layout === 'string') o.layout = s.layout;
       if (s.bullets2 != null) {
         o.body2 = SLText.fromFileBullets(s.bullets2, { list: s.list2 || 'bullet', max: 5000 });
@@ -117,6 +123,9 @@
       });
       if (Array.isArray(s.shapes)) o.shapes = s.shapes;
       if (Array.isArray(s.tables)) o.tables = s.tables;
+      if (s.notes != null) o.notes = s.notes;
+      if (s.transition != null || s.trans != null) o.trans = s.transition || s.trans;
+      if (Array.isArray(s.ink)) o.ink = window.SLPresent ? SLPresent.inkIn(s.ink) : s.ink;
       return SLSave.cleanSlide(o);
     });
     var t = Date.parse(j.created);
