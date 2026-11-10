@@ -1,0 +1,33 @@
+/* GG-1a: full viewport, 40px controls, landscape lawn and portrait play-small fit. */
+:root { color-scheme:light; --bg:#edf3e6; --panel:#fffdf5; --text:#233d2f; --line:#bacbb3; --accent:#317343; }
+:root[data-theme=dark] { color-scheme:dark; --bg:#14251f; --panel:#22382f; --text:#e4f3db; --line:#48614e; --accent:#9cdd8a; }
+* { box-sizing:border-box; }
+html,body { margin:0; width:100%; height:100%; height:100dvh; overflow:hidden; overscroll-behavior:none; background:var(--bg); color:var(--text); font:14px system-ui,sans-serif; }
+button,a,select { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+button,select,.back,#gear a { min-width:40px; min-height:40px; border:1px solid var(--line); border-radius:9px; padding:4px 9px; background:var(--panel); color:var(--text); font:inherit; cursor:pointer; }
+button:hover { border-color:var(--accent); } :focus-visible { outline:3px solid #eab731; outline-offset:2px; }
+#app { width:100%; height:100%; padding:max(6px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left)); display:grid; grid-template-rows:42px 62px minmax(0,1fr) 18px 20px; gap:4px; }
+header { display:flex; align-items:center; justify-content:center; gap:7px; min-width:0; }
+h1 { font-size:20px; margin:0 auto 0 0; white-space:nowrap; } h1 small { font-size:10px; opacity:.65; }
+.back { text-decoration:none; font-size:27px; display:grid; place-items:center; padding:0; }
+.sun-count { min-width:64px; color:var(--text); white-space:nowrap; }
+#gear,#gear a { display:inline-flex; align-items:center; justify-content:center; }
+#seeds { display:flex; gap:5px; justify-content:center; width:min(100%,730px); justify-self:center; }
+.seed { flex:1; min-width:0; position:relative; padding:3px; overflow:hidden; font-size:11px; line-height:1.1; }
+.seed-top { display:flex; justify-content:center; align-items:center; gap:4px; height:29px; font-size:13px; }
+.seed canvas { width:28px; height:28px; } .seed-name { display:block; }
+.seed.selected { border:2px solid var(--accent); background:var(--bg); padding:2px; }
+.seed[aria-disabled=true] { opacity:.65; } .seed .cool { position:absolute; bottom:0; left:0; height:3px; background:#d59430; }
+#field { display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:0; min-width:0; }
+#board { display:block; touch-action:none; border-radius:12px; box-shadow:0 2px 8px #0002; }
+#waves { position:relative; width:min(100%,932px); justify-self:center; border-radius:5px; border:1px solid var(--line); background:var(--panel); font-size:11px; text-align:center; }
+.track { position:absolute; inset:0 132px 0 0; } #wave-fill { display:block; height:100%; background:#71ad70; border-radius:4px; } #wave-label { position:absolute; right:5px; top:0; text-shadow:0 1px var(--panel); }
+#flags span { position:absolute; top:-4px; color:var(--text); font-size:16px; }
+#message { margin:0; text-align:center; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rotate { display:none; } .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.overlay { position:fixed; inset:0; background:#081c16b8; display:grid; place-items:center; padding:12px; z-index:5; }
+[hidden] { display:none!important; } .card { width:min(100%,440px); max-height:100%; overflow:auto; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; box-shadow:0 15px 60px #0004; }
+.card h2 { margin:0 0 12px; } .card p { line-height:1.5; } #card-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; } #card-actions button:first-child { background:var(--accent); color:var(--bg); font-weight:bold; }
+@media(max-width:580px) { h1 { display:none; } header { gap:5px; } header select { width:83px; } #pause { padding:4px 7px; } .sun-count { min-width:58px; } }
+@media(orientation:portrait) { #app { grid-template-rows:42px 62px minmax(0,1fr) 18px 20px 30px; } .rotate { display:block; text-align:center; margin:0; font-size:11px; opacity:.75; } }
+@media(max-height:350px) and (orientation:landscape) { #app { grid-template-rows:40px 58px minmax(0,1fr) 16px; gap:2px; } #message { display:none; } }
