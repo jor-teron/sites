@@ -851,6 +851,41 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   `hub_catalog.js` / `hub_appindex.js` before it shows in the Hub menu.
 - 1.53–1.55 are used on in-flight VD1 / VD2 / RA1 / RA2 / TD1 branches, so this note is numbered 1.56.
 
+### 1.83 Password Manager, release PW2
+
+- Backup and health on `apps/tools/password-manager/` (PW1 vault). Branch
+  `apps/pw2-password-manager`. RELEASE / title / `?v=` = PW2.
+- Vault JSON bumped to version 2, migrated from v1 on first unlock (tags,
+  custom fields `{id,name,value,hidden}`, `passwordChanged`, tombstones). The
+  crypto header stays `{v:1, kdf, iter, salt, iv, ct}` (PBKDF2-SHA-256 310,000
+  + AES-GCM-256). Deletes now write a tombstone so a later merge does not
+  restore the entry (last 200 kept).
+- Encrypted backup: Settings exports a `.pwvault` JSON wrapper
+  `{type:"hub-password-manager-backup", format, exported, hint, ...header}`.
+  Import asks for the file's master password, then Merge (newest-wins per
+  entry id) or Replace (second in-app confirm; this device's master password
+  is unchanged).
+- CSV import for Chrome, Firefox and Bitwarden exports. In-app warning to
+  delete the plaintext CSV afterwards. Bitwarden notes/cards/folders/TOTP
+  strings are kept.
+- Health check (toolbar + Settings): weak or empty passwords (< ~40 bits),
+  reused passwords, passwords last changed more than a year ago. Click a row
+  to open the entry.
+- Change master password: re-encrypts with a new salt/key. The previous
+  header is stored as `prev` until the new ciphertext has been written and
+  decrypted as a check. If interrupted, the new password finishes the change
+  and the old password rolls it back. No data loss either way.
+- Custom fields (text / hidden) and tags, with a tag filter and search.
+- New files: `pm_csv.js`, `pm_health.js`, `pm_merge.js`,
+  `tests/pm_{csv,health,merge}_test.js`. In-app dialogs only. CSP unchanged.
+- Tested with `node --check` on every JS file, `node tests/pm_crypto_test.js`
+  (plus CSV / health / merge, including crypto round-trips, backup wrap,
+  v1→v2 migrate, rekey headers, RFC-style CSV fixtures, newest-wins merge),
+  and a static curl smoke test. No Puppeteer, Playwright or jsdom.
+- 1.73–1.82 are reserved for in-flight Team 2 branches, so this note is
+  numbered 1.83.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

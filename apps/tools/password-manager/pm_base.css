@@ -1,4 +1,4 @@
-/* Password Manager PW1 — theme, gate screens, list + detail, dialogs. */
+/* Password Manager PW2 — theme, gate screens, list + detail, dialogs, health, tags. */
 
 :root,
 html[data-theme="light"],
@@ -525,6 +525,81 @@ header.app-header h1 {
 }
 
 .acts .btn { min-width: 88px; flex: 0 0 auto; }
+
+
+/* ----- PW2 tags, custom fields, health, settings actions ----- */
+.filter-gap {
+  display: inline-block;
+  width: 8px;
+}
+
+.custom-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.custom-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.custom-field input[data-cf="name"] {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.set-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 8px;
+}
+
+.set-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.health-h {
+  margin: 12px 0 6px;
+  font-size: 0.95rem;
+}
+
+.health-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.health-list li { margin: 0 0 4px; }
+
+button.linkish {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  color: var(--accent);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.entry-tags {
+  display: block;
+  color: var(--mute);
+  font-size: 0.78rem;
+  margin-top: 2px;
+}
 
 /* Phone: one column, detail replaces the list */
 @media (max-width: 799px) {

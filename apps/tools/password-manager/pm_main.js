@@ -1,8 +1,8 @@
-/* Password Manager PW1 — boot. */
+/* Password Manager PW2 — boot. */
 (function () {
   'use strict';
 
-  var RELEASE = 'PW1';
+  var RELEASE = 'PW2';
 
   function boot() {
     if (window.PMTheme) PMTheme.boot();
