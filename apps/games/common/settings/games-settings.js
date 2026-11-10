@@ -93,13 +93,20 @@
    * a key matches only if it starts with a known game prefix followed by
    * '.', '-' or '_' (or equals one of the exact keys). Never 'games.settings'.
    */
-  var GAME_PREFIXES = ['2048', 'aeroplane', 'ant-farm', 'aoe-rts', 'aquarium', 'ar-game', 'battleship', 'blockade', 'browser-fps',
-    'car-run', 'chess', 'contra-alpha', 'demolisher', 'desert-road', 'dino-run', 'game-of-life', 'go', 'gravity-sandbox',
-    'hero-builder', 'island-alpha', 'island-conquest', 'island-demo', 'landcraft', 'ludo', 'neon-fist-3d',
-    'neon-fist', 'neon-raid', 'orbito', 'pacman', 'pinball', 'ping-pong', 'sling-birds', 'snake', 'snake-ladder', 'solar-system',
-    'space-invader', 'swell-foop', 'tennis-throw', 'connect-4', 'tetris', 'tic-tac-toe', 'tower-defence', 'turbo-lap', 'unblock',
-    // short aliases some games already use
-    'td', 'nf3d', 'slingbirds', 'hero-viewer'];
+  var GAME_PREFIXES = [
+    '2048', 'aeroplane', 'ant-farm', 'aoe-rts', 'aquarium', 'ar-game', 'battleship', 'blockade',
+    'browser-fps', 'car-run', 'chess', 'contra-alpha', 'demolisher', 'desert-road', 'dino-run', 'game-of-life',
+    'go', 'gravity-sandbox', 'hero-builder', 'island-alpha', 'island-conquest', 'island-demo', 'landcraft', 'ludo',
+    'neon-fist-3d', 'neon-fist', 'neon-raid', 'orbito', 'pacman', 'pinball', 'ping-pong', 'sling-birds',
+    'snake', 'snake-ladder', 'solar-system', 'space-invader', 'swell-foop', 'tennis-throw', 'connect-4', 'tetris',
+    'tic-tac-toe', 'tower-defence', 'turbo-lap', 'unblock', 'td', 'nf3d', 'slingbirds', 'hero-viewer',
+    'bubble-shooter', 'arrow-escape', 'star-colony', 'jigsaw', 'garden-guard', 'breakout', 'minesweeper', 'sweet-swap'
+  ];
+  
+  
+  
+  
+  
   var GAME_EXACT = ['td_best'];
   function isGameKey(k) {
     if (k === KEY) return false;

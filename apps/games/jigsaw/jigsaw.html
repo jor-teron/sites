@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#286d80"><title>Jigsaw · JIG-1a</title>
+  <link rel="icon" href="jigsaw_icon.png"><link rel="stylesheet" href="ui/style.css">
+</head><body>
+  <main id="app">
+    <header><a class="back" href="../games.html" aria-label="Back to Games">‹ Games</a><h1>Jigsaw</h1>
+      <span class="release">JIG-1a</span><button id="pauseBtn">Pause</button><button id="helpBtn" aria-label="How to play">?</button><span id="gear"></span></header>
+    <section class="controls" aria-label="Puzzle options">
+      <label>Picture<select id="picture" aria-label="Picture"></select></label>
+      <label>Size<select id="size" aria-label="Piece count"></select></label>
+      <button id="new" class="primary">New puzzle</button>
+      <label class="photo">Use your own photo<input id="photo" type="file" accept="image/*" aria-label="Use your own photo"></label>
+      <label class="check"><input id="edges" type="checkbox"> Edges only</label>
+      <label class="check"><input id="ghost" type="checkbox"> Ghost preview</label>
+    </section>
+    <div class="hud" aria-label="Puzzle progress"><span>Time <b id="time">0:00</b></span><span>Placed <b id="placed">0 / 24</b></span><span>Best <b id="best">—</b></span></div>
+    <canvas id="board" tabindex="0" aria-label="Jigsaw puzzle"></canvas>
+    <footer><span id="status" role="status">Preparing your puzzle…</span><span id="hint">Drag matching pieces together · progress saves automatically</span></footer>
+  </main>
+  <div id="pause" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="pauseTitle"><h2 id="pauseTitle">Puzzle paused</h2><p id="pauseInfo"></p><button id="resume" class="primary">Resume</button><p>Your puzzle is saved on this device.</p></section></div>
+  <div id="over" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="overTitle"><div class="medal">✦</div><h2 id="overTitle">Puzzle complete!</h2><p id="result"></p><button id="again" class="primary">Choose next puzzle</button></section></div>
+  <div id="help" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><h2 id="helpTitle">How to play</h2><p>Drag a piece with your mouse or finger. Bring it near its place on the board or near a matching neighbour to snap. Joined pieces move as one group. Pieces on the board stay put.</p><p>Edges only hides loose groups without border pieces. Ghost preview shows a faint picture on the board. Pieces never rotate in this release.</p><p>The timer starts with your first drag. Pause or leave the tab to take a break. Your latest puzzle and best times are saved automatically on this device.</p><p>Six original pictures are built in. Your own photo is processed here with no upload. Large photos may be available only until you close this tab.</p><button id="closeHelp" class="primary">Got it</button></section></div>
+  <script src="../common/settings/games-settings.js"></script><script src="core/model.js"></script>
+  <script src="assets/pictures.js"></script><script src="ui/settings.js"></script>
+  <script src="ui/render.js"></script><script src="core/game.js"></script>
+</body></html>

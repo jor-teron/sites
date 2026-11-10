@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- Sweet Swap SWAP-1a — original match-3. Classic scripts; no build or network required.
+     Rules/group shapes: core/matches.js; saves/levels: core/progress.js; controller: core/game.js.
+     UI: responsive DOM gradients, pointer + keyboard input, shared Games Settings. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sweet Swap SWAP-1a</title>
+  <link rel="icon" href="sweet-swap_icon.png">
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="side info">
+      <header><a class="back" href="../games.html" aria-label="Back to Games">‹</a><h1>Sweet Swap</h1><span class="release">1a</span></header>
+      <div class="level-line"><label for="level">Level</label><select id="level" aria-label="Level"></select><span>Best <b id="best">0</b></span></div>
+      <div class="stats"><div><small>Score</small><b id="score">0</b></div><div><small>Moves left</small><b id="moves">25</b></div></div>
+      <div class="goal"><span>Target <b id="target">2400</b></span><span id="stars" aria-label="0 of 3 stars">☆☆☆</span></div>
+      <div class="meter"><i id="meter"></i></div>
+      <p id="thresholds" class="muted"></p>
+      <p id="status" role="status" aria-live="polite">Swap neighbours to match 3.</p>
+    </section>
+    <div id="boardWrap" class="board-wrap"><div id="board" role="group" aria-label="Sweet Swap board"></div></div>
+    <section class="side controls">
+      <div class="buttons"><button id="pauseBtn">Pause</button><button id="helpBtn">How to play</button><span id="gearSlot"></span></div>
+      <p class="muted instructions">Tap two neighbours or swipe a candy.<br>Match 3 or more. Cascades multiply your score!</p>
+      <p class="muted">Progress saves after every move.</p>
+    </section>
+  </main>
+  <div id="pause" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <h2 id="pauseTitle">Taking a sweet break</h2><p>Your board is saved.</p>
+    <button id="resumeBtn" class="primary">Resume</button><button id="restartBtn">Retry level</button>
+  </section></div>
+  <div id="help" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <h2 id="helpTitle">How to play</h2>
+    <p>Swap two neighbouring candies by tapping them or swiping. Mouse dragging works too. A swap must make a line of at least 3 or it returns without using a move.</p>
+    <p>Matches clear and candies drop. Each cascade adds a multiplier: ×1 then ×2 then ×3 and so on. Each cleared candy scores 60 × the multiplier.</p>
+    <p>You have 25 moves. Reach the target for one star; keep playing for two or three! Shapes distinguish all six colours. A glow suggests a move after 5 seconds idle. Stuck boards reshuffle for free.</p>
+    <p>Keyboard: Tab or arrows to a candy then Enter/Space to select; select a neighbour to swap. Escape pauses. Ten generated score challenges; special candies come later.</p>
+    <button id="helpClose" class="primary">Got it</button>
+  </section></div>
+  <div id="over" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="overTitle">
+    <h2 id="overTitle">Level complete!</h2><div id="endStars" class="end-stars"></div><p id="endInfo"></p>
+    <button id="retryBtn">Retry</button><button id="nextBtn" class="primary">Next</button>
+  </section></div>
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/matches.js"></script><script src="core/progress.js"></script>
+  <script src="ui/settings.js"></script><script src="ui/render.js"></script><script src="ui/input.js"></script>
+  <script src="core/game.js"></script>
+</body>
+</html>
