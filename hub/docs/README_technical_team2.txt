@@ -1807,6 +1807,29 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.95 is AG42, so this note is numbered 1.96.
 
 
+### 1.97 Notely window bar, release NL4
+
+- Notely's Open and Download (the only document buttons on the page) go to the
+  Hub window title bar after `hubTitleBarHello`. `NL.hubbar` calls
+  `HubTitleBar.set` with those two (text glyphs, short labels, no tabs). Clicks
+  come back as `hubTitleBarClick` and call `NL.files.open` / `NL.files.download`.
+  The in-page copies hide (`hidden`, and `body.hub-titlebar` in notely.css).
+  The word count stays.
+- Enabled flags mirror the in-page buttons and follow with `HubTitleBar.update`.
+  Both stay enabled: notes autosave, and Download always writes the current text.
+  There is no separate Save button to disable when nothing has changed.
+- OfficeQuick was not reused. It is Undo / Redo / Save / Print plus ribbon tabs,
+  which Notely does not have. `apps/office/shared/` was not edited.
+- Standalone, and a frame that never says hello, send nothing and keep the page
+  buttons. Keyboard shortcuts are unchanged. Notely has no service-worker cache
+  version. Hub build and `hub-shell` CACHE were not bumped. Old lines stay, with
+  `(before NL4)` where a comment marks the previous toolbar-only behaviour.
+- Checked with `node --check` and `node apps/office/notely/tests/nl4.test.cjs`,
+  plus the existing Office node tests (HO2, spreadsheet SH9–SH12, pdf-tools,
+  base BS5–BS9, expense tracker, invoice). No browser runner.
+- 1.96 is HO2, so this note is numbered 1.97.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

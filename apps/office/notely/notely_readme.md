@@ -13,6 +13,7 @@ One page of plain-text notes that saves itself as you type. Open and download `.
 - `parked/`: NOT loaded, kept for reuse: `nl_clear.js` (Clear + Undo), `nl_theme_cycle.js` (NL1 theme button), `nl_fontsize.js` (A− / A+)
 - `nl_keys.js`: keyboard shortcuts
 - `nl_handoff.js`: "Open with Notely" from the Files app (sessionStorage `notely-handoff`, asks before replacing notes)
+- `nl_hubbar.js`: Hub window bar (NL4) — Open and Download, only after the Hub says hello
 - `nl_main.js`: start-up and buttons
 - `notely_icon.png`: hub icon
 - `index.html`: opens `notely.html`
@@ -81,6 +82,7 @@ Shown briefly in the toolbar:
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-11-10 IST: NL4: Open and Download move into the Hub window bar; the copies on the page hide after the Hub says hello. Standalone is unchanged.
 - 2026-10-27 IST: NL1 System theme mode (default), follows the Hub theme and accent live.
 - 2026-11-01 IST: NL2 clean-up: Clear, A− / A+ and the theme button removed (code parked in `parked/`); theme always follows system / Hub; fixed 16 px; word wrap on.
 - 2026-10-04 23:24 IST: moved from `apps/tools/notely/` to `apps/office/notely/`, now in the hub's Office menu; notes are kept (commit 3a32f4e).
@@ -95,3 +97,13 @@ Shown briefly in the toolbar:
 - A failed autosave is no longer silent. The card in section 6 stays until the notes are stored.
 - "Open with Notely" asks with an in-app dialog (Enter confirms, Esc cancels) instead of the browser's confirm box. The parked Clear button does the same, if it is ever wired back in.
 - An empty or blocked store does not wipe text the browser had already put back in the box.
+
+## NL4
+
+Open and Download are the only document buttons on the page. Inside the Hub, once the Hub has said hello, those two move up into the window bar (the strip with the app name). A small icon sits with each short label. The copies on the page then hide, so the notes get that strip of space back. The word and character count stays on the page.
+
+They are the actions you actually use: open a text file, and download the notes as `Notely.txt`. New, Find, and Share are not buttons here, so they are not in the window bar. Clear used to empty the page and was removed. Notes already save themselves as you type, so there is no separate Save button, and neither Open nor Download turns off when nothing has changed. Download always writes the current text. If a button on the page is ever turned off, the matching one in the window bar turns off too.
+
+On its own — not in a Hub window, or the Hub never says hello — Notely looks and works as before. The buttons stay on the page. Ctrl/Cmd+O and Ctrl/Cmd+S do the same thing.
+
+The shared Undo / Redo / Save / Print bar belongs to the other Office apps. Notely does not have those, so it uses the same window-bar helper they do, with its own two buttons.

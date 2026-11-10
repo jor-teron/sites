@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#181b21">
 <title>Notely</title>
-<meta name="version" content="NL2">
+<meta name="version" content="NL4">
 <link rel="icon" href="notely_icon.png">
 <link rel="stylesheet" href="notely.css">
 <link rel="stylesheet" href="../shared/office-dialog.css">
@@ -14,6 +14,7 @@
 </head>
 <body>
 <div class="bar" role="toolbar" aria-label="Notely">
+  <!-- (before NL4) Open and Download lived only on this row. They stay for standalone. Inside the Hub, nl_hubbar.js copies them to the window bar and hides these two after hello. -->
   <button id="btn-open" type="button" title="Open a text file (Ctrl+O)">Open</button>
   <button id="btn-download" type="button" title="Download as Notely.txt (Ctrl+S)">Download</button>
   <span id="status" class="status" role="status" aria-live="polite"></span>
@@ -22,6 +23,7 @@
 <input id="file" type="file" accept=".txt,.md,.markdown,.csv,.log,.json,text/*" hidden>
 <script src="../shared/office-dialog.js"></script>
 <script src="../shared/office-notify.js"></script>
+<script src="../shared/office-hubbar.js"></script>
 <script src="notely_config.js"></script>
 <script src="nl_store.js"></script>
 <script src="nl_theme.js"></script>
@@ -29,6 +31,7 @@
 <script src="nl_files.js"></script>
 <script src="nl_keys.js"></script>
 <script src="nl_handoff.js"></script>
+<script src="nl_hubbar.js"></script>
 <script src="nl_main.js"></script>
 </body>
 </html>
