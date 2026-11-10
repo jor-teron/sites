@@ -88,3 +88,4 @@ var BaseCsv = (function () {
   }
   return { parse: parse, importText: importText, exportTable: exportTable, guess: guess, cast: cast };
 })();
+if (typeof module !== "undefined" && module.exports) module.exports = BaseCsv;

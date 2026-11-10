@@ -1,5 +1,5 @@
 /*
- * base-ui.js  (BS1–BS8: undo, field types, rules, links, reports, views, gallery and calendar)
+ * base-ui.js  (BS1–BS9: undo, field types, links, reports, views, files and backup)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
  * Field editing uses BaseFields.add / .edit (rules, Choice options, retype preview).
@@ -9,7 +9,7 @@
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS8";
+var BASE_VERSION = "BS9";
 var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };
@@ -120,11 +120,7 @@ var BaseUI = (function () {
     if ((v === "grid" || v === "gallery" || v === "calendar") && typeof BaseView !== "undefined") BaseView.setMode(v);
     render();
   }
-  function importFile(file) {
-    var rd = new FileReader();
-    rd.onload = function () { try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Import CSV"); } catch (e) {} var t = BaseCsv.importText(uniqueName(file.name.replace(/\.[^.]+$/, "")), String(rd.result)); if (!t) return toast("That CSV is empty"); BASE.sort = null; render(); toast("Imported " + t.rows.length + " records"); };
-    rd.readAsText(file);
-  }
+  function importFile(file) { if (typeof BaseFiles !== "undefined") BaseFiles.open(file); }
   function downloadRaw() {
     var data = BaseStore.raw(); if (data == null) data = BASE.db;
     var txt; try { txt = JSON.stringify(data, null, 2); } catch (e) { txt = String(data); }
@@ -217,9 +213,13 @@ function initBaseSettings() {
   function menu(id, fn) { $(id).addEventListener("click", function () { ribbonSetFile(false); fn(); }); }
   menu("btn-new-table", BaseUI.newTable);
   menu("btn-export", function () { var t = BaseStore.table(); if (t) BaseCsv.exportTable(t); });
+  menu("btn-backup", function () { BaseFiles.backup(); });
+  menu("btn-export-xlsx", function () { BaseFiles.exportXlsx(); });
+  menu("btn-send-sheet", function () { BaseFiles.sendToSpreadsheet(); });
   menu("btn-print", function () { if (typeof BaseReport !== "undefined") BaseReport.print(); else window.print(); });
   menu("settingsMenuBtn", function () { BASE_SETTINGS.open(); });
   $("file-import").addEventListener("change", function (e) { var f = e.target.files[0]; ribbonSetFile(false); if (f) BaseUI.importFile(f); e.target.value = ""; });
+  $("file-restore").addEventListener("change", function (e) { var f = e.target.files[0]; ribbonSetFile(false); if (f) BaseFiles.restoreFile(f); e.target.value = ""; });
   $("table-sel").addEventListener("change", function (e) { BaseUI.switchTable(e.target.value); });
   $("btn-table-rename").addEventListener("click", BaseUI.renameTable);
   $("btn-table-more").addEventListener("click", function () {

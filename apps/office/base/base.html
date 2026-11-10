@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base BS8</title>
-  <!-- BS1-BS8 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
+  <title>Base BS9</title>
+  <!-- BS1-BS9 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
-  <link rel="stylesheet" href="base.css?v=BS8">
+  <link rel="stylesheet" href="base.css?v=BS9">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -27,11 +27,17 @@
   <!-- File menu: shared look (../shared/office-tools.css) -->
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
     <button type="button" class="file-item" role="menuitem" id="btn-new-table" data-icon="fileNew"><span>New table</span></button>
-    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import CSV</span>
-      <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
+    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import…</span>
+      <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hbase,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    </label>
+    <button type="button" class="file-item" role="menuitem" id="btn-backup"><span>Backup…</span></button>
+    <label class="file-item" role="menuitem"><span>Restore backup…</span>
+      <input id="file-restore" type="file" accept=".hbase,.json,application/json" hidden>
     </label>
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx"><span>Export Excel…</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-send-sheet"><span>Send to Spreadsheet</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
     <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <div class="file-sep" role="separator"></div>
@@ -147,26 +153,27 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=BS8"></script>
+  <script src="modules/base-quick.js?v=BS9"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=BS8"></script>
-  <script src="modules/base-history.js?v=BS8"></script>
-  <script src="modules/base-store.js?v=BS8"></script>
-  <script src="modules/base-links.js?v=BS8"></script>
-  <script src="modules/base-pics.js?v=BS8"></script>
-  <script src="modules/base-csv.js?v=BS8"></script>
-  <script src="modules/base-grid.js?v=BS8"></script>
-  <script src="modules/base-form.js?v=BS8"></script>
-  <script src="modules/base-fields.js?v=BS8"></script>
-  <script src="modules/base-query.js?v=BS8"></script>
-  <script src="modules/base-view.js?v=BS8"></script>
-  <script src="modules/base-report.js?v=BS8"></script>
-  <script src="modules/base-delete.js?v=BS8"></script>
-  <script src="modules/base-ui.js?v=BS8"></script>
-  <script src="modules/base_hub.js?v=BS8"></script>
+  <script src="modules/base-types.js?v=BS9"></script>
+  <script src="modules/base-history.js?v=BS9"></script>
+  <script src="modules/base-store.js?v=BS9"></script>
+  <script src="modules/base-links.js?v=BS9"></script>
+  <script src="modules/base-pics.js?v=BS9"></script>
+  <script src="modules/base-csv.js?v=BS9"></script>
+  <script src="modules/base-files.js?v=BS9"></script>
+  <script src="modules/base-grid.js?v=BS9"></script>
+  <script src="modules/base-form.js?v=BS9"></script>
+  <script src="modules/base-fields.js?v=BS9"></script>
+  <script src="modules/base-query.js?v=BS9"></script>
+  <script src="modules/base-view.js?v=BS9"></script>
+  <script src="modules/base-report.js?v=BS9"></script>
+  <script src="modules/base-delete.js?v=BS9"></script>
+  <script src="modules/base-ui.js?v=BS9"></script>
+  <script src="modules/base_hub.js?v=BS9"></script>
 </body>
 </html>
