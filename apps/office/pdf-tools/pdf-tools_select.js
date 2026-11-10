@@ -25,9 +25,10 @@ PT.Select = (() => {
       if (S.sel.has(id)) S.sel.delete(id); else S.sel.add(id);
       S.anchor = id;
     } else {
-      const only = S.sel.size === 1 && S.sel.has(id);
+      /* Click again no longer clears (P3): a second click is also the first half of a
+         double-click that opens the zoom preview. Esc or a click on empty space still clears. */
       S.sel.clear();
-      if (!only) S.sel.add(id);
+      S.sel.add(id);
       S.anchor = id;
     }
     sync();
@@ -46,7 +47,7 @@ PT.Select = (() => {
     const g = document.createElement('div');
     g.className = 'ghost-drag';
     const p = S.pages[index(id)];
-    const url = PT.Thumbs.url(p.src);
+    const url = p && PT.Thumbs.url(p);
     g.innerHTML = (url ? '<img alt="" src="' + url + '"' + (p.rot ? ' style="transform:rotate(' + p.rot + 'deg)"' : '') + '>' : '') +
       (st.ids.length > 1 ? '<b>' + st.ids.length + '</b>' : '');
     document.body.appendChild(g);
@@ -128,6 +129,10 @@ PT.Select = (() => {
     grid.addEventListener('touchmove', (e) => { if (st && st.drag) e.preventDefault(); }, { passive: false });
     grid.addEventListener('contextmenu', (e) => { if (idOf(e.target) != null && e.pointerType !== 'mouse') e.preventDefault(); });
     grid.addEventListener('dragstart', (e) => e.preventDefault());
+    grid.addEventListener('dblclick', (e) => {
+      const id = idOf(e.target);
+      if (id != null && PT.Images) PT.Images.preview(id);
+    });
     addEventListener('keydown', (e) => { if (e.key === 'Escape' && st) end(false); }, true);
   }
   return { init, all, none, dragging: () => !!(st && st.drag) };

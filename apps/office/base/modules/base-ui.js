@@ -1,18 +1,18 @@
 /*
- * base-ui.js  (BS1, BS2: Query tab, Totals toggle, dropdowns for field type + template, BS3: safe start)
+ * base-ui.js  (BS1–BS9: undo, field types, links, reports, views, files and backup)
  * Base app shell: ribbon (shared office-ribbon / hover / collapse), Settings panel (office-settings,
  * key 'base_settings'), File menu, table + field + record commands, view switch, starter templates, boot.
- * Field editing uses OfficeDialog.form: a name box + type dropdown per field (empty name = delete field).
+ * Field editing uses BaseFields.add / .edit (rules, Choice options, retype preview).
  * BS4: delete table / delete record go through BaseDelete (modules/base-delete.js): ribbon ⋯ menus, typed confirm.
  * BS3: boot wraps the first render in try/catch; on failure BaseUI.recover(err) shows an in-app dialog
  *   (office-dialog look, no alert/confirm): "Download raw data" (JSON file of what was loaded) and
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
-var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS4";
-var BASE_TYPE_OPTS = [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
+var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
+var BASE_VERSION = "BS9";
+var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
-var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No" };
+var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };
 
 function ribbonSelectTab(id, focus) { if (BASE_RIBBON) BASE_RIBBON.select(id, focus); }
 function ribbonSetFile(show) { if (BASE_RIBBON) BASE_RIBBON.setFile(show); }
@@ -27,13 +27,13 @@ var BaseUI = (function () {
   function $(id) { return document.getElementById(id); }
   function toast(m) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 2500); }
   function status(m) { $("status").textContent = m; }
-  function typeLabel(t) { return BASE_TYPES[t] || "Text"; }
-  function parseType(s) {
+  function typeLabel(t) { return (typeof BaseTypes !== "undefined" ? BaseTypes.label(t) : BASE_TYPES[t]) || "Text"; }
+  function parseType(s) { return typeof BaseTypes !== "undefined" ? BaseTypes.parseType(s) : (function () {
     s = String(s || "").trim().toLowerCase();
     if (/^num/.test(s)) return "number"; if (/^date/.test(s)) return "date";
     if (/^(yes|bool|y\/n|check)/.test(s)) return "bool"; if (!s || /^te?xt/.test(s)) return "text";
     return null;
-  }
+  })(); }
   function render() {
     var t = BaseStore.table();
     if (t) BASE.db.current = t.id;
@@ -45,13 +45,33 @@ var BaseUI = (function () {
       b.textContent = x.name; b.addEventListener("click", function () { ribbonSetFile(false); switchTable(x.id); }); ft.appendChild(b);
     });
     $("grid-wrap").hidden = BASE.view !== "grid"; $("form-wrap").hidden = BASE.view !== "form";
+    var gw = $("gallery-wrap"); if (gw) gw.hidden = BASE.view !== "gallery";
+    var cw = $("cal-wrap"); if (cw) cw.hidden = BASE.view !== "calendar";
+    var rw = $("related-wrap"); if (rw && (BASE.view === "report" || BASE.view === "gallery" || BASE.view === "calendar")) rw.hidden = true;
     $("btn-view-grid").classList.toggle("on", BASE.view === "grid"); $("btn-view-form").classList.toggle("on", BASE.view === "form");
     $("btn-totals").classList.toggle("on", !!BASE.totals);
-    if (BASE.view === "grid") BaseGrid.render(); else BaseForm.render();
+    if (BASE.view === "grid") BaseGrid.render();
+    else if (BASE.view === "form") BaseForm.render();
+    else if (BASE.view === "gallery" && typeof BaseView !== "undefined") BaseView.renderGallery();
+    else if (BASE.view === "calendar" && typeof BaseView !== "undefined") BaseView.renderCalendar();
     if (typeof BaseQuery !== "undefined") BaseQuery.renderPicker();
+    if (typeof BaseReport !== "undefined") BaseReport.render();
+    if (typeof BaseView !== "undefined") BaseView.renderPicker();
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.sendTitle) BASE_HUB.sendTitle();
+    try { if (typeof OfficeQuick !== "undefined" && OfficeQuick.refresh) OfficeQuick.refresh(); } catch (e) {}
   }
-  function switchTable(id) { BASE.db.current = id; BASE.sort = null; BASE.selRow = null; BASE.formIndex = 0; BaseStore.save(); render(); }
+  function switchTable(id) {
+    BASE.db.current = id; BASE.selRow = null; BASE.formIndex = 0;
+    var nt = BaseStore.table();
+    if (BASE.report) BASE.report = null;
+    if (typeof BaseView !== "undefined" && nt) {
+      var L = BaseView.layout(nt);
+      BASE.sort = L.sort;
+      if (BASE.view === "report") BASE.view = "grid";
+      if (BASE.view !== "form" && (L.mode === "gallery" || L.mode === "calendar" || L.mode === "grid")) BASE.view = L.mode;
+    } else { BASE.sort = null; if (BASE.view === "report") BASE.view = "grid"; }
+    BaseStore.save(); render();
+  }
   function renderEmpty(wrap) {
     var d = document.createElement("div"); d.className = "base-empty";
     d.appendChild(document.createTextNode("No tables yet. Start from a template:"));
@@ -63,62 +83,44 @@ var BaseUI = (function () {
     d.appendChild(row); wrap.appendChild(d); status("");
   }
   function uniqueName(n) { var base = n, i = 2; while (BASE.db.tables.some(function (t) { return t.name === n; })) n = base + " " + i++; return n; }
-  function fromTemplate(k, name) { var tp = BaseStore.templates[k]; BaseStore.newTable(uniqueName(name), tp.fields, tp.rows); BASE.sort = null; BASE.selRow = null; render(); toast("Table “" + BaseStore.table().name + "” created"); }
+  function fromTemplate(k, name, addId) {
+    try { if (typeof BaseHistory !== "undefined") BaseHistory.push("New table"); } catch (e) {}
+    var tp = BaseStore.templates[k]; BaseStore.newTable(uniqueName(name), tp.fields, tp.rows, { addId: !!addId });
+    BASE.sort = null; BASE.selRow = null; render(); toast("Table “" + BaseStore.table().name + "” created");
+  }
   function newTable() {
     OfficeDialog.form({ title: "New table",
-      fields: [{ key: "name", label: "Table name", value: "Table" }, { key: "tpl", label: "Template", type: "select", options: Object.keys(BaseStore.templates), value: "Blank" }],
+      fields: [
+        { key: "name", label: "Table name", value: "Table" },
+        { key: "tpl", label: "Template", type: "select", options: Object.keys(BaseStore.templates), value: "Blank" },
+        { key: "id", label: "Auto-number ID field", type: "select", options: [{ value: "no", label: "No" }, { value: "yes", label: "Yes (add a read-only ID column)" }], value: "no" }
+      ],
       validate: function (v) { return !v.name.trim() ? "Enter a name" : ""; }
-    }).then(function (v) { if (v) fromTemplate(matchTpl(v.tpl) || "Blank", v.name.trim()); });
+    }).then(function (v) { if (v) fromTemplate(matchTpl(v.tpl) || "Blank", v.name.trim(), v.id === "yes"); });
   }
   function matchTpl(s) { s = String(s || "").trim().toLowerCase() || "blank"; return Object.keys(BaseStore.templates).filter(function (k) { return k.toLowerCase().indexOf(s) === 0; })[0]; }
   function renameTable() {
     var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.prompt({ title: "Rename table", label: "Name", value: t.name }).then(function (v) { if (v) { t.name = v.trim(); BaseStore.save(); render(); } });
+    OfficeDialog.prompt({ title: "Rename table", label: "Name", value: t.name }).then(function (v) { if (v && v.trim() && v.trim() !== t.name) { try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Rename table"); } catch (e) {} t.name = v.trim(); BaseStore.save(); render(); } });
   }
   function deleteTable() { return BaseDelete.table(); }   /* BS4: typed-name confirm */
   function addRow() {
     var t = BaseStore.table(); if (!t) return;
-    var r = { id: BaseStore.uid(), v: {} }; t.fields.forEach(function (f) { r.v[f.id] = f.type === "bool" ? false : ""; });
+    try { if (typeof BaseHistory !== "undefined") BaseHistory.push("Add record"); } catch (e) {}
+    var r = BaseStore.newRow(t);
     t.rows.push(r); BASE.selRow = r.id; BASE.search = ""; $("search").value = ""; BASE.sort = null; BaseStore.save(); BASE.focusForm = true; render();
-    var tr = document.querySelector(".base-grid tr.sel"); if (tr) { tr.classList.add("pop"); tr.scrollIntoView({ block: "nearest" }); var i = tr.querySelector("input"); if (i) i.focus(); }
+    var tr = document.querySelector(".base-grid tr.sel"); if (tr) { tr.classList.add("pop"); tr.scrollIntoView({ block: "nearest" }); var i = tr.querySelector("input:not([readonly]), select, textarea"); if (i) i.focus(); }
   }
   function deleteRow() { return BaseDelete.records(); }   /* BS4: typed DELETE confirm, no one-tap delete */
-  function addField() {
-    var t = BaseStore.table(); if (!t) return;
-    OfficeDialog.form({ title: "Add field", fields: [{ key: "name", label: "Field name", value: "" }, { key: "type", label: "Type", type: "select", options: BASE_TYPE_OPTS, value: "text" }],
-      validate: function (v) { return !v.name.trim() ? "Enter a name" : ""; }
-    }).then(function (v) {
-      if (!v) return; var f = { id: BaseStore.uid(), name: v.name.trim(), type: parseType(v.type) };
-      t.fields.push(f); t.rows.forEach(function (r) { r.v[f.id] = f.type === "bool" ? false : ""; }); BaseStore.save(); render();
-    });
+  function addField() { return BaseFields.add(); }
+  function editFields() { return BaseFields.edit(); }
+  function setView(v) {
+    BASE.view = v;
+    if (v !== "report" && BASE.report) BASE.report = null;
+    if ((v === "grid" || v === "gallery" || v === "calendar") && typeof BaseView !== "undefined") BaseView.setMode(v);
+    render();
   }
-  function editFields() {
-    var t = BaseStore.table(); if (!t) return;
-    var fs = [];
-    t.fields.forEach(function (f, i) {
-      fs.push({ key: "n_" + f.id, label: "Field " + (i + 1) + " name", value: f.name });
-      fs.push({ key: "t_" + f.id, label: "Type", type: "select", options: BASE_TYPE_OPTS, value: f.type });
-    });
-    OfficeDialog.form({ title: "Fields of " + t.name, message: "Rename or change the type. Clear a name to delete that field.", fields: fs,
-      validate: function (v) { return t.fields.some(function (f) { return v["n_" + f.id].trim(); }) ? "" : "Keep at least one field"; }
-    }).then(function (v) {
-      if (!v) return;
-      t.fields = t.fields.filter(function (f) {
-        var nm = v["n_" + f.id].trim(), nt = v["t_" + f.id] || f.type;
-        if (!nm) { t.rows.forEach(function (r) { delete r.v[f.id]; }); return false; }
-        f.name = nm;
-        if (nt !== f.type) { t.rows.forEach(function (r) { r.v[f.id] = BaseCsv.cast(String(r.v[f.id] === true ? "yes" : r.v[f.id] === false ? "" : r.v[f.id]), nt); if (nt === "number" && isNaN(r.v[f.id])) r.v[f.id] = ""; }); f.type = nt; }
-        return true;
-      });
-      BASE.sort = null; BaseStore.save(); render();
-    });
-  }
-  function setView(v) { BASE.view = v; render(); }
-  function importFile(file) {
-    var rd = new FileReader();
-    rd.onload = function () { var t = BaseCsv.importText(uniqueName(file.name.replace(/\.[^.]+$/, "")), String(rd.result)); if (!t) return toast("That CSV is empty"); BASE.sort = null; render(); toast("Imported " + t.rows.length + " records"); };
-    rd.readAsText(file);
-  }
+  function importFile(file) { if (typeof BaseFiles !== "undefined") BaseFiles.open(file); }
   function downloadRaw() {
     var data = BaseStore.raw(); if (data == null) data = BASE.db;
     var txt; try { txt = JSON.stringify(data, null, 2); } catch (e) { txt = String(data); }
@@ -150,7 +152,7 @@ var BaseUI = (function () {
         if (!ok) { back.hidden = false; dl.focus(); return; }
         back.remove();
         BaseStore.reset(function () {
-          BASE.view = "grid";
+          BASE.view = "grid"; BASE.report = null;
           try { render(); } catch (e) { $("grid-wrap").textContent = ""; renderEmpty($("grid-wrap")); }
           toast("Base was reset");
         });
@@ -211,9 +213,13 @@ function initBaseSettings() {
   function menu(id, fn) { $(id).addEventListener("click", function () { ribbonSetFile(false); fn(); }); }
   menu("btn-new-table", BaseUI.newTable);
   menu("btn-export", function () { var t = BaseStore.table(); if (t) BaseCsv.exportTable(t); });
-  menu("btn-print", function () { window.print(); });
+  menu("btn-backup", function () { BaseFiles.backup(); });
+  menu("btn-export-xlsx", function () { BaseFiles.exportXlsx(); });
+  menu("btn-send-sheet", function () { BaseFiles.sendToSpreadsheet(); });
+  menu("btn-print", function () { if (typeof BaseReport !== "undefined") BaseReport.print(); else window.print(); });
   menu("settingsMenuBtn", function () { BASE_SETTINGS.open(); });
   $("file-import").addEventListener("change", function (e) { var f = e.target.files[0]; ribbonSetFile(false); if (f) BaseUI.importFile(f); e.target.value = ""; });
+  $("file-restore").addEventListener("change", function (e) { var f = e.target.files[0]; ribbonSetFile(false); if (f) BaseFiles.restoreFile(f); e.target.value = ""; });
   $("table-sel").addEventListener("change", function (e) { BaseUI.switchTable(e.target.value); });
   $("btn-table-rename").addEventListener("click", BaseUI.renameTable);
   $("btn-table-more").addEventListener("click", function () {
@@ -227,6 +233,16 @@ function initBaseSettings() {
   $("btn-field-edit").addEventListener("click", BaseUI.editFields);
   $("btn-view-grid").addEventListener("click", function () { BaseUI.setView("grid"); });
   $("btn-view-form").addEventListener("click", function () { BaseUI.setView("form"); });
+  $("btn-view-gallery").addEventListener("click", function () { BaseUI.setView("gallery"); });
+  $("btn-view-calendar").addEventListener("click", function () { BaseUI.setView("calendar"); });
+  $("btn-view-save").addEventListener("click", BaseView.save);
+  $("btn-view-rename").addEventListener("click", BaseView.rename);
+  $("btn-view-delete").addEventListener("click", BaseView.remove);
+  $("btn-columns").addEventListener("click", BaseView.columns);
+  $("btn-colours").addEventListener("click", BaseView.colours);
+  $("btn-filters-clear").addEventListener("click", BaseView.clearFilters);
+  $("view-freeze").addEventListener("change", function (e) { BaseView.setFreeze(+e.target.value); });
+  $("view-pick").addEventListener("change", function (e) { if (e.target.value) BaseView.pick(e.target.value); });
   $("btn-totals").addEventListener("click", function () { BASE.totals = !BASE.totals; try { localStorage.setItem("base_totals", BASE.totals ? "1" : ""); } catch (e) {} BaseUI.render(); });
   try { BASE.totals = !!localStorage.getItem("base_totals"); } catch (e) {}
   $("btn-query").addEventListener("click", BaseQuery.open);
@@ -236,11 +252,33 @@ function initBaseSettings() {
   $("btn-query-delete").addEventListener("click", BaseQuery.remove);
   $("btn-query-sql").addEventListener("click", function () { BaseQuery.open(); BaseQuery.toggleSql(); });
   $("query-pick").addEventListener("change", function (e) { if (e.target.value) BaseQuery.pick(e.target.value); });
-  $("btn-sort-clear").addEventListener("click", function () { BASE.sort = null; BaseUI.render(); });
+  $("btn-report").addEventListener("click", BaseReport.open);
+  $("btn-report-clear").addEventListener("click", BaseReport.clear);
+  $("btn-report-save").addEventListener("click", BaseReport.save);
+  $("btn-report-rename").addEventListener("click", BaseReport.rename);
+  $("btn-report-delete").addEventListener("click", BaseReport.remove);
+  $("btn-report-bar").addEventListener("click", function () { BaseReport.setChart("bar"); });
+  $("btn-report-pie").addEventListener("click", function () { BaseReport.setChart("pie"); });
+  $("btn-report-print").addEventListener("click", BaseReport.print);
+  $("report-pick").addEventListener("change", function (e) { if (e.target.value) BaseReport.pick(e.target.value); });
+  $("btn-sort-clear").addEventListener("click", function () {
+    BASE.sort = null;
+    var t = BaseStore.table();
+    if (t && typeof BaseView !== "undefined") { BaseView.layout(t).sort = null; BaseView.persist(t); }
+    BaseUI.render();
+  });
   var st = null;
   $("search").addEventListener("input", function (e) { clearTimeout(st); st = setTimeout(function () { BASE.search = e.target.value; BaseUI.render(); }, 150); });
   window.addEventListener("pagehide", BaseStore.saveNow);
   BaseStore.load(function () {
-    try { BaseUI.render(); } catch (e) { BaseUI.recover(e); }
+    try {
+      var t0 = BaseStore.table();
+      if (t0 && typeof BaseView !== "undefined") {
+        var L0 = BaseView.layout(t0);
+        BASE.sort = L0.sort;
+        if (L0.mode === "gallery" || L0.mode === "calendar") BASE.view = L0.mode;
+      }
+      BaseUI.render();
+    } catch (e) { BaseUI.recover(e); }
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start(); });
 })();
