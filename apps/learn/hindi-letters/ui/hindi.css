@@ -37,3 +37,27 @@ dialog::backdrop { background:#07142bbb; backdrop-filter:blur(3px); } label { di
 .word-filters { display:flex; flex-wrap:wrap; gap:16px; } .word-filters label { flex:1; min-width:140px; } .word-filters input,.word-filters select { display:block; width:100%; }
 input[type=search] { min-height:44px; border:1px solid var(--edge); border-radius:12px; color:var(--ink); background:var(--panel); padding:8px 12px; }
 @media(max-width:600px) { #modes { gap:6px; } #modes button { padding:8px 11px; } .study-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; } .study-card { padding:10px; } .word-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; } .picture-card { padding:10px; } .picture-card strong { font-size:24px; } }
+.game-menu { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.game-menu-card { min-height:140px; font-size:21px; display:flex; flex-direction:column; justify-content:center; gap:12px; }
+.game-menu-card small { font-size:15px; } .game-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.game-prompt { text-align:center; background:var(--wash); padding:18px; border-radius:18px; margin-bottom:20px; }
+.game-prompt p { margin:6px 0; } .game-glyph { display:block; font-size:72px; line-height:1.6; color:var(--accent); }
+.roman-prompt { font-size:40px; } .game-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.answer { min-height:84px; font-size:34px; line-height:1.7; overflow-wrap:anywhere; } .game-feedback { min-height:48px; color:var(--accent); font-size:20px; }
+.game-choices:has(.tile-row) { display:block; } .tile-row { display:flex; flex-wrap:wrap; gap:12px; }
+.word-tile { min-width:60px; min-height:64px; font-size:30px; line-height:1.6; } .built { text-align:center; font-size:32px; min-height:70px; border-bottom:2px solid var(--accent); }
+.result-stars { font-size:48px; color:var(--accent); } #rewards { color:var(--accent); }
+@media(max-width:600px) { .lrn-head { flex-wrap:wrap; } .lrn-head h1 { min-width:200px; } .lrn-head #help,.lrn-head #mute,.lrn-head #settings { flex:1; } .game-menu { gap:10px; } .game-menu-card { font-size:18px; padding:12px; } .answer { font-size:30px; } }
+@media(max-height:500px) and (min-width:650px) {
+  #content.playing { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px 18px; scroll-margin-top:8px; }
+  .playing .game-head,.playing > .muted { grid-column:1/-1; margin:0; }
+  .playing .game-head h2 { margin:4px 0; font-size:21px; }
+  .playing .game-prompt { grid-column:1; grid-row:3/span 4; margin:0; padding:10px; }
+  .playing .game-prompt .emoji { font-size:36px; } .playing .game-glyph { font-size:54px; line-height:1.4; }
+  .playing .game-choices { grid-column:2; grid-row:3; gap:8px; } .playing .answer { min-height:65px; font-size:30px; }
+  .playing .game-feedback { grid-column:2; grid-row:4; margin:0; min-height:0; font-size:17px; }
+  .playing #next-question { grid-column:2; grid-row:5; } .playing .built { grid-column:2; grid-row:3; margin:0; min-height:50px; font-size:27px; }
+  .playing.build .game-choices { grid-row:4; } .playing.build .game-feedback { grid-row:5; } .playing.build #next-question { grid-row:6; }
+  .playing .word-tile { min-height:54px; font-size:25px; } .playing .row { gap:6px; margin:6px 0; }
+}
+#content.playing { min-height:calc(100dvh - 32px); scroll-margin-top:16px; align-content:start; }

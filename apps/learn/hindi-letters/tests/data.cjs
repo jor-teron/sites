@@ -42,3 +42,8 @@ test('Hindi numerals 1–10 and names',()=>{
   a.equal(H.numbers.map(n=>n.glyph).join(' '),'१ २ ३ ४ ५ ६ ७ ८ ९ १०');
   a.equal(H.numbers.map(n=>n.name).join(' '),'एक दो तीन चार पाँच छह सात आठ नौ दस');
 });
+
+test('ids are unique across all learning data collections',()=>{
+  const rows=[...H.letters,...H.matras,...H.halves,...H.joins,...H.numbers,...H.words];
+  a.equal(new Set(rows.map(r=>r.id)).size,rows.length);
+});

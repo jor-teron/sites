@@ -18,7 +18,7 @@
     const example=el('div'); example.append(el('span',letter.emoji+' ','emoji'),el('strong',letter.word,'hi example'),el('p',letter.meaning)); info.append(example);
     const controls=el('div',undefined,'row'); controls.append(button('Hear letter',()=>H.speak(letter.glyph)),button('Hear word',()=>H.speak(letter.word)));
     info.append(controls,el('p',letter.hint),el('p',letter.note,'note'));
-    const learned=button(H.progress.learned[letter.id]?'✓ Learned':'Mark learned',()=>{H.progress.learned[letter.id]=true; learned.textContent='✓ Learned'; progress(); H.renderChart();},'primary'); info.append(learned);
+    const learned=button(H.progress.learned[letter.id]?'✓ Learned':'Mark learned',()=>{H.progress.learned[letter.id]=true; learned.textContent='✓ Learned'; if(H.recordActivity) H.recordActivity(); progress(); H.renderChart();},'primary'); info.append(learned);
     const practice=el('section'); practice.append(el('h3','Trace with a finger or mouse'));
     const wrap=el('div',undefined,'trace-wrap'),canvas=el('canvas'); canvas.id='trace'; canvas.tabIndex=0; canvas.setAttribute('aria-label','Trace '+letter.glyph+' over the faint guide'); wrap.append(canvas);
     const row=el('div',undefined,'row trace-buttons'), result=el('p','Follow the faint letter, then add the top line.'); result.id='trace-result'; result.setAttribute('role','status');
@@ -28,7 +28,7 @@
     layout.append(info,practice); box.append(layout);
     trace=H.createTrace(canvas,letter.glyph,r=>{
       result.textContent='★'.repeat(r.stars)+'☆'.repeat(3-r.stars)+' · '+Math.round(r.coverage*100)+'% covered · '+Math.round(r.precision*100)+'% on the guide';
-      if(r.stars) { H.progress.traced[letter.id]=Math.max(H.progress.traced[letter.id]||0,r.stars); progress(); H.renderChart(); }
+      if(r.stars) { if(H.recordActivity) H.recordActivity(); H.progress.traced[letter.id]=Math.max(H.progress.traced[letter.id]||0,r.stars); progress(); H.renderChart(); }
     });
     H.trace=trace;
     if(!$('letter-card').open) $('letter-card').showModal();
@@ -52,7 +52,7 @@
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
   $('letter-card').addEventListener('close',H.stopSpeech);
   $('settings').onclick=()=>{ $('theme').value=HubTheme.own(); $('audio').checked=H.prefs.audio; $('preferences').showModal(); H.stopSpeech(); };
-  $('audio').onchange=e=>{H.prefs.audio=e.target.checked; H.write('prefs',H.prefs); H.stopSpeech();};
+  $('audio').onchange=e=>{H.prefs.audio=e.target.checked; H.write('prefs',H.prefs); H.stopSpeech(); if(H.audioChanged) H.audioChanged();};
   $('theme').onchange=e=>HubTheme.setOwn(e.target.value);
   function syncTheme() {
     if(HubTheme.own()!=='system') return;
