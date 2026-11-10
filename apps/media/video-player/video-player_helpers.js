@@ -1,10 +1,10 @@
-/* Video Player helpers (VPL2). Pure functions: no DOM.
+/* Video Player helpers (VPL3). Pure functions: no DOM.
    SRT→VTT, natural sort, subtitle name matching, time formatting, resume keys.
    Used by video-player.js and by node tests (test_vpl_helpers.js). */
 (function (root) {
   'use strict';
 
-  var RELEASE = 'VPL2';
+  var RELEASE = 'VPL3';
   var VIDEO_EXT = ['mp4', 'm4v', 'webm', 'mkv', 'mov', 'ogv', '3gp'];
   var SUB_EXT = ['srt', 'vtt'];
 
@@ -106,6 +106,22 @@
     });
   }
 
+
+  function formatSize(n) {
+    n = Number(n) || 0;
+    if (n < 0) n = 0;
+    if (n < 1024) return Math.round(n) + ' B';
+    if (n < 1024 * 1024) {
+      var kb = n / 1024;
+      return (kb < 10 ? kb.toFixed(1) : String(Math.round(kb))) + ' KB';
+    }
+    if (n < 1024 * 1024 * 1024) {
+      var mb = n / (1024 * 1024);
+      return (mb < 10 ? mb.toFixed(1) : String(Math.round(mb))) + ' MB';
+    }
+    return (n / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+
   var api = {
     RELEASE: RELEASE,
     VERSION: RELEASE,
@@ -124,7 +140,8 @@
     srtToVtt: srtToVtt,
     parseTs: parseTs,
     formatTs: formatTs,
-    shiftVtt: shiftVtt
+    shiftVtt: shiftVtt,
+    formatSize: formatSize
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.VPL = api;

@@ -1,4 +1,4 @@
-/* Node tests for Video Player VPL2 helpers (video-player_helpers.js).
+/* Node tests for Video Player VPL3 helpers (video-player_helpers.js).
    Run: node test_vpl_helpers.js
    No DOM, no jsdom, no browser. */
 'use strict';
@@ -90,8 +90,18 @@ ok('shift -5s clamps', VPL.shiftVtt(vttIn, -5).indexOf('00:00:00.000 --> 00:00:0
 ok('shift keeps dialogue', VPL.shiftVtt(vttIn, 1).indexOf('Hello, world') >= 0);
 ok('shift srt then vtt', VPL.shiftVtt(VPL.srtToVtt('00:00:01,000 --> 00:00:02,000\nHi\n'), 0.5).indexOf('00:00:01.500 --> 00:00:02.500') >= 0);
 
-eq('RELEASE', VPL.RELEASE, 'VPL2');
-eq('VERSION', VPL.VERSION, 'VPL2');
+
+eq('formatSize 0', VPL.formatSize(0), '0 B');
+eq('formatSize 500', VPL.formatSize(500), '500 B');
+eq('formatSize 1024', VPL.formatSize(1024), '1.0 KB');
+eq('formatSize 1536', VPL.formatSize(1536), '1.5 KB');
+eq('formatSize 1MB', VPL.formatSize(1048576), '1.0 MB');
+eq('formatSize 12MB', VPL.formatSize(12 * 1048576), '12 MB');
+eq('formatSize 1GB', VPL.formatSize(1073741824), '1.00 GB');
+eq('formatSize neg', VPL.formatSize(-4), '0 B');
+
+eq('RELEASE', VPL.RELEASE, 'VPL3');
+eq('VERSION', VPL.VERSION, 'VPL3');
 
 if (fails.length) {
   console.error('\nFAILED ' + fails.length);
