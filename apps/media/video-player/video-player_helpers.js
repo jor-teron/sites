@@ -1,10 +1,10 @@
-/* Video Player helpers (VPL1). Pure functions: no DOM.
+/* Video Player helpers (VPL2). Pure functions: no DOM.
    SRT→VTT, natural sort, subtitle name matching, time formatting, resume keys.
    Used by video-player.js and by node tests (test_vpl_helpers.js). */
 (function (root) {
   'use strict';
 
-  var RELEASE = 'VPL1';
+  var RELEASE = 'VPL2';
   var VIDEO_EXT = ['mp4', 'm4v', 'webm', 'mkv', 'mov', 'ogv', '3gp'];
   var SUB_EXT = ['srt', 'vtt'];
 
@@ -77,6 +77,35 @@
     return 'WEBVTT\n\n' + body.replace(/^\s+|\s+$/g, '') + (body.trim() ? '\n' : '');
   }
 
+
+  /* VTT / SRT-style timestamp → seconds. Accepts H:MM:SS.mmm, MM:SS.mmm, commas or dots. */
+  function parseTs(s) {
+    var m = String(s || '').trim().match(/^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[.,](\d{1,3})$/);
+    if (!m) return 0;
+    var h = m[1] ? parseInt(m[1], 10) : 0;
+    var min = parseInt(m[2], 10), sec = parseInt(m[3], 10), ms = parseInt((m[4] + '000').slice(0, 3), 10);
+    return h * 3600 + min * 60 + sec + ms / 1000;
+  }
+  function formatTs(sec) {
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    var ms = Math.round(sec * 1000);
+    var h = Math.floor(ms / 3600000); ms -= h * 3600000;
+    var min = Math.floor(ms / 60000); ms -= min * 60000;
+    var s = Math.floor(ms / 1000); ms -= s * 1000;
+    function p2(n) { return n < 10 ? '0' + n : String(n); }
+    function p3(n) { return n < 10 ? '00' + n : (n < 100 ? '0' + n : String(n)); }
+    return p2(h) + ':' + p2(min) + ':' + p2(s) + '.' + p3(ms);
+  }
+  /* Shift every cue timestamp in a VTT (or SRT) string by offset seconds. Times are clamped at 0. */
+  function shiftVtt(text, offset) {
+    var src = String(text || '');
+    var off = Number(offset) || 0;
+    if (!off) return src;
+    return src.replace(/(\d{1,2}:\d{2}(?::\d{2})?[.,]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}(?::\d{2})?[.,]\d{1,3})/g, function (_, a, b) {
+      return formatTs(Math.max(0, parseTs(a) + off)) + ' --> ' + formatTs(Math.max(0, parseTs(b) + off));
+    });
+  }
+
   var api = {
     RELEASE: RELEASE,
     VERSION: RELEASE,
@@ -92,7 +121,10 @@
     matchSubtitle: matchSubtitle,
     formatTime: formatTime,
     resumeKey: resumeKey,
-    srtToVtt: srtToVtt
+    srtToVtt: srtToVtt,
+    parseTs: parseTs,
+    formatTs: formatTs,
+    shiftVtt: shiftVtt
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.VPL = api;

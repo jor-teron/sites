@@ -1,4 +1,4 @@
-/* Video Player VPL1 — minimal player: video + thin auto-hiding bar. */
+/* Video Player VPL2 — minimal player: video + thin auto-hiding bar. */
 :root{
   --bg:#f4f5f7;--fg:#16181c;--mut:#6b7280;--card:#fff;--line:#e3e6ea;
   --acc:#2563eb;--bar:rgba(255,255,255,.92);--shade:rgba(15,18,22,.45);
@@ -93,3 +93,19 @@ kbd{display:inline-block;padding:0 5px;border:1px solid var(--line);border-radiu
 @media (prefers-reduced-motion:reduce){
   #chrome{transition:none}
 }
+
+.swatches{display:flex;gap:6px}
+.swatches button{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;background:var(--sw,#fff)}
+#subColorSeg button:nth-child(1){--sw:#ffffff}
+#subColorSeg button:nth-child(2){--sw:#ffe066}
+#subColorSeg button:nth-child(3){--sw:#7ee0ff}
+#subColorSeg button:nth-child(4){--sw:#111111}
+.swatches button.on{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 40%,transparent)}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper.ab{flex-wrap:wrap;justify-content:flex-end}
+.stepper #shiftVal{min-width:3.6em;text-align:center;font-variant-numeric:tabular-nums;font-size:13px}
+.stepper button:not(.btn){width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);cursor:pointer}
+#panel select{height:32px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);font-size:13px;max-width:160px}
+#app.sub-s video::cue{font-size:16px;color:var(--cue-fg,#fff);background:var(--cue-bg,rgba(0,0,0,.65))}
+#app.sub-m video::cue{font-size:24px;color:var(--cue-fg,#fff);background:var(--cue-bg,rgba(0,0,0,.65))}
+#app.sub-l video::cue{font-size:36px;color:var(--cue-fg,#fff);background:var(--cue-bg,rgba(0,0,0,.65))}
