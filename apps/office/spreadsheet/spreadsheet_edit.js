@@ -68,27 +68,28 @@ function onCellKey(ev) {
   if (ev.key === KEYS.commit) {
     ev.preventDefault();
     inp.blur();
-    focusCell(Math.min(ROWS - 1, r + 1), c);
+    focusCell(nextVisible(r, c, 1, 0).r, c);
   } else if (ev.key === KEYS.next) {
     ev.preventDefault();
     inp.blur();
-    focusCell(r, ev.shiftKey ? Math.max(0, c - 1) : Math.min(COLS - 1, c + 1));
+    var step = ev.shiftKey ? nextVisible(r, c, 0, -1) : nextVisible(r, c, 0, 1);
+    focusCell(r, step.c);
   } else if (ev.key === KEYS.up) {
     ev.preventDefault();
     inp.blur();
-    focusCell(Math.max(0, r - 1), c);
+    focusCell(nextVisible(r, c, -1, 0).r, c);
   } else if (ev.key === KEYS.down) {
     ev.preventDefault();
     inp.blur();
-    focusCell(Math.min(ROWS - 1, r + 1), c);
+    focusCell(nextVisible(r, c, 1, 0).r, c);
   } else if (ev.key === KEYS.left && (inp.readOnly || inp.selectionStart === 0)) {
     ev.preventDefault();
     inp.blur();
-    focusCell(r, Math.max(0, c - 1));
+    focusCell(r, nextVisible(r, c, 0, -1).c);
   } else if (ev.key === KEYS.right && (inp.readOnly || inp.selectionStart === inp.value.length)) {
     ev.preventDefault();
     inp.blur();
-    focusCell(r, Math.min(COLS - 1, c + 1));
+    focusCell(r, nextVisible(r, c, 0, 1).c);
   }
 }
 
@@ -103,16 +104,16 @@ function onDocKey(ev) {
   if (ev.key === "Delete" || ev.key === "Backspace") { ev.preventDefault(); clearSelection(); return; }
   if (ev.key === KEYS.up) {
     ev.preventDefault();
-    focusCell(Math.max(0, selR - 1), selC);
+    focusCell(nextVisible(selR, selC, -1, 0).r, selC);
   } else if (ev.key === KEYS.down) {
     ev.preventDefault();
-    focusCell(Math.min(ROWS - 1, selR + 1), selC);
+    focusCell(nextVisible(selR, selC, 1, 0).r, selC);
   } else if (ev.key === KEYS.left) {
     ev.preventDefault();
-    focusCell(selR, Math.max(0, selC - 1));
+    focusCell(selR, nextVisible(selR, selC, 0, -1).c);
   } else if (ev.key === KEYS.right) {
     ev.preventDefault();
-    focusCell(selR, Math.min(COLS - 1, selC + 1));
+    focusCell(selR, nextVisible(selR, selC, 0, 1).c);
   } else if (ev.key === KEYS.commit || ev.key === "F2") {
     ev.preventDefault();
     focusCell(selR, selC);
