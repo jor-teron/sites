@@ -24,6 +24,7 @@ Swell Foop,        swell-foop/,    , , Puzzle, Tap groups of same-coloured balls
 Tetris,            tetris/,        , , Puzzle, Classic falling blocks: clear lines before the stack reaches the top
 Tic-Tac-Toe,       tic-tac-toe/,   , , Puzzle, Get three in a row on a 3x3 grid - play a friend or the computer
 Connect 4,        connect-4/, , , Puzzle, Drop red and yellow discs to line up four - play a friend or the computer
+Sweet Swap,        sweet-swap/,   sweet-swap/sweet-swap_icon.png, , Puzzle, Swap colourful candy shapes to match three and chain cascades across score challenges
 Unblock,           unblock/,      unblock/unblock_icon.png, , Puzzle, Sliding block puzzle: move blocks to free the red one
 Snake & Ladder,    snake-ladder/,  , , Puzzle, Classic snakes and ladders board game - roll the dice and race to 100
 Ping Pong,         ping-pong/,     , , Arcade, Paddle and ball table tennis - return the ball and outscore your opponent
@@ -32,6 +33,8 @@ Space Invaders,    space-invader/, , , Arcade, Retro shooter: move your cannon a
 Demolisher,        demolisher/,    , , Arcade, Side-scrolling action: smash buildings and fight enemies with physics weapons
 Sling Birds,       sling-birds/, , , Arcade, Physics slingshot: launch birds to knock down towers and defeat the pigs
 Pacman,            pacman/, , , Arcade, Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables
+Garden Guard,      garden-guard/, garden-guard/garden-guard_icon.png, , Strategy, Grow a garden defence across five lawns with sun makers and frosty shooters
+Breakout,          breakout/,      breakout/breakout_icon.png, , Arcade, Clear brick layouts with a paddle and ball - catch powers and survive endless levels
 Star Pinball,      pinball/,       , , Arcade, Original space pinball: ramp - spinner - drop targets and missions from Cadet to Admiral
 Osmos OSM1c,      osmos/,        osmos/assets/cell-icon.svg, , Arcade, Calm glow cell survival: absorb smaller cells and grow through seeded levels
 Dino Run,          dino-run/,      , , Runners, Endless runner: jump the dinosaur over obstacles - pick your dino and theme
@@ -46,6 +49,7 @@ Battleship,        battleship/,    , , Strategy, Hide five ships and take turns 
 Ludo,              ludo/,          , , Strategy, Race four tokens round the cross board and home - 2 to 4 players on one device
 Orbito,            orbito/,        , , Strategy, Push - place and turn the board: get four marbles in a row before your rival - play a friend or computer
 AoE RTS,           aoe-rts/,       , , Strategy, Tiny real-time strategy in Age of Empires style: gather - build and command units
+Star Colony,       star-colony/, star-colony/star-colony_icon.png, , Simulator, Build an alien settlement: guide settlers through research and storms to thrive
 Gravity Sandbox,   gravity-sandbox/, , , Simulator, Drop planets - stars and black holes and watch gravity make orbits
 Solar System,      solar-system/,  , , Simulator, Explore the Sun and planets: tap a planet for key facts - pan and zoom
 Aquarium,          aquarium/,      , , Simulator, Virtual fish tank: meet the fish - feed them and keep the water clean
@@ -67,6 +71,10 @@ Island Game Demo,   island-demo/,                 , , Beta, 3D island demo: walk
 Game Settings,      common/settings/games-settings.html, , , Settings, Shared game settings: display - FPS limit - sound - touch controls and difficulty
 Rock Paper Scissors,   rps/,     , , Arcade, Rock paper scissors against the computer
 Sudoku,                sudoku/,  , , Puzzle, Simple 9x9 sudoku with easy puzzles
+Bubble Shooter, bubble-shooter/, bubble-shooter/bubble-shooter_icon.png, , Arcade, Aim and bounce bubbles to match three - clear 20 levels then play endless
+Arrow Escape, arrow-escape/, arrow-escape/arrow-escape_icon.png, , Puzzle, Clear the grid by sending arrows out in the right order
+Jigsaw,            jigsaw/,        jigsaw/jigsaw_icon.png, , Puzzle, Join shaped pieces from six original pictures or your own photo
+Minesweeper,       minesweeper/,   minesweeper/minesweeper_icon.png, , Puzzle, Clear the minefield with safe first openings - flags and three board sizes
 `,
   "Media": `# Media — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -210,6 +218,7 @@ Human Body Explorer,     human-body/,                , , Health, Tap body parts 
 Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
+Hindi Letters,           hindi-letters/,             , , Language, Hindi alphabet: trace letters - matras - picture words and gentle practice games
 English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
@@ -226,6 +235,8 @@ Guitar Chords,           guitar-chords/,             , , Music, Learn guitar cho
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
+
+Driving School,          driving-school/,            , , Life Skills, Learn car controls and practise driving with guided lessons and road skills
 `,
   "System": `# System — tiles page + Hub menu flyout (R53: the Hub's own apps; R53b: Files, Viewer, System Monitor, Device Benchmark moved here from Tools; R53c: D-Pad Controller listed here from Games, folder stays in hub/controller/; R54: new Disk app; T1: Terminal; AH1: App Hub; H48: Search; H69: Mesh Viewer; H66: Notification Centre). This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
