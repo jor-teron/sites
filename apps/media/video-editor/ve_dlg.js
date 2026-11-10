@@ -1,4 +1,4 @@
-/* Video Editor — ve_dlg.js: in-app dialogs only (no alert/confirm/prompt). VD1 */
+/* Video Editor — ve_dlg.js: in-app dialogs only (no alert/confirm/prompt). VD1+VD2 */
 (function (root) {
   'use strict';
 
@@ -39,6 +39,8 @@
     if (!dlg || !body || !acts) return function () {};
 
     allowDismiss = opts.dismissable !== false;
+    var box = dlg.querySelector('.box');
+    if (box) box.classList.toggle('wide', !!opts.wide);
     if (boxTitle) {
       boxTitle.textContent = opts.title || '';
       boxTitle.hidden = !opts.title;

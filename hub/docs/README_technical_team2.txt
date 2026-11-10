@@ -846,6 +846,30 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Details: apps/media/video-editor/NOTES.md.
 
 
+### 1.54 Video Editor join and arrange, release VD2
+
+- apps/media/video-editor only. Several clips on one track (add via picker or drop); each block is
+  sized by kept duration, with the file name and a thumbnail grabbed on load. Drag to reorder,
+  move-left / move-right, Split at the playhead (S), Delete clip. Each clip keeps its own VD1
+  cut/keep list; In/Out marks apply to the selected clip.
+- Preview plays the whole sequence, skipping cuts, with a global time display and seek bar.
+  Optional fade through black between clips (Off / 0.5 s / 1 s), drawn at export inside the kept
+  ends (sequence length unchanged; fade capped at half a short clip).
+- Export draws frames to a canvas (drawImage + canvas.captureStream) and mixes audio through one
+  AudioContext + MediaStreamDestination (createMediaElementSource once per clip element), then
+  MediaRecorder (WebM vp9/vp8+opus, or MP4 when supported). Real-time progress dialog with Cancel.
+  Download <first-clip-name>_edited.webm (or .mp4). Canvas long side capped at 1280 px.
+- Undo / Redo cover add, delete, split, reorder, cut/keep and fade. Projects in IndexedDB
+  `videoeditor` (stores `files`, `projects`): list / open / rename / delete (in-app confirm),
+  autosave, storage-used line and a warning when space is low or a quota error happens.
+  localStorage video-editor-v1 also holds currentProjectId.
+- RELEASE/title/?v= VD2 (legacy VD1 noted in comments / NOTES). Tests: node --check,
+  tests/vd1.test.cjs + tests/vd2.test.cjs (pure helpers: sequence timing, split, reorder).
+  No Puppeteer / Playwright / jsdom. Details: apps/media/video-editor/NOTES.md.
+  Note: 1.54 is the next free number on this branch after 1.53 (VD1). RA1 and TD1 may also
+  take a 1.54 (or later) section on their own branches.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -1,8 +1,8 @@
-/* Video Editor — ve_main.js: boot theme, dialogs, UI. VD1 */
+/* Video Editor — ve_main.js: boot theme, dialogs, UI. VD2 */
 (function () {
   'use strict';
 
-  var RELEASE = 'VD1';
+  var RELEASE = 'VD2';
 
   function boot() {
     if (window.VETheme) VETheme.boot();
