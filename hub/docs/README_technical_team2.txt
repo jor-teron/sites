@@ -3941,3 +3941,390 @@ Next week (waiting for Jor):
   - Games:
     - next new game
   - Test private-code phone join on a real device
+
+================================================================================
+WEEK WRAP-UP: Wed 2026-11-05 to Tue 2026-11-10 - Team 2 (handover to Team 3
+for the next 3 days)
+================================================================================
+Written by Hub Main Builder 2, with notes from Hub Apps Builder 2 and Hub
+Games Builder 2. GitHub main at end of day: a98cc41f.
+Added at the end; nothing above was changed.
+
+
+--- HUB MAIN BUILDER 2 (hub/, desktop/, apps/system)
+
+Mon 9: local branch cleanup on Jor's OK. Deleted 62 local branches in the
+  shared clone (including chess and games/desert-road-refactor). Hub Apps
+  Builder 2 then removed its 27 worktrees and branches, also on Jor's OK.
+  GitHub already had only main. Worktrees left: /workspace/sites (detached),
+  /workspace/sites_h46 (main), /workspace/sites_h48d (detached, not ours).
+  Apps says /workspace/sites_apps is its working folder - never delete it.
+Tue 10: picked up Team 1's week notes (end of README_technical_team1.txt,
+  PR #460, main 2de0a92). Already shipped by Team 1/3: H104 XP, H119 SFTP,
+  H108a/b Files phone layout (#416), H134a-g HubAPI. Team 1 used H138-H144,
+  so the next Hub id is H145.
+
+Releases:
+  - RL1 b1796837 (PR #461, branch commit b9cce6b). One shared modular Node
+    relay (stdlib only) in hub/relay/ (hub-relay.js, relay_config.js,
+    relay_core.js, relay_security.js, relay_ws.js, mod_mcp.js, mod_tcp.js,
+    mod_fetch.js, install.sh, install.ps1, start-relay.sh/.ps1,
+    config.example.json, tcp_allowlist.example.txt, tests/). Listens on
+    127.0.0.1:8787. MCP at /ws and /mcp/<PIN> (same protocol as the Web MCP
+    relay). TCP bridge at /tcp, /websockify, and / with ?token=HOST:PORT
+    (allowlist; empty = deny). POST /fetch proxy (allowlist, no redirects,
+    bounded). GET /health. Modules can be switched on or off; optional
+    HTTPS/WSS; a token is required for a non-loopback bind; exact
+    Origin/Host checks and limits. Installers:
+    curl -fsSL https://raw.githubusercontent.com/jor-teron/sites/main/hub/relay/install.sh | bash
+    irm https://raw.githubusercontent.com/jor-teron/sites/main/hub/relay/install.ps1 | iex
+    New files only; no app, sftp_relay.py, sw.js or catalog changes; no
+    build bump. 326/326 tests (25 new). README section +166, hub_readme
+    section 11 change log.
+
+Fixes:
+  - none.
+
+Work for other teams:
+  - Relayed Jor's cleanup OK to Apps.
+  - FYIs to Apps and Games about the Team 1 pickup and RL1.
+
+Diagnoses:
+  - none new.
+
+Ideas / future (not built):
+  - RL1 follow-ups: a Windows run test, a real SSH/VNC/browser test, fetch
+    streaming/SSE, large transfers, and externally reachable HTTPS hosting.
+  - Apps switching Web MCP and Remote over to RL1 (needs Jor's OK; Apps
+    area).
+  - Hub-side shared PeerJS relay settings helper (use our relay first, with
+    0.peerjs.com as the fallback; depends on the APK Maker 1 relay contract).
+  - A named Dezgo API-key row.
+  - An About Hub link in the phone quick panel (this is an Apps file).
+
+Open, not approved (discussed):
+  - H130 (move the remaining parts into the Hub core).
+  - H131 (clean up the old redirect files left by the moves into desktop/).
+  - Fingerprint "Add phone" fix (waits for the error code from Jor's phone;
+    H143.1 added the codes).
+  - A limit on wrong PIN tries.
+  - H139b, more of the shared embedding feature beyond H139a.
+  - H98, a "Pair a device" card.
+  - An Allow or passcode check before a Connect link joins
+    (shared/link/link_core.js attachLink has no gate).
+  - Catalog and appindex regen for the 10 new apps (Video Editor, Read Aloud,
+    3D Builder, Password Manager, Numerology, Sun Position, Video Player,
+    Image Converter, Invoice Maker, Expense Tracker) plus PDF Tools, and
+    whether the new games/Learn apps need a hub_sw.js offline list and a
+    build bump (needs Jor's OK). Games later regenerated hub_catalog.js in
+    #520 (c1958785) for 10 CSV rows that were missing after the Apps merges.
+  - A real-device test of the private-code phone join.
+  - Open question: About Hub links, new tab vs same tab.
+
+Parked:
+  - H128, more Viewer formats (PNG issue).
+  - WebDAV over Tailscale Funnel (Android, no terminal).
+  - The standalone apps idea.
+  - The desktop Start-up manager.
+  - H99, default 000000 plus a masked passcode.
+  - H90, persistence of the block across reloads.
+  - OS5 Hub launcher link.
+  - Old /workspace worktrees bisect-wt and h138b, only if Jor asks.
+
+Moved:
+  - H108 and H134 were given to Team 3 on 4 Nov (both later found shipped
+    or already covered).
+  - The MCP server project went to MCP Bot (Team 1, 10 Nov).
+
+For Team 3:
+  - Release wording: a plain id means give the plan and wait; "lets do",
+    "do HNN" or "code" means commit locally only; "push" means push AND
+    merge; "code n push" or "do n push" means both; "no coding", "just
+    discussion" or "am just asking" means talk only. Only Jor's own words
+    approve work.
+  - Never fully remove old code or text. Comment it out with a
+    "(before HNN)" marker.
+  - Bump only for Hub updates: python3 hub/tools/hub_bump.py --release HNN
+    --note "..." then --check, and add a change-log entry at the end of
+    section 11 of hub/docs/hub_readme.md.
+  - Week notes are APPENDED at the end of files, never overwritten.
+  - Stage files by name only. Never use git add -A (the shared clone has
+    about 205 pre-existing tracked vendor/node_modules deletions; never
+    stage them).
+  - No rebasing. Merge origin/main instead. PRs use merge commits.
+  - Commit as jor-teron <1854500+jor-teron@users.noreply.github.com>.
+  - Next Hub id is H145.
+  - hub_appindex_gen.py: never pass --help (it runs the full headless mode).
+
+
+--- HUB APPS BUILDER 2
+
+5-10 Nov. All of the releases below were merged on Tue 10 Nov between
+20:40 and 22:13 IST. Its own docs are in README_technical_team2.txt,
+sections 1.53 to 1.94 (next free section is 1.95). main was f5b3da89
+after its pushes.
+
+Releases:
+  - VD1 93abe126  Video Editor, cut and trim clips and export WebM
+                  (apps/media/video-editor) (PR #478).
+  - VD2 b5407b7a  Video Editor, join and arrange clips (PR #479).
+  - VD3 55b29420  Video Editor, filters, rotate, crop, speed, volume and
+                  text (PR #480).
+  - RA1 14bc07c8  Read Aloud, text-to-speech for pasted text and Markdown
+                  (apps/tools/read-aloud) (PR #481).
+  - RA2 bd9f24a2  Read Aloud, reads PDFs and web pages, plus a sleep timer
+                  (PR #482).
+  - TD1 f7a6a2ae  3D Builder, basic WYSIWYG with a local three.js r170 copy
+                  (apps/media/3d-builder) (PR #483).
+  - TD2 d73c3dd0  3D Builder, second feature release (PR #484).
+  - TD3 6f708971  3D Builder, export and import (PR #485).
+  - PW1 823c7c21  Password Manager, encrypted on-device vault
+                  (apps/tools/password-manager) (PR #486).
+  - PW2 b65d4ca1  Password Manager, CSV import/export, password health
+                  check and merge (PR #487).
+  - SH8 c66d41b5  Spreadsheet, sheet tabs, cross-sheet refs, freeze, hide
+                  rows/cols; grid stays 26x100 (PR #488).
+  - SH9 cf8eda50  Spreadsheet, formulas (PR #489).
+  - SH10 dbbe8d20 Spreadsheet, data tools (PR #490).
+  - SH11 15b7752f Spreadsheet, formatting (PR #491).
+  - SH12 2fceab98 Spreadsheet, charts (PR #492).
+  - SL5 fae5f590  Slides, text styling and free text boxes (PR #493).
+  - SL6 90f971cd  Slides, shapes, tables and arrange (PR #494).
+  - SL7 c1886750  Slides, presenter tools (PR #495).
+  - SL8 540a6ee1  Slides, themes and masters (PR #496).
+  - SL9 6e2283fc  Slides, PPTX export/import and PNG export (PR #497).
+  - BS5 d886dbfb  Base, undo plus field types, rules and auto-number
+                  (PR #498).
+  - BS6 560a04c5  Base, links between tables (PR #499).
+  - BS7 db76bf6f  Base, reports, summaries and charts (PR #500).
+  - BS8 29ce76e8  Base, views and filters (PR #501).
+  - BS9 73bdaa5e  Base, attached files and backup (PR #502).
+  - NU1 5450e46d  Numerology with a minimal UI (apps/tools/numerology)
+                  (PR #503).
+  - PV2 68a589ac  PDF Viewer, OCR (PR #504).
+  - P2 6d6646d5   PDF Tools, merge and split (PR #505).
+  - P3 d098e087   PDF Tools, images to PDF and PDF to images (PR #506).
+  - P4 fe804702   PDF Tools, stamp and tidy (PR #507).
+  - P5 a664264f   PDF Tools, fill and sign (PR #508).
+  - SP1 d8e80fac  Sun Position, location, compass dial, sunrise/sunset and
+                  twilight using the NOAA formula offline
+                  (apps/tools/sun-position) (PR #509).
+  - SP2 634fe73c  Sun Position, second feature release (PR #510).
+  - SP3 82214121  Sun Position, third feature release (PR #511).
+  - VPL1 01636592 Video Player, minimal player with an auto-hiding bar,
+                  folder list, resume and SRT/VTT subtitles
+                  (apps/media/video-player) (PR #512).
+  - VPL2 1d8f93ef Video Player, extras in a menu (PR #513).
+  - VPL3 da4bd762 Video Player, more extras in the menu (PR #514).
+  - CI1 6a78b06e  Image Converter, JPG/PNG/WebP (and AVIF where supported),
+                  resize, quality or target size, strips location data,
+                  zip download (apps/media/image-converter) (PR #515).
+  - CI2 a96cbc2d  Image Converter, second feature release (PR #516).
+  - CI3 e410ee6b  Image Converter, third feature release (PR #517).
+  - INV1 0e4d0eae Invoice Maker (apps/office/invoice-maker; row added to
+                  office-apps.csv) (PR #518).
+  - EXT1 f5b3da89 Expense Tracker (apps/office/expense-tracker) (PR #519).
+  All of these passed node --check and the pure-helper node tests. Per
+  Jor's rule, there were no browser tests.
+
+Fixes:
+  - none as separate releases. While pushing, clashing doc section numbers
+    were renumbered and both sides of the CSV rows were kept.
+
+Work for other teams:
+  - Catalog rows pending for the 10 new apps plus PDF Tools (Hub Main).
+    Games later added 10 missing catalog rows in #520; see Hub and Games.
+  - Push order agreed with Games.
+
+Diagnoses (reviews, nothing built):
+  - Office: Draftly and Notely autosave fail silently. Notepad can lose
+    text. Paper Scan, Print and Notely still use browser alert/confirm.
+    Auto theme in Draftly and Base ignores the Hub. Heavy libraries load
+    eagerly, and vendor files are duplicated.
+  - Agent (main at AG40): a duplicate btnPick id breaks the Pick folder
+    button in Settings. Also found: the photo history budget, the
+    chat-search memory cache, stream parse errors, long-chat redraw cost
+    on a 4 GB machine, a Stop/Send race, and missing in-app delete
+    confirms.
+
+Ideas / future (not built):
+  - 15 Office app ideas, of which Invoice Maker and Expense Tracker are
+    now built.
+
+Open, not approved (discussed):
+  - HO2, Office fixes. It touches apps/office/shared, so it needs an
+    explicit go.
+  - DF23, NL3 and OC1, Office follow-ups from the review.
+  - AG41, AG42 and AG43, Agent fixes, about 2 h, 3 h and 2.5 h.
+  - DF19 to DF22 and MM7.
+  - IV1 and IV2, Image Viewer.
+  - LL3, PH2 (Jor says it needs more thought), and WB1 to WB4 (a remote
+    browser).
+
+Parked:
+  - PW3, Password Manager sync over the Hub link, TOTP codes, and
+    PIN/fingerprint unlock.
+  - MCP3, Team 1's v86 Linux mode for Web MCP.
+  - NVIDIA NIM and the Agent saved-provider list (left for Team 1).
+  - The API Keys system app (left for Team 3).
+  - PH3.
+
+Moved:
+  - VNC2 and VNC3 went to Team 3 on 4 Nov.
+
+For Team 3:
+  - Never delete /workspace/sites_apps; it is the Apps working folder.
+    Cleanup means deleting stale branches only.
+  - The wt-* worktrees are now fully merged and have been removed.
+  - Release ids already taken: IC, IX, VP1 and PT2. Free ids include HO2,
+    DF23, NL3, OC1, PS1, PN1 and NP1.
+  - The Video Editor name isn't decided. Avoid 'VirtualDub', which is a
+    trademark.
+  - Docs go only in README_technical_team2.txt. Don't touch other hub/
+    files, root shared/, apps/system, index.html or the catalog files.
+    Don't touch apps/office/shared unless the plan says so. Never use
+    git add -A. No build bumps. In-app dialogs only. Keep apps light for
+    a 4 GB Celeron. No Puppeteer or Playwright unless Jor asks. Only
+    Jor's own words in a bot's own chat count as approval.
+
+
+--- HUB GAMES BUILDER 2 (apps/games/, apps/learn/)
+
+Nothing from 4-9 Nov. All of the work below is from Tue 10 Nov, all merge
+commits, no rebase, no build bump. Final main after its pushes: a98cc41f.
+
+Releases:
+  - Minesweeper 8f95eb71 (PR #462).
+  - Breakout 4b10c011 (PR #463).
+  - Sweet Swap 1a 1fa4948c, match-3 (PR #464).
+  - Garden Guard 1a 3ccd8e9d, tower defence (PR #465).
+  - Jigsaw 1a c4793bfe (PR #466).
+  - Star Colony SC-1a..1c 4024ef53 (PR #467).
+  - Driving School DS-1a..1c 5dba437c (Learn) (PR #468).
+  - Arrow Escape 9cb4a292 (PR #469).
+  - Bubble Shooter 0d1784f5 (PR #470).
+  - Hindi Letters f03afb7c (Learn) (PR #471).
+  - SUDO-P1 78711965, printable Sudoku (PR #472).
+  - SI-T1 fc0b0a3b, Space Invaders themes (PR #473).
+  - SNL-2a..2c 1c6db5fd, Snake & Ladder (PR #474).
+  - History Timeline 8d49ba9b (Learn) (PR #475).
+  - Camping Checklist 891d7470 (Learn) (PR #476).
+  - SNK-T1 06825842, Snake themes (PR #477).
+  - Battleship SHIP-2a..2c 82941ed8 (Hard AI ~46 shots avg) (PR #520).
+  - Ant Farm AF-4a..4d 051682a0 (adds core/life.js) (PR #521).
+  - Nutrition Plate NP-1a..1c a98cc41f (Learn Health, sex-specific
+    targets, 16 tests) (PR #522).
+
+Fixes:
+  - #520 regenerated hub_catalog.js (c1958785), adding 10 rows that were
+    in the CSVs but missing after the Apps merges.
+  - Merge conflicts in the settings README, games-settings.js, the CSVs,
+    hub_appindex.js and hub_catalog.js were resolved keeping both sides.
+  - GAME_PREFIXES is now one registry.
+
+Work for other teams:
+  - Push order with Apps: #462-477 Games, #478-519 Apps, #520-522 Games.
+  - Hub Main: the new games/Learn apps may need a Hub menu entry, a
+    hub_sw.js offline list and a build bump (Main to decide; none done).
+
+Diagnoses:
+  - Usage ran out at about 20:36 IST and stopped six executors mid-build
+    (that is why SHIP, AF and Flag Master were first unfinished).
+  - hub_appindex_gen.py --catalog-only only rewrites hub_catalog.js;
+    hub_appindex.js entries need a hand or union merge.
+
+Ideas / future (not built):
+  - Flag Master FM-1a..1c (Learn flags, about 1600 lines, about 2 h).
+  - Aeroplane code review and improvements.
+  - More Browser FPS maps.
+
+Open, not approved (discussed):
+  - Aeroplane review (apps/games/aeroplane, plus the Lab copy at
+    apps/lab/aeroplane) and Browser FPS maps - Jor will do later.
+
+Parked:
+  - Flag Master (parked by Jor tonight; no code).
+  - Earlier parked items from Team 1's notes: Unblock 3D look, LandCraft
+    LC1/LC2, AoE balance/Ages/ARQ1f fog, Turbo Lap and Desert Road shared
+    settings, Learn theme LRN3a, NIX-G4/Island Alpha, Hero Builder
+    keep/move/remove, Technology Learn topic, and a Connect 4 / Game of
+    Life hub bridge.
+
+Moved:
+  - none.
+
+For Team 3:
+  - Code and commit locally; push only on Jor's "push". PRs with merge
+    commits only, no rebase, no build bump for games.
+  - Commit as J T <jor.teron@gmail.com>.
+  - New worktree: git -C /workspace/sites_games worktree add
+    /workspace/sites_<x> -b <branch> origin/main.
+  - Don't touch /workspace/sites, sites_h46 or sites_h48d. Leave
+    /workspace/sites_games as it is (untracked files and the learn/cr3
+    branch).
+  - Catalog wiring: a 6-column CSV row, description with no commas and
+    under 90 characters, plus hub_appindex.js, games-settings.js and the
+    settings README.
+  - Content rules: Human Body has no private parts; Code School has no
+    tutorials; Clock Reading is one page; Auto theme is the default; apps
+    open Windowed; no trademarked names; AoE only in apps/games/aoe-rts.
+  - Earlier handover note: /workspace/team3_games_handover.md.
+
+
+--- HANDOVER TO TEAM 3 (next 3 days)
+
+Team 3 handles the repo for the next 3 days. Team 2 resumes after that.
+Nothing below is approved to build until Jor says so in that bot's own
+chat.
+
+Where to start:
+  - Read this wrap-up, and Team 1's WEEK NOTES at the end of
+    README_technical_team1.txt, before starting any release.
+  - Do not begin unapproved work. A plain release id still means give the
+    plan and wait.
+  - If Jor picks a first task, Hub's natural next ids are H130 and H131;
+    Apps has HO2 (needs an explicit go) and AG41-AG43; Games has no open
+    build waiting (Aeroplane and Browser FPS maps are for Jor later;
+    Flag Master is parked).
+
+Top waiting items:
+  - Hub: H130 (move into the core) and H131 (forwarder cleanup);
+    fingerprint "Add phone" (needs the error code from Jor's phone);
+    the PIN retry limit; H139b; H98 pairing; the Connect-link
+    Allow/passcode gate; catalog/appindex and whether new games/Learn
+    apps need a hub_sw.js offline list plus a build bump (needs Jor's
+    OK); RL1 follow-ups (Windows and real SSH/VNC/browser tests, fetch
+    streaming, large transfers, reachable HTTPS) and, if Jor okays it,
+    Apps switching Web MCP and Remote over to the new relay.
+  - Apps: HO2 Office fixes (touches apps/office/shared); AG41, AG42 and
+    AG43; DF23, NL3, OC1, DF19-DF22 and MM7; IV1 and IV2; LL3, PH2 and
+    WB1-WB4.
+  - Games: Aeroplane review and more Browser FPS maps (Jor will do
+    later). Parked: Flag Master, plus the earlier Team 1 list (Unblock
+    3D look, LandCraft, AoE, shared settings, Learn theme, and the
+    rest in the Games block above).
+
+Folders never to delete or touch:
+  - Never delete /workspace/sites_apps (Apps working folder). Cleanup
+    there means stale branches only.
+  - Don't touch /workspace/sites, /workspace/sites_h46 or
+    /workspace/sites_h48d.
+  - Leave /workspace/sites_games as it is (untracked files and the
+    learn/cr3 branch).
+  - The shared clone still has about 205 pre-existing tracked
+    vendor/node_modules deletions. Never stage them.
+
+Release wording (only Jor's own words in a bot's own chat count):
+  - A plain release id means give the plan and wait.
+  - "lets do", "do HNN" or "code" means build and commit locally only.
+  - "push" means push AND merge.
+  - "code n push" or "do n push" means build, push and merge.
+  - "no coding", "just discussion" or "am just asking" means talk only.
+
+Next free ids:
+  - Hub: H145.
+  - Apps docs: next free section in README_technical_team2.txt is 1.95.
+  - Apps release ids already taken: IC, IX, VP1 and PT2. Free ids
+    include HO2, DF23, NL3, OC1, PS1, PN1 and NP1.
+
+Team 2 resumes after 3 days.
