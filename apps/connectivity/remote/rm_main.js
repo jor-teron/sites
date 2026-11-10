@@ -1,4 +1,4 @@
-/* Remote — rm_main.js: start the RM6 connections list, tabs, SFTP browse and transfers, and the SSH terminal, once the page has loaded. */
+/* Remote — rm_main.js: start the RM5 connections list, tabs, SFTP/WebDAV browse and transfers, and the SSH terminal, once the page has loaded. */
 (function (root) {
   'use strict';
 

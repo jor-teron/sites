@@ -1,4 +1,6 @@
-/* Remote — rm_sftp_view.js: SFTP connect sheet, folder browse, transfers and file management (RM3, still used in RM6). */
+/* Remote — rm_sftp_view.js: SFTP and WebDAV connect sheet, folder browse, transfers and file management.
+ * WebDAV uses RMDavClient (the same list/read/write/mkdir/rename/remove shape as the SFTP client).
+ */
 (function (root) {
   'use strict';
 
@@ -7,6 +9,8 @@
   var Url = root.RMUrl || (typeof require === 'function' ? require('./rm_url.js') : {});
   var Path = root.RMSftpPath || (typeof require === 'function' ? require('./rm_sftp_path.js') : {});
   var Client = root.RMSftpClient || (typeof require === 'function' ? require('./rm_sftp_client.js') : {});
+  var DavClient = root.RMDavClient || (typeof require === 'function' ? require('./rm_dav_client.js') : {});
+  var DavUrl = root.RMDavUrl || (typeof require === 'function' ? require('./rm_dav_url.js') : {});
   var Xfer = root.RMSftpXfer || (typeof require === 'function' ? require('./rm_sftp_xfer.js') : {});
 
   /* Short getElementById helper. */
@@ -76,8 +80,23 @@
     }
 
     /* Open the connect sheet for a saved SFTP connection. */
+    /* True when this connection should use the shared file view (SFTP or WebDAV). */
+    function isFiles(conn) {
+      return !!(conn && (conn.protocol === 'sftp' || conn.protocol === 'webdav'));
+    }
+
+    /* Describe the WebDAV target for the connect sheet, including a mixed-content warning. */
+    function davTarget(conn) {
+      var raw = (conn && conn.url) || '';
+      var norm = DavUrl.normalize ? DavUrl.normalize(raw, { port: conn && conn.port, pageProtocol: pageProtocol() }) : { ok: false, reason: C.DAV_ERR_URL };
+      if (!raw.trim() && conn && conn.host && DavUrl.normalize) {
+        norm = DavUrl.normalize(conn.host, { port: conn.port, pageProtocol: pageProtocol() });
+      }
+      return norm;
+    }
+
     function startConnect(conn) {
-      if (!conn || conn.protocol !== 'sftp') return;
+      if (!isFiles(conn)) return;
       /* Re-focus an already-open session instead of asking for the password again. */
       var existing = tabs.findByConn(conn.id);
       if (existing) {
@@ -87,13 +106,14 @@
       pending = conn;
       opening = false;
       $('connect-title').textContent = 'Connect to ' + conn.name;
-      $('connect-note').textContent = C.SFTP_SECURITY_NOTE;
+      var isDav = conn.protocol === 'webdav';
+      $('connect-note').textContent = isDav ? (C.DAV_SECURITY_NOTE || '') : C.SFTP_SECURITY_NOTE;
       var wrap = $('connect-token-wrap');
-      if (wrap) wrap.hidden = false;
-      var r = relayUrl(conn);
-      $('connect-relay').textContent = r.ok ? r.url : (conn.relay || '(no relay URL)');
+      if (wrap) wrap.hidden = isDav;
+      var r = isDav ? davTarget(conn) : relayUrl(conn);
+      $('connect-relay').textContent = r.ok ? r.url : (isDav ? (conn.url || '(no WebDAV URL)') : (conn.relay || '(no relay URL)'));
       $('c-pass').value = '';
-      $('c-token').value = conn.token || '';
+      $('c-token').value = isDav ? '' : (conn.token || '');
       $('c-remember').checked = false;
       $('connect-err').hidden = true;
       $('connect-err').textContent = r.ok ? (r.warn || '') : r.reason;
@@ -103,7 +123,8 @@
       } else {
         $('connect-err').className = 'form-err';
       }
-      $('btn-connect-go').disabled = !r.ok;
+      /* Mixed content will always fail from an https page, so do not offer Connect. */
+      $('btn-connect-go').disabled = !r.ok || !!r.insecure;
       $('connect').showModal();
       setTimeout(function () { $('c-pass').focus(); }, 0);
     }
@@ -128,10 +149,12 @@
     /* Submit the connect sheet: open the relay, then add a tab and browse the start folder. */
     function submitConnect(ev) {
       if (ev) ev.preventDefault();
-      if (opening || !pending || pending.protocol !== 'sftp') return;
+      if (opening || !pending || !isFiles(pending)) return;
       var conn = pending;
-      var r = relayUrl(conn);
+      var isDav = conn.protocol === 'webdav';
+      var r = isDav ? davTarget(conn) : relayUrl(conn);
       if (!r.ok) { connectError(r.reason); return; }
+      if (isDav && r.insecure) { connectError(r.warn); return; }
       var pass = $('c-pass').value;
       var token = $('c-token').value;
       var remember = $('c-remember').checked;
@@ -140,17 +163,27 @@
       opening = true;
       $('btn-connect-go').disabled = true;
       connectError('Connecting…', true);
-      Client.connect({
-        relay: r.url,
-        token: token,
-        host: conn.host,
-        port: conn.port,
-        user: conn.user,
-        pass: pass,
-        root: root.value || ''
-      }).then(function (client) {
-        /* Optionally store the token (never the password) on this connection. */
-        if (remember) {
+      var opener = isDav
+        ? DavClient.connect({
+            url: r.url,
+            port: conn.port,
+            user: conn.user,
+            pass: pass,
+            folder: root.value || '',
+            pageProtocol: pageProtocol()
+          })
+        : Client.connect({
+            relay: r.url,
+            token: token,
+            host: conn.host,
+            port: conn.port,
+            user: conn.user,
+            pass: pass,
+            root: root.value || ''
+          });
+      opener.then(function (client) {
+        /* Optionally store the SFTP relay token (never the password) on this connection. */
+        if (remember && !isDav) {
           store.save({
             id: conn.id,
             name: conn.name,
@@ -170,7 +203,7 @@
         var tab = tabs.openSession({
           connId: conn.id,
           name: conn.name,
-          protocol: 'sftp',
+          protocol: isDav ? 'webdav' : 'sftp',
           client: client,
           path: [],
           root: client.root || conn.name,

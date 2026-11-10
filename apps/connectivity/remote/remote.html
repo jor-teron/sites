@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <!--
-  Remote — RM6: connections list, Remmina-style tabs, SFTP browse/transfers, and an SSH terminal.
+  Remote — RM5: connections list, Remmina-style tabs, SFTP browse/transfers, an SSH terminal, and WebDAV.
   SFTP talks JSON over a WebSocket to hub/relay/sftp_relay.py (Remote has its own client; it does
   not import shared/fs). SSH talks through a websockify TCP relay (port 8022); encryption runs in
-  this page using vendor/ssh-lib.min.js, so the relay never sees the password. Passwords are never
-  stored. A relay token (SFTP only) is stored only if you choose to. VNC and FTP rows still show
-  an honest "coming" toast. The app is standalone and does not import the SSH or VNC apps.
-  Styles: vendor/xterm.css, rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_tabs.js,
-  rm_sftp_path.js, rm_sftp_client.js, rm_sftp_xfer.js, rm_sftp_view.js, rm_ssh_known.js,
-  rm_ssh_client.js, rm_ssh_term.js, rm_ssh_view.js, rm_ui.js, rm_main.js.
+  this page using vendor/ssh-lib.min.js, so the relay never sees the password. WebDAV talks to the
+  server with fetch (CORS required; no relay). Passwords are never stored. A relay token (SFTP only)
+  is stored only if you choose to. VNC still shows an honest "coming" toast; FTP is parked. The app
+  is standalone and does not import the SSH or VNC apps.
+  Styles: vendor/xterm.css, rm_base.css. Modules: rm_config.js, rm_url.js, rm_dav_url.js, rm_dav_xml.js,
+  rm_dav_client.js, rm_store.js, rm_tabs.js, rm_sftp_path.js, rm_sftp_client.js, rm_sftp_xfer.js,
+  rm_sftp_view.js, rm_ssh_known.js, rm_ssh_client.js, rm_ssh_term.js, rm_ssh_view.js, rm_ui.js, rm_main.js.
   Connections are stored in localStorage 'remote-conns-v1'. SSH fingerprints use 'remote-known-hosts-v1'.
 -->
 <html lang="en">
@@ -28,14 +29,14 @@
       <a class="back jelly" href="../connectivity.html">Back</a>
       <img src="rm_icon.svg" alt="">
       <h1>Remote</h1>
-      <span class="tag">RM6</span>
+      <span class="tag">RM5</span>
       <button type="button" id="btn-add" class="jelly">Add</button>
     </header>
 
     <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
 
     <section id="view-list">
-      <p class="hint">One list for SSH, VNC, SFTP and FTP. SFTP can browse, transfer and manage files. SSH opens a terminal. VNC and FTP viewers arrive later.</p>
+      <p class="hint">One list for SSH, VNC, SFTP, WebDAV and FTP. SFTP and WebDAV can browse, transfer and manage files. SSH opens a terminal. VNC arrives later; FTP is parked.</p>
       <p class="hint warn" id="security-note">This SFTP relay logs in for you and sees the password and files. Run it only on your own machine, LAN or VPN.</p>
 
       <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
@@ -118,18 +119,29 @@
           <option value="sftp" selected>SFTP</option>
           <option value="ssh">SSH</option>
           <option value="vnc">VNC</option>
+          <option value="webdav">WebDAV</option>
           <option value="ftp">FTP</option>
         </select>
       </label>
-      <label class="field">Host<input id="f-host" name="host" maxlength="255" required placeholder="192.168.1.8" autocomplete="off" spellcheck="false"></label>
+      <div id="field-url" hidden>
+        <label class="field">WebDAV URL<input id="f-url" name="url" maxlength="500" placeholder="https://host/dav/" autocomplete="off" spellcheck="false"></label>
+        <p id="url-hint" class="hint">https:// or http://. No relay. The server must allow CORS. See the README.</p>
+      </div>
+      <div id="field-host">
+        <label class="field">Host<input id="f-host" name="host" maxlength="255" placeholder="192.168.1.8" autocomplete="off" spellcheck="false"></label>
+      </div>
       <label class="field">Port<input id="f-port" name="port" type="number" min="1" max="65535" value="22" inputmode="numeric"></label>
       <label class="field">User<input id="f-user" name="user" maxlength="64" placeholder="optional" autocomplete="username" spellcheck="false"></label>
       <label class="field">Start folder<input id="f-folder" name="folder" maxlength="255" placeholder="optional, e.g. projects or /var/www" autocomplete="off" spellcheck="false"></label>
-      <p class="hint">SFTP only. Sent as the relay start folder (root). Leave empty for the account home.</p>
-      <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8022 or wss://host:8022" autocomplete="off" spellcheck="false"></label>
-      <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SSH uses the relay on port 8022, SFTP on 8023.</p>
-      <label class="field">Relay token<input id="f-token" name="token" maxlength="200" placeholder="optional, or enter it when you connect" autocomplete="off" spellcheck="false"></label>
-      <p class="hint">Saved on this device only if you fill it in here. You can also enter it when you connect and tick Remember.</p>
+      <p id="folder-hint" class="hint">SFTP only. Sent as the relay start folder (root). Leave empty for the account home.</p>
+      <div id="field-relay">
+        <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8022 or wss://host:8022" autocomplete="off" spellcheck="false"></label>
+        <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SSH uses the relay on port 8022, SFTP on 8023.</p>
+      </div>
+      <div id="field-token">
+        <label class="field">Relay token<input id="f-token" name="token" maxlength="200" placeholder="optional, or enter it when you connect" autocomplete="off" spellcheck="false"></label>
+        <p class="hint">Saved on this device only if you fill it in here. You can also enter it when you connect and tick Remember.</p>
+      </div>
       <label class="field">Group<input id="f-group" name="group" maxlength="60" placeholder="optional, e.g. Home" autocomplete="off"></label>
       <label class="field">Notes<textarea id="f-notes" name="notes" maxlength="240" rows="2" placeholder="optional"></textarea></label>
       <p id="edit-err" class="form-err" hidden></p>
@@ -239,6 +251,9 @@
   <script src="vendor/ssh-lib.min.js"></script>
   <script src="rm_config.js"></script>
   <script src="rm_url.js"></script>
+  <script src="rm_dav_url.js"></script>
+  <script src="rm_dav_xml.js"></script>
+  <script src="rm_dav_client.js"></script>
   <script src="rm_store.js"></script>
   <script src="rm_tabs.js"></script>
   <script src="rm_sftp_path.js"></script>

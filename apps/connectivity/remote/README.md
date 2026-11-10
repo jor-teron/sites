@@ -1,24 +1,82 @@
-<!-- Remote — README.md: how to use the RM6 connections list, tabs, SFTP browse and transfers, and the SSH terminal. -->
-# Remote (RM6)
+<!-- Remote — README.md: how to use the RM5 connections list, tabs, SFTP and WebDAV browse and transfers, and the SSH terminal. -->
+# Remote (RM5)
 
-One saved-connections list for SSH, VNC, SFTP and FTP, with Remmina-style tabs. This release adds an SSH terminal on top of the SFTP folder browser and transfers. No passwords are stored. A relay token (SFTP only) is stored only if you save it on the connection or tick **Remember this token** when you connect (off by default).
+One saved-connections list for SSH, VNC, SFTP, WebDAV and FTP, with Remmina-style tabs. This release adds WebDAV on top of the SFTP folder browser, transfers, and the SSH terminal (RM6). No passwords are stored. A relay token (SFTP only) is stored only if you save it on the connection or tick **Remember this token** when you connect (off by default).
 
 Tapping a row:
 
 - **SFTP** asks for the password (and relay token) and opens a folder browser in a new tab
 - **SSH** asks for the password and opens a terminal in a new tab
+- **WebDAV** asks for the password and opens the same folder browser (no relay; the server must allow CORS)
 - **VNC**: `viewer coming in a later RM release`
-- **FTP**: `coming in RM4` (parked)
+- **FTP**: `parked`
 
-Several sessions can stay open at once. Switching tabs keeps each session alive. Re-tapping a connection focuses its existing tab. Closing a tab (or leaving the page) while an SFTP transfer is running asks you to confirm. The **Connections** tab is always first and cannot be closed. On a phone the tab strip scrolls sideways.
+Several sessions can stay open at once. Switching tabs keeps each session alive. Re-tapping a connection focuses its existing tab. Closing a tab (or leaving the page) while a transfer is running asks you to confirm. The **Connections** tab is always first and cannot be closed. On a phone the tab strip scrolls sideways.
 
-Remote is standalone. It does not open the old SSH or VNC apps, and it does not import their saved hosts or host keys. It keeps its own copies of the terminal and SSH libraries in `vendor/`. VNC and WebDAV will come in later releases. FTP, RDP, X2Go, WWW, EXEC and SPICE are parked.
+Remote is standalone. It does not open the old SSH or VNC apps, and it does not import their saved hosts or host keys. It keeps its own copies of the terminal and SSH libraries in `vendor/`. VNC will come in a later release. FTP, RDP, X2Go, WWW, EXEC and SPICE are parked.
 
-The protocol picker defaults to SFTP. Changing the protocol fills in port 22, 5900, 22 or 21 unless you already edited the port. An optional **Start folder** on an SFTP connection is sent as the relay `root` (leave it empty for the account home).
+The protocol picker defaults to SFTP. Changing the protocol fills in port 22, 5900, 22, 443 or 21 unless you already edited the port. A WebDAV URL that starts with `http://` uses port 80. An optional **Start folder** on an SFTP or WebDAV connection is the folder to open first (leave it empty for the SFTP account home, or the WebDAV base URL).
 
 The optional relay field accepts `ws://` and `wss://`. A bare host becomes `wss://` on https pages and `ws://` on http pages. An https page warns if you enter `ws://`. SSH uses the relay on port **8022**. SFTP uses the relay on port **8023**.
 
-Connections are stored in this browser only, under localStorage key `remote-conns-v1`. Accepted SSH host-key fingerprints are stored under `remote-known-hosts-v1`. The terminal font size is stored under `remote-ssh-font-v1`.
+Connections are stored in this browser only, under localStorage key `remote-conns-v1` (WebDAV rows also keep their base `url`). Accepted SSH host-key fingerprints are stored under `remote-known-hosts-v1`. The terminal font size is stored under `remote-ssh-font-v1`.
+
+
+## WebDAV
+
+The browser talks to the WebDAV server directly with `fetch`. There is no relay. The password is sent as HTTP Basic authentication, so use **https**. An https Hub page cannot call an `http://` server (the browser blocks mixed content).
+
+**The server must allow this page with CORS**, including a preflight `OPTIONS` for `PROPFIND`, `GET`, `PUT`, `MKCOL`, `MOVE` and `DELETE`, and the `Authorization`, `Depth`, `Destination`, `Overwrite` and `Content-Type` request headers.
+
+On first connect, Remote lists the base URL (plus an optional start folder) with `PROPFIND`. The folder tab is the same one SFTP uses: browse, download, upload (with overwrite choices), rename, delete (folders are recursive), and new folder. On a wide screen you can also open a local folder.
+
+If something goes wrong, the app says so clearly: can't reach the server (CORS or the network), login failed (401), access denied (403), not found (404), method not allowed (405), or the server is out of storage (507).
+
+### CORS examples
+
+The origin must be the page that serves Remote, for example `https://jor-teron.github.io`. Using `*` is simpler on a LAN, but is a bad idea on a server that uses a password.
+
+**rclone** (the flag is `--allow-origin`, not `--cors`):
+
+```
+rclone serve webdav /path/to/files --addr :8080 --user me --pass secret --allow-origin https://jor-teron.github.io
+```
+
+On a LAN http Hub you can pass `--allow-origin http://192.168.1.8:port` (the origin of the Hub page). `--allow-origin *` allows any origin; rclone itself warns that this is a risk on an authenticated server.
+
+**nginx** (needs the DAV module, and [nginx-dav-ext-module](https://github.com/arut/nginx-dav-ext-module) for PROPFIND; adjust the origin and path):
+
+```
+location /dav/ {
+  dav_methods PUT DELETE MKCOL COPY MOVE;
+  dav_ext_methods PROPFIND OPTIONS;
+  dav_access user:rw group:rw;
+  autoindex on;
+  if ($request_method = OPTIONS) {
+    add_header Access-Control-Allow-Origin "https://jor-teron.github.io";
+    add_header Access-Control-Allow-Methods "GET, PUT, OPTIONS, DELETE, PROPFIND, MKCOL, MOVE, HEAD";
+    add_header Access-Control-Allow-Headers "Authorization, Content-Type, Depth, Destination, Overwrite";
+    add_header Access-Control-Max-Age 86400;
+    add_header Content-Length 0;
+    return 204;
+  }
+  add_header Access-Control-Allow-Origin "https://jor-teron.github.io" always;
+  add_header Access-Control-Allow-Methods "GET, PUT, OPTIONS, DELETE, PROPFIND, MKCOL, MOVE, HEAD" always;
+  add_header Access-Control-Allow-Headers "Authorization, Content-Type, Depth, Destination, Overwrite" always;
+}
+```
+
+**Apache** (needs `mod_dav`, `mod_dav_fs` and `mod_headers`):
+
+```
+Dav On
+Header always set Access-Control-Allow-Origin "https://jor-teron.github.io"
+Header always set Access-Control-Allow-Methods "GET, PUT, OPTIONS, DELETE, PROPFIND, MKCOL, MOVE, HEAD"
+Header always set Access-Control-Allow-Headers "Authorization, Content-Type, Depth, Destination, Overwrite"
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=204,L]
+```
 
 ## SSH terminal
 

@@ -1,4 +1,4 @@
-/* Remote — rm_ui.js: DOM for the RM6 connections list, session tabs, editor, toast and overflow menu. */
+/* Remote — rm_ui.js: DOM for the RM5 connections list, session tabs, editor, toast and overflow menu. */
 (function (root) {
   'use strict';
 
@@ -118,7 +118,7 @@
       row.appendChild(more);
       row.addEventListener('click', function () {
         var a = store.tapAction(conn);
-        if ((a.action === 'sftp' || a.action === 'ssh') && opts.onOpen) opts.onOpen(conn);
+        if ((a.action === 'sftp' || a.action === 'ssh' || a.action === 'webdav') && opts.onOpen) opts.onOpen(conn);
         else toast(a.message);
       });
       row.addEventListener('keydown', function (e) {
@@ -200,10 +200,10 @@
     function showPane() {
       var onList = !opts.tabs || opts.tabs.isConnections();
       var tab = opts.tabs ? opts.tabs.current() : null;
-      var isSftp = !onList && tab && tab.protocol === 'sftp';
+      var isFiles = !onList && tab && (tab.protocol === 'sftp' || tab.protocol === 'webdav');
       var isSsh = !onList && tab && tab.protocol === 'ssh';
       if ($('view-list')) $('view-list').hidden = !onList;
-      if ($('view-sftp')) $('view-sftp').hidden = !isSftp;
+      if ($('view-sftp')) $('view-sftp').hidden = !isFiles;
       if ($('view-ssh')) $('view-ssh').hidden = !isSsh;
       if ($('app')) $('app').classList.toggle('wide', !!isSsh);
       if (!onList && opts.onShowSession) opts.onShowSession(tab);
@@ -235,12 +235,15 @@
       f.elements.folder.value = conn && conn.folder ? conn.folder : '';
       f.elements.group.value = conn && conn.group ? conn.group : '';
       f.elements.notes.value = conn && conn.notes ? conn.notes : '';
+      if (f.elements.url) f.elements.url.value = conn && conn.url ? conn.url : '';
       portProtocol = proto;
       portEdited = !!(conn && String(conn.port) !== String(C.DEFAULT_PORTS[proto]));
       $('edit-title').textContent = conn && conn.id ? 'Edit connection' : 'Add connection';
       $('edit-err').hidden = true;
       $('edit-err').textContent = '';
+      updateProtocolFields();
       updateRelayHint();
+      updateUrlHint();
     }
 
     /* Open the add/edit dialog. */
@@ -272,6 +275,7 @@
         relay: relayRaw.trim() ? (norm.ok ? norm.url : relayRaw) : '',
         token: f.elements.token.value,
         folder: f.elements.folder.value,
+        url: f.elements.url ? f.elements.url.value : '',
         group: f.elements.group.value,
         notes: f.elements.notes.value,
         _relayNorm: norm
@@ -302,6 +306,53 @@
       hint.className = 'hint';
     }
 
+    /* Show or hide URL / host / relay fields so the editor matches the chosen protocol. */
+    function updateProtocolFields() {
+      var proto = $('edit-form').elements.protocol.value;
+      var isDav = proto === 'webdav';
+      if ($('field-url')) $('field-url').hidden = !isDav;
+      if ($('field-host')) $('field-host').hidden = isDav;
+      if ($('field-relay')) $('field-relay').hidden = isDav;
+      if ($('field-token')) $('field-token').hidden = isDav;
+      if ($('folder-hint')) {
+        $('folder-hint').textContent = isDav
+          ? 'WebDAV only. A folder under the base URL. Leave empty for the base URL itself.'
+          : 'SFTP only. Sent as the relay start folder (root). Leave empty for the account home.';
+      }
+    }
+
+    /* Live hint under the WebDAV URL: preview, mixed-content warning, or error. */
+    function updateUrlHint() {
+      var hint = $('url-hint');
+      if (!hint || !$('edit-form').elements.url) return;
+      var raw = $('edit-form').elements.url.value;
+      var DavUrl = root.RMDavUrl;
+      if (!DavUrl) return;
+      var norm = DavUrl.normalize(raw, { port: $('edit-form').elements.port.value, pageProtocol: pageProtocol() });
+      if (!raw.trim()) {
+        hint.textContent = 'https:// or http://. No relay. The server must allow CORS. See the README.';
+        hint.className = 'hint';
+        return;
+      }
+      if (!norm.ok) {
+        hint.textContent = norm.reason;
+        hint.className = 'hint err';
+        return;
+      }
+      if (norm.insecure) {
+        hint.textContent = norm.warn;
+        hint.className = 'hint warn';
+        return;
+      }
+      hint.textContent = norm.url;
+      hint.className = 'hint';
+      /* Keep the port field in sync when it is still the previous default. */
+      if (!portEdited && $('edit-form').elements.port.value !== String(norm.port)) {
+        $('edit-form').elements.port.value = String(norm.port);
+        portProtocol = 'webdav';
+      }
+    }
+
     /* When the protocol changes, auto-fill the port unless the user edited it. */
     function onProtocolChange() {
       var f = $('edit-form');
@@ -316,13 +367,19 @@
         portEdited = String(n) !== String(store.defaultPort(next));
       }
       portProtocol = next;
+      /* Switching to WebDAV can prefill the URL from a host already typed in the form. */
+      if (next === 'webdav' && f.elements.url && !f.elements.url.value.trim() && f.elements.host.value.trim()) {
+        f.elements.url.value = 'https://' + f.elements.host.value.trim() + '/';
+      }
+      updateProtocolFields();
+      updateUrlHint();
     }
 
     /* Validate and save the open editor. */
     function saveEditor(ev) {
       if (ev) ev.preventDefault();
       var v = formValues();
-      if (v.relay && !v._relayNorm.ok) {
+      if (v.protocol !== 'webdav' && v.relay && !v._relayNorm.ok) {
         $('edit-err').textContent = v._relayNorm.reason;
         $('edit-err').hidden = false;
         return;
@@ -402,6 +459,7 @@
     $('f-protocol').addEventListener('change', onProtocolChange);
     $('f-port').addEventListener('input', function () { portEdited = true; });
     $('f-relay').addEventListener('input', updateRelayHint);
+    if ($('f-url')) $('f-url').addEventListener('input', updateUrlHint);
     $('menu-edit').addEventListener('click', function () {
       var id = $('menu').dataset.id;
       closeMenu();

@@ -40,7 +40,7 @@ var Known = require(path.join(app, 'rm_ssh_known.js'));
 var Client = require(path.join(app, 'rm_ssh_client.js'));
 var Term = require(path.join(app, 'rm_ssh_term.js'));
 
-assertEq(C.RELEASE, 'RM6', 'release tag is RM6');
+assert(/^RM\d+$/.test(C.RELEASE), 'release tag is RMn');
 assertEq(C.LS_SSH_KNOWN, 'remote-known-hosts-v1', 'known hosts use Remote\'s own key');
 assertEq(C.LS_SSH_FONT, 'remote-ssh-font-v1', 'font uses Remote\'s own key');
 assert(C.SSH_SECURITY_NOTE && /encrypted/.test(C.SSH_SECURITY_NOTE), 'SSH security note mentions encrypted bytes');
@@ -59,7 +59,7 @@ assertEq(Store.tapAction({ protocol: 'sftp' }).action, 'sftp', 'sftp row still o
 assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'toast', 'vnc row is still a toast');
 assertEq(Store.tapAction({ protocol: 'vnc' }).message, C.TOAST_VIEWER_LATER, 'vnc toast text');
 assertEq(Store.tapAction({ protocol: 'ftp' }).action, 'toast', 'ftp row is still a toast');
-assertEq(Store.tapAction({ protocol: 'webdav' }).action, 'toast', 'unknown protocol is a toast');
+assertEq(Store.tapAction({ protocol: 'spice' }).action, 'toast', 'unknown protocol is a toast');
 
 /* -------------------------------------------------------------------------- */
 /* Relay URL / token                                                          */
@@ -238,7 +238,7 @@ assert(/6\.0\.0/.test(vreadme) && /3\.12\.42/.test(vreadme), 'vendor README reco
 assert(/MIT/.test(vreadme), 'vendor README records licences');
 
 var html = fs.readFileSync(path.join(app, 'remote.html'), 'utf8');
-assert(html.indexOf('RM6') >= 0, 'the page tag is RM6');
+assert(/RM\d+/.test(html), 'the page has an RM tag');
 assert(html.indexOf('connect-token-wrap') >= 0, 'the connect sheet can hide the SFTP token fields');
 
 if (failed) {

@@ -1,7 +1,7 @@
 /* Remote — rm_store.js: saved connections in localStorage 'remote-conns-v1'. No DOM, so node can unit-test it.
- * Each entry is { id, name, protocol, host, port, user, relay, token?, folder?, group, notes }. Passwords are never stored.
+ * Each entry is { id, name, protocol, host, port, user, relay, token?, folder?, url?, group, notes }. Passwords are never stored.
  * An optional relay token is stored only when the user saves it (editor, or the connect-sheet tick box).
- * folder is the optional SFTP start folder, sent as root in the relay open message.
+ * folder is the optional SFTP or WebDAV start folder. url is the WebDAV base URL (https://host/dav/).
  * This app is standalone: it does not read SSH or VNC storage keys, and it does not link to those apps.
  * Store.make(storage, now) -> { list, get, save, remove, duplicate, exportJSON, importJSON, search, grouped,
  *   clean, defaultPort, portAfterProtocolChange, tapAction }.
@@ -13,6 +13,8 @@
   var C = root.RM_CONFIG || (typeof require === 'function' ? require('./rm_config.js') : {});
   /* URL helper, used only to reject a relay with a bad scheme on save/import. */
   var Url = root.RMUrl || (typeof require === 'function' ? require('./rm_url.js') : {});
+  /* WebDAV URL helper, used to validate and split a base URL into host, port and path. */
+  var DavUrl = root.RMDavUrl || (typeof require === 'function' ? require('./rm_dav_url.js') : {});
 
   /* Trim and cap a value so stored strings stay short and safe. */
   function str(v, max) {
@@ -43,15 +45,16 @@
   }
 
   /**
-   * What tapping a row should do: open a session for SFTP or SSH, otherwise a toast.
+   * What tapping a row should do: open a session for SFTP, SSH or WebDAV, otherwise a toast.
    * Never a navigation to another app. VNC and unknown protocols share one "later" message;
-   * FTP has its own parked-release tag.
+   * FTP has its own parked message.
    */
   function tapAction(conn) {
     /* Protocol id on the row, or empty if the caller passed nothing. */
     var p = conn && conn.protocol ? String(conn.protocol) : '';
     if (p === 'sftp') return { action: 'sftp' };
     if (p === 'ssh') return { action: 'ssh' };
+    if (p === 'webdav') return { action: 'webdav' };
     if (p === 'ftp') return { action: 'toast', message: C.TOAST_FTP };
     /* VNC, and any unknown protocol, get the honest "later" toast. */
     return { action: 'toast', message: C.TOAST_VIEWER_LATER };
@@ -66,19 +69,36 @@
     h = h || {};
     /* Protocol id, lower-cased. An empty value falls back to SFTP. */
     var protocol = str(h.protocol, 8).toLowerCase() || C.DEFAULT_PROTOCOL;
-    if (C.PROTOCOLS.indexOf(protocol) < 0) return 'Choose a protocol: SFTP, SSH, VNC or FTP.';
+    if (C.PROTOCOLS.indexOf(protocol) < 0) return 'Choose a protocol: SFTP, SSH, VNC, WebDAV or FTP.';
+    /* Optional WebDAV base URL, validated below when the protocol is webdav. */
+    var davUrl = str(h.url, C.MAX_URL || 500);
     /* Host name or IP, with IPv6 brackets stripped so we store a bare address. */
     var host = str(h.host, C.MAX_HOST).replace(/^\[|\]$/g, '');
-    if (!host || /[\s/@]/.test(host)) return 'Enter a valid host (name or IP address).';
     /* Optional user name; blank is allowed (VNC often has none). */
     var user = str(h.user, C.MAX_USER);
     if (user && /[\s@:]/.test(user)) return 'Enter a valid user name.';
     /* Port, falling back to the protocol default when missing or not a number. */
     var port = parseInt(h.port, 10);
-    if (!port) port = defaultPort(protocol);
+    if (protocol === 'webdav' && DavUrl.normalize) {
+      /* Prefer the URL field; if it is empty, build one from host + port. */
+      var rawDav = davUrl;
+      if (!rawDav && host) {
+        var scheme = (port === 80) ? 'http' : 'https';
+        var hostPart = host.indexOf(':') >= 0 ? '[' + host + ']' : host;
+        rawDav = scheme + '://' + hostPart + '/';
+      }
+      var parsed = DavUrl.normalize(rawDav, { port: port || undefined });
+      if (!parsed.ok) return parsed.reason || 'Enter a WebDAV URL (https://host/dav/).';
+      host = parsed.host;
+      port = parseInt(parsed.port, 10);
+      davUrl = parsed.url;
+    } else {
+      if (!host || /[\s/@]/.test(host)) return 'Enter a valid host (name or IP address).';
+      if (!port) port = defaultPort(protocol);
+    }
     if (port < C.PORT_MIN || port > C.PORT_MAX) return 'Port must be 1–65535.';
-    /* Optional relay: empty is fine; any other value must normalize as ws:// or wss:// (or a bare host). */
-    var relay = str(h.relay, C.MAX_RELAY);
+    /* Optional relay: empty is fine; ignored for WebDAV (there is no relay). */
+    var relay = protocol === 'webdav' ? '' : str(h.relay, C.MAX_RELAY);
     if (relay && Url.normalizeRelay) {
       /* Use a neutral page protocol so a stored bare host is not forced to ws or wss here. */
       var check = Url.normalizeRelay(relay, '');
@@ -108,8 +128,9 @@
       group: group,
       notes: notes
     };
-    if (token) out.token = token;
+    if (token && protocol !== 'webdav') out.token = token;
     if (folder) out.folder = folder;
+    if (davUrl && protocol === 'webdav') out.url = davUrl;
     return out;
   }
 
@@ -203,6 +224,7 @@
         relay: c.relay,
         token: c.token,
         folder: c.folder,
+        url: c.url,
         group: c.group,
         notes: c.notes
       });
@@ -240,6 +262,7 @@
           relay: raw.relay,
           token: raw.token,
           folder: raw.folder,
+          url: raw.url,
           group: raw.group,
           notes: raw.notes
         });
@@ -254,7 +277,7 @@
       var all = hlist();
       if (!q) return all;
       return all.filter(function (h) {
-        var blob = [h.name, h.protocol, h.host, h.user, h.group, h.notes, h.port].join(' ').toLowerCase();
+        var blob = [h.name, h.protocol, h.host, h.user, h.group, h.notes, h.port, h.url].join(' ').toLowerCase();
         return blob.indexOf(q) >= 0;
       });
     }

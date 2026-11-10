@@ -1,4 +1,4 @@
-/* Remote — rm_config.js: every constant for the RM6 connections list, SFTP browse and transfers, and the SSH terminal, each one commented. */
+/* Remote — rm_config.js: every constant for the RM5 connections list, SFTP browse and transfers, the SSH terminal, and WebDAV, each one commented. */
 (function (root) {
   'use strict';
 
@@ -7,13 +7,13 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Remote',
     /* Release tag shown next to the title. */
-    RELEASE: 'RM6',
+    RELEASE: 'RM5',
     /* localStorage key for the saved connections list. Passwords are never stored under this key. */
     LS_CONNS: 'remote-conns-v1',
     /* Shared Hub theme key — read only, never written by this app. */
     HUB_THEME_KEY: 'sites-hub.theme',
     /* Allowed protocol ids, in the order the picker shows them. SFTP is first because it is the default. */
-    PROTOCOLS: ['sftp', 'ssh', 'vnc', 'ftp'],
+    PROTOCOLS: ['sftp', 'ssh', 'vnc', 'webdav', 'ftp'],
     /* Protocol chosen when the add form first opens. */
     DEFAULT_PROTOCOL: 'sftp',
     /* Default TCP port for each protocol, filled in when the protocol changes unless the user edited the port. */
@@ -21,6 +21,7 @@
       ssh: 22,
       vnc: 5900,
       sftp: 22,
+      webdav: 443,
       ftp: 21
     },
     /* Short labels drawn on row badges and in the protocol picker. */
@@ -28,14 +29,15 @@
       ssh: 'SSH',
       vnc: 'VNC',
       sftp: 'SFTP',
+      webdav: 'WebDAV',
       ftp: 'FTP'
     },
     /* Toast shown when a VNC row is tapped. The VNC viewer arrives in a later RM release, in this app. */
     TOAST_VIEWER_LATER: 'viewer coming in a later RM release',
     /* Kept for older tests and copy; RM2 opens an SFTP tab instead of this toast. */
     TOAST_SFTP: 'coming in RM2',
-    /* Toast shown when an FTP row is tapped. Plain FTP lands in RM4. */
-    TOAST_FTP: 'coming in RM4',
+    /* Toast shown when an FTP row is tapped. Plain FTP is parked. */
+    TOAST_FTP: 'parked',
     /* Maximum length of a connection name. */
     MAX_NAME: 60,
     /* Maximum length of a host name or IP address. */
@@ -149,7 +151,31 @@
     /* Shown when the SSH server does not answer in time. */
     SSH_ERR_TIMEOUT: 'The SSH server did not respond in time.',
     /* Short security note drawn on the SSH connect sheet and in the README. */
-    SSH_SECURITY_NOTE: 'This relay only forwards encrypted SSH bytes. It never sees your password or what you type. Run it only on your own machine, LAN or VPN.'
+    SSH_SECURITY_NOTE: 'This relay only forwards encrypted SSH bytes. It never sees your password or what you type. Run it only on your own machine, LAN or VPN.',
+    /* Maximum length of a WebDAV base URL. */
+    MAX_URL: 500,
+    /* Suffix appended to WebDAV CORS / method errors so the user can find setup steps. */
+    DAV_README_HINT: ' See the README for how to allow CORS on the WebDAV server.',
+    /* Shown when the WebDAV URL is missing or not http(s). */
+    DAV_ERR_URL: 'Enter a WebDAV URL (https://host/dav/ or http://host/dav/).',
+    /* Shown when fetch throws (CORS, mixed content, or the network failed). */
+    DAV_ERR_CORS: "Can't reach the WebDAV server. If this page is on a different origin, the server must allow CORS. An https page also cannot call an http:// server.",
+    /* Shown when the server returns 401. */
+    DAV_ERR_AUTH: 'Login failed. Check the user and password.',
+    /* Shown when the server returns 403. */
+    DAV_ERR_DENIED: 'Access denied.',
+    /* Shown when the server returns 404. */
+    DAV_ERR_NOTFOUND: 'That file or folder was not found.',
+    /* Shown when the server returns 405 or 501. */
+    DAV_ERR_METHOD: 'The server does not allow that WebDAV method (405). PROPFIND, GET, PUT, MKCOL, MOVE and DELETE must be allowed, and CORS must list them.',
+    /* Shown when the server returns 507. */
+    DAV_ERR_STORAGE: 'The server is out of storage (507).',
+    /* Shown when MOVE/MKCOL hits a name that already exists (409 or 412). */
+    DAV_ERR_EXISTS: 'A file or folder with that name already exists.',
+    /* Shown when an https page is given an http:// WebDAV URL. */
+    DAV_ERR_MIXED: 'This https page cannot use an http:// WebDAV server. Use https://, or open the Hub over http on your LAN.',
+    /* Short note drawn on the WebDAV connect sheet and in the README. */
+    DAV_SECURITY_NOTE: 'The browser talks to the server directly. The password is sent as HTTP Basic authentication — use https. The server must allow this page with CORS. There is no relay.'
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */

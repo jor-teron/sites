@@ -1,4 +1,4 @@
-/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM6 */
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM5 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -21,6 +21,7 @@ html.light {
   --vnc: #7c3aed;
   --sftp: #0f766e;
   --ftp: #c2410c;
+  --webdav: #0e7490;
 }
 
 html[data-theme="dark"],
@@ -40,6 +41,7 @@ html.dark {
   --vnc: #c4b5fd;
   --sftp: #5eead4;
   --ftp: #fdba74;
+  --webdav: #67e8f9;
 }
 
 /* Before JS runs, follow the device scheme so the first paint is not a flash. */
@@ -60,6 +62,7 @@ html.dark {
     --vnc: #c4b5fd;
     --sftp: #5eead4;
     --ftp: #fdba74;
+    --webdav: #67e8f9;
   }
 }
 
@@ -251,6 +254,7 @@ button, .btn {
 .badge-vnc { background: color-mix(in srgb, var(--vnc) 22%, var(--surface)); color: var(--vnc); }
 .badge-sftp { background: color-mix(in srgb, var(--sftp) 22%, var(--surface)); color: var(--sftp); }
 .badge-ftp { background: color-mix(in srgb, var(--ftp) 22%, var(--surface)); color: var(--ftp); }
+.badge-webdav { background: color-mix(in srgb, var(--webdav) 22%, var(--surface)); color: var(--webdav); }
 
 .more {
   flex: 0 0 auto;
@@ -750,3 +754,5 @@ label.check input {
 @media (prefers-reduced-motion: reduce) {
   #ssh-menu { animation: none; }
 }
+
+#field-url[hidden], #field-host[hidden], #field-relay[hidden], #field-token[hidden] { display: none; }

@@ -210,7 +210,7 @@ assert(!noHost.ok, 'scheme without a host is rejected');
 assertEq(Store.tapAction({ protocol: 'ssh' }).action, 'ssh', 'ssh action opens a terminal tab');
 assertEq(Store.tapAction({ protocol: 'vnc' }).message, 'viewer coming in a later RM release', 'vnc toast');
 assertEq(Store.tapAction({ protocol: 'sftp' }).action, 'sftp', 'sftp action opens browse');
-assertEq(Store.tapAction({ protocol: 'ftp' }).message, 'coming in RM4', 'ftp toast');
+assertEq(Store.tapAction({ protocol: 'ftp' }).message, 'parked', 'ftp toast is parked');
 assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'toast', 'vnc action is toast not navigate');
 
 var src = require('fs').readFileSync(path.join(app, 'rm_store.js'), 'utf8')
