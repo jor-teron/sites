@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!--
-  Battleship (SHIP-2a) — page. The classic paper game: hide ships on a 10 x 10 grid, take turns firing.
+  Battleship (SHIP-2b) — page. The classic paper game: hide ships on a 10 x 10 grid, take turns firing.
   Info / centred board cluster (grid + tray or both grids) / buttons. Short landscape keeps info + buttons on the left.
   Ships, water and the chart frame: ui/ships.js + ui/render.js. Rules: core/rules.js. Computer: core/ai.js.
   Sound: ui/sound.js. Shared settings (Auto theme is the default): ui/settings.js.
-  Drag-to-place, the fleet list and saves: core/game.js. Classic scripts only (file:// works).
+  Drag-to-place, the fleet list, motion and saves: core/game.js. Effects: ui/fx.js. Classic scripts only (file:// works).
 -->
 <html lang="en">
 <head>
@@ -63,6 +63,13 @@
       <button id="coverBtn" class="primary">I'm ready</button>
     </div>
   </div>
+  <div class="help" id="endCard" hidden>
+    <div class="help-card end-card" role="dialog" aria-label="Game over">
+      <h2 id="endTitle">Victory</h2>
+      <p id="endMsg"></p>
+      <button id="endAgain" class="primary">Play again</button>
+    </div>
+  </div>
   <div class="help" id="help" hidden>
     <div class="help-card" role="dialog" aria-label="How to play Battleship">
       <h2>How to play</h2>
@@ -89,6 +96,7 @@
   <script src="ui/sound.js"></script>
   <script src="ui/ships.js"></script>
   <script src="ui/render.js"></script>
+  <script src="ui/fx.js"></script>
   <script src="core/game.js"></script>
 </body>
 </html>

@@ -58,6 +58,18 @@ const BSRules = (() => {
   const shipsLeft = (b) => b.ships.filter((_, j) => !isSunk(b, j)).length;
   const lost = (b) => shipsLeft(b) === 0;
 
+  /** Look at a shot without changing the board. Same result shape as fire(). */
+  function peek(b, c) {
+    if (c < 0 || c >= N * N || b.shots[c]) return { res: 'repeat' };
+    const j = occupancy(b)[c];
+    if (j < 0) return { res: 'miss' };
+    const wouldSink = cells(b.ships[j]).every((k) => k === c || b.shots[k] === 2);
+    if (wouldSink) {
+      const win = b.ships.every((_, i) => i === j || isSunk(b, i));
+      return { res: 'sunk', ship: j, win };
+    }
+    return { res: 'hit', ship: j };
+  }
   /** Fire at cell c. Returns { res: 'repeat' | 'miss' | 'hit' | 'sunk', ship, win }. */
   function fire(b, c) {
     if (c < 0 || c >= N * N || b.shots[c]) return { res: 'repeat' };
@@ -78,5 +90,6 @@ const BSRules = (() => {
   }
 
   return { N, idx, label, newBoard, cells, cellsOf, occupancy, fits, place, placeNear, unplace, randomFleet,
-    allPlaced, isSunk, shipsLeft, lost, fire, serialize, deserialize };
+    allPlaced, isSunk, shipsLeft, lost, peek, fire, serialize, deserialize };
 })();
+window.BSRules = BSRules;

@@ -1,5 +1,5 @@
 /*
- * Battleship — styles (SHIP-2a). Follows the shared theme (html.dark). Auto (System) is the default.
+ * Battleship — styles (SHIP-2b). Follows the shared theme (html.dark). Auto (System) is the default.
  * The two boards and the placement tray sit together as a centred cluster, so the tray no longer
  * floats to the far edge on a wide screen. Chips do not wrap mid-label. Short phone and landscape
  * layouts keep the grids as large as the chrome allows.
@@ -57,6 +57,11 @@ button.link { background: none; border-color: transparent; color: var(--muted); 
 .help-card li { margin-bottom: 5px; }
 
 /* Wide / landscape: boards side by side, tray parked beside the grid (not at the screen edge). */
+.end-card { text-align: center; border: 1px solid var(--border); min-width: 240px; }
+.end-card h2 { font-size: 1.4rem; margin-bottom: 6px; }
+.end-card p { margin: 0 0 14px; line-height: 1.4; color: var(--muted); }
+.end-card button { min-width: 8em; }
+
 @media (orientation: landscape) {
   .cluster { flex-direction: row; }
 }

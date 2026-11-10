@@ -1,12 +1,13 @@
 /*
- * Battleship — shared Games Settings bridge (SHIP-2a), same shape as tic-tac-toe/ui/settings.js.
+ * Battleship — shared Games Settings bridge (SHIP-2b), same shape as tic-tac-toe/ui/settings.js.
  * Reads window.GameSettings; if it did not load, every call falls back to fixed defaults.
  *
  * Used:     theme (light / dark; auto = Hub theme, else device), sfx + masterVolume (shot / hit / sunk / win sounds),
  *           difficulty (default CPU level the first time),
  *           vibration (hit / sunk / win / loss), ⚙ gear (button row).
  * Used also: the Auto (System) theme is the default (Hub theme, else the device). Water motion pauses when the device asks for reduced motion.
- * Not used: fpsLimit, showFps, autoPause (turn-based), lowGraphics (SHIP-2b), controls / 3D options, hints.
+ * Used also: lowGraphics (skips arcs, splash, explosions, fire, radar and water motion; also off for reduced motion), fpsLimit (caps the effect loop).
+ * Not used: showFps, autoPause (turn-based), controls / 3D options, hints.
  * Load order: games-settings.js → core/config.js → this file → the rest.
  */
 const BS_SETTINGS = (() => {

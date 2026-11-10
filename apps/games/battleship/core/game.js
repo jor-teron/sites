@@ -1,11 +1,12 @@
 /*
- * Battleship — game controller (SHIP-2a). Wires rules, AI, renderer, sound, settings and the page.
+ * Battleship — game controller (SHIP-2b). Wires rules, AI, renderer, sound, settings and the page.
  * Flow: place ships (drag or tap; Rotate; Random; Ready) → take turns firing one shot each → first
  * to sink the whole enemy fleet wins.
  * Dragging lifts a ship off the board and shows a ghost on mouse and touch. A tap near the edge
  * no longer slides the ship — if it would hang off, the drop is refused.
  * vs CPU: you are Player 1 and fire first; the computer hides its fleet at random.
  * 2 players: one device. Between turns a full-screen cover hides both grids.
+ * Cannon arcs, splash, explosions, fire, a radar sweep and a win card come from ui/fx.js.
  * Saves wins, mode and the game in progress (BS_CONFIG.storeKey).
  */
 (() => {
@@ -20,12 +21,12 @@
   const saved = load();
   const save = () => { try { localStorage.setItem(CFG.storeKey, JSON.stringify(saved)); } catch (_) {} };
 
-  let g, sel = 0, orient = 'h', hover = -1, flash = '', cpuTimer = 0, drag = null;
+  let g, sel = 0, orient = 'h', hover = -1, flash = '', cpuTimer = 0, drag = null, fxLock = false, fxGen = 0, sinking = { 1: [], 2: [] };
   const isCpu = () => saved.mode !== '2p';
   const tally = () => saved.score[isCpu() ? 'cpu' : 'pvp'];
   const who = (p) => (isCpu() ? (p === 1 ? 'You' : 'Computer') : CFG.names[p]);
   const viewer = () => (isCpu() ? 1 : g.phase === 'place' ? g.placer : g.phase === 'over' ? g.winner : g.turn);
-  const canFire = () => g.phase === 'battle' && !g.cover && !g.shotDone && !(isCpu() && g.turn === 2);
+  const canFire = () => g.phase === 'battle' && !g.cover && !g.shotDone && !fxLock && !(isCpu() && g.turn === 2);
 
   function fresh() {
     const b = { 1: R.newBoard(), 2: R.newBoard() };
@@ -40,6 +41,9 @@
   function newGame() {
     clearTimeout(cpuTimer);
     if (drag) cancelDrag(false);
+    fxGen++; fxLock = false; sinking = { 1: [], 2: [] };
+    if (window.BSFx) BSFx.drop();
+    const end = $('endCard'); if (end) end.hidden = true;
     g = fresh(); sel = 0; orient = 'h'; hover = -1; flash = '';
     persist(); refresh(); fit();
   }
@@ -80,16 +84,16 @@
     const v = viewer(), placing = g.phase === 'place';
     $('app').classList.toggle('placing', placing);
     if (placing) {
-      big.set({ board: g.b[g.placer], showShips: true, sel, ghost: ghost(), last: -1, dim: false });
+      big.set({ id: 'big', board: g.b[g.placer], showShips: true, sel, ghost: ghost(), last: -1, dim: false, sinking: [], pulse: false });
       $('bigCap').textContent = isCpu() ? 'Your fleet' : CFG.names[g.placer] + "'s fleet";
     } else {
       const over = g.phase === 'over';
-      big.set({ board: g.b[other(v)], showShips: over, sel: -1, ghost: null, last: g.last[v], dim: !over && !canFire() });
-      mini.set({ board: g.b[v], showShips: true, sel: -1, ghost: null, last: g.last[other(v)], dim: false });
+      big.set({ id: 'big', board: g.b[other(v)], showShips: over, sel: -1, ghost: null, last: g.last[v], dim: !over && !canFire() && !fxLock, sinking: sinking[other(v)], pulse: window.BSFx && !BSFx.off() });
+      mini.set({ id: 'mini', board: g.b[v], showShips: true, sel: -1, ghost: null, last: g.last[other(v)], dim: false, sinking: sinking[v], pulse: window.BSFx && !BSFx.off() });
       $('bigCap').textContent = over ? who(other(v)) + "'s fleet" : (isCpu() ? 'Enemy waters' : CFG.names[other(v)] + "'s waters");
       $('miniCap').textContent = (isCpu() ? 'Your' : CFG.names[v] + "'s") + ' fleet';
     }
-    tray(); fleets(); status(); cover();
+    tray(); fleets(); status(); cover(); ambient();
   }
   function tray() {
     const el = $('tray');
@@ -132,6 +136,21 @@
     const v = viewer(), placing = g.phase === 'place';
     fleetList($('fleetBig'), placing ? g.b[g.placer] : g.b[other(v)], placing);
     fleetList($('fleetMini'), placing ? g.b[g.placer] : g.b[v], placing);
+  }
+  function wounded(board) {
+    const out = [];
+    board.ships.forEach((sh, j) => {
+      if (R.isSunk(board, j)) return;
+      R.cells(sh).forEach((c) => { if (board.shots[c] === 2) out.push(c); });
+    });
+    return out;
+  }
+  function ambient() {
+    if (!window.BSFx) return;
+    const v = viewer(), placing = g.phase === 'place', over = g.phase === 'over';
+    if (placing || g.cover) { BSFx.setAmbient('big', { radarOn: false, fireCells: [], last: -1 }); BSFx.setAmbient('mini', { radarOn: false, fireCells: [], last: -1 }); return; }
+    BSFx.setAmbient('big', { radarOn: !over, fireCells: wounded(g.b[other(v)]), last: g.last[v] });
+    BSFx.setAmbient('mini', { radarOn: false, fireCells: wounded(g.b[v]), last: g.last[other(v)] });
   }
   const acc = (st) => (st.s ? Math.round((100 * st.h) / st.s) : 0);
   function status() {
@@ -249,42 +268,81 @@
   }
 
   // ---- firing ----
-  function shoot(p, c) {
-    const tb = g.b[other(p)], r = R.fire(tb, c);
-    if (r.res === 'repeat') return false;
-    const st = g.stats[p]; st.s++; if (r.res !== 'miss') st.h++;
-    g.last[p] = c; flash = '';
-    const name = r.ship >= 0 ? tb.ships[r.ship].name : '';
+  function noteFor(p, c, r) {
+    const tb = g.b[other(p)], name = r.ship >= 0 ? tb.ships[r.ship].name : '';
     const youHit = isCpu() && p === 2;
-    g.note[p] = who(p) + ' fired at ' + R.label(c) + ': ' + (r.res === 'miss' ? 'miss' : r.res === 'hit' ? 'hit!' :
+    return who(p) + ' fired at ' + R.label(c) + ': ' + (r.res === 'miss' ? 'miss' : r.res === 'hit' ? 'hit!' :
       'sank ' + (youHit ? 'your ' : isCpu() ? 'the ' : CFG.names[other(p)] + "'s ") + name + '!');
-    if (r.res === 'miss') BSSound.miss();
-    else if (r.res === 'hit') { BSSound.hit(); S.vibrate(youHit ? 40 : 20); }
-    else { BSSound.sunk(); S.vibrate([60, 40, 60]); }
-    if (r.win) { finish(p); return true; }
-    if (isCpu()) { g.turn = other(p); persist(); refresh(); maybeCpu(); }
+  }
+  function applyShot(p, c) {
+    const tb = g.b[other(p)], r = R.fire(tb, c);
+    if (r.res === 'repeat') return r;
+    const st = g.stats[p]; st.s++; if (r.res !== 'miss') st.h++;
+    g.last[p] = c; flash = ''; g.note[p] = noteFor(p, c, r);
+    const youHit = isCpu() && p === 2;
+    if (r.res === 'hit') S.vibrate(youHit ? 40 : 20);
+    else if (r.res === 'sunk') S.vibrate([60, 40, 60]);
+    return r;
+  }
+  async function fireSeq(p, c, viewId) {
+    const tb = g.b[other(p)], peek = R.peek(tb, c);
+    if (peek.res === 'repeat') return false;
+    const my = ++fxGen;
+    fxLock = true; refresh();
+    const view = viewId === 'mini' ? mini : big;
+    const size = view.size();
+    const from = viewId === 'mini' ? { x: size / 2, y: -20 } : { x: size / 2, y: size + 16 };
+    let applied = null;
+    const run = window.BSFx ? BSFx.playShot({
+      view: viewId, c, hit: peek.res !== 'miss', sunk: peek.res === 'sunk',
+      ship: peek.ship >= 0 ? Object.assign({}, tb.ships[peek.ship]) : null,
+      dark: S.isDark(), from, lift: size * 0.28,
+      onImpact: () => {
+        applied = applyShot(p, c);
+        if (applied.res === 'sunk') sinking[other(p)] = [applied.ship];
+        refresh();
+      }
+    }) : Promise.resolve().then(() => { applied = applyShot(p, c); refresh(); });
+    await run;
+    if (my !== fxGen) return true;
+    sinking[other(p)] = [];
+    fxLock = false;
+    if (applied && applied.win) { finish(p); return true; }
+    if (isCpu()) { if (p === 1) { g.turn = 2; persist(); refresh(); maybeCpu(); } else { g.turn = 1; persist(); refresh(); } }
     else { g.shotDone = true; persist(); refresh(); }
     return true;
   }
   function fireAt(c) {
     if (!canFire()) return false;
-    if (!shoot(g.turn, c)) { BSSound.bad(); flash = 'Already fired at ' + R.label(c) + ' – pick another square'; refresh(); return false; }
+    const peek = R.peek(g.b[other(g.turn)], c);
+    if (peek.res === 'repeat') { BSSound.bad(); flash = 'Already fired at ' + R.label(c) + ' – pick another square'; refresh(); return false; }
+    fireSeq(g.turn, c, 'big');
     return true;
   }
   function maybeCpu() {
     clearTimeout(cpuTimer);
-    if (!isCpu() || g.phase !== 'battle' || g.turn !== 2) return;
-    cpuTimer = setTimeout(() => { if (g.phase === 'battle' && g.turn === 2) shoot(2, AI.choose(g.b[1], saved.mode)); }, CFG.cpuDelayMs);
+    if (!isCpu() || g.phase !== 'battle' || g.turn !== 2 || fxLock) return;
+    cpuTimer = setTimeout(() => {
+      if (g.phase === 'battle' && g.turn === 2 && !fxLock) fireSeq(2, AI.choose(g.b[1], saved.mode), 'mini');
+    }, CFG.cpuDelayMs);
   }
   function pass() {
-    if (!g.shotDone) return;
+    if (!g.shotDone || fxLock) return;
     g.shotDone = false; g.turn = other(g.turn); g.cover = { p: g.turn }; persist(); refresh(); fit();
   }
   function finish(p) {
     g.phase = 'over'; g.winner = p; g.cover = null; g.shotDone = false; tally()[p]++;
     const lose = isCpu() && p === 2;
     if (lose) { BSSound.lose(); S.vibrate(300); } else { BSSound.win(); S.vibrate([80, 40, 80, 40, 160]); }
-    persist(); refresh(); fit();
+    persist(); refresh(); fit(); showEnd(p);
+  }
+  function showEnd(p) {
+    const el = $('endCard'); if (!el) return;
+    const st = g.stats[p], lose = isCpu() && p === 2;
+    $('endTitle').textContent = isCpu() ? (lose ? 'Defeat' : 'Victory') : CFG.names[p] + ' wins';
+    $('endMsg').textContent = (isCpu() ? (lose ? 'The computer sank your fleet.' : 'You sank the computer\'s fleet.') : CFG.names[p] + ' sank the other fleet.') +
+      ' ' + st.s + ' shots, ' + acc(st) + '% hits.';
+    el.hidden = false;
   }
 
   // ---- input ----
@@ -376,6 +434,9 @@
   if (window.ResizeObserver) { const ro = new ResizeObserver(() => fit()); ro.observe($('stage')); }
   const gear = S.mountGear($('gearSlot'));
   if (!gear) $('gearSlot').remove();
+  if (window.BSFx) BSFx.bindSettings();
+  if ($('endAgain')) $('endAgain').addEventListener('click', newGame);
+  if ($('endCard')) $('endCard').addEventListener('click', (e) => { if (e.target.id === 'endCard') $('endCard').hidden = true; });
 
   applyTheme(); restore(); fit();
   // for tests
@@ -387,5 +448,7 @@
     state: () => ({ phase: g.phase, placer: g.placer, turn: g.turn, winner: g.winner, mode: saved.mode, cover: !!g.cover, shotDone: g.shotDone,
       stats: JSON.parse(JSON.stringify(g.stats)), afloat: { 1: R.shipsLeft(g.b[1]), 2: R.shipsLeft(g.b[2]) }, placed: g.b[g.placer].ships.filter((s) => s.x >= 0).length, sel, orient, wins: Object.assign({}, tally()) }),
     raw: () => g,
+    waitFx: () => new Promise((r) => { const tick = () => { if (!fxLock && !(window.BSFx && BSFx.busy())) r(); else requestAnimationFrame(tick); }; tick(); }),
+    waitTurn: () => new Promise((r) => { const tick = () => { if (g.phase !== 'battle' || (g.turn === 1 && !fxLock && !(window.BSFx && BSFx.busy()))) r(); else requestAnimationFrame(tick); }; tick(); }),
   };
 })();

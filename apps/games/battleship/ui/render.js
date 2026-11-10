@@ -2,12 +2,13 @@
  * Battleship — canvas renderer (SHIP-2a). A view is the big grid or the small one.
  * Draws a naval-chart frame, animated water, column letters and row numbers, the five
  * distinct ships (ui/ships.js), a drag/place ghost, misses, hits and the last-shot ring.
- * Water motion uses a shared rAF tick and pauses when the device asks for reduced motion.
+ * Water motion is driven by ui/fx.js and only advances while effects are playing
+ * (or pauses when Low graphics is on or the device asks for reduced motion).
  */
 const BSRender = (() => {
   const R = BSRules, N = R.N;
   const views = [];
-  let phase = 0, raf = 0, reduced = false;
+  let phase = 0, reduced = false;
 
   function colors() {
     return BS_SETTINGS.isDark()
@@ -15,17 +16,10 @@ const BSRender = (() => {
       : { paper: '#d8c9a6', ink: '#1e3a5f', frame: '#8a6d3b', frame2: '#c4a574', water: '#2f7da6', water2: '#3b8db8', deep: '#1f6488', foam: 'rgba(255,255,255,.22)', caustic: 'rgba(191,234,255,.28)', miss: '#1e3a8a', hit: '#dc2626', scorch: '#3f0d0d', ring: '#ca8a04', dim: 'rgba(255,255,255,.4)', compass: '#1e3a5f' };
   }
   function readMotion() {
-    reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ||
+      !!(window.BS_SETTINGS && BS_SETTINGS.get('lowGraphics'));
   }
-  function tick(now) {
-    phase = now / 1000;
-    views.forEach((v) => v.draw());
-    raf = reduced ? 0 : requestAnimationFrame(tick);
-  }
-  function kick() {
-    readMotion();
-    if (!raf && !reduced) raf = requestAnimationFrame(tick);
-  }
+  function setPhase(t) { phase = t; }
 
   function view(cv, wrap) {
     const g = cv.getContext('2d');
@@ -137,12 +131,16 @@ const BSRender = (() => {
 
     function draw() {
       if (!st || !st.board) return;
+      readMotion();
+      if (window.BSFx && !reduced && window.BSFx.time()) phase = window.BSFx.time();
       const C = colors(), b = st.board, dark = BS_SETTINGS.isDark();
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       paper(C); water(C); labels(C); frame(C);
       const ghost = st.ghost;
+      const sinking = (st.sinking || []).slice();
       b.ships.forEach((sh, j) => {
         if (sh.x < 0) return;
+        if (sinking.indexOf(j) >= 0) return;
         const sunk = R.isSunk(b, j);
         if (!sunk && !st.showShips) return;
         BSShips.draw(g, sh, { cell, x: cx(sh.x), y: cy(sh.y), dark, sunk, selected: j === st.sel });
@@ -165,18 +163,18 @@ const BSRender = (() => {
           g.beginPath(); g.moveTo(x - r, y - r); g.lineTo(x + r, y + r); g.moveTo(x + r, y - r); g.lineTo(x - r, y + r); g.stroke();
         }
       }
-      if (st.last >= 0) {
+      if (st.last >= 0 && !st.pulse) {
         g.strokeStyle = C.ring; g.lineWidth = Math.max(2, cell * 0.08);
         const c = st.last;
         g.strokeRect(cx(c % N) + 1.5, cy(Math.floor(c / N)) + 1.5, cell - 3, cell - 3);
       }
+      if (window.BSFx) window.BSFx.paint(g, st.id || cv.id, { cx, cy, cell, px, ox: ox() });
       if (st.dim) { g.fillStyle = C.dim; g.fillRect(0, 0, px, px); }
     }
     /** st = { board, showShips, sel, ghost: { ship, ok } | { cells, ok } | null, last, dim } */
     const set = (s) => { st = s; draw(); };
     const api = { resize, draw, set, cellAt, cellAtAllowEdge, cellPx: () => cell, size: () => px };
     views.push(api);
-    kick();
     return api;
   }
 
@@ -193,7 +191,7 @@ const BSRender = (() => {
   }
 
   if (window.matchMedia) {
-    try { matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => { readMotion(); if (!reduced) kick(); }); } catch (_) {}
+    try { matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => { readMotion(); views.forEach((v) => v.draw()); }); } catch (_) {}
   }
-  return { view, thumb, kick, colors };
+  return { view, thumb, colors, setPhase, views };
 })();
