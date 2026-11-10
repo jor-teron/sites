@@ -1,4 +1,4 @@
-/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM1 */
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM2 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -360,4 +360,147 @@ label.field textarea { min-height: 72px; resize: vertical; }
   .jelly, .jelly:hover, .jelly:active { transition: none; transform: none; }
   .jelly:active { transform: scale(0.97); }
   .conn, dialog, #menu, .toast { animation: none; }
+}
+
+/* --- RM2: session tabs, SFTP browse, connect sheet --- */
+
+#view-list[hidden],
+#view-sftp[hidden] { display: none; }
+
+.tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 6px;
+  padding: 2px 0 8px;
+  scrollbar-width: thin;
+}
+
+.tab {
+  flex: 0 0 auto;
+  min-height: 48px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 14px;
+  border: 2px solid var(--surface-2);
+  background: var(--surface);
+  color: var(--text);
+  max-width: min(80vw, 280px);
+  font-weight: 700;
+}
+
+.tab.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.tab-close {
+  flex: 0 0 auto;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.sftp-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 2px;
+  min-height: 48px;
+  align-items: center;
+  flex: 1;
+}
+
+.crumb {
+  flex: 0 0 auto;
+  min-height: 48px;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 10px;
+  font-weight: 700;
+}
+
+.crumb.current { color: var(--accent); }
+
+.crumb-sep {
+  color: var(--mute);
+  padding: 0 2px;
+  flex: 0 0 auto;
+}
+
+#sftp-list { display: flex; flex-direction: column; gap: 8px; }
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: 18px;
+  padding: 10px 14px;
+  cursor: pointer;
+  animation: pop 0.3s ease-out;
+}
+
+.entry-kind {
+  flex: 0 0 auto;
+  min-width: 58px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 6px 8px;
+  background: var(--surface-2);
+}
+
+.entry-kind.dir { color: var(--sftp); background: color-mix(in srgb, var(--sftp) 22%, var(--surface)); }
+.entry-kind.file { color: var(--mute); }
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin: 10px 0;
+  color: var(--text);
+  font-weight: 600;
+}
+
+label.check input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.form-err.warn { color: var(--warn); }
+
+@media (prefers-reduced-motion: reduce) {
+  .entry { animation: none; }
 }

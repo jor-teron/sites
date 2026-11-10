@@ -1,4 +1,4 @@
-/* Remote — rm_ui.js: DOM for the RM1 connections list (theme, list, editor, toast, overflow menu). */
+/* Remote — rm_ui.js: DOM for the RM2 connections list, session tabs, editor, toast and overflow menu. */
 (function (root) {
   'use strict';
 
@@ -72,6 +72,8 @@
         });
       });
       closeMenu();
+      renderTabs();
+      showPane();
     }
 
     /* Build one 48px tap row with a protocol badge and a single overflow button. */
@@ -116,7 +118,8 @@
       row.appendChild(more);
       row.addEventListener('click', function () {
         var a = store.tapAction(conn);
-        toast(a.message);
+        if (a.action === 'sftp' && opts.onOpen) opts.onOpen(conn);
+        else toast(a.message);
       });
       row.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -150,7 +153,70 @@
       m.style.left = Math.max(8, Math.min(left, maxLeft)) + 'px';
     }
 
+    /* Draw the Remmina-style tab strip: Connections first, then open sessions. */
+    function renderTabs() {
+      var nav = $('tabs');
+      if (!nav || !opts.tabs) return;
+      nav.textContent = '';
+      var cur = opts.tabs.current();
+      opts.tabs.list().forEach(function (tab) {
+        var b = document.createElement('div');
+        b.className = 'tab jelly' + (cur && cur.id === tab.id ? ' active' : '');
+        b.setAttribute('role', 'tab');
+        b.tabIndex = 0;
+        b.setAttribute('aria-selected', cur && cur.id === tab.id ? 'true' : 'false');
+        b.setAttribute('aria-label', tab.name);
+        if (tab.protocol) {
+          var badge = document.createElement('span');
+          badge.className = 'badge badge-' + tab.protocol;
+          badge.textContent = C.PROTOCOL_LABELS[tab.protocol] || tab.protocol;
+          b.appendChild(badge);
+        }
+        var label = document.createElement('span');
+        label.className = 'tab-name';
+        label.textContent = tab.name;
+        b.appendChild(label);
+        b.addEventListener('click', function () { opts.tabs.select(tab.id); });
+        b.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); opts.tabs.select(tab.id); }
+        });
+        if (tab.closable) {
+          var x = document.createElement('button');
+          x.type = 'button';
+          x.className = 'tab-close jelly';
+          x.setAttribute('aria-label', 'Close ' + tab.name);
+          x.textContent = '\u00d7';
+          x.addEventListener('click', function (e) {
+            e.stopPropagation();
+            requestClose(tab.id);
+          });
+          b.appendChild(x);
+        }
+        nav.appendChild(b);
+      });
+    }
+
+    /* Show the connections list or the active session view. Sessions stay alive while hidden. */
+    function showPane() {
+      var onList = !opts.tabs || opts.tabs.isConnections();
+      if ($('view-list')) $('view-list').hidden = !onList;
+      if ($('view-sftp')) $('view-sftp').hidden = onList;
+      if (!onList && opts.onShowSession) opts.onShowSession(opts.tabs.current());
+    }
+
+    /* Close a session tab. Confirm only if a transfer is running (hook for RM3). */
+    function requestClose(id) {
+      if (!opts.tabs) return;
+      var r = opts.tabs.close(id);
+      if (!r.ok && r.reason === 'busy') {
+        if (confirm(C.TAB_CLOSE_BUSY)) opts.tabs.close(id, { confirmed: true });
+      }
+      renderTabs();
+      showPane();
+    }
+
     /* Fill the editor with a connection, or with SFTP defaults when adding. */
+
     function fillForm(conn) {
       var f = $('edit-form');
       var proto = conn && conn.protocol ? conn.protocol : C.DEFAULT_PROTOCOL;
@@ -160,6 +226,7 @@
       f.elements.port.value = conn && conn.port ? conn.port : String(C.DEFAULT_PORTS[proto]);
       f.elements.user.value = conn && conn.user ? conn.user : '';
       f.elements.relay.value = conn && conn.relay ? conn.relay : '';
+      f.elements.token.value = conn && conn.token ? conn.token : '';
       f.elements.group.value = conn && conn.group ? conn.group : '';
       f.elements.notes.value = conn && conn.notes ? conn.notes : '';
       portProtocol = proto;
@@ -197,6 +264,7 @@
         port: f.elements.port.value,
         user: f.elements.user.value,
         relay: relayRaw.trim() ? (norm.ok ? norm.url : relayRaw) : '',
+        token: f.elements.token.value,
         group: f.elements.group.value,
         notes: f.elements.notes.value,
         _relayNorm: norm
@@ -352,7 +420,7 @@
     }
     applyTheme();
     render();
-    return { render: render, toast: toast, applyTheme: applyTheme, openEditor: openEditor };
+    return { render: render, renderTabs: renderTabs, showPane: showPane, toast: toast, applyTheme: applyTheme, openEditor: openEditor, pageProtocol: pageProtocol, requestClose: requestClose };
   }
 
   /* Public API, also exported for Node tests (init itself needs a document). */

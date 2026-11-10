@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <!--
-  Remote — RM1: one saved-connections list for SSH, VNC, SFTP and FTP.
-  This release is the list only (add, edit, delete, duplicate, search, groups, export/import JSON).
-  Tapping a row shows an honest toast; viewers and a file browser arrive in later RM releases.
-  The app is standalone: it does not open the old SSH or VNC apps, and it does not import their hosts.
-  Styles: rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_ui.js, rm_main.js.
-  Connections are stored in localStorage 'remote-conns-v1'. Passwords are never stored.
+  Remote — RM2: connections list plus Remmina-style tabs and an SFTP folder browser.
+  SFTP talks JSON over a WebSocket to hub/relay/sftp_relay.py (Remote has its own client; it does
+  not import shared/fs). Passwords are never stored. A relay token is stored only if you choose to.
+  SSH, VNC and FTP rows still show an honest "coming" toast. The app is standalone: it does not
+  open the old SSH or VNC apps.
+  Styles: rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_tabs.js, rm_sftp_path.js,
+  rm_sftp_client.js, rm_sftp_view.js, rm_ui.js, rm_main.js.
+  Connections are stored in localStorage 'remote-conns-v1'.
 -->
 <html lang="en">
 <head>
@@ -23,22 +25,38 @@
       <a class="back jelly" href="../connectivity.html">Back</a>
       <img src="rm_icon.svg" alt="">
       <h1>Remote</h1>
-      <span class="tag">RM1</span>
+      <span class="tag">RM2</span>
       <button type="button" id="btn-add" class="jelly">Add</button>
     </header>
 
-    <p class="hint">One list for SSH, VNC, SFTP and FTP. Viewers and file browsing arrive in later releases.</p>
+    <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
 
-    <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
+    <section id="view-list">
+      <p class="hint">One list for SSH, VNC, SFTP and FTP. SFTP opens a folder browser; SSH, VNC and FTP viewers arrive later.</p>
+      <p class="hint warn" id="security-note">This SFTP relay logs in for you and sees the password and files. Run it only on your own machine, LAN or VPN.</p>
 
-    <div class="row">
-      <button type="button" id="btn-export" class="ghost jelly">Export</button>
-      <button type="button" id="btn-import" class="ghost jelly">Import JSON</button>
-      <input id="import-file" type="file" accept="application/json,.json" hidden>
-    </div>
+      <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
 
-    <div id="list" aria-label="Saved connections"></div>
-    <p id="empty" class="hint">No connections yet. Tap Add to save one, or Import JSON.</p>
+      <div class="row">
+        <button type="button" id="btn-export" class="ghost jelly">Export</button>
+        <button type="button" id="btn-import" class="ghost jelly">Import JSON</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden>
+      </div>
+
+      <div id="list" aria-label="Saved connections"></div>
+      <p id="empty" class="hint">No connections yet. Tap Add to save one, or Import JSON.</p>
+    </section>
+
+    <section id="view-sftp" class="sftp" hidden>
+      <div class="sftp-bar">
+        <button type="button" id="sftp-up" class="ghost jelly">Up</button>
+        <button type="button" id="sftp-refresh" class="ghost jelly">Refresh</button>
+        <nav id="sftp-crumbs" class="crumbs" aria-label="Folder path"></nav>
+      </div>
+      <p id="sftp-status" class="hint"></p>
+      <div id="sftp-list" aria-label="Folder contents"></div>
+      <p id="sftp-empty" class="hint" hidden>This folder is empty.</p>
+    </section>
   </div>
 
   <dialog id="edit">
@@ -56,8 +74,10 @@
       <label class="field">Host<input id="f-host" name="host" maxlength="255" required placeholder="192.168.1.8" autocomplete="off" spellcheck="false"></label>
       <label class="field">Port<input id="f-port" name="port" type="number" min="1" max="65535" value="22" inputmode="numeric"></label>
       <label class="field">User<input id="f-user" name="user" maxlength="64" placeholder="optional" autocomplete="username" spellcheck="false"></label>
-      <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="wss://host/ws or 192.168.1.8:8787" autocomplete="off" spellcheck="false"></label>
-      <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host.</p>
+      <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8023 or wss://host:8023" autocomplete="off" spellcheck="false"></label>
+      <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SFTP uses the relay on port 8023.</p>
+      <label class="field">Relay token<input id="f-token" name="token" maxlength="200" placeholder="optional, or enter it when you connect" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">Saved on this device only if you fill it in here. You can also enter it when you connect and tick Remember.</p>
       <label class="field">Group<input id="f-group" name="group" maxlength="60" placeholder="optional, e.g. Home" autocomplete="off"></label>
       <label class="field">Notes<textarea id="f-notes" name="notes" maxlength="240" rows="2" placeholder="optional"></textarea></label>
       <p id="edit-err" class="form-err" hidden></p>
@@ -66,6 +86,33 @@
         <button type="submit" id="btn-save" class="jelly">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="connect">
+    <form id="connect-form">
+      <h2 id="connect-title">Connect</h2>
+      <p id="connect-note" class="hint warn"></p>
+      <p class="hint">Relay: <span id="connect-relay"></span></p>
+      <label class="field">Password<input id="c-pass" name="password" type="password" autocomplete="current-password"></label>
+      <label class="field">Relay token<input id="c-token" name="token" maxlength="200" autocomplete="off" spellcheck="false"></label>
+      <label class="check"><input id="c-remember" type="checkbox"> Remember this token on this connection</label>
+      <p id="connect-err" class="form-err" hidden></p>
+      <div class="row">
+        <button type="button" id="btn-connect-cancel" class="ghost jelly">Cancel</button>
+        <button type="submit" id="btn-connect-go" class="jelly">Connect</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="file-details">
+    <h2 id="file-name">File</h2>
+    <p class="hint">Path: <span id="file-path"></span></p>
+    <p class="hint">Size: <span id="file-size"></span></p>
+    <p class="hint">Modified: <span id="file-date"></span></p>
+    <p id="file-hint" class="hint">Download arrives in RM3.</p>
+    <div class="row">
+      <button type="button" id="btn-file-close" class="jelly">Close</button>
+    </div>
   </dialog>
 
   <div id="menu" hidden role="menu" aria-label="Connection actions">
@@ -79,6 +126,10 @@
   <script src="rm_config.js"></script>
   <script src="rm_url.js"></script>
   <script src="rm_store.js"></script>
+  <script src="rm_tabs.js"></script>
+  <script src="rm_sftp_path.js"></script>
+  <script src="rm_sftp_client.js"></script>
+  <script src="rm_sftp_view.js"></script>
   <script src="rm_ui.js"></script>
   <script src="rm_main.js"></script>
 </body>

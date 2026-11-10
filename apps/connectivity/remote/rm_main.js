@@ -1,11 +1,13 @@
-/* Remote — rm_main.js: start the RM1 connections list once the page has loaded. */
+/* Remote — rm_main.js: start the RM2 connections list, tabs and SFTP browse once the page has loaded. */
 (function (root) {
   'use strict';
 
-  /* Config and store constructors, loaded as script tags before this file. */
+  /* Constructors, loaded as script tags before this file. */
   var C = root.RM_CONFIG;
   var Store = root.RMStore;
+  var Tabs = root.RMTabs;
   var UI = root.RMUI;
+  var SftpView = root.RMSftpView;
 
   /* Bind the store to localStorage, with an in-memory fallback if it is blocked. */
   function storage() {
@@ -29,7 +31,31 @@
 
   /* Start the UI after the DOM is ready. */
   function start() {
-    UI.init({ store: Store.make(storage()) });
+    /* Saved connections (no passwords). */
+    var store = Store.make(storage());
+    /* Remmina-style tab list; the Connections tab is always first. */
+    var tabs = Tabs.make();
+    /* Filled after UI.init so the open-connection callback can call into the SFTP view. */
+    var sftp = null;
+    var ui = UI.init({
+      store: store,
+      tabs: tabs,
+      onOpen: function (conn) { if (sftp) sftp.startConnect(conn); },
+      onShowSession: function (tab) { if (sftp) sftp.showSession(tab); }
+    });
+    sftp = SftpView.init({
+      store: store,
+      tabs: tabs,
+      toast: ui.toast,
+      pageProtocol: ui.pageProtocol
+    });
+    /* Redraw the tab strip and the visible pane whenever a tab is opened, selected or closed. */
+    tabs.onChange(function () {
+      ui.renderTabs();
+      ui.showPane();
+    });
+    ui.renderTabs();
+    ui.showPane();
   }
 
   if (document.readyState === 'loading') {

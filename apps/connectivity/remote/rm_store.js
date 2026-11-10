@@ -1,5 +1,6 @@
 /* Remote — rm_store.js: saved connections in localStorage 'remote-conns-v1'. No DOM, so node can unit-test it.
- * Each entry is { id, name, protocol, host, port, user, relay, group, notes }. Passwords are never stored.
+ * Each entry is { id, name, protocol, host, port, user, relay, token?, group, notes }. Passwords are never stored.
+ * An optional relay token is stored only when the user saves it (editor, or the connect-sheet tick box).
  * This app is standalone: it does not read SSH or VNC storage keys, and it does not link to those apps.
  * Store.make(storage, now) -> { list, get, save, remove, duplicate, exportJSON, importJSON, search, grouped,
  *   clean, defaultPort, portAfterProtocolChange, tapAction }.
@@ -47,7 +48,7 @@
   function tapAction(conn) {
     /* Protocol id on the row, or empty if the caller passed nothing. */
     var p = conn && conn.protocol ? String(conn.protocol) : '';
-    if (p === 'sftp') return { action: 'toast', message: C.TOAST_SFTP };
+    if (p === 'sftp') return { action: 'sftp' };
     if (p === 'ftp') return { action: 'toast', message: C.TOAST_FTP };
     /* SSH, VNC, and any unknown protocol get the honest "later" toast. */
     return { action: 'toast', message: C.TOAST_VIEWER_LATER };
@@ -83,9 +84,12 @@
     /* Optional group and notes, just trimmed and capped. */
     var group = str(h.group, C.MAX_GROUP);
     var notes = str(h.notes, C.MAX_NOTES);
+    /* Optional relay token. Never stored unless the caller passed one; passwords are ignored. */
+    var token = str(h.token, C.MAX_TOKEN || 200);
     /* Name, or a simple default from user@host or the host alone. */
     var name = str(h.name, C.MAX_NAME) || (user ? user + '@' + host : host);
-    return {
+    /* Built entry; token is omitted when empty so older RM1 rows stay unchanged. */
+    var out = {
       name: name,
       protocol: protocol,
       host: host,
@@ -95,6 +99,8 @@
       group: group,
       notes: notes
     };
+    if (token) out.token = token;
+    return out;
   }
 
   /* Build a store bound to a storage object (localStorage in the page, a fake in tests). */
@@ -185,6 +191,7 @@
         port: c.port,
         user: c.user,
         relay: c.relay,
+        token: c.token,
         group: c.group,
         notes: c.notes
       });
@@ -220,6 +227,7 @@
           port: raw.port,
           user: raw.user,
           relay: raw.relay,
+          token: raw.token,
           group: raw.group,
           notes: raw.notes
         });

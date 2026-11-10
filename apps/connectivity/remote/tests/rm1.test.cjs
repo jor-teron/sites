@@ -209,7 +209,7 @@ assert(!noHost.ok, 'scheme without a host is rejected');
 
 assertEq(Store.tapAction({ protocol: 'ssh' }).message, 'viewer coming in a later RM release', 'ssh toast');
 assertEq(Store.tapAction({ protocol: 'vnc' }).message, 'viewer coming in a later RM release', 'vnc toast');
-assertEq(Store.tapAction({ protocol: 'sftp' }).message, 'coming in RM2', 'sftp toast');
+assertEq(Store.tapAction({ protocol: 'sftp' }).action, 'sftp', 'sftp action opens browse');
 assertEq(Store.tapAction({ protocol: 'ftp' }).message, 'coming in RM4', 'ftp toast');
 assertEq(Store.tapAction({ protocol: 'ssh' }).action, 'toast', 'ssh action is toast not navigate');
 assertEq(Store.tapAction({ protocol: 'vnc' }).action, 'toast', 'vnc action is toast not navigate');
