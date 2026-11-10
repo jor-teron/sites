@@ -37,7 +37,8 @@ HR.semView = (function () {
       if (!HR.perms.memory()) { HR.sem.state(); $('semStat').textContent = 'Memory is Off.'; return; }
       var p = await HR.sem.plan(), c = HR.sem.state().conf;
       if (!p.chunks.length) { $('semStat').textContent = 'Nothing to index yet.'; return; }
-      if (!confirm('Send ' + p.chunks.length + ' pieces (' + p.chars + ' characters) from ' + p.files + ' files — your user/assistant notes, topics and knowledge documents — to ' + c.provider + ' / ' + c.model + ' to make the index?\n\nThe provider sees this text and may charge for it. Session notes are not sent. Your files are not changed.')) return;
+      // (before AG42) if (!confirm('Send ' + p.chunks.length + ' pieces (' + p.chars + ' characters) from ' + p.files + ' files — your user/assistant notes, topics and knowledge documents — to ' + c.provider + ' / ' + c.model + ' to make the index?\n\nThe provider sees this text and may charge for it. Session notes are not sent. Your files are not changed.')) return;
+      if (!await HR.confirm('Send ' + p.chunks.length + ' pieces (' + p.chars + ' characters) from ' + p.files + ' files — your user/assistant notes, topics and knowledge documents — to ' + c.provider + ' / ' + c.model + ' to make the index?\n\nThe provider sees this text and may charge for it. Session notes are not sent. Your files are not changed.')) return;
       await HR.sem.build(p);
     } catch (e) { paint(); if (!HR.sem.state().status) $('semStat').textContent = e.message; }
   }
@@ -49,7 +50,8 @@ HR.semView = (function () {
     $('semDocPre').onchange = function () { put('semDocPrefix', $('semDocPre').value); };
     $('semQPre').onchange = function () { put('semQueryPrefix', $('semQPre').value); };
     $('btnSemBuild').onclick = build; $('btnSemStop').onclick = function () { HR.sem.stop(); };
-    $('btnSemReset').onclick = function () { if (confirm('Delete the semantic index? Only the derived index file is removed.')) HR.sem.reset(); };
+    // (before AG42) $('btnSemReset').onclick = function () { if (confirm('Delete the semantic index? Only the derived index file is removed.')) HR.sem.reset(); };
+    $('btnSemReset').onclick = async function () { if (await HR.confirm('Delete the semantic index? Only the derived index file is removed.', { danger: true })) HR.sem.reset(); };
     HR.sem.onChange(paint); $('btnSet').addEventListener('click', draw);
     HR.fs.onChange(function () { HR.sem.stop(); HR.sem.load(); });   /* AG34.1: a folder switch stops a build */
     HR.sem.load();

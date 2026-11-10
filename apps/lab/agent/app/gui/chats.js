@@ -102,7 +102,8 @@ HR.chats = (function () {
     await HR.threads.save(Object.assign({}, c, { title: t }), l); refresh();
   }
   async function del(c) {
-    if (!confirm('Delete chat “' + (c.title || 'New chat') + '”? Its file and session notes are removed (the daily log stays).')) return;
+    // (before AG42) if (!confirm('Delete chat “' + (c.title || 'New chat') + '”? Its file and session notes are removed (the daily log stays).')) return;
+    if (!await HR.confirm('Delete chat “' + (c.title || 'New chat') + '”? Its file and session notes are removed (the daily log stays).', { danger: true })) return;
     if (meta && meta.id === c.id) { if (busy()) return; clearTimeout(timer); meta = fresh(); HR.msgs.set([]); show(); }
     await saving; await HR.threads.remove(c.id).catch(function () {}); if (HR.mem) await HR.mem.dropSession(c.id); if (HR.summary) HR.summary.drop(c.id);   /* AG32 */
     refresh();

@@ -25,6 +25,7 @@
   AG30: 📊 Usage is a link to usage.html (Token usage & spending, and Rates). It is not a Settings card.
   AG38: Settings is a full page: categories on the left, the chosen section on the right (narrow: list, then section
   with ‹ Categories). 📊 opens Settings › Usage; usage.html redirects there. Knowledge & Search is its own category.
+  AG42: app/gui/confirm.js (HR.confirm) loads before knowview, semview and chats. In-app dialog, not the browser confirm.
   AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
@@ -303,6 +304,7 @@
 <script src="app/gui/assistset.js"></script>
 <script src="app/gui/summaryview.js"></script>
 <script src="app/gui/conview.js"></script>
+<script src="app/gui/confirm.js"></script>   <!-- AG42: HR.confirm, native dialog above Settings -->
 <script src="app/gui/knowview.js"></script>
 <script src="app/gui/semview.js"></script>
 <script src="app/gui/provider.js"></script>

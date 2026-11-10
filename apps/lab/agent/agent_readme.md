@@ -58,6 +58,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/edit.js` — AG5 `HR.edit`: ✎ Edit / ↻ Retry / ⧉ Copy on bubbles (hover or tap)
 - `app/gui/meter.js` — AG5 `HR.meter`: token / context meter above the composer
 - `usage.html`, `ui/usage.css`, `app/gui/usageview.js` — AG30 Usage page (`HR.usageView`): Token usage & spending, and Rates. AG7–AG29 this view was Settings → Usage
+- `app/gui/confirm.js` — AG42 `HR.confirm`: in-app confirm dialog (`<dialog>` opened with `showModal()`), used instead of the browser confirm
 - `app/gui/chats.js` — AG4 `HR.chats`: Chats drawer (new, switch, rename, delete), resume last chat, per-chat provider + model. AG27 rename uses `UiDialog.ask` (the Hub dialog), not `window.prompt`
 - `app/gui/chatsearch.js` — AG8 `HR.chatSearch`: search box in the 💬 drawer (title + message text), snippet results, jump to the hit
 - `app/main.js` — `HR.notify` (Hub cards, local fallback) + boot
@@ -533,3 +534,39 @@ AG7–AG29 drew Usage inside Settings (`#sc_usage` / `#usageBox`): Today without
 ### Legacy code notes — AG40
 - Before AG40, `HR.perms.auto(kind)` used autoWrite for every non-shell kind. Now only `'write'` uses it.
 - `HR.fs.remove` is still used only by chat delete and write Undo. No tool can call it.
+
+## AG42 — In-app confirm, and the picture viewer after a delete
+
+Deleting something used to call the browser's `confirm()` box. That box sits outside the page, and it cannot
+stack on top of a dialog the page already has open. Agent now asks with its own small dialog.
+
+`HR.confirm(message, options)` in `app/gui/confirm.js` returns a promise of yes or no. It builds a real
+`<dialog>` and opens it with `showModal()`, so it appears above the Settings dialog and above the full-screen
+picture viewer (both of those are already modal). Enter means OK. Esc means Cancel. For a dangerous action the
+Cancel button is focused first and the OK button is red. The message is plain text. The dialog is removed from
+the page when it closes. Light and dark follow the same colours as the rest of Agent.
+
+These questions now use it, with the same words as before:
+
+- Delete a chat (the file and the session notes go; the daily log stays).
+- Delete a picture in the image viewer.
+- Remove a knowledge document (only Agent's copy).
+- Build a semantic index. The question still says how many pieces are sent, which files they come from, which
+  provider and model receive them, that the provider can charge, and that session notes are not sent.
+- Delete the semantic index (only the derived file).
+
+The picture viewer had a second bug. After a delete it kept showing the old list of pictures, but the gallery
+had already thrown away those picture addresses and made new ones. The next picture was a dead address, so it
+did not load. The delete step now hands the viewer the new list. The viewer shows the next picture, or the
+previous one if you deleted the last, and it closes when none are left.
+
+`confirm.js` is loaded by `agent.html` and `image.html`. The service worker picks it up from those pages.
+Its version is `agent-ag42`.
+
+### Legacy code notes — AG42
+- The old `confirm()` lines are still in the files, commented with `(before AG42)`.
+- The service worker keeps `AG42 Legacy: VER = 'agent-ag40'`.
+- The old viewer line that cut the deleted picture out of the stale list is commented the same way. That cut
+  is still used only if a refresh fails before the old picture addresses are thrown away.
+- Nothing under `app/api/hub/` was changed. Those files still fall back to the browser confirm when the shared
+  dialog script is missing. Agent's provider page loads that shared dialog, so the fallback is not the normal path.

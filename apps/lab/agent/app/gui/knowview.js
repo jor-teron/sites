@@ -12,7 +12,11 @@ HR.knowView = (function () {
     var l = await HR.know.list(); stat.textContent = l.length ? l.length + ' document' + (l.length > 1 ? 's' : '') + ' in agent/knowledge/raw/' : 'No documents yet.';
     l.forEach(function (f) {
       var row = el('div', 'know-row'), x = el('button', 'hb', '✕'); x.type = 'button'; x.title = 'Remove Agent\'s copy'; x.setAttribute('aria-label', 'Remove ' + f.name);
-      x.onclick = async function () { if (!confirm('Remove "' + f.name + '" from Agent\'s knowledge? (Only Agent\'s copy; your original file is not touched.)')) return; try { await HR.know.remove(f.name); } catch (e) { stat.textContent = e.message; } draw(); };
+      x.onclick = async function () {
+        // (before AG42) if (!confirm('Remove "' + f.name + '" from Agent\'s knowledge? (Only Agent\'s copy; your original file is not touched.)')) return;
+        if (!await HR.confirm('Remove "' + f.name + '" from Agent\'s knowledge? (Only Agent\'s copy; your original file is not touched.)', { danger: true })) return;
+        try { await HR.know.remove(f.name); } catch (e) { stat.textContent = e.message; } draw();
+      };
       row.appendChild(el('span', 'know-n', f.name)); row.appendChild(x); box.appendChild(row);
     });
   }

@@ -8,6 +8,7 @@
   AG19: top row = Provider + Model dropdowns (no tabs); Ratio / Size / Steps as one compact line of dropdowns.
   AG21: download name = [model]_[prompt].png (real extension kept).
   AG20: ☆/★ favourite models (⭐ Favourites group on top), full-screen viewer (app/gui/imageviewer.js).
+  AG42: app/gui/confirm.js before the viewer. Delete confirms in-app; the viewer rebuilds from gallery()'s new picture URLs.
   Scripts: hubkeys, presets, registry (keys + Ollama URL), settings (HR.set only), imagegen + img_* providers, imagestore, imagepage.
 -->
 <html lang="en">
@@ -81,6 +82,7 @@
 <script src="app/models/img_ollama.js"></script>
 <script src="app/storage/imagestore.js"></script>
 <script src="app/gui/imagesize.js"></script>
+<script src="app/gui/confirm.js"></script>   <!-- AG42: HR.confirm, native dialog above the picture viewer -->
 <script src="app/gui/imageviewer.js"></script>
 <script src="app/gui/imagepage.js"></script>
 <script>

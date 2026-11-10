@@ -1758,6 +1758,24 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.53–1.93 are already taken on main, so this note is numbered 1.94.
 
 
+### 1.95 Agent in-app confirm, release AG42
+
+- Agent (`apps/lab/agent/`) no longer uses the browser confirm box for deleting a chat, deleting a
+  picture, removing a knowledge document, consenting to send notes to an embedding provider, or
+  deleting the semantic index. `app/gui/confirm.js` adds `HR.confirm`, a native dialog opened with
+  `showModal()` so it sits on top of Settings and the image viewer. Enter confirms, Esc cancels.
+  A dangerous action focuses Cancel and paints OK red. The consent text still says what is sent
+  and which provider receives it.
+- Deleting a picture used to leave the viewer on a dead image address (the gallery had already
+  replaced those addresses). The viewer now rebuilds from the fresh list: next picture, or the
+  previous one if the last was deleted, and it closes when none are left.
+- Service worker version is `agent-ag42` (legacy line keeps `agent-ag40`). Old confirm lines stay
+  in the files as `(before AG42)` comments. `app/api/hub/` was not edited.
+- Checked with `node --check` and `node --test apps/lab/agent/tests`. No browser runner and no
+  paid API calls.
+- 1.53–1.94 are already taken on main, so this note is numbered 1.95.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
