@@ -20,8 +20,8 @@ function almost(a, b, eps) {
   return Math.abs(a - b) < (eps == null ? 1e-9 : eps);
 }
 
-assert(RELEASE === 'TD1', 'RELEASE is TD1');
-assert(FORMAT === 'h3d' && FORMAT_VERSION === 1, 'format version 1');
+assert(RELEASE === 'TD2', 'RELEASE is TD2');
+assert(FORMAT === 'h3d' && FORMAT_VERSION === 2, 'format version 2');
 assert(TYPES.length === 6, 'six primitive types');
 assert(SNAP.translate === 0.5 && SNAP.rotateDeg === 15 && SNAP.scale === 0.1, 'snap steps');
 
@@ -60,7 +60,8 @@ const proj = makeProject([
 const ok = validateProject(proj);
 assert(ok.ok && ok.project.objects.length === 1, 'valid project');
 assert(!validateProject({ format: 'glb', version: 1, objects: [] }).ok, 'wrong format');
-assert(!validateProject({ format: 'h3d', version: 2, objects: [] }).ok, 'wrong version');
+assert(validateProject({ format: 'h3d', version: 2, objects: [] }).ok, 'v2 empty project valid');
+assert(!validateProject({ format: 'h3d', version: 3, objects: [] }).ok, 'v3 rejected in TD2');
 assert(!validateProject({ format: 'h3d', version: 1 }).ok, 'missing objects');
 const parsed = parseProject(JSON.stringify(proj));
 assert(parsed.ok && parsed.project.objects[0].name === 'Box 1', 'parseProject');
@@ -109,4 +110,4 @@ if (failed) {
   console.error(failed + ' failed, ' + passed + ' passed');
   process.exit(1);
 }
-console.log('td1 tests ok: ' + passed + ' passed');
+console.log('td1+v2 tests ok: ' + passed + ' passed');

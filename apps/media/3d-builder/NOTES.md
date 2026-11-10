@@ -38,3 +38,38 @@
 - The Media page tile comes from `apps/media/media-apps.csv`. The Hub menu
   catalog needs a Team 1 / Main Builder `hub_appindex_gen.py --catalog-only`
   run before the new app shows in the Hub flyout.
+
+
+## TD2
+
+- `.h3d` format version 2 (opens version 1 and migrates: visible, unlocked, default
+  material, no texture, no custom sky). Autosave uses IndexedDB (`3dbuilder` /
+  `scene`) and still tries `localStorage` `3dbuilder.scene` (drops big textures
+  there if the quota is hit).
+- Groups: select two or more, Group (Ctrl+G) or Ungroup (Ctrl+Shift+G). Children
+  keep their world transform. The outliner indents children.
+- Hide and lock toggles on each row in the object list. Locked objects can be
+  selected but not moved with the gizmo. Hidden objects are skipped in the view.
+- Materials on shapes: roughness (or shininess in the file), metalness, opacity.
+- Add Point, Spot or Directional lights (helpers you can move). The default
+  hemisphere and directional lights stay on. Scene panel: optional custom sky
+  colour; otherwise the viewport follows the theme.
+- Image texture (file picker, resized to 256 px JPEG) and text texture (drawn
+  on a canvas). Images are stored in the project `textures` map as data URLs.
+- Multi-select with Shift or Ctrl click in the view and the list. Align
+  (left/centre/right on X, Y or Z) and Distribute (needs 3+). Snap also
+  snaps bounding-box faces to other objects when you release a move.
+- Undo / redo covers the new edits (full project snapshot, including textures).
+- Tests: `node --check`, `node tests/td1.test.mjs`, `node tests/td2.test.mjs`.
+  No Puppeteer, Playwright or jsdom. RELEASE / title / `?v=` = TD2.
+
+### TD2 limits
+
+- Object snap runs when you finish a move, not live mid-drag, so the gizmo
+  does not fight the snap.
+- Image textures are capped at 256 px and JPEG-compressed so a 4 GB Celeron
+  and localStorage stay comfortable. Very large projects may only autosave
+  fully in IndexedDB.
+- Lights have no shadows. Multi-select rotation is around the selection
+  centre (a pivot), not each object's own origin.
+- GLB / OBJ / STL import and export are still TD3.
