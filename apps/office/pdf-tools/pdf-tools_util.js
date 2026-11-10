@@ -297,11 +297,54 @@ const PTUtil = (() => {
     return String(text == null ? '' : text).replace(/[^\t\n\r\x20-\x7E\xA0-\xFF]/g, '?');
   }
 
+
+  /* Visual coords are from the bottom-left of the displayed page (PDF /Rotate clockwise). */
+  function mediaToVisual(x, y, W, H, rot) {
+    rot = ((Number(rot) || 0) % 360 + 360) % 360;
+    if (rot === 90) return { x: y, y: W - x, w: H, h: W };
+    if (rot === 180) return { x: W - x, y: H - y, w: W, h: H };
+    if (rot === 270) return { x: H - y, y: x, w: H, h: W };
+    return { x: x, y: y, w: W, h: H };
+  }
+
+  function visualToMedia(vx, vy, W, H, rot) {
+    rot = ((Number(rot) || 0) % 360 + 360) % 360;
+    if (rot === 90) return { x: W - vy, y: vx };
+    if (rot === 180) return { x: W - vx, y: H - vy };
+    if (rot === 270) return { x: vy, y: H - vx };
+    return { x: vx, y: vy };
+  }
+
+  function mapRect(r, convert, W, H, rot) {
+    const pts = [
+      convert(r.x, r.y, W, H, rot),
+      convert(r.x + r.w, r.y, W, H, rot),
+      convert(r.x, r.y + r.h, W, H, rot),
+      convert(r.x + r.w, r.y + r.h, W, H, rot),
+    ];
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    const x = Math.min.apply(null, xs), y = Math.min.apply(null, ys);
+    return { x, y, w: Math.max.apply(null, xs) - x, h: Math.max.apply(null, ys) - y };
+  }
+
+  function mediaRectToVisual(r, W, H, rot) { return mapRect(r, mediaToVisual, W, H, rot); }
+  function visualRectToMedia(r, W, H, rot) { return mapRect(r, visualToMedia, W, H, rot); }
+
+  function dataUrlToBytes(dataUrl) {
+    const m = String(dataUrl || '').match(/^data:([^;]+);base64,(.*)$/);
+    if (!m) return null;
+    const bin = typeof atob === 'function' ? atob(m[2]) : Buffer.from(m[2], 'base64').toString('binary');
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return { mime: m[1], bytes: out };
+  }
+
   return {
     COLORS, PAPER, colorFor, fileBase, shortName, pad, isContiguous, partName,
     parseRanges, planSingles, planEvery, planHint, displaySize, neighbourSize,
     sourceOf, pageKey, MM, ptFromMm, RENDER_MAX, imagePageLayout, isImageFile, imageMime, imagePartName, renderScale,
     SLOTS, SLOT_LABELS, pageIndexNumber, pageLabel, batesLabel, cropBox, slotPoint, watermarkOrigin, formatDate, expandTemplate, winAnsiSafe,
+    mediaToVisual, visualToMedia, mediaRectToVisual, visualRectToMedia, dataUrlToBytes,
   };
 })();
 

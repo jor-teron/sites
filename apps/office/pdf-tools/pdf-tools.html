@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <!--
-  PDF Tools — P4 stamp and tidy. Page shell only.
+  PDF Tools — P5 fill and sign. Page shell only.
   Styles: pdf-tools.css. Modules: pdf-tools_ui.js (state, theme, menu, dialog, cards via ../shared/office-notify.js),
   pdf-tools_load.js (open, add, drop, errors), pdf-tools_thumbs.js (lazy thumbnail grid, source badges),
   pdf-tools_select.js (selection + drag reorder), pdf-tools_edit.js (rotate, delete, duplicate, blank, extract, split, undo/redo),
-  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_zip.js (stored zip), pdf-tools_util.js (pure helpers), pdf-tools_images.js (add images, export, preview), pdf-tools_stamp.js (numbers, watermark, crop, metadata, shrink),
+  pdf-tools_save.js (one save(blob, name) for every file), pdf-tools_zip.js (stored zip), pdf-tools_util.js (pure helpers), pdf-tools_images.js (add images, export, preview), pdf-tools_stamp.js (numbers, watermark, crop, metadata, shrink), pdf-tools_sign.js (forms, annotate, signatures),
   pdf-tools_app.js (wiring, keys).
   pdf.js is read from the Hub's shared/vendor/pdfjs (read-only); pdf-lib is vendored in ./vendor.
   Everything stays on the device. Actions are a rail on the RIGHT (right-handed).
@@ -14,10 +14,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>PDF Tools P4</title>
+  <title>PDF Tools P5</title>
   <link rel="icon" href="pdf-tools_icon.png">
   <script>try{var m=(JSON.parse(localStorage.getItem('pdf-tools-settings-v1')||'{}').theme)||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
-  <link rel="stylesheet" href="pdf-tools.css?v=P4">
+  <link rel="stylesheet" href="pdf-tools.css?v=P5">
   <link rel="stylesheet" href="../shared/office-notify.css">
 </head>
 <body>
@@ -66,6 +66,8 @@
     <button type="button" class="mi" id="m-export" data-need="doc">Export as images…</button>
     <button type="button" class="mi" id="m-stamp" data-need="doc">Stamp &amp; tidy…</button>
     <button type="button" class="mi" id="m-crop" data-need="doc">Crop pages…</button>
+    <button type="button" class="mi" id="m-form" data-need="doc">Fill form…</button>
+    <button type="button" class="mi" id="m-ann" data-need="doc">Sign &amp; annotate…</button>
     <button type="button" class="mi" id="m-close" data-need="doc">Close file</button>
     <button type="button" class="mi" id="m-about">About</button>
   </div>
@@ -86,24 +88,68 @@
 
   <div id="preview" class="preview" hidden>
     <button type="button" id="preview-close" class="pill ghost">Close</button>
+    <button type="button" id="preview-ann" class="pill">Write or sign</button>
     <div id="preview-stage" class="preview-stage"></div>
     <p id="preview-cap" class="preview-cap"></p>
+  </div>
+
+  <div id="editor" class="editor" hidden>
+    <div id="ed-bar" class="ed-bar">
+      <div id="ed-tools" class="ed-tools">
+        <button type="button" data-tool="select" class="on" title="Select">Select</button>
+        <button type="button" data-tool="text" title="Add text">Text</button>
+        <button type="button" data-tool="highlight" title="Highlight">Highlight</button>
+        <button type="button" data-tool="box" title="Box">Box</button>
+        <button type="button" data-tool="sign" title="Signature">Sign</button>
+        <button type="button" id="ed-del" title="Delete selected">Delete</button>
+      </div>
+      <span id="ed-cap" class="ed-cap"></span>
+      <span class="grow"></span>
+      <button type="button" id="ed-cancel" class="pill ghost">Cancel</button>
+      <button type="button" id="ed-done" class="pill">Done</button>
+    </div>
+    <div class="ed-stage">
+      <div class="ed-wrap">
+        <div id="ed-stage-page" class="ed-page"></div>
+        <div id="ed-layer" class="ed-layer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sigpad" class="dlg-back" hidden>
+    <div class="dlg wide" role="dialog" aria-modal="true" aria-labelledby="sigpad-title">
+      <h2 id="sigpad-title">Signature</h2>
+      <p>Draw with the pointer, or type a name. It is stored only on this device (up to 8).</p>
+      <canvas id="sigpad-c" class="sigpad-c" width="400" height="160"></canvas>
+      <input type="text" id="sigpad-text" class="sigpad-text" placeholder="Type a name" hidden>
+      <div class="dlg-btns" style="justify-content:space-between">
+        <span>
+          <button type="button" id="sigpad-clear" class="pill ghost">Clear</button>
+          <button type="button" id="sigpad-type" class="pill ghost">Type instead</button>
+        </span>
+        <span>
+          <button type="button" id="sigpad-cancel" class="pill ghost">Cancel</button>
+          <button type="button" id="sigpad-save" class="pill">Save</button>
+        </span>
+      </div>
+    </div>
   </div>
 </div>
 
 <script src="../../../shared/vendor/pdfjs/pdf.min.js"></script>
 <script src="vendor/pdf-lib.min.js"></script>
 <script src="../shared/office-notify.js"></script>
-<script src="pdf-tools_util.js?v=P4"></script>
-<script src="pdf-tools_zip.js?v=P4"></script>
-<script src="pdf-tools_ui.js?v=P4"></script>
-<script src="pdf-tools_save.js?v=P4"></script>
-<script src="pdf-tools_load.js?v=P4"></script>
-<script src="pdf-tools_thumbs.js?v=P4"></script>
-<script src="pdf-tools_edit.js?v=P4"></script>
-<script src="pdf-tools_select.js?v=P4"></script>
-<script src="pdf-tools_images.js?v=P4"></script>
-<script src="pdf-tools_stamp.js?v=P4"></script>
-<script src="pdf-tools_app.js?v=P4"></script>
+<script src="pdf-tools_util.js?v=P5"></script>
+<script src="pdf-tools_zip.js?v=P5"></script>
+<script src="pdf-tools_ui.js?v=P5"></script>
+<script src="pdf-tools_save.js?v=P5"></script>
+<script src="pdf-tools_sign.js?v=P5"></script>
+<script src="pdf-tools_load.js?v=P5"></script>
+<script src="pdf-tools_thumbs.js?v=P5"></script>
+<script src="pdf-tools_edit.js?v=P5"></script>
+<script src="pdf-tools_select.js?v=P5"></script>
+<script src="pdf-tools_images.js?v=P5"></script>
+<script src="pdf-tools_stamp.js?v=P5"></script>
+<script src="pdf-tools_app.js?v=P5"></script>
 </body>
 </html>

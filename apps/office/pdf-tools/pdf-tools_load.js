@@ -46,6 +46,7 @@ PT.Load = (() => {
       color: PTUtil.colorFor(S.nextSrc - 2),
       bytes, pdf, n: pdf.numPages, sizes,
       title, author, subject,
+      fields: PT.Sign ? PT.Sign.readFields(lib) : [],
     };
   }
 
@@ -91,6 +92,7 @@ PT.Load = (() => {
         const first = loaded[0];
         S.meta = { title: first.title || '', author: first.author || '', subject: first.subject || '' };
       }
+      if (PT.Sign) PT.Sign.reset();
       PT.emit('opened');
       PT.refresh();
     } else {
@@ -115,6 +117,7 @@ PT.Load = (() => {
     S.doc = null; S.pages = []; S.sel.clear(); S.anchor = null;
     PT.Edit.reset();
     if (PT.Stamp) PT.Stamp.reset();
+    if (PT.Sign) PT.Sign.reset();
     if (!silent) PT.refresh();
   }
 

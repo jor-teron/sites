@@ -1,4 +1,4 @@
-/* Node tests for PDF Tools P2–P4 helpers (pdf-tools_util.js, pdf-tools_zip.js).
+/* Node tests for PDF Tools P2–P5 helpers (pdf-tools_util.js, pdf-tools_zip.js).
    Run: node test_pdf_tools_util.js
    No DOM, no jsdom, no browser. */
 'use strict';
@@ -158,6 +158,35 @@ ok('wm upright centred', Math.abs(wm0.x - 80) < 1e-9 && Math.abs(wm0.y - 40) < 1
 var wm90 = U.watermarkOrigin(200, 100, 40, 20, 90);
 ok('wm 90 centred x', Math.abs(wm90.x - (100 + 10)) < 1e-6);
 ok('wm 90 centred y', Math.abs(wm90.y - (50 - 20)) < 1e-6);
+
+
+// ---- visual ↔ media (P5) ----
+var W = 200, H = 100;
+eq('v2m 0', U.visualToMedia(10, 20, W, H, 0), { x: 10, y: 20 });
+eq('m2v 0', U.mediaToVisual(10, 20, W, H, 0), { x: 10, y: 20, w: 200, h: 100 });
+// rot 90: media BL (0,0) is visual top-left (0, W)
+eq('m2v 90 BL', U.mediaToVisual(0, 0, W, H, 90), { x: 0, y: 200, w: 100, h: 200 });
+eq('m2v 90 BR', U.mediaToVisual(200, 0, W, H, 90), { x: 0, y: 0, w: 100, h: 200 });
+eq('v2m 90 visual BL', U.visualToMedia(0, 0, W, H, 90), { x: 200, y: 0 });
+eq('m2v 180 BL', U.mediaToVisual(0, 0, W, H, 180), { x: 200, y: 100, w: 200, h: 100 });
+eq('m2v 270 BL', U.mediaToVisual(0, 0, W, H, 270), { x: 100, y: 0, w: 100, h: 200 });
+// round-trip a few points
+[0, 90, 180, 270].forEach(function (rot) {
+  var pts = [[0, 0], [200, 0], [0, 100], [200, 100], [40, 25]];
+  pts.forEach(function (pt) {
+    var v = U.mediaToVisual(pt[0], pt[1], W, H, rot);
+    var back = U.visualToMedia(v.x, v.y, W, H, rot);
+    ok('round-trip ' + rot + ' ' + pt, Math.abs(back.x - pt[0]) < 1e-9 && Math.abs(back.y - pt[1]) < 1e-9, JSON.stringify(back));
+  });
+});
+var rec = U.mediaRectToVisual({ x: 10, y: 20, w: 30, h: 10 }, W, H, 90);
+ok('rect 90 size swapped-ish', Math.abs(rec.w - 10) < 1e-9 && Math.abs(rec.h - 30) < 1e-9);
+var backR = U.visualRectToMedia(rec, W, H, 90);
+ok('rect 90 back', Math.abs(backR.x - 10) < 1e-9 && Math.abs(backR.y - 20) < 1e-9 && Math.abs(backR.w - 30) < 1e-9 && Math.abs(backR.h - 10) < 1e-9);
+var decoded = U.dataUrlToBytes('data:image/png;base64,AQID');
+ok('dataUrl mime', decoded && decoded.mime === 'image/png');
+ok('dataUrl bytes', decoded && decoded.bytes.length === 3 && decoded.bytes[0] === 1 && decoded.bytes[2] === 3);
+ok('dataUrl bad', U.dataUrlToBytes('not-a-url') == null);
 
 // ---- zip (stored, local headers) ----
 ok('crc32 empty', Z.crc32(new Uint8Array(0)) === 0);

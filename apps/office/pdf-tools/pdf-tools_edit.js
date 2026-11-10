@@ -6,7 +6,8 @@
 PT.Edit = (() => {
   const { S } = PT;
   let undo = [], redo = [], savedAt = 0, ver = 0;
-  const snap = () => ({ pages: S.pages.map((p) => ({ ...p, crop: p.crop ? { ...p.crop } : null })), sel: [...S.sel], ver, name: S.doc && S.doc.name });
+  const copyPage = (p) => ({ ...p, crop: p.crop ? { ...p.crop } : null, annots: (p.annots || []).map((a) => ({ ...a })) });
+  const snap = () => ({ pages: S.pages.map(copyPage), sel: [...S.sel], ver, name: S.doc && S.doc.name });
 
   function commit(pages, label) {
     undo.push(snap());
@@ -140,6 +141,7 @@ PT.Edit = (() => {
         stamp: st,
         meta: S.meta,
         shrink: !!(st && st.shrink),
+        flatten: !!S.formFlatten,
         onProgress: (i, n) => PT.busy('Shrinking ' + i + ' of ' + n + '…'),
       });
       const name = await PTSave.save(blob, sessionName('save'));

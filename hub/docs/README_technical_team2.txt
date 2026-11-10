@@ -1452,6 +1452,26 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   on the original page box; Shrink is rasterisation, not a smart compressor;
   unusual characters become ?. Details: apps/office/pdf-tools/pdf-tools_readme.md.
 
+### 1.83 PDF Tools fill and sign, release P5
+
+- apps/office/pdf-tools only, on top of P4. Fill existing AcroForm fields
+  (pdf-lib getForm / setText / check / select, optional flatten on Save).
+  Light page editor (menu Sign & annotate, or Write or sign on the preview):
+  add text, a highlight rectangle, a box/outline, and a signature, then move
+  or resize. Signatures are drawn on a pointer canvas or typed, stored on the
+  device (localStorage, up to 8), and placed on a page. Marks are one undo
+  step per page when you press Done. All output still through PTSave.save.
+  In-app dialogs only. No new library.
+- New pdf-tools_sign.js. Visual↔media coordinate maths (for page rotation) in
+  pdf-tools_util.js (node-tested). Helvetica / WinAnsi for typed page text.
+- RELEASE/title/?v= P5 on this app's own CSS/JS only. Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: no XFA; some fields may skip; flatten can fail on odd widgets;
+  duplicated pages share source field values; no comment threads or free ink
+  beyond the signature pad; unusual original crop boxes may not match the
+  overlay. Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
