@@ -12,8 +12,11 @@
   Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
   body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
   browser's print window; PDF = "Save as PDF" there, with an in-app hint).
-  SL7 (this release): speaker notes, Presenter view (second window or a one-screen fallback), pen and laser in Present,
-  B / W blank screen, and CSS slide transitions (none / fade / push / wipe). .hslides version 5. No libraries.
+  SL8 (this release): more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a simple master
+  footer (text, slide numbers, date, skip on title slides, per-slide override), hide slide, and named sections in the
+  slide list. .hslides version 6. No libraries.
+  Legacy (SL7): speaker notes, Presenter view (second window or a one-screen fallback), pen and laser in Present,
+  B / W blank screen, and CSS slide transitions (none / fade / push / wipe). .hslides version 5.
   Legacy (SL6): shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill / outline
   and SL5 text inside, tables (insert rows × cols, add / delete row or column, cell text, header row, borders), and arrange
   (bring forward / send backward / to front / to back, align, distribute, Shift multi-select, arrow nudge, snap guides to the
@@ -26,11 +29,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Slides SL7</title><!-- legacy: <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
+  <title>Slides SL8</title><!-- legacy: <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="slides.css?v=SL7">
+  <link rel="stylesheet" href="slides.css?v=SL8">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -108,9 +111,12 @@
     </div>
     <div class="of-panel" role="tabpanel" id="sl-panel-design" data-tab="design" aria-labelledby="sl-tab-design" hidden>
       <div class="of-group" role="group" aria-label="Deck theme"><span class="of-group-label">Theme</span>
-        <button type="button" id="r-th-light" data-theme="light" aria-pressed="false" title="Light theme for every slide">Light</button>
-        <button type="button" id="r-th-dark" data-theme="dark" aria-pressed="false" title="Dark theme for every slide">Dark</button></div>
-      <div class="of-group"><button type="button" id="b-theme" title="This slide's background (and the deck theme)" aria-haspopup="dialog">🎨<span class="lbl"> Slide background…</span></button></div>
+        <span id="th-swatches" class="th-swatches"></span>
+        <button type="button" id="b-themes" title="All deck themes" aria-haspopup="dialog">All themes…</button></div>
+      <div class="of-group"><button type="button" id="b-theme" title="This slide's background (and the deck theme)" aria-haspopup="dialog">🎨<span class="lbl"> Slide background…</span></button>
+        <button type="button" id="b-master" title="Footer text, slide numbers and date for the deck" aria-haspopup="dialog">▭<span class="lbl"> Master and footer…</span></button>
+        <button type="button" id="b-hide" title="Skip this slide in the show (it stays in the list, faded)" aria-pressed="false">🙈<span class="lbl"> Hide slide</span></button>
+        <button type="button" id="b-sec" title="Start a named section at this slide">§<span class="lbl"> Add section…</span></button></div>
     </div>
     <div class="of-panel" role="tabpanel" id="sl-panel-show" data-tab="show" aria-labelledby="sl-tab-show" hidden>
       <div class="of-group"><button type="button" id="r-show0" title="Present from the first slide (F5)">▶<span class="lbl"> From beginning</span></button>
@@ -156,6 +162,7 @@
             <div id="sellayer" class="sellayer"></div>
             <div id="guides" class="guides" hidden></div>
           </div>
+          <div id="s-foot" class="s-foot" hidden><span class="s-foot-text"></span><span class="s-foot-date"></span><span class="s-foot-num"></span></div>
         </div>
       </div>
       <div id="picbar" role="toolbar" aria-label="Picture" hidden>
@@ -260,6 +267,9 @@
     <button type="button" role="menuitem" data-a="shape">◇ Insert shape…</button>
     <button type="button" role="menuitem" data-a="table">▦ Insert table…</button>
     <button type="button" role="menuitem" data-a="theme">🎨 Theme and background…</button>
+    <button type="button" role="menuitem" data-a="master">▭ Master and footer…</button>
+    <button type="button" role="menuitem" data-a="hide">🙈 Hide / unhide this slide</button>
+    <button type="button" role="menuitem" data-a="sec">§ Add section…</button>
     <button type="button" role="menuitem" data-a="undo">↶ Undo</button>
     <button type="button" role="menuitem" data-a="redo">↷ Redo</button>
     <div class="sep"></div>
@@ -326,10 +336,11 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Slides</b> <span id="ver">SL7</span><!-- legacy: SL6 · SL5 · SL4 · SL3 · SL2 -->
+        <div><b>Hub Office Slides</b> <span id="ver">SL8</span><!-- legacy: SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
             Export a deck as a .hslides file (open JSON, pictures inside) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
-          <p>SL7: speaker notes, Presenter view (notes, next slide and a timer in a second window), a pen and laser pointer while presenting, B / W to blank the screen, and simple slide transitions.</p>
+          <p>SL8: more deck themes (colours and fonts; the app itself stays Light / Dark), a footer with optional slide numbers and date, hide a slide from the show, and named sections in the slide list.</p>
+          <!-- legacy (SL7): <p>SL7: speaker notes, Presenter view (notes, next slide and a timer in a second window), a pen and laser pointer while presenting, B / W to blank the screen, and simple slide transitions.</p> -->
           <!-- legacy (SL6): <p>SL6: shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill, outline and text inside; tables with a header row; and arrange (align, distribute, front / back, multi-select, snap guides).</p> --></div>
       </div>
     </div>
@@ -354,6 +365,26 @@
         <h3>This slide's background</h3>
         <div class="swatches" id="pick-sw"></div>
       </div>
+    </div>
+  </div>
+  <div id="master" class="sheet" hidden>
+    <div class="box set-wrap" role="dialog" aria-modal="true" aria-labelledby="master-h">
+      <div class="bar"><h2 id="master-h">Master and footer</h2><button type="button" class="mini sq" id="master-x" aria-label="Close">✕</button></div>
+      <p class="mut">These appear at the bottom of every slide in this deck (the app’s Light / Dark look is unchanged). Older decks start with the footer off, so they look the same until you turn something on.</p>
+      <label class="set-row">Footer text<input type="text" id="m-footer" maxlength="200" placeholder="e.g. Conference 2026" aria-label="Footer text"></label>
+      <label class="set-row"><span>Slide numbers<small>Shown as 1 / 12 among slides that are not hidden</small></span><input type="checkbox" id="m-number"></label>
+      <label class="set-row"><span>Date</span><input type="checkbox" id="m-date"></label>
+      <label class="set-row"><span>Fixed date<small>Leave empty to use today</small></span><input type="date" id="m-when" aria-label="Fixed date"></label>
+      <label class="set-row"><span>Don’t show on title slides</span><input type="checkbox" id="m-skip"></label>
+      <h3>This slide</h3>
+      <label class="set-row"><span>Footer on this slide</span>
+        <select id="m-foot" aria-label="Footer on this slide">
+          <option value="">Same as the master</option>
+          <option value="hide">Hide</option>
+          <option value="show">Show (even on a title slide)</option>
+        </select></label>
+      <label class="set-row">Footer text on this slide<input type="text" id="m-footer-this" maxlength="200" placeholder="Leave empty to use the master text" aria-label="Footer text on this slide"></label>
+      <div class="row"><button type="button" class="mini" id="master-cancel">Cancel</button><button type="button" class="mini acc" id="master-ok">Apply</button></div>
     </div>
   </div>
   <div id="toast" role="status"></div>
@@ -416,17 +447,18 @@
 <script src="../shared/office-ribbon.js"></script>
 <script src="../shared/office-hubbar.js"></script>
 <script src="../shared/office-quick.js"></script>
-<script src="slides_pics.js?v=SL7"></script>
-<script src="slides_text.js?v=SL7"></script>
-<script src="slides_draw.js?v=SL7"></script>
-<script src="slides_present.js?v=SL7"></script>
-<script src="slides_save.js?v=SL7"></script>
-<script src="slides_file.js?v=SL7"></script>
-<script src="slides_edit.js?v=SL7"></script>
-<script src="slides_show.js?v=SL7"></script>
-<script src="slides_list.js?v=SL7"></script>
-<script src="slides_print.js?v=SL7"></script>
-<script src="slides_hub.js?v=SL7"></script>
-<script src="slides_app.js?v=SL7"></script>
+<script src="slides_pics.js?v=SL8"></script>
+<script src="slides_text.js?v=SL8"></script>
+<script src="slides_draw.js?v=SL8"></script>
+<script src="slides_present.js?v=SL8"></script>
+<script src="slides_master.js?v=SL8"></script>
+<script src="slides_save.js?v=SL8"></script>
+<script src="slides_file.js?v=SL8"></script>
+<script src="slides_edit.js?v=SL8"></script>
+<script src="slides_show.js?v=SL8"></script>
+<script src="slides_list.js?v=SL8"></script>
+<script src="slides_print.js?v=SL8"></script>
+<script src="slides_hub.js?v=SL8"></script>
+<script src="slides_app.js?v=SL8"></script>
 </body>
 </html>

@@ -23,7 +23,7 @@
   var el, fitEl, zoomEl, slideEl, oldEl, endEl, countEl, inkEl, laserEl, blankEl, nextFit, nextEl, notesEl, timeEl;
   var ctx = null, cb = {}, on = false, mode = '', i = 0, n = 0, slides = [], atEnd = false, theme = 'light';
   var idleT = 0, numBuf = '', numT = 0, lock = null, p0 = null;
-  var presenter = false, satellite = false, reduce = false, anim = false, animT = 0, scale = 1, dir = 1;
+  var presenter = false, satellite = false, reduce = false, anim = false, animT = 0, scale = 1, dir = 1, master = {};
   var tool = '', color = '#ef4444', blank = 'none', inkMap = {}, stroke = null, drawing = false;
   var keepOn = false, bus = null, sessionKey = '', popupWin = null;
   var t0 = 0, elapsed = 0, running = true, tickT = 0, waitOwner = 0;
@@ -47,6 +47,35 @@
   }
   function sid(k) { return (slides[k] && slides[k].id) || ('#' + k); }
   function inkOf(k) { var id = sid(k); return inkMap[id] || (inkMap[id] = SLPresent.cloneInk(slides[k] && slides[k].ink)); }
+  function visAll() {
+    var a = [];
+    for (var k = 0; k < n; k++) if (!(slides[k] && slides[k].hide)) a.push(k);
+    return a.length ? a : (function () { var b = []; for (var x = 0; x < n; x++) b.push(x); return b; })();
+  }
+  function skipped(k) { return !!(slides[k] && slides[k].hide) && visAll().some(function (x) { return !(slides[x] && slides[x].hide); }); }
+  /* if every slide is hidden, visAll falls back to all, so skipped() is false */
+  function visPos(k) {
+    var v = visAll(), p = v.indexOf(k);
+    return p < 0 ? 0 : p + 1;
+  }
+  function nearestVis(k, dir) {
+    var v = visAll();
+    if (v.indexOf(k) >= 0) return k;
+    if (dir >= 0) { for (var x = 0; x < v.length; x++) if (v[x] >= k) return v[x]; return v[v.length - 1]; }
+    for (var y = v.length - 1; y >= 0; y--) if (v[y] <= k) return v[y];
+    return v[0];
+  }
+  function nextVis(k) {
+    var v = visAll(), p = v.indexOf(k);
+    if (p < 0) { var n2 = nearestVis(k, 1); return n2 === k ? -1 : n2; }
+    return p + 1 < v.length ? v[p + 1] : -1;
+  }
+  function prevVis(k) {
+    var v = visAll(), p = v.indexOf(k);
+    if (p < 0) { var n2 = nearestVis(k, -1); return n2 === k ? -1 : n2; }
+    return p > 0 ? v[p - 1] : -1;
+  }
+  function deckCtx() { return { slides: slides, master: master }; }
 
   /* ---------- wake lock ---------- */
   function wake() {
@@ -146,12 +175,13 @@
   function transOf(k) { return SLPresent.effectiveTrans(slides[k], { reduce: reduce }); }
   function paintSlide(node, k, live) {
     if (!node || k < 0 || k >= n) { if (node) node.innerHTML = ''; return; }
-    SLEdit.paint(node, slides[k], k, { show: true }, theme, 'slide sv pv show-layer' + (live ? '' : ''));
+    SLEdit.paint(node, slides[k], k, { show: true, deck: deckCtx() }, theme, 'slide sv pv show-layer' + (live ? '' : ''));
   }
   function paintNext() {
     if (!presenter || !nextEl) return;
-    if (atEnd || i >= n - 1) { nextEl.innerHTML = ''; nextEl.setAttribute('aria-label', 'End'); return; }
-    paintSlide(nextEl, i + 1, false);
+    var nx = nextVis(i);
+    if (atEnd || nx < 0) { nextEl.innerHTML = ''; nextEl.setAttribute('aria-label', 'End'); return; }
+    paintSlide(nextEl, nx, false);
     nextEl.className = 'slide sv pv';
     fit();
   }
@@ -198,7 +228,7 @@
     if (!atEnd) { paintSlide(slideEl, i, true); slideEl.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n); }
     else slideEl.innerHTML = '';
     slideEl.style.opacity = ''; slideEl.style.clipPath = ''; slideEl.className = 'slide sv pv show-layer';
-    countEl.textContent = atEnd ? 'End' : ((i + 1) + ' / ' + n);
+    countEl.textContent = atEnd ? 'End' : (visPos(i) + ' / ' + visAll().length);
     $('show-prev').disabled = !atEnd && i === 0; $('show-next').disabled = false;
     paintNext(); paintNotes(); paintInk(); syncTools(); poke(); emit();
   }
@@ -224,7 +254,7 @@
     i = nk; atEnd = false;
     paintSlide(slideEl, i, true);
     slideEl.setAttribute('aria-label', 'Slide ' + (i + 1) + ' of ' + n);
-    countEl.textContent = (i + 1) + ' / ' + n;
+    countEl.textContent = visPos(i) + ' / ' + visAll().length;
     $('show-prev').disabled = i === 0;
     paintNext(); paintNotes(); paintInk();
     var from = dir > 0 ? 1 : -1;
@@ -252,17 +282,20 @@
   function go(k) {
     k = Math.max(0, Math.min(n - 1, k | 0));
     if (blank !== 'none') { setBlank('none'); return; }
+    k = nearestVis(k, k >= i ? 1 : -1);
     goAnim(k, false, k >= i ? 1 : -1);
   }
   function next() {
     if (blank !== 'none') { setBlank('none'); return; }
     if (atEnd) { cmdExit(); return; }
-    if (i < n - 1) goAnim(i + 1, false, 1); else goAnim(i, true, 1);
+    var nx = nextVis(i);
+    if (nx >= 0) goAnim(nx, false, 1); else goAnim(i, true, 1);
   }
   function prev() {
     if (blank !== 'none') { setBlank('none'); return; }
-    if (atEnd) { atEnd = false; draw(); return; }
-    if (i > 0) goAnim(i - 1, false, -1); else poke();
+    if (atEnd) { atEnd = false; i = nearestVis(i, -1); draw(); return; }
+    var pv = prevVis(i);
+    if (pv >= 0) goAnim(pv, false, -1); else poke();
   }
   function cmdExit() { if (satellite && bus) bus.send({ type: 'exit' }); exit(); }
 
@@ -388,17 +421,24 @@
     e.stopPropagation();
     if (/^[0-9]$/.test(k)) {
       e.preventDefault(); numBuf = (numBuf + k).slice(-4); countEl.textContent = 'Go to ' + numBuf;
-      el.classList.remove('idle'); clearTimeout(numT); numT = setTimeout(function () { numBuf = ''; if (on) countEl.textContent = atEnd ? 'End' : ((i + 1) + ' / ' + n); }, 3000); return;
+      el.classList.remove('idle'); clearTimeout(numT); numT = setTimeout(function () { numBuf = ''; if (on) countEl.textContent = atEnd ? 'End' : (visPos(i) + ' / ' + visAll().length); }, 3000); return;
     }
-    if (k === 'Enter' && numBuf) { e.preventDefault(); var t = parseInt(numBuf, 10); numBuf = ''; clearTimeout(numT); if (t >= 1) cmd({ type: 'go', i: t - 1 }); else draw(); return; }
+    if (k === 'Enter' && numBuf) {
+      e.preventDefault(); var t = parseInt(numBuf, 10); numBuf = ''; clearTimeout(numT);
+      if (t >= 1) {
+        var v = visAll(); var tgt = v[Math.max(0, Math.min(v.length, t) - 1)];
+        cmd({ type: 'go', i: tgt });
+      } else draw();
+      return;
+    }
     if (numBuf && k !== 'Shift') { numBuf = ''; clearTimeout(numT); }
     if (k === 'Escape') { e.preventDefault(); cmdExit(); return; }
     if (k === 'b' || k === 'B') { e.preventDefault(); cmd({ type: 'blank', blank: 'toggle-black' }); return; }
     if (k === 'w' || k === 'W') { e.preventDefault(); cmd({ type: 'blank', blank: 'toggle-white' }); return; }
     if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'Spacebar' || k === 'PageDown' || k === 'Enter' || k === 'n' || k === 'N') { e.preventDefault(); cmd({ type: 'next' }); return; }
     if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace' || k === 'p' || k === 'P') { e.preventDefault(); cmd({ type: 'prev' }); return; }
-    if (k === 'Home') { e.preventDefault(); cmd({ type: 'go', i: 0 }); return; }
-    if (k === 'End') { e.preventDefault(); cmd({ type: 'go', i: n - 1 }); return; }
+    if (k === 'Home') { e.preventDefault(); cmd({ type: 'go', i: visAll()[0] }); return; }
+    if (k === 'End') { e.preventDefault(); var vv = visAll(); cmd({ type: 'go', i: vv[vv.length - 1] }); return; }
     if (k === 'F5' || k === 'Tab' || k === 'F6') { e.preventDefault(); return; }
     if (atEnd && k.length === 1) { e.preventDefault(); cmdExit(); return; }
   }
@@ -443,7 +483,10 @@
     if (on || !list || !list.length) return false;
     opts = opts || {};
     theme = th || 'light';
-    slides = list; n = list.length; i = Math.max(0, Math.min(n - 1, start | 0)); atEnd = false; numBuf = '';
+    master = opts.master || (opts.deck && opts.deck.master) || {};
+    slides = list; n = list.length;
+    i = nearestVis(Math.max(0, Math.min(n - 1, start | 0)), 1);
+    atEnd = false; numBuf = '';
     presenter = !!opts.presenter; satellite = !!opts.satellite; sessionKey = opts.key || '';
     popupWin = opts.popup || null; keepOn = false; tool = ''; blank = 'none'; color = '#ef4444';
     inkMap = {}; stroke = null; drawing = false; anim = false; reduce = prefersReduce();
@@ -484,7 +527,7 @@
     numBuf = ''; atEnd = false; p0 = null; drawing = false; stroke = null; anim = false; waitOwner = 0;
     if (bus) { try { if (!satellite) bus.send({ type: 'exit' }); } catch (_) { /* */ } bus.close(); bus = null; }
     try { if (popupWin && !popupWin.closed) popupWin.close(); } catch (_) { /* */ }
-    popupWin = null; sessionKey = ''; presenter = false; satellite = false;
+    popupWin = null; sessionKey = ''; presenter = false; satellite = false; master = {};
     el.hidden = true; el.classList.remove('idle', 'fs', 'presenter', 'tool-laser');
     var aside = $('show-aside'); if (aside) aside.hidden = true;
     document.documentElement.classList.remove('presenting');

@@ -1225,6 +1225,42 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   phone.
 
 
+### 1.71 Hub Office Slides themes, masters, hide and sections, release SL8
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl8-slides` from `apps/sl7-slides` (e341d842).
+  `apps/office/shared/` not edited. New `slides_master.js` (`SLMaster`): master / footer / date / hide / section
+  helpers. No DOM, safe to load in Node.
+- Deck themes: eight colour + font sets (Light, Dark, Ocean, Forest, Sunset, Slate, Paper, Midnight). Fonts are
+  already on the machine (system UI or Georgia / Palatino) — no web fonts. The app chrome stays System / Light / Dark
+  in Settings (Jor). Unknown theme ids load as Light. A per-slide background still overrides the theme colour only.
+- Master / footer: Design → Master and footer… (in-app sheet). Optional footer text (200 characters), slide numbers
+  (1 / N among slides that are not hidden), date (today or a fixed YYYY-MM-DD), and “don’t show on title slides”
+  (on by default). Per-slide override: inherit / hide / show, plus optional footer text. Older decks start with the
+  footer off. App undo covers the master and the per-slide override.
+- Hide slide: skipped in Present and Presenter view (and in that count). Shown faded in the sorter with a Hidden badge.
+  If every slide is hidden the show still runs. Print / Export PDF / notes pages ask Include or Leave out (default:
+  leave out) when the deck has hidden slides.
+- Sections: named groups of consecutive slides (`slide.sec` + `deck.sections: [{ id, name, fold }]`). Add section at
+  this slide; list headers collapse / expand, rename or remove, and move as a block (▲ ▼ or drag the header). Up to
+  50 sections. Collapse is saved, not an undo step. App undo covers add / rename / remove / move.
+- Format / compatibility: deck record `fmt: 7`. SL1–SL7 records (fmt 6 / 5 / 4 / 3 / none) open unchanged. .hslides
+  `version: 6` (reads 1–6; higher refused). v6 keeps the v5 fields and adds optional `master`, `sections`, and per-slide
+  `hide`, `foot`, `footer`, `sec`. Export writes v6.
+- Release id: `<title>Slides SL8</title>` (legacy SL7 · … comment), `VERSION = 'SL8'`, About SL8 (legacy comments),
+  `?v=SL8` on the app's own css / js (including the new slides_master.js; shared office-*.css/js left unversioned).
+  No service worker, catalog, CSV, build, other hub/, repo-root shared/ or apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51;
+  `slides_draw_test.js` 55/55; `slides_present_test.js` 31/31; `slides_master_test.js` (master defaults / cap, date
+  format, footer skip-title and per-slide override, vis index, add / split / move / remove sections, normalize
+  disconnected runs); `slides_file_test.js` (v5 still opens and migrates master off, v6 write / reparse of ocean theme
+  + master + sections + hide / foot, version 7 refused, cloneSlide is deep for hide). Static curl smoke: 200 on
+  slides.html / slides.css / slides_master.js / slides_app.js / slides_list.js, body greps SL8. No Puppeteer,
+  Playwright, jsdom or headless browser.
+- Caveats: themes use only local fonts. Dragging a slide to a section boundary may attach it to the previous section.
+  The footer sits in the bottom padding and can overlap a very low object. Collapse is not on the undo stack. Not tried
+  on a real phone or a real printer.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

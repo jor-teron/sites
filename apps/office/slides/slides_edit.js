@@ -27,7 +27,12 @@
     pic: ['Click to add a heading', 'Click to add a caption'], two: ['Click to add a title', 'Left column: one bullet per line'] };
   var BUL_HINT = 'Click to add bullets: one per line, Tab to indent';
   function slots(s) { return SLOTS[(s && s.layout) || 'tc'] || SLOTS.tc; }
-  function cls(s, th) { return 'lay-' + ((s && SLOTS[s.layout]) ? s.layout : 'tc') + ' th-' + (th || 'light'); }
+  var deckCtx = null;
+  function cls(s, th) {
+    var id = th || (deckCtx && deckCtx.theme) || 'light';
+    if (window.SLSave && SLSave.THEME_IDS && SLSave.THEME_IDS.indexOf(id) < 0) id = 'light';
+    return 'lay-' + ((s && SLOTS[s.layout]) ? s.layout : 'tc') + ' th-' + id;
+  }
   function bgStyle(s) { return s && s.bg ? '--s-bg:' + s.bg : ''; }
   function paint(el, s, i, o, th, base) {
     el.className = base + ' ' + cls(s, th);
@@ -1008,7 +1013,24 @@
     title.setAttribute('aria-label', 'Slide title');
     body.setAttribute('aria-label', L.b === 'plain' ? 'Slide text' : 'Slide bullets, one per line');
   }
-  function show(slide, th) {
+  function paintFoot() {
+    var el = document.getElementById('s-foot'); if (!el) return;
+    var info = null, i = 0;
+    if (window.SLMaster && deckCtx && cur && deckCtx.slides) {
+      i = deckCtx.slides.indexOf(cur);
+      if (i < 0) i = deckCtx.cur | 0;
+      info = SLMaster.footerFor(deckCtx, i, {});
+    }
+    if (!info) { el.hidden = true; return; }
+    el.hidden = false;
+    var tx = el.querySelector('.s-foot-text'), dt = el.querySelector('.s-foot-date'), nm = el.querySelector('.s-foot-num');
+    if (tx) tx.textContent = info.text || '';
+    if (dt) { dt.textContent = info.date || ''; dt.hidden = !info.date; }
+    if (nm) { nm.textContent = info.num || ''; nm.hidden = !info.num; }
+  }
+  function setDeck(d) { deckCtx = d || null; }
+  function show(slide, th, deck) {
+    if (deck) deckCtx = deck;
     if (th) theme = th;
     if (slide !== cur) { sels = []; cellSel = null; editSlot = ''; clearGuides(); }
     cur = slide;
@@ -1016,7 +1038,7 @@
     renderBox(title, slide ? slide.title : SLText.empty('none'), 'title');
     renderBox(body, slide ? slide.body : SLText.empty(defList('body')), 'body');
     renderBox(body2, slide ? slide.body2 : SLText.empty('bullet'), 'body2');
-    autoTitle(); drawObjs();
+    autoTitle(); drawObjs(); paintFoot();
   }
 
   /* the static slide renderer (thumbnails + Present + Print). o = { max, show } */
@@ -1041,11 +1063,15 @@
     if (s.shapes && s.shapes.length) objs += '<div class="shapes">' + s.shapes.map(function (sh) { return shapeHTML(sh, false); }).join('') + '</div>';
     if (s.tables && s.tables.length) objs += '<div class="tables">' + s.tables.map(function (tb) { return tableHTML(tb, false); }).join('') + '</div>';
     if (objs) h += '<div class="objs">' + objs + '</div>';
+    if (!o.noFoot && window.SLMaster) {
+      var deck = o.deck || deckCtx;
+      if (deck) h += SLMaster.footHTML(SLMaster.footerFor(deck, i, o));
+    }
     return h;
   }
 
   window.SLEdit = {
-    init: init, show: show, html: html, paint: paint, cls: cls, bgStyle: bgStyle, slots: slots, W: W, H: H, fit: doFit, scale: function () { return scale; },
+    init: init, show: show, html: html, paint: paint, cls: cls, bgStyle: bgStyle, slots: slots, W: W, H: H, fit: doFit, scale: function () { return scale; }, setDeck: setDeck, paintFoot: paintFoot,
     theme: function () { return theme; },
     selected: function () {
       var p = primary(); if (!p) return null;

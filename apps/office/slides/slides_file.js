@@ -18,7 +18,9 @@
    and tables:[{ x, y, w, h, rows, cols, header, border, bw, fill, hfill, cells:[[{ text, runs, bullets, align, list }]], z }].
    A higher version than 4 is refused by SL6.
    SL7 writes version 5 (and reads 1–5): optional notes (plain text), transition (none|fade|push|wipe; alias trans),
-   and ink (kept pen strokes, only when saved). A higher version than 5 is refused. */
+   and ink (kept pen strokes, only when saved). A higher version than 5 is refused by SL7.
+   SL8 writes version 6 (and reads 1–6): optional master { footer, number, date, when, skipTitle }, sections [{ id, name, fold }],
+   and per-slide hide, foot (hide|show), footer, sec. A higher version than 6 is refused. */
 (function () {
   'use strict';
   var MAX_BYTES = 40 * 1024 * 1024, MAX_SLIDES = 500, MAX_BULLETS = 200;   /* legacy (SL1 / SL2): MAX_BYTES = 5 MB */
@@ -39,8 +41,8 @@
   }
   function toJSON(deck) {
     /* legacy (SL1 / SL2): version 1, slides: [{ title, bullets }]. SL3: version 2 + theme, layout, bullets2, background, pictures. */
-    return {
-      format: 'hub-slides', version: 5, name: deck.name, created: iso(deck.created), updated: iso(deck.updated || Date.now()),
+    var out = {
+      format: 'hub-slides', version: 6, name: deck.name, created: iso(deck.created), updated: iso(deck.updated || Date.now()),
       theme: deck.theme || 'light',
       slides: deck.slides.map(function (s) {
         var titleOut = SLText.titleOut(s.title);
@@ -83,9 +85,21 @@
         var tr = window.SLPresent ? SLPresent.cleanTrans(s.trans) : (s.trans || 'none');
         if (tr && tr !== 'none') o.transition = tr;
         if (s.ink && s.ink.length && window.SLPresent) o.ink = SLPresent.inkOut(s.ink);
+        if (s.hide) o.hide = true;
+        if (s.foot === 'hide' || s.foot === 'show') o.foot = s.foot;
+        if (s.footer) o.footer = window.SLMaster ? SLMaster.cleanFooterText(s.footer) : String(s.footer);
+        if (s.sec) o.sec = String(s.sec).slice(0, 20);
         return o;
       })
     };
+    var m = window.SLMaster ? SLMaster.cleanMaster(deck.master) : (deck.master || {});
+    if (m && (m.footer || m.number || m.date || m.when || m.skipTitle === false)) {
+      out.master = { footer: m.footer || '', number: !!m.number, date: !!m.date, skipTitle: m.skipTitle !== false };
+      if (m.when) out.master.when = m.when;
+    }
+    var secs = window.SLMaster ? SLMaster.cleanSections(deck.sections) : (deck.sections || []);
+    if (secs && secs.length) out.sections = secs.map(function (s) { var q = { id: s.id, name: s.name }; if (s.fold) q.fold = true; return q; });
+    return out;
   }
   /* returns { deck } or { error } — never throws */
   function parse(text) {
@@ -94,7 +108,7 @@
     var j; try { j = JSON.parse(text.replace(/^\uFEFF/, '')); } catch (_) { return { error: 'This is not a Slides file (not valid JSON).' }; }
     if (!j || typeof j !== 'object' || Array.isArray(j)) return { error: 'This is not a Slides file.' };
     if (j.format !== 'hub-slides') return { error: 'This is not a Slides file (format is not "hub-slides").' };
-    if ((+j.version || 0) > 5) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
+    if ((+j.version || 0) > 6) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
     if (!Array.isArray(j.slides)) return { error: 'The file has no slides list.' };
     var slides = j.slides.slice(0, MAX_SLIDES).map(function (s) {
       s = s && typeof s === 'object' ? s : {};
@@ -104,7 +118,7 @@
       if (s.titleRuns || s.titleAlign) titleSrc = { text: typeof s.title === 'string' ? s.title : (s.title && s.title.text), runs: s.titleRuns || (s.title && s.title.runs), align: s.titleAlign || (s.title && s.title.align) };
       var o = { title: SLText.fromFileTitle(titleSrc), body: SLText.fromFileBullets(s.bullets != null ? s.bullets : s.body, { list: s.list || bl, max: 5000 }) };
       if (s.align) o.body = SLText.setAlign(o.body, s.align);
-      /* SL3 fields (version 2); SL5 rich runs / list / align / texts (version 3); SL6 shapes / tables (version 4); SL7 notes / transition / ink (version 5). Missing or wrong → SLSave.cleanSlide defaults. */
+      /* SL3 fields (version 2); SL5 rich runs / list / align / texts (version 3); SL6 shapes / tables (version 4); SL7 notes / transition / ink (version 5); SL8 hide / foot / sec (version 6). Missing or wrong → SLSave.cleanSlide defaults. */
       if (typeof s.layout === 'string') o.layout = s.layout;
       if (s.bullets2 != null) {
         o.body2 = SLText.fromFileBullets(s.bullets2, { list: s.list2 || 'bullet', max: 5000 });
@@ -126,11 +140,16 @@
       if (s.notes != null) o.notes = s.notes;
       if (s.transition != null || s.trans != null) o.trans = s.transition || s.trans;
       if (Array.isArray(s.ink)) o.ink = window.SLPresent ? SLPresent.inkIn(s.ink) : s.ink;
+      if (s.hide) o.hide = true;
+      if (s.foot != null) o.foot = s.foot;
+      if (s.footer != null) o.footer = s.footer;
+      if (s.sec != null) o.sec = s.sec;
       return SLSave.cleanSlide(o);
     });
     var t = Date.parse(j.created);
     return { deck: { name: String(j.name || '').trim().slice(0, 80) || 'Imported deck', created: isFinite(t) ? t : Date.now(), slides: slides,
-      theme: typeof j.theme === 'string' ? j.theme : 'light' },
+      theme: typeof j.theme === 'string' ? j.theme : 'light',
+      master: j.master, sections: j.sections },
       cut: j.slides.length > MAX_SLIDES };
   }
   function safeName(n) { return (String(n || 'slides').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').trim() || 'slides').slice(0, 60); }

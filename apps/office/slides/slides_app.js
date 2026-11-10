@@ -17,10 +17,12 @@
      undo covers shapes, tables and arrange.
    SL7: speaker notes (pane under the editor), Presenter view (F6; a second window, or one screen if the popup is
      blocked or storage is memory-only), pen / laser / B / W / transitions during Present; undo covers notes,
-     transitions and kept ink. */
+     transitions and kept ink.
+   SL8: more deck themes (colour + font; app chrome stays System / Light / Dark), master footer, hide slide, sections;
+     undo covers master, hide and section structure. */
 (function () {
   'use strict';
-  var VERSION = 'SL7';   /* legacy: 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  var VERSION = 'SL8';   /* legacy: 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -142,13 +144,16 @@
   }
   function renderAll() { SLList.render(deck.slides, deck.cur); showSlide(); }
   function showSlide() {
-    SLEdit.show(deck.slides[deck.cur], deck.theme || 'light');
-    $('pos').textContent = 'Slide ' + (deck.cur + 1) + ' of ' + deck.slides.length;
+    if (SLEdit.setDeck) SLEdit.setDeck(deck);
+    SLEdit.show(deck.slides[deck.cur], deck.theme || 'light', deck);
+    var s = deck.slides[deck.cur], hid = !!(s && s.hide);
+    $('pos').textContent = 'Slide ' + (deck.cur + 1) + ' of ' + deck.slides.length + (hid ? ' (hidden)' : '');
     $('b-up').disabled = deck.cur === 0; $('b-down').disabled = deck.cur === deck.slides.length - 1;
-    var s = deck.slides[deck.cur], ta = $('notes-in');
+    var ta = $('notes-in');
     if (ta && document.activeElement !== ta) ta.value = s.notes || '';
-    if ($('notes-slide')) $('notes-slide').textContent = 'Slide ' + (deck.cur + 1);
+    if ($('notes-slide')) $('notes-slide').textContent = 'Slide ' + (deck.cur + 1) + (hid ? ' (hidden)' : '');
     if ($('b-trans')) $('b-trans').value = SLPresent.cleanTrans(s.trans);
+    if ($('b-hide')) $('b-hide').setAttribute('aria-pressed', hid ? 'true' : 'false');
     syncRibbon();
   }
   /* SL4: ribbon state (theme buttons, delete, undo / redo) + the Quick Access bar */
@@ -164,11 +169,10 @@
     if (i === deck.cur || i < 0 || i >= deck.slides.length) return;
     flushNotes(true);
     SLSave.flush();
-    var old = deck.cur; deck.cur = i;
-    var kids = $('list-in').children;
-    if (kids[old]) { kids[old].classList.remove('cur'); kids[old].setAttribute('aria-current', 'false'); }
-    if (kids[i]) { kids[i].classList.add('cur'); kids[i].setAttribute('aria-current', 'true'); }
-    SLList.reveal(); showSlide(); dirty();
+    deck.cur = i;
+    unfoldAt(i, false);
+    SLList.render(deck.slides, deck.cur);
+    showSlide(); dirty();
   }
   /* SL3: a new slide takes the current slide's layout (Title and Section Header are followed by Title + Content) */
   function nextLayout() { var l = deck.slides[deck.cur].layout || 'tc'; return l === 'title' || l === 'sec' ? 'tc' : l; }
@@ -187,6 +191,8 @@
   function move(from, to) {
     if (to < 0 || to >= deck.slides.length || from === to) return;
     var s = deck.slides.splice(from, 1)[0]; deck.slides.splice(to, 0, s);
+    var neigh = to > 0 ? deck.slides[to - 1] : deck.slides[to + 1];
+    if (neigh) s.sec = neigh.sec || '';
     deck.cur = to; renderAll(); dirty();
   }
   function nudge(d) { move(deck.cur, deck.cur + d); }
@@ -258,7 +264,7 @@
   function present(fromStart) {
     if (SLShow.on()) return;
     prepareShow();
-    SLShow.enter(deck.slides, fromStart ? 0 : deck.cur, deck.theme || 'light');
+    SLShow.enter(deck.slides, fromStart ? 0 : deck.cur, deck.theme || 'light', { master: deck.master, onKeep: keepInk });
   }
   function presentView(fromStart) {
     if (SLShow.on()) return;
@@ -266,7 +272,7 @@
     var start = fromStart ? 0 : deck.cur, th = deck.theme || 'light';
     if (SLSave.memOnly) {
       toast('Presenter view on this screen (storage is memory only, so a second window cannot share the deck)', 2800);
-      SLShow.enter(deck.slides, start, th, { presenter: true, onKeep: keepInk });
+      SLShow.enter(deck.slides, start, th, { presenter: true, master: deck.master, onKeep: keepInk });
       return;
     }
     var key = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -275,10 +281,10 @@
     try { w = window.open(url, 'hub-slides-pv', 'width=1200,height=800'); } catch (_) { w = null; }
     if (!w) {
       toast('Presenter view on this screen (the browser blocked a second window)', 2600);
-      SLShow.enter(deck.slides, start, th, { presenter: true, onKeep: keepInk });
+      SLShow.enter(deck.slides, start, th, { presenter: true, master: deck.master, onKeep: keepInk });
       return;
     }
-    SLShow.enter(deck.slides, start, th, { presenter: false, key: key, popup: w, onKeep: keepInk });
+    SLShow.enter(deck.slides, start, th, { presenter: false, key: key, popup: w, master: deck.master, onKeep: keepInk });
   }
   /* SL3: pictures are written into the file, so wait for them to be loaded from IndexedDB first */
   function exportDeck() { SLSave.flush(); var d = deck; SLPics.hydrate(d).then(function () { var f = SLFile.download(d); toast('Exported ' + f); }); }
@@ -286,7 +292,7 @@
     SLSave.flush();
     /* pictures go to IndexedDB first, so the deck record stays small */
     return SLPics.storeAll(r.deck.slides).then(function () {
-      var d = SLSave.newDeck(uniqueName(r.deck.name), r.deck.slides, r.deck.theme);
+      var d = SLSave.newDeck(uniqueName(r.deck.name), r.deck.slides, r.deck.theme, { master: r.deck.master, sections: r.deck.sections });
       d.slides.forEach(function (s, i) { (s.pics || []).forEach(function (p, j) { var o = r.deck.slides[i] && r.deck.slides[i].pics[j]; if (o && !p.src) p.src = o.src; }); });
       showDeck(d); return d;
     });
@@ -313,6 +319,12 @@
     if (e.kind === 'theme') {
       to.push({ label: e.label, kind: 'theme', before: deck.theme });
       deck.theme = e.before; renderAll();
+    } else if (e.kind === 'master') {
+      to.push({ label: e.label, kind: 'master', before: snapMaster() });
+      applyMaster(e.before); renderAll();
+    } else if (e.kind === 'sections') {
+      to.push({ label: e.label, kind: 'sections', before: snapSecs() });
+      applySecs(e.before); renderAll();
     } else if (e.kind === 'trans-all') {
       var now = deck.slides.map(function (s) { return { id: s.id, trans: s.trans }; });
       to.push({ label: e.label, kind: 'trans-all', before: now, after: e.after });
@@ -332,6 +344,10 @@
       s.notes = SLPresent.cleanNotes(b.notes);
       s.trans = SLPresent.cleanTrans(b.trans);
       s.ink = SLPresent.cloneInk(b.ink);
+      s.hide = !!b.hide;
+      s.foot = SLMaster.cleanFoot(b.foot);
+      s.footer = SLMaster.cleanFooterText(b.footer);
+      s.sec = b.sec || '';
       /* text comes back only when it was not edited since (a layout change can move text between boxes) */
       if (e.after && sameText(e.after, s)) { s.title = SLText.clone(b.title); s.body = SLText.clone(b.body); s.body2 = SLText.clone(b.body2); }
       if (i !== deck.cur) { SLSave.flush(); deck.cur = i; renderAll(); } else { SLList.update(i); showSlide(); }
@@ -362,7 +378,7 @@
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
     b.innerHTML = '<div class="tile-s"><div class="mini-in slide sv"></div></div><span></span>';
     var mi = b.querySelector('.mini-in'); mi.style.transform = 'scale(' + (144 / 960) + ')';
-    SLEdit.paint(mi, slide, 0, { max: 6 }, th, 'mini-in slide sv');
+    SLEdit.paint(mi, slide, 0, { max: 6, noFoot: true }, th, 'mini-in slide sv');
     b.querySelector('span').textContent = label;
     return b;
   }
@@ -374,7 +390,7 @@
     g.textContent = ''; $('pick').dataset.kind = kind;
     $('pick-bg').hidden = kind !== 'theme';
     if (kind === 'theme') {
-      $('pick-h').textContent = 'Deck theme'; $('pick-m').textContent = 'Colours and fonts for every slide in “' + deck.name + '”.';
+      $('pick-h').textContent = 'Deck theme'; $('pick-m').textContent = 'Colours and fonts for every slide in “' + deck.name + '”. The app’s own Light / Dark look is unchanged.';
       SLSave.THEMES.forEach(function (t) {
         var sample = Object.assign({}, cur, { bg: '', pics: cur.pics || [] });
         if (!hasText(sample.title) && !hasText(sample.body)) sample = Object.assign({}, SAMPLE, { layout: cur.layout });
@@ -670,7 +686,7 @@
     if (a === 'new') newDeck(); else if (a === 'open') openDeck(); else if (a === 'rename') renameDeck();
     else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); } else if (a === 'export') exportDeck(); else if (a === 'deldeck') deleteDeck();
     else if (a === 'show0') present(true); else if (a === 'showcur') present(false);
-    else if (a === 'print') printDeck(); else if (a === 'printnotes') printNotes(); else if (a === 'pdf') exportPdf(); else if (a === 'settings') openSettings();
+    else if (a === 'print') printWithHidden(false, false); else if (a === 'printnotes') printNotes(); else if (a === 'pdf') exportPdf(); else if (a === 'settings') openSettings();
   });
   $('b-addlay').onclick = function () { openPick('add'); };
   $('b-lay').onclick = function () { openPick('layout'); };
@@ -688,7 +704,7 @@
     else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture(); else if (a === 'tbox') addTextBox();
     else if (a === 'shape') openShapePop($('b-shape') || $('b-more')); else if (a === 'table') openTablePop($('b-table') || $('b-more'));
     else if (a === 'undo') swap(undo, redo, 'Undo'); else if (a === 'redo') swap(redo, undo, 'Redo');
-    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pv') presentView(false); else if (a === 'notes') toggleNotes(); else if (a === 'pdf') exportPdf(); else if (a === 'printnotes') printNotes();
+    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pv') presentView(false); else if (a === 'notes') toggleNotes(); else if (a === 'master') openMaster(); else if (a === 'hide') toggleHide(); else if (a === 'sec') addSectionAt(); else if (a === 'pdf') exportPdf(); else if (a === 'printnotes') printNotes();
   });
   /* SL4 ribbon buttons (the rest keep their SL1 - SL3 ids and handlers above) */
   $('b-name').onclick = renameDeck;
@@ -767,25 +783,198 @@
   };
   setNotesOpen(notesWanted());
 
+  /* ---------- SL8 themes, master, hide, sections ---------- */
+  var TH_SW = { light: '#ffffff', dark: '#16181d', ocean: '#0369a1', forest: '#3f6b3a', sunset: '#c2410c', slate: '#334155', paper: '#faf6ee', midnight: '#0b1220' };
+  function fillSwatches() {
+    var box = $('th-swatches'); if (!box || box.childNodes.length) return;
+    SLSave.THEMES.forEach(function (t) {
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.theme = t[0];
+      b.title = t[1] + ' theme for every slide'; b.setAttribute('aria-label', t[1] + ' theme');
+      b.style.background = TH_SW[t[0]] || '#ccc';
+      if (t[0] === 'light' || t[0] === 'paper') b.style.borderColor = '#cbd5e1';
+      b.onclick = function () { setTheme(t[0]); syncRibbon(); };
+      box.appendChild(b);
+    });
+  }
+  function snapMaster() {
+    return { master: SLMaster.cloneMaster(deck.master), slides: deck.slides.map(function (s) { return { id: s.id, foot: s.foot, footer: s.footer }; }) };
+  }
+  function applyMaster(x) {
+    deck.master = SLMaster.cloneMaster(x.master);
+    (x.slides || []).forEach(function (it) {
+      var s = slideById(it.id); if (!s) return;
+      s.foot = SLMaster.cleanFoot(it.foot);
+      s.footer = SLMaster.cleanFooterText(it.footer);
+    });
+  }
+  function snapSecs() {
+    return {
+      sections: JSON.parse(JSON.stringify(deck.sections || [])),
+      secs: deck.slides.map(function (s) { return { id: s.id, sec: s.sec || '' }; }),
+      order: deck.slides.map(function (s) { return s.id; }),
+      cur: deck.cur
+    };
+  }
+  function applySecs(x) {
+    if (x.order && x.order.length === deck.slides.length) {
+      var map = {}; deck.slides.forEach(function (s) { map[s.id] = s; });
+      var next = x.order.map(function (id) { return map[id]; }).filter(Boolean);
+      if (next.length === deck.slides.length) deck.slides = next;
+    }
+    deck.sections = SLMaster.cleanSections(x.sections);
+    (x.secs || []).forEach(function (it) { var s = slideById(it.id); if (s) s.sec = it.sec || ''; });
+    if (typeof x.cur === 'number') deck.cur = Math.max(0, Math.min(deck.slides.length - 1, x.cur));
+    deck.sections = SLMaster.normalize(deck);
+  }
+  function unfoldAt(i, save) {
+    if (!deck || !window.SLMaster) return;
+    var r = SLMaster.runs(deck.slides, deck.sections), changed = false;
+    r.forEach(function (run) {
+      if (run.id && run.fold && i >= run.start && i <= run.end) {
+        deck.sections = SLMaster.setFold(deck.sections, run.id, false);
+        changed = true;
+      }
+    });
+    if (changed && save !== false) dirty();
+  }
+  function closeMaster() { if ($('master')) $('master').hidden = true; }
+  function openMaster() {
+    closeMenus(); if (!$('settings').hidden) $('settings').hidden = true;
+    var m = SLMaster.cleanMaster(deck.master), s = deck.slides[deck.cur];
+    $('m-footer').value = m.footer || '';
+    $('m-number').checked = !!m.number;
+    $('m-date').checked = !!m.date;
+    $('m-when').value = m.when || '';
+    $('m-skip').checked = m.skipTitle !== false;
+    $('m-foot').value = SLMaster.cleanFoot(s.foot);
+    $('m-footer-this').value = s.footer || '';
+    $('master').hidden = false;
+    try { $('m-footer').focus(); } catch (_) { /* */ }
+  }
+  function applyMasterDlg() {
+    var before = snapMaster();
+    deck.master = SLMaster.cleanMaster({
+      footer: $('m-footer').value,
+      number: $('m-number').checked,
+      date: $('m-date').checked,
+      when: $('m-when').value,
+      skipTitle: $('m-skip').checked
+    });
+    var s = deck.slides[deck.cur];
+    s.foot = SLMaster.cleanFoot($('m-foot').value);
+    s.footer = SLMaster.cleanFooterText($('m-footer-this').value);
+    pushUndo({ label: 'Master and footer', kind: 'master', before: before });
+    closeMaster(); renderAll(); dirty(); toast('Master updated');
+  }
+  function toggleHide() {
+    var s = deck.slides[deck.cur], b = SLSave.cloneSlide(s);
+    s.hide = !s.hide;
+    recordSlide(s, b, s.hide ? 'Hide slide' : 'Unhide slide');
+    renderAll(); dirty(); toast(s.hide ? 'Slide hidden from the show' : 'Slide will be shown');
+  }
+  function addSectionAt() {
+    dialog({ title: 'Add section', msg: 'Name a section starting at slide ' + (deck.cur + 1) + '. Later slides in the same group join it.',
+      input: { value: 'Section', placeholder: 'Section name' },
+      buttons: [{ label: 'Cancel', v: false }, { label: 'Add', v: true, cls: 'acc', ok: true }] })
+      .then(function (r) {
+        if (!r || r.v !== true) return;
+        var before = snapSecs();
+        var res = SLMaster.addSection(deck.slides, deck.sections, deck.cur, r.text);
+        if (res.error === 'max') { toast('A deck can have up to ' + SLMaster.MAX_SECTIONS + ' sections'); return; }
+        deck.sections = res.sections;
+        pushUndo({ label: 'Add section', kind: 'sections', before: before });
+        renderAll(); dirty(); toast('Section added');
+      });
+  }
+  function renameSection(id) {
+    var sec = (deck.sections || []).filter(function (s) { return s.id === id; })[0];
+    if (!sec) return;
+    dialog({ title: 'Rename section', msg: '', input: { value: sec.name, placeholder: 'Section name' },
+      buttons: [{ label: 'Cancel', v: false }, { label: 'Remove section', v: 'rm' }, { label: 'Rename', v: true, cls: 'acc', ok: true }] })
+      .then(function (r) {
+        if (!r) return;
+        var before = snapSecs();
+        if (r.v === 'rm') {
+          var out = SLMaster.removeSection(deck.slides, deck.sections, id);
+          deck.sections = out.sections;
+          pushUndo({ label: 'Remove section', kind: 'sections', before: before });
+          renderAll(); dirty(); toast('Section removed'); return;
+        }
+        if (r.v !== true) return;
+        deck.sections = SLMaster.renameSection(deck.sections, id, r.text);
+        pushUndo({ label: 'Rename section', kind: 'sections', before: before });
+        renderAll(); dirty();
+      });
+  }
+  function shiftSection(id, dir) {
+    var before = snapSecs();
+    if (!SLMaster.moveSection(deck.slides, deck.sections, id, dir)) return;
+    var r = SLMaster.runs(deck.slides, deck.sections).filter(function (x) { return x.id === id; })[0];
+    if (r) deck.cur = r.start;
+    pushUndo({ label: 'Move section', kind: 'sections', before: before });
+    renderAll(); dirty();
+  }
+  function moveSectionTo(id, to) {
+    var before = snapSecs();
+    if (!SLMaster.moveSectionTo(deck.slides, deck.sections, id, to)) return;
+    var r = SLMaster.runs(deck.slides, deck.sections).filter(function (x) { return x.id === id; })[0];
+    if (r) deck.cur = r.start;
+    pushUndo({ label: 'Move section', kind: 'sections', before: before });
+    renderAll(); dirty();
+  }
+  function foldSection(id) {
+    var sec = (deck.sections || []).filter(function (s) { return s.id === id; })[0];
+    if (!sec) return;
+    deck.sections = SLMaster.setFold(deck.sections, id, !sec.fold);
+    renderAll(); dirty();
+  }
+  $('b-themes').onclick = function () { openPick('theme'); };
+  $('b-master').onclick = openMaster;
+  $('b-hide').onclick = toggleHide;
+  $('b-sec').onclick = addSectionAt;
+  $('master-x').onclick = closeMaster;
+  $('master-cancel').onclick = closeMaster;
+  $('master-ok').onclick = applyMasterDlg;
+  $('master').addEventListener('click', function (e) { if (e.target.id === 'master') closeMaster(); });
+  $('master').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMaster(); }
+  });
+  fillSwatches();
+
   /* ---------- SL4 Print / Export PDF (slides_print.js) ---------- */
   var printing = false;
-  function printDeck(pdf, notes) {
+  function printDeck(pdf, notes, hidden) {
     if (printing || SLShow.on() || !deck) return Promise.resolve(false);
     closeMenus(); flushNotes(true); SLSave.flush(); SLEdit.select('');
-    printing = true; status('Preparing ' + deck.slides.length + (deck.slides.length === 1 ? ' page…' : ' pages…'));
-    return SLPrint.run(deck, { pdf: !!pdf, notes: !!notes }).then(function () { printing = false; SLSave.onSaved(true); return true; }, function () { printing = false; SLSave.onSaved(true); toast('Could not print'); return false; });
+    var n = (deck.slides || []).filter(function (s) { return hidden || !s.hide; }).length;
+    if (!n) n = deck.slides.length;
+    printing = true; status('Preparing ' + n + (n === 1 ? ' page…' : ' pages…'));
+    return SLPrint.run(deck, { pdf: !!pdf, notes: !!notes, hidden: !!hidden }).then(function () { printing = false; SLSave.onSaved(true); return true; }, function () { printing = false; SLSave.onSaved(true); toast('Could not print'); return false; });
+  }
+  function printWithHidden(pdf, notes) {
+    var nHide = deck.slides.filter(function (s) { return s.hide; }).length;
+    if (!nHide) return printDeck(pdf, notes, false);
+    return dialog({
+      title: 'Hidden slides',
+      msg: 'This deck has ' + nHide + ' hidden slide' + (nHide === 1 ? '' : 's') + '. Include them in the print, or leave them out (the default)?',
+      buttons: [{ label: 'Cancel', v: false }, { label: 'Leave out', v: 'out' }, { label: 'Include', v: 'in', cls: 'acc' }]
+    }).then(function (v) {
+      if (v === 'in') return printDeck(pdf, notes, true);
+      if (v === 'out') return printDeck(pdf, notes, false);
+      return false;
+    });
   }
   function printNotes() {
     closeMenus();
     return dialog({ title: 'Print notes pages', msg: 'Each page shows a smaller copy of the slide and its speaker notes (A4). Empty notes still print the slide. Ordinary Print stays one 16:9 page per slide.',
       buttons: [{ label: 'Cancel', v: false }, { label: 'Print', v: true, cls: 'acc' }] })
-      .then(function (v) { return v === true ? printDeck(false, true) : false; });
+      .then(function (v) { return v === true ? printWithHidden(false, true) : false; });
   }
   function exportPdf() {
     closeMenus();
     return dialog({ title: 'Export PDF', msg: 'The print window opens with one 16:9 page per slide (' + deck.slides.length + (deck.slides.length === 1 ? ' page' : ' pages') +
       ', pictures, shapes, tables and theme included). Choose “Save as PDF” as the destination (Printer), then Save.', buttons: [{ label: 'Cancel', v: false }, { label: 'Continue', v: true, cls: 'acc' }] })
-      .then(function (v) { return v === true ? printDeck(true) : false; });
+      .then(function (v) { return v === true ? printWithHidden(true, false) : false; });
   }
   SLPrint.source(function () { return deck; });
   menuKeys($('menu-deck')); menuKeys($('menu-slide'));
@@ -809,7 +998,7 @@
     if (e.key === 'F6' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); if ($('dialog').hidden) presentView(!!e.shiftKey); return; }
     if (e.key === 'F5' && e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); if ($('dialog').hidden) presentView(!e.shiftKey); return; }
     if (!$('pick').hidden) { if (e.key === 'Escape') { e.preventDefault(); closePick(); } return; }   /* the picker's own keys are on #pick */
-    if (!$('dialog').hidden || !$('settings').hidden) return;
+    if (!$('dialog').hidden || !$('settings').hidden || ($('master') && !$('master').hidden)) return;
     var tg = e.target, typing = tg && (tg.tagName === 'TEXTAREA' || tg.tagName === 'INPUT' || tg.isContentEditable);
     var menus = !$('menu-deck').hidden || !$('menu-slide').hidden;
     /* SL3: app undo / redo outside the text boxes (inside them the browser's own text undo works).
@@ -860,7 +1049,12 @@
     SLEdit.fit();
     try { $('b-show').focus({ preventScroll: true }); } catch (_) { /* */ }
   }, onKeep: keepInk });
-  SLList.init({ onSelect: select, onMove: move, onNudge: nudge, onEnter: function () { SLEdit.focusTitle(); }, theme: function () { return deck ? deck.theme || 'light' : 'light'; } });
+  SLList.init({
+    onSelect: select, onMove: move, onNudge: nudge, onEnter: function () { SLEdit.focusTitle(); },
+    theme: function () { return deck ? deck.theme || 'light' : 'light'; },
+    context: function () { return deck || { slides: [], master: {}, sections: [] }; },
+    onFold: foldSection, onShiftSection: shiftSection, onRenameSection: renameSection, onMoveSection: moveSectionTo
+  });
 
   /* ---------- SL4 ribbon + Quick Access + Hub bar ---------- */
   var TABS = [{ id: 'home', label: 'Home' }, { id: 'insert', label: 'Insert' }, { id: 'design', label: 'Design' }, { id: 'show', label: 'Slide Show' }];
@@ -877,14 +1071,14 @@
     var f = m.querySelector('button'); if (f) f.focus();
   }
   $('b-deck').addEventListener('click', function () { if (!$('menu-deck').hidden) { $('menu-slide').hidden = true; var f = $('menu-deck').querySelector('button'); if (f) f.focus(); } });
-  function blocked() { return SLShow.on() || !$('dialog').hidden || !$('settings').hidden || !$('pick').hidden; }
+  function blocked() { return SLShow.on() || !$('dialog').hidden || !$('settings').hidden || !$('pick').hidden || ($('master') && !$('master').hidden); }
   OfficeQuick.register({
     app: 'Slides',
     undo: function () { if (!blocked()) swap(undo, redo, 'Undo'); }, redo: function () { if (!blocked()) swap(redo, undo, 'Redo'); },
     canUndo: function () { return !!deck && undo.length > 0; }, canRedo: function () { return !!deck && redo.length > 0; },
     save: function () { if (!deck) return false; SLSave.saveDeck(deck); return SLSave.flush() !== false && !SLSave.memOnly; },
     canSave: function () { return !!deck; },
-    print: function () { if (!blocked()) printDeck(false); },
+    print: function () { if (!blocked()) printWithHidden(false, false); },
     /* Ctrl+Z / Y: the app undo outside the text boxes; inside them (and in dialogs) the browser's own text undo */
     undoKey: function (ev) { var t = ev.target; return !blocked() && !(t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)); },
     tabs: function () { return [{ id: 'file', label: 'File' }].concat(TABS); },
@@ -910,7 +1104,7 @@
       }
       deck = d;
       function startPv() {
-        SLShow.enter(deck.slides, 0, deck.theme || 'light', { presenter: true, satellite: true, key: key, onKeep: keepInk });
+        SLShow.enter(deck.slides, 0, deck.theme || 'light', { presenter: true, satellite: true, key: key, master: deck.master, onKeep: keepInk });
       }
       if (window.SLPics && SLPics.hydrate) SLPics.hydrate(d).then(startPv, startPv); else startPv();
       return;
