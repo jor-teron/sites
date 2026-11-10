@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<!--
+  Read Aloud (RA2) -- standalone reader for News headlines, pasted or opened text, PDFs, and web pages.
+  Modules: ra_store, ra_text, ra_speech, ra_news, ra_web, ra_pdf (lazy pdf.js), ra_ui.
+  Does not edit the News app or write News settings/seen. Release RA2 (RA1: News + Text).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#141821">
+  <title>Read Aloud · RA2</title>
+  <link rel="icon" href="read-aloud_icon.svg">
+  <link rel="stylesheet" href="read-aloud.css?v=RA2">
+  <script src="../../../shared/theme/hub_theme.js"></script>
+  <script>
+    try {
+      var s = JSON.parse(localStorage.getItem('readaloud.theme') || '"auto"'), t = localStorage.getItem('sites-hub.theme');
+      var m = (s === 'light' || s === 'dark') ? s : (t === 'dark' ? 'dark' : 'light');
+      document.documentElement.dataset.ra = m;
+    } catch (e) { document.documentElement.dataset.ra = 'light'; }
+  </script>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <h1 class="brand">🔊 Read Aloud</h1>
+    <div class="srcseg" id="srcSeg" role="tablist" aria-label="Source">
+      <button type="button" class="nb" data-src="news" role="tab" aria-selected="true">News</button>
+      <button type="button" class="nb" data-src="text" role="tab" aria-selected="false">Text</button>
+      <button type="button" class="nb" data-src="pdf" role="tab" aria-selected="false">PDF</button>
+      <button type="button" class="nb" data-src="web" role="tab" aria-selected="false">Web</button>
+    </div>
+    <button type="button" class="nb" id="btnRef" title="Refresh news" aria-label="Refresh news">↻</button>
+    <button type="button" class="nb" id="btnSet" title="Settings" aria-label="Settings">⚙</button>
+  </header>
+  <nav id="newsTabs" class="tabs" role="tablist" aria-label="News tabs"></nav>
+  <div id="banner" class="banner" hidden role="status"></div>
+  <div id="status" class="status" aria-live="polite"></div>
+  <main id="main">
+    <section id="paneNews" class="pane on" aria-label="News headlines"></section>
+    <section id="paneText" class="pane" aria-label="Text to read" hidden>
+      <div class="textbar">
+        <button type="button" class="nb wide" id="btnOpen">Open file</button>
+        <input id="fileIn" type="file" accept=".txt,.md,text/plain,text/markdown" hidden>
+        <button type="button" class="nb wide" id="btnClear">Clear</button>
+        <span id="textMeta" class="mut"></span>
+      </div>
+      <label class="sr" for="textIn">Text to read</label>
+      <textarea id="textIn" rows="6" placeholder="Paste text here, or open a .txt or .md file. It is read sentence by sentence."></textarea>
+      <div id="sentList" class="slist" aria-label="Sentences"></div>
+    </section>
+    <section id="panePdf" class="pane" aria-label="PDF to read" hidden>
+      <div class="textbar">
+        <button type="button" class="nb wide" id="btnOpenPdf">Open PDF</button>
+        <input id="pdfIn" type="file" accept=".pdf,application/pdf" hidden>
+        <span id="pdfName" class="mut"></span>
+        <label class="goto" id="pdfGoto" hidden>Page <input id="pdfPage" type="number" min="1" value="1" inputmode="numeric" aria-label="Page number"> of <span id="pdfPages">0</span>
+          <button type="button" class="nb wide" id="btnGoPage">Go</button>
+        </label>
+        <span id="pdfMeta" class="mut"></span>
+      </div>
+      <div id="pdfList" class="slist" aria-label="PDF sentences"></div>
+    </section>
+    <section id="paneWeb" class="pane" aria-label="Web page to read" hidden>
+      <form id="webForm" class="textbar" action="#">
+        <label class="sr" for="webUrl">Web address</label>
+        <input id="webUrl" type="url" placeholder="https://example.com/article" autocomplete="url" enterkeyhint="go">
+        <button type="submit" class="nb wide pri" id="btnFetch">Fetch</button>
+        <span id="webMeta" class="mut"></span>
+      </form>
+      <h2 id="webTitle" class="web-title" hidden></h2>
+      <div id="webList" class="slist" aria-label="Article sentences"></div>
+    </section>
+  </main>
+  <footer class="player" id="player">
+    <div class="now" id="nowPlaying" aria-live="polite">Nothing to read yet</div>
+    <div class="prow">
+      <button type="button" class="chip" id="btnSleep" title="Sleep timer" aria-label="Sleep timer">Sleep off</button>
+      <div class="pbtns">
+        <button type="button" class="nb play" id="btnPrev" title="Previous" aria-label="Previous">⏮</button>
+        <button type="button" class="nb play pri" id="btnPlay" title="Play" aria-label="Play">▶</button>
+        <button type="button" class="nb play" id="btnNext" title="Next" aria-label="Next">⏭</button>
+        <button type="button" class="nb play" id="btnStop" title="Stop" aria-label="Stop">⏹</button>
+      </div>
+    </div>
+  </footer>
+</div>
+<dialog id="settings" class="dlg" aria-labelledby="setTitle">
+  <div class="dlg-head"><h2 id="setTitle">Settings</h2><button type="button" class="nb" id="setClose" aria-label="Close">✕</button></div>
+  <h3>Theme</h3>
+  <div class="seg" id="setTheme" role="radiogroup" aria-label="Theme"></div>
+  <h3>Voice</h3>
+  <select id="setVoice" aria-label="Voice"></select>
+  <button type="button" class="nb wide" id="btnTest" style="margin-top:8px">Test voice</button>
+  <h3>Speed</h3>
+  <label class="rng"><input id="setRate" type="range" min="0.75" max="2" step="0.05" value="1"><span id="setRateVal">1×</span></label>
+  <h3>Pitch</h3>
+  <label class="rng"><input id="setPitch" type="range" min="0.5" max="1.5" step="0.05" value="1"><span id="setPitchVal">1</span></label>
+  <h3>Sleep timer</h3>
+  <div class="seg" id="setSleep" role="radiogroup" aria-label="Sleep timer"></div>
+  <h3>News</h3>
+  <label class="chk"><input id="setOnlyNew" type="checkbox"> Only new stories</label>
+  <p class="hint">Uses the browser’s built-in voice (no key, works offline for Saved, pasted text, and opened PDFs). News headlines come from the same cache as the News app. Web pages are fetched through a free relay and often fail. Auto theme follows the Hub. Release RA2.</p>
+</dialog>
+<dialog id="sleepDlg" class="dlg" aria-labelledby="sleepTitle">
+  <div class="dlg-head"><h2 id="sleepTitle">Sleep timer</h2><button type="button" class="nb" id="sleepClose" aria-label="Close">✕</button></div>
+  <div class="seg" id="sleepSeg" role="radiogroup" aria-label="Sleep timer"></div>
+  <p class="hint">Stops reading when the time is up (after the current sentence) or at the end of the current item.</p>
+</dialog>
+<script src="../../media/news/news_store.js"></script>
+<script src="../../media/news/news_feed.js"></script>
+<script src="ra_store.js?v=RA2"></script>
+<script src="ra_text.js?v=RA2"></script>
+<script src="ra_speech.js?v=RA2"></script>
+<script src="ra_news.js?v=RA2"></script>
+<script src="ra_web.js?v=RA2"></script>
+<script src="ra_pdf.js?v=RA2"></script>
+<script src="ra_ui.js?v=RA2"></script>
+</body>
+</html>
