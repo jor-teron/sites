@@ -845,6 +845,14 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Formula hint under the formula bar while typing; fx button opens a searchable in-app function picker (inserts NAME().).
 - Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH9. Storage still sheet-v3. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
+### 1.80 Spreadsheet data tools, release SH10
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Find and replace (this sheet or all sheets, optional match case). Replace edits stored cell text only, not a calculated result; undoable. Ctrl/Cmd+F and Ctrl/Cmd+H. In-app panel (no window.prompt).
+- Header-row filter dropdowns on the used area or selection (unique values + blanks). Filter-hidden rows are separate from View → Hide. Multi-column Sort… with a "has header row" option. Data validation dropdown (comma list or a range). Remove duplicates (chosen columns, optional header) inside the block only. All undoable.
+- Storage still sheet-v3; filters and validations are optional fields, so older v3 files still open. Title / SHEET_VERSION / ?v=: SH10. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

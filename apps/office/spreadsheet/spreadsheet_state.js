@@ -32,6 +32,7 @@ var cells = [];
 var colWidths = [];
 var hiddenRows = [];
 var hiddenCols = [];
+var filterHidden = [];
 var freeze = { rows: 0, cols: 0 };
 
 /* Sheet the evaluator is reading (equals workbook.active except during recalc) */
@@ -99,6 +100,9 @@ function makeSheet(name) {
     widths: widthsArray(),
     hiddenRows: flags(ROWS),
     hiddenCols: flags(COLS),
+    filterHidden: flags(ROWS),
+    filters: { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
+    validations: [],
     freeze: { rows: 0, cols: 0 },
     sel: [CFG.start.row, CFG.start.col, CFG.start.row, CFG.start.col, CFG.start.mode]
   };
@@ -118,6 +122,10 @@ function bindActiveSheet() {
   colWidths = s.widths;
   hiddenRows = s.hiddenRows;
   hiddenCols = s.hiddenCols;
+  if (!s.filterHidden) s.filterHidden = flags(ROWS);
+  if (!s.filters) s.filters = { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };
+  if (!s.validations) s.validations = [];
+  filterHidden = s.filterHidden;
   freeze = s.freeze;
   evalSheetIdx = workbook.active;
 }
@@ -137,10 +145,13 @@ function emptyGrid() {
   for (r = 0; r < ROWS; r++) {
     for (c = 0; c < COLS; c++) s.cells[r][c] = blankCell();
     s.hiddenRows[r] = false;
+    s.filterHidden[r] = false;
   }
   for (c = 0; c < COLS; c++) { s.widths[c] = null; s.hiddenCols[c] = false; }
   s.freeze.rows = 0;
   s.freeze.cols = 0;
+  s.filters = { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };
+  s.validations = [];
   bindActiveSheet();
 }
 
@@ -234,9 +245,19 @@ function nextVisible(r, c, dr, dc) {
   while (guard++ < ROWS + COLS) {
     nr += dr; nc += dc;
     if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return { r: r, c: c };
-    if ((dr === 0 || !hiddenRows[nr]) && (dc === 0 || !hiddenCols[nc]) && !hiddenRows[nr] && !hiddenCols[nc]) {
+    if ((dr === 0 || !rowHidden(nr)) && (dc === 0 || !hiddenCols[nc]) && !rowHidden(nr) && !hiddenCols[nc]) {
       return { r: nr, c: nc };
     }
   }
   return { r: r, c: c };
+}
+
+
+/* SH10: a row is hidden if the user hid it or a filter hid it. */
+function rowHidden(r, si) {
+  var s = workbook && workbook.sheets[si == null ? workbook.active : si];
+  if (!s) return !!(hiddenRows[r]);
+  if (s.hiddenRows && s.hiddenRows[r]) return true;
+  if (s.filterHidden && s.filterHidden[r]) return true;
+  return false;
 }

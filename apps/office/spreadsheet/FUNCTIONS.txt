@@ -118,6 +118,7 @@ SHORTCUTS (Ctrl or Cmd)
   Z undo · Y / Shift+Z redo · A select all
   C / X / V copy, cut, paste (tab-separated)
   D fill down · R fill right
+  F find · H find and replace
   Shift+arrows / drag / Shift+click   select a block
   Delete / Backspace                  clear selection
   F2 / double-click                   edit, keeping the text

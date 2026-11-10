@@ -30,7 +30,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet_select.js`: block selection (drag, Shift+click, Shift+arrows, select all)
 - `spreadsheet_clipboard.js`: copy / cut / paste, fill down / right
 - `spreadsheet_rows.js`: insert / delete rows and columns
-- `spreadsheet_sort.js`: sort
+- `spreadsheet_sort.js`: one-column sort (A→Z / Z→A)
+- `spreadsheet_data.js`: SH10 find and replace, header-row filters, multi-column sort, list validation, remove duplicates
 - `spreadsheet_resize.js`: column widths
 - `spreadsheet_keys.js`: Ctrl/Cmd shortcuts
 - `FUNCTIONS.txt`: list of formulas and shortcuts (opened by the Functions button)
@@ -42,7 +43,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list.
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
-- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, insert/delete, sort, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
+- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
 - **Copy / paste:**
   - Copy puts tab-separated values on the system clipboard, so it pastes into Excel or Google Sheets.
   - Pasting the app's own copy brings formulas and styles and shifts relative refs.
@@ -51,7 +52,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
   - Text from other apps (tab-separated) goes in as typed text, starting at the active cell.
 - **Fill:** Ctrl+D copies the top row of the block down; Ctrl+R copies the left column right. The small handle on the active cell drags to autofill.
 - **Insert / delete:** + Row / − Row / + Col / − Col act on the selected rows or columns. Formula refs are adjusted on every sheet (including `Sheet2!A1` refs that point at the changed sheet), ranges grow or shrink, refs to deleted cells become `#REF!`. The grid stays 26 × 100, so insert is refused when the last row/column has data.
-- **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. There is no header-row detection.
+- **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. **Sort…** (SH10) sorts by up to three columns and can keep a header row.
 - **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
 - **Column widths:** drag the right edge of a column letter; double-click it to reset. Widths are saved.
 - **Styles:** align, bold, italic, underline, fill colour, text colour for the selection.
@@ -68,6 +69,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - Ctrl/Cmd+A selects all
 - Ctrl/Cmd+C / X / V copy, cut, paste
 - Ctrl/Cmd+D fill down; Ctrl/Cmd+R fill right
+- Ctrl/Cmd+F find; Ctrl/Cmd+H find and replace
 - While typing in a cell or the formula bar, the browser's own text shortcuts apply.
 
 Works inside the hub and responds to its phone D-pad, but the hub's key presses are synthetic: only shortcuts the app handles itself work (arrows move, Start = Enter, Select = Esc); browser actions such as the system clipboard don't, so a hub paste uses the app's internal copy.
@@ -108,7 +110,7 @@ localStorage key `sheet-v3` (workbook: sheets, active sheet, cells, styles, form
 - Column widths aren't part of undo.
 - Copy puts raw values on the system clipboard, not formatted text.
 - Cut + paste doesn't update other formulas that pointed at the moved cells.
-- Sort has no header-row detection (select below the header).
+- The one-click A→Z / Z→A buttons still have no header-row detection (use Sort… for a header).
 - In the hub, paste uses only the internal copy.
 - Old version after an update: hard-refresh.
 
@@ -154,3 +156,14 @@ The grid is still 26 × 100.
 - **Hint / picker:** while a formula is being typed in a cell or the formula bar, a hint lists the current function and highlights the argument. The **fx** button opens a searchable in-app list; picking a function inserts `NAME(`.
 - Title, `SHEET_VERSION` and `?v=` on this app's own css/js are SH9. Storage is still `sheet-v3` (no new saved fields).
 - **Limits:** `TEXT` only covers the formats listed above (not every Excel custom format). `AVERAGEIFS` is also implemented but is not in the plan list. `RAND` / `RANDBETWEEN` change on every recalculation. Approximate lookup on an unsorted first column follows Excel and can return the wrong row. Date serials before 1 March 1900 may be a day off Excel.
+
+## SH10 — data tools
+The grid is still 26 × 100. Storage is still `sheet-v3`; filters and validation lists are extra optional fields (an older v3 file still opens).
+
+- **Find and replace:** Data → Find, or Ctrl/⌘+F (Ctrl/⌘+H focuses Replace). Search this sheet or all sheets, optional match case. Find looks in stored text and in calculated values; Replace only changes stored text (a match that is only a formula result is left alone, with a status message). Replace and Replace all can be undone.
+- **Filter:** Data → Filter puts arrows on the header row of the used area (or of the selection). Each arrow lists the unique values and blanks. Filtered rows are hidden separately from View → Hide, so Unhide does not clear a filter. Clear filter resets the choices; Filter again turns the arrows off. Arrow-key movement and print skip filtered rows; CSV still includes them.
+- **Sort…:** up to three columns, with a "My data has a header row" option that keeps the first row of the range where it is.
+- **Data validation:** a dropdown list for the selection, from a comma-separated list or a range (`A1:A10`, `Sheet2!A1:A10`). A typed value that is not in the list gets an in-app confirm (Keep / Cancel). Formulas in a validated cell are allowed.
+- **Remove duplicates:** compares the chosen columns in the selected block (or used area), keeps the first row of each set, and can treat the first row as a header. Only cells inside the block move; the rest of the sheet is left alone.
+- Title, `SHEET_VERSION` and `?v=` are SH10.
+- **Limits:** Find does not support regular expressions or "match entire cell". Filter is a simple unique-value list (no colour or custom conditions). Validation is a dropdown list only (no number or date rules). Remove duplicates is case-insensitive.

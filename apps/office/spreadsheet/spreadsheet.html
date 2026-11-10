@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- legacy: <title>Spreadsheet</title> -->
-  <title>Spreadsheet SH9</title>
+  <title>Spreadsheet SH10</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css?v=SH9">
+  <link rel="stylesheet" href="spreadsheet.css?v=SH10">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-colour.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH9">
-  <link rel="stylesheet" href="spreadsheet_page.css?v=SH9">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH10">
+  <link rel="stylesheet" href="spreadsheet_page.css?v=SH10">
 </head>
 <body>
   <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS by ../shared/office-ribbon.js) -->
@@ -126,8 +126,20 @@
     </div>
     <div class="of-panel" role="tabpanel" id="of-panel-data" data-tab="data" hidden>
       <div class="of-group tool-group">
+        <button type="button" id="btn-find" title="Find and replace (Ctrl/⌘+F)">Find</button>
+      </div>
+      <div class="of-group tool-group">
         <button type="button" id="btn-sort-asc" title="Sort A→Z by the active column">Sort A→Z</button>
         <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
+        <button type="button" id="btn-sort-more" title="Sort by more than one column, with an optional header row">Sort…</button>
+      </div>
+      <div class="of-group tool-group">
+        <button type="button" id="btn-filter" title="Show filter arrows on the header row of the used area or selection">Filter</button>
+        <button type="button" id="btn-filter-clear" title="Clear filter choices (keeps the arrows)">Clear filter</button>
+      </div>
+      <div class="of-group tool-group">
+        <button type="button" id="btn-valid" title="Set a dropdown list for the selected cells">Data validation</button>
+        <button type="button" id="btn-dups" title="Remove duplicate rows from the selection">Remove duplicates</button>
       </div>
     </div>
     <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
@@ -163,6 +175,30 @@
     <input id="fx-picker-q" type="search" placeholder="Search functions" aria-label="Search functions" autocomplete="off">
     <div id="fx-picker-list" class="fx-picker-list"></div>
   </div>
+  <div id="data-find" class="data-panel" hidden role="dialog" aria-label="Find and replace">
+    <div class="fx-picker-head">
+      <strong>Find and replace</strong>
+      <button type="button" class="fx-picker-close" data-find-close="1" title="Close" aria-label="Close">×</button>
+    </div>
+    <label class="data-field">Find <input id="data-find-q" type="text" autocomplete="off"></label>
+    <label class="data-field">Replace with <input id="data-find-r" type="text" autocomplete="off"></label>
+    <label class="data-check"><input type="checkbox" id="data-find-case"> Match case</label>
+    <div class="data-scope">
+      <label class="data-check"><input type="radio" name="data-find-scope" value="sheet" checked> This sheet</label>
+      <label class="data-check"><input type="radio" name="data-find-scope" value="book"> All sheets</label>
+    </div>
+    <div class="data-actions">
+      <button type="button" id="data-find-next">Find next</button>
+      <button type="button" id="data-find-rep">Replace</button>
+      <button type="button" id="data-find-all">Replace all</button>
+    </div>
+  </div>
+  <div id="data-sort" class="data-panel" hidden role="dialog" aria-label="Sort"></div>
+  <div id="data-dups" class="data-panel" hidden role="dialog" aria-label="Remove duplicates"></div>
+  <div id="data-valid" class="data-panel" hidden role="dialog" aria-label="Data validation"></div>
+  <div id="data-filter" class="data-panel data-filter-menu" hidden role="dialog" aria-label="Filter"></div>
+  <button type="button" id="data-valid-arrow" class="data-valid-arrow" hidden title="Pick a value" aria-label="Pick a value" aria-haspopup="listbox">▾</button>
+  <div id="data-valid-list" class="data-panel" hidden role="listbox" aria-label="Allowed values"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
   <div class="sheet-footer" id="sheet-footer">
     <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Sheets"></div>
@@ -182,33 +218,34 @@
   <script src="../shared/office-colour.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="spreadsheet_config.js?v=SH9"></script>
-  <script src="spreadsheet_formula.js?v=SH9"></script>
-  <script src="spreadsheet_functions.js?v=SH9"></script>
-  <script src="spreadsheet_fx.js?v=SH9"></script>
-  <script src="spreadsheet_refs.js?v=SH9"></script>
-  <script src="spreadsheet_state.js?v=SH9"></script>
-  <script src="spreadsheet_storage.js?v=SH9"></script>
-  <script src="spreadsheet_files.js?v=SH9"></script>
-  <script src="spreadsheet_grid.js?v=SH9"></script>
-  <script src="spreadsheet_edit.js?v=SH9"></script>
-  <script src="spreadsheet_fill.js?v=SH9"></script>
-  <script src="spreadsheet_toolbar.js?v=SH9"></script>
-  <script src="spreadsheet_settings.js?v=SH9"></script>
-  <script src="spreadsheet_page.js?v=SH9"></script>
-  <script src="spreadsheet_ribbon.js?v=SH9"></script>
-  <script src="spreadsheet_logic.js?v=SH9"></script>
-  <script src="spreadsheet_format.js?v=SH9"></script>
-  <script src="spreadsheet_undo.js?v=SH9"></script>
-  <script src="spreadsheet_select.js?v=SH9"></script>
-  <script src="spreadsheet_clipboard.js?v=SH9"></script>
-  <script src="spreadsheet_rows.js?v=SH9"></script>
-  <script src="spreadsheet_sheets.js?v=SH9"></script>
-  <script src="spreadsheet_sort.js?v=SH9"></script>
-  <script src="spreadsheet_resize.js?v=SH9"></script>
-  <script src="spreadsheet_keys.js?v=SH9"></script>
-  <script src="spreadsheet_xlsx.js?v=SH9"></script>
-  <script src="spreadsheet_hub.js?v=SH9"></script>
-  <script src="spreadsheet_quick.js?v=SH9"></script>
+  <script src="spreadsheet_config.js?v=SH10"></script>
+  <script src="spreadsheet_formula.js?v=SH10"></script>
+  <script src="spreadsheet_functions.js?v=SH10"></script>
+  <script src="spreadsheet_fx.js?v=SH10"></script>
+  <script src="spreadsheet_refs.js?v=SH10"></script>
+  <script src="spreadsheet_state.js?v=SH10"></script>
+  <script src="spreadsheet_storage.js?v=SH10"></script>
+  <script src="spreadsheet_files.js?v=SH10"></script>
+  <script src="spreadsheet_grid.js?v=SH10"></script>
+  <script src="spreadsheet_edit.js?v=SH10"></script>
+  <script src="spreadsheet_fill.js?v=SH10"></script>
+  <script src="spreadsheet_toolbar.js?v=SH10"></script>
+  <script src="spreadsheet_settings.js?v=SH10"></script>
+  <script src="spreadsheet_page.js?v=SH10"></script>
+  <script src="spreadsheet_ribbon.js?v=SH10"></script>
+  <script src="spreadsheet_logic.js?v=SH10"></script>
+  <script src="spreadsheet_format.js?v=SH10"></script>
+  <script src="spreadsheet_undo.js?v=SH10"></script>
+  <script src="spreadsheet_select.js?v=SH10"></script>
+  <script src="spreadsheet_clipboard.js?v=SH10"></script>
+  <script src="spreadsheet_rows.js?v=SH10"></script>
+  <script src="spreadsheet_sheets.js?v=SH10"></script>
+  <script src="spreadsheet_sort.js?v=SH10"></script>
+  <script src="spreadsheet_data.js?v=SH10"></script>
+  <script src="spreadsheet_resize.js?v=SH10"></script>
+  <script src="spreadsheet_keys.js?v=SH10"></script>
+  <script src="spreadsheet_xlsx.js?v=SH10"></script>
+  <script src="spreadsheet_hub.js?v=SH10"></script>
+  <script src="spreadsheet_quick.js?v=SH10"></script>
 </body>
 </html>
