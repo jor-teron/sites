@@ -1452,7 +1452,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   on the original page box; Shrink is rasterisation, not a smart compressor;
   unusual characters become ?. Details: apps/office/pdf-tools/pdf-tools_readme.md.
 
-### 1.70 PDF Tools fill and sign, release P5
+### 1.83 PDF Tools fill and sign, release P5
 
 - apps/office/pdf-tools only, on top of P4. Fill existing AcroForm fields
   (pdf-lib getForm / setText / check / select, optional flatten on Save).
