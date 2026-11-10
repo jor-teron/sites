@@ -12,9 +12,14 @@
  */
 function afterChange() {
   recalcAll();
+  if (typeof applyFilters === "function") applyFilters();
+  if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
   paintAll();
+  if (typeof dataRenderFilterButtons === "function") dataRenderFilterButtons();
+  if (typeof renderCharts === "function") renderCharts();
   syncStyleUi();
   saveStore();
+  if (typeof updateStats === "function") updateStats();
 }
 
 /**
@@ -22,10 +27,15 @@ function afterChange() {
  */
 function boot() {
   var i;
-  emptyGrid();
+  emptyWorkbook();
   loadStore();
   recalcAll();
+  if (typeof applyFilters === "function") {
+    var si;
+    for (si = 0; si < workbook.sheets.length; si++) applyFilters(si);
+  }
   buildTable();
+  if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
   wireUi();
   document.addEventListener("keydown", onDocKey);
   for (i = 0; i < SHEET_INIT.length; i++) {

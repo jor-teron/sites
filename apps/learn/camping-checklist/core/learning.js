@@ -1,0 +1,93 @@
+/* Short practical notes. General planning guidance, not expedition or medical training. */
+(function (root, factory) {
+  const value = factory();
+  if (typeof module === 'object' && module.exports) module.exports = value;
+  else root.CCLearn = value;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  const tips = {
+    pack: ['Carries the load close to your body.', 'Adjust the hip belt; keep heavy items near your back. Check the actual loaded weight.'],
+    tent: ['Shelter from wind, insects and rain.', 'Practise pitching; dry it before storage. Never cook or burn fuel inside a tent.'],
+    ground: ['Protects the tent floor.', 'Tuck edges under the fly so rain cannot collect on it.'],
+    tarp: ['Backup cover if delayed or injured.', 'Keep accessible; an emergency bivvy is not a substitute for planned overnight shelter.'],
+    bag: ['Insulation for the forecast night temperature.', 'Use the comfort rating, not the survival limit; keep it dry in a liner.'],
+    mat: ['Reduces heat lost to the ground.', 'Check insulation rating for cold ground; carry a repair patch for inflatable mats.'],
+    pillow: ['May improve sleep.', 'A soft spare layer in a bag can replace it.'],
+    stove: ['Heats meals and can boil water.', 'Use outdoors on stable ground, away from tents. Follow fire bans and fuel instructions.'],
+    fuel: ['Supplies the stove for planned meals.', 'Check compatibility and remaining fuel. Estimate for wind and altitude; transport legally.'],
+    pot: ['Holds cooking and boiling water.', 'Use a lid to save fuel; let it cool before packing.'],
+    bowl: ['Lets everyone eat without sharing dirty utensils.', 'Clean away from waterways; pack out food scraps.'],
+    food: ['Replaces energy used walking and staying warm.', 'Check packet calories and allergies. 800 g is only a placeholder; keep food animal-proof.'],
+    snack: ['Ready-to-eat food if a meal or return is delayed.', 'Keep a reserve separate from the daily ration; do not count it twice.'],
+    bottle: ['Holds safe water within reach.', 'These are EMPTY bottle weights. Water is a separate item; wash and dry bottles after use.'],
+    water: ['Supports hydration; natural water may be unsafe.', 'Each unit is 1 L = about 1 kg. Adjust carry quantity for verified safe refills and a reserve.'],
+    treatment: ['Makes suitable natural-source water safer to drink.', 'Most filters miss viruses: filter then disinfect per label, or boil. Protect filters from freezing.'],
+    ors: ['May help replace salts lost through diarrhoea.', 'Mix with the exact safe-water volume on the sachet. It is not a substitute for medical care.'],
+    rain: ['Limits rain and wind exposure.', 'Pack near the top; dry it after use and maintain the waterproof finish.'],
+    fleece: ['Adds warmth during stops and cooler nights.', 'Keep a dry layer separate; wet clothing can chill you even in monsoon weather.'],
+    shirt: ['Protects skin from sun and insects.', 'Choose breathable quick-dry fabric; long sleeves help against mosquitoes.'],
+    trousers: ['Protects legs from brush and insects.', 'Avoid slow-drying heavy cotton on wet or cold trips.'],
+    socks: ['Dry feet blister less easily.', 'Change wet socks; inspect and dry feet at stops.'],
+    underwear: ['Helps hygiene on multi-day trips.', 'Keep a dry change in a waterproof bag.'],
+    hat: ['Shades the head in hot plains and exposed trails.', 'Start early and avoid midday heat; a hat alone cannot prevent heat illness.'],
+    shoes: ['Grip and support on uneven ground.', 'Break them in before the trip; check soles and laces. Snow may require specialist footwear.'],
+    insulation: ['Traps warmth in cold conditions.', 'Keep dry and add it before you become chilled.'],
+    thermal: ['Adds a dry layer next to the skin.', 'Reserve a dry set for sleeping in cold conditions.'],
+    gloves: ['Protects hands and head from cold.', 'Pack dry spares when prolonged wet or snow conditions are expected.'],
+    gaiters: ['Helps keep mud and leeches off lower legs.', 'Inspect after wet forest walks. Avoid salt or flame on attached leeches; gently release the sucker.'],
+    rainpants: ['Keeps wind-driven rain or wet snow off legs.', 'Check fit over boots and allow ventilation.'],
+    firstaid: ['Treats minor cuts and blisters while help is arranged.', 'Check expiry dates; include dressings and gloves. Training matters more than kit size.'],
+    meds: ['Keeps prescribed treatment available.', 'Carry enough plus a reserve and a prescription copy; ask a clinician about trip-specific needs.'],
+    map: ['A battery-free route backup.', 'Waterproof it and mark safe exits before leaving.'],
+    compass: ['Helps orient a paper map.', 'Practise navigation; keep away from magnets and phones while taking bearings.'],
+    phone: ['Offline mapping and emergency communication where signal exists.', 'Download maps first, protect from water, and do not rely on mobile signal in the Himalaya.'],
+    power: ['Extends phone runtime.', 'Charge before leaving, protect connectors and keep batteries warm in the cold.'],
+    lamp: ['Hands-free light if the return is late.', 'Test it; lock the switch so it cannot turn on inside the pack.'],
+    batteries: ['Backup power for compatible equipment.', 'Check type and charge; cover terminals. Some rechargeable devices need a cable instead.'],
+    whistle: ['A low-energy way to attract attention.', 'Attach within reach and agree emergency signals with the group.'],
+    repair: ['Fixes small tears, buckles or equipment failures.', 'Choose parts that fit your own gear; do not rely on tape for critical safety repairs.'],
+    knife: ['Supports small gear repairs and food preparation.', 'Check local restrictions; sheath sharp edges.'],
+    matches: ['Backup ignition for an allowed stove.', 'Keep dry, away from fuel; never light fires during bans.'],
+    poles: ['Can ease balance on uneven trails.', 'Adjust length and avoid damaging fragile ground. They do not make river crossings safe.'],
+    drybag: ['Keeps insulation, electronics and documents dry.', 'Use a sealed liner even with a pack cover; inspect for holes.'],
+    sunscreen: ['Reduces UV exposure.', 'Use broad-spectrum SPF 30+ as labelled; reapply after sweating or swimming.'],
+    glasses: ['Protects eyes from UV and glare.', 'Snow glare needs suitable high-protection eyewear; use a case.'],
+    repellent: ['Helps reduce mosquito bites.', 'Use labelled DEET or picaridin as directed; do not put permethrin on skin. Ask about malaria risk locally.'],
+    net: ['Adds a mosquito barrier while sleeping.', 'Inspect holes and tuck edges securely; keep away from flames.'],
+    soap: ['Supports hand hygiene before eating and after toileting.', 'Use sparingly away from water; even biodegradable soap does not belong in streams.'],
+    tooth: ['Maintains oral hygiene.', 'Use little paste and dispose of waste per local rules, away from water.'],
+    waste: ['Carries rubbish and food scraps back out.', 'Use tough sealed bags, including for wrappers and used hygiene products.'],
+    toilet: ['Enables hygienic toileting.', 'Use designated toilets or approved pack-out systems; never leave paper or wipes behind.'],
+    trowel: ['Helps bury human waste only where rules allow.', 'Prefer toilets. Where allowed, dig 15–20 cm deep at least 60 m from water, camp and paths; pack out paper.'],
+    period: ['Makes personal care manageable away from facilities.', 'Pack sealable waste bags; clean hands before use and pack out products.'],
+    towel: ['Dries skin and equipment.', 'Dry fully before storage to avoid mildew.'],
+    id: ['Helps identification and emergency contact.', 'Keep waterproof copies and note allergies or key medical information.'],
+    permit: ['Shows access permission and booking details.', 'Check forest, border and trekking permits; carry offline copies and insurance details if relevant.'],
+    cash: ['Backup where UPI or cards have no signal.', 'Split small notes across secure waterproof pockets.'],
+    swim: ['Clothing for permitted swimming.', 'Check currents, tides and lifeguard advice; avoid unknown water and never swim alone.'],
+    pfd: ['Adds flotation for appropriate water activities.', 'Use the right certified size; it does not make unsafe currents safe. Follow local supervision.'],
+    sandals: ['Lets feet rest at camp.', 'Use secure footwear; do not wade into fast water.'],
+    chair: ['Optional comfort at a vehicle campsite.', 'Leave behind on weight-sensitive treks.'],
+    cooler: ['Keeps perishable food cold.', 'Keep cold foods at 5°C or below; use a thermometer and discard food kept unsafely warm.'],
+    car: ['Supports basic vehicle emergencies.', 'Check tyres, tools and breakdown contact; never run an engine in an enclosed shelter.'],
+    helmet: ['Reduces head injury risk while cycling.', 'Check fit and damage; replace after a significant impact.'],
+    cycle: ['Supports common puncture repairs.', 'Match tube and pump to your valves; practise repairs before leaving.'],
+    fishing: ['Equipment for a permitted activity.', 'Check licences and closures; pack out line and hooks and follow catch rules.'],
+    camera: ['Records the trip without collecting natural objects.', 'Use a waterproof pouch; keep wildlife undisturbed and pack out batteries.'],
+    snow: ['Route-specific traction for some snowy trails.', 'Get trained local advice. This is not a glacier, avalanche or technical climbing kit.']
+  };
+  const fallback = ['Helps meet a need on your own route.', 'Check condition and actual weight; keep it accessible if needed in an emergency.'];
+  const before = ['Weather forecast and local warnings checked', 'Route and return time shared with someone',
+    'Permits and local access rules confirmed', 'Phone and power bank fully charged', 'Spare batteries / charging backup checked',
+    'First aid restocked and personal medicines packed', 'Emergency contacts saved: India 112 + local rescue'];
+  const lnt = [
+    ['Prepare before leaving', 'Learn the route, weather, local rules and skills needed. Choose a trip the whole group can manage.'],
+    ['Stay on robust ground', 'Use existing trails and campsites. Avoid crushing plants; camp about 60 m from water unless local sites or rules say otherwise.'],
+    ['Take waste home', 'Pack out litter, leftovers and hygiene waste. Use toilets and follow the local human-waste system.'],
+    ['Leave nature in place', 'Leave plants, stones and historic objects where they are. Clean footwear to avoid spreading seeds.'],
+    ['Keep fire impact low', 'Prefer a permitted stove; obey bans. Never leave a fire unattended and extinguish it fully.'],
+    ['Give wildlife space', 'Observe quietly from a distance. Never feed animals and secure all food and scented items.'],
+    ['Make room for others', 'Keep voices and music low, yield considerately and respect local communities.']
+  ];
+  return { tips, fallback, before, lnt };
+});

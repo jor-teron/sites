@@ -25,7 +25,8 @@ const overlayMsg = document.getElementById("overlay-msg");
 // ---------- constants (from core/config.js) ----------
 const CFG = SPACE_INVADER_CONFIG;
 const IC = CFG.invaders;
-const COLR = CFG.colors;
+const Visuals = window.SpaceInvaderThemes;
+const Appearance = window.SpaceInvaderAppearance;
 /** True if the event's code or key is in the binding list. */
 const isKey = (list, e) => list.indexOf(e.code) !== -1 || list.indexOf(e.key) !== -1;
 const W = CFG.width;
@@ -86,8 +87,6 @@ function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, CFG.maxDpr);
   canvas.width = W * dpr;
   canvas.height = H * dpr;
-  canvas.style.width = "100vw";
-  canvas.style.height = "100vh";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
@@ -202,6 +201,8 @@ function hit(a, b) {
  * @param {boolean} down
  */
 function onKey(e, down) {
+  if (Appearance.dialog.open || /^(INPUT|SELECT)$/.test(e.target.tagName)) return;
+  if (e.target.tagName === 'BUTTON' && ['Enter', 'Space', ' '].includes(e.code || e.key)) return;
   if (isKey(CFG.keys.left, e)) { keys.left = down; e.preventDefault(); }
   if (isKey(CFG.keys.right, e)) { keys.right = down; e.preventDefault(); }
   if (isKey(CFG.keys.shoot, e)) {
@@ -317,6 +318,7 @@ function maybeEnemyShot() {
  */
 function playerHit() {
   if (invuln > 0) return;
+  Visuals.burst(player.x, player.y - PLAYER_H / 2, 2);
   lives -= 1;
   updateHud();
   eBullets = [];
@@ -385,6 +387,7 @@ function update(dt) {
     for (const inv of invaders) {
       if (!inv.alive) continue;
       if (hit(b, inv)) {
+        Visuals.burst(inv.x + inv.w / 2, inv.y + inv.h / 2, inv.type);
         inv.alive = false;
         b.y = -99;
         score += (inv.type + 1) * IC.pointsPerType;
@@ -416,71 +419,35 @@ function update(dt) {
   }
 }
 
-// ---------- draw ----------
-/**
- * Draw a simple pixel-ish invader.
- * @param {object} inv
- */
-function drawInvader(inv) {
-  const { x, y, w, h, type } = inv;
-  ctx.fillStyle = type === 2 ? COLR.invaderTop : type === 1 ? COLR.invaderMid : COLR.invaderLow;
-  // body
-  ctx.fillRect(x + 4, y + 6, w - 8, h - 10);
-  // "eyes"
-  ctx.fillRect(x + 6, y + 8, 5, 4);
-  ctx.fillRect(x + w - 11, y + 8, 5, 4);
-  // arms
-  ctx.fillRect(x, y + 10, 4, 6);
-  ctx.fillRect(x + w - 4, y + 10, 4, 6);
-  // feet
-  ctx.fillRect(x + 4, y + h - 4, 6, 4);
-  ctx.fillRect(x + w - 10, y + h - 4, 6, 4);
-}
-
-/**
- * Draw player cannon.
- */
-function drawPlayer() {
-  if (invuln > 0 && Math.floor(invuln / CFG.player.blinkMs) % 2 === 0) return;
-  const x = player.x - PLAYER_W / 2;
-  const y = player.y - PLAYER_H;
-  ctx.fillStyle = COLR.player;
-  ctx.fillRect(x + 4, y + 8, PLAYER_W - 8, PLAYER_H - 8);
-  ctx.fillRect(x + PLAYER_W / 2 - 3, y, 6, 10);
-  ctx.fillStyle = COLR.playerTip;
-  ctx.fillRect(x + PLAYER_W / 2 - 2, y - 2, 4, 4);
-}
-
-/**
- * Render one frame.
- */
+// ---------- draw (visuals only; simulation and hitboxes are unchanged) ----------
 function draw() {
-  ctx.fillStyle = COLR.bg;
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.fillStyle = COLR.star;
-  for (const s of stars) {
-    ctx.globalAlpha = 0.35 + s.s * 0.3;
-    ctx.fillRect(s.x, s.y, s.s, s.s);
+  const theme = Appearance.current(), now = performance.now();
+  const frame = Visuals.motion.matches ? 0 : Math.floor(now / 650) % 2;
+  ctx.imageSmoothingEnabled = !['pixel', 'sketch'].includes(theme.style);
+  Visuals.background(ctx, theme, W, H, now);
+  for (const inv of invaders) if (inv.alive) Visuals.actor(ctx, theme, inv.type, frame, inv.x, inv.y, inv.w, inv.h);
+  for (const b of bullets) Visuals.bullet(ctx, theme, b, false);
+  for (const b of eBullets) Visuals.bullet(ctx, theme, b, true);
+  // Reduced motion uses a steady translucent invincibility cue, not blinking.
+  if (Visuals.motion.matches || !(invuln > 0 && Math.floor(invuln / CFG.player.blinkMs) % 2 === 0)) {
+    ctx.globalAlpha = invuln > 0 && Visuals.motion.matches ? .5 : 1;
+    Visuals.actor(ctx, theme, 'player', 0, player.x - PLAYER_W / 2, player.y - PLAYER_H, PLAYER_W, PLAYER_H);
+    ctx.globalAlpha = 1;
   }
-  ctx.globalAlpha = 1;
-
-  // ground line
-  ctx.fillStyle = COLR.ground;
-  ctx.fillRect(0, H - COLR.groundOffset, W, 2);
-
-  for (const inv of invaders) {
-    if (inv.alive) drawInvader(inv);
-  }
-
-  ctx.fillStyle = COLR.bullet;
-  for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
-
-  ctx.fillStyle = COLR.enemyBullet;
-  for (const b of eBullets) ctx.fillRect(b.x, b.y, b.w, b.h);
-
-  drawPlayer();
+  Visuals.effects(ctx, theme, W, H, now);
 }
+
+// The modal freezes the game without resetting the wave, score or held shots.
+let resumeAfterSettings = false;
+document.getElementById('theme-open').addEventListener('click', () => {
+  resumeAfterSettings = state === 'playing';
+  if (resumeAfterSettings) state = 'paused';
+  clearKeys(); Appearance.open();
+});
+Appearance.dialog.addEventListener('close', () => {
+  if (resumeAfterSettings && state === 'paused') { state = 'playing'; canvas.focus({ preventScroll: true }); }
+  resumeAfterSettings = false; clearKeys();
+});
 
 /**
  * Main loop.
