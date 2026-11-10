@@ -25,7 +25,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet_page.js` / `spreadsheet_page.css`: Page tab (orientation, paper, margins, gridlines, headings, fit width, print), saved under `<storage key>-page`
 - `../shared/`: Office shared ribbon, dialog and page-setup files (see `apps/office/shared/README.md`)
 - `spreadsheet_logic.js`: small orchestrator (after-change pipeline, start-up)
-- `spreadsheet_format.js`: number formats
+- `spreadsheet_format.js`: number and date / time display formats
+- `spreadsheet_style.js`: SH11 merge, borders, font size, wrap, conditional formatting, format painter
 - `spreadsheet_undo.js`: undo / redo
 - `spreadsheet_select.js`: block selection (drag, Shift+click, Shift+arrows, select all)
 - `spreadsheet_clipboard.js`: copy / cut / paste, fill down / right
@@ -43,7 +44,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list.
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
-- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
+- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, merge, conditional formatting, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
 - **Copy / paste:**
   - Copy puts tab-separated values on the system clipboard, so it pastes into Excel or Google Sheets.
   - Pasting the app's own copy brings formulas and styles and shifts relative refs.
@@ -53,9 +54,9 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - **Fill:** Ctrl+D copies the top row of the block down; Ctrl+R copies the left column right. The small handle on the active cell drags to autofill.
 - **Insert / delete:** + Row / − Row / + Col / − Col act on the selected rows or columns. Formula refs are adjusted on every sheet (including `Sheet2!A1` refs that point at the changed sheet), ranges grow or shrink, refs to deleted cells become `#REF!`. The grid stays 26 × 100, so insert is refused when the last row/column has data.
 - **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. **Sort…** (SH10) sorts by up to three columns and can keep a header row.
-- **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
+- **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency, Date (YYYY-MM-DD or DD/MM/YYYY), Time, Date and time. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
 - **Column widths:** drag the right edge of a column letter; double-click it to reset. Widths are saved.
-- **Styles:** align, bold, italic, underline, fill colour, text colour for the selection.
+- **Styles:** align, bold, italic, underline, fill colour, text colour, font size, wrap, borders, merge, format painter, and conditional highlighting for the selection.
 - **CSV:** Export CSV downloads the active sheet (formulas, trailing empty rows/columns trimmed; hidden rows/columns are included). Import CSV loads a file onto the active sheet, starting at A1. Other sheets are left alone.
 - **Print / PDF:** browser print dialog; choose Save as PDF.
 - **Saving:** automatic after every change.
@@ -128,7 +129,7 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 - SH5: Settings opens as a centred pop-up dialog (shared office-settings.*, ?v=2).
 
 ## SH6 — XLSX open / save
-`spreadsheet_xlsx.js` + vendored SheetJS CE 0.20.3 (`vendor/sheetjs/`, Apache-2.0, ~930 KB, lazy-loaded on first XLSX use). File → Open takes .xlsx/.xls/.csv; File → Export XLSX. Import: first sheet only (toast names it and says if there are more), values + formulas, cells outside A–Z × 100 skipped. Export: values + formulas, sheet/file name from the title. Styles (bold/align/colours) are not read or written.
+`spreadsheet_xlsx.js` + vendored SheetJS CE 0.20.3 (`vendor/sheetjs/`, Apache-2.0, ~930 KB, lazy-loaded on first XLSX use). File → Open takes .xlsx/.xls/.csv; File → Export XLSX. Import: first sheet only (toast names it and says if there are more), values + formulas, cells outside A–Z × 100 skipped. Export: values + formulas, sheet/file name from the title. Styles (bold/align/colours) were not read or written in SH6. SH11 writes merged cells (`!merges`) and number/date formats (`cell.z`). Other cell styles are attached as `cell.s` but SheetJS Community Edition usually does not write them; they stay in the app's own save.
 
 ## SS1 — Light / Auto themes
 Settings → View → Theme: Auto (default) / Light / Dark. Auto inside the Sites Hub (same-origin parent frame) follows `localStorage['sites-hub.theme']` ('dark' = Dark, else Light), live on `storage`, a same-origin `{type:'hub-prefs'}` message and focus; standalone it follows `prefers-color-scheme`. Light / Dark always win. Saved in `spreadsheet_settings` (`theme`, plus `ss1: true`; pre-SS1 settings with the old default 'dark' move to Auto once). Light palette tuned (headers, selection, pressed buttons, dialogs now follow the theme via `--select-bg`); dark values unchanged.
@@ -167,3 +168,16 @@ The grid is still 26 × 100. Storage is still `sheet-v3`; filters and validation
 - **Remove duplicates:** compares the chosen columns in the selected block (or used area), keeps the first row of each set, and can treat the first row as a header. Only cells inside the block move; the rest of the sheet is left alone.
 - Title, `SHEET_VERSION` and `?v=` are SH10.
 - **Limits:** Find does not support regular expressions or "match entire cell". Filter is a simple unique-value list (no colour or custom conditions). Validation is a dropdown list only (no number or date rules). Remove duplicates is case-insensitive.
+
+## SH11 — formatting
+The grid is still 26 × 100. Storage is still `sheet-v3`; merges and conditional-format rules are extra optional fields (an older v3 file still opens).
+
+- **Merge / Unmerge:** the top-left cell keeps its value; other cells in the block are cleared (undo restores them). Covered cells are hidden in the grid.
+- **Borders:** All, Outside, Inside, Top, Bottom, Left, Right, or No border, in black.
+- **Font size:** 8 to 24 px. **Wrap** shows a wrapped preview in the cell (the editor itself stays a single line while you type).
+- **Date / time formats:** YYYY-MM-DD, DD/MM/YYYY, HH:MM, and date+time, using the same date parser as the SH9 date functions.
+- **Highlight (conditional formatting):** a red–yellow–green or white–green colour scale, or highlight numbers above / below a value. Up to 20 rules on a sheet. A matching rule overrides the cell fill.
+- **Format painter:** copies the style of the active cell onto the next click or drag. Double-click keeps it on until Esc.
+- **XLSX:** merged cells and number/date formats are written. Font, fill, borders and align are attached for libraries that support `cell.s`; SheetJS CE usually drops them. Styles always stay in the app's own save. CSV is values only, as before.
+- Title, `SHEET_VERSION` and `?v=` are SH11.
+- **Limits:** wrap preview can clip to a couple of lines; editing is still one line. Merges that include a hidden or filtered row can look odd. Colour scales use numeric values only. Conditional formatting is not written to XLSX. SheetJS CE typically does not persist font/fill/border styles on export.

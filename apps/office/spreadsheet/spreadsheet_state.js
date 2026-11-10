@@ -103,6 +103,8 @@ function makeSheet(name) {
     filterHidden: flags(ROWS),
     filters: { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
     validations: [],
+    merges: [],
+    condFormats: [],
     freeze: { rows: 0, cols: 0 },
     sel: [CFG.start.row, CFG.start.col, CFG.start.row, CFG.start.col, CFG.start.mode]
   };
@@ -125,6 +127,8 @@ function bindActiveSheet() {
   if (!s.filterHidden) s.filterHidden = flags(ROWS);
   if (!s.filters) s.filters = { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };
   if (!s.validations) s.validations = [];
+  if (!s.merges) s.merges = [];
+  if (!s.condFormats) s.condFormats = [];
   filterHidden = s.filterHidden;
   freeze = s.freeze;
   evalSheetIdx = workbook.active;
@@ -152,6 +156,8 @@ function emptyGrid() {
   s.freeze.cols = 0;
   s.filters = { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };
   s.validations = [];
+  s.merges = [];
+  s.condFormats = [];
   bindActiveSheet();
 }
 

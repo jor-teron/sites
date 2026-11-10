@@ -112,7 +112,7 @@ FORMULA HINT / PICKER (SH9)
   function and argument. The fx button opens a searchable function list.
 
 NUMBER FORMATS (toolbar list, display only)
-  General · 0 · 0.00 · 1,000 · % · ₹ Currency
+  General · 0 · 0.00 · 1,000 · % · ₹ Currency · Date · Time
 
 SHORTCUTS (Ctrl or Cmd)
   Z undo · Y / Shift+Z redo · A select all

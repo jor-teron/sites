@@ -18,7 +18,9 @@ function serializeSheet(s) {
     freeze: { rows: s.freeze.rows || 0, cols: s.freeze.cols || 0 },
     sel: s.sel || [0, 0, 0, 0, "cell"],
     filters: s.filters || { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} },
-    validations: s.validations || []
+    validations: s.validations || [],
+    merges: s.merges || [],
+    condFormats: s.condFormats || []
   };
 }
 
@@ -78,6 +80,8 @@ function deserializeSheet(raw, fallbackName) {
   if (raw && Array.isArray(raw.sel) && raw.sel.length >= 4) s.sel = raw.sel.slice(0, 5);
   if (raw && raw.filters) s.filters = raw.filters;
   if (raw && Array.isArray(raw.validations)) s.validations = raw.validations;
+  if (raw && Array.isArray(raw.merges)) s.merges = raw.merges;
+  if (raw && Array.isArray(raw.condFormats)) s.condFormats = raw.condFormats;
   if (typeof applyFilters === "function") {
     /* compute filterHidden after the workbook is bound; loadStore does it per sheet later */
   }

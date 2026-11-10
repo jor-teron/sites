@@ -502,3 +502,30 @@ th.filter-active .filter-btn { color: var(--sel); font-weight: 700; }
 @media print {
   .data-panel, .data-valid-arrow, .filter-btn { display: none !important; }
 }
+
+
+/* SH11: wrap, merge, painter */
+td.cell.wrap { vertical-align: top; min-height: 36px; }
+td.cell .cell-face {
+  position: absolute;
+  inset: 1px 2px;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font: inherit;
+  pointer-events: none;
+  padding: 2px 4px;
+  line-height: 1.25;
+}
+td.cell.wrap input {
+  color: transparent;
+  caret-color: var(--text);
+}
+td.cell.wrap input.wrap-edit { color: var(--text); position: relative; z-index: 1; }
+td.cell.merged { overflow: hidden; }
+td.merge-hidden { display: none; }
+#font-size-sel { min-width: 52px; }
+@media print {
+  td.cell .cell-face { color: #000; }
+  td.cell.wrap input { color: transparent !important; }
+}

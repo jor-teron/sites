@@ -39,6 +39,9 @@ const SPREADSHEET_CONFIG = {
     underline: false,
     bg: "",                              // cell background ("" = CSS default)
     color: "",                           // text colour ("" = CSS default)
+    fontSize: "",                        // px, "" = default
+    wrap: false,
+    bt: "", br: "", bb: "", bl: "",     // border colours ("" = none extra)
   },
 
   // Colours / look
