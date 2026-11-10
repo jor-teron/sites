@@ -1,4 +1,4 @@
-/* Image Converter — layout, theme, list, dialogs. CI1 */
+/* Image Converter — layout, theme, list, dialogs. CI2 */
 
 :root,
 html[data-theme="light"],
@@ -500,4 +500,91 @@ select:focus-visible {
   header.app-header h1 { font-size: 1rem; }
   .seg button, .header-btn { min-height: 32px; padding: 0 8px; font-size: 0.75rem; }
   .preview-frame, .preview-frame img { max-height: 120px; min-height: 72px; }
+}
+
+/* CI2: presets, crop overlay, watermark, tighter rows */
+.toolbar.tight { padding-top: 0; }
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.preset-chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.preset-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.wrap-seg { flex-wrap: wrap; }
+.adj-row, .wrap-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+.adj-row .btn { min-height: 36px; padding: 0 10px; font-size: 0.8rem; }
+.field input[type="color"] {
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  cursor: pointer;
+}
+.preview-frame { position: relative; }
+.preview-stage {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.preview-stage canvas {
+  max-width: 100%;
+  max-height: 200px;
+  display: block;
+}
+.crop-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.crop-layer:not(.hidden) { pointer-events: auto; }
+.crop-rect {
+  position: absolute;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.45);
+  box-sizing: border-box;
+  cursor: move;
+  touch-action: none;
+}
+.crop-h {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 4px;
+  pointer-events: auto;
+  touch-action: none;
+}
+.crop-h[data-h="nw"] { left: -9px; top: -9px; cursor: nwse-resize; }
+.crop-h[data-h="ne"] { right: -9px; top: -9px; cursor: nesw-resize; }
+.crop-h[data-h="se"] { right: -9px; bottom: -9px; cursor: nwse-resize; }
+.crop-h[data-h="sw"] { left: -9px; bottom: -9px; cursor: nesw-resize; }
+
+@media (max-width: 419px), (max-height: 420px) {
+  .preview-stage, .preview-stage canvas { max-height: 120px; height: 120px; }
 }

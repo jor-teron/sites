@@ -1,22 +1,31 @@
-/* Image Converter — ic_ui.js: add files, convert one at a time, list, zip, settings. CI1 */
+/* Image Converter — ic_ui.js: convert, presets, crop/rotate/watermark. CI2 */
 (function (root) {
   'use strict';
 
-  var RELEASE = 'CI1';
+  var RELEASE = 'CI2';
   var H = root.ICHelpers;
   var Zip = root.ICZip;
   var Theme = root.ICTheme;
   var Dlg = root.ICDlg;
   var Conv = root.ICConvert;
+  var Presets = root.ICPresets;
+  var Edit = root.ICEdit;
 
   var items = [];
   var selectedId = null;
   var previewUrl = null;
+  var previewBase = null;
+  var previewItemId = null;
+  var previewPaint = 0;
+  var logoImage = null;
+  var logoName = '';
   var busy = false;
   var cancelled = false;
   var stale = false;
   var heicWarned = false;
   var avifOk = false;
+  var activePreset = '';
+  var cropDrag = null;
 
   function $(id) { return document.getElementById(id); }
 
@@ -33,7 +42,14 @@
       quality: 80,
       useTarget: false,
       targetKb: 100,
-      pattern: '{name}_{n}'
+      pattern: '{name}_{n}',
+      cropRatio: 'none',
+      bg: '#ffffff',
+      wmText: '',
+      wmPosition: 'bottom-right',
+      wmOpacity: 60,
+      wmColor: '#ffffff',
+      wmScale: 12
     };
   }
 
@@ -53,6 +69,14 @@
     if (typeof s.useTarget === 'boolean') d.useTarget = s.useTarget;
     if (Number(s.targetKb) > 0) d.targetKb = Math.round(Number(s.targetKb));
     if (typeof s.pattern === 'string' && s.pattern.trim()) d.pattern = s.pattern;
+    if (typeof s.cropRatio === 'string' && s.cropRatio) d.cropRatio = s.cropRatio;
+    if (typeof s.bg === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.bg)) d.bg = s.bg;
+    if (typeof s.wmText === 'string') d.wmText = s.wmText;
+    if (typeof s.wmPosition === 'string' && s.wmPosition) d.wmPosition = s.wmPosition;
+    if (Number(s.wmOpacity) > 0) d.wmOpacity = Math.round(Number(s.wmOpacity));
+    if (typeof s.wmColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.wmColor)) d.wmColor = s.wmColor;
+    if (Number(s.wmScale) > 0) d.wmScale = Math.round(Number(s.wmScale));
+    if (typeof s.activePreset === 'string') activePreset = s.activePreset;
     return d;
   }
 
@@ -71,6 +95,14 @@
     s.useTarget = cfg.useTarget;
     s.targetKb = cfg.targetKb;
     s.pattern = cfg.pattern;
+    s.cropRatio = cfg.cropRatio;
+    s.bg = cfg.bg;
+    s.wmText = cfg.wmText;
+    s.wmPosition = cfg.wmPosition;
+    s.wmOpacity = cfg.wmOpacity;
+    s.wmColor = cfg.wmColor;
+    s.wmScale = cfg.wmScale;
+    s.activePreset = activePreset;
     Theme.saveStore(s);
   }
 
@@ -87,7 +119,14 @@
       quality: numVal('qualityIn', 80),
       useTarget: $('useTarget') ? $('useTarget').checked : false,
       targetKb: numVal('targetKb', 100),
-      pattern: ($('patternIn') && $('patternIn').value.trim()) || '{name}_{n}'
+      pattern: ($('patternIn') && $('patternIn').value.trim()) || '{name}_{n}',
+      cropRatio: currentSeg('cropSeg', 'none'),
+      bg: ($('bgIn') && $('bgIn').value) || '#ffffff',
+      wmText: ($('wmText') && $('wmText').value) || '',
+      wmPosition: currentSeg('wmPosSeg', 'bottom-right'),
+      wmOpacity: numVal('wmOpacity', 60),
+      wmColor: ($('wmColor') && $('wmColor').value) || '#ffffff',
+      wmScale: numVal('wmScale', 12)
     };
     if (cfg.format === 'avif' && !avifOk) cfg.format = 'jpeg';
     return cfg;
@@ -127,6 +166,15 @@
     if ($('useTarget')) $('useTarget').checked = cfg.useTarget;
     if ($('targetKb')) $('targetKb').value = cfg.targetKb;
     if ($('patternIn')) $('patternIn').value = cfg.pattern;
+    setSeg('cropSeg', cfg.cropRatio || 'none');
+    if ($('bgIn')) $('bgIn').value = cfg.bg || '#ffffff';
+    if ($('wmText')) $('wmText').value = cfg.wmText || '';
+    setSeg('wmPosSeg', cfg.wmPosition || 'bottom-right');
+    if ($('wmOpacity')) $('wmOpacity').value = cfg.wmOpacity;
+    if ($('wmOpacityVal')) $('wmOpacityVal').textContent = String(cfg.wmOpacity) + '%';
+    if ($('wmColor')) $('wmColor').value = cfg.wmColor || '#ffffff';
+    if ($('wmScale')) $('wmScale').value = cfg.wmScale;
+    if ($('wmScaleVal')) $('wmScaleVal').textContent = String(cfg.wmScale) + '%';
     syncSettingVisibility();
   }
 
@@ -149,11 +197,17 @@
     renderStatus();
   }
 
-  function settingsChanged() {
+  function settingsChanged(opts) {
+    opts = opts || {};
+    if (!opts.keepPreset) activePreset = '';
     persistSettings(readSettings());
     if ($('qualityVal') && $('qualityIn')) $('qualityVal').textContent = String($('qualityIn').value);
+    if ($('wmOpacityVal') && $('wmOpacity')) $('wmOpacityVal').textContent = String($('wmOpacity').value) + '%';
+    if ($('wmScaleVal') && $('wmScale')) $('wmScaleVal').textContent = String($('wmScale').value) + '%';
     syncSettingVisibility();
+    renderPresets();
     markStale();
+    if (!opts.skipPreview) renderPreview();
   }
 
   function dropOut(item) {
@@ -194,7 +248,11 @@
         outH: 0,
         qualityUsed: null,
         overTarget: false,
-        error: ''
+        error: '',
+        rotate: 0,
+        flipH: false,
+        flipV: false,
+        crop: null
       });
       added += 1;
     }
@@ -232,6 +290,7 @@
           items = [];
           selectedId = null;
           stale = false;
+          dropPreviewBase();
           renderAll();
         } }
       ]
@@ -252,7 +311,7 @@
     item.error = '';
     renderList();
     try {
-      var result = await Conv.processFile(item.file, cfg);
+      var result = await Conv.processFile(item.file, itemSettings(item, cfg));
       item.outBlob = result.blob;
       item.outSize = result.size;
       item.outW = result.width;
@@ -400,35 +459,384 @@
     }
   }
 
-  function setPreview(item) {
+  function customPresets() {
+    var s = Theme && Theme.loadStore ? Theme.loadStore() : {};
+    return Presets ? Presets.sanitizeCustom(s.customPresets) : [];
+  }
+
+  function saveCustomPresets(list) {
+    if (!Theme || !Theme.loadStore || !Theme.saveStore) return;
+    var s = Theme.loadStore();
+    s.customPresets = list;
+    Theme.saveStore(s);
+  }
+
+  function allPresets() {
+    var list = Presets ? Presets.builtinList() : [];
+    return list.concat(customPresets());
+  }
+
+  function findPreset(id) {
+    var list = allPresets();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  function applyPreset(id) {
+    var p = findPreset(id);
+    if (!p) return;
+    var cfg = Presets.applyTo(p, readSettings());
+    activePreset = p.id;
+    writeSettings(cfg);
+    for (var i = 0; i < items.length; i++) items[i].crop = null;
+    settingsChanged({ keepPreset: true });
+  }
+
+  function savePresetDialog() {
+    Dlg.open({
+      title: 'Save preset',
+      html: '<p>Save the current format, resize, crop, background and watermark text as a preset on this device.</p>' +
+        '<label for="presetNameIn">Name</label>' +
+        '<input type="text" id="presetNameIn" maxlength="40" style="display:block;width:100%;min-height:36px;margin-top:6px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font:inherit">',
+      actions: [
+        { label: 'Cancel', cls: 'secondary-btn' },
+        { label: 'Save', cls: 'primary-btn', fn: function () {
+          var name = ($('presetNameIn') && $('presetNameIn').value.trim()) || '';
+          if (!name) {
+            Dlg.message('Name needed', 'Type a name for this preset.');
+            return false;
+          }
+          var row = Presets.snapshotSettings(readSettings(), name);
+          var list = customPresets();
+          list.push(row);
+          saveCustomPresets(list);
+          activePreset = row.id;
+          persistSettings(readSettings());
+          renderPresets();
+        } }
+      ],
+      onOpen: function () {
+        var el = $('presetNameIn');
+        if (el) el.focus();
+      }
+    });
+  }
+
+  function deletePresetDialog() {
+    var p = findPreset(activePreset);
+    if (!p) {
+      Dlg.message('No preset selected', 'Tap a saved preset first. Built-in presets cannot be deleted.');
+      return;
+    }
+    if (p.builtin) {
+      Dlg.message('Built-in preset', 'WhatsApp, Instagram, Email, Passport photo and Signature cannot be deleted.');
+      return;
+    }
+    Dlg.open({
+      title: 'Delete preset?',
+      text: 'Remove "' + p.name + '" from this device? This cannot be undone.',
+      actions: [
+        { label: 'Cancel', cls: 'secondary-btn' },
+        { label: 'Delete', cls: 'primary-btn', fn: function () {
+          saveCustomPresets(customPresets().filter(function (x) { return x.id !== p.id; }));
+          activePreset = '';
+          persistSettings(readSettings());
+          renderPresets();
+        } }
+      ]
+    });
+  }
+
+  function renderPresets() {
+    var row = $('presetRow');
+    if (!row) return;
+    row.textContent = '';
+    allPresets().forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'preset-chip' + (p.id === activePreset ? ' on' : '');
+      b.textContent = p.name;
+      b.setAttribute('data-id', p.id);
+      b.addEventListener('click', function () { applyPreset(p.id); });
+      row.appendChild(b);
+    });
+  }
+
+  function itemSettings(item, cfg) {
+    var s = Object.assign({}, cfg);
+    if (item) {
+      s.rotate = item.rotate || 0;
+      s.flipH = !!item.flipH;
+      s.flipV = !!item.flipV;
+      s.crop = item.crop || null;
+    }
+    var text = (cfg.wmText || '').trim();
+    if (text || logoImage) {
+      s.watermark = {
+        text: text,
+        logo: logoImage,
+        position: cfg.wmPosition || 'bottom-right',
+        opacity: (Number(cfg.wmOpacity) || 60) / 100,
+        color: cfg.wmColor || '#ffffff',
+        scale: Number(cfg.wmScale) || 12
+      };
+    }
+    return s;
+  }
+
+  function dropPreviewBase() {
+    if (previewBase && Conv && Conv.dropCanvas) Conv.dropCanvas(previewBase);
+    previewBase = null;
+    previewItemId = null;
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       previewUrl = null;
     }
-    var img = $('previewImg');
-    var empty = $('previewEmpty');
+  }
+
+  function selectedItem() {
+    return findItem(selectedId);
+  }
+
+  function editSelected(fn) {
+    var item = selectedItem();
     if (!item) {
-      if (img) { img.hidden = true; img.removeAttribute('src'); }
-      if (empty) empty.hidden = false;
+      Dlg.message('Select a photo', 'Tap a photo in the list first, then rotate, flip or crop it.');
       return;
     }
-    var src = item.outBlob || item.file;
-    if (!src) {
-      if (img) { img.hidden = true; img.removeAttribute('src'); }
-      if (empty) empty.hidden = false;
+    fn(item);
+    dropOut(item);
+    stale = items.some(function (it) { return it.outBlob; });
+    renderList();
+    renderStatus();
+    renderPreview();
+  }
+
+  function rotateSelected(dir) {
+    editSelected(function (item) {
+      item.rotate = ((item.rotate || 0) + dir + 360) % 360;
+      item.crop = null;
+    });
+  }
+
+  function flipSelected(axis) {
+    editSelected(function (item) {
+      if (axis === 'h') item.flipH = !item.flipH;
+      else item.flipV = !item.flipV;
+      item.crop = null;
+    });
+  }
+
+  function resetSelectedEdits() {
+    editSelected(function (item) {
+      item.rotate = 0;
+      item.flipH = false;
+      item.flipV = false;
+      item.crop = null;
+    });
+  }
+
+  function onCropRatio() {
+    for (var i = 0; i < items.length; i++) items[i].crop = null;
+    settingsChanged();
+  }
+
+  function workSize(base, item) {
+    if (!base) return { width: 0, height: 0 };
+    if (Edit) return Edit.sizeAfterRotate(base.width, base.height, item && item.rotate);
+    return { width: base.width, height: base.height };
+  }
+
+  function paintPreviewCanvas(base, item) {
+    var canvas = $('previewCanvas');
+    if (!canvas || !base) return;
+    var rot = (item && item.rotate) || 0;
+    var flipH = !!(item && item.flipH);
+    var flipV = !!(item && item.flipV);
+    var size = workSize(base, item);
+    canvas.width = size.width;
+    canvas.height = size.height;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(size.width / 2, size.height / 2);
+    ctx.rotate((rot || 0) * Math.PI / 180);
+    ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+    ctx.drawImage(base, -base.width / 2, -base.height / 2);
+    ctx.restore();
+  }
+
+  function displayRect() {
+    var canvas = $('previewCanvas');
+    var stage = $('previewStage');
+    if (!canvas || !stage) return null;
+    var cr = canvas.getBoundingClientRect();
+    var sr = stage.getBoundingClientRect();
+    if (!cr.width || !cr.height) return null;
+    return { x: cr.left - sr.left, y: cr.top - sr.top, w: cr.width, h: cr.height };
+  }
+
+  function currentPixelCrop(base, item, cfg) {
+    if (!base || !Edit) return null;
+    var size = workSize(base, item);
+    return Edit.resolveCrop(size.width, size.height, {
+      cropRatio: cfg.cropRatio,
+      crop: item && item.crop
+    });
+  }
+
+  function layoutCrop(base, item, cfg) {
+    var layer = $('cropLayer');
+    var rect = $('cropRect');
+    if (!layer || !rect) return;
+    var ratio = Edit && Edit.parseRatio(cfg.cropRatio);
+    if (!ratio) {
+      layer.classList.add('hidden');
       return;
     }
-    previewUrl = URL.createObjectURL(src);
-    if (empty) empty.hidden = true;
-    if (img) {
-      img.hidden = false;
-      img.alt = item.name;
-      img.src = previewUrl;
+    var disp = displayRect();
+    var crop = currentPixelCrop(base, item, cfg);
+    if (!disp || !crop) {
+      layer.classList.add('hidden');
+      return;
+    }
+    var size = workSize(base, item);
+    var sx = disp.w / size.width;
+    var sy = disp.h / size.height;
+    layer.classList.remove('hidden');
+    rect.style.left = (disp.x + crop.x * sx) + 'px';
+    rect.style.top = (disp.y + crop.y * sy) + 'px';
+    rect.style.width = (crop.w * sx) + 'px';
+    rect.style.height = (crop.h * sy) + 'px';
+  }
+
+  function storeCropFromRect(base, item, cfg) {
+    var disp = displayRect();
+    var rect = $('cropRect');
+    if (!disp || !rect || !item || !Edit) return;
+    var size = workSize(base, item);
+    var sx = disp.w / size.width;
+    var sy = disp.h / size.height;
+    var px = {
+      x: (parseFloat(rect.style.left) - disp.x) / sx,
+      y: (parseFloat(rect.style.top) - disp.y) / sy,
+      w: parseFloat(rect.style.width) / sx,
+      h: parseFloat(rect.style.height) / sy
+    };
+    var ratio = Edit.parseRatio(cfg.cropRatio);
+    var clamped = Edit.clampCrop(px, size.width, size.height, ratio);
+    item.crop = Edit.cropToFrac(clamped, size.width, size.height);
+    dropOut(item);
+    stale = items.some(function (it) { return it.outBlob; });
+  }
+
+  function startCropDrag(e) {
+    var item = selectedItem();
+    if (!item || !previewBase) return;
+    var handle = e.target.closest && e.target.closest('.crop-h');
+    var rect = $('cropRect');
+    if (!rect) return;
+    var typ = handle ? handle.getAttribute('data-h') : 'move';
+    var r = rect.getBoundingClientRect();
+    var pt = e.touches ? e.touches[0] : e;
+    cropDrag = {
+      type: typ,
+      startX: pt.clientX,
+      startY: pt.clientY,
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+      stage: $('previewStage').getBoundingClientRect()
+    };
+    e.preventDefault();
+  }
+
+  function moveCropDrag(e) {
+    if (!cropDrag) return;
+    var pt = e.touches ? e.touches[0] : e;
+    var dx = pt.clientX - cropDrag.startX;
+    var dy = pt.clientY - cropDrag.startY;
+    var rect = $('cropRect');
+    if (!rect) return;
+    var sr = cropDrag.stage;
+    var left = cropDrag.left - sr.left;
+    var top = cropDrag.top - sr.top;
+    var w = cropDrag.width;
+    var h = cropDrag.height;
+    var typ = cropDrag.type;
+    if (typ === 'move') {
+      left += dx;
+      top += dy;
+    } else {
+      var ratio = cropDrag.width / cropDrag.height;
+      if (typ.indexOf('w') >= 0) { w = cropDrag.width - dx; left = (cropDrag.left - sr.left) + dx; }
+      if (typ.indexOf('e') >= 0) { w = cropDrag.width + dx; }
+      if (typ.indexOf('n') >= 0) { h = cropDrag.height - dy; top = (cropDrag.top - sr.top) + dy; }
+      if (typ.indexOf('s') >= 0) { h = cropDrag.height + dy; }
+      h = w / (ratio || 1);
+      if (typ.indexOf('n') >= 0) top = (cropDrag.top + cropDrag.height - sr.top) - h;
+      if (typ.indexOf('w') >= 0) left = (cropDrag.left + cropDrag.width - sr.left) - w;
+    }
+    rect.style.left = left + 'px';
+    rect.style.top = top + 'px';
+    rect.style.width = Math.max(16, w) + 'px';
+    rect.style.height = Math.max(16, h) + 'px';
+    e.preventDefault();
+  }
+
+  function endCropDrag() {
+    if (!cropDrag) return;
+    cropDrag = null;
+    var item = selectedItem();
+    var cfg = readSettings();
+    if (item && previewBase) {
+      storeCropFromRect(previewBase, item, cfg);
+      layoutCrop(previewBase, item, cfg);
+      renderList();
+      renderStatus();
     }
   }
 
-  function renderPreview() {
-    setPreview(findItem(selectedId));
+  function showPreviewEmpty(on) {
+    var empty = $('previewEmpty');
+    var stage = $('previewStage');
+    if (empty) empty.hidden = !on;
+    if (stage) stage.classList.toggle('hidden', on);
+  }
+
+  async function renderPreview() {
+    var item = selectedItem();
+    var cfg = readSettings();
+    if (!item) {
+      dropPreviewBase();
+      showPreviewEmpty(true);
+      var layer = $('cropLayer');
+      if (layer) layer.classList.add('hidden');
+      return;
+    }
+    showPreviewEmpty(false);
+    var token = ++previewPaint;
+    try {
+      if (previewItemId !== item.id || !previewBase) {
+        dropPreviewBase();
+        var decoded = await Conv.decodeOriented(item.file);
+        if (token !== previewPaint) {
+          if (decoded && decoded.canvas && Conv.dropCanvas) Conv.dropCanvas(decoded.canvas);
+          return;
+        }
+        previewBase = decoded.canvas;
+        previewItemId = item.id;
+      }
+      paintPreviewCanvas(previewBase, item);
+      layoutCrop(previewBase, item, cfg);
+    } catch (err) {
+      if (token !== previewPaint) return;
+      showPreviewEmpty(true);
+      var empty = $('previewEmpty');
+      if (empty) empty.textContent = (err && err.message) || 'Could not preview this photo.';
+    }
   }
 
   function renderList() {
@@ -563,6 +971,7 @@
     renderStatus();
     renderPreview();
     renderTheme();
+    renderPresets();
     var has = items.length > 0;
     if ($('convertBtn')) $('convertBtn').disabled = !has || busy;
     if ($('zipBtn')) $('zipBtn').disabled = !has || busy;
@@ -580,6 +989,9 @@
       '<li>Download one file, or all of them as a zip. The rename pattern uses {name}, {n} and {ext}.</li>' +
       '<li>Photos are converted one at a time so a large batch stays light on a 4 GB machine.</li>' +
       '<li>iPhone HEIC photos are not opened in this release.</li>' +
+      '<li>Presets: WhatsApp, Instagram, Email, Indian passport photo (413×531, under 40 KB) and signature (300×80, under 30 KB). You can save your own.</li>' +
+      '<li>Crop to 1:1, 4:5, 16:9 or passport (7:9). Rotate 90° and flip the selected photo.</li>' +
+      '<li>Optional text or logo watermark, with position and opacity. A background colour fills transparent areas when saving as JPG.</li>' +
       '</ul>' +
       '<p class="hint">Release ' + RELEASE + '. Fully offline.</p>';
   }
@@ -616,13 +1028,72 @@
     bindSeg('formatSeg', settingsChanged);
     bindSeg('resizeSeg', settingsChanged);
 
-    ['longestIn', 'percentIn', 'widthIn', 'heightIn', 'qualityIn', 'targetKb', 'patternIn', 'keepAspect', 'noEnlarge', 'useTarget'].forEach(function (id) {
+    bindSeg('cropSeg', function () { onCropRatio(); });
+    bindSeg('wmPosSeg', function () { settingsChanged(); });
+
+    ['longestIn', 'percentIn', 'widthIn', 'heightIn', 'qualityIn', 'targetKb', 'patternIn', 'keepAspect', 'noEnlarge', 'useTarget', 'bgIn', 'wmText', 'wmOpacity', 'wmScale', 'wmColor'].forEach(function (id) {
       var el = $(id);
       if (!el) return;
       el.addEventListener('change', settingsChanged);
       el.addEventListener('input', function () {
         if (id === 'qualityIn' && $('qualityVal')) $('qualityVal').textContent = String(el.value);
+        if (id === 'wmOpacity' && $('wmOpacityVal')) $('wmOpacityVal').textContent = String(el.value) + '%';
+        if (id === 'wmScale' && $('wmScaleVal')) $('wmScaleVal').textContent = String(el.value) + '%';
       });
+    });
+
+    if ($('savePresetBtn')) $('savePresetBtn').addEventListener('click', savePresetDialog);
+    if ($('deletePresetBtn')) $('deletePresetBtn').addEventListener('click', deletePresetDialog);
+    if ($('rotLeftBtn')) $('rotLeftBtn').addEventListener('click', function () { rotateSelected(-90); });
+    if ($('rotRightBtn')) $('rotRightBtn').addEventListener('click', function () { rotateSelected(90); });
+    if ($('flipHBtn')) $('flipHBtn').addEventListener('click', function () { flipSelected('h'); });
+    if ($('flipVBtn')) $('flipVBtn').addEventListener('click', function () { flipSelected('v'); });
+    if ($('resetEditBtn')) $('resetEditBtn').addEventListener('click', resetSelectedEdits);
+
+    if ($('wmLogoBtn') && $('wmLogoInput')) {
+      $('wmLogoBtn').addEventListener('click', function () { $('wmLogoInput').click(); });
+      $('wmLogoInput').addEventListener('change', function () {
+        var f = $('wmLogoInput').files && $('wmLogoInput').files[0];
+        $('wmLogoInput').value = '';
+        if (!f) return;
+        if (logoImage && typeof logoImage.close === 'function') {
+          try { logoImage.close(); } catch (_) { /* ok */ }
+        }
+        logoImage = null;
+        var url = URL.createObjectURL(f);
+        var img = new Image();
+        img.onload = function () {
+          URL.revokeObjectURL(url);
+          logoImage = img;
+          logoName = f.name || 'logo';
+          if ($('wmLogoName')) $('wmLogoName').textContent = logoName;
+          settingsChanged({ keepPreset: true });
+        };
+        img.onerror = function () {
+          URL.revokeObjectURL(url);
+          Dlg.message('Logo failed', 'That file could not be opened as an image.');
+        };
+        img.src = url;
+      });
+    }
+    if ($('wmLogoClear')) {
+      $('wmLogoClear').addEventListener('click', function () {
+        logoImage = null;
+        logoName = '';
+        if ($('wmLogoName')) $('wmLogoName').textContent = 'No logo';
+        settingsChanged({ keepPreset: true });
+      });
+    }
+
+    var cropRect = $('cropRect');
+    if (cropRect) {
+      cropRect.addEventListener('pointerdown', startCropDrag);
+    }
+    document.addEventListener('pointermove', moveCropDrag);
+    document.addEventListener('pointerup', endCropDrag);
+    document.addEventListener('pointercancel', endCropDrag);
+    window.addEventListener('resize', function () {
+      if (previewBase) layoutCrop(previewBase, selectedItem(), readSettings());
     });
 
     if ($('addFilesBtn') && $('fileInput')) {
