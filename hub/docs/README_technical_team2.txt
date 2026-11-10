@@ -347,6 +347,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - `spreadsheet-ribbon-tab`: the last ribbon tab.
 - Undo keeps 100 steps; colour drags within 0.8 s merge into one step.
 - Possible future name: "Sheetly".
+- SH8 (1.63): multiple sheets (sheet-v3), cross-sheet refs, freeze panes, hide rows/columns. Grid size unchanged.
 
 ### 1.7 Draftly: `apps/office/draftly/` (Office → Write)
 - An A4 paged word processor, with text flowing line by line between pages. Autosave; PDF and DOCX export.
@@ -824,7 +825,478 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
 
-### 1.59 Base undo, field types and rules: `apps/office/base/` (Office), release BS5
+### 1.53 Video Editor, release VD1
+
+- New apps/media/video-editor (Media, section 'Video', row added after Screen Recorder in
+  apps/media/media-apps.csv). Offline, no libraries, no ffmpeg.wasm. Name is "Video Editor"
+  until Jor picks one. Tile icon video-editor_icon.png (192 px).
+- Open via picker or drag and drop; preview with play/pause, 1/30 s frame step, seek,
+  current time. Timeline (source duration) has a playhead, In/Out dual handles (I / O,
+  tap chips to type a time) and hatched marks on removed ranges. Play skips the cuts.
+- Edit list of kept segments: Cut selection removes the In-Out range; Keep selection keeps
+  only that range (intersected with what is still left). Undo / Redo (buttons, Ctrl+Z / Ctrl+Y).
+  Keys: Space, Left, Right, I, O, Delete. In-app dialogs only.
+- Theme Auto / Light / Dark in the header (localStorage video-editor-v1 {theme}); Auto follows
+  sites-hub.theme / sites-hub.themeAuto live.
+- Export plays kept parts through captureStream + MediaRecorder (WebM vp9/vp8+opus, or MP4
+  when supported), with audio, in real time. Progress dialog with Cancel and a real-time note.
+  Download <original-name>_edited.webm (or .mp4). Full-viewport layout (VT2 approach).
+- RELEASE/title/?v= VD1. Tests: node --check, node tests/vd1.test.cjs (pure helpers). No
+  Puppeteer / Playwright / jsdom. Hub catalog not regenerated (Media tiles page reads the CSV;
+  the Hub flyout needs hub_appindex_gen.py --catalog-only from Main Builder).
+- Details: apps/media/video-editor/NOTES.md.
+
+
+### 1.54 Video Editor join and arrange, release VD2
+
+- apps/media/video-editor only. Several clips on one track (add via picker or drop); each block is
+  sized by kept duration, with the file name and a thumbnail grabbed on load. Drag to reorder,
+  move-left / move-right, Split at the playhead (S), Delete clip. Each clip keeps its own VD1
+  cut/keep list; In/Out marks apply to the selected clip.
+- Preview plays the whole sequence, skipping cuts, with a global time display and seek bar.
+  Optional fade through black between clips (Off / 0.5 s / 1 s), drawn at export inside the kept
+  ends (sequence length unchanged; fade capped at half a short clip).
+- Export draws frames to a canvas (drawImage + canvas.captureStream) and mixes audio through one
+  AudioContext + MediaStreamDestination (createMediaElementSource once per clip element), then
+  MediaRecorder (WebM vp9/vp8+opus, or MP4 when supported). Real-time progress dialog with Cancel.
+  Download <first-clip-name>_edited.webm (or .mp4). Canvas long side capped at 1280 px.
+- Undo / Redo cover add, delete, split, reorder, cut/keep and fade. Projects in IndexedDB
+  `videoeditor` (stores `files`, `projects`): list / open / rename / delete (in-app confirm),
+  autosave, storage-used line and a warning when space is low or a quota error happens.
+  localStorage video-editor-v1 also holds currentProjectId.
+- RELEASE/title/?v= VD2 (legacy VD1 noted in comments / NOTES). Tests: node --check,
+  tests/vd1.test.cjs + tests/vd2.test.cjs (pure helpers: sequence timing, split, reorder).
+  No Puppeteer / Playwright / jsdom. Details: apps/media/video-editor/NOTES.md.
+  Note: 1.54 is the next free number on this branch after 1.53 (VD1). RA1 and TD1 may also
+  take a 1.54 (or later) section on their own branches.
+
+
+
+### 1.55 Video Editor looks, transform, speed, titles, release VD3
+
+- apps/media/video-editor only (local commit on apps/vd3-video-editor, from VD2
+  9f49bc36). Per-clip colour filters (brightness, contrast, saturation, greyscale,
+  sepia, blur) with reset; CSS filter on the preview <video>, ctx.filter on the
+  export canvas. If ctx.filter is missing (common on Safari) the export and the
+  PNG go out without colour filters and an in-app warning is shown; rotate, crop,
+  speed and titles still apply.
+- Per-clip transform: rotate 0/90/180/270, flip H/V, crop rectangle (handles on
+  the preview plus numeric % inputs) applied on export with a drawImage source
+  rect. Output size Auto (first clip after crop/rotate), 1280x720, 720x1280 or
+  1080x1080, long side still capped at 1280, even dimensions, others letterboxed.
+- Per-clip speed 0.25/0.5/1/1.5/2x (playbackRate in preview and export; timeline
+  durations are kept/speed; pitch preserved where the browser supports it).
+  Per-clip volume 0-200% and mute (GainNode in the existing AudioContext mix,
+  plus video.volume in the preview).
+- Project-level text/title overlays: text, start, end, position presets plus
+  drag, size, colour, background box, fade in/out. HTML layer on the preview;
+  drawn on the export canvas and on Save frame (PNG). Keyboard shortcut list
+  (?). Office-style hover tips on toolbar buttons (HPS6 approach: mouse only,
+  delay Off/100/500/1000 ms, default 100, stored in video-editor-v1 {tip}).
+- Undo/Redo cover the new fields. Project format version 3, with migration from
+  VD2 projects (default speed 1x, full crop, no overlays, Auto output).
+- RELEASE/title/?v= VD3. Tests: node --check, tests/vd1.test.cjs + vd2.test.cjs
+  + vd3.test.cjs (pure helpers: speed-adjusted sequence timing, crop/rotate
+  output size, overlay visibility). No Puppeteer / Playwright / jsdom.
+  Details: apps/media/video-editor/NOTES.md.
+  Note: section 1.55 is the next free number on main after VD2 (1.54).
+
+### 1.56 Read Aloud, release RA1
+
+Standalone Tools app. Jor asked for a reader inside the Hub (for News), then
+for it to be a standalone app, not a News-app button. Built by Hub Apps
+Builder 2 after "do RA1". Local commit only at the time of writing.
+
+Shipped in this file set (RA1):
+- Path: apps/tools/read-aloud/. Tile in apps/tools/tools-apps.csv (Language),
+  icon read-aloud/read-aloud_icon.svg. tools.html is CSV-driven and was not
+  changed. Hub catalog / hub_appindex.js was not regenerated (Hub-owned).
+- News source: same tabs as the News app (India, Assam, user places from
+  news.places, World / Sports / Tech / Business, Saved). Includes
+  apps/media/news/news_store.js and news_feed.js (they do not boot UI).
+  Shares the news.* cache. Refresh may write the shared cache. Does not
+  write News settings, seen, Saved, or places. "Only new stories" reads
+  news.seen but does not mark stories seen.
+- Spoken form: "<source>, <time ago>, <headline>". Current item highlighted
+  and scrolled into view. Open link in a new tab. Tap an item to start there.
+- Text source: paste, or open a .txt / .md file (FileReader, basic markdown
+  stripped). Sentence-by-sentence highlight; tap a sentence to start there.
+- Player: play / pause, previous, next, stop. Keys: Space, left / right,
+  Esc to stop (ignored while typing). Position remembered per source
+  (readaloud.pos.*). One utterance per item or sentence.
+- Settings: voice (en-IN if available, else English, else first), speed
+  0.75x-2x (default 1), pitch 0.5-1.5, only-new toggle, theme Auto / Light /
+  Dark (Auto follows the Hub via shared/theme/hub_theme.js, live). Voice test.
+- In-app dialogs only. Light: vanilla JS, no CDN, browser speechSynthesis.
+- Tests: node --check on every JS file, a Node sentence-splitter helper
+  check (no DOM), static serve + curl 200, grep for RELEASE / RA1.
+  No Puppeteer, Playwright, or jsdom.
+
+Later, if Jor wants them: RA2 could add PDF and web-page reading, plus a
+sleep timer. Full article text is still a maybe (publishers often block it).
+
+Doc section 1.56 is the next free number on main after Video Editor VD3.
+
+### 1.57 Read Aloud PDF, web page, sleep timer, release RA2
+Built by Hub Apps Builder 2 after "RA2 code", on top of RA1 (section 1.56),
+branch apps/ra2-read-aloud. Local commit only at the time of writing.
+
+- Release id RA2 in <title>, RELEASE, and ?v=RA2 on the app's own css/js.
+- PDF source: open a .pdf from the device; text extracted page by page with
+  Mozilla pdf.js 3.11.174 (legacy UMD, Apache-2.0) from shared/vendor/pdfjs
+  (the same copy PDF Tools uses; referenced by relative path, not copied into
+  this app). Loaded lazily only when a PDF is opened. Page indicator and Go
+  to page. Scanned PDFs with no text layer show an in-app message and point
+  to the Office OCR app. OCR is out of scope.
+- Web source: paste a URL, fetch through api.allorigins.win (raw, then /get),
+  the News HTML-capable relay. feedrapp.info is RSS-only and is not used.
+  Extract readable text with regex/string parsing (prefer <article>, else
+  p/h1-h3 in main or body; strip nav, footer, aside, script, style). Title
+  is shown and read. Clear in-app error if the relay fails or the site
+  blocks it. This often fails.
+- News "Read article": tries the story link (Google News redirects are
+  resolved when possible). On failure, an in-app message is shown and the
+  headline is read instead.
+- Sleep timer: Off, 5/10/15/30/60 minutes, or end of the current item, with
+  a countdown chip in the player bar (also in Settings). Stops after the
+  current sentence when time is up.
+- Word count and estimated reading time (~160 wpm, scaled by speed) for
+  Text, PDF and Web. Last source tab and per-source position remembered
+  (PDF file is not stored; reopen it after a reload).
+- Tests: node --check on every JS file, ra_helpers_test.js (sentence split,
+  word count, HTML-to-text, Google URL decode; no DOM / jsdom), static serve
+  + curl 200 including shared/vendor/pdfjs/pdf.min.js, grep for RELEASE /
+  RA2. No Puppeteer, Playwright, or jsdom.
+
+### 1.58 3D Builder, release TD1
+
+- New apps/media/3d-builder (Media, section '3D', row added after 3D Viewer in media-apps.csv).
+  Local three.js r170 in vendor/three (LandCraft's unmodified build + official OrbitControls and
+  TransformControls; import map, no CDN). Renders on demand only; pixelRatio cap 1.5; no shadows.
+- Viewport with grid and axes, orbit/pan/zoom, Perspective/Front/Top/Side + Frame (F). Add box,
+  sphere, cylinder, cone, plane, torus (sit on the grid, offset so they do not overlap). Select,
+  Move/Rotate/Scale gizmo (W/E/R), snap 0.5 / 15° / 0.1. Properties, outliner, rename dialog,
+  Duplicate (Ctrl+D), Delete. Undo/redo snapshot stack (cap 100). Autosave key 3dbuilder.scene
+  (.h3d JSON, format version 1); New / Save / Open. Theme Auto/Light/Dark (3dbuilder.theme), Auto
+  follows sites-hub.theme. In-app dialogs only.
+- RELEASE/title/?v= TD1. Details: apps/media/3d-builder/NOTES.md.
+  Note: section 1.58 is the next free number on main after Read Aloud RA2 (1.57).
+
+
+### 1.59 3D Builder, release TD2
+
+- apps/media/3d-builder only. .h3d format version 2 (migrates v1). Groups / ungroup
+  (Ctrl+G / Ctrl+Shift+G), hide and lock in the outliner, MeshStandardMaterial
+  roughness/metalness/opacity, user Point/Spot/Directional lights (default lights
+  kept), optional custom sky colour, text and image textures (images resized to
+  256 px, stored in project.textures; autosave IndexedDB + localStorage).
+  Multi-select (Shift/Ctrl), align and distribute, bounding-box object snap
+  (with grid snap). Undo/redo covers the new edits. RELEASE/title/?v= TD2.
+  Details: apps/media/3d-builder/NOTES.md.
+
+
+### 1.60 3D Builder, release TD3
+
+- apps/media/3d-builder only. Export .glb / .obj / .stl via official three.js r170
+  GLTFExporter, OBJExporter and STLExporter (local vendor copies, plus GLTFLoader
+  and BufferGeometryUtils). Import self-contained .glb/.gltf (wrapped as one
+  object, stored in project.models). PNG screenshot of the view. .h3d format
+  version 3 (migrates v1 and v2). In-app Download dialogs only. 8 MB import cap.
+  RELEASE/title/?v= TD3. Details: apps/media/3d-builder/NOTES.md.
+
+### 1.61 Password Manager, release PW1
+
+- New app `apps/tools/password-manager/` (Tools → Security). Encrypted vault for logins, cards,
+  notes and Wi-Fi, all on this device. Branch `apps/pw1-password-manager`.
+- Crypto (Web Crypto only): PBKDF2-SHA-256, 310,000 iterations (count stored in the header), random
+  16-byte salt, AES-GCM-256, random 12-byte IV per write. The whole vault JSON is one ciphertext.
+  Header `{v:1, kdf, iter, salt, iv, ct}` (salt/iv/ct Base64) in IndexedDB `pwmanager`. An optional
+  hint is stored in plain text beside the header. The master password is proved by a successful GCM
+  decrypt (no separate hash). The AES key is non-extractable. The decrypted vault is memory-only and
+  is wiped on Lock, idle auto-lock, or a hidden-tab lock.
+- First run sets a master password (at least 8 characters, strength meter, confirm, a no-recovery
+  warning). Unlock screen. After 5 wrong tries, a growing delay (5s, 10s, … cap 60s) with an in-app
+  countdown. Copy tries to clear the clipboard after 30s (adjustable). Passwords are masked by default.
+- Generator on password fields (length 8–64, character sets, avoid look-alikes, a simple entropy
+  estimate). Search, favourites, add / edit / delete (confirm) / duplicate. Open site (http/https,
+  rel=noopener). Settings: auto-lock 1/5/15/30 min (default 5), lock when the tab is hidden, clipboard
+  clear, Auto / Light / Dark (Auto follows `sites-hub.theme` / `sites-hub.themeAuto`).
+- CSP meta (`default-src 'self'`, no inline script, no external requests). In-app dialogs only.
+- Files: `index.html`, `pm_base.css`, `pm_{crypto,store,gen,util,lock,dlg,theme,ui,main}.js`,
+  `password-manager_icon.svg`, `NOTES.md`, `tests/pm_crypto_test.js`. RELEASE / title / `?v=` = PW1.
+- Tested with `node --check` on every JS file, `node tests/pm_crypto_test.js` (derive, encrypt/decrypt
+  round-trip, wrong password fails, tamper fails, generator, delay, URL safety), and a static curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+- Hub catalog / menu flyout: this CSV row is added; Main Builder still needs to regenerate
+  `hub_catalog.js` / `hub_appindex.js` before it shows in the Hub menu.
+- Section 1.61 is the next free number on main after 3D Builder TD3 (1.60).
+
+### 1.62 Password Manager, release PW2
+
+- Backup and health on `apps/tools/password-manager/` (PW1 vault). Branch
+  `apps/pw2-password-manager`. RELEASE / title / `?v=` = PW2.
+- Vault JSON bumped to version 2, migrated from v1 on first unlock (tags,
+  custom fields `{id,name,value,hidden}`, `passwordChanged`, tombstones). The
+  crypto header stays `{v:1, kdf, iter, salt, iv, ct}` (PBKDF2-SHA-256 310,000
+  + AES-GCM-256). Deletes now write a tombstone so a later merge does not
+  restore the entry (last 200 kept).
+- Encrypted backup: Settings exports a `.pwvault` JSON wrapper
+  `{type:"hub-password-manager-backup", format, exported, hint, ...header}`.
+  Import asks for the file's master password, then Merge (newest-wins per
+  entry id) or Replace (second in-app confirm; this device's master password
+  is unchanged).
+- CSV import for Chrome, Firefox and Bitwarden exports. In-app warning to
+  delete the plaintext CSV afterwards. Bitwarden notes/cards/folders/TOTP
+  strings are kept.
+- Health check (toolbar + Settings): weak or empty passwords (< ~40 bits),
+  reused passwords, passwords last changed more than a year ago. Click a row
+  to open the entry.
+- Change master password: re-encrypts with a new salt/key. The previous
+  header is stored as `prev` until the new ciphertext has been written and
+  decrypted as a check. If interrupted, the new password finishes the change
+  and the old password rolls it back. No data loss either way.
+- Custom fields (text / hidden) and tags, with a tag filter and search.
+- New files: `pm_csv.js`, `pm_health.js`, `pm_merge.js`,
+  `tests/pm_{csv,health,merge}_test.js`. In-app dialogs only. CSP unchanged.
+- Tested with `node --check` on every JS file, `node tests/pm_crypto_test.js`
+  (plus CSV / health / merge, including crypto round-trips, backup wrap,
+  v1→v2 migrate, rekey headers, RFC-style CSV fixtures, newest-wins merge),
+  and a static curl smoke test. No Puppeteer, Playwright or jsdom.
+- Section 1.62 is the next free number on main after Password Manager PW1 (1.61).
+
+
+### 1.63 Spreadsheet multiple sheets, freeze and hide, release SH8
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Workbook with a tab bar: add, rename (dialog; unique, 31 chars, no \ / * ? : [ ]), delete (not the last sheet; formulas become #REF!; undoable), duplicate, reorder (drag or Move left/right).
+- Cross-sheet refs: Sheet2!A1, Sheet2!A1:B5, 'My Sheet'!A1. Recalc is workbook-wide. Rename updates formulas; delete -> #REF!. Insert/delete rows or columns on one sheet adjusts refs from other sheets. Copy/fill keep the sheet prefix fixed.
+- View tab: freeze top row, first column, panes (rows above / columns left of the active cell), unfreeze. Hidden rows/columns (Unhide selection or Unhide all), thin markers, skipped in print, kept in CSV; formulas still see them. Frozen panes use position:sticky.
+- Storage sheet-v3 {sheets, active}. First load migrates sheet-v2 (or v1) into Sheet1 and leaves v2/v1 in place as a backup. Page setup also reads sheet-v2-page if sheet-v3-page is empty. Undo covers sheet add/rename/delete/reorder, freeze and hide (full workbook snapshot).
+- CSV import/export is the active sheet. XLSX open loads every sheet (cap 20, each still 26x100; a message if any were cut). XLSX save writes every sheet. Print is the active sheet (hidden rows/cols skipped).
+- Status bar: Average, Count and Sum for the numeric cells in the selection.
+- Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH8. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
+### 1.64 Spreadsheet more formulas, hint and function picker, release SH9
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- New functions: VLOOKUP, HLOOKUP, XLOOKUP, INDEX, MATCH; SUMIF, SUMIFS, COUNTIF, COUNTIFS, AVERAGEIF; AND, OR, NOT, IFS, SWITCH; MID, FIND, SUBSTITUTE, TEXT, PROPER, TEXTJOIN; DATE, YEAR, MONTH, DAY, WEEKDAY, DATEDIF, EDATE; ROUNDUP, ROUNDDOWN, MEDIAN, RANK, RAND, RANDBETWEEN. All work with Sheet2!A1-style ranges. New errors: #N/A, #VALUE!. TRUE / FALSE literals are accepted.
+- Formula hint under the formula bar while typing; fx button opens a searchable in-app function picker (inserts NAME().).
+- Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH9. Storage still sheet-v3. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+### 1.65 Spreadsheet data tools, release SH10
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Find and replace (this sheet or all sheets, optional match case). Replace edits stored cell text only, not a calculated result; undoable. Ctrl/Cmd+F and Ctrl/Cmd+H. In-app panel (no window.prompt).
+- Header-row filter dropdowns on the used area or selection (unique values + blanks). Filter-hidden rows are separate from View → Hide. Multi-column Sort… with a "has header row" option. Data validation dropdown (comma list or a range). Remove duplicates (chosen columns, optional header) inside the block only. All undoable.
+- Storage still sheet-v3; filters and validations are optional fields, so older v3 files still open. Title / SHEET_VERSION / ?v=: SH10. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
+### 1.66 Spreadsheet formatting, release SH11
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Merge / unmerge (top-left keeps the value; undoable), borders (all / outside / inside / sides / none), font size, wrap text, format painter (double-click to keep it on; Esc cancels).
+- Date / time display formats (YYYY-MM-DD, DD/MM/YYYY, HH:MM, date+time). Conditional formatting: colour scales (red-yellow-green or white-green) and highlight above / below a value, up to 20 rules per sheet, in-app panel.
+- XLSX export writes merged cells (!merges) and number/date formats (cell.z). Font/fill/border/align are attached as cell.s; SheetJS Community Edition usually does not write those, so they stay in the app's own sheet-v3 save (optional merges / condFormats fields; older v3 files still open). CSV is values only.
+- Title / SHEET_VERSION / ?v=: SH11. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
+### 1.67 Spreadsheet charts, release SH12
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Column, bar, line and pie charts from the selected range (or the used area), drawn on a canvas with no libraries. Move / resize, save as PNG, delete with an in-app confirm. At most 8 charts per sheet. Undo covers add / delete / move / resize. Charts are redrawn from current cell values.
+- Storage bumped to sheet-v4 {sheets, charts, active}. A sheet-v3 / v2 / v1 save is migrated on first load and left in place as a backup. Page setup also falls back to sheet-v3-page then sheet-v2-page. Charts are not written to XLSX or CSV.
+- Title / SHEET_VERSION / ?v=: SH12. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+
+
+### 1.68 Hub Office Slides rich text, lists, free text boxes, release SL5
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl5-slides` from origin/main. `apps/office/shared/` not edited.
+  New `slides_text.js` (`SLText`): the rich-text model (paragraphs of runs `{ text, b, i, u, s, size, color, hl }` with
+  `level` / `align` / `list`), paste sanitising (plain text or a strict HTML allowlist, no DOM), `.hslides` v3 helpers.
+  Safe to load in Node.
+- Editor (SLEdit): title, body, body2 and free text boxes are contenteditable, kept in the model (not raw HTML). Tab /
+  Shift+Tab indent, Enter keeps the indent, Backspace at the start outdents, Enter on the title goes to the bullets (SL1–SL4
+  behaviour kept). Format from the Home Format group and a small floating mini toolbar on a selection: bold (Ctrl+B),
+  italic (Ctrl+I), underline (Ctrl+U), strikethrough, font size (preset list + grow / shrink, Ctrl+Shift+> / <), text colour,
+  highlight, align left / centre / right (Ctrl+L / E / R), list type bullet / numbered (1. 2. 3., a. b. c. at the next
+  level) / none, and Clear formatting. In-app colour popovers only (no alert / confirm / prompt).
+- Free text boxes: Insert → Text box (and ⋯) adds a box on any layout, including Blank. Click to select, drag / handles
+  to move / resize (same handle logic as pictures, Shift keeps the shape), Delete, arrow nudge, double-click or Enter to
+  edit, Esc ends editing. Boxes sit above pictures. 50 per slide max.
+- One renderer (`SLEdit.html` / `paint`) for the editor, thumbnails, Present and Print / PDF, so styling matches.
+- Undo / redo (SL3 stack): now also text-box add / move / resize / delete and formatting. Typing keeps the browser's own
+  undo inside the box.
+- Format / compatibility: deck record `fmt: 4`; title / body / body2 are documents; `texts` (also `tboxes`) hold the boxes.
+  SL1 / SL2 / SL3 records (plain strings, fmt 3 or none) migrate on load: one plain run per line, list none on Title /
+  Section Header / Picture + Caption captions, nothing dropped. .hslides `version: 3` (reads 1, 2 and 3; higher refused).
+  v3 keeps a string `title` and `{ text, level }` bullets; styled titles add `titleRuns` / `titleAlign`; bullets may add
+  `runs` / `align`; `list` / `list2` / `align` / `align2`; `texts:[{ x, y, w, h, bullets, list, align, fill, border, z }]`.
+  `textboxes` / `tboxes` aliases are accepted on import. Export writes v3.
+- Release id: `<title>Slides SL5</title>` (legacy SL4 · SL3 · SL2 comment), `VERSION = 'SL5'`, About SL5 (legacy comments),
+  `?v=SL5` on the app's own css / js (slides.css, slides_*.js including the new slides_text.js; shared office-*.css/js left unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51 (fromPlain
+  / plain, v1/v2/v3 field migrate, apply / merge / clear runs, numbered 1. 2. a. b., parseHtml sanitises script / img /
+  css urls, paste, nextSize, concat / equal, indent / list / align, colour / size checks, html markers, box cap, cross-para
+  apply); `slides_file_test.js` 27/27 (v1 and v2 parse, Title-layout captions stay un-bulleted, v3 write / reparse loses
+  nothing, titleRuns + texts, version 4 refused, document-shaped title and textboxes alias, raw SL1 / fmt-3 localStorage
+  migrate, cloneSlide is deep). Static curl smoke: 200 on slides.html / slides.css / slides_text.js / slides_edit.js /
+  slides_app.js, body greps SL5. No Puppeteer, Playwright, jsdom or headless browser.
+- Caveats: applying a format from the ribbon re-renders the box, so the browser's typing undo for that box may start
+  fresh (Ctrl+Z outside undoes the format). Paste drops fonts, tables and links on purpose. Numbered lists restart after
+  a non-numbered paragraph. Some browsers pause contenteditable undo after a format. Not tried on a real phone.
+
+### 1.69 Hub Office Slides shapes, tables and arrange, release SL6
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl6-slides` from `apps/sl5-slides` (e06f5539).
+  `apps/office/shared/` not edited. New `slides_draw.js` (`SLDraw`): shape / table records, SVG paths, table
+  row / column helpers, align / distribute / z-order / snap-to-slide. No DOM, safe to load in Node.
+- Shapes: Insert → Shape (in-app popover) adds rectangle, rounded rectangle, ellipse, line, arrow, triangle, star
+  or callout. Fill / outline colour and width (and Flip for a line or arrow) on the shape bar. Text inside shapes
+  (not line / arrow) uses the SL5 rich-text model and the same Format group / mini toolbar. 50 per slide max.
+- Tables: Insert → Table (8 × 8 size grid) adds a table with equal column widths and equal row heights. Add / delete
+  row or column, header row, simple borders and fill, cell text with SL5 styling. 20 tables per slide, 20 × 12 cells
+  max. Double-click or Enter edits a cell.
+- Arrange: Home Arrange group and the object bars. Bring to front / Bring forward / Send backward / Send to back
+  (pictures, text boxes, shapes and tables share one z-order in `#objs`). Align left / centre / right / top / middle /
+  bottom (one object → the slide; two or more → the selection). Distribute horizontally / vertically (three or more).
+  Shift+click multi-selects; arrow keys nudge (Shift = 10); drag snaps to the slide centre and edges (orange guides).
+  Resize handles still work on one object at a time.
+- One renderer (`SLEdit.html` / `paint`) for the editor, thumbnails, Present and Print / PDF, so shapes and tables
+  print. App undo / redo (SL3 stack) covers add / move / resize / delete / style / arrange of the new objects.
+- Format / compatibility: deck record `fmt: 5`; `shapes` and `tables` on each slide. SL1–SL5 records (fmt 4 / 3 / none)
+  open unchanged, with empty shape / table lists. .hslides `version: 4` (reads 1–4; higher refused). v4 keeps the v3
+  fields and adds `shapes:[{ kind, x, y, w, h, fill, stroke, sw, flip, bullets, list, align, z }]` and
+  `tables:[{ x, y, w, h, rows, cols, header, border, bw, fill, hfill, cells:[[{ text, runs, bullets, align, list }]], z }]`.
+  Export writes v4.
+- Release id: `<title>Slides SL6</title>` (legacy SL5 · SL4 · SL3 · SL2 comment), `VERSION = 'SL6'`, About SL6
+  (legacy comments), `?v=SL6` on the app's own css / js (slides.css, slides_*.js including the new slides_draw.js;
+  shared office-*.css/js left unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or
+  apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51
+  (unchanged SL5 helpers); `slides_draw_test.js` 55/55 (kinds, clean / SVG, table add/delete row/col and caps, file
+  bullets, align / distribute, z-order including multi to front, snap to edges / centre and already-on-edge,
+  bounds); `slides_file_test.js` 38/38 (v1/v2 parse, v3 still opens, v4 write / reparse of styled title + texts + shapes +
+  tables, version 5 refused, raw SL1 / fmt-3 localStorage migrate, cloneSlide is deep for shapes). Static curl smoke:
+  200 on slides.html / slides.css / slides_draw.js / slides_edit.js / slides_app.js, body greps SL6. No Puppeteer,
+  Playwright, jsdom or headless browser.
+- Caveats: shape text sits in a padded rectangle, not clipped to a star or triangle. Table columns / rows are always
+  equal (no custom widths). Multi-select can move, align, distribute or delete, but not resize as a group. Snap
+  guides are the slide centre and edges only. Lines and arrows have no text. Applying a format from the ribbon
+  re-renders the box, so the browser's typing undo for that box may start fresh. Not tried on a real phone.
+
+
+### 1.70 Hub Office Slides presenter tools, release SL7
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl7-slides` from `apps/sl6-slides` (e8e7c963).
+  `apps/office/shared/` not edited. New `slides_present.js` (`SLPresent`): notes / transition / ink cleaning, timer
+  format, BroadcastChannel / postMessage envelope, presenter URL helpers. No DOM, safe to load in Node.
+- Speaker notes: a pane under the editor (Slide Show → Notes). Plain text, 4 000 characters, saved on the slide,
+  covered by app undo (blur or ~800 ms debounce). File / ⋯ → Print notes pages… prints an A4-ish page (scaled slide +
+  notes). Ordinary Print stays one 16:9 page per slide.
+- Presenter view: Slide Show → Presenter view, F6 (Shift+F6 from the start), or Alt+F5. Tries `window.open` of the same
+  app with `?pv=1&k=&d=`. The second window shows current + next slide, notes, a timer and the slide count. The original
+  window is the audience show. Sync is `BroadcastChannel` (`hub-slides-present`) or `postMessage` to opener / popup.
+  If the popup is blocked, or storage is memory-only, a one-screen Presenter layout is used (no separate audience).
+- Pen and laser during Present: Laser (glow, no ink), Pen (six colours), Eraser, Clear. Ink stays in memory unless
+  Keep ink is on, which writes `slide.ink` (undoable). B / W toggle a black or white blank; a click or next / previous
+  while blank shows the slide again without advancing.
+- Transitions: none / fade / push / wipe, per slide or Apply to all (asks first, one undo). CSS only, about 0.4 s.
+  `prefers-reduced-motion: reduce` forces none. Push / wipe come from the right going forward and from the left going back.
+- Format / compatibility: deck record `fmt: 6`; `notes`, `trans` and `ink` on each slide. SL1–SL6 records (fmt 5 / 4 / 3 /
+  none) open unchanged (empty notes, trans none, no ink). .hslides `version: 5` (reads 1–5; higher refused). v5 keeps the
+  v4 fields and adds optional `notes`, `transition` and packed `ink` (`pts` as `[x,y]` pairs). Export writes v5.
+- App undo / redo covers notes, transitions (including Apply to all) and kept ink, as well as the earlier SL3–SL6 slide
+  edits. Typing in the notes pane uses the same app undo (not a second browser stack for the stored value).
+- Release id: `<title>Slides SL7</title>` (legacy SL6 · SL5 · SL4 · SL3 · SL2 comment), `VERSION = 'SL7'`, About SL7
+  (legacy comments), `?v=SL7` on the app's own css / js (slides.css, slides_*.js including the new slides_present.js;
+  shared office-*.css/js left unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or
+  apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51
+  (unchanged SL5 helpers); `slides_draw_test.js` 55/55 (unchanged SL6 helpers); `slides_present_test.js` (notes cap,
+  trans aliases / reduced-motion, ink pack / addPoint, timer, envelope accept / reject, presentUrl); `slides_file_test.js`
+  (v1/v2 parse, v3 / v4 still open, v5 write / reparse of notes + transition + ink, version 6 refused, cloneSlide is
+  deep for notes). Static curl smoke: 200 on slides.html / slides.css / slides_present.js / slides_show.js / slides_app.js,
+  body greps SL7. No Puppeteer, Playwright, jsdom or headless browser.
+- Caveats: live pen ink is on the audience slide; the presenter preview updates ink at the end of a stroke, not live,
+  and does not show the laser. Ink is not shown in the editor. Presenter view needs a same-origin second window and a
+  saved deck (memory-only storage falls back to one screen). Transitions do not run when the system asks for reduced
+  motion. Popup / BroadcastChannel behaviour was not tried on a real second monitor in this build. Not tried on a real
+  phone.
+
+
+### 1.71 Hub Office Slides themes, masters, hide and sections, release SL8
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl8-slides` from `apps/sl7-slides` (e341d842).
+  `apps/office/shared/` not edited. New `slides_master.js` (`SLMaster`): master / footer / date / hide / section
+  helpers. No DOM, safe to load in Node.
+- Deck themes: eight colour + font sets (Light, Dark, Ocean, Forest, Sunset, Slate, Paper, Midnight). Fonts are
+  already on the machine (system UI or Georgia / Palatino) — no web fonts. The app chrome stays System / Light / Dark
+  in Settings (Jor). Unknown theme ids load as Light. A per-slide background still overrides the theme colour only.
+- Master / footer: Design → Master and footer… (in-app sheet). Optional footer text (200 characters), slide numbers
+  (1 / N among slides that are not hidden), date (today or a fixed YYYY-MM-DD), and “don’t show on title slides”
+  (on by default). Per-slide override: inherit / hide / show, plus optional footer text. Older decks start with the
+  footer off. App undo covers the master and the per-slide override.
+- Hide slide: skipped in Present and Presenter view (and in that count). Shown faded in the sorter with a Hidden badge.
+  If every slide is hidden the show still runs. Print / Export PDF / notes pages ask Include or Leave out (default:
+  leave out) when the deck has hidden slides.
+- Sections: named groups of consecutive slides (`slide.sec` + `deck.sections: [{ id, name, fold }]`). Add section at
+  this slide; list headers collapse / expand, rename or remove, and move as a block (▲ ▼ or drag the header). Up to
+  50 sections. Collapse is saved, not an undo step. App undo covers add / rename / remove / move.
+- Format / compatibility: deck record `fmt: 7`. SL1–SL7 records (fmt 6 / 5 / 4 / 3 / none) open unchanged. .hslides
+  `version: 6` (reads 1–6; higher refused). v6 keeps the v5 fields and adds optional `master`, `sections`, and per-slide
+  `hide`, `foot`, `footer`, `sec`. Export writes v6.
+- Release id: `<title>Slides SL8</title>` (legacy SL7 · … comment), `VERSION = 'SL8'`, About SL8 (legacy comments),
+  `?v=SL8` on the app's own css / js (including the new slides_master.js; shared office-*.css/js left unversioned).
+  No service worker, catalog, CSV, build, other hub/, repo-root shared/ or apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51;
+  `slides_draw_test.js` 55/55; `slides_present_test.js` 31/31; `slides_master_test.js` (master defaults / cap, date
+  format, footer skip-title and per-slide override, vis index, add / split / move / remove sections, normalize
+  disconnected runs); `slides_file_test.js` (v5 still opens and migrates master off, v6 write / reparse of ocean theme
+  + master + sections + hide / foot, version 7 refused, cloneSlide is deep for hide). Static curl smoke: 200 on
+  slides.html / slides.css / slides_master.js / slides_app.js / slides_list.js, body greps SL8. No Puppeteer,
+  Playwright, jsdom or headless browser.
+- Caveats: themes use only local fonts. Dragging a slide to a section boundary may attach it to the previous section.
+  The footer sits in the bottom padding and can overlap a very low object. Collapse is not on the undo stack. Not tried
+  on a real phone or a real printer.
+
+
+### 1.72 Hub Office Slides PowerPoint and PNG export, release SL9
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl9-slides` from `apps/sl8-slides` (10be31c0).
+  `apps/office/shared/` not edited. New helpers: `slides_zip.js` (`SLZip`, tiny store-only ZIP pack / unpack),
+  `slides_pptx.js` (`SLPptx`, build / parse a files map, regex XML, no DOM), `slides_png.js` (`SLPng`, `svgFor()`
+  is Node-testable; `toPngBlob()` needs a browser canvas). No CDN and no new dependency. Deflated .pptx imports
+  lazy-load JSZip already vendored at `shared/vendor/jszip.min.js` (fallback `apps/office/ocr/vendor/jszip.min.js`);
+  those vendor files were not edited.
+- Export .pptx: text boxes with basic styling (bold / italic / underline / strike, size, colour, highlight, bullets),
+  shapes, tables, pictures (from in-memory data URLs), notes, theme colours, footer and slide numbers baked as text,
+  hidden flag (`p:sld show="0"`). One blank 16:9 layout; objects absolutely placed. EMU = px × 9525 (960 × 540).
+  Sections, transitions and ink are skipped (an in-app summary lists them). WebP may stay WebP unless a converter is
+  passed. The package is an uncompressed zip (PowerPoint / LibreOffice accept it).
+- Import .pptx (best-effort): text, pictures, simple shapes / tables, notes. Theme is picked by nearest colour match.
+  Unknown parts (charts, SmartArt, video and the like) are skipped and listed in a summary dialog. Cap 500 slides.
+  A deflated package uses lazy JSZip; if it cannot load, import stops with a message.
+- Export PNG: File / ⋯ → Export PNG… asks This slide (one PNG) or All slides (ZIP, including hidden slides). Drawn
+  from the model as SVG, then rasterised at 1920 × 1080, one slide after another (light on a 4 GB Celeron). Not a
+  screenshot of the editor.
+- Format / compatibility: no bump. Deck record stays `fmt: 7`. .hslides stays `version: 6` (reads 1–6; higher refused).
+- Release id: `<title>Slides SL9</title>` (legacy SL8 · … comment), `VERSION = 'SL9'`, About SL9 (legacy comments),
+  `?v=SL9` on the app's own css / js (including the new zip / pptx / png helpers; shared office-*.css/js left
+  unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or apps/system edits.
+  slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; existing helper suites rerun
+  (`slides_text_test.js`, `slides_draw_test.js`, `slides_present_test.js`, `slides_master_test.js`,
+  `slides_file_test.js` — v6 write unchanged); new `slides_pptx_test.js` (store ZIP pack / unpack, PPTX XML
+  build → pack → unpack → parse round-trip of title styling, bullets, shape, table, text box, picture, notes,
+  hidden flag, theme colours and baked footer; sections warned; bad package error; `svgFor()` has title / footer).
+  Static curl smoke: 200 on slides.html / css / zip / pptx / png / app, body greps SL9. No Puppeteer, Playwright,
+  jsdom or headless browser.
+- Caveats: export is not a real PowerPoint master (footer is a text box and is not reconstructed as a master on
+  import). PNG wrapping is estimated, not pixel-perfect. Not tried in every PowerPoint version or on a real phone.
+
+
+### 1.73 Base undo, field types and rules: `apps/office/base/` (Office), release BS5
 - Why: BS4 left Quick Access Undo/Redo disabled; fields were only Text / Number / Date / Yes-No, with no required, default, unique or auto-number ID.
 - New modules (under `apps/office/base/modules/` only): `base-types.js` (types, format, convert, validate, auto-number; no DOM), `base-history.js` (in-memory undo stack, ~100 steps, JSON snapshots of BASE.db), `base-pics.js` (resize to 800 px long side, WebP or JPEG, blobs in an IndexedDB `pics` store), `base-fields.js` (Add field / Fields… dialogs and the grid/form commit path).
 - Undo/Redo: Ctrl+Z / Ctrl+Y and the HO1 Quick Access buttons. Covers cell edits (one step from first change to blur), add/delete record, field add/rename/retype/delete, table rename, CSV import. Not persisted. Deleting a whole table still cannot be undone (dialog text + `BaseHistory.clear()`). Inside a text field, Ctrl+Z stays the browser's own undo (`undoKey`).
@@ -835,7 +1307,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - `<title>Base BS5</title>`, `BASE_VERSION = "BS5"`, Base's own css/js `?v=BS5`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, a static curl smoke test (200 + BS5), and pure-helper Node tests for validation, auto-number and the undo stack (no Puppeteer / Playwright / jsdom).
 
-### 1.65 Base links between tables: `apps/office/base/` (Office), release BS6
+### 1.74 Base links between tables: `apps/office/base/` (Office), release BS6
 - Why: BS5 added field types and rules but tables still could not point at each other, so a real little database (Orders → Customers) was out of reach.
 - New `modules/base-links.js` (pure helpers + in-app record picker, jump, add-related, related-records panel). New types: `ref` (Link to record: `{to, multi?, display?}`, value is a row id or an array of ids) and `lookup` (read-only `{via, src}`, computed from the linked record(s), not stored). The URL field stays `link`.
 - Record picker: in-app `dlg-*` dialog with search, single-click (or tick + OK when multi). Chips in the grid/form jump to the linked record; Change / Clear / × edit the link. Undo covers link edits (JSON snapshots already include arrays).
