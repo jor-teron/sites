@@ -1,4 +1,4 @@
-/* Web MCP — wm_main.js: boot the page, wire buttons, bind tools to the relay link. MCP2 */
+/* Web MCP — wm_main.js: boot the page, wire buttons, bind tools to the relay link. MCP2.1 */
 (function (root) {
   'use strict';
 
@@ -8,6 +8,30 @@
   var Tools = root.WMTools;
   var Link = root.WMLink;
   var UI = root.WMUI;
+  var Mask = root.WMMask;
+
+  /**
+   * Trimmed value of the PIN field, or '' when the field is missing.
+   */
+  function readPin() {
+    var pinEl = document.getElementById('pin');
+    return pinEl ? pinEl.value.trim() : '';
+  }
+
+  /**
+   * Trimmed value of the relay URL field, or '' when the field is missing.
+   */
+  function readRelay() {
+    var relayEl = document.getElementById('relay');
+    return relayEl ? relayEl.value.trim() : '';
+  }
+
+  /**
+   * Refresh the masked Grok URL line from the current form values.
+   */
+  function refreshGrokUrl() {
+    UI.updateGrokUrl(readRelay(), readPin());
+  }
 
   /**
    * Load the saved PIN and relay URL into the form, generating a PIN if none is saved.
@@ -23,13 +47,14 @@
   }
 
   /**
-   * Persist the current PIN and relay URL so a reload can reuse them.
+   * Persist the current PIN and relay URL so a reload can reuse them, and refresh the Grok URL line.
    */
   function persistForm() {
     var pinEl = document.getElementById('pin');
     var relayEl = document.getElementById('relay');
     if (pinEl) UI.lsSet(C.LS_PIN, pinEl.value.trim());
     if (relayEl) UI.lsSet(C.LS_RELAY, relayEl.value.trim());
+    refreshGrokUrl();
   }
 
   /**
@@ -64,10 +89,26 @@
   }
 
   /**
+   * Copy `text` and flash 'Copied' on `btn`, or show an error in the status line.
+   */
+  function copyAndFlash(text, btn, emptyMessage) {
+    var value = text == null ? '' : String(text);
+    if (!value) {
+      UI.setStatus(emptyMessage || 'Nothing to copy', 'error');
+      return;
+    }
+    UI.copyText(value).then(function (ok) {
+      if (ok) UI.flashCopied(btn);
+      else UI.setStatus('Could not copy', 'error');
+    });
+  }
+
+  /**
    * Wire every control once the DOM is ready.
    */
   async function boot() {
     UI.bootTheme();
+    UI.bootPinMask();
     loadForm();
     Link.onStatus(onLink);
     FS.onChange(onFolder);
@@ -103,21 +144,44 @@
       gen.addEventListener('click', function () {
         var pinEl = document.getElementById('pin');
         if (pinEl) pinEl.value = Link.generatePin();
+        UI.remaskPin();
         persistForm();
       });
     }
 
     var pinEl = document.getElementById('pin');
     var relayEl = document.getElementById('relay');
-    if (pinEl) pinEl.addEventListener('change', persistForm);
-    if (relayEl) relayEl.addEventListener('change', persistForm);
+    if (pinEl) {
+      pinEl.addEventListener('change', persistForm);
+      pinEl.addEventListener('input', refreshGrokUrl);
+    }
+    if (relayEl) {
+      relayEl.addEventListener('change', persistForm);
+      relayEl.addEventListener('input', refreshGrokUrl);
+    }
+
+    var copyPin = document.getElementById('btn-pin-copy');
+    if (copyPin) {
+      copyPin.addEventListener('click', function () {
+        copyAndFlash(readPin(), copyPin, 'Enter a PIN first');
+      });
+    }
+
+    var copyUrl = document.getElementById('btn-copy-url');
+    if (copyUrl) {
+      copyUrl.addEventListener('click', function () {
+        var url = Mask && Mask.grokUrl ? Mask.grokUrl(readRelay(), readPin()) : '';
+        copyAndFlash(url, copyUrl, 'Set the relay URL and PIN first');
+      });
+    }
 
     var connect = document.getElementById('btn-connect');
     if (connect) {
       connect.addEventListener('click', function () {
         persistForm();
-        var pin = pinEl ? pinEl.value : '';
-        var url = relayEl ? relayEl.value : '';
+        UI.remaskPin();
+        var pin = readPin();
+        var url = readRelay();
         /* Bind the real filesystem tools for this session. */
         var tools = Tools.createTools(FS, root.WMCmd);
         Link.connect(url, pin, tools, UI.addLog);

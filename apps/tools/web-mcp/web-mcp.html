@@ -10,7 +10,7 @@
   <div class="app" id="app">
     <header class="top">
       <h1>Web MCP</h1>
-      <span class="tag">MCP2</span>
+      <span class="tag">MCP2.1</span>
     </header>
 
     <p class="banner" id="unsupported" hidden></p>
@@ -26,8 +26,10 @@
     <section class="panel" aria-label="Relay">
       <label class="field">
         <span>PIN</span>
-        <div class="row">
-          <input id="pin" type="text" autocomplete="off" spellcheck="false" minlength="6" placeholder="At least 6 characters" aria-label="PIN">
+        <div class="row pin-row">
+          <input id="pin" type="password" name="web-mcp-pin" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off" minlength="6" placeholder="At least 6 characters" aria-label="PIN">
+          <button type="button" class="btn" id="btn-pin-show" aria-pressed="false" aria-label="Show PIN" title="Show PIN">&#128065; Show</button>
+          <button type="button" class="btn" id="btn-pin-copy" aria-label="Copy PIN" title="Copy PIN">Copy</button>
           <button type="button" class="btn" id="btn-gen">Generate</button>
         </div>
       </label>
@@ -35,6 +37,10 @@
         <span>Relay URL</span>
         <input id="relay" type="url" autocomplete="off" spellcheck="false" aria-label="Relay URL">
       </label>
+      <div class="grok-url-row">
+        <p class="muted grok-url" id="grok-url"></p>
+        <button type="button" class="btn" id="btn-copy-url" aria-label="Copy Grok URL" title="Copy Grok URL">Copy URL</button>
+      </div>
       <div class="row">
         <button type="button" class="btn btn-primary" id="btn-connect">Connect</button>
         <button type="button" class="btn btn-danger" id="btn-disconnect" disabled>Disconnect</button>
@@ -50,6 +56,7 @@
   </div>
 
   <script src="wm_config.js"></script>
+  <script src="wm_mask.js"></script>
   <script src="wm_paths.js"></script>
   <script src="wm_cmd_parse.js"></script>
   <script src="wm_cmd_diff.js"></script>

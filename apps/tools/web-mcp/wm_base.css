@@ -1,4 +1,4 @@
-/* Web MCP — wm_base.css: theme vars, 48px targets, jelly press, reduced motion. MCP1 */
+/* Web MCP — wm_base.css: theme vars, 48px targets, jelly press, reduced motion. MCP2.1 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -149,7 +149,8 @@ header.top .tag {
 }
 
 input[type="text"],
-input[type="url"] {
+input[type="url"],
+input[type="password"] {
   flex: 1 1 160px;
   min-height: 48px;
   width: 100%;
@@ -160,6 +161,24 @@ input[type="url"] {
   color: var(--text);
   font: inherit;
   font-size: 1rem;
+}
+
+.pin-row input {
+  flex: 1 1 140px;
+  width: auto;
+}
+
+.grok-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.grok-url {
+  flex: 1 1 200px;
+  min-width: 0;
+  word-break: break-all;
 }
 
 input:focus {

@@ -1,4 +1,4 @@
-/* Web MCP — wm_config.js: all constants and magic values in one place. MCP2 */
+/* Web MCP — wm_config.js: all constants and magic values in one place. MCP2.1 */
 (function (root) {
   'use strict';
 
@@ -9,9 +9,9 @@
     /* MCP initialize.serverInfo.name (stable id for clients). */
     SERVER_NAME: 'web-mcp',
     /* MCP initialize.serverInfo.version for this release. */
-    SERVER_VERSION: '1.1.0',
+    SERVER_VERSION: '1.1.1',
     /* Release tag shown in the header. */
-    RELEASE: 'MCP2',
+    RELEASE: 'MCP2.1',
     /* Protocol versions we accept, newest first. */
     PROTOCOL_VERSIONS: ['2025-06-18', '2025-03-26', '2024-11-05'],
     /* Fallback when the client omits a version or sends an unknown one. */
@@ -36,6 +36,16 @@
     PIN_CHARS: 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789',
     /* Alphabet accepted when the user types a PIN: letters, digits, underscore, hyphen. */
     PIN_VALID_CHARS: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-',
+    /* How many characters stay visible at each end of a masked PIN (when it is longer than PIN_MIN_LEN). */
+    PIN_MASK_ENDS: 2,
+    /* Bullet used to hide the middle (or all) of a PIN in the log, status, and Grok URL line. */
+    PIN_MASK_CHAR: '\u2022',
+    /* How long the PIN stays visible after Show is pressed, in milliseconds. It remasks earlier on Connect or page hide. */
+    PIN_REMASK_MS: 30000,
+    /* How long the Copy buttons show "Copied", in milliseconds. */
+    COPY_FEEDBACK_MS: 1500,
+    /* Path Grok posts to on the relay, written as origin + this path + PIN. */
+    GROK_MCP_PATH: '/mcp/',
 
     /* IndexedDB database that stores the persisted folder handle. */
     IDB_NAME: 'web-mcp',
