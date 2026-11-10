@@ -128,3 +128,9 @@ nor are Hub/Learn/other keys. The page lists the keys and asks to confirm first.
 | Sweet Swap (`sweet-swap`) | done (SWAP-1a) | theme (Auto follows Hub then device), showHints (idle move glow), lowGraphics / reduced motion (instant moves), gear (`?from=sweet-swap`). Saves `sweet-swap.save` and per-level bests `sweet-swap.best`. Hiding the page pauses input. No sound or timed loop: FPS, autoPause, difficulty, sound and controls options unused |
 | Breakout (`breakout`) | done (BRK-1) | theme (Auto = Hub then system), fpsLimit (draw only; fixed 60 Hz physics with adaptive sub-steps), lowGraphics / reduced motion (particles off), showHints, sfx + masterVolume, autoPause (blur optional; hidden tab always pauses), gear (`?from=breakout`). Local mute uses shared sfx. `breakout.best` and `breakout.save` are cleared by Clear all game progress. No music; difficulty, vibration, screenShake, joystick and 3D options unused |
 | All other games | pending | |
+
+## Per-game visual settings
+
+| Storage key | Values | Default |
+|---|---|---|
+| `space-invader.visualTheme` | `auto`, `classic`, `retro`, `gameboy`, `amber`, `neon`, `space`, `flat`, `cyber`, `paper`, `ocean` | `auto` (Hub light → Minimal Flat; dark → Classic Arcade). The in-game Theme dialog saves the choice; live Hub changes only affect Auto. |
