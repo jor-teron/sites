@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- MINE-1. Rules: core/rules.js; clock/saves: core/game.js; drawing/input/settings/audio: ui/. -->
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minesweeper MINE-1</title><link rel="icon" href="minesweeper_icon.png"><link rel="stylesheet" href="ui/style.css">
+</head><body><main id="app">
+<header class="header"><a class="back" target="_top" href="../../../desktop/desktop.html#games" aria-label="Back to Hub">← Hub</a><h1>Minesweeper</h1><span id="gearSlot" class="gear-slot"></span></header>
+<section class="controls" aria-label="Game controls">
+  <div class="hud"><div class="meter"><small>Mines left</small><output id="remaining">10</output></div>
+    <button id="reset" class="smiley" aria-label="New game" title="New game">☺</button>
+    <div class="meter"><small>Time</small><output id="timer">0:00</output></div></div>
+  <div class="toolbar"><select id="difficulty" aria-label="Difficulty"><option value="easy">Easy · 9 × 9</option><option value="medium">Medium · 16 × 16</option><option value="hard">Hard · 30 × 16</option><option value="custom">Custom</option></select><button id="flagMode" aria-pressed="false">⚑ Flag mode</button></div>
+  <form id="custom" hidden><label>Width<input id="width" type="number" min="5" max="40" value="12"></label><label>Height<input id="height" type="number" min="5" max="30" value="12"></label><label>Mines<input id="mines" type="number" min="1" max="1191" value="20"></label><button type="submit">Start</button></form>
+  <p id="status" role="status">Choose a cell. Your first opening is safe.</p><p id="best" class="hint">Best: —</p>
+  <div class="toolbar options"><label>Cells <select id="zoom" aria-label="Cell size"><option value="fit">Fit</option><option value="32">Large</option><option value="40">XL</option></select></label><label><input type="checkbox" id="questions"> ? marks</label><button id="mute" aria-pressed="false">Mute</button><button id="helpBtn">How to play</button></div>
+  <p class="hint instructions">Tap to reveal · hold to flag · drag to pan large boards</p>
+</section>
+<section id="boardWrap" aria-label="Scrollable minefield"><div id="board" role="grid" aria-label="Minefield"></div></section>
+</main>
+<dialog id="help" aria-labelledby="helpTitle"><h2 id="helpTitle">How to play</h2>
+<p>Reveal every safe cell without hitting a mine. Numbers count mines in the eight surrounding cells.</p>
+<p>Your first reveal opens an area: that cell and all its neighbours contain no mines.</p>
+<p>Right-click or hold a cell for 400 ms to flag it. On phones enable <b>Flag mode</b> to flag with a tap. Optional ? marks cycle after a flag.</p>
+<p>Click an open number to <b>chord</b>: when its adjacent flag count matches its number it reveals the remaining neighbours. Wrong flags can explode a mine!</p>
+<p>Arrows move keyboard focus; Enter or Space reveals; F flags. Drag to pan Hard or choose larger cells. Browser zoom is not disabled.</p>
+<p>Custom sizes clamp to 5–40 columns and 5–30 rows. Mines clamp to 1 through the number of cells minus 9 to reserve a safe opening.</p>
+<p>Games save after each move. The timer pauses when hidden or help is open. Best times are kept by difficulty and separately for each custom size.</p>
+<p>Smiley or a new difficulty starts over. A safe opening does not guarantee every board can be solved without guessing.</p><button id="helpClose">Got it</button></dialog>
+<script src="../common/settings/games-settings.js"></script><script src="core/rules.js"></script><script src="ui/settings.js"></script><script src="ui/sound.js"></script><script src="ui/render.js"></script><script src="ui/input.js"></script><script src="core/game.js"></script>
+</body></html>
