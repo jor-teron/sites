@@ -131,7 +131,7 @@
       if (!descend(w, a, w.distS)) randStep(w, a); return;
     }
     if (a.st === 'forage') {
-      if (AF.nightAmt(w) > 0.3) { a.st = 'home'; return; }      // AF3: sleep in the nest at night
+      if (AF.nightAmt(w) > 0.18) { a.st = 'home'; return; }      // AF-4b: head in at dusk so they are clearly inside at night
       if (!atSurf) { if (!descend(w, a, w.distS)) randStep(w, a); return; }
       if (a.trip > 35) { a.st = 'home'; a.trip = 0; return; }
       var f = nearFood(w, a.cx);
@@ -180,6 +180,17 @@
     }
     // pheromone decay
     w.phT += dt; if (w.phT > 0.5) { w.phT = 0; var ph = w.ph; for (i = 0; i < ph.length; i++) if (ph[i] > 0) { ph[i] *= 0.93; if (ph[i] < 0.01) ph[i] = 0; } }
+    // AF-4b: wet soil dries (surface faster than deep); mark dirty so the cache repaints
+    w.dryT = (w.dryT || 0) + dt;
+    if (w.dryT > 0.5) {
+      var dryDt = w.dryT, wet = w.wet, y, rate, nv; w.dryT = 0;
+      for (i = S * W; i < wet.length; i++) if (wet[i] > 0) {
+        y = i / W | 0; rate = 0.022 * (y < S + 5 ? 1.5 : 0.7);
+        nv = wet[i] - rate * dryDt; if (nv < 0.008) nv = 0;
+        if (nv !== wet[i]) { wet[i] = nv; w.dirty.push(i); }
+      }
+    }
+    if (w.splash) { w.splash.t -= dt; if (w.splash.t <= 0) w.splash = null; }
     // food upkeep
     w.stored = Math.max(0, w.stored - dt * (0.004 * w.ants.length + 0.02 * countStage(w, 'larva')));
     // queen

@@ -20,11 +20,18 @@
     var night = Math.max(0, Math.abs(AF.dayPhase(w) - 0.5) * 4 - 1.2);   // 0 by day, ~0.8 deep night
     c.save(); c.beginPath(); c.rect(ox, oy, W * k, S * k); c.clip();
     if (night > 0) { c.fillStyle = 'rgba(255,255,230,' + Math.min(1, night) + ')';
-      for (var s = 0; s < 24; s++) c.fillRect(ox + ((s * 97) % W) * k, oy + ((s * 53) % (S - 4)) * k, Math.max(1, k * .2), Math.max(1, k * .2)); }
-    c.globalAlpha = 1 - Math.min(0.7, night);
+      for (var s = 0; s < 24; s++) c.fillRect(ox + ((s * 97) % W) * k, oy + ((s * 53) % (S - 4)) * k, Math.max(1, k * .2), Math.max(1, k * .2));
+      // moon travels slowly across the sky
+      var mx = ox + ((AF.dayPhase(w) + 0.15) % 1) * W * k, my = oy + (2.2 + Math.sin(AF.dayPhase(w) * 6) * 1.2) * k, mr = 1.6 * k;
+      c.fillStyle = 'rgba(255,250,220,' + (0.55 + night * 0.45) + ')'; c.beginPath(); c.arc(mx, my, mr, 0, 7); c.fill();
+      c.fillStyle = 'rgba(210,205,180,' + (0.25 * night) + ')';
+      c.beginPath(); c.arc(mx + mr * 0.25, my - mr * 0.1, mr * 0.28, 0, 7); c.fill();
+      c.beginPath(); c.arc(mx - mr * 0.3, my + mr * 0.2, mr * 0.16, 0, 7); c.fill(); }
+    c.globalAlpha = (1 - Math.min(0.85, night * 1.15)) * (night > 0.3 ? 0.55 : 1);  // dimmer, cooler clouds at night
     for (var j = 0; j < (low ? 0 : CL.length); j++) { var q = CL[j], cw = 18 * q[2] * k, span = W * k + cw;
       var cx = ox - cw + ((q[0] * span + w.t * q[3] * k * 0.4) % span);
-      c.drawImage(cloud, cx, oy + q[1] * k, cw, cw * 0.42); }
+      c.drawImage(cloud, cx, oy + q[1] * k, cw, cw * 0.42);
+}
     c.restore(); c.globalAlpha = 1;
   };
 
@@ -53,5 +60,18 @@
       c.fillStyle = '#d63a3a'; c.beginPath(); c.arc(bx, by, br, 0, 7); c.fill();
       c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(bx - br * .35, by - br * .35, br * .3, 0, 7); c.fill();
       c.fillStyle = '#e8a33a'; c.beginPath(); c.arc(fx + r * .4 * k, fy - r * .3 * k, br * .8, 0, 7); c.fill(); }
+    // puddles where the soil is still wet near the surface
+    var wx, wet, px, py, pud;
+    for (wx = 0; wx < W; wx++) {
+      wet = w.wet[S * W + wx] || 0;
+      if (wx > 0) wet = Math.max(wet, w.wet[S * W + wx - 1] || 0);
+      if (wet < 0.18) continue;
+      pud = (w.mound[wx] || 0);
+      px = ox + (wx + .5) * k; py = base - pud * k + k * 0.08;
+      c.fillStyle = 'rgba(80,140,190,' + (0.22 + wet * 0.35).toFixed(3) + ')';
+      c.beginPath(); c.ellipse(px, py, k * (0.55 + wet * 0.5), k * (0.12 + wet * 0.1), 0, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255,255,255,' + (0.12 + wet * 0.15).toFixed(3) + ')';
+      c.beginPath(); c.ellipse(px - k * 0.15, py - k * 0.04, k * 0.25, k * 0.05, -0.2, 0, 7); c.fill();
+    }
   };
 })();

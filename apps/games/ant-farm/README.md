@@ -33,3 +33,8 @@ nest, `F` to fit the whole tank. Fit farm and Fill view are also in the ⋯ menu
   soil and stones, distinct chamber floors, compact toolbar with the title
   visible, light theme plus Auto (System) as the default, settings moved to
   `ui/settings.js` (old keys still work).
+- **AF-4b** — side-view ants with walk, dig and carry cycles, a bigger queen,
+  clearer eggs / wriggling larvae / cocoons, soft glowing pheromone paths,
+  ants that walk on dirt mounds, wet soil that dries with puddles and a
+  drawn splash, and a moon with dimmer clouds at night (foragers inside the nest).
+

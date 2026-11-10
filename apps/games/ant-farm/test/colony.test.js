@@ -66,5 +66,23 @@ var c = run(11111, 5);
 ok('clock advanced', c.t >= 5 && c.t < 5.1, c.t);
 ok('dayPhase is in [0,1)', AF.dayPhase(c) >= 0 && AF.dayPhase(c) < 1, AF.dayPhase(c));
 
+// AF-4b: wet soil dries; splash ticks down
+var wet = run(11111, 1);
+AF.dropWater(wet, 80);
+for (var tw = 0; tw < 2 && !(wet.splash && wet.splash.t > 0); tw += 1 / 30) AF.step(wet, 1 / 30);
+ok('splash starts after a drop', !!(wet.splash && wet.splash.t > 0.3), wet.splash);
+var soaked = 0, i;
+for (i = 0; i < wet.wet.length; i++) if (wet.wet[i] > 0.05) soaked++;
+ok('water soaks the soil', soaked > 10, soaked);
+var sum0 = 0, sum1 = 0;
+for (i = 0; i < wet.wet.length; i++) sum0 += wet.wet[i];
+for (var t2 = 0; t2 < 80; t2 += 1 / 30) AF.step(wet, 1 / 30);
+for (i = 0; i < wet.wet.length; i++) sum1 += wet.wet[i];
+ok('wet soil dries over time', sum1 < sum0 * 0.7, 'before=' + sum0.toFixed(2) + ' after=' + sum1.toFixed(2));
+ok('splash expires', !wet.splash, wet.splash);
+
+var d1 = run(11111, 90), d2 = run(11111, 90);
+eq('same seed, same after 90s (with drying)', snap(d1), snap(d2));
+
 if (fail) { console.log('\n' + fail + ' failed'); process.exit(1); }
-console.log('\nAll ' + (8) + ' checks passed.');
+console.log('\nAll checks passed.');
