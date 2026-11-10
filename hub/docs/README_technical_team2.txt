@@ -936,6 +936,37 @@ sleep timer. Full article text is still a maybe (publishers often block it).
 
 Doc section 1.56 is the next free number on main after Video Editor VD3.
 
+### 1.57 Read Aloud PDF, web page, sleep timer, release RA2
+Built by Hub Apps Builder 2 after "RA2 code", on top of RA1 (section 1.56),
+branch apps/ra2-read-aloud. Local commit only at the time of writing.
+
+- Release id RA2 in <title>, RELEASE, and ?v=RA2 on the app's own css/js.
+- PDF source: open a .pdf from the device; text extracted page by page with
+  Mozilla pdf.js 3.11.174 (legacy UMD, Apache-2.0) from shared/vendor/pdfjs
+  (the same copy PDF Tools uses; referenced by relative path, not copied into
+  this app). Loaded lazily only when a PDF is opened. Page indicator and Go
+  to page. Scanned PDFs with no text layer show an in-app message and point
+  to the Office OCR app. OCR is out of scope.
+- Web source: paste a URL, fetch through api.allorigins.win (raw, then /get),
+  the News HTML-capable relay. feedrapp.info is RSS-only and is not used.
+  Extract readable text with regex/string parsing (prefer <article>, else
+  p/h1-h3 in main or body; strip nav, footer, aside, script, style). Title
+  is shown and read. Clear in-app error if the relay fails or the site
+  blocks it. This often fails.
+- News "Read article": tries the story link (Google News redirects are
+  resolved when possible). On failure, an in-app message is shown and the
+  headline is read instead.
+- Sleep timer: Off, 5/10/15/30/60 minutes, or end of the current item, with
+  a countdown chip in the player bar (also in Settings). Stops after the
+  current sentence when time is up.
+- Word count and estimated reading time (~160 wpm, scaled by speed) for
+  Text, PDF and Web. Last source tab and per-source position remembered
+  (PDF file is not stored; reopen it after a reload).
+- Tests: node --check on every JS file, ra_helpers_test.js (sentence split,
+  word count, HTML-to-text, Google URL decode; no DOM / jsdom), static serve
+  + curl 200 including shared/vendor/pdfjs/pdf.min.js, grep for RELEASE /
+  RA2. No Puppeteer, Playwright, or jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
