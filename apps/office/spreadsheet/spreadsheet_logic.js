@@ -15,6 +15,7 @@ function afterChange() {
   paintAll();
   syncStyleUi();
   saveStore();
+  if (typeof updateStats === "function") updateStats();
 }
 
 /**
@@ -22,10 +23,11 @@ function afterChange() {
  */
 function boot() {
   var i;
-  emptyGrid();
+  emptyWorkbook();
   loadStore();
   recalcAll();
   buildTable();
+  if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
   wireUi();
   document.addEventListener("keydown", onDocKey);
   for (i = 0; i < SHEET_INIT.length; i++) {

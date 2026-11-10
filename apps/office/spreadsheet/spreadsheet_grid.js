@@ -129,6 +129,7 @@ function highlightSel() {
   }
   if (inpGrid[selR] && inpGrid[selR][selC]) inpGrid[selR][selC].parentNode.classList.add(CLS.selected);
   if (multi) setStatus(rangeLabel());
+  if (typeof updateStats === "function") updateStats();
 }
 
 /**

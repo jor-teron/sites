@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- legacy: <title>Spreadsheet</title> -->
-  <title>Spreadsheet SS1</title>
+  <title>Spreadsheet SH8</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css">
+  <link rel="stylesheet" href="spreadsheet.css?v=SH8">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-colour.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css">
-  <link rel="stylesheet" href="spreadsheet_page.css">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH8">
+  <link rel="stylesheet" href="spreadsheet_page.css?v=SH8">
 </head>
 <body>
   <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS by ../shared/office-ribbon.js) -->
@@ -130,6 +130,22 @@
         <button type="button" id="btn-sort-desc" title="Sort Z→A by the active column">Sort Z→A</button>
       </div>
     </div>
+    <div class="of-panel" role="tabpanel" id="of-panel-view" data-tab="view" hidden>
+      <div class="of-group tool-group" role="group" aria-label="Freeze panes">
+        <span class="of-group-label">Freeze</span>
+        <button type="button" id="btn-freeze-top" title="Keep the top row visible while scrolling">Top row</button>
+        <button type="button" id="btn-freeze-first" title="Keep the first column visible while scrolling">First column</button>
+        <button type="button" id="btn-freeze-panes" title="Freeze rows above and columns to the left of the active cell">Panes</button>
+        <button type="button" id="btn-unfreeze" title="Unfreeze panes">Unfreeze</button>
+      </div>
+      <div class="of-group tool-group" role="group" aria-label="Hide rows and columns">
+        <span class="of-group-label">Hide</span>
+        <button type="button" id="btn-hide-rows" title="Hide the selected rows">Hide rows</button>
+        <button type="button" id="btn-hide-cols" title="Hide the selected columns">Hide columns</button>
+        <button type="button" id="btn-unhide" title="Unhide rows and columns in the selection">Unhide</button>
+        <button type="button" id="btn-unhide-all" title="Unhide every hidden row and column on this sheet">Unhide all</button>
+      </div>
+    </div>
   </nav>
 
   <!-- Formula bar: its own row -->
@@ -137,8 +153,13 @@
     <span class="eq-mark">=</span>
     <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar">
   </div>
-  <div id="status" class="status"></div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
+  <div class="sheet-footer" id="sheet-footer">
+    <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Sheets"></div>
+    <button type="button" class="sheet-tab-add" id="btn-sheet-add" title="Add sheet" aria-label="Add sheet">+</button>
+    <div class="sheet-stats" id="sheet-stats" hidden></div>
+    <div id="status" class="status"></div>
+  </div>
   <script src="../shared/office-icons.js"></script>
   <script src="../shared/office-dialog.js"></script>
   <script src="../shared/office-page.js"></script>
@@ -151,31 +172,32 @@
   <script src="../shared/office-colour.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="spreadsheet_config.js"></script>
-  <script src="spreadsheet_formula.js"></script>
-  <script src="spreadsheet_functions.js"></script>
-  <script src="spreadsheet_refs.js"></script>
-  <script src="spreadsheet_state.js"></script>
-  <script src="spreadsheet_storage.js"></script>
-  <script src="spreadsheet_files.js"></script>
-  <script src="spreadsheet_grid.js"></script>
-  <script src="spreadsheet_edit.js"></script>
-  <script src="spreadsheet_fill.js"></script>
-  <script src="spreadsheet_toolbar.js"></script>
-  <script src="spreadsheet_settings.js"></script>
-  <script src="spreadsheet_page.js"></script>
-  <script src="spreadsheet_ribbon.js"></script>
-  <script src="spreadsheet_logic.js"></script>
-  <script src="spreadsheet_format.js"></script>
-  <script src="spreadsheet_undo.js"></script>
-  <script src="spreadsheet_select.js"></script>
-  <script src="spreadsheet_clipboard.js"></script>
-  <script src="spreadsheet_rows.js"></script>
-  <script src="spreadsheet_sort.js"></script>
-  <script src="spreadsheet_resize.js"></script>
-  <script src="spreadsheet_keys.js"></script>
-  <script src="spreadsheet_xlsx.js"></script>
-  <script src="spreadsheet_hub.js"></script>
-  <script src="spreadsheet_quick.js"></script>
+  <script src="spreadsheet_config.js?v=SH8"></script>
+  <script src="spreadsheet_formula.js?v=SH8"></script>
+  <script src="spreadsheet_functions.js?v=SH8"></script>
+  <script src="spreadsheet_refs.js?v=SH8"></script>
+  <script src="spreadsheet_state.js?v=SH8"></script>
+  <script src="spreadsheet_storage.js?v=SH8"></script>
+  <script src="spreadsheet_files.js?v=SH8"></script>
+  <script src="spreadsheet_grid.js?v=SH8"></script>
+  <script src="spreadsheet_edit.js?v=SH8"></script>
+  <script src="spreadsheet_fill.js?v=SH8"></script>
+  <script src="spreadsheet_toolbar.js?v=SH8"></script>
+  <script src="spreadsheet_settings.js?v=SH8"></script>
+  <script src="spreadsheet_page.js?v=SH8"></script>
+  <script src="spreadsheet_ribbon.js?v=SH8"></script>
+  <script src="spreadsheet_logic.js?v=SH8"></script>
+  <script src="spreadsheet_format.js?v=SH8"></script>
+  <script src="spreadsheet_undo.js?v=SH8"></script>
+  <script src="spreadsheet_select.js?v=SH8"></script>
+  <script src="spreadsheet_clipboard.js?v=SH8"></script>
+  <script src="spreadsheet_rows.js?v=SH8"></script>
+  <script src="spreadsheet_sheets.js?v=SH8"></script>
+  <script src="spreadsheet_sort.js?v=SH8"></script>
+  <script src="spreadsheet_resize.js?v=SH8"></script>
+  <script src="spreadsheet_keys.js?v=SH8"></script>
+  <script src="spreadsheet_xlsx.js?v=SH8"></script>
+  <script src="spreadsheet_hub.js?v=SH8"></script>
+  <script src="spreadsheet_quick.js?v=SH8"></script>
 </body>
 </html>

@@ -18,7 +18,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear
 - `spreadsheet_fill.js`: autofill handle
 - `spreadsheet_toolbar.js`: toolbar wiring and style buttons
-- `spreadsheet_ribbon.js`: ribbon tabs (Home / Insert / Page / Data, defined as data) and the File menu, via `../shared/office-ribbon.js`
+- `spreadsheet_ribbon.js`: ribbon tabs (Home / Insert / Page / Data / View, defined as data) and the File menu, via `../shared/office-ribbon.js`
+- `spreadsheet_sheets.js`: SH8 workbook tabs, freeze panes, hide / unhide, selection stats
 - `spreadsheet_ribbon.css`: sheet colours for the shared ribbon, formula-bar row
 - `spreadsheet_page.js` / `spreadsheet_page.css`: Page tab (orientation, paper, margins, gridlines, headings, fit width, print), saved under `<storage key>-page`
 - `../shared/`: Office shared ribbon, dialog and page-setup files (see `apps/office/shared/README.md`)
@@ -40,7 +41,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3).
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
-- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, insert/delete, sort and CSV import. Last 100 steps; colour-picker drags within 0.8 s count as one step.
+- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, insert/delete, sort, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
 - **Copy / paste:**
   - Copy puts tab-separated values on the system clipboard, so it pastes into Excel or Google Sheets.
   - Pasting the app's own copy brings formulas and styles and shifts relative refs.
@@ -48,12 +49,12 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
   - One copied cell pasted over a block fills the whole block.
   - Text from other apps (tab-separated) goes in as typed text, starting at the active cell.
 - **Fill:** Ctrl+D copies the top row of the block down; Ctrl+R copies the left column right. The small handle on the active cell drags to autofill.
-- **Insert / delete:** + Row / − Row / + Col / − Col act on the selected rows or columns. Formula refs are adjusted, ranges grow or shrink, refs to deleted cells become `#REF!`. The grid stays 26 × 100, so insert is refused when the last row/column has data.
+- **Insert / delete:** + Row / − Row / + Col / − Col act on the selected rows or columns. Formula refs are adjusted on every sheet (including `Sheet2!A1` refs that point at the changed sheet), ranges grow or shrink, refs to deleted cells become `#REF!`. The grid stays 26 × 100, so insert is refused when the last row/column has data.
 - **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. There is no header-row detection.
 - **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
 - **Column widths:** drag the right edge of a column letter; double-click it to reset. Widths are saved.
 - **Styles:** align, bold, italic, underline, fill colour, text colour for the selection.
-- **CSV:** Export CSV downloads `sheet.csv` (values, trailing empty rows/columns trimmed). Import CSV loads a file starting at A1.
+- **CSV:** Export CSV downloads the active sheet (formulas, trailing empty rows/columns trimmed; hidden rows/columns are included). Import CSV loads a file onto the active sheet, starting at A1. Other sheets are left alone.
 - **Print / PDF:** browser print dialog; choose Save as PDF.
 - **Saving:** automatic after every change.
 
@@ -71,7 +72,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 Works inside the hub and responds to its phone D-pad, but the hub's key presses are synthetic: only shortcuts the app handles itself work (arrows move, Start = Enter, Select = Esc); browser actions such as the system clipboard don't, so a hub paste uses the app's internal copy.
 
 ## 5. Saved data
-localStorage key `sheet-v2` (cells, styles, formats, column widths). An older `sheet-v1` save is read if `sheet-v2` is empty, and older `sheet-v2` saves without widths or formats still load. To reset, use Clear (asks first; can be undone) or delete the key / clear site data.
+localStorage key `sheet-v3` (workbook: sheets, active sheet, cells, styles, formats, widths, freeze, hidden). An older `sheet-v2` (or `sheet-v1`) save is copied into Sheet1 on first load and left in place as a backup; later loads use only `sheet-v3`. Page setup is `sheet-v3-page`, with `sheet-v2-page` as a fallback. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
 
 ## 6. Errors
 - In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#ERR` (formula not understood).
@@ -128,3 +129,14 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 
 ## SS1 — Light / Auto themes
 Settings → View → Theme: Auto (default) / Light / Dark. Auto inside the Sites Hub (same-origin parent frame) follows `localStorage['sites-hub.theme']` ('dark' = Dark, else Light), live on `storage`, a same-origin `{type:'hub-prefs'}` message and focus; standalone it follows `prefers-color-scheme`. Light / Dark always win. Saved in `spreadsheet_settings` (`theme`, plus `ss1: true`; pre-SS1 settings with the old default 'dark' move to Auto once). Light palette tuned (headers, selection, pressed buttons, dialogs now follow the theme via `--select-bg`); dark values unchanged.
+
+## SH8 — multiple sheets, freeze, hide
+The grid is still 26 × 100; this release does not add rows or columns.
+
+- **Tabs:** a bar under the grid with Sheet1, Sheet2, …. `+` adds a sheet (up to 20). Double-click a tab (or right-click → Rename) to rename it, in an in-app dialog. Names must be unique, not empty, at most 31 characters, and must not contain `\ / * ? : [ ]`. Delete is not allowed on the last sheet; it can be undone, and formulas that pointed at the deleted sheet become `#REF!`. Duplicate, drag to reorder, or Move left / right in the tab menu. The active sheet is remembered.
+- **Cross-sheet formulas:** `Sheet2!A1`, `Sheet2!A1:B5`, `'My Sheet'!A1`. Recalculation is across the whole workbook. Renaming a sheet rewrites formulas that refer to it. Copy, cut, paste and fill keep the sheet prefix and still shift relative A1 parts. Insert / delete rows or columns on one sheet also adjusts refs from other sheets that point at it.
+- **View tab:** Freeze top row, first column, or panes (rows above and columns to the left of the active cell), and Unfreeze. Frozen rows and columns stay visible while scrolling (`position: sticky`). Hide selected rows or columns; Unhide (the selection, including gaps you selected around) or Unhide all. A thin marker shows where something is hidden. Hidden cells are still used in formulas and included in CSV, but skipped when printing.
+- **Files:** CSV import / export is the active sheet. XLSX open loads every sheet (up to 20, each still A–Z × 100; a message says if any were cut). XLSX save writes every sheet. Print prints the active sheet.
+- **Status bar:** Average, Count and Sum for numeric cells in the selection.
+- **Saving:** `sheet-v3`. A `sheet-v2` save is migrated once into Sheet1; the old key is not deleted. New / Clear uses an in-app confirm (no `window.confirm`).
+- Title, `SHEET_VERSION` and `?v=` on this app's own css/js are SH8.

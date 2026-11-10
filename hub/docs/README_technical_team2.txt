@@ -347,6 +347,7 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   - `spreadsheet-ribbon-tab`: the last ribbon tab.
 - Undo keeps 100 steps; colour drags within 0.8 s merge into one step.
 - Possible future name: "Sheetly".
+- SH8 (1.56): multiple sheets (sheet-v3), cross-sheet refs, freeze panes, hide rows/columns. Grid size unchanged.
 
 ### 1.7 Draftly: `apps/office/draftly/` (Office → Write)
 - An A4 paged word processor, with text flowing line by line between pages. Autosave; PDF and DOCX export.
@@ -823,6 +824,18 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
   (tithi+paksha, nakshatra, yoga, karana, vara) at st.panPlace (default first profile's place, else Delhi). Settings: st.ayanamsa.
 - Panchang is for the current moment (not sunrise); vara changes at local midnight. Traditional, for fun.
 - RELEASE/title/?v= AS3 (legacy AS2 noted in comments). Details: apps/tools/astrology/astrology_readme.md.
+
+
+### 1.56 Spreadsheet multiple sheets, freeze and hide, release SH8
+
+- apps/office/spreadsheet only (apps/office/shared/ was not edited). Grid stays 26 columns (A-Z) x 100 rows.
+- Workbook with a tab bar: add, rename (dialog; unique, 31 chars, no \ / * ? : [ ]), delete (not the last sheet; formulas become #REF!; undoable), duplicate, reorder (drag or Move left/right).
+- Cross-sheet refs: Sheet2!A1, Sheet2!A1:B5, 'My Sheet'!A1. Recalc is workbook-wide. Rename updates formulas; delete -> #REF!. Insert/delete rows or columns on one sheet adjusts refs from other sheets. Copy/fill keep the sheet prefix fixed.
+- View tab: freeze top row, first column, panes (rows above / columns left of the active cell), unfreeze. Hidden rows/columns (Unhide selection or Unhide all), thin markers, skipped in print, kept in CSV; formulas still see them. Frozen panes use position:sticky.
+- Storage sheet-v3 {sheets, active}. First load migrates sheet-v2 (or v1) into Sheet1 and leaves v2/v1 in place as a backup. Page setup also reads sheet-v2-page if sheet-v3-page is empty. Undo covers sheet add/rename/delete/reorder, freeze and hide (full workbook snapshot).
+- CSV import/export is the active sheet. XLSX open loads every sheet (cap 20, each still 26x100; a message if any were cut). XLSX save writes every sheet. Print is the active sheet (hidden rows/cols skipped).
+- Status bar: Average, Count and Sum for the numeric cells in the selection.
+- Title / SHEET_VERSION / ?v= on the spreadsheet's own css/js: SH8. Details: apps/office/spreadsheet/spreadsheet_readme.md.
 
 ## 2. Releases (PR → what)
 
