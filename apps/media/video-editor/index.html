@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Video Editor VD1</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="video-editor_icon.png">
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('video-editor-v1') || '{}');
+        var m = s.theme || 'auto';
+        var auto = false, t = '';
+        try {
+          auto = localStorage.getItem('sites-hub.themeAuto') === '1';
+          t = localStorage.getItem('sites-hub.theme') || '';
+        } catch (e) { /* blocked */ }
+        var dark;
+        if (m === 'dark' || m === 'light') dark = m === 'dark';
+        else if (!auto && (t === 'dark' || t === 'light')) dark = t === 'dark';
+        else dark = !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        var el = document.documentElement;
+        el.classList.add(dark ? 'dark' : 'light');
+        el.dataset.theme = dark ? 'dark' : 'light';
+        el.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) { /* ok */ }
+    })();
+  </script>
+  <link rel="stylesheet" href="ve_base.css?v=VD1">
+  <link rel="stylesheet" href="ve_range.css?v=VD1">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-header">
+      <h1>Video Editor</h1>
+      <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+        <button type="button" data-v="auto">Auto</button>
+        <button type="button" data-v="light">Light</button>
+        <button type="button" data-v="dark">Dark</button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <section class="empty-stage" id="uploadSection">
+        <label for="videoInput" class="drop-zone">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <span>Choose a video file or drag it here</span>
+          <span class="hint">Any format this browser can play. Cut and export stay on this device.</span>
+          <input type="file" id="videoInput" accept="video/*" hidden>
+        </label>
+      </section>
+
+      <section class="editor-stage hidden" id="editorSection">
+        <div class="video-area">
+          <div class="video-frame">
+            <video id="videoPreview" playsinline preload="auto"></video>
+          </div>
+        </div>
+
+        <aside class="controls-panel">
+          <div class="transport">
+            <button type="button" id="frameBackBtn" class="btn secondary-btn icon-btn" aria-label="Previous frame" title="Previous frame (Left)">&#8249;</button>
+            <button type="button" id="playBtn" class="btn secondary-btn" aria-label="Play">Play</button>
+            <button type="button" id="frameFwdBtn" class="btn secondary-btn icon-btn" aria-label="Next frame" title="Next frame (Right)">&#8250;</button>
+            <div class="time-readout">
+              <span id="curTime">0:00.0</span><span class="mute"> / </span><span id="srcDur">0:00.0</span>
+              <span class="edited-dur">Edited <strong id="editDur">0:00.0</strong></span>
+            </div>
+          </div>
+
+          <div class="range-block" id="rangeBlock">
+            <div class="range-times">
+              <button type="button" class="time-chip" id="startChip" title="In point — tap to type a time">0:00.0</button>
+              <span class="sel-dur">Selection <strong id="selDur">0:00.0</strong></span>
+              <button type="button" class="time-chip" id="endChip" title="Out point — tap to type a time">0:00.0</button>
+            </div>
+            <div class="range-track" id="rangeTrack" role="group" aria-label="Timeline">
+              <div class="range-rail" aria-hidden="true"></div>
+              <div class="range-removed-layer" id="rangeRemoved" aria-hidden="true"></div>
+              <div class="range-fill" id="rangeFill" aria-hidden="true"></div>
+              <button type="button" class="range-handle" id="handleStart" role="slider"
+                aria-label="In point" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
+              <button type="button" class="range-handle" id="handleEnd" role="slider"
+                aria-label="Out point" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
+              <button type="button" class="playhead" id="playhead" role="slider"
+                aria-label="Playhead" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" id="setInBtn" class="btn secondary-btn" title="Set In to the playhead (I)">Set In</button>
+            <button type="button" id="setOutBtn" class="btn secondary-btn" title="Set Out to the playhead (O)">Set Out</button>
+            <button type="button" id="cutBtn" class="btn secondary-btn" title="Remove the In–Out range (Delete)">Cut</button>
+            <button type="button" id="keepBtn" class="btn secondary-btn" title="Keep only the In–Out range">Keep</button>
+            <button type="button" id="undoBtn" class="btn secondary-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+            <button type="button" id="redoBtn" class="btn secondary-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
+            <button type="button" id="exportBtn" class="btn primary-btn">Export</button>
+            <button type="button" id="resetBtn" class="btn text-btn">Choose another video</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="dlg" class="dlg" hidden>
+    <div class="box" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+      <h2 id="dlgTitle"></h2>
+      <div id="dlgBody"></div>
+      <div class="acts" id="dlgActs"></div>
+    </div>
+  </div>
+
+  <script src="ve_helpers.js?v=VD1"></script>
+  <script src="ve_edits.js?v=VD1"></script>
+  <script src="ve_theme.js?v=VD1"></script>
+  <script src="ve_dlg.js?v=VD1"></script>
+  <script src="ve_range.js?v=VD1"></script>
+  <script src="ve_export.js?v=VD1"></script>
+  <script src="ve_ui.js?v=VD1"></script>
+  <script src="ve_main.js?v=VD1"></script>
+</body>
+</html>
