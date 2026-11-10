@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web MCP</title>
+  <link rel="stylesheet" href="wm_base.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top">
+      <h1>Web MCP</h1>
+      <span class="tag">MCP1</span>
+    </header>
+
+    <p class="banner" id="unsupported" hidden></p>
+
+    <section class="panel" aria-label="Folder">
+      <div class="row">
+        <button type="button" class="btn btn-primary" id="btn-pick">Pick folder</button>
+        <button type="button" class="btn" id="btn-allow" disabled>Allow</button>
+      </div>
+      <p class="muted" id="folder-label">No folder selected</p>
+    </section>
+
+    <section class="panel" aria-label="Relay">
+      <label class="field">
+        <span>PIN</span>
+        <div class="row">
+          <input id="pin" type="text" autocomplete="off" spellcheck="false" minlength="6" placeholder="At least 6 characters" aria-label="PIN">
+          <button type="button" class="btn" id="btn-gen">Generate</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>Relay URL</span>
+        <input id="relay" type="url" autocomplete="off" spellcheck="false" aria-label="Relay URL">
+      </label>
+      <div class="row">
+        <button type="button" class="btn btn-primary" id="btn-connect">Connect</button>
+        <button type="button" class="btn btn-danger" id="btn-disconnect" disabled>Disconnect</button>
+      </div>
+    </section>
+
+    <p class="status" id="status" role="status" aria-live="polite">Disconnected</p>
+
+    <section class="panel log-panel" aria-label="Tool call log">
+      <h2>Log</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+  </div>
+
+  <script src="wm_config.js"></script>
+  <script src="wm_paths.js"></script>
+  <script src="wm_fs.js"></script>
+  <script src="wm_tools.js"></script>
+  <script src="wm_rpc.js"></script>
+  <script src="wm_link.js"></script>
+  <script src="wm_ui.js"></script>
+  <script src="wm_main.js"></script>
+</body>
+</html>
