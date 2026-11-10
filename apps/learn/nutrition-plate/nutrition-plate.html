@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3d6b3a">
+<title>Nutrition Plate NP-1a</title>
+<link rel="icon" href="nutrition-plate_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.nutrition-plate.theme"></script>
+<link rel="stylesheet" href="ui/nutrition.css">
+</head>
+<body>
+<div class="lrn">
+<header class="lrn-head">
+  <h1><img src="nutrition-plate_icon.png" width="32" height="32" alt="">Nutrition Plate</h1>
+  <button id="back" class="lrn-qc">‹ Learn</button>
+  <button id="settings" class="lrn-qc" aria-label="Settings">⚙</button>
+</header>
+<main>
+  <div class="intro">
+    <div>
+      <p class="eyebrow">LEARN / HEALTH</p>
+      <h2>Build a plate. See what is in it.</h2>
+      <p>Everyday Indian foods, with approximate nutrients and a balanced-plate guide.</p>
+    </div>
+  </div>
+  <p class="notice">Figures are rounded guides based on IFCT 2017 food tables and common portions such as 1 roti, 1 katori or 1 cup. They are approximate, not a lab test, and this app is an educational guide, not medical advice.</p>
+  <section class="workspace">
+    <div class="plate-col">
+      <h2>Your plate</h2>
+      <p class="hint" id="plate-hint">Drag a food here, or tap it in the list to add one portion.</p>
+      <div id="plate" class="plate-drop" tabindex="0" role="region" aria-label="Plate"></div>
+      <section id="totals" aria-live="polite"></section>
+      <section id="balance" aria-label="Balanced plate guide"></section>
+    </div>
+    <div class="library-col">
+      <h2>Food library</h2>
+      <div class="filters" aria-label="Search and filter foods">
+        <label>Search<input id="search" type="search" placeholder="roti, dal, mango…" autocomplete="off"></label>
+        <label>Food group<select id="group"><option value="all">All groups</option></select></label>
+        <label>Diet<select id="diet">
+          <option value="all">All foods</option>
+          <option value="veg">Vegetarian</option>
+          <option value="egg">Egg</option>
+          <option value="nonveg">Non-veg</option>
+        </select></label>
+      </div>
+      <p id="lib-count" class="muted"></p>
+      <div id="library" class="food-grid"></div>
+    </div>
+  </section>
+  <p id="status" role="status"></p>
+</main>
+<footer>NP-1a · Approximate IFCT-based values · <span id="offline">Preparing offline copy…</span></footer>
+</div>
+<dialog id="settings-dialog">
+<h2>Settings</h2>
+<label>Theme<select id="theme">
+  <option value="system">Auto (System)</option>
+  <option value="light">Light</option>
+  <option value="dark">Dark</option>
+</select></label>
+<p>Auto follows your Hub theme. Food values stay on this page. No account is needed.</p>
+<button data-close>Done</button>
+</dialog>
+<noscript>Enable JavaScript to use Nutrition Plate.</noscript>
+<script src="../shared/learn-hubbar.js"></script>
+<script src="core/foods.js"></script>
+<script src="core/plate.js"></script>
+<script src="ui/icons.js"></script>
+<script src="ui/app.js"></script>
+</body>
+</html>
