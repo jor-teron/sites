@@ -19,6 +19,7 @@ function ribbonSetFile(show) { if (BASE_RIBBON) BASE_RIBBON.setFile(show); }
 
 function baseApplySetting(k) {
   var s = BASE_SETTINGS.s;
+  /* (before HO2) OfficeTheme.isDark('auto') followed the system only, ignoring the Hub. */
   if (!k || k === "theme") OfficeTheme.apply(OfficeTheme.isDark(s.theme), { lightClass: "base-light", key: "base_theme" });
   if ((!k || k === "ribbonCollapsed") && BASE_COLLAPSE) BASE_COLLAPSE.apply(s.ribbonCollapsed);
 }
@@ -202,7 +203,9 @@ function initBaseSettings() {
     toast: function (m) { OfficeNotify.show(m); }
   });
   baseApplySetting();
-  if (typeof OfficeTheme.watch === "function") OfficeTheme.watch(function () { if (BASE_SETTINGS.s.theme === "auto") baseApplySetting("theme"); });
+  /* (before HO2) if (typeof OfficeTheme.watch === "function") OfficeTheme.watch(...) — system scheme only. */
+  var watchAuto = (typeof OfficeTheme !== "undefined" && (OfficeTheme.watchHub || OfficeTheme.watch)) || null;
+  if (watchAuto) watchAuto(function () { if (BASE_SETTINGS.s.theme === "auto") baseApplySetting("theme"); });
 }
 
 (function boot() {

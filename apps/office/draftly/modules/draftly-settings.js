@@ -90,9 +90,10 @@ Draftly.settings.load = function load() {
     onReset: function () { S.s = S.panel.s; S.apply(); S.apply('font'); },
     resetMessage: 'Reset all settings to their defaults? Your documents are not touched.',
     confirm: function (msg) {
+      /* (before HO2) : window.confirm(msg) */
       return Draftly.dialog && Draftly.dialog.confirm
         ? Draftly.dialog.confirm({ title: 'Reset settings?', message: msg, okLabel: 'Reset', danger: true })
-        : window.confirm(msg);
+        : Promise.resolve(false);
     },
     toast: function (m) { if (Draftly.ui.showToast) Draftly.ui.showToast(m); }
   });
@@ -199,7 +200,9 @@ Draftly.settings.hook = function hook() {
       });
     };
   }
-  OfficeTheme.watch(function () { if (S.s.theme === 'auto') S.applyTheme(); });
+  /* (before HO2) OfficeTheme.watch(function () { if (S.s.theme === 'auto') S.applyTheme(); }); */
+  var watchAuto = OfficeTheme.watchHub || OfficeTheme.watch;
+  watchAuto.call(OfficeTheme, function () { if (S.s.theme === 'auto') S.applyTheme(); });
 };
 
 Draftly.settings.bind = function bind() {

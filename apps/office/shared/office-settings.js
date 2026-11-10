@@ -120,7 +120,10 @@ var OfficeSettings = (function () {
     };
     S.askReset = function () {
       var msg = o.resetMessage || 'Reset all settings to their defaults? Your files are not touched.';
-      var ask = o.confirm ? o.confirm(msg) : window.confirm(msg);
+      /* (before HO2) var ask = o.confirm ? o.confirm(msg) : window.confirm(msg); */
+      var ask = o.confirm ? o.confirm(msg) : (window.OfficeDialog && OfficeDialog.confirm
+        ? OfficeDialog.confirm({ title: 'Reset settings?', message: msg, okLabel: 'Reset' })
+        : Promise.resolve(false));
       Promise.resolve(ask).then(function (yes) {
         if (!yes) return;
         S.reset();

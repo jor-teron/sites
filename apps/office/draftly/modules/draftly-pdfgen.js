@@ -347,6 +347,9 @@ Draftly.pdfgen = (function () {
 
   function render(parts, opts) {
     opts = opts || {};
+    /* (before HO2) jsPDF was already on the page. HO2 loads vendor/jspdf.umd.min.js on first export. */
+    var ready = (Draftly.vendor && Draftly.vendor.ensurePdf) ? Draftly.vendor.ensurePdf() : Promise.resolve();
+    return ready.then(function () {
     if (!window.jspdf || !window.jspdf.jsPDF) return Promise.reject(new Error('jsPDF missing'));
     var g = geometry();
     var doc = new window.jspdf.jsPDF({ orientation: g.land ? 'landscape' : 'portrait', unit: 'mm', format: [Math.min(g.w, g.h), Math.max(g.w, g.h)], compress: true });
@@ -362,12 +365,16 @@ Draftly.pdfgen = (function () {
       }).then(next);
     }
     return next();
+    });
   }
 
   /* Image fallback for parts with non-Latin text (mail merge rows): each part is
      drawn by html2canvas off screen and cut at page height (a line can be cut). */
   function renderImages(parts, opts) {
     opts = opts || {};
+    /* (before HO2) html2canvas was already on the page. */
+    var ready = (Draftly.vendor && Draftly.vendor.ensurePdf) ? Draftly.vendor.ensurePdf() : Promise.resolve();
+    return ready.then(function () {
     if (typeof window.html2canvas !== 'function') return Promise.reject(new Error('html2canvas missing'));
     var g = geometry(), c = cfg();
     var doc = new window.jspdf.jsPDF({ orientation: g.land ? 'landscape' : 'portrait', unit: 'mm', format: [Math.min(g.w, g.h), Math.max(g.w, g.h)], compress: true });
@@ -398,6 +405,7 @@ Draftly.pdfgen = (function () {
       }, function (e) { box.paper.remove(); throw e; }).then(next);
     }
     return next();
+    });
   }
 
   /* The open document's body HTML (continuations joined, no marks). */

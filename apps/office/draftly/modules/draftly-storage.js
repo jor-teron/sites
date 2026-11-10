@@ -5,8 +5,9 @@
          DF3: save() skips a never-stored blank document (no text,
          image or table in body, header or footer).
    DEPENDS: Draftly.config
-   ISOLATION: Failures are swallowed. A bad store does not
-              stop the editor from opening.
+   ISOLATION: A bad store does not stop the editor from opening.
+              HO2: a failed document save shows one notice until a later save works.
+              (before HO2) failures were swallowed with no notice.
    ============================================================ */
 
 /* Shared namespace. */
@@ -19,22 +20,44 @@ Draftly.storage = {};
 /* Open IndexedDB handle, cached after the first success. */
 Draftly.storage.dbPromise = null;
 
-/* Open or create the document database. */
+/* HO2: one sticky notice until a later save works. Private mode and a full disk share this. */
+Draftly.storage.noteFailed = function noteFailed(err) {
+  if (typeof OfficeNotify !== 'undefined' && OfficeNotify.saveProblem) OfficeNotify.saveProblem('draftly', err);
+};
+Draftly.storage.noteSaved = function noteSaved() {
+  if (typeof OfficeNotify !== 'undefined' && OfficeNotify.saveOk) OfficeNotify.saveOk('draftly');
+};
+
+/* Open or create the document database. A failed open is not cached, so a later save can retry. */
 Draftly.storage.open = function open() {
   if (Draftly.storage.dbPromise) return Draftly.storage.dbPromise;
-  Draftly.storage.dbPromise = new Promise(function (resolve, reject) {
-    var cfg = Draftly.config;
-    var req = indexedDB.open(cfg.dbName, cfg.dbVersion);
-    req.onupgradeneeded = function () {
-      var db = req.result;
-      if (!db.objectStoreNames.contains(cfg.storeName)) {
-        db.createObjectStore(cfg.storeName, { keyPath: 'name' });
+  /* (before HO2) the rejected promise was kept, so every later save failed the same way with no notice. */
+  var p = new Promise(function (resolve, reject) {
+    try {
+      if (typeof indexedDB === 'undefined' || !indexedDB) {
+        var missing = new Error('IndexedDB unavailable');
+        missing.name = 'SecurityError';
+        reject(missing);
+        return;
       }
-    };
-    req.onsuccess = function () { resolve(req.result); };
-    req.onerror = function () { reject(req.error); };
+      var cfg = Draftly.config;
+      var req = indexedDB.open(cfg.dbName, cfg.dbVersion);
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        if (!db.objectStoreNames.contains(cfg.storeName)) {
+          db.createObjectStore(cfg.storeName, { keyPath: 'name' });
+        }
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      /* (before HO2) req.onerror = function () { reject(req.error); }; */
+      req.onerror = function () { reject(req.error || new Error('IndexedDB failed')); };
+    } catch (e) { reject(e); }
   });
-  return Draftly.storage.dbPromise;
+  p.catch(function () {
+    if (Draftly.storage.dbPromise === p) Draftly.storage.dbPromise = null;
+  });
+  Draftly.storage.dbPromise = p;
+  return p;
 };
 
 /* Build Doc_YYYY_MM_DD_HH-MM from local time. No colon. */
@@ -122,7 +145,7 @@ Draftly.storage.save = function save() {
       Draftly.ui && Draftly.ui.isNonPrinting() ? cfg.nonPrintOnValue : cfg.nonPrintOffValue
     );
   } catch (e) {}
-  return Draftly.storage.open().then(function (db) {
+  var saved = Draftly.storage.open().then(function (db) {
     return new Promise(function (resolve, reject) {
       var tx = db.transaction(cfg.storeName, 'readwrite');
       var store = tx.objectStore(cfg.storeName);
@@ -162,9 +185,19 @@ Draftly.storage.save = function save() {
         try { localStorage.setItem(cfg.storageKeyLastName, name); } catch (e) {}
         resolve(name);
       };
-      tx.onerror = function () { reject(tx.error); };
+      /* (before HO2) tx.onerror = function () { reject(tx.error); }; */
+      tx.onerror = function () { reject(tx.error || new Error('IndexedDB failed')); };
     });
+  }).then(function (savedName) {
+    Draftly.storage.noteSaved();
+    return savedName;
+  }, function (err) {
+    Draftly.storage.noteFailed(err);
+    return Promise.reject(err);
   });
+  /* Keep the rejection for callers, and stop an unhandled rejection when autosave ignores it. */
+  saved.catch(function () {});
+  return saved;
 };
 
 /* DF15-B1: name the user may replace on the next save (set only after a confirm). */
@@ -245,7 +278,8 @@ Draftly.storage.writeBackup = function writeBackup() {
       name: Draftly.storage.fillNameIfEmpty(), html: holder.innerHTML,
       hf: Draftly.hf ? Draftly.hf.get() : undefined, time: Date.now()
     }));
-  } catch (e) {}
+  /* (before HO2) } catch (e) {} */
+  } catch (e) { Draftly.storage.noteFailed(e); }
 };
 
 /* Read the backup, or null. */

@@ -26,11 +26,16 @@ Draftly.pdf.fileName = function fileName() {
 Draftly.pdf.download = function download() {
   var cfg = Draftly.config;
   if (Draftly.pdf.busy) return;
+  /* (before HO2) if the libraries were missing the download returned immediately.
+     They used to be script tags. HO2 loads them here, from the same vendor files. */
+  Draftly.pdf.busy = true;
+  var ready = (Draftly.vendor && Draftly.vendor.ensurePdf) ? Draftly.vendor.ensurePdf() : Promise.resolve();
+  ready.then(function () {
   if (typeof window.html2canvas !== 'function' || !window.jspdf || !window.jspdf.jsPDF) {
     if (Draftly.ui) Draftly.ui.showToast('PDF libraries missing');
+    Draftly.pdf.busy = false;
     return;
   }
-  Draftly.pdf.busy = true;
   if (Draftly.editor) Draftly.editor.saveSelection();
   if (Draftly.ui) Draftly.ui.showToast('Making PDF…');
   var landscape = document.body.classList.contains(cfg.landscapeClass);
@@ -85,4 +90,8 @@ Draftly.pdf.download = function download() {
     if (Draftly.editor) Draftly.editor.restoreSelection();
   }
   next();
+  }).catch(function () {
+    if (Draftly.ui) Draftly.ui.showToast('PDF libraries missing');
+    Draftly.pdf.busy = false;
+  });
 };

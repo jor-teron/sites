@@ -1776,6 +1776,37 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.53–1.94 are already taken on main, so this note is numbered 1.95.
 
 
+### 1.96 Office fixes, release HO2
+
+- Draftly and Notely autosave: a failed save (full disk, private mode, IndexedDB or
+  localStorage blocked) shows one sticky card, "Couldn't save — storage full" or
+  "Couldn't save — storage blocked", until a later save works. `OfficeNotify.saveProblem`
+  / `saveOk` in apps/office/shared/office-notify.js. Draftly no longer caches a failed
+  IndexedDB open, so a later save can retry.
+- Notepad: text is saved on a short timer and flushed on pagehide and when the tab is
+  hidden. An empty or blocked read does not wipe text already in the box. The same
+  save card is used when storage rejects the write.
+- Paper Scan, Print and Notely use `OfficeDialog` instead of `alert` / `confirm` /
+  `prompt`. The shared dialog is a `<dialog>` opened with `showModal()` (Enter = OK,
+  Esc = Cancel, danger style, textContent only) and gained `OfficeDialog.alert`.
+  The same fallback was removed from Draftly, Spreadsheet and office-settings.js.
+- Draftly and Base Auto theme follow `sites-hub.theme` inside the Hub and
+  `prefers-color-scheme` when standalone, and update on storage, `hub-prefs` and focus
+  (`OfficeTheme.watchHub`).
+- Draftly's jsPDF, html2canvas and html-docx, and the jsQR copies in Paper Scan and
+  Print's sender, load on first use from the same vendor paths. PeerJS, the station
+  QR library, OCR's tesseract/pdf.js/jszip, and PDF Tools' pdf.js/pdf-lib stay eager
+  (they are needed as soon as the page is up, or the worker wiring is not a safe
+  one-line deferral).
+- Vendor files were not moved or deleted. Identical copies are listed in
+  apps/office/shared/README.md (HO2). No Office app here has a service-worker cache
+  version to bump. Old lines are commented with `(before HO2)`.
+- Checked with `node apps/office/shared/tests/ho2.test.cjs` and the existing Office
+  node tests (spreadsheet SH9–SH12, pdf-tools, base BS5–BS9, expense tracker, invoice).
+  No browser runner.
+- 1.95 is AG42, so this note is numbered 1.96.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
