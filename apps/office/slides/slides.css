@@ -1,4 +1,4 @@
-/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes + SL5 rich text / lists / text boxes — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes + SL5 rich text / lists / text boxes + SL6 shapes, tables, arrange — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
 :root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
 :root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
 *{box-sizing:border-box}
@@ -91,7 +91,7 @@ body.in-hub #top{display:none}
 .s-ed.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none;position:absolute;left:0;right:8px;top:4px;white-space:pre-wrap}
 .s-body.s-ed.empty::before{left:40px;top:2px}
 .s-body-wrap.plain .s-body.s-ed.empty::before,.s-body.s-ed.empty:not(.has-list)::before{left:0}
-.s-ed .p,.sv .t .p,.sv .b .p,.tbox-in .p{position:relative;min-height:1.4em;margin:0}
+.s-ed .p,.sv .t .p,.sv .b .p,.tbox-in .p,.shp-in .p,.cell-in .p{position:relative;min-height:1.4em;margin:0}
 .r.b{font-weight:700}
 .r.i{font-style:italic}
 .r.u{text-decoration:underline}
@@ -107,15 +107,15 @@ body.in-hub #top{display:none}
 .sv .b .p,.s-ed.s-body .p{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
 .s-ed.s-body .p{white-space:pre-wrap;overflow:visible;text-overflow:clip}
 /* SL5 list markers (editor, thumbnails, Present, Print): bullet dots or 1. 2. / a. b. */
-.s-ed .p.l1,.sv .b .p.l1,.tbox-in .p.l1{padding-left:48px}
-.s-ed .p.l2,.sv .b .p.l2,.tbox-in .p.l2{padding-left:96px}
-.s-ed .p.bullet::before,.sv .b .p.bullet::before,.tbox-in .p.bullet::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
-.s-ed .p.l1.bullet::before,.sv .b .p.l1.bullet::before,.tbox-in .p.l1.bullet::before{left:22px;width:8px;height:8px;top:.58em;background:transparent;border:2px solid var(--s-mut)}
-.s-ed .p.l2.bullet::before,.sv .b .p.l2.bullet::before,.tbox-in .p.l2.bullet::before{left:70px;width:6px;height:6px;top:.62em;background:var(--s-mut);border:0;border-radius:50%}
-.s-ed .p.number::before,.sv .b .p.number::before,.tbox-in .p.number::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}
-.s-ed .p.l1.number::before,.sv .b .p.l1.number::before,.tbox-in .p.l1.number::before{left:0;width:40px}
-.s-ed .p.l2.number::before,.sv .b .p.l2.number::before,.tbox-in .p.l2.number::before{left:48px;width:40px}
-.s-ed .p.none::before,.sv .b .p.none::before,.sv .t .p::before,.tbox-in .p.none::before{content:none;display:none}
+.s-ed .p.l1,.sv .b .p.l1,.tbox-in .p.l1,.shp-in .p.l1,.cell-in .p.l1{padding-left:48px}
+.s-ed .p.l2,.sv .b .p.l2,.tbox-in .p.l2,.shp-in .p.l2,.cell-in .p.l2{padding-left:96px}
+.s-ed .p.bullet::before,.sv .b .p.bullet::before,.tbox-in .p.bullet::before,.shp-in .p.bullet::before,.cell-in .p.bullet::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
+.s-ed .p.l1.bullet::before,.sv .b .p.l1.bullet::before,.tbox-in .p.l1.bullet::before,.shp-in .p.l1.bullet::before,.cell-in .p.l1.bullet::before{left:22px;width:8px;height:8px;top:.58em;background:transparent;border:2px solid var(--s-mut)}
+.s-ed .p.l2.bullet::before,.sv .b .p.l2.bullet::before,.tbox-in .p.l2.bullet::before,.shp-in .p.l2.bullet::before,.cell-in .p.l2.bullet::before{left:70px;width:6px;height:6px;top:.62em;background:var(--s-mut);border:0;border-radius:50%}
+.s-ed .p.number::before,.sv .b .p.number::before,.tbox-in .p.number::before,.shp-in .p.number::before,.cell-in .p.number::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}
+.s-ed .p.l1.number::before,.sv .b .p.l1.number::before,.tbox-in .p.l1.number::before,.shp-in .p.l1.number::before,.cell-in .p.l1.number::before{left:0;width:40px}
+.s-ed .p.l2.number::before,.sv .b .p.l2.number::before,.tbox-in .p.l2.number::before,.shp-in .p.l2.number::before,.cell-in .p.l2.number::before{left:48px;width:40px}
+.s-ed .p.none::before,.sv .b .p.none::before,.sv .t .p::before,.tbox-in .p.none::before,.shp-in .p.none::before,.cell-in .p.none::before{content:none;display:none}
 /* Present (.pv): long titles and bullets wrap like in the editor */
 .pv .t{white-space:normal;overflow-wrap:break-word}
 .pv .b .p{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
@@ -144,26 +144,59 @@ body.in-hub #top{display:none}
 #slide .s-picph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--s-ph);border-radius:10px;background:color-mix(in srgb,var(--s-ph) 10%,transparent);color:var(--s-ph);font:500 26px/1.3 var(--s-fb);cursor:pointer;padding:0}
 #slide .s-picph small{font-size:18px}
 #slide .s-picph:hover{border-color:var(--s-acc);color:var(--s-acc)}
-/* pictures (design px, above the text) */
-.pics{position:absolute;inset:0;pointer-events:none;z-index:2}
+/* pictures, text boxes, shapes and tables share one layer so z-order works across types (SL6) */
+.objs{position:absolute;inset:0;pointer-events:none;z-index:2}
+.pics,.tboxes,.shapes,.tables,.sellayer,.guides{position:absolute;inset:0;pointer-events:none}
 .pic{position:absolute;overflow:hidden}
 .pic img{display:block;width:100%;height:100%;-webkit-user-drag:none;user-select:none;pointer-events:none}
 .pic.miss{background:repeating-linear-gradient(45deg,rgba(156,163,175,.25) 0 10px,transparent 10px 20px);outline:1px dashed #9ca3af}
 #pics .pic{pointer-events:auto;cursor:move;touch-action:none}
 #pics .pic.sel{outline:var(--ol,2px) solid #2563eb}
-/* SL5 free text boxes (above pictures) */
-.tboxes{position:absolute;inset:0;pointer-events:none;z-index:3}
+/* SL5 free text boxes */
 .tbox{position:absolute;overflow:hidden;box-sizing:border-box;background:transparent}
 #tboxes .tbox{pointer-events:auto;cursor:move;touch-action:none}
 #tboxes .tbox.sel{outline:var(--ol,2px) solid #2563eb}
 #tboxes .tbox.editing{cursor:text;touch-action:auto;outline:var(--ol,2px) solid #2563eb}
-.tbox-in{width:100%;height:100%;overflow:auto;padding:8px 14px;font:400 24px/1.35 var(--s-fb);color:var(--s-fg);outline:none;scrollbar-width:none;box-sizing:border-box;cursor:inherit}
-.tbox-in::-webkit-scrollbar{display:none}
-.tbox-in.has-list{padding-left:48px}
-.tbox-in.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none}
-#tbbar{flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
-.selbox{position:absolute;pointer-events:none;z-index:4}
+.tbox-in,.shp-in,.cell-in{width:100%;height:100%;overflow:auto;padding:8px 14px;font:400 24px/1.35 var(--s-fb);color:var(--s-fg);outline:none;scrollbar-width:none;box-sizing:border-box;cursor:inherit}
+.tbox-in::-webkit-scrollbar,.shp-in::-webkit-scrollbar,.cell-in::-webkit-scrollbar{display:none}
+.tbox-in.has-list,.shp-in.has-list,.cell-in.has-list{padding-left:48px}
+.tbox-in.empty::before,.shp-in.empty::before,.cell-in.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none}
+#tbbar,#shpbar,#tblbar,#arrbar{flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.sw-lbl{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}
+.sw-lbl select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 4px}
+/* SL6 shapes */
+.shp{position:absolute;box-sizing:border-box;overflow:visible}
+#shapes .shp{pointer-events:auto;cursor:move;touch-action:none}
+#shapes .shp.sel{outline:var(--ol,2px) solid #2563eb}
+#shapes .shp.editing{cursor:text;touch-action:auto;outline:var(--ol,2px) solid #2563eb}
+.shp svg{display:block;width:100%;height:100%;pointer-events:none;overflow:visible}
+.shp-in{position:absolute;inset:0;padding:12px 16px;font:400 20px/1.35 var(--s-fb);text-align:center;background:transparent}
+.shp.line .shp-in,.shp.arrow .shp-in{display:none}
+/* SL6 tables */
+.tbl{position:absolute;box-sizing:border-box;overflow:hidden;background:transparent}
+#tables .tbl{pointer-events:auto;cursor:move;touch-action:none}
+#tables .tbl.sel{outline:var(--ol,2px) solid #2563eb}
+#tables .tbl.editing{cursor:default;touch-action:auto}
+.tbl table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed;box-sizing:border-box}
+.tbl td{padding:0;vertical-align:top;word-break:break-word;position:relative}
+.tbl td.cell-sel{outline:var(--ol,2px) solid #2563eb;outline-offset:-2px}
+.cell-in{padding:6px 8px;font:400 16px/1.3 var(--s-fb);min-height:100%;cursor:inherit}
+.tbl.editing .cell-in[contenteditable="true"]{cursor:text;touch-action:auto}
+.selbox{position:absolute;pointer-events:none;z-index:1000}
 .selbox .h{position:absolute;width:var(--hs,14px);height:var(--hs,14px);margin:calc(var(--hs,14px) / -2) 0 0 calc(var(--hs,14px) / -2);background:#fff;border:var(--ol,2px) solid #2563eb;border-radius:50%;pointer-events:auto;touch-action:none;box-sizing:border-box}
+.selbox.multi{outline:var(--ol,2px) dashed #2563eb;outline-offset:2px}
+.guides .g{position:absolute;background:#f97316;pointer-events:none;z-index:1001}
+.guides .g.x{top:0;bottom:0;width:2px;margin-left:-1px}
+.guides .g.y{left:0;right:0;height:2px;margin-top:-1px}
+.shape-pop{width:268px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.shape-pop button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);cursor:pointer;font-size:11px;line-height:1.2}
+.shape-pop button:hover,.shape-pop button:focus-visible{border-color:var(--acc);outline:none}
+.shape-pop button svg{width:36px;height:24px;display:block}
+.table-pop{width:196px;padding:8px}
+.table-pop .tg{display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+.table-pop .tg button{width:18px;height:18px;padding:0;border:1px solid var(--line);background:var(--bg);border-radius:2px;cursor:pointer}
+.table-pop .tg button.on,.table-pop .tg button:hover{background:color-mix(in srgb,var(--acc) 35%,var(--bg));border-color:var(--acc)}
+.table-pop .tg-lab{font-size:12px;color:var(--mut);margin-top:6px;text-align:center}
 .h-nw{left:0;top:0;cursor:nwse-resize}.h-n{left:50%;top:0;cursor:ns-resize}.h-ne{left:100%;top:0;cursor:nesw-resize}.h-e{left:100%;top:50%;cursor:ew-resize}
 .h-se{left:100%;top:100%;cursor:nwse-resize}.h-s{left:50%;top:100%;cursor:ns-resize}.h-sw{left:0;top:100%;cursor:nesw-resize}.h-w{left:0;top:50%;cursor:ew-resize}
 #picbar{flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
@@ -302,5 +335,5 @@ html.presenting #app>*:not(#show){visibility:hidden}
 }
 
 /* aliases if a list class is written in the long form */
-.s-ed .p.bullets::before,.sv .b .p.bullets::before,.tbox-in .p.bullets::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
-.s-ed .p.numbers::before,.sv .b .p.numbers::before,.tbox-in .p.numbers::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}
+.s-ed .p.bullets::before,.sv .b .p.bullets::before,.tbox-in .p.bullets::before,.shp-in .p.bullets::before,.cell-in .p.bullets::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
+.s-ed .p.numbers::before,.sv .b .p.numbers::before,.tbox-in .p.numbers::before,.shp-in .p.numbers::before,.cell-in .p.numbers::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}

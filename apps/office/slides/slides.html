@@ -12,21 +12,23 @@
   Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
   body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
   browser's print window; PDF = "Save as PDF" there, with an in-app hint).
-  SL5 (this release): rich text in the title, body, subtitle / caption and free text boxes (contenteditable, SLText model:
-  runs + paragraphs, not raw HTML), numbered lists, a Format group on Home + a mini toolbar, Insert → Text box (move /
-  resize like a picture). .hslides version 3. No libraries.
-  Legacy (SL4): "SL5 rich text, lists and free text boxes come later."
+  SL6 (this release): shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill / outline
+  and SL5 text inside, tables (insert rows × cols, add / delete row or column, cell text, header row, borders), and arrange
+  (bring forward / send backward / to front / to back, align, distribute, Shift multi-select, arrow nudge, snap guides to the
+  slide centre and edges). .hslides version 4. No libraries.
+  Legacy (SL5): rich text in the title, body, subtitle / caption and free text boxes (contenteditable, SLText model:
+  runs + paragraphs, not raw HTML), numbered lists, a Format group on Home + a mini toolbar, Insert → Text box.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Slides SL5</title><!-- legacy: <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
+  <title>Slides SL6</title><!-- legacy: <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="slides.css?v=SL5">
+  <link rel="stylesheet" href="slides.css?v=SL6">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -78,12 +80,28 @@
         <button type="button" id="r-del" class="danger-t" title="Delete this slide (asks first)">🗑<span class="lbl"> Delete</span></button></div>
       <div class="of-group"><button type="button" class="sq" id="b-up" title="Move slide up (Alt+↑)" aria-label="Move slide up">▲</button>
         <button type="button" class="sq" id="b-down" title="Move slide down (Alt+↓)" aria-label="Move slide down">▼</button></div>
-      <div class="of-group"><button type="button" class="sq" id="r-undo" title="Undo pictures, text boxes, layouts, themes, formatting (Ctrl+Z outside the text)" aria-label="Undo">↶</button>
+      <div class="of-group arr" id="arr-group" role="group" aria-label="Arrange">
+        <button type="button" class="sq" id="a-front" title="Bring to front" aria-label="Bring to front">⊤</button>
+        <button type="button" class="sq" id="a-fwd" title="Bring forward" aria-label="Bring forward">↑</button>
+        <button type="button" class="sq" id="a-back" title="Send backward" aria-label="Send backward">↓</button>
+        <button type="button" class="sq" id="a-toback" title="Send to back" aria-label="Send to back">⊥</button>
+        <button type="button" class="sq" id="a-left" title="Align left" aria-label="Align left">⇤</button>
+        <button type="button" class="sq" id="a-center" title="Align centre" aria-label="Align centre">↔</button>
+        <button type="button" class="sq" id="a-right" title="Align right" aria-label="Align right">⇥</button>
+        <button type="button" class="sq" id="a-top" title="Align top" aria-label="Align top">⤒</button>
+        <button type="button" class="sq" id="a-middle" title="Align middle" aria-label="Align middle">↕</button>
+        <button type="button" class="sq" id="a-bottom-al" title="Align bottom" aria-label="Align bottom">⤓</button>
+        <button type="button" class="sq" id="a-disth" title="Distribute horizontally" aria-label="Distribute horizontally">⇄</button>
+        <button type="button" class="sq" id="a-distv" title="Distribute vertically" aria-label="Distribute vertically">⇅</button>
+      </div>
+      <div class="of-group"><button type="button" class="sq" id="r-undo" title="Undo pictures, text boxes, shapes, tables, layouts, themes, formatting (Ctrl+Z outside the text)" aria-label="Undo">↶</button>
         <button type="button" class="sq" id="r-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button></div>
     </div>
     <div class="of-panel" role="tabpanel" id="sl-panel-insert" data-tab="insert" aria-labelledby="sl-tab-insert" hidden>
       <div class="of-group"><button type="button" id="b-pic" title="Insert a picture (or paste / drop one)">🖼<span class="lbl"> Picture</span></button>
-        <button type="button" id="b-tbox" title="Insert a text box">Aa<span class="lbl"> Text box</span></button></div>
+        <button type="button" id="b-tbox" title="Insert a text box">Aa<span class="lbl"> Text box</span></button>
+        <button type="button" id="b-shape" title="Insert a shape" aria-haspopup="true">◇<span class="lbl"> Shape</span></button>
+        <button type="button" id="b-table" title="Insert a table" aria-haspopup="true">▦<span class="lbl"> Table</span></button></div>
       <div class="of-group"><button type="button" id="r-addlay" title="New slide with a layout…" aria-haspopup="dialog">＋<span class="lbl"> New slide with layout…</span></button></div>
     </div>
     <div class="of-panel" role="tabpanel" id="sl-panel-design" data-tab="design" aria-labelledby="sl-tab-design" hidden>
@@ -115,8 +133,14 @@
               <div id="s-body2" class="s-body s-ed" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-slot="body2" data-ph="Right column: one bullet per line" aria-label="Right column bullets, one per line"></div>
             </div>
           </div>
-          <div id="pics" class="pics"></div>
-          <div id="tboxes" class="tboxes"></div>
+          <div id="objs" class="objs">
+            <div id="pics" class="pics"></div>
+            <div id="tboxes" class="tboxes"></div>
+            <div id="shapes" class="shapes"></div>
+            <div id="tables" class="tables"></div>
+            <div id="sellayer" class="sellayer"></div>
+            <div id="guides" class="guides" hidden></div>
+          </div>
         </div>
       </div>
       <div id="picbar" role="toolbar" aria-label="Picture" hidden>
@@ -135,6 +159,51 @@
         <button type="button" class="mini" data-a="fwd" title="Bring the text box forward">Bring forward</button>
         <button type="button" class="mini" data-a="back" title="Send the text box back">Send back</button>
         <button type="button" class="mini danger-t" data-a="del" title="Delete the text box (Delete key; Ctrl+Z brings it back)">🗑 Delete</button>
+      </div>
+      <div id="shpbar" role="toolbar" aria-label="Shape" hidden>
+        <button type="button" class="mini" data-a="edit" title="Type in this shape (or double-click it)">Edit text</button>
+        <label class="sw-custom">Fill <input type="color" id="sh-fill" aria-label="Fill colour" value="#dbeafe"></label>
+        <button type="button" class="mini" data-a="nofill">No fill</button>
+        <label class="sw-custom">Line <input type="color" id="sh-stroke" aria-label="Outline colour" value="#2563eb"></label>
+        <button type="button" class="mini" data-a="nostroke">No line</button>
+        <label class="sw-lbl">Width <select id="sh-sw" aria-label="Outline width"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option></select></label>
+        <button type="button" class="mini" data-a="flip" title="Flip the line or arrow">Flip</button>
+        <button type="button" class="mini" data-a="front" title="Bring to front">To front</button>
+        <button type="button" class="mini" data-a="fwd" title="Bring forward">Forward</button>
+        <button type="button" class="mini" data-a="back" title="Send backward">Backward</button>
+        <button type="button" class="mini" data-a="toback" title="Send to back">To back</button>
+        <button type="button" class="mini danger-t" data-a="del" title="Delete the shape (Delete key; Ctrl+Z brings it back)">🗑 Delete</button>
+      </div>
+      <div id="tblbar" role="toolbar" aria-label="Table" hidden>
+        <button type="button" class="mini" data-a="edit" title="Type in the selected cell (or double-click it)">Edit cell</button>
+        <button type="button" class="mini" data-a="header" aria-pressed="false" title="First row is a header">Header row</button>
+        <label class="sw-custom">Line <input type="color" id="tbl-border" aria-label="Border colour" value="#111827"></label>
+        <label class="sw-custom">Fill <input type="color" id="tbl-fill" aria-label="Cell fill" value="#ffffff"></label>
+        <button type="button" class="mini" data-a="addrow" title="Add a row below">＋ Row</button>
+        <button type="button" class="mini" data-a="delrow" title="Delete this row">− Row</button>
+        <button type="button" class="mini" data-a="addcol" title="Add a column to the right">＋ Column</button>
+        <button type="button" class="mini" data-a="delcol" title="Delete this column">− Column</button>
+        <button type="button" class="mini" data-a="front" title="Bring to front">To front</button>
+        <button type="button" class="mini" data-a="fwd" title="Bring forward">Forward</button>
+        <button type="button" class="mini" data-a="back" title="Send backward">Backward</button>
+        <button type="button" class="mini" data-a="toback" title="Send to back">To back</button>
+        <button type="button" class="mini danger-t" data-a="del" title="Delete the table (Delete key; Ctrl+Z brings it back)">🗑 Delete</button>
+      </div>
+      <div id="arrbar" role="toolbar" aria-label="Several objects" hidden>
+        <span id="arr-count" class="mut">Several objects</span>
+        <button type="button" class="mini" data-a="left" title="Align left">Left</button>
+        <button type="button" class="mini" data-a="center" title="Align centre">Centre</button>
+        <button type="button" class="mini" data-a="right" title="Align right">Right</button>
+        <button type="button" class="mini" data-a="top" title="Align top">Top</button>
+        <button type="button" class="mini" data-a="middle" title="Align middle">Middle</button>
+        <button type="button" class="mini" data-a="bottom" title="Align bottom">Bottom</button>
+        <button type="button" class="mini" data-a="disth" title="Distribute horizontally">Distribute ↔</button>
+        <button type="button" class="mini" data-a="distv" title="Distribute vertically">Distribute ↕</button>
+        <button type="button" class="mini" data-a="front" title="Bring to front">To front</button>
+        <button type="button" class="mini" data-a="fwd" title="Bring forward">Forward</button>
+        <button type="button" class="mini" data-a="back" title="Send backward">Backward</button>
+        <button type="button" class="mini" data-a="toback" title="Send to back">To back</button>
+        <button type="button" class="mini danger-t" data-a="del" title="Delete the selected objects (Delete key; Ctrl+Z brings them back)">🗑 Delete</button>
       </div>
       <div id="pos" class="mut"></div>
     </section>
@@ -167,6 +236,8 @@
     <button type="button" role="menuitem" data-a="lay">▦ Layout…</button>
     <button type="button" role="menuitem" data-a="pic">🖼 Insert picture…</button>
     <button type="button" role="menuitem" data-a="tbox">Aa Insert text box</button>
+    <button type="button" role="menuitem" data-a="shape">◇ Insert shape…</button>
+    <button type="button" role="menuitem" data-a="table">▦ Insert table…</button>
     <button type="button" role="menuitem" data-a="theme">🎨 Theme and background…</button>
     <button type="button" role="menuitem" data-a="undo">↶ Undo</button>
     <button type="button" role="menuitem" data-a="redo">↷ Redo</button>
@@ -209,8 +280,10 @@
         <span><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> Nudge the picture (<kbd>Shift</kbd>: 10 px)</span>
         <span><kbd>Delete</kbd> Delete the selected picture</span>
         <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> Undo / redo pictures, text boxes, layouts, themes, formatting (outside the text)</span>
-        <span>Double-click a text box (or <kbd>Enter</kbd> when it is selected) to type in it</span>
-        <span><kbd>Delete</kbd> Delete the selected picture or text box</span>
+        <span>Double-click a text box, shape or table cell (or <kbd>Enter</kbd> when it is selected) to type in it</span>
+        <span><kbd>Shift</kbd>+click selects more than one object</span>
+        <span><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> Nudge the selected objects (<kbd>Shift</kbd>: 10 px)</span>
+        <span><kbd>Delete</kbd> Delete the selected picture, text box, shape or table</span>
       </div>
       <h3>Present</h3>
       <div class="keys">
@@ -226,11 +299,11 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Slides</b> <span id="ver">SL5</span><!-- legacy: SL4 · SL3 · SL2 -->
+        <div><b>Hub Office Slides</b> <span id="ver">SL6</span><!-- legacy: SL5 · SL4 · SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
             Export a deck as a .hslides file (open JSON, pictures inside) to back it up or move it to another device. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
-          <p>SL5: rich text (bold, italic, underline, strikethrough, size, colour, highlight, alignment), numbered lists, and free text boxes you can put anywhere on a slide.</p>
-          <!-- legacy (SL4): <p>SL4: the same ribbon and Quick Access bar (Undo, Redo, Save, Print) as Draftly and Spreadsheet, and Print / Export PDF with one 16:9 page per slide.</p> --></div>
+          <p>SL6: shapes (rectangle, rounded rectangle, ellipse, line, arrow, triangle, star, callout) with fill, outline and text inside; tables with a header row; and arrange (align, distribute, front / back, multi-select, snap guides).</p>
+          <!-- legacy (SL5): <p>SL5: rich text (bold, italic, underline, strikethrough, size, colour, highlight, alignment), numbered lists, and free text boxes you can put anywhere on a slide.</p> --></div>
       </div>
     </div>
   </div>
@@ -282,20 +355,23 @@
   <button type="button" data-a="hl" title="Highlight">🖍</button>
   <button type="button" data-a="clear" title="Clear formatting">Tx</button>
 </div>
+<div id="pop-shape" class="fmt-pop shape-pop" hidden role="dialog" aria-label="Insert a shape"></div>
+<div id="pop-table" class="fmt-pop table-pop" hidden role="dialog" aria-label="Insert a table"></div>
 <!-- SL4 print view: filled just before printing (slides_print.js), one 16:9 page per slide; empty on screen -->
 <div id="print" aria-hidden="true"></div>
 <script src="../shared/office-ribbon.js"></script>
 <script src="../shared/office-hubbar.js"></script>
 <script src="../shared/office-quick.js"></script>
-<script src="slides_pics.js?v=SL5"></script>
-<script src="slides_text.js?v=SL5"></script>
-<script src="slides_save.js?v=SL5"></script>
-<script src="slides_file.js?v=SL5"></script>
-<script src="slides_edit.js?v=SL5"></script>
-<script src="slides_show.js?v=SL5"></script>
-<script src="slides_list.js?v=SL5"></script>
-<script src="slides_print.js?v=SL5"></script>
-<script src="slides_hub.js?v=SL5"></script>
-<script src="slides_app.js?v=SL5"></script>
+<script src="slides_pics.js?v=SL6"></script>
+<script src="slides_text.js?v=SL6"></script>
+<script src="slides_draw.js?v=SL6"></script>
+<script src="slides_save.js?v=SL6"></script>
+<script src="slides_file.js?v=SL6"></script>
+<script src="slides_edit.js?v=SL6"></script>
+<script src="slides_show.js?v=SL6"></script>
+<script src="slides_list.js?v=SL6"></script>
+<script src="slides_print.js?v=SL6"></script>
+<script src="slides_hub.js?v=SL6"></script>
+<script src="slides_app.js?v=SL6"></script>
 </body>
 </html>

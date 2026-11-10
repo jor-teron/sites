@@ -12,10 +12,12 @@
    Undo / Redo = this app undo, Save = SLSave.flush + ✓ Saved, Print = SLPrint; Ctrl+Z / Y / S / P; in the Hub title bar
    after hubTitleBarHello), the Hub app bar (slides_hub.js) and Print / Export PDF (slides_print.js).
    SL5: Format group on Home + mini toolbar (bold / italic / underline, size, colour, highlight, align, bullet / numbered
-   / none, clear), Insert text box, rich-text undo of formatting and of text-box add / move / resize / delete. */
+   / none, clear), Insert text box, rich-text undo of formatting and of text-box add / move / resize / delete.
+   SL6: Insert shape / table, Home Arrange (front / back, align, distribute), Shift multi-select, snap guides;
+     undo covers shapes, tables and arrange. */
 (function () {
   'use strict';
-  var VERSION = 'SL5';   /* legacy: 'SL4' · 'SL3' · 'SL2' */
+  var VERSION = 'SL6';   /* legacy: 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -281,6 +283,8 @@
       s.pics = (b.pics || []).map(function (p) { return Object.assign({}, p); });
       s.texts = (b.texts || b.tboxes || []).map(function (t) { return Object.assign({}, t, { doc: SLText.clone(t.doc) }); });
       s.tboxes = s.texts;
+      s.shapes = (b.shapes || []).map(function (sh) { return SLDraw.cloneShape(sh); });
+      s.tables = (b.tables || []).map(function (tb) { return SLDraw.cloneTable(tb); });
       /* text comes back only when it was not edited since (a layout change can move text between boxes) */
       if (e.after && sameText(e.after, s)) { s.title = SLText.clone(b.title); s.body = SLText.clone(b.body); s.body2 = SLText.clone(b.body2); }
       if (i !== deck.cur) { SLSave.flush(); deck.cur = i; renderAll(); } else { SLList.update(i); showSlide(); }
@@ -305,7 +309,7 @@
     toast(hidden ? 'Layout: ' + layName(lay) + '. Some text is hidden by this layout (kept; pick another layout to see it)' : 'Layout: ' + layName(lay), hidden ? 3200 : 1600);
   }
   function layName(id) { var x = SLSave.LAYOUTS.filter(function (l) { return l[0] === id; })[0]; return x ? x[1] : id; }
-  var SAMPLE = { title: SLText.fromPlain('Title', { list: 'none', single: true }), body: SLText.fromPlain('First point\nSecond point\n\tDetail', { list: 'bullet' }), body2: SLText.fromPlain('Other side\nMore', { list: 'bullet' }), pics: [], texts: [], tboxes: [] };
+  var SAMPLE = { title: SLText.fromPlain('Title', { list: 'none', single: true }), body: SLText.fromPlain('First point\nSecond point\n\tDetail', { list: 'bullet' }), body2: SLText.fromPlain('Other side\nMore', { list: 'bullet' }), pics: [], texts: [], tboxes: [], shapes: [], tables: [] };
   function tile(label, slide, th, on, v) {
     var b = document.createElement('button'); b.type = 'button'; b.className = 'tile' + (on ? ' on' : ''); b.dataset.v = v;
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -458,10 +462,62 @@
     if (!box) { toast('A slide can have up to ' + SLText.MAX_BOX + ' text boxes'); return; }
     toast('Text box added');
   }
+  function shapeSvgBtn(kind) {
+    var s = SLDraw.defaultShape(kind);
+    s.w = 36; s.h = 24; s.sw = kind === 'line' || kind === 'arrow' ? 2 : 1.5;
+    return SLDraw.shapeSvg(s);
+  }
+  function fillShapePop() {
+    var el = $('pop-shape'); if (!el || el.dataset.ready) return el;
+    el.innerHTML = SLDraw.KINDS.map(function (k) {
+      return '<button type="button" data-kind="' + k + '" title="' + SLDraw.LABELS[k] + '">' + shapeSvgBtn(k) + '<span>' + SLDraw.LABELS[k] + '</span></button>';
+    }).join('');
+    el.dataset.ready = '1'; return el;
+  }
+  function fillTablePop() {
+    var el = $('pop-table'); if (!el || el.dataset.ready) return el;
+    var r, c, h = '<div class="tg">';
+    for (r = 1; r <= 8; r++) for (c = 1; c <= 8; c++) h += '<button type="button" data-r="' + r + '" data-c="' + c + '" aria-label="' + r + ' by ' + c + '"></button>';
+    el.innerHTML = h + '</div><div class="tg-lab" id="tbl-size-lab">3 × 3</div>';
+    el.dataset.ready = '1';
+    el.addEventListener('mousemove', function (e) {
+      var b = e.target.closest('button[data-r]'); if (!b) return;
+      var R = +b.dataset.r, C = +b.dataset.c;
+      [].forEach.call(el.querySelectorAll('button[data-r]'), function (x) { x.classList.toggle('on', +x.dataset.r <= R && +x.dataset.c <= C); });
+      var lab = $('tbl-size-lab'); if (lab) lab.textContent = R + ' × ' + C;
+    });
+    return el;
+  }
+  function openShapePop(btn) {
+    var p = fillShapePop(), was = p && !p.hidden;
+    closePops(); closeMenus();
+    if (was) return;
+    placePop(p, btn);
+  }
+  function openTablePop(btn) {
+    var p = fillTablePop(), was = p && !p.hidden;
+    closePops(); closeMenus();
+    if (was) return;
+    placePop(p, btn);
+  }
+  function addShape(kind) {
+    if (SLShow.on()) return;
+    var s = SLEdit.addShape(kind);
+    if (!s) { toast('A slide can have up to ' + SLDraw.MAX_SHAPES + ' shapes'); return; }
+    toast(SLDraw.LABELS[kind] + ' added');
+  }
+  function addTable(rows, cols) {
+    if (SLShow.on()) return;
+    var t = SLEdit.addTable(rows, cols);
+    if (!t) { toast('A slide can have up to ' + SLDraw.MAX_TABLES + ' tables'); return; }
+    toast('Table added (' + rows + ' × ' + cols + ')');
+  }
   function bumpSize(dir) {
     var m = SLEdit.marks(), base = 28;
     if (m.slot === 'title') base = 44;
     else if (m.slot && m.slot.indexOf('tb:') === 0) base = 24;
+    else if (m.slot && m.slot.indexOf('sh:') === 0) base = 20;
+    else if (m.slot && m.slot.indexOf('tc:') === 0) base = 16;
     SLEdit.format({ size: SLText.nextSize(m.size || base, dir) }, 'Font size');
   }
   var TCOLS = ['#111827', '#ffffff', '#6b7280', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#2563eb', '#7c3aed', '#db2777', '#0891b2', '#000000'];
@@ -480,7 +536,7 @@
     var y = r.bottom + 6; if (y + pop.offsetHeight > innerHeight - 6) y = Math.max(6, r.top - pop.offsetHeight - 6);
     pop.style.left = x + 'px'; pop.style.top = y + 'px';
   }
-  function closePops() { var a = $('pop-color'), b = $('pop-hl'); if (a) a.hidden = true; if (b) b.hidden = true; }
+  function closePops() { ['pop-color', 'pop-hl', 'pop-shape', 'pop-table'].forEach(function (id) { var el = $(id); if (el) el.hidden = true; }); }
   function syncFmt() {
     var m = SLEdit.marks();
     function press(id, on) { var b = $(id); if (b) b.setAttribute('aria-pressed', on ? 'true' : 'false'); }
@@ -548,7 +604,7 @@
       else if (a === 'clear') SLEdit.format({ clear: true }, 'Clear formatting');
     });
     document.addEventListener('pointerdown', function (e) {
-      if (!e.target.closest('.fmt-pop') && !e.target.closest('#f-color') && !e.target.closest('#f-hl') && !e.target.closest('#mini-fmt [data-a=color]') && !e.target.closest('#mini-fmt [data-a=hl]')) closePops();
+      if (!e.target.closest('.fmt-pop') && !e.target.closest('#f-color') && !e.target.closest('#f-hl') && !e.target.closest('#mini-fmt [data-a=color]') && !e.target.closest('#mini-fmt [data-a=hl]') && !e.target.closest('#b-shape') && !e.target.closest('#b-table')) closePops();
     });
     document.addEventListener('selectionchange', function () { if (!SLShow.on()) syncFmt(); });
   }
@@ -574,11 +630,16 @@
   $('b-theme').onclick = function () { openPick('theme'); };
   $('b-pic').onclick = pickPicture;
   $('b-tbox').onclick = addTextBox;
+  $('b-shape').onclick = function () { openShapePop(this); };
+  $('b-table').onclick = function () { openTablePop(this); };
+  $('pop-shape').addEventListener('click', function (e) { var b = e.target.closest('button[data-kind]'); if (!b) return; closePops(); addShape(b.dataset.kind); });
+  $('pop-table').addEventListener('click', function (e) { var b = e.target.closest('button[data-r]'); if (!b) return; closePops(); addTable(+b.dataset.r, +b.dataset.c); });
   $('menu-slide').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return; closeMenus();
     var a = b.dataset.a;
     if (a === 'add') addSlide(); else if (a === 'dup') dupSlide(); else if (a === 'up') nudge(-1); else if (a === 'down') nudge(1); else if (a === 'del') delSlide();
     else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture(); else if (a === 'tbox') addTextBox();
+    else if (a === 'shape') openShapePop($('b-shape') || $('b-more')); else if (a === 'table') openTablePop($('b-table') || $('b-more'));
     else if (a === 'undo') swap(undo, redo, 'Undo'); else if (a === 'redo') swap(redo, undo, 'Redo');
     else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pdf') exportPdf();
   });
@@ -590,6 +651,19 @@
   $('r-addlay').onclick = function () { openPick('add'); };
   $('r-show0').onclick = function () { present(true); };
   [].forEach.call(document.querySelectorAll('#of-ribbon [data-theme]'), function (b) { b.onclick = function () { setTheme(b.dataset.theme); syncRibbon(); }; });
+  function wireArrange(id, fn) { var b = $(id); if (b) b.onclick = fn; }
+  wireArrange('a-front', function () { SLEdit.arrangeLayer('front'); });
+  wireArrange('a-fwd', function () { SLEdit.arrangeLayer('forward'); });
+  wireArrange('a-back', function () { SLEdit.arrangeLayer('backward'); });
+  wireArrange('a-toback', function () { SLEdit.arrangeLayer('back'); });
+  wireArrange('a-left', function () { SLEdit.arrangeAlign('left'); });
+  wireArrange('a-center', function () { SLEdit.arrangeAlign('center'); });
+  wireArrange('a-right', function () { SLEdit.arrangeAlign('right'); });
+  wireArrange('a-top', function () { SLEdit.arrangeAlign('top'); });
+  wireArrange('a-middle', function () { SLEdit.arrangeAlign('middle'); });
+  wireArrange('a-bottom-al', function () { SLEdit.arrangeAlign('bottom'); });
+  wireArrange('a-disth', function () { if (!SLEdit.arrangeDist('h')) toast('Select at least three objects to distribute'); });
+  wireArrange('a-distv', function () { if (!SLEdit.arrangeDist('v')) toast('Select at least three objects to distribute'); });
 
   /* ---------- SL4 Print / Export PDF (slides_print.js) ---------- */
   var printing = false;
@@ -602,7 +676,7 @@
   function exportPdf() {
     closeMenus();
     return dialog({ title: 'Export PDF', msg: 'The print window opens with one 16:9 page per slide (' + deck.slides.length + (deck.slides.length === 1 ? ' page' : ' pages') +
-      ', pictures and theme included). Choose “Save as PDF” as the destination (Printer), then Save.', buttons: [{ label: 'Cancel', v: false }, { label: 'Continue', v: true, cls: 'acc' }] })
+      ', pictures, shapes, tables and theme included). Choose “Save as PDF” as the destination (Printer), then Save.', buttons: [{ label: 'Cancel', v: false }, { label: 'Continue', v: true, cls: 'acc' }] })
       .then(function (v) { return v === true ? printDeck(true) : false; });
   }
   SLPrint.source(function () { return deck; });
@@ -643,15 +717,17 @@
       if (e.shiftKey && (k === '>' || k === '.' || e.code === 'Period' || e.key === 'Period')) { e.preventDefault(); bumpSize(1); return; }
       if (e.shiftKey && (k === '<' || k === ',' || e.code === 'Comma' || e.key === 'Comma')) { e.preventDefault(); bumpSize(-1); return; }
     }
-    /* SL3 / SL5: the selected picture or text box: Delete removes it, arrows nudge, Enter edits a text box, Esc drops the selection */
+    /* SL3 / SL5 / SL6: the selected picture, text box, shape or table: Delete removes it, arrows nudge, Enter edits, Esc drops the selection */
     var sp = SLEdit.selected();
     if (sp && !sp.editing && !typing && !menus && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
-        var kind = sp.kind === 'tbox' ? 'Text box' : 'Picture';
-        SLEdit.delObj(); toast(kind + ' deleted (Ctrl+Z brings it back)'); return;
+        var n = (sp.items && sp.items.length) || 1;
+        SLEdit.delObj(); toast((n > 1 ? n + ' objects' : (sp.kind === 'tbox' ? 'Text box' : sp.kind === 'shape' ? 'Shape' : sp.kind === 'table' ? 'Table' : 'Picture')) + ' deleted (Ctrl+Z brings ' + (n > 1 ? 'them' : 'it') + ' back)'); return;
       }
-      if (e.key === 'Enter' && sp.kind === 'tbox') { e.preventDefault(); SLEdit.startEdit(sp.obj.id); return; }
+      if (e.key === 'Enter' && sp.kind === 'tbox') { e.preventDefault(); SLEdit.startEdit('tbox', sp.obj.id); return; }
+      if (e.key === 'Enter' && sp.kind === 'shape') { e.preventDefault(); SLEdit.startEdit('shape', sp.obj.id); return; }
+      if (e.key === 'Enter' && sp.kind === 'table') { e.preventDefault(); var c = sp.cell || { r: 0, c: 0 }; SLEdit.startEdit('table', sp.obj.id, c.r, c.c); return; }
       var st = e.shiftKey ? 10 : 1, mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
       if (mv) { e.preventDefault(); SLEdit.nudge(mv[0], mv[1]); return; }
       if (e.key === 'Escape') { e.preventDefault(); SLEdit.select(''); return; }
@@ -725,7 +801,7 @@
     /* legacy (SL1 / SL2): sync import. SL3: r.done = a promise for the new deck (pictures are stored first) */
     importText: function (t) { var r = SLFile.parse(t); if (!r.error) r.done = importParsed(r); return r; },
     setLayout: function (l) { setLayout(l); }, setTheme: function (t) { setTheme(t); }, setBg: function (c) { setBg(c); },
-    addSlide: function (l) { addSlide(l); }, insertPicture: insertPicture, addTextBox: addTextBox,
+    addSlide: function (l) { addSlide(l); }, insertPicture: insertPicture, addTextBox: addTextBox, addShape: addShape, addTable: addTable,
     undo: function () { return swap(undo, redo, 'Undo'); }, redo: function () { return swap(redo, undo, 'Redo'); },
     busy: function () { return busy; },
     /* SL4 */

@@ -1146,6 +1146,46 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   fresh (Ctrl+Z outside undoes the format). Paste drops fonts, tables and links on purpose. Numbered lists restart after
   a non-numbered paragraph. Some browsers pause contenteditable undo after a format. Not tried on a real phone.
 
+### 1.69 Hub Office Slides shapes, tables and arrange, release SL6
+
+- `apps/office/slides/` only (plus this section). Branch `apps/sl6-slides` from `apps/sl5-slides` (e06f5539).
+  `apps/office/shared/` not edited. New `slides_draw.js` (`SLDraw`): shape / table records, SVG paths, table
+  row / column helpers, align / distribute / z-order / snap-to-slide. No DOM, safe to load in Node.
+- Shapes: Insert → Shape (in-app popover) adds rectangle, rounded rectangle, ellipse, line, arrow, triangle, star
+  or callout. Fill / outline colour and width (and Flip for a line or arrow) on the shape bar. Text inside shapes
+  (not line / arrow) uses the SL5 rich-text model and the same Format group / mini toolbar. 50 per slide max.
+- Tables: Insert → Table (8 × 8 size grid) adds a table with equal column widths and equal row heights. Add / delete
+  row or column, header row, simple borders and fill, cell text with SL5 styling. 20 tables per slide, 20 × 12 cells
+  max. Double-click or Enter edits a cell.
+- Arrange: Home Arrange group and the object bars. Bring to front / Bring forward / Send backward / Send to back
+  (pictures, text boxes, shapes and tables share one z-order in `#objs`). Align left / centre / right / top / middle /
+  bottom (one object → the slide; two or more → the selection). Distribute horizontally / vertically (three or more).
+  Shift+click multi-selects; arrow keys nudge (Shift = 10); drag snaps to the slide centre and edges (orange guides).
+  Resize handles still work on one object at a time.
+- One renderer (`SLEdit.html` / `paint`) for the editor, thumbnails, Present and Print / PDF, so shapes and tables
+  print. App undo / redo (SL3 stack) covers add / move / resize / delete / style / arrange of the new objects.
+- Format / compatibility: deck record `fmt: 5`; `shapes` and `tables` on each slide. SL1–SL5 records (fmt 4 / 3 / none)
+  open unchanged, with empty shape / table lists. .hslides `version: 4` (reads 1–4; higher refused). v4 keeps the v3
+  fields and adds `shapes:[{ kind, x, y, w, h, fill, stroke, sw, flip, bullets, list, align, z }]` and
+  `tables:[{ x, y, w, h, rows, cols, header, border, bw, fill, hfill, cells:[[{ text, runs, bullets, align, list }]], z }]`.
+  Export writes v4.
+- Release id: `<title>Slides SL6</title>` (legacy SL5 · SL4 · SL3 · SL2 comment), `VERSION = 'SL6'`, About SL6
+  (legacy comments), `?v=SL6` on the app's own css / js (slides.css, slides_*.js including the new slides_draw.js;
+  shared office-*.css/js left unversioned). No service worker, catalog, CSV, build, other hub/, repo-root shared/ or
+  apps/system edits. slides_readme.md updated.
+- Tested without a browser (Team 2 hard rule): `node --check` on every changed JS file; `slides_text_test.js` 51/51
+  (unchanged SL5 helpers); `slides_draw_test.js` 55/55 (kinds, clean / SVG, table add/delete row/col and caps, file
+  bullets, align / distribute, z-order including multi to front, snap to edges / centre and already-on-edge,
+  bounds); `slides_file_test.js` 38/38 (v1/v2 parse, v3 still opens, v4 write / reparse of styled title + texts + shapes +
+  tables, version 5 refused, raw SL1 / fmt-3 localStorage migrate, cloneSlide is deep for shapes). Static curl smoke:
+  200 on slides.html / slides.css / slides_draw.js / slides_edit.js / slides_app.js, body greps SL6. No Puppeteer,
+  Playwright, jsdom or headless browser.
+- Caveats: shape text sits in a padded rectangle, not clipped to a star or triangle. Table columns / rows are always
+  equal (no custom widths). Multi-select can move, align, distribute or delete, but not resize as a group. Snap
+  guides are the slide centre and edges only. Lines and arrows have no text. Applying a format from the ribbon
+  re-renders the box, so the browser's typing undo for that box may start fresh. Not tried on a real phone.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

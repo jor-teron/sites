@@ -11,12 +11,15 @@
      raw HTML). Tab / Shift+Tab indent, Enter keeps the indent, Backspace at the start outdents, Enter on the title
      goes to the bullets. Format (bold / italic / underline, size, colour, highlight, align, list type) is applied to
      the model. Free text boxes (.tboxes, above pictures) move / resize with the same handles; click selects, double-click
-     or Enter edits. Thumbnails, Present and Print use the same renderer, so styling matches the editor. */
+     or Enter edits. Thumbnails, Present and Print use the same renderer, so styling matches the editor.
+   SL6: shapes and tables live with pictures and text boxes in #objs (shared z-order). Shapes have fill / outline and
+     SL5 text inside (except line / arrow). Tables have equal cells, a header row, and SL5 cell text. Shift-click
+     multi-selects; arrange aligns, distributes and changes z-order; drag snaps to the slide centre and edges. */
 (function () {
   'use strict';
   var W = 960, H = 540;
   var $ = function (id) { return document.getElementById(id); };
-  var title, body, body2, fit, stage, slideEl, picsEl, boxesEl, picph, picbar, tbbar, cur = null, theme = 'light';
+  var title, body, body2, fit, stage, slideEl, picsEl, boxesEl, shapesEl, tablesEl, objsEl, sellayer, guidesEl, picph, picbar, tbbar, shpbar, tblbar, arrbar, cur = null, theme = 'light';
   var onChange = function () {}, onObj = function () {}, onPickPic = function () {}, onFmt = function () {}, scale = 1;
   var SLOTS = { title: { t: 1, b: 'plain' }, tc: { t: 1, b: 'bul' }, two: { t: 1, b: 'bul', b2: 1 }, sec: { t: 1, b: 'plain' },
     pic: { t: 1, b: 'plain', ph: 1 }, to: { t: 1 }, blank: {} };
@@ -35,8 +38,13 @@
   function escq(x) { return SLText.escq(x); }
   function defList(slot) {
     if (slot === 'title') return 'none';
+    if (slot && (slot.indexOf('tb:') === 0 || slot.indexOf('sh:') === 0 || slot.indexOf('tc:') === 0)) return 'none';
     if (slot === 'body' && slots(cur).b === 'plain') return 'none';
     return 'bullet';
+  }
+  function parseTc(slot) {
+    var m = /^tc:([^:]+):(\d+):(\d+)$/.exec(slot || '');
+    return m ? { id: m[1], r: +m[2], c: +m[3] } : null;
   }
   function hasList(doc) {
     return (SLText.clean(doc).paragraphs || []).some(function (p) { return p.list === 'bullet' || p.list === 'number'; });
@@ -48,6 +56,13 @@
     if (slot.indexOf('tb:') === 0) {
       var t = tbById(slot.slice(3)); return t ? t.doc : SLText.empty('none');
     }
+    if (slot.indexOf('sh:') === 0) {
+      var sh = shById(slot.slice(3)); return sh && sh.doc ? sh.doc : SLText.empty('none');
+    }
+    if (slot.indexOf('tc:') === 0) {
+      var p = parseTc(slot), tb = p && tblById(p.id), cell = tb && tb.cells[p.r] && tb.cells[p.r][p.c];
+      return cell ? cell.doc : SLText.empty('none');
+    }
     return cur.body;
   }
   function writeSlot(slot, doc) {
@@ -55,6 +70,11 @@
     if (slot === 'title') cur.title = doc;
     else if (slot === 'body2') cur.body2 = doc;
     else if (slot.indexOf('tb:') === 0) { var t = tbById(slot.slice(3)); if (t) t.doc = doc; }
+    else if (slot.indexOf('sh:') === 0) { var sh = shById(slot.slice(3)); if (sh) sh.doc = doc; }
+    else if (slot.indexOf('tc:') === 0) {
+      var p = parseTc(slot), tb = p && tblById(p.id);
+      if (tb && tb.cells[p.r] && tb.cells[p.r][p.c]) tb.cells[p.r][p.c].doc = doc;
+    }
     else cur.body = doc;
   }
   function elSlot(el) { return el && el.dataset ? el.dataset.slot : ''; }
@@ -62,8 +82,9 @@
   function doFit() {
     var r = stage.getBoundingClientRect(), pos = $('pos');
     var bar = 0;
-    if (picbar && !picbar.hidden) bar = picbar.offsetHeight + 6;
-    if (tbbar && !tbbar.hidden) bar = Math.max(bar, tbbar.offsetHeight + 6);
+    [picbar, tbbar, shpbar, tblbar, arrbar].forEach(function (el) {
+      if (el && !el.hidden) bar = Math.max(bar, el.offsetHeight + 6);
+    });
     var aw = r.width, ah = r.height - (pos ? pos.offsetHeight + 6 : 0) - bar;
     scale = Math.max(0.1, Math.min(aw / W, ah / H));
     fit.style.width = Math.floor(W * scale) + 'px'; fit.style.height = Math.floor(H * scale) + 'px';
@@ -214,9 +235,9 @@
     if (title && !title.hidden) cur.title = readBox(title, 'title');
     if (body && body.closest('.s-cols') && !body.closest('.s-cols').hidden) cur.body = readBox(body, 'body');
     if (body2 && body2.parentNode && !body2.parentNode.hidden) cur.body2 = readBox(body2, 'body2');
-    if (editTb) {
-      var t = tbById(editTb), inEl = boxesEl && boxesEl.querySelector('.tbox[data-id="' + editTb + '"] .tbox-in');
-      if (t && inEl) t.doc = readBox(inEl, 'tb:' + editTb);
+    if (editSlot) {
+      var inEl = editorEl(editSlot);
+      if (inEl) writeSlot(editSlot, readBox(inEl, editSlot));
     }
     if (title) { refreshMarks(title, cur.title); autoTitle(); }
     if (body) refreshMarks(body, cur.body);
@@ -263,9 +284,9 @@
     if (title && (el === title || title.contains(el))) return { el: title, slot: 'title', doc: readBox(title, 'title') };
     if (body && (el === body || body.contains(el))) return { el: body, slot: 'body', doc: readBox(body, 'body') };
     if (body2 && (el === body2 || body2.contains(el))) return { el: body2, slot: 'body2', doc: readBox(body2, 'body2') };
-    if (editTb && boxesEl) {
-      var inEl = boxesEl.querySelector('.tbox[data-id="' + editTb + '"] .tbox-in');
-      if (inEl && (el === inEl || inEl.contains(el))) return { el: inEl, slot: 'tb:' + editTb, doc: readBox(inEl, 'tb:' + editTb) };
+    if (editSlot) {
+      var inEl = editorEl(editSlot);
+      if (inEl && (el === inEl || inEl.contains(el))) return { el: inEl, slot: editSlot, doc: readBox(inEl, editSlot) };
     }
     return null;
   }
@@ -321,7 +342,7 @@
         var p2 = currentPara(el), s3 = getSel(el);
         if (p2 && p2.level >= 1 && s3 && s3.a.p === s3.b.p) { e.preventDefault(); paraFmt({ indent: -1 }, 'Outdent'); }
       }
-      if (e.key === 'Escape' && editTb && slot.indexOf('tb:') === 0) { e.preventDefault(); endEdit(true); }
+      if (e.key === 'Escape' && editSlot && (slot.indexOf('tb:') === 0 || slot.indexOf('sh:') === 0 || slot.indexOf('tc:') === 0)) { e.preventDefault(); endEdit(true); }
     });
     el.addEventListener('paste', function (e) {
       var dt = e.clipboardData; if (!dt) return;
@@ -344,45 +365,57 @@
     el.addEventListener('mouseup', function () { onFmt(); });
   }
 
-  /* ---------- pictures + free text boxes ---------- */
-  var sel = '', selKind = '', editTb = '', G = null;
+  /* ---------- pictures, text boxes, shapes and tables (SL6 shared z-order) ---------- */
+  var sels = [], editSlot = '', cellSel = null, G = null;
   function boxArr() {
     if (!cur) return [];
     if (!cur.texts) cur.texts = cur.tboxes || [];
     cur.tboxes = cur.texts;
     return cur.texts;
   }
+  function shapeArr() { if (!cur) return []; if (!cur.shapes) cur.shapes = []; return cur.shapes; }
+  function tableArr() { if (!cur) return []; if (!cur.tables) cur.tables = []; return cur.tables; }
   function picById(id) { return cur && (cur.pics || []).filter(function (p) { return p.id === id; })[0]; }
   function tbById(id) { return boxArr().filter(function (t) { return t.id === id; })[0]; }
+  function shById(id) { return shapeArr().filter(function (s) { return s.id === id; })[0]; }
+  function tblById(id) { return tableArr().filter(function (t) { return t.id === id; })[0]; }
+  function objBy(kind, id) {
+    return kind === 'pic' ? picById(id) : kind === 'tbox' ? tbById(id) : kind === 'shape' ? shById(id) : kind === 'table' ? tblById(id) : null;
+  }
+  function isSel(kind, id) { return sels.some(function (s) { return s.kind === kind && s.id === id; }); }
+  function primary() { return sels.length ? sels[sels.length - 1] : null; }
+  function editorEl(slot) {
+    if (!slot) return null;
+    if (slot.indexOf('tb:') === 0) return boxesEl && boxesEl.querySelector('.tbox[data-id="' + slot.slice(3) + '"] .tbox-in');
+    if (slot.indexOf('sh:') === 0) return shapesEl && shapesEl.querySelector('.shp[data-id="' + slot.slice(3) + '"] .shp-in');
+    var p = parseTc(slot);
+    if (p && tablesEl) {
+      var td = tablesEl.querySelector('.tbl[data-id="' + p.id + '"] td[data-r="' + p.r + '"][data-c="' + p.c + '"] .cell-in');
+      return td;
+    }
+    return null;
+  }
   function picHTML(p, edit) {
     var u = window.SLPics ? SLPics.url(p) : '';
     var st = 'left:' + p.x + 'px;top:' + p.y + 'px;width:' + p.w + 'px;height:' + p.h + 'px;z-index:' + (p.z || 0);
-    return '<div class="pic' + (u ? '' : ' miss') + (edit && selKind === 'pic' && p.id === sel ? ' sel' : '') + '"' + (edit ? ' data-id="' + escq(p.id) + '"' : '') + ' style="' + st + '">' +
+    return '<div class="pic' + (u ? '' : ' miss') + (edit && isSel('pic', p.id) ? ' sel' : '') + '"' + (edit ? ' data-id="' + escq(p.id) + '"' : '') + ' style="' + st + '">' +
       (u ? '<img src="' + escq(u) + '" alt="" draggable="false" decoding="async" style="object-fit:' + (p.fit === 'contain' ? 'contain' : 'cover') + '">' : '') + '</div>';
   }
   var HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-  function selboxHTML(o) {
-    return '<div class="selbox" style="left:' + o.x + 'px;top:' + o.y + 'px;width:' + o.w + 'px;height:' + o.h + 'px">' +
-      HANDLES.map(function (h) { return '<div class="h h-' + h + '" data-h="' + h + '"></div>'; }).join('') + '</div>';
+  function selboxHTML(o, kind, withHandles) {
+    return '<div class="selbox' + (withHandles ? '' : ' multi') + '" data-id="' + escq(o.id) + '" data-kind="' + escq(kind) + '" style="left:' + o.x + 'px;top:' + o.y + 'px;width:' + o.w + 'px;height:' + o.h + 'px;z-index:1000">' +
+      (withHandles ? HANDLES.map(function (h) { return '<div class="h h-' + h + '" data-h="' + h + '"></div>'; }).join('') : '') + '</div>';
   }
-  function drawPics() {
-    var ps = (cur && cur.pics) || [];
-    if (selKind === 'pic' && sel && !picById(sel)) { sel = ''; selKind = ''; }
-    var p = selKind === 'pic' ? picById(sel) : null;
-    picsEl.innerHTML = ps.map(function (q) { return picHTML(q, true); }).join('') + (p ? selboxHTML(p) : '');
-    picph.hidden = !(slots(cur).ph && !ps.length);
-    var had = !picbar.hidden; picbar.hidden = !p;
-    if (p) {
-      [].forEach.call(picbar.querySelectorAll('[data-fit]'), function (b) { b.classList.toggle('on', b.dataset.fit === p.fit); b.setAttribute('aria-pressed', b.dataset.fit === p.fit ? 'true' : 'false'); });
-    }
-    if (had !== !picbar.hidden) doFit();
+  function minSize(kind) {
+    if (kind === 'tbox' || kind === 'table') return { w: 80, h: 40 };
+    return { w: 16, h: 16 };
   }
   function boxHTML(t, edit) {
     var st = 'left:' + t.x + 'px;top:' + t.y + 'px;width:' + t.w + 'px;height:' + t.h + 'px;z-index:' + (t.z || 1);
     if (t.fill) st += ';background:' + t.fill;
     if (t.border) st += ';box-shadow:inset 0 0 0 2px ' + t.border;
-    var on = edit && selKind === 'tbox' && t.id === sel;
-    var ed = edit && editTb === t.id;
+    var on = edit && isSel('tbox', t.id);
+    var ed = edit && editSlot === 'tb:' + t.id;
     var inner = SLText.html(t.doc, { show: true, list: 'none' });
     return '<div class="tbox' + (on ? ' sel' : '') + (ed ? ' editing' : '') + (SLText.has(t.doc) ? '' : ' empty') + '"' +
       (edit ? ' data-id="' + escq(t.id) + '"' : '') + ' style="' + st + '">' +
@@ -390,70 +423,199 @@
       (edit ? ' data-slot="tb:' + escq(t.id) + '" data-ph="Click to add text"' : '') +
       (ed ? ' contenteditable="true" spellcheck="true"' : '') + '>' + inner + '</div></div>';
   }
+  function shapeHTML(s, edit) {
+    var st = 'left:' + s.x + 'px;top:' + s.y + 'px;width:' + s.w + 'px;height:' + s.h + 'px;z-index:' + (s.z || 2);
+    var on = edit && isSel('shape', s.id);
+    var ed = edit && editSlot === 'sh:' + s.id;
+    var text = '';
+    if (SLDraw.hasText(s.kind)) {
+      var doc = s.doc || SLText.empty('none');
+      text = '<div class="shp-in s-ed' + (hasList(doc) ? ' has-list' : '') + (SLText.has(doc) ? '' : ' empty') + '"' +
+        (edit ? ' data-slot="sh:' + escq(s.id) + '" data-ph="Click to add text"' : '') +
+        (ed ? ' contenteditable="true" spellcheck="true"' : '') + '>' + SLText.html(doc, { show: true, list: 'none' }) + '</div>';
+    }
+    return '<div class="shp ' + s.kind + (on ? ' sel' : '') + (ed ? ' editing' : '') + '"' +
+      (edit ? ' data-id="' + escq(s.id) + '"' : '') + ' style="' + st + '">' + SLDraw.shapeSvg(s) + text + '</div>';
+  }
+  function tableHTML(t, edit) {
+    var st = 'left:' + t.x + 'px;top:' + t.y + 'px;width:' + t.w + 'px;height:' + t.h + 'px;z-index:' + (t.z || 3);
+    var on = edit && isSel('table', t.id);
+    var edTbl = edit && editSlot && editSlot.indexOf('tc:' + t.id + ':') === 0;
+    var border = t.border || '#111827', bw = t.bw || 1, rows = '', r, c;
+    for (r = 0; r < t.rows; r++) {
+      rows += '<tr' + (t.header && r === 0 ? ' class="hdr"' : '') + '>';
+      for (c = 0; c < t.cols; c++) {
+        var cell = t.cells[r][c], doc = cell.doc || SLText.empty('none');
+        var slot = 'tc:' + t.id + ':' + r + ':' + c;
+        var ed = edit && editSlot === slot;
+        var cs = edit && cellSel && cellSel.id === t.id && cellSel.r === r && cellSel.c === c;
+        var bg = (t.header && r === 0) ? (t.hfill || '#e5e7eb') : (t.fill || '#ffffff');
+        rows += '<td class="' + (cs ? 'cell-sel' : '') + '" data-r="' + r + '" data-c="' + c + '" style="background:' + bg + ';border:' + bw + 'px solid ' + border + '">' +
+          '<div class="cell-in s-ed' + (hasList(doc) ? ' has-list' : '') + (SLText.has(doc) ? '' : ' empty') + '"' +
+          (edit ? ' data-slot="' + escq(slot) + '" data-ph=""' : '') +
+          (ed ? ' contenteditable="true" spellcheck="true"' : '') + '>' + SLText.html(doc, { show: true, list: 'none' }) + '</div></td>';
+      }
+      rows += '</tr>';
+    }
+    return '<div class="tbl' + (on ? ' sel' : '') + (edTbl ? ' editing' : '') + '"' + (edit ? ' data-id="' + escq(t.id) + '"' : '') + ' style="' + st + '"><table>' + rows + '</table></div>';
+  }
+  function hideBars() {
+    var vis = function (el, on) { if (!el) return; var had = !el.hidden; el.hidden = !on; return had !== !on; };
+    var ch = false;
+    ch = vis(picbar, false) || ch; ch = vis(tbbar, false) || ch; ch = vis(shpbar, false) || ch;
+    ch = vis(tblbar, false) || ch; ch = vis(arrbar, false) || ch;
+    return ch;
+  }
+  function showBars() {
+    var p = primary(), multi = sels.length > 1, changed = hideBars();
+    if (multi) {
+      if (arrbar) { arrbar.hidden = false; var lab = document.getElementById('arr-count'); if (lab) lab.textContent = sels.length + ' objects'; }
+      if (changed || (arrbar && !arrbar.hidden)) doFit();
+      return;
+    }
+    if (!p || editSlot) { if (changed) doFit(); return; }
+    if (p.kind === 'pic' && picbar) {
+      picbar.hidden = false;
+      var o = picById(p.id);
+      if (o) [].forEach.call(picbar.querySelectorAll('[data-fit]'), function (b) { b.classList.toggle('on', b.dataset.fit === o.fit); b.setAttribute('aria-pressed', b.dataset.fit === o.fit ? 'true' : 'false'); });
+    } else if (p.kind === 'tbox' && tbbar) {
+      tbbar.hidden = false;
+      var t = tbById(p.id), fi = document.getElementById('tb-fill'), bo = document.getElementById('tb-border');
+      if (t && fi) fi.value = t.fill || '#ffffff';
+      if (t && bo) bo.value = t.border || '#2563eb';
+    } else if (p.kind === 'shape' && shpbar) {
+      var s = shById(p.id);
+      shpbar.hidden = false;
+      var sf = document.getElementById('sh-fill'), ss = document.getElementById('sh-stroke'), sw = document.getElementById('sh-sw');
+      if (s && sf) sf.value = s.fill || '#dbeafe';
+      if (s && ss) ss.value = s.stroke || '#2563eb';
+      if (s && sw) sw.value = String(s.sw || 2);
+      var flip = shpbar.querySelector('[data-a=flip]'), ed = shpbar.querySelector('[data-a=edit]');
+      if (flip) flip.hidden = !(s && (s.kind === 'line' || s.kind === 'arrow'));
+      if (ed) ed.hidden = !(s && SLDraw.hasText(s.kind));
+    } else if (p.kind === 'table' && tblbar) {
+      var tb = tblById(p.id);
+      tblbar.hidden = false;
+      var hdr = tblbar.querySelector('[data-a=header]'), bf = document.getElementById('tbl-fill'), bb = document.getElementById('tbl-border');
+      if (hdr && tb) { hdr.setAttribute('aria-pressed', tb.header ? 'true' : 'false'); hdr.classList.toggle('on', !!tb.header); }
+      if (tb && bf) bf.value = tb.fill || '#ffffff';
+      if (tb && bb) bb.value = tb.border || '#111827';
+    }
+    doFit();
+  }
+  function keepLive(root, sel, cls) {
+    if (!editSlot || !root) return null;
+    var live = root.querySelector(sel);
+    if (live) { live.parentNode && live.parentNode.removeChild(live); return live; }
+    return null;
+  }
+  function drawPics() {
+    var ps = (cur && cur.pics) || [];
+    picsEl.innerHTML = ps.map(function (q) { return picHTML(q, true); }).join('');
+    picph.hidden = !(slots(cur).ph && !ps.length);
+  }
   function drawBoxes() {
     if (!boxesEl) return;
     var ts = boxArr();
-    if (selKind === 'tbox' && sel && !tbById(sel)) { sel = ''; selKind = ''; }
-    var t = selKind === 'tbox' ? tbById(sel) : null;
-    /* keep the live editor node if we are mid-edit, so typing / browser undo survive a sibling paint */
-    var keep = null, keepId = editTb;
-    if (keepId) {
-      var live = boxesEl.querySelector('.tbox[data-id="' + keepId + '"]');
-      if (live) { keep = live; live.parentNode && live.parentNode.removeChild(live); }
-    }
-    boxesEl.innerHTML = ts.map(function (q) { return (keep && q.id === keepId) ? '' : boxHTML(q, true); }).join('') +
-      (t && t.id !== keepId ? selboxHTML(t) : (t && t.id === keepId ? selboxHTML(t) : ''));
-    if (keep) {
-      boxesEl.insertBefore(keep, boxesEl.querySelector('.selbox'));
-      if (!boxesEl.querySelector('.selbox') && t && t.id === keepId) boxesEl.appendChild(htmlEl(selboxHTML(t)));
-    }
-    var had = tbbar && !tbbar.hidden; if (tbbar) tbbar.hidden = !(t && editTb !== t.id);
-    if (t && tbbar && !tbbar.hidden) {
-      var fi = document.getElementById('tb-fill'), bo = document.getElementById('tb-border');
-      if (fi) fi.value = t.fill || '#ffffff';
-      if (bo) bo.value = t.border || '#2563eb';
-    }
-    if (had !== (tbbar && !tbbar.hidden)) doFit();
+    var keep = (editSlot && editSlot.indexOf('tb:') === 0) ? keepLive(boxesEl, '.tbox[data-id="' + editSlot.slice(3) + '"]') : null;
+    boxesEl.innerHTML = ts.map(function (q) { return (keep && q.id === editSlot.slice(3)) ? '' : boxHTML(q, true); }).join('');
+    if (keep) boxesEl.appendChild(keep);
   }
-  function htmlEl(h) { var d = document.createElement('div'); d.innerHTML = h; return d.firstChild; }
-  function drawObjs() { drawPics(); drawBoxes(); }
+  function drawShapes() {
+    if (!shapesEl) return;
+    var ss = shapeArr();
+    var keep = (editSlot && editSlot.indexOf('sh:') === 0) ? keepLive(shapesEl, '.shp[data-id="' + editSlot.slice(3) + '"]') : null;
+    shapesEl.innerHTML = ss.map(function (q) { return (keep && q.id === editSlot.slice(3)) ? '' : shapeHTML(q, true); }).join('');
+    if (keep) shapesEl.appendChild(keep);
+  }
+  function drawTables() {
+    if (!tablesEl) return;
+    var ts = tableArr();
+    var keepId = (editSlot && editSlot.indexOf('tc:') === 0) ? parseTc(editSlot).id : '';
+    var keep = keepId ? keepLive(tablesEl, '.tbl[data-id="' + keepId + '"]') : null;
+    tablesEl.innerHTML = ts.map(function (q) { return (keep && q.id === keepId) ? '' : tableHTML(q, true); }).join('');
+    if (keep) tablesEl.appendChild(keep);
+  }
+  function drawSel() {
+    if (!sellayer) return;
+    var html = '', multi = sels.length > 1, i, s, o;
+    for (i = 0; i < sels.length; i++) {
+      s = sels[i]; o = objBy(s.kind, s.id);
+      if (o) html += selboxHTML(o, s.kind, !multi && !editSlot);
+    }
+    sellayer.innerHTML = html;
+  }
+  function clearGuides() { if (guidesEl) { guidesEl.hidden = true; guidesEl.innerHTML = ''; } }
+  function showGuides(list) {
+    if (!guidesEl) return;
+    if (!list || !list.length) { clearGuides(); return; }
+    guidesEl.hidden = false;
+    guidesEl.innerHTML = list.map(function (g) {
+      return '<div class="g ' + g.axis + '" style="' + (g.axis === 'x' ? 'left:' + g.pos + 'px' : 'top:' + g.pos + 'px') + '"></div>';
+    }).join('');
+  }
+  function pruneSel() {
+    sels = sels.filter(function (s) { return !!objBy(s.kind, s.id); });
+  }
+  function drawObjs() {
+    pruneSel();
+    drawPics(); drawBoxes(); drawShapes(); drawTables(); drawSel(); showBars();
+  }
   function moveBox(o, kind) {
-    var root = kind === 'tbox' ? boxesEl : picsEl;
-    var el = root && root.querySelector((kind === 'tbox' ? '.tbox' : '.pic') + '[data-id="' + o.id + '"]');
-    var sb = (boxesEl && boxesEl.querySelector('.selbox')) || (picsEl && picsEl.querySelector('.selbox'));
-    [el, sb].forEach(function (x) { if (!x) return; x.style.left = o.x + 'px'; x.style.top = o.y + 'px'; x.style.width = o.w + 'px'; x.style.height = o.h + 'px'; });
+    var root = kind === 'tbox' ? boxesEl : kind === 'shape' ? shapesEl : kind === 'table' ? tablesEl : picsEl;
+    var cls = kind === 'tbox' ? '.tbox' : kind === 'shape' ? '.shp' : kind === 'table' ? '.tbl' : '.pic';
+    var el = root && root.querySelector(cls + '[data-id="' + o.id + '"]');
+    if (el) { el.style.left = o.x + 'px'; el.style.top = o.y + 'px'; el.style.width = o.w + 'px'; el.style.height = o.h + 'px'; }
+    if (sellayer) [].forEach.call(sellayer.querySelectorAll('.selbox[data-id="' + o.id + '"]'), function (x) {
+      x.style.left = o.x + 'px'; x.style.top = o.y + 'px'; x.style.width = o.w + 'px'; x.style.height = o.h + 'px';
+    });
   }
   function endEdit(keepSel) {
-    if (!editTb) return;
-    var id = editTb, inEl = boxesEl && boxesEl.querySelector('.tbox[data-id="' + id + '"] .tbox-in');
-    if (inEl && cur) {
-      var t = tbById(id); if (t) t.doc = readBox(inEl, 'tb:' + id);
-    }
-    editTb = '';
+    if (!editSlot) return;
+    var slot = editSlot, inEl = editorEl(slot);
+    if (inEl && cur) writeSlot(slot, readBox(inEl, slot));
+    editSlot = '';
     try { if (inEl) inEl.blur(); } catch (_) { /* */ }
-    drawBoxes();
-    if (keepSel) { sel = id; selKind = 'tbox'; drawBoxes(); }
+    if (!keepSel) { /* leave sels as they are */ }
+    drawObjs();
     onChange(cur); onFmt();
   }
-  function startEdit(id) {
-    var t = tbById(id); if (!t) return;
-    if (editTb && editTb !== id) endEdit(false);
-    sel = id; selKind = 'tbox'; editTb = id;
-    drawBoxes();
-    var inEl = boxesEl.querySelector('.tbox[data-id="' + id + '"] .tbox-in');
+  function startEdit(kind, id, r, c) {
+    var slot;
+    if (kind === 'tbox') slot = 'tb:' + id;
+    else if (kind === 'shape') slot = 'sh:' + id;
+    else if (kind === 'table') slot = 'tc:' + id + ':' + (r | 0) + ':' + (c | 0);
+    else return;
+    if (kind === 'shape') { var sh = shById(id); if (!sh || !SLDraw.hasText(sh.kind)) return; }
+    if (editSlot && editSlot !== slot) endEdit(true);
+    sels = [{ kind: kind === 'table' ? 'table' : kind, id: id }];
+    if (kind === 'table') cellSel = { id: id, r: r | 0, c: c | 0 };
+    editSlot = slot;
+    drawObjs();
+    var inEl = editorEl(slot);
     if (inEl) {
       inEl.setAttribute('contenteditable', 'true');
       inEl.setAttribute('spellcheck', 'true');
-      if (!inEl.dataset.bound) { inEl.dataset.bound = '1'; boxKeys(inEl, 'tb:' + id); }
+      if (!inEl.dataset.bound) { inEl.dataset.bound = '1'; boxKeys(inEl, slot); }
       placeEnd(inEl);
     }
-    if (tbbar) { tbbar.hidden = true; doFit(); }
+    showBars();
     onFmt();
   }
-  function select(id, kind) {
-    if (editTb && !(kind === 'tbox' && id === editTb)) endEdit(false);
-    if (sel === id && selKind === (kind || selKind)) return;
-    sel = id || ''; selKind = sel ? (kind || 'pic') : '';
+  function select(id, kind, add) {
+    if (editSlot && !(kind && editSlot.indexOf((kind === 'tbox' ? 'tb:' : kind === 'shape' ? 'sh:' : kind === 'table' ? 'tc:' : '') + id) === 0)) endEdit(false);
+    if (!id) { sels = []; cellSel = null; drawObjs(); return; }
+    if (add) {
+      var i, found = -1;
+      for (i = 0; i < sels.length; i++) if (sels[i].kind === kind && sels[i].id === id) found = i;
+      if (found >= 0) sels.splice(found, 1);
+      else sels.push({ kind: kind, id: id });
+      if (kind !== 'table') cellSel = null;
+    } else {
+      if (sels.length === 1 && sels[0].kind === kind && sels[0].id === id) return;
+      sels = [{ kind: kind, id: id }];
+      if (kind !== 'table') cellSel = null;
+    }
     drawObjs();
   }
   function clamp(p, minW, minH) {
@@ -465,38 +627,73 @@
   function objDone(before, label) { if (cur) onObj(cur, before, label); }
   function before() { return SLSave.cloneSlide(cur); }
   function objOf() {
-    if (selKind === 'pic') return picById(sel);
-    if (selKind === 'tbox') return tbById(sel);
+    var p = primary(); return p ? objBy(p.kind, p.id) : null;
+  }
+  function hitObj(e) {
+    var h = e.target.closest('.h'), sb = h && h.closest('.selbox');
+    if (h && sb) return { handle: h.dataset.h, kind: sb.dataset.kind, id: sb.dataset.id };
+    var te = e.target.closest('.tbox'); if (te) return { kind: 'tbox', id: te.dataset.id, el: te };
+    var se = e.target.closest('.shp'); if (se) return { kind: 'shape', id: se.dataset.id, el: se };
+    var ce = e.target.closest('.tbl'); if (ce) return { kind: 'table', id: ce.dataset.id, el: ce, td: e.target.closest('td') };
+    var pe = e.target.closest('.pic'); if (pe) return { kind: 'pic', id: pe.dataset.id, el: pe };
     return null;
   }
   function objDown(e) {
-    var h = e.target.closest('.h'), pe = e.target.closest('.pic'), te = e.target.closest('.tbox');
-    if (!h && !pe && !te) return;
+    var hit = hitObj(e);
+    if (!hit) return;
     if (e.button > 0) return;
-    /* while editing a text box, clicks inside the text stay with the caret */
-    if (te && editTb === te.dataset.id && !h && e.target.closest('.tbox-in')) return;
+    if (hit.kind === 'tbox' && editSlot === 'tb:' + hit.id && !hit.handle && e.target.closest('.tbox-in')) return;
+    if (hit.kind === 'shape' && editSlot === 'sh:' + hit.id && !hit.handle && e.target.closest('.shp-in')) return;
+    if (hit.kind === 'table' && editSlot && editSlot.indexOf('tc:' + hit.id + ':') === 0 && !hit.handle && e.target.closest('.cell-in[contenteditable="true"]')) return;
     e.preventDefault(); e.stopPropagation();
-    try { if (document.activeElement && document.activeElement !== document.body && !(te && editTb === te.dataset.id)) document.activeElement.blur(); } catch (_) { /* */ }
+    try { if (document.activeElement && document.activeElement !== document.body && !e.target.closest('[contenteditable="true"]')) document.activeElement.blur(); } catch (_) { /* */ }
     try { stage.focus({ preventScroll: true }); } catch (_) { /* */ }
-    if (pe) select(pe.dataset.id, 'pic');
-    else if (te) select(te.dataset.id, 'tbox');
-    var o = objOf(); if (!o) return;
-    G = { id: e.pointerId, kind: selKind, mode: h ? h.dataset.h : 'move', x0: e.clientX, y0: e.clientY,
-      r0: { x: o.x, y: o.y, w: o.w, h: o.h }, before: before(), moved: false };
+    if (!hit.handle) {
+      if (e.shiftKey) select(hit.id, hit.kind, true);
+      else if (!isSel(hit.kind, hit.id)) select(hit.id, hit.kind, false);
+      else if (sels.length === 1) select(hit.id, hit.kind, false);
+      /* already in a multi-selection: keep it, start a group move */
+      if (hit.kind === 'table' && hit.td && !e.shiftKey) {
+        cellSel = { id: hit.id, r: +hit.td.dataset.r, c: +hit.td.dataset.c };
+        if (tblbar && !tblbar.hidden) { /* refresh cell highlight */ drawTables(); drawSel(); }
+      }
+    } else if (!isSel(hit.kind, hit.id)) select(hit.id, hit.kind, false);
+    var group = sels.map(function (s) { var o = objBy(s.kind, s.id); return o ? { kind: s.kind, id: s.id, r0: { x: o.x, y: o.y, w: o.w, h: o.h } } : null; }).filter(Boolean);
+    if (!group.length) return;
+    G = { id: e.pointerId, kind: hit.kind, mode: hit.handle || 'move', x0: e.clientX, y0: e.clientY,
+      group: group, before: before(), moved: false };
   }
   function objMove(e) {
     if (!G || e.pointerId !== G.id) return;
-    var o = objOf(); if (!o) { G = null; return; }
-    var dx = (e.clientX - G.x0) / scale, dy = (e.clientY - G.y0) / scale, r = G.r0, m = G.mode;
+    var dx = (e.clientX - G.x0) / scale, dy = (e.clientY - G.y0) / scale, m = G.mode;
     if (!G.moved && Math.abs(dx) + Math.abs(dy) < 2 / scale) return;
     G.moved = true; e.preventDefault();
-    if (m === 'move') { o.x = r.x + dx; o.y = r.y + dy; clamp(o, G.kind === 'tbox' ? 80 : 16, G.kind === 'tbox' ? 40 : 16); moveBox(o, G.kind); return; }
-    var x = r.x, y = r.y, w = r.w, hh = r.h;
+    if (m === 'move') {
+      G.group.forEach(function (g) {
+        var o = objBy(g.kind, g.id), ms = minSize(g.kind); if (!o) return;
+        o.x = g.r0.x + dx; o.y = g.r0.y + dy; clamp(o, ms.w, ms.h);
+      });
+      var box = SLDraw.bounds(G.group.map(function (g) { return objBy(g.kind, g.id); }).filter(Boolean));
+      var sn = SLDraw.snapRect(box, { threshold: 8 / Math.max(scale, 0.2) });
+      var ax = sn.x - box.x, ay = sn.y - box.y;
+      if (ax || ay) {
+        G.group.forEach(function (g) {
+          var o = objBy(g.kind, g.id), ms = minSize(g.kind); if (!o) return;
+          o.x += ax; o.y += ay; clamp(o, ms.w, ms.h);
+        });
+      }
+      G.group.forEach(function (g) { var o = objBy(g.kind, g.id); if (o) moveBox(o, g.kind); });
+      showGuides(sn.guides);
+      return;
+    }
+    if (G.group.length !== 1) return;
+    var g = G.group[0], o = objBy(g.kind, g.id); if (!o) { G = null; return; }
+    var r = g.r0, ms = minSize(g.kind), x = r.x, y = r.y, w = r.w, hh = r.h;
     if (m.indexOf('e') >= 0) w = r.w + dx;
     if (m.indexOf('w') >= 0) w = r.w - dx;
     if (m.indexOf('s') >= 0) hh = r.h + dy;
     if (m.indexOf('n') >= 0) hh = r.h - dy;
-    w = Math.max(G.kind === 'tbox' ? 80 : 16, w); hh = Math.max(G.kind === 'tbox' ? 40 : 16, hh);
+    w = Math.max(ms.w, w); hh = Math.max(ms.h, hh);
     if (e.shiftKey) {
       var a = r.w / r.h;
       if (m === 'n' || m === 's') w = hh * a;
@@ -507,46 +704,82 @@
     if (m.indexOf('n') >= 0) y = r.y + r.h - hh;
     if (e.shiftKey && (m === 'n' || m === 's')) x = r.x + (r.w - w) / 2;
     if (e.shiftKey && (m === 'e' || m === 'w')) y = r.y + (r.h - hh) / 2;
-    o.x = x; o.y = y; o.w = w; o.h = hh; clamp(o, G.kind === 'tbox' ? 80 : 16, G.kind === 'tbox' ? 40 : 16); moveBox(o, G.kind);
+    o.x = x; o.y = y; o.w = w; o.h = hh; clamp(o, ms.w, ms.h); moveBox(o, g.kind);
   }
   function objUp(e) {
     if (!G || e.pointerId !== G.id) return;
-    var g = G; G = null;
+    var g = G; G = null; clearGuides();
     if (g.moved) {
-      objDone(g.before, g.mode === 'move' ? (g.kind === 'tbox' ? 'Move text box' : 'Move picture') : (g.kind === 'tbox' ? 'Resize text box' : 'Resize picture'));
+      var lab = g.mode === 'move' ? (g.group.length > 1 ? 'Move objects' : ('Move ' + kindLabel(g.kind))) : ('Resize ' + kindLabel(g.kind));
+      objDone(g.before, lab);
     }
   }
+  function kindLabel(k) { return k === 'tbox' ? 'text box' : k === 'pic' ? 'picture' : k === 'shape' ? 'shape' : k === 'table' ? 'table' : 'object'; }
   function editPic(fn, label) {
-    var p = picById(sel); if (!p || selKind !== 'pic') return false;
-    var b = before(); if (fn(p) === false) return false; clamp(p); drawPics(); objDone(b, label); return true;
-  }
-  function delPic() {
-    var p = picById(sel); if (!p || selKind !== 'pic') return false;
-    var b = before(); cur.pics = cur.pics.filter(function (q) { return q !== p; }); sel = ''; selKind = ''; drawObjs(); objDone(b, 'Delete picture'); return true;
+    var p = primary(), o = p && p.kind === 'pic' ? picById(p.id) : null; if (!o) return false;
+    var b = before(); if (fn(o) === false) return false; clamp(o); drawObjs(); objDone(b, label); return true;
   }
   function addPic(p) {
     if (!cur) return;
-    if (editTb) endEdit(false);
-    var b = before(); cur.pics = (cur.pics || []).concat([p]); sel = p.id; selKind = 'pic'; drawObjs(); objDone(b, 'Insert picture');
-  }
-  function delBox() {
-    var t = tbById(sel); if (!t || selKind !== 'tbox') return false;
-    if (editTb) endEdit(false);
-    var b = before(); cur.texts = boxArr().filter(function (q) { return q !== t; }); cur.tboxes = cur.texts; sel = ''; selKind = ''; drawObjs(); objDone(b, 'Delete text box'); return true;
+    if (editSlot) endEdit(false);
+    var b = before(); cur.pics = (cur.pics || []).concat([p]); sels = [{ kind: 'pic', id: p.id }]; drawObjs(); objDone(b, 'Insert picture');
   }
   function addBox(at) {
     if (!cur) return null;
     if (boxArr().length >= SLText.MAX_BOX) return null;
-    if (editTb) endEdit(false);
+    if (editSlot) endEdit(false);
     var b = before();
     var n = boxArr().length;
     var box = SLText.cleanBox({ id: SLSave.uid(), x: (at && at.x) || (80 + n * 24), y: (at && at.y) || (80 + n * 24),
       w: 320, h: 100, doc: SLText.empty('none') });
     if (!at) { box.x = Math.round((W - box.w) / 2 + n * 24); box.y = Math.round((H - box.h) / 2 + n * 24); clamp(box, 80, 40); }
+    box.z = nextZVal(1);
     cur.texts = boxArr().concat([box]); cur.tboxes = cur.texts;
-    sel = box.id; selKind = 'tbox'; drawObjs(); objDone(b, 'Insert text box');
-    startEdit(box.id);
+    sels = [{ kind: 'tbox', id: box.id }]; drawObjs(); objDone(b, 'Insert text box');
+    startEdit('tbox', box.id);
     return box;
+  }
+  function addShape(kind, at) {
+    if (!cur) return null;
+    if (shapeArr().length >= SLDraw.MAX_SHAPES) return null;
+    if (editSlot) endEdit(false);
+    var b = before();
+    var sh = SLDraw.defaultShape(kind, at, shapeArr().length);
+    sh.id = SLSave.uid();
+    sh.z = nextZVal(1);
+    clamp(sh, 16, 16);
+    cur.shapes = shapeArr().concat([sh]);
+    sels = [{ kind: 'shape', id: sh.id }]; drawObjs(); objDone(b, 'Insert shape');
+    if (SLDraw.hasText(sh.kind)) startEdit('shape', sh.id);
+    return sh;
+  }
+  function addTable(rows, cols, at) {
+    if (!cur) return null;
+    if (tableArr().length >= SLDraw.MAX_TABLES) return null;
+    if (editSlot) endEdit(false);
+    var b = before();
+    var tb = SLDraw.makeTable(rows, cols, at, tableArr().length);
+    tb.id = SLSave.uid();
+    tb.z = nextZVal(1);
+    clamp(tb, 80, 40);
+    cur.tables = tableArr().concat([tb]);
+    sels = [{ kind: 'table', id: tb.id }]; cellSel = { id: tb.id, r: 0, c: 0 };
+    drawObjs(); objDone(b, 'Insert table');
+    return tb;
+  }
+  function delSelected() {
+    if (!sels.length || editSlot) return false;
+    var b = before(), n = sels.length;
+    var drop = {};
+    sels.forEach(function (s) { drop[s.kind + ':' + s.id] = 1; });
+    if (cur.pics) cur.pics = cur.pics.filter(function (p) { return !drop['pic:' + p.id]; });
+    cur.texts = boxArr().filter(function (t) { return !drop['tbox:' + t.id]; }); cur.tboxes = cur.texts;
+    cur.shapes = shapeArr().filter(function (s) { return !drop['shape:' + s.id]; });
+    cur.tables = tableArr().filter(function (t) { return !drop['table:' + t.id]; });
+    var lab = n > 1 ? 'Delete objects' : ('Delete ' + kindLabel((sels[0] && sels[0].kind) || 'object'));
+    sels = []; cellSel = null;
+    drawObjs(); objDone(b, lab);
+    return true;
   }
   function placeholderRect() {
     if (!slots(cur).ph) return null;
@@ -555,62 +788,118 @@
     picph.hidden = was; return r;
   }
   function nudgeObj(dx, dy) {
-    var o = objOf(); if (!o || editTb) return false;
-    var b = before(); o.x += dx; o.y += dy; clamp(o, selKind === 'tbox' ? 80 : 16, selKind === 'tbox' ? 40 : 16);
-    moveBox(o, selKind); objDone(b, selKind === 'tbox' ? 'Move text box' : 'Move picture'); return true;
+    if (!sels.length || editSlot) return false;
+    var b = before();
+    sels.forEach(function (s) {
+      var o = objBy(s.kind, s.id); if (!o) return;
+      var ms = minSize(s.kind); o.x += dx; o.y += dy; clamp(o, ms.w, ms.h); moveBox(o, s.kind);
+    });
+    objDone(b, sels.length > 1 ? 'Move objects' : 'Move ' + kindLabel(primary().kind));
+    return true;
   }
-  function delObj() {
-    if (selKind === 'tbox') return delBox();
-    if (selKind === 'pic') return delPic();
-    return false;
-  }
-  function nextZ(dir) {
-    var zs = [];
-    (cur.pics || []).forEach(function (p) { zs.push(p.z || 0); });
-    boxArr().forEach(function (tb) { zs.push(tb.z || 1); });
+  function nextZVal(dir) {
+    var zs = SLDraw.listObjs(cur).map(function (o) { return o.z; });
     if (!zs.length) return dir > 0 ? 1 : 0;
     return dir > 0 ? Math.max.apply(null, zs) + 1 : Math.min.apply(null, zs) - 1;
   }
-  function layer(dir) {
-    var o = objOf(); if (!o) return false;
+  function arrangeLayer(how) {
+    if (!sels.length) return false;
     var b = before();
-    o.z = nextZ(dir);
-    drawObjs(); objDone(b, dir > 0 ? 'Bring forward' : 'Send back'); return true;
+    SLDraw.applyOrder(cur, sels.map(function (s) { return s.id; }), how);
+    drawObjs(); objDone(b, how === 'front' ? 'Bring to front' : how === 'back' ? 'Send to back' : how === 'forward' ? 'Bring forward' : 'Send backward');
+    return true;
   }
+  function arrangeAlign(edge) {
+    if (!sels.length) return false;
+    var b = before(), objs = sels.map(function (s) { return objBy(s.kind, s.id); }).filter(Boolean);
+    SLDraw.align(objs, edge, objs.length === 1 ? { w: W, h: H, slide: true } : null);
+    objs.forEach(function (o, i) { var ms = minSize(sels[i].kind); clamp(o, ms.w, ms.h); });
+    drawObjs(); objDone(b, 'Align'); return true;
+  }
+  function arrangeDist(axis) {
+    if (sels.length < 3) return false;
+    var b = before(), objs = sels.map(function (s) { return objBy(s.kind, s.id); }).filter(Boolean);
+    SLDraw.distribute(objs, axis);
+    objs.forEach(function (o, i) { var ms = minSize(sels[i].kind); clamp(o, ms.w, ms.h); });
+    drawObjs(); objDone(b, axis === 'v' ? 'Distribute vertically' : 'Distribute horizontally'); return true;
+  }
+  function layer(dir) { return arrangeLayer(dir > 0 ? 'forward' : 'backward'); }
   function setBoxChrome(prop, value, label) {
-    var o = selKind === 'tbox' ? tbById(sel) : null; if (!o) return false;
+    var p = primary(), o = p && p.kind === 'tbox' ? tbById(p.id) : null; if (!o) return false;
     var b = before();
     if (prop === 'fill') { if (value) o.fill = value; else delete o.fill; }
     else if (prop === 'border') { if (value) o.border = value; else delete o.border; }
     else return false;
-    drawBoxes(); objDone(b, label || 'Text box style'); return true;
+    drawObjs(); objDone(b, label || 'Text box style'); return true;
   }
+  function setShapeChrome(prop, value, label) {
+    var p = primary(), o = p && p.kind === 'shape' ? shById(p.id) : null; if (!o) return false;
+    var b = before();
+    if (prop === 'fill') { if (value) o.fill = value; else delete o.fill; }
+    else if (prop === 'stroke') { if (value) o.stroke = value; else delete o.stroke; }
+    else if (prop === 'sw') o.sw = +value || 0;
+    else if (prop === 'flip') o.flip = !o.flip;
+    else return false;
+    drawObjs(); objDone(b, label || 'Shape style'); return true;
+  }
+  function setTableChrome(prop, value, label) {
+    var p = primary(), o = p && p.kind === 'table' ? tblById(p.id) : null; if (!o) return false;
+    var b = before();
+    if (prop === 'fill') { if (value) o.fill = value; else delete o.fill; }
+    else if (prop === 'border') { if (value) o.border = value; else delete o.border; }
+    else if (prop === 'header') o.header = !!value;
+    else if (prop === 'addrow') { var next = SLDraw.addRow(o, cellSel && cellSel.id === o.id ? cellSel.r + 1 : o.rows); o.cells = next.cells; o.rows = next.rows; o.cols = next.cols; }
+    else if (prop === 'delrow') {
+      if (o.rows <= 1) return false;
+      var ri = cellSel && cellSel.id === o.id ? cellSel.r : o.rows - 1;
+      var nextR = SLDraw.delRow(o, ri); o.cells = nextR.cells; o.rows = nextR.rows; o.cols = nextR.cols;
+      if (cellSel && cellSel.r >= o.rows) cellSel.r = o.rows - 1;
+    } else if (prop === 'addcol') { var nextC = SLDraw.addCol(o, cellSel && cellSel.id === o.id ? cellSel.c + 1 : o.cols); o.cells = nextC.cells; o.rows = nextC.rows; o.cols = nextC.cols; }
+    else if (prop === 'delcol') {
+      if (o.cols <= 1) return false;
+      var ci = cellSel && cellSel.id === o.id ? cellSel.c : o.cols - 1;
+      var nextD = SLDraw.delCol(o, ci); o.cells = nextD.cells; o.rows = nextD.rows; o.cols = nextD.cols;
+      if (cellSel && cellSel.c >= o.cols) cellSel.c = o.cols - 1;
+    } else return false;
+    drawObjs(); objDone(b, label || 'Table'); return true;
+  }
+
 
   function init(o) {
     onChange = o.onChange || onChange; onObj = o.onObj || onObj; onPickPic = o.onPickPic || onPickPic; onFmt = o.onFmt || onFmt;
     title = $('s-title'); body = $('s-body'); body2 = $('s-body2'); fit = $('fit'); stage = $('stage'); slideEl = $('slide');
-    picsEl = $('pics'); boxesEl = $('tboxes'); picph = $('s-picph'); picbar = $('picbar'); tbbar = $('tbbar');
+    picsEl = $('pics'); boxesEl = $('tboxes'); shapesEl = $('shapes'); tablesEl = $('tables'); objsEl = $('objs');
+    sellayer = $('sellayer'); guidesEl = $('guides'); picph = $('s-picph');
+    picbar = $('picbar'); tbbar = $('tbbar'); shpbar = $('shpbar'); tblbar = $('tblbar'); arrbar = $('arrbar');
     boxKeys(title, 'title'); boxKeys(body, 'body'); boxKeys(body2, 'body2');
-    picsEl.addEventListener('pointerdown', objDown);
-    if (boxesEl) {
-      boxesEl.addEventListener('pointerdown', objDown);
-      boxesEl.addEventListener('dblclick', function (e) {
-        var t = e.target.closest('.tbox'); if (!t) return;
-        e.preventDefault(); startEdit(t.dataset.id);
+    if (objsEl) objsEl.addEventListener('pointerdown', objDown);
+    else { if (picsEl) picsEl.addEventListener('pointerdown', objDown); if (boxesEl) boxesEl.addEventListener('pointerdown', objDown); }
+    if (objsEl) {
+      objsEl.addEventListener('dblclick', function (e) {
+        var t = e.target.closest('.tbox'); if (t) { e.preventDefault(); startEdit('tbox', t.dataset.id); return; }
+        var s = e.target.closest('.shp'); if (s) { e.preventDefault(); startEdit('shape', s.dataset.id); return; }
+        var td = e.target.closest('.tbl td'); if (td) {
+          var tbl = td.closest('.tbl'); e.preventDefault();
+          startEdit('table', tbl.dataset.id, +td.dataset.r, +td.dataset.c);
+        }
       });
     }
     addEventListener('pointermove', objMove, { passive: false });
     addEventListener('pointerup', objUp);
     addEventListener('pointercancel', function (e) {
       if (G && e.pointerId === G.id) {
-        var o = objOf();
-        if (o && G.moved) { o.x = G.r0.x; o.y = G.r0.y; o.w = G.r0.w; o.h = G.r0.h; moveBox(o, G.kind); }
-        G = null;
+        if (G.moved && G.group) {
+          G.group.forEach(function (g) {
+            var o = objBy(g.kind, g.id); if (!o) return;
+            o.x = g.r0.x; o.y = g.r0.y; o.w = g.r0.w; o.h = g.r0.h; moveBox(o, g.kind);
+          });
+        }
+        G = null; clearGuides();
       }
     });
     slideEl.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('.pics .pic') || e.target.closest('.tbox') || e.target.closest('.selbox')) return;
-      if (editTb) endEdit(false);
+      if (e.target.closest('.pic') || e.target.closest('.tbox') || e.target.closest('.shp') || e.target.closest('.tbl') || e.target.closest('.selbox')) return;
+      if (editSlot) endEdit(false);
       select('');
     }, true);
     picph.addEventListener('click', function () { onPickPic(); });
@@ -624,25 +913,85 @@
         if (Math.abs(w - p.w) < 0.5 && Math.abs(h - p.h) < 0.5) return false;
         p.w = w; p.h = h; p.x = cx - w / 2; p.y = cy - h / 2;
       }, 'Original shape');
-      else if (b.dataset.a === 'del') delPic();
-      else if (b.dataset.a === 'fwd') layer(1);
-      else if (b.dataset.a === 'back') layer(-1);
+      else if (b.dataset.a === 'del') delSelected();
+      else if (b.dataset.a === 'fwd') arrangeLayer('forward');
+      else if (b.dataset.a === 'back') arrangeLayer('backward');
+      else if (b.dataset.a === 'front') arrangeLayer('front');
+      else if (b.dataset.a === 'toback') arrangeLayer('back');
     });
-    if (tbbar) {
-      tbbar.addEventListener('click', function (e) {
-        var b = e.target.closest('button'); if (!b) return;
-        if (b.dataset.a === 'del') delBox();
-        else if (b.dataset.a === 'edit' && selKind === 'tbox') startEdit(sel);
-        else if (b.dataset.a === 'fwd') layer(1);
-        else if (b.dataset.a === 'back') layer(-1);
-        else if (b.dataset.a === 'nofill') setBoxChrome('fill', '', 'Text box fill');
-        else if (b.dataset.a === 'noborder') setBoxChrome('border', '', 'Text box line');
-      });
-      tbbar.addEventListener('input', function (e) {
-        if (e.target.id === 'tb-fill') setBoxChrome('fill', e.target.value, 'Text box fill');
-        else if (e.target.id === 'tb-border') setBoxChrome('border', e.target.value, 'Text box line');
-      });
+    function wireBar(el, click, input) {
+      if (!el) return;
+      el.addEventListener('click', click);
+      if (input) el.addEventListener('input', input);
     }
+    wireBar(tbbar, function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var p = primary();
+      if (b.dataset.a === 'del') delSelected();
+      else if (b.dataset.a === 'edit' && p && p.kind === 'tbox') startEdit('tbox', p.id);
+      else if (b.dataset.a === 'fwd') arrangeLayer('forward');
+      else if (b.dataset.a === 'back') arrangeLayer('backward');
+      else if (b.dataset.a === 'front') arrangeLayer('front');
+      else if (b.dataset.a === 'toback') arrangeLayer('back');
+      else if (b.dataset.a === 'nofill') setBoxChrome('fill', '', 'Text box fill');
+      else if (b.dataset.a === 'noborder') setBoxChrome('border', '', 'Text box line');
+    }, function (e) {
+      if (e.target.id === 'tb-fill') setBoxChrome('fill', e.target.value, 'Text box fill');
+      else if (e.target.id === 'tb-border') setBoxChrome('border', e.target.value, 'Text box line');
+    });
+    wireBar(shpbar, function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var p = primary();
+      if (b.dataset.a === 'del') delSelected();
+      else if (b.dataset.a === 'edit' && p && p.kind === 'shape') startEdit('shape', p.id);
+      else if (b.dataset.a === 'fwd') arrangeLayer('forward');
+      else if (b.dataset.a === 'back') arrangeLayer('backward');
+      else if (b.dataset.a === 'front') arrangeLayer('front');
+      else if (b.dataset.a === 'toback') arrangeLayer('back');
+      else if (b.dataset.a === 'nofill') setShapeChrome('fill', '', 'Shape fill');
+      else if (b.dataset.a === 'nostroke') setShapeChrome('stroke', '', 'Shape outline');
+      else if (b.dataset.a === 'flip') setShapeChrome('flip', true, 'Flip line');
+    }, function (e) {
+      if (e.target.id === 'sh-fill') setShapeChrome('fill', e.target.value, 'Shape fill');
+      else if (e.target.id === 'sh-stroke') setShapeChrome('stroke', e.target.value, 'Shape outline');
+      else if (e.target.id === 'sh-sw') setShapeChrome('sw', e.target.value, 'Outline width');
+    });
+    if (shpbar) {
+      var sw = document.getElementById('sh-sw');
+      if (sw) sw.addEventListener('change', function () { setShapeChrome('sw', this.value, 'Outline width'); });
+    }
+    wireBar(tblbar, function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var p = primary();
+      if (b.dataset.a === 'del') delSelected();
+      else if (b.dataset.a === 'edit' && p && p.kind === 'table') startEdit('table', p.id, cellSel ? cellSel.r : 0, cellSel ? cellSel.c : 0);
+      else if (b.dataset.a === 'fwd') arrangeLayer('forward');
+      else if (b.dataset.a === 'back') arrangeLayer('backward');
+      else if (b.dataset.a === 'front') arrangeLayer('front');
+      else if (b.dataset.a === 'toback') arrangeLayer('back');
+      else if (b.dataset.a === 'header') {
+        var tb = p && tblById(p.id);
+        setTableChrome('header', !(tb && tb.header), 'Header row');
+      } else if (b.dataset.a === 'addrow') setTableChrome('addrow', 1, 'Add row');
+      else if (b.dataset.a === 'delrow') setTableChrome('delrow', 1, 'Delete row');
+      else if (b.dataset.a === 'addcol') setTableChrome('addcol', 1, 'Add column');
+      else if (b.dataset.a === 'delcol') setTableChrome('delcol', 1, 'Delete column');
+    }, function (e) {
+      if (e.target.id === 'tbl-fill') setTableChrome('fill', e.target.value, 'Table fill');
+      else if (e.target.id === 'tbl-border') setTableChrome('border', e.target.value, 'Table border');
+    });
+    wireBar(arrbar, function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var a = b.dataset.a;
+      if (a === 'del') delSelected();
+      else if (a === 'fwd') arrangeLayer('forward');
+      else if (a === 'back') arrangeLayer('backward');
+      else if (a === 'front') arrangeLayer('front');
+      else if (a === 'toback') arrangeLayer('back');
+      else if (a === 'disth') arrangeDist('h');
+      else if (a === 'distv') arrangeDist('v');
+      else if (a === 'left' || a === 'center' || a === 'right' || a === 'top' || a === 'middle' || a === 'bottom') arrangeAlign(a);
+    });
     if (window.ResizeObserver) new ResizeObserver(doFit).observe(stage); else addEventListener('resize', doFit);
     doFit();
   }
@@ -661,7 +1010,7 @@
   }
   function show(slide, th) {
     if (th) theme = th;
-    if (slide !== cur) { sel = ''; selKind = ''; if (editTb) { editTb = ''; } }
+    if (slide !== cur) { sels = []; cellSel = null; editSlot = ''; clearGuides(); }
     cur = slide;
     setLayoutDom();
     renderBox(title, slide ? slide.title : SLText.empty('none'), 'title');
@@ -686,8 +1035,12 @@
       else h += o.show ? '<div class="t empty"></div>' : '<div class="t empty">Slide ' + ((i | 0) + 1) + '</div>';
     }
     if (L.b) h += '<div class="s-cols">' + bodyHTML(s.body, o, L.b === 'plain') + (L.b2 ? bodyHTML(s.body2, o, false, ' b2') : '') + '</div>';
-    if (s.pics && s.pics.length) h += '<div class="pics">' + s.pics.map(function (p) { return picHTML(p, false); }).join('') + '</div>';
-    var tbs = s.texts || s.tboxes || []; if (tbs.length) h += '<div class="tboxes">' + tbs.map(function (tb) { return boxHTML(tb, false); }).join('') + '</div>';
+    var objs = '';
+    if (s.pics && s.pics.length) objs += '<div class="pics">' + s.pics.map(function (p) { return picHTML(p, false); }).join('') + '</div>';
+    var tbs = s.texts || s.tboxes || []; if (tbs.length) objs += '<div class="tboxes">' + tbs.map(function (tb) { return boxHTML(tb, false); }).join('') + '</div>';
+    if (s.shapes && s.shapes.length) objs += '<div class="shapes">' + s.shapes.map(function (sh) { return shapeHTML(sh, false); }).join('') + '</div>';
+    if (s.tables && s.tables.length) objs += '<div class="tables">' + s.tables.map(function (tb) { return tableHTML(tb, false); }).join('') + '</div>';
+    if (objs) h += '<div class="objs">' + objs + '</div>';
     return h;
   }
 
@@ -695,13 +1048,17 @@
     init: init, show: show, html: html, paint: paint, cls: cls, bgStyle: bgStyle, slots: slots, W: W, H: H, fit: doFit, scale: function () { return scale; },
     theme: function () { return theme; },
     selected: function () {
-      if (selKind === 'pic' && picById(sel)) return { kind: 'pic', obj: picById(sel) };
-      if (selKind === 'tbox' && tbById(sel)) return { kind: 'tbox', obj: tbById(sel), editing: editTb === sel };
-      return null;
+      var p = primary(); if (!p) return null;
+      var obj = objBy(p.kind, p.id); if (!obj) return null;
+      return { kind: p.kind, obj: obj, editing: !!editSlot, items: sels.slice(), cell: cellSel };
     },
-    select: function (id, kind) { select(id, kind); },
-    addPic: addPic, delPic: delPic, addBox: addBox, delBox: delBox, delObj: delObj, layer: layer, setBoxChrome: setBoxChrome, startEdit: startEdit, endEdit: endEdit,
-    editingBox: function () { return editTb || ''; },
+    select: function (id, kind, add) { select(id, kind, add); },
+    addPic: addPic, delPic: delSelected, addBox: addBox, delBox: delSelected, delObj: delSelected, delSelected: delSelected,
+    addShape: addShape, addTable: addTable, layer: layer, arrangeLayer: arrangeLayer, arrangeAlign: arrangeAlign, arrangeDist: arrangeDist,
+    setBoxChrome: setBoxChrome, setShapeChrome: setShapeChrome, setTableChrome: setTableChrome,
+    startEdit: function (kind, id, r, c) { if (id == null) return startEdit('tbox', kind); return startEdit(kind, id, r, c); },
+    endEdit: endEdit,
+    editingBox: function () { return editSlot || ''; },
     placeholderRect: placeholderRect,
     nudge: function (dx, dy) { return nudgeObj(dx, dy); },
     redrawPics: drawObjs, redraw: drawObjs,
