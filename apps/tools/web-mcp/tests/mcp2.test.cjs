@@ -258,6 +258,8 @@ listTests()
       console.error(failed + ' failed');
       process.exit(1);
     }
+    /* BusyBox's `false` applet sets process.exitCode; clear it so a green run exits 0. */
+    process.exitCode = 0;
     console.log('All tests passed');
   })
   .catch(function (err) {

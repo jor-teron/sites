@@ -303,7 +303,8 @@ async function relayTests() {
   try {
     var health = await httpGet(port, '/health');
     assertEq(health.status, 200, 'GET /health 200');
-    assertEq(health.body, 'ok\n', 'GET /health body');
+    assert(health.body.indexOf('ok') === 0, 'GET /health starts with ok');
+    assert(/modules:\s*mcp/.test(health.body), 'GET /health lists the mcp module');
 
     var noTab = await httpPost(port, '/mcp/Abcd2345', JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }));
     assertEq(noTab.status, 200, 'missing tab HTTP 200');

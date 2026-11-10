@@ -1,0 +1,10 @@
+# Web MCP — relay/relay_files.txt: files start-relay.sh downloads together. MCP2.2
+# One filename per line. Paths are not allowed. Comments and blank lines are ignored.
+# Future modules (TCP bridge, fetch proxy) should be added here so the
+# starter script picks them up on the next run.
+web-mcp-relay.js
+relay_config.js
+relay_core.js
+relay_ws.js
+mod_mcp.js
+relay_files.txt
