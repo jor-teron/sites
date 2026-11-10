@@ -1430,3 +1430,199 @@ Future Plans
   - Unmerged remote branches not owned by these builders: ag-f1-dup-chats,
     ag-f6-merge-msgs, df15b1, ig4-online-gen, mm4-merge-pdf, qr1-code-maker,
     sr-f1-ids, vs2-cloud-vision.
+
+
+==========================================================================
+WEEK NOTES: Wed 2026-11-04 to Tue 2026-11-10 evening - Team 1
+Written by Hub Builder 1, with notes from Hub Main Builder Team 1, Hub
+Apps Builder and Hub Games Builder. GitHub main at end of day: 944a6a6.
+==========================================================================
+
+--- HUB BUILDER 1 (Hub/main: hub/, desktop/, shared/, apps/system/, sw.js, root entrypoints)
+Took over from Hub Main Builder Team 1 on Sun 2026-11-08 ~21:25 IST.
+
+Releases (all pushed + merged to main on Jor's "push"):
+Sun 8:
+  - H138a 58c07a4  Centralized API credential store consolidated, no migration (PR #448, 10 files +314/-129).
+  - H138b 8b23bc1  Standalone API Keys System app (apps/system/api-keys) (PR #449, 15 files +777/-448).
+  - H138c 2cbfdff  NVIDIA setup + safe model-list diagnostics (PR #450, 5 files +210/-21).
+  - H140 b9af92e   Eleven named API-key rows (Tavily, Ollama URL, Gemini, Cloud Vision, OpenRouter, Groq,
+                   DeepSeek, OpenAI, xAI, DeepInfra, NVIDIA), each with Save; Add Provider Row kept (PR #451, 5 files +301/-16).
+  - H139a 11aa450  Bounded central embedding APIs (HubAPI) (PR #452, 6 files +459/-5).
+  - H141 6bc41b6   Normalized provider-reported cache-read usage (usage.cache contract, used by Apps AG35 st2) (PR #453, 4 files +151/-3).
+Mon 9:
+  - (catalog) 7744b3c  hub/core/hub_catalog.js regen for Unblock move to Games, on Jor's OK (PR #454, 1 file).
+  - H142 5f49c89   Hub PIN lock screen, Desktop mode only, off by default, 4-digit PIN (PBKDF2), locks on load,
+                   Lock Now, no lock on ?join devices, QR unlock from phone over PeerJS (PR #455, 14 files +1376/-6).
+  - H140.1 e1f98db Test-only: API Keys test no longer cross-checks Agent keys (Agent has own store since AG37) (PR #456).
+  - H143 50f345c   Fingerprint unlock via phone passkey (WebAuthn); method PIN / finger / both; finger-only keeps
+                   PIN as hidden recovery; SW hub-shell-v161 (PR #457, 10 files +1151/-69).
+  - H143.1 8a08f3a Phone unlock error codes (phone, lock QR, Settings Add phone), Try again, 45 s timeout,
+                   "Use PIN instead", host reconnect; SW hub-shell-v162 / V 20261109c (PR #458, 10 files +397/-53).
+Tue 10:
+  - H144 0bd53cc   Ask before closing (beforeunload, default on, off for ?join; Hub's own reloads exempt via
+                   window.__hubAllowUnload) + taskbar fullscreen toggle #wm-fs + two Settings > Desktop switches;
+                   SW hub-shell-v163 / V 20261110a (PR #459, 18 files +349/-28).
+
+Fixes:
+  - H140.1: 7 failing hub_api_keys_app tests (bisected to Apps AG37 9d7dc44's intended key split) fixed on the Hub test side.
+  - Mistake noted: running hub_appindex_gen.py --help runs the FULL (headless browser) mode; output reverted. Never pass --help.
+
+Work for other teams:
+  - Apps: H141 cache-usage contract for AG35 st2; H140.1 after AG37; info on Terminal BusyBox-WASM reuse for Web MCP (MCP2);
+    agreed conditions for a shared relay in hub/relay/ (new files only, no sftp_relay.py/.gitignore/sw.js/catalog edits,
+    no third relay next to apps/connectivity/ssh/relay).
+  - Games: catalog regen 7744b3c for Unblock.
+  - MCP Bot: built MCP server v1.3.0 (stdlib Python, Gemini OAuth: RFC 9728/8414 discovery, DCR, PKCE S256; oauth.py,
+    auth.html, mcp.sh control script, 44/44 tests), staged on Jor's PC in /home/www/ai/mcp-update (not installed),
+    then handed the whole MCP project to MCP Bot on Tue 10.
+
+Diagnoses:
+  - Fingerprint "Add phone" failure: root cause still unknown; H143.1 adds error codes so Jor's phone can report it.
+  - PeerJS public broker 0.peerjs.com verified up (200).
+  - A PWA window's close button cannot be hidden or removed by a web page (led to H144).
+
+Ideas (not built): H139 embedding proposal beyond H139a; full split of MCP server.py (moved to MCP Bot).
+Open, not approved: fix release for fingerprint Add phone (waits for Jor's error code); H139b; PIN retry limit.
+Parked: desktop Start-up manager (very low priority); cleanup of old /workspace worktrees (bisect-wt, h138b) only if Jor asks.
+Moved: MCP server project to MCP Bot (Tue 10); hub.html removed earlier, Desktop is desktop/desktop.html.
+
+--- HUB MAIN BUILDER TEAM 1 (Wed 2026-11-04 to handover Sun 2026-11-08 ~21:25 IST)
+
+Releases: none (no commits/pushes this period; last were H115-H118 + week notes, 2026-11-03, d81257a..79d1e96).
+Fixes: none.
+
+Work for other teams:
+  - Wed 11-04: launcher relay brief to APK Maker 1 (planning only): local Hub hosting over HTTP,
+    PeerJS-compatible broker, WS-to-TCP bridge (SSH/VNC/Telnet), WebDAV server, AI proxy holding keys,
+    LAN discovery (mDNS + JS bridge); later WS data fallback, MQTT. Out of scope: TURN, RDP, SFTP/FTP.
+  - Sun 11-08: woke Hub Apps Builder and Hub Games Builder to read all three technical READMEs and
+    reconcile backlogs (read-only); both reported nothing waiting to push then (Apps later: AG31 627e7c2,
+    AG32 108864d+a46bb08 - their entries).
+  - Sun 11-08: created Hub Builder B (now Hub Builder 1) at Jor's request and handed over.
+
+Diagnoses / audits (read-only, Sun 11-08, main 4777cb7):
+  - H108a/b Files phone layout already shipped by Team 3 in PR #416 (merged 2026-11-06).
+  - Already shipped, removed from Hub Main backlog: H104 XP (#388), H119 SFTP (#382; SFTP, not FTP),
+    H120 cache bump (#381), H134a-g HubAPI.
+  - H90 (5 wrong guesses) already covered by H97 hub/link/hub_trust.js: 15-min block, memory only (resets on reload).
+  - Highest H id then: H137 (#441); nothing reserved.
+  - 11-04 answer "H108" for Files phone support was corrected by the 11-08 audit (already shipped as H108a/b).
+
+Ideas (not built): Hub-side shared PeerJS relay settings helper (relay first, fallback 0.peerjs.com),
+  depends on APK Maker 1's relay contract.
+Open, not approved: H98 "Pair a device" card; Connect-link Allow/passcode gate (shared/link/link_core.js
+  attachLink has no gate); shared PeerJS relay settings helper.
+Parked: H99 default 000000 + masked passcode; H90 only if block must survive reloads; OS5 Hub launcher link
+  (Team 1 dependency for Team 3 OS.js).
+Moved: none.
+
+--- APPS BUILDER (apps/ except games, settings, tools/files, tools/sysmon, tools/phonekey)
+
+Releases (all pushed, on origin/main):
+Sun 8 (Agent, apps/lab/agent):
+  - AG31 627e7c2   Assist model (helper provider/model) + answer length (11 files +229/-4).
+  - AG32 108864d   Rolling summaries of older turns via Assist (13 files +274/-14).
+  - AG32.1 a46bb08 Summary sidecar (.sum.json / IndexedDB) (7 files +214/-118).
+  - AG33 c61f7a9   memory_search keyword search over memory + imported knowledge (17 files +374/-6).
+  - AG34 71d432b   Optional semantic search via HubAPI embeddings (14 files +422/-4).
+  - AG34.1 f716816 Exact-span chunks, partial index reporting, async guards (4 files +124/-44).
+  - AG35 st1 20a7765  Stable-first system prompt (7 files +93/-8).
+  - AG35 st2 d624795  Provider-reported cached input (H141 contract) (14 files +158/-15).
+  - AG36 565099a   Opt-in memory consolidation with exact undo (12 files +434/-17).
+  - AG37 9d7dc44   Agent's own API & Providers page + runtime (Hub code in Agent namespace) (30 files +2433/-83).
+  - AG38 4b24728   Full-page Settings with categories, Usage in Settings (11 files +233/-65).
+Mon 9:
+  - AG39 82ae1db   Slimmer top bar, folder chip, rate fields, image usage (14 files +210/-45).
+  - AG40 890a601   workspace/user/trash layout, move_to_trash + rename_file (approval, no overwrite, no delete) (14 files +326/-16).
+  - CT1 384968d    Cooking Timer modular ct_*, endAt timers, persist, big taps (11 files +867/-451).
+  - TR1+TR2 1f834d8  Torrent: browser WebTorrent client with folder save (15 files +1442).
+  - TR3+4+5 4e00976  Torrent queue, file pick + player, seed/limits (14 files +1337/-359).
+  - PV1 112c269    PDF Viewer: continuous scroll, vendored pdf.js 3.11.174 (old app kept as pdf-viewer-old) (19 files +1741/-30).
+  - ZP1+ZP2 395aa84  Zip: make/open zip, folder extract, optional AES (zip.js 2.24.0) (24 files +1653/-1615).
+  - DB1+DB2 e9c99e6  DB Browser: SQLite browse/query offline, CSV, save-as (sql.js 1.13.0) (15 files +2182).
+  - VT1 49a12aa    Video Trimmer modular vt_*, system theme, dual-handle range (13 files +1296/-484).
+  - VT2 73bad81    Video Trimmer full-viewport layout, pinned controls, side panel (5 files +347/-68).
+Tue 10:
+  - MCP1 390e92b   Web MCP (apps/tools/web-mcp): browser MCP server, file tools + relay (16 files +3245).
+  - MCP2 7c6e364   run_command via vendored BusyBox-WASM (20 files +4335/-23).
+  - (tile) 47a865e Web MCP tile moved to AI section (1 file).
+  - MCP2.1 a60eabc Masked PIN with Show/Hide and Copy (8 files +542/-24).
+  - MCP2.2 6763cf4 Modular Node relay core + start-relay.sh (12 files +1726/-708).
+  - RM1 2b3fa42    Remote (apps/connectivity/remote): standalone connections list (12 files +1561).
+  - RM2 797384b    Tabs + SFTP browse (sftp_relay.py protocol, own client) (13 files +1535/-41).
+  - RM3 a2d0ebf    SFTP transfers + file management, two-pane (13 files +1744/-85).
+  - RM6 21a83ea    SSH terminal (own xterm 6.0.0 + dev-tunnels-ssh copies, websockify 8022) (23 files +2568/-48).
+  - RM5 d3a1c0c    WebDAV (direct fetch, CORS, reuses SFTP view) (14 files +1236/-73).
+  - RM4 7c0467f    VNC viewer (own noVNC 1.7.0, quality/compression, Low bandwidth preset) (72 files +18044/-42).
+  (RM numbering is Jor's: RM6 and RM5 shipped before RM4.)
+
+Fixes:
+  - MCP2.2: relay README said port 8788 and /ai/mcp; fixed to 8787 (Jor's Linux MCP is on 10001).
+  - AG34.1: lost long-line tails in chunking.
+  - RM5: FTP row text 'coming in RM4' changed to 'parked'.
+
+Work for other teams:
+  - AG37 reused Hub Builder 1's API/provider code inside the Agent namespace (Hub API Keys unchanged).
+  - Regenerated hub/core/hub_catalog.js (--catalog-only) for RM1's Connectivity CSV row.
+
+Diagnoses:
+  - Mon 9: bisect showed AG37 9d7dc44 broke 7 Hub API Keys tests via the test's cross-check into Agent keys
+    (intended split); fixed Hub side in H140.1.
+  - Tue 10: X2Go in a browser not feasible (NX needs a real X server on the viewer; official HTML5 client uses
+    KDrive, heavy server stack, GPL-2+). No code.
+  - Only SSH and VNC truly need a self-run TCP relay; Web MCP needs one because a tab can't accept inbound connections.
+
+Ideas (not built):
+  - RL1: one shared modular relay in hub/relay/ (MCP forwarder, TCP bridge, fetch proxy), one-line installers
+    (curl | bash, irm | iex), no Tailscale/Funnel steps, bind 127.0.0.1:8787, ws/wss URL handling.
+  - One-command native MCP server installer (hub/mcp/), source via MCP Bot.
+  - Remote Browser WB1-WB4: headless Chromium on the relay (mod_browser, Puppeteer) streamed into a Remote tab.
+  - MCP3: full Linux (v86) mode for Web MCP.
+Open, not approved: RL1 (approved once, then Jor said stop before anything was written; needs a fresh 'code RL1');
+  WB1-WB4; hub/mcp installer; MCP3 (v86); PV2 (PDF OCR); refresh of stale hub_appindex.js.
+Parked: Remote FTP, RDP, X2Go, WWW, EXEC, SPICE; Password Manager; Start-up manager; Agent btnPick duplicate id.
+Moved: standalone FTP1-FTP4 plan replaced by the Remote app (RM); Web MCP tile to AI (47a865e); old PDF Viewer kept
+  as pdf-viewer-old; Zip ZP1+2 replaced the JSZip Zip app from 6d11094.
+Unattributed (in apps/ history this week, not confirmed by Apps): AS1-AS3 Astrology (089d50c, 653db90, 44cb8e5),
+  AG21 337a982, AG23-AG30, ZIP ZP1 6d11094, Weather Sim WS1-WS6, ec9a27a apps-list update, 652419b 'Add new tools'.
+
+--- GAMES BUILDER (apps/games/, apps/learn/)
+
+Releases (all pushed by Games on Jor's "push"), Mon 9 - Unblock (apps/games/unblock/):
+  - UNB-0 93a6af1  Unblock moved from apps/lab/unblock-game (upload 652419b) into a modular Games
+    layout (index.html redirect, unblock.html, core/ ui/ assets/), no gameplay change, both CSVs (22 files +520/-231).
+  - UNB-1 d518d30  1000 solver-verified levels (assets/levels.json; par avg 3.0 for 000-099 up to 15.5
+    for 900-999, max 24), par/stars, solver hint, smooth drag, paged level list, save key
+    unblock_game_save_v2, tools/gen-levels.mjs + verify-levels.mjs (22 files +1031/-374).
+  - UNB-2 9c5021a  Shared settings gear (?from=unblock, 'unblock' in GAME_PREFIXES), shared theme, icon (11 files +181/-33).
+  - UNB-3 3a66f75  Phone layout: ~93% board in portrait, side controls landscape, 640px desktop cap,
+    dvh/safe-area, compact HUD (8 files +224/-100).
+  - UNB-4 6aa692f  5 board themes (Classic, Wood, Car & Bus, Floor Tiles, Stone; CSS/SVG, unblock.boardTheme) (19 files +798/-52).
+  - UNB-5 3d6dce4  Portrait phones: all controls in one compact bottom bar, board centred (3 files +221/-96).
+  Related (Hub Builder 1): Unblock catalog regen 7744b3c (PR #454), OK'd by Jor.
+  Wed 4 - Sun 8: no releases.
+
+Fixes:
+  - UNB-4 header overlap at 360px (portrait wordmark hidden at <=420px), amended before push.
+  - UNB-5 board stuck at top with empty gap, now centred, amended before push.
+
+Work for other teams:
+  - Sun 8: read-only backlog review vs main 4777cb7 + all 3 technical READMEs for Hub Main Builder Team 1:
+    GO-1, BLKD-1, SHIP-1, LUDO-1a/b/c, ORB-1, G-FIX1 and AF2 already merged; Team 3 NIX-G3/LRN-WK1
+    "unfinished" notes are stale.
+  - Mon 9: box cleanup for Hub Builder 1 with Jor's OK: deleted /workspace/c4test and
+    /workspace/backups/body_4k_src.glb; kept ar-game-aside, ar-shots, browser-fps, pwtest.
+
+Diagnoses:
+  - Original Unblock levels were trivial: of 1000, 400 took 1 move, hardest 8 (led to UNB-1).
+  - The 7 failing hub/tests/hub_api_keys_app.test.cjs tests: no Games commit since 4773098 touched
+    apps/system/api-keys, hub/core or shared/.
+
+Ideas (not built): Unblock 3D look (CSS-only or three.js); UNB-1b harder 600-999 (dropped by Jor).
+Open, not approved: Unblock not tested on a real phone (headless only); resync /workspace/sites_games.
+Parked: Unblock 3D look (needs new id); LandCraft LC1/LC2; AoE balance, Ages, ARQ1f fog; Turbo Lap and
+  Desert Road shared settings; Learn theme and LRN3a; NIX-G4/Island Alpha; Hero Builder keep/move/remove;
+  Technology Learn topic; optional Connect 4 / Game of Life hub bridge.
+Moved: Unblock apps/lab/unblock-game -> apps/games/unblock (UNB-0); Lab row removed, Games row added in both CSVs.
+
