@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- BRK-1. Original names and geometry. Fixed 60 Hz physics in core/physics.js;
+     shared settings/theme bridge, oscillator audio and responsive art in ui/. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Breakout — BRK-1</title>
+  <link rel="icon" href="breakout_icon.png">
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="side" aria-label="Game controls">
+      <header><a class="back" href="../games.html" aria-label="Back to Games">‹ Games</a><h1>Breakout</h1><small>BRK-1</small></header>
+      <div class="stats" aria-label="Scoreboard">
+        <div>Score <b id="score">0</b></div><div>Best <b id="best">0</b></div>
+        <div>Level <b id="level">1</b></div><div>Lives <b id="lives">3</b></div>
+      </div>
+      <div class="buttons">
+        <button id="launchBtn" class="primary">Launch</button><button id="pauseBtn">Pause</button>
+        <button id="newBtn">New game</button><button id="helpBtn">How to play</button>
+        <button id="muteBtn" aria-pressed="false">Mute</button><span id="gearSlot"></span>
+      </div>
+      <p id="status" role="status">Ready to launch</p>
+      <p id="powers" aria-label="Active power-ups"></p>
+      <p class="keys">Mouse / drag / ← → or A D to move. Space to launch. P / Esc to pause. Lasers fire automatically.</p>
+    </section>
+    <div class="board-wrap" id="boardWrap"><canvas id="board" aria-label="Breakout playfield: use the paddle to clear the bricks"></canvas></div>
+  </main>
+  <div class="overlay" id="pause" hidden>
+    <section class="card" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+      <h2 id="pauseTitle">Paused</h2><p id="pauseInfo"></p>
+      <button id="resumeBtn" class="primary">Resume</button><button id="pauseHelpBtn">How to play</button>
+      <button id="pauseNewBtn">New game</button><p class="muted">Your game is saved on this device. P / Esc resumes.</p>
+    </section>
+  </div>
+  <div class="overlay" id="over" hidden>
+    <section class="card" role="dialog" aria-modal="true" aria-labelledby="overTitle">
+      <h2 id="overTitle">Game over</h2><p id="overInfo"></p><button id="againBtn" class="primary">Play again</button>
+    </section>
+  </div>
+  <div class="overlay" id="help" hidden>
+    <section class="card help-card" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <h2 id="helpTitle">How to play</h2>
+      <p>Clear every coloured brick. Grey crossed bricks cannot break and do not count toward clearing a level. Dots show hits remaining.</p>
+      <p>Move with the mouse, drag on the board, or use ← → / A D. Tap Launch or press Space. A hit near a paddle edge sends the ball sideways; the centre sends it up. Speed increases as you play.</p>
+      <p>Catch falling capsules: <b>W</b> wider paddle · <b>M</b> multi-ball · <b>S</b> slow ball · <b>L</b> automatic lasers · <b>+</b> extra life (up to 9). Timed powers last 16 seconds and can be refreshed.</p>
+      <p>You start with 3 lives. Lose a life only when the last ball falls. Powers end on life loss or a new level. Brick hits earn 10 points and breaking one adds 40. Clearing a level adds a bonus.</p>
+      <p>Ten handmade boards lead to endless random levels. Best score and progress save automatically. P / Esc pauses; switching tabs always pauses. Shared Settings controls theme and sound.</p>
+      <button id="helpClose" class="primary">Got it</button>
+    </section>
+  </div>
+  <script src="../common/settings/games-settings.js"></script>
+  <script src="core/config.js"></script><script src="ui/settings.js"></script>
+  <script src="core/levels.js"></script><script src="core/physics.js"></script><script src="core/storage.js"></script>
+  <script src="ui/sound.js"></script><script src="ui/render.js"></script><script src="core/game.js"></script>
+</body>
+</html>

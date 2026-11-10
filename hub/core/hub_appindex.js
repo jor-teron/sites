@@ -5,6 +5,7 @@
  * H48c: the 6th item (description) is there only when the app's CSV row has one (optional last column).
  */
 window.HUB_APP_INDEX = {
+  "minesweeper": ["Games", "apps/games/minesweeper/", "Minesweeper", "apps/games/minesweeper/minesweeper_icon.png", 0, "Clear the minefield with safe first openings - flags and three board sizes"],
   "2048": ["Games", "apps/games/2048/", "2048", "apps/games/2048/2048_icon.png", 0, "Slide number tiles and merge matching pairs to reach the 2048 tile"],
   "tv": ["Favorite", "tv/", "TV", "tv/tv_icon.png", 0, "Live TV player for free IPTV channels from M3U playlists - remote and touch"],
   "draw": ["Media", "apps/media/draw/", "Draw", "apps/media/draw/draw_icon.png", 0, "Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG"],
@@ -46,6 +47,9 @@ window.HUB_APP_INDEX = {
   "sling-birds": ["Games", "apps/games/sling-birds/", "Sling Birds", "apps/games/sling-birds/sling-birds_icon.png", 0, "Physics slingshot: launch birds to knock down towers and defeat the pigs"],
   "pacman": ["Games", "apps/games/pacman/", "Pacman", "apps/games/pacman/pacman_icon.png", 0, "Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables"],
   "jigsaw": ["Games", "apps/games/jigsaw/", "Jigsaw", "apps/games/jigsaw/jigsaw_icon.png", 0, "Join shaped pieces from six original pictures or your own photo"],
+  "garden-guard": ["Games", "apps/games/garden-guard/", "Garden Guard", "apps/games/garden-guard/garden-guard_icon.png", 0, "Grow a garden defence across five lawns with sun makers and frosty shooters"],
+  "sweet-swap": ["Games", "apps/games/sweet-swap/", "Sweet Swap", "apps/games/sweet-swap/sweet-swap_icon.png", 0, "Swap colourful candy shapes to match three and chain cascades across score challenges"],
+  "breakout": ["Games", "apps/games/breakout/", "Breakout", "apps/games/breakout/breakout_icon.png", 0, "Clear brick layouts with a paddle and ball - catch powers and survive endless levels"],
   "pinball": ["Games", "apps/games/pinball/", "Star Pinball", "apps/games/pinball/pinball_icon.png", 0, "Original space pinball: ramp - spinner - drop targets and missions from Cadet to Admiral"],
   "osmos": ["Games", "apps/games/osmos/", "Osmos OSM1c", "apps/games/osmos/assets/cell-icon.svg", 0, "Calm glow cell survival: absorb smaller cells and grow through seeded levels"],
   "dino-run": ["Games", "apps/games/dino-run/", "Dino Run", "apps/games/dino-run/dino-run_icon.png", 0, "Endless runner: jump the dinosaur over obstacles - pick your dino and theme"],
