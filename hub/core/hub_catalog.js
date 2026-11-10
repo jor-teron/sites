@@ -221,6 +221,7 @@ Code Lab,                ../lab/code-lab/,           ../lab/code-lab/codelab_ico
 Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type code in a box and see the web page result as you type
 Code School,             code-school/,               , , Coding, Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database
 Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
+Camping Checklist,       camping-checklist/,        , , Outdoors, Camping gear lists with weights - trip planner - packing tips and print
 Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
 Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo

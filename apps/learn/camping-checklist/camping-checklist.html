@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#204f3c">
+<title>Camping Checklist CC-1a</title>
+<link rel="icon" href="camping-checklist_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.camping-checklist.theme"></script>
+<link rel="stylesheet" href="ui/camping.css">
+</head>
+<body>
+<div class="lrn">
+<header class="lrn-head">
+  <h1><img src="camping-checklist_icon.png" width="32" height="32" alt="">Camping Checklist</h1>
+  <button id="back" class="lrn-qc">‹ Learn</button>
+  <button id="settings" class="lrn-qc" aria-label="Settings">⚙</button>
+</header>
+<main id="main">
+  <div class="intro"><div><p class="eyebrow">LEARN / OUTDOORS</p><h2>Pack well. Leave no trace.</h2>
+  <p>Practical lists for trails, tents and changing skies.</p></div>
+  <a href="../survival-outdoors/">Survival &amp; Outdoors ↗</a></div>
+  <p class="notice">Adapt to your route and local rules. Weights are estimates per unit, including worn gear and consumables — not just your pack. Must-have labels are a starting point, not a safety guarantee.</p>
+  <section class="toolbar" aria-label="Choose a packing list">
+    <label>Template or My lists<select id="lists"></select></label>
+    <button id="duplicate">Copy to My lists</button><button id="rename">Rename</button>
+    <button id="reset">Reset ticks</button><button id="add">+ Add item</button>
+  </section>
+  <section id="summary" aria-live="polite"></section>
+  <div id="groups"></div>
+  <p id="status" role="status"></p>
+</main>
+<footer>CC-1a · Metric units · <span id="offline">Preparing offline copy…</span></footer>
+</div>
+<dialog id="editor">
+<form id="item-form">
+  <h2 id="edit-title">Add item</h2>
+  <label>Item name<input id="item-name" required maxlength="120"></label>
+  <label>Category<select id="item-category"></select></label>
+  <div class="fields"><label>Weight per unit (g)<input id="item-grams" type="number" min="0" max="100000" step="1" required></label>
+  <label>Quantity<input id="item-qty" type="number" min="1" max="10000" value="1" required></label></div>
+  <label class="check"><input id="item-must" type="checkbox" checked>Must-have</label>
+  <div class="actions"><button type="button" data-close>Cancel</button><button class="primary" type="submit">Save item</button></div>
+</form>
+</dialog>
+<dialog id="settings-dialog">
+<h2>Settings</h2><label>Theme<select id="theme"><option value="system">Auto (System)</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+<p>Auto follows your Hub theme. All lists stay on this device. No account or connection needed after the first offline download.</p>
+<button data-close>Done</button>
+</dialog>
+<noscript>Enable JavaScript to use the offline checklist.</noscript>
+<script src="../shared/learn-hubbar.js"></script>
+<script src="core/data.js"></script><script src="core/model.js"></script><script src="ui/app.js"></script>
+</body>
+</html>

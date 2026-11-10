@@ -118,6 +118,7 @@ window.HUB_APP_INDEX = {
   "clock-reading": ["Learn", "apps/learn/clock-reading/", "Clock Reading", "apps/learn/clock-reading/clock-reading_icon.png", 0, "A live clock in 7 styles - tap any part to learn its name - 12 h and 24 h GMT time"],
   "code-lab": ["Learn", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/codelab_icon.png", 0, "Jupyter-style code cells that run on a remote Jupyter server"],
   "code-school": ["Learn", "apps/learn/code-school/", "Code School", "apps/learn/code-school/code-school_icon.png", 0, "Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database"],
+  "camping-checklist": ["Learn", "apps/learn/camping-checklist/", "Camping Checklist", "apps/learn/camping-checklist/camping-checklist_icon.png", 0, "Camping gear lists with weights - trip planner - packing tips and print"],
   "survival-outdoors": ["Learn", "apps/learn/survival-outdoors/", "Survival and Outdoors", "apps/learn/survival-outdoors/survival-outdoors_icon.png", 0, "Outdoor survival basics: making fire and finding safe drinking water"],
   "piano-basics": ["Learn", "apps/learn/piano-basics/", "Piano Basics", "apps/learn/piano-basics/piano-basics_icon.png", 0, "Learn piano: play songs step by step or with falling notes - sargam - record"],
   "guitar-chords": ["Learn", "apps/learn/guitar-chords/", "Guitar Chords", "apps/learn/guitar-chords/guitar-chords_icon.png", 0, "Learn guitar chords: finger charts - strum sound - chord change practice and quiz"],

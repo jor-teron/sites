@@ -1,0 +1,31 @@
+:root{--bg:#14231d;--panel:#1e3027;--soft:#2c4135;--text:#ecf4ed;--muted:#b4c8b9;--line:#45604d;--accent:#9ed8b2;color-scheme:dark}
+:root.light{--bg:#f4f6ef;--panel:#fff;--soft:#e8eee4;--text:#21372b;--muted:#526959;--line:#c3d1bf;--accent:#286242;color-scheme:light}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
+[hidden]{display:none!important}button,input,select,textarea{font:inherit;color:inherit}
+button,a,input,select{touch-action:manipulation}button,select,input:not([type=checkbox]){min-height:44px}
+button{padding:8px 14px;cursor:pointer;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+button:hover{border-color:var(--accent)}button:disabled{opacity:.45;cursor:default}
+a{color:var(--accent)}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+input,select,textarea{min-width:0;max-width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:var(--accent)}
+.lrn{max-width:1120px;margin:auto}.lrn-head{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line)}
+h1{display:flex;align-items:center;gap:10px;font-size:1.15rem;line-height:1.2;margin:0;flex:1;min-width:0}
+h2{margin:0 0 8px;font-size:1.6rem}h3{margin:0;font-size:1rem}p{margin:8px 0 16px}
+main{padding:20px 20px 40px}.intro{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.intro a{display:inline-flex;align-items:center;min-height:44px}.eyebrow{font-size:.75rem;letter-spacing:.13em;font-weight:800;color:var(--accent);margin-bottom:5px}
+.notice{border-left:4px solid var(--accent);padding:10px 14px;background:var(--soft);border-radius:4px;font-size:.9rem;color:var(--muted)}
+.toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:8px;margin:20px 0}.toolbar label{flex:1;min-width:230px}
+label{display:flex;flex-direction:column;gap:5px;font-size:.9rem}label.check{flex-direction:row;align-items:center;min-height:44px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:12px}
+.stat strong{display:block;font-size:1.5rem}.stat small,.muted{color:var(--muted)}progress{width:100%;height:14px;accent-color:var(--accent)}
+.breakdown{display:flex;gap:8px 20px;flex-wrap:wrap;padding:12px 0}.breakdown span{font-size:.8rem;color:var(--muted)}
+.category{margin-top:16px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel)}
+.category>h3{padding:12px 16px;background:var(--soft);display:flex;justify-content:space-between;gap:12px}
+.item{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:6px 10px}.item label{flex:1;min-width:0;display:flex;flex-direction:row;align-items:center;gap:12px;min-height:54px;cursor:pointer;font-size:1rem;padding:4px}
+.item .info{overflow-wrap:anywhere}.item small{display:block;font-size:.78rem;color:var(--muted)}.item.packed .name{text-decoration:line-through;color:var(--muted)}
+.item button{font-size:.8rem;padding:6px 10px}.badge{font-size:.7rem;font-weight:700;color:var(--accent);margin-left:6px}
+footer{text-align:center;border-top:1px solid var(--line);padding:12px;color:var(--muted);font-size:.8rem}
+#status{min-height:24px;color:var(--accent)}dialog{width:min(480px,calc(100% - 24px));max-height:90dvh;overflow:auto;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}dialog::backdrop{background:#0009}
+dialog label{margin:12px 0}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;justify-content:end;gap:10px;margin-top:16px}.primary{background:var(--accent);color:var(--bg);font-weight:700}
+@media(max-width:540px){main{padding:16px 12px 30px}h1{font-size:.95rem;gap:6px}h1 img{width:26px;height:26px}.lrn-head{padding:8px 10px}h2{font-size:1.4rem}.toolbar label{flex-basis:100%}.toolbar button{flex:1}.stat{padding:10px}.stat strong{font-size:1.15rem}.stat small{font-size:.72rem}.item{flex-wrap:wrap;gap:4px}.item label{flex-basis:calc(100% - 124px)}.item button{padding:6px}.category>h3{padding:10px}.badge{display:inline-block}}
+@media(max-height:430px){main{padding-top:10px}.intro h2{font-size:1.2rem}.lrn-head{padding:6px 10px}dialog{max-height:96dvh}}
