@@ -9,7 +9,7 @@
 </head>
 <body>
 <div class="lrn" id="app">
-<header class="lrn-head"><a href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1><span class="lrn-here">History Timeline</span></h1><button id="settings">Settings</button></header>
+<header class="lrn-head"><a href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1><span class="lrn-here">History Timeline</span></h1><button id="quiz">Quiz</button><button id="help">How to use</button><button id="settings">Settings</button></header>
 <section class="toolbar" aria-label="Timeline controls">
 <label>Explore <select id="lanes"><option value="both">World + India</option><option value="world">World</option><option value="india">India</option></select></label>
 <label>Scale <select id="scale"><option value="log">Deep-time · compressed</option><option value="linear">Linear · equal years</option></select></label>
@@ -29,7 +29,19 @@
 <footer>Curated learning overview · BCE = Before Common Era · CE = Common Era · no year zero</footer>
 </div>
 <dialog id="preferences"><h2>Timeline settings</h2><label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label><p>Auto follows the Hub's chosen theme, or your device when the Hub has no choice saved.</p><button id="close-settings">Done</button></dialog>
+<dialog id="quiz-card" aria-label="History quiz"></dialog>
+<dialog id="help-card"><h2>How to use History Timeline</h2>
+<ol><li>Choose World, India or both parallel lanes. The India lane includes the wider subcontinent and related events abroad, not just current borders.</li>
+<li>Deep-time mode compresses ancient millennia so recent eras stay readable. Spacing is unequal. Linear mode uses equal spacing for equal years.</li>
+<li>Drag to pan, wheel or pinch to zoom. Keyboard: focus the timeline, use ←/→ to pan, +/− to zoom and Home for all time. Use Decade for a ten-year window around your selected event or view centre.</li>
+<li>Tap a marker or an event button for a fact card. Crowded markers are sampled to stay usable: every event remains in the paginated list. In view only restricts the list to the current date window.</li>
+<li>Search event titles, filter topics and use ★ Bookmarks. Selected topics are combined; choosing All topics resets them. Bookmarks stay on this device only.</li>
+<li>At the same time lists all records within 25 years of the selected start date, ignoring filters. Approximate dates are still approximate. Pins mark representative places on a schematic map, not exact historical territories.</li>
+<li>Guided tours automatically visit a curated sequence every 8 seconds. Pause, resume or step manually; End tour leaves the timeline where you stopped. Direct dragging and zooming pause auto-advance. Tours also pause in a hidden tab or when a quiz opens.</li>
+<li>Ordering quiz: arrange five events from earliest to latest by dragging the handle or using ↑/↓. Century quiz: answer five questions. Both use exact-date records and save separate best scores locally.</li>
+<li>BCE means Before Common Era; CE means Common Era. There is no year zero. 1–100 CE is the first century CE; 100–1 BCE is the first century BCE. c. means circa, or approximately. Era boundaries are teaching conventions, not universal divisions.</li></ol>
+<p>This is a selective overview, not an exhaustive history. Ancient dates and period boundaries can change with new research. Quiz answers use only non-approximate event start dates.</p><button id="close-help">Back to timeline</button></dialog>
 <noscript>History Timeline needs JavaScript to explore the events.</noscript>
 <script src="../shared/learn-hubbar.js"></script>
-<script src="core/data/base.js"></script><script src="core/data/expanded.js"></script><script src="core/model.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script><script src="ui/explore.js"></script>
+<script src="core/data/base.js"></script><script src="core/data/expanded.js"></script><script src="core/model.js"></script><script src="core/activities.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script><script src="ui/explore.js"></script><script src="ui/activities.js"></script>
 </body></html>

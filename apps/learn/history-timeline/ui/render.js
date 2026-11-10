@@ -49,20 +49,22 @@
         ctx.globalAlpha = .22; ctx.fillStyle = colour; ctx.fillRect(a, by, b - a, 16); ctx.globalAlpha = 1;
         ctx.save(); ctx.beginPath(); ctx.rect(a + 3, by, Math.max(0, b - a - 6), 16); ctx.clip(); ctx.fillStyle = ink; ctx.font = '10px system-ui'; ctx.fillText(name, a + 5, by + 12); ctx.restore();
       }
-      const slots = Math.max(2, Math.floor((laneH - 65) / 34)), occupied = Array(slots).fill(-1000);
+      const slots = Math.max(2, Math.floor((laneH - 65) / 34)), occupied = Array.from({length:slots}, () => []);
       const candidates = state.events.filter(e => e.region === lane && x(e.year) >= 4 && x(e.year) <= w - 4);
       // Selected marker wins its slot even at whole-history scale.
       candidates.sort((a, b) => (b.id === state.selected) - (a.id === state.selected) || a.year - b.year);
       for (const e of candidates) {
-        const px = x(e.year); let row = occupied.findIndex(v => Math.abs(px - v) > 65);
+        const px = x(e.year), label = e.title.length > 19 ? e.title.slice(0,17) + '…' : e.title;
+        ctx.font = '10px system-ui';
+        const labelWidth = ctx.measureText(label).width, showLabel = (span < 600 || candidates.length < slots * 3) && px + 20 + labelWidth < w;
+        const extent = [px - 14, px + (showLabel ? 18 + labelWidth : 14)];
+        let row = occupied.findIndex(intervals => intervals.every(([a,b]) => extent[1] + 10 < a || extent[0] > b + 10));
         if (row < 0 && e.id !== state.selected) continue; if (row < 0) row = 0;
-        occupied[row] = px; const py = y0 + 65 + row * 34;
+        occupied[row].push(extent); const py = y0 + 65 + row * 34;
         ctx.strokeStyle = H.colours[e.topic]; ctx.lineWidth = e.id === state.selected ? 3 : 1.5;
         ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.stroke();
         ctx.save(); ctx.translate(px, py); ctx.scale(.68, .68); ctx.stroke(new Path2D(H.paths[e.topic])); ctx.restore();
-        ctx.font = '10px system-ui'; ctx.fillStyle = ink;
-        const label = e.title.length > 19 ? e.title.slice(0, 17) + '…' : e.title;
-        if (span < 600 || candidates.length < slots * 3) ctx.fillText(label, Math.max(3, Math.min(w - 115, px + 16)), py + 3);
+        ctx.fillStyle = ink; if (showLabel) ctx.fillText(label, px + 16, py + 3);
         hits.push({ x: px, y: py, e });
       }
       ctx.strokeStyle = line; ctx.beginPath(); ctx.moveTo(0, y0 + laneH - 1); ctx.lineTo(w, y0 + laneH - 1); ctx.stroke();

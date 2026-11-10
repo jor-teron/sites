@@ -75,5 +75,5 @@
       const selected = H.events.find(e => e.id === H.state.selected); if (selected) H.select(selected, false);
     }
   });
-  sync(); H.update();
+  H.syncFilters = sync; sync(); H.update();
 })();

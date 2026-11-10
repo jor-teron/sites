@@ -3,6 +3,7 @@ const base = path.join(__dirname, '..');
 require('../core/data/base.js');
 if (fs.existsSync(path.join(base, 'core/data/expanded.js'))) require('../core/data/expanded.js');
 require('../core/model.js');
+if (fs.existsSync(path.join(base, 'core/activities.js'))) require('../core/activities.js');
 const H = globalThis.HT, events = H.events;
 test('schema: ids are unique; date, text, category and representative place are valid', () => {
   const ids = new Set();
@@ -65,3 +66,33 @@ test('combined filters preserve all regions in the contemporaries query', () => 
   const filtered=H.query(events,{region:'india',topics:['science','culture'],search:'Raman',ids:['raman']});
   assert.deepEqual(filtered.map(e=>e.id),['raman']);
 });
+
+if(H.orderQuestion){
+ test('quiz ordering: unambiguous years, no approximate records, scoring and invalid ids',()=>{
+  let seed=42;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+  for(let i=0;i<100;i++){
+   const q=H.orderQuestion(events,random);assert.equal(q.items.length,5);assert.equal(new Set(q.items.map(e=>e.year)).size,5);
+   assert(q.items.every(e=>!e.approximate));assert.equal(H.gradeOrder(q.answer,q.answer),100);
+   assert.equal(H.gradeOrder([...q.answer].reverse(),q.answer),20);assert.equal(H.gradeOrder(Array(5).fill(q.answer[0]),q.answer),0);
+   assert.equal(H.gradeOrder(['unknown',...q.answer.slice(1)],q.answer),0);
+   assert.deepEqual(H.ordered(q.items).map(e=>e.id),q.answer);
+  }
+ });
+ test('century quiz choices are unique, nonzero, correctly signed and contain the answer',()=>{
+  let seed=7;const random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+  for(let i=0;i<500;i++){
+   const q=H.centuryQuestion(events,random);assert.equal(q.options.length,4);assert.equal(new Set(q.options).size,4);assert(!q.options.includes(0));
+   assert(q.options.includes(q.answer));assert.equal(q.answer,H.century(q.event.year));assert.equal(q.event.approximate,false);
+  }
+ });
+ test('four guided tours reference unique real events in chronological order',()=>{
+  assert.equal(H.tours.length,4);
+  for(const t of H.tours){assert(t.ids.length>=8);assert.equal(new Set(t.ids).size,t.ids.length);const rows=t.ids.map(id=>events.find(e=>e.id===id));assert(rows.every(Boolean));assert.deepEqual(H.ordered(rows).map(e=>e.id),t.ids);}
+ });
+ test('shuffle preserves input without mutation',()=>{const original=[1,2,3,4], result=H.shuffle(original,()=>.3);assert.deepEqual(original,[1,2,3,4]);assert.deepEqual([...result].sort(),original);});
+ test('decade clamps remain within global bounds in both modes',()=>{
+  for(const mode of ['linear','log'])for(const year of [H.MIN,-1,1,H.MAX]){
+   const v=H.clampView(H.view(mode,year-1,year+1)),r=H.range(v);assert(r[0]>=H.MIN-1e-5);assert(r[1]<=H.MAX+1e-5);assert(H.astro(r[1])-H.astro(r[0])>=9.9999);
+  }
+ });
+}
