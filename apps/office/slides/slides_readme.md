@@ -1,11 +1,11 @@
-# Hub Office Slides (Office → Hub Office) — release SL6
-<!-- legacy: release SL5 · release SL4 · release SL3 · release SL2 -->
+# Hub Office Slides (Office → Hub Office) — release SL7
+<!-- legacy: release SL6 · release SL5 · release SL4 · release SL3 · release SL2 -->
 
 A basic slide editor. Static, no build step, no libraries, works from `file://`. Built to stay light on a Celeron / 4 GB
 laptop: only the slide being edited is live (contenteditable title and body, plus any free text boxes, shapes and table
 cells), thumbnails are the same slide design scaled down (up to 9 bullets each), saving is debounced (400 ms) and one
 deck is one localStorage record. Pictures (SL3) are kept in IndexedDB, so the deck record stays small. SL5 stores
-formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange (still no new libraries).
+formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions (still no new libraries).
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -69,8 +69,26 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
     finger moves and fade after 2 s; the mouse pointer hides with them.
   - While presenting, the screen is kept awake with the Screen Wake Lock API when the browser has it (asked again when you
     come back to the tab, released when the show ends). Without it, the device's own sleep timer applies.
-  - Light on purpose: only the shown slide is in the page (drawn by the same renderer as the thumbnails), no animations,
-    no loops; the editor underneath is hidden while the show is open.
+  - Light on purpose: only the shown slide is in the page (drawn by the same renderer as the thumbnails); the editor
+    underneath is hidden while the show is open. SL7 adds short CSS transitions (see below); there are still no loops
+    or extra libraries.
+- **Speaker notes (SL7)**: a notes pane under the editor (Slide Show → Notes, or ⋯). Plain text, 4 000 characters max,
+  saved with the slide and covered by app undo. Only you see them in Presenter view. **Print notes pages…** (File or ⋯)
+  prints an A4-ish page per slide (a smaller copy of the slide plus the notes). Ordinary Print stays one 16:9 page per slide.
+- **Presenter view (SL7)**: Slide Show → Presenter view, **F6** (from this slide; Shift+F6 from the start), or Alt+F5.
+  Tries `window.open` for a second same-origin window (`?pv=1&k=&d=`). That window shows the current slide, the next slide,
+  the notes, a timer (pause / reset) and the slide count. The original window stays the audience show. The two stay in
+  step through `BroadcastChannel` (`hub-slides-present`) or, if that is missing, `postMessage`. If the browser blocks the
+  popup, or storage is memory-only so the second window cannot load the deck, Presenter view opens on this screen instead
+  (current slide plus the notes panel; there is no separate audience window).
+- **Pen and laser (SL7)**: during Present, a toolbar has Laser, Pen (six colours), Eraser and Clear. The laser is a
+  following glow and leaves no ink. Pen strokes stay in memory for this show; they are written into the deck only if you
+  turn on **Keep ink** (that write is undoable). Ink is not shown in the editor.
+- **Black / white screen (SL7)**: **B** toggles a black blank, **W** a white one. A click or a next / previous key while
+  the screen is blank shows the slide again without advancing.
+- **Transitions (SL7)**: Slide Show → Transition (None, Fade, Push, Wipe) applies to the current slide; **Apply to all**
+  asks first (one undo step). Transitions are CSS only. `prefers-reduced-motion: reduce` forces none. Push / wipe come
+  from the right when going forward and from the left when going back.
 - **Layouts (SL3)**: seven layouts: Title, Title + Content (the default, the SL1 / SL2 slide), Two Columns, Section Header,
   Picture + Caption, Title Only, Blank. **▦ Layout** (or ⋯ → Layout…) changes the current slide; **▾** next to ＋ Slide
   (or ⋯ → New slide with layout…) adds a slide with a layout. ＋ Slide / Ctrl+Enter adds one with the current slide's
@@ -201,6 +219,10 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - SL6 writes `fmt: 5`. `shapes` is `[{ id, kind, x, y, w, h, fill, stroke, sw, flip, doc, z }]`. `tables` is
   `[{ id, x, y, w, h, header, border, bw, fill, hfill, cells:[[{doc}]], z }]`. Older fmt 4 / 3 / no-fmt records open unchanged
   (no shapes or tables).
+- SL7 writes `fmt: 6`. Each slide may have `notes` (plain text), `trans` (`none` | `fade` | `push` | `wipe`) and `ink`
+  (kept pen strokes, only when the presenter chose Keep ink). Older fmt 5 / 4 / 3 / no-fmt records open unchanged
+  (empty notes, trans none, no ink). The .hslides file uses `notes`, `transition` and packed `ink` (`pts` as `[x,y]` pairs)
+  on version 5 (reads 1–5; version 6 and higher are refused).
 - Pictures: IndexedDB `hub-slides-pics`, store `pics`, key = content hash of the data URL, value `{ src, at }`. The deck
   record keeps only the key. If IndexedDB is missing or fails, the picture stays inside the record (`inl: true`, the
   data URL in `src`) — then localStorage can fill up sooner. On start (after 4 s) pictures that no deck uses any more and
@@ -212,26 +234,30 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides.html`, `slides.css`, `index.html` (redirect), `slides_icon.png` (192 px), `slides_readme.md`
 - `slides_text.js` (`SLText`, SL5): the rich-text model (runs + paragraphs, not raw HTML), paste sanitising, `.hslides` v3 helpers. No DOM (safe to test in Node).
 - `slides_draw.js` (`SLDraw`, SL6): shape and table records, SVG paths, table row/column helpers, align / distribute / z-order / snap. No DOM (safe to test in Node).
-- `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load; SL6 fmt 5
-- `slides_file.js` (`SLFile`): .hslides export / import and checks (writes v4, reads v1–v4)
+- `slides_present.js` (`SLPresent`, SL7): notes / transition / ink cleaning, timer format, BroadcastChannel envelope, presenter URL helpers. No DOM (safe to test in Node).
+- `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load; SL6 fmt 5; SL7 fmt 6
+- `slides_file.js` (`SLFile`): .hslides export / import and checks (writes v5, reads v1–v5)
 - `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, contenteditable title / body / text boxes / shape text / table cells, Tab / Shift+Tab, layouts (placeholders),
   picture, text-box, shape and table select / move / resize / crop / arrange, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
   the thumbnails, the pickers, Present and Print
 - `slides_pics.js` (`SLPics`, SL3): picture decode, downscale and re-encode, IndexedDB store, blob URLs, clean-up
-- `slides_show.js` (`SLShow`, SL2): Present: full screen / overlay, fit, keys, taps, swipes, jump, end screen, idle fade, wake lock
+- `slides_show.js` (`SLShow`, SL2, extended in SL7): Present: full screen / overlay, fit, keys, taps, swipes, jump, end screen, idle fade, wake lock; SL7 transitions, ink, B/W, presenter chrome and the sync bus
 - `slides_list.js` (`SLList`): thumbnails, selection, drag to reorder
-- `slides_print.js` (`SLPrint`, SL4): the print view (#print, one page per slide) and print / PDF
+- `slides_print.js` (`SLPrint`, SL4, extended in SL7): the print view (#print, one 16:9 page per slide, or A4 notes pages) and print / PDF
 - `slides_hub.js` (`SLHub`, SL4): Hub app-bar bridge (tabs, deck name, File, Settings)
-- `slides_app.js`: top bar, ribbon, Format group + mini toolbar, Arrange group, Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture, text-box, shape and table insert
+- `slides_app.js`: top bar, ribbon, Format group + mini toolbar, Arrange group, Slide Show (Presenter view, notes, transitions), Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture, text-box, shape and table insert
   (file / paste / drop), undo / redo; `window.Slides` (helpers for tests)
 
-## Limits (SL1 – SL6)
+## Limits (SL1 – SL7)
 - Long text can run past the bottom of the slide; it scrolls
   inside the slide but is not shrunk to fit.
-- Present: no transitions, speaker notes, presenter view, second-screen output or timer; text that runs past the bottom
-  of a slide is cut off in the show (it is not shrunk). Tested headless with emulated touch and a stubbed wake lock only.
+- Present (SL7): transitions are CSS only (none / fade / push / wipe) and honour `prefers-reduced-motion`. Presenter view
+  uses a second window when the browser allows it; otherwise a one-screen fallback (no separate audience). Live pen ink
+  is drawn on the audience slide; the presenter preview updates ink at the end of a stroke, not live, and does not show
+  the laser. Ink is not shown in the editor. Text that runs past the bottom of a slide is cut off in the show (it is not
+  shrunk). Popup / BroadcastChannel behaviour was not tried on a real second monitor in this build.
 - App Undo / Redo covers pictures, text boxes, shapes and tables (add / move / resize / delete / style / arrange), formatting,
-  layouts, backgrounds and the theme; typing uses the browser's undo inside each box. Applying a format from the ribbon
+  layouts, backgrounds, the theme, notes, transitions (including Apply to all) and kept ink; typing uses the browser's undo inside each box. Applying a format from the ribbon
   re-renders the box, so the browser's typing undo for that box may start fresh; Ctrl+Z outside the box undoes the format.
 - Shape text sits in a padded rectangle inside the shape, not clipped to a star or triangle. Table columns and rows are
   always equal (no custom column widths). Resize handles work on one object at a time; a multi-selection can be moved,
