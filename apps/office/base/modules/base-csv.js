@@ -1,9 +1,11 @@
 /*
- * base-csv.js  (BS1, BS5)
+ * base-csv.js  (BS1, BS5, BS6: export linked display text)
  * CSV parse / build for Base. Import makes a NEW table and guesses field types
  * (number, date YYYY-MM-DD, yes/no, else text). Export writes the current table (all rows, current sort).
  * BS5: Currency is written as a plain number; Picture columns are left out (a note is shown);
  *   import still creates a new table, then reports required / unique / format problems if any.
+ * BS6: Link to record and Lookup columns are exported as the linked records' display text
+ *   (several records joined with "; "), not as raw ids.
  * API: BaseCsv.parse(text) -> rows[][], BaseCsv.importText(name, text), BaseCsv.exportTable(t)
  */
 var BaseCsv = (function () {
@@ -72,6 +74,8 @@ var BaseCsv = (function () {
       lines.push(fields.map(function (f) {
         var v = r.v[f.id];
         if (f.type === "currency") return esc(v === "" || v == null || isNaN(+v) ? "" : +v);
+        if (f.type === "ref" && typeof BaseLinks !== "undefined") return esc(BaseLinks.displayText(f, v));
+        if (f.type === "lookup" && typeof BaseLinks !== "undefined") return esc(BaseLinks.lookupText(t, f, r));
         return esc(v);
       }).join(","));
     });
@@ -84,3 +88,4 @@ var BaseCsv = (function () {
   }
   return { parse: parse, importText: importText, exportTable: exportTable, guess: guess, cast: cast };
 })();
+if (typeof module !== "undefined" && module.exports) module.exports = BaseCsv;

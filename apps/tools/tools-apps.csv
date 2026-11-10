@@ -8,6 +8,7 @@ Unit Converter,        unit-converter/,                   , , Calculators, Conve
 Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
 Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
 Calendar Maker,        calendar-maker/,  , , Time, Design and print a one-page A4 year calendar (PDF)
+Sun Position,          sun-position/,    sun-position/sun-position_icon.svg, , Time, Sunrise sunset and sun direction for any place and time - works offline
 My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
 Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
 Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
@@ -24,4 +25,5 @@ Password Generator,    password-generator/, , , , Generate strong passwords with
 Password Manager,     password-manager/, password-manager/password-manager_icon.svg, , Security, Encrypted vault for logins cards notes and Wi-Fi - stays on this device
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
+Numerology,            numerology/,      numerology/numerology_icon.svg, , Fun, Life Path and name numbers from your birth date - traditional readings for fun
 Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings

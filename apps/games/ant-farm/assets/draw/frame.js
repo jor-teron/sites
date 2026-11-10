@@ -2,9 +2,11 @@
 // once into an offscreen canvas and only rebuilt when the view size changes.
 (function () {
   var cache = document.createElement('canvas'), key = '';
-  function build(fw, fh, t) {
+  function build(fw, fh, t, light) {
     cache.width = fw; cache.height = fh; var g = cache.getContext('2d');
-    var wood = g.createLinearGradient(0, 0, 0, fh); wood.addColorStop(0, '#9a6a3c'); wood.addColorStop(0.5, '#7d522c'); wood.addColorStop(1, '#5e3c1f');
+    var wood = g.createLinearGradient(0, 0, 0, fh);
+    if (light) { wood.addColorStop(0, '#c49a68'); wood.addColorStop(0.5, '#a67a48'); wood.addColorStop(1, '#8a5e32'); }
+    else { wood.addColorStop(0, '#9a6a3c'); wood.addColorStop(0.5, '#7d522c'); wood.addColorStop(1, '#5e3c1f'); }
     g.fillStyle = wood; g.fillRect(0, 0, fw, fh); g.clearRect(t, t, fw - 2 * t, fh - 2 * t);
     // grain: wavy darker lines along each rail
     g.save(); g.beginPath(); g.rect(0, 0, fw, fh); g.rect(t, t, fw - 2 * t, fh - 2 * t); g.clip('evenodd');
@@ -21,9 +23,9 @@
     g.strokeStyle = 'rgba(255,220,170,.35)'; g.lineWidth = 1; g.strokeRect(.5, .5, fw - 1, fh - 1);
     g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 2; g.strokeRect(t - 1, t - 1, fw - 2 * t + 2, fh - 2 * t + 2);
   }
-  AF.drawFrame = function (c, ox, oy, gw, gh, k) {
-    var t = Math.max(6, Math.round(k * 1.4)), fw = Math.round(gw + 2 * t), fh = Math.round(gh + 2 * t), id = fw + 'x' + fh + 'x' + t;
-    if (id !== key) { build(fw, fh, t); key = id; }
+  AF.drawFrame = function (c, ox, oy, gw, gh, k, light) {
+    var t = Math.max(6, Math.round(k * 1.4)), fw = Math.round(gw + 2 * t), fh = Math.round(gh + 2 * t), id = fw + 'x' + fh + 'x' + t + (light ? 'L' : 'D');
+    if (id !== key) { build(fw, fh, t, light); key = id; }
     // glass: a soft diagonal sheen plus a thin bright streak
     var gl = c.createLinearGradient(ox, oy, ox + gw * .6, oy + gh);
     gl.addColorStop(0, 'rgba(255,255,255,.13)'); gl.addColorStop(.25, 'rgba(255,255,255,0)'); gl.addColorStop(.5, 'rgba(255,255,255,0)');

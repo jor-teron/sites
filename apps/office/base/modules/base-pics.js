@@ -5,7 +5,8 @@
  * (pic_…); the blob itself is never written into BASE.db, so undo snapshots stay small.
  * On insert the image is resized so the long side is at most 800 px, then saved as WebP
  * (or JPEG if the browser cannot make WebP).
- * API: BasePics.ingest(file, cb), .url(key, cb), .remove unused via .gc(), .revoke(key)
+ * API: BasePics.ingest(file, cb), .url(key, cb), .remove unused via .gc(), .revoke(key),
+ *      .exportAll(cb), .importAll(map, cb), .clearAll(cb), .getBlob(key, cb), .putBlob(key, blob, cb)
  */
 var BasePics = (function () {
   var MAX = 800, cache = {}, gcT = null;
@@ -162,6 +163,61 @@ var BasePics = (function () {
     });
   }
 
+  function blobToB64(blob, cb) {
+    var rd = new FileReader();
+    rd.onload = function () {
+      var s = String(rd.result || ""), i = s.indexOf(",");
+      cb(i >= 0 ? s.slice(i + 1) : s, blob.type || "application/octet-stream");
+    };
+    rd.onerror = function () { cb("", blob.type || ""); };
+    rd.readAsDataURL(blob);
+  }
+  function b64ToBlob(data, type) {
+    try {
+      var bin = atob(data || ""), arr = new Uint8Array(bin.length), i;
+      for (i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: type || "application/octet-stream" });
+    } catch (e) { return null; }
+  }
+  function exportAll(cb) {
+    var keys = Object.keys(usedKeys()), out = {};
+    function next(i) {
+      if (i >= keys.length) { if (cb) cb(out); return; }
+      getBlob(keys[i], function (blob) {
+        if (!blob) return next(i + 1);
+        blobToB64(blob, function (b64, type) {
+          if (b64) out[keys[i]] = { type: type, data: b64 };
+          next(i + 1);
+        });
+      });
+    }
+    next(0);
+  }
+  function importAll(map, cb) {
+    var keys = Object.keys(map || {}), i = 0;
+    function next() {
+      if (i >= keys.length) { if (cb) cb(); return; }
+      var k = keys[i++], rec = map[k], blob = rec && rec.data ? b64ToBlob(rec.data, rec.type) : null;
+      if (!blob) return next();
+      putBlob(k, blob, function () { next(); });
+    }
+    next();
+  }
+  function clearAll(cb) {
+    Object.keys(cache).forEach(function (k) {
+      if (cache[k] && cache[k].url) { try { URL.revokeObjectURL(cache[k].url); } catch (e) {} }
+    });
+    cache = {};
+    var db = idb();
+    if (!db) { if (cb) cb(); return; }
+    try {
+      var tx = db.transaction("pics", "readwrite");
+      tx.oncomplete = function () { if (cb) cb(); };
+      tx.onabort = tx.onerror = function () { if (cb) cb(); };
+      tx.objectStore("pics").clear();
+    } catch (e) { if (cb) cb(); }
+  }
+
   function thumb(key, cls, size) {
     var img = document.createElement("img");
     img.className = cls || "base-thumb";
@@ -172,5 +228,6 @@ var BasePics = (function () {
     return img;
   }
 
-  return { ingest: ingest, url: url, gc: gc, thumb: thumb, MAX: MAX, usedKeys: usedKeys };
+  return { ingest: ingest, url: url, gc: gc, thumb: thumb, MAX: MAX, usedKeys: usedKeys,
+    getBlob: getBlob, putBlob: putBlob, exportAll: exportAll, importAll: importAll, clearAll: clearAll, blobToB64: blobToB64, b64ToBlob: b64ToBlob };
 })();

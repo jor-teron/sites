@@ -1307,6 +1307,457 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - `<title>Base BS5</title>`, `BASE_VERSION = "BS5"`, Base's own css/js `?v=BS5`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, a static curl smoke test (200 + BS5), and pure-helper Node tests for validation, auto-number and the undo stack (no Puppeteer / Playwright / jsdom).
 
+### 1.74 Base links between tables: `apps/office/base/` (Office), release BS6
+- Why: BS5 added field types and rules but tables still could not point at each other, so a real little database (Orders → Customers) was out of reach.
+- New `modules/base-links.js` (pure helpers + in-app record picker, jump, add-related, related-records panel). New types: `ref` (Link to record: `{to, multi?, display?}`, value is a row id or an array of ids) and `lookup` (read-only `{via, src}`, computed from the linked record(s), not stored). The URL field stays `link`.
+- Record picker: in-app `dlg-*` dialog with search, single-click (or tick + OK when multi). Chips in the grid/form jump to the linked record; Change / Clear / × edit the link. Undo covers link edits (JSON snapshots already include arrays).
+- Related-records panel (`#related-wrap`): inbound links grouped by table and field, with Open and + Add (new row pre-filled with this record). Queries gain “Link ▸ field” paths and = / ≠ / empty on a `ref`; a row matches if any linked record does. CSV export writes display text, not ids.
+- Delete guard in `base-delete.js`: if others link to the record or table, the typed-confirm dialog lists them and the button becomes “Clear links and delete…”. Cancel keeps everything. `BaseLinks.clearLinksTo` runs first. Record deletes stay undoable; table deletes still clear the undo stack.
+- Data: `schema: 6`. Existing schema 5 (and older) records in IndexedDB `office-base` load unchanged; first open writes `db-backup` and migrates in place. Repair keeps arrays of strings on `ref` fields (other arrays are dropped). IndexedDB version stays 2.
+- `<title>Base BS6</title>`, `BASE_VERSION = "BS6"`, Base's own css/js `?v=BS6`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5-helpers.js` + new `test-bs6-helpers.js` (display, lookup, inbound, clear, delete impact, schema 5→6 repair), static curl smoke (200 + BS6). No Puppeteer / Playwright / jsdom.
+
+
+### 1.75 Base reports, summaries and charts: `apps/office/base/` (Office), release BS7
+- Why: BS6 linked tables together, but there was still no way to group records, total them, print a report, or see a simple chart — the next step planned to Jor after links.
+- New `modules/base-report.js` (pure group/aggregate helpers + Report tab UI + SVG bar/pie, no chart library). A report groups by one field and an optional second field (including a `ref`, a `lookup`, or a “Link ▸ field” path). Dates can be bucketed by day / month / year. Aggregates: Count, plus Sum / Average / Min / Max of Number, Currency and Auto-number ID (and lookups of those). Two group-by levels produce subtotals and a grand total. Empty groups are “(blank)”. A row with several links is counted in each linked group.
+- The report runs over the currently visible rows (active query + search). Saved reports live in `BASE.db.reports` (same IndexedDB record), in the Report tab picker and the File menu. Save / Rename / Delete are undoable until Base is closed. Deleting a table drops its reports (still not undoable).
+- Charts are SVG (bar: top 12; pie: top 8 + Other). File > Print, the Report tab “Print report” button and Quick Access print open the browser print window when a report is active (`body.base-print-report` + `@media print`); use Save as PDF there. No PDF library.
+- The grid totals row (View → Summary row) also shows Min and Max.
+- Data: `schema: 7`. Existing schema 6 (and older) records in IndexedDB `office-base` load unchanged; first open writes `db-backup` and migrates in place. Repair validates reports. IndexedDB version stays 2.
+- `<title>Base BS7</title>`, `BASE_VERSION = "BS7"`, Base's own css/js `?v=BS7`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5-helpers.js` + `test-bs6-helpers.js` + new `test-bs7-helpers.js` (group-by, aggregates, date buckets, two-level subtotals, link/multi-link, chart series, schema 6→7 repair), static curl smoke (200 + BS7). No Puppeteer / Playwright / jsdom.
+
+
+### 1.76 Base views and filters: `apps/office/base/` (Office), release BS8
+- Why: BS7 added reports and charts, but everyday work still needed Excel-style header filters, saved layouts, frozen/resized columns, a splash of colour, and a way to browse records as cards or on a calendar — the next step planned to Jor after reports.
+- New `modules/base-view.js` (pure filter / layout / colour / calendar-cell helpers + header popover, Columns… / Colours… dialogs, gallery and month calendar). Click a column header to sort or to filter by ticked values and/or a condition; several columns AND together. Filters run after an active query and before the search box.
+- Saved views in `BASE.db.views` (same IndexedDB record) store filters, sort, visible/ordered columns, widths, freeze (0/1/2 data columns plus the row number), colour rules, and Grid / Gallery / Calendar. Listed in the View tab picker and the File menu. The working layout is also stored on the table (`t.layout`) so it survives a reload. Save / Rename / Delete / Apply, and changes to filters, columns, freeze, colours and a finished column resize, are undoable until Base is closed. Deleting a table drops its views (still not undoable).
+- Conditional colours: “field, operator, value → colour the row or the cell”, up to 8 rules, first match wins, named pastel washes (no raw colour picker). Gallery: a card per record with a picture field and a few fields; click opens the form. Calendar: a Sunday-start month by a Date field; click a record to open it; records with no date are listed under the month.
+- Celeron-light: the grid renders at most 200 rows, the gallery at most 80 cards, a calendar day shows 8 then “+N more”, and a header value list caps at 50 (use a condition for the rest). Totals still use every visible row, not just the ones drawn.
+- Data: `schema: 8`. Existing schema 7 (and older) records in IndexedDB `office-base` load unchanged; first open writes `db-backup` and migrates in place. Repair validates views and layout. IndexedDB version stays 2.
+- `<title>Base BS8</title>`, `BASE_VERSION = "BS8"`, Base's own css/js `?v=BS8`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5` + `test-bs6` + `test-bs7` + new `test-bs8-helpers.js` (AND filters, checklist/blank, operators, multi-link, unique-value cap, column order, layout clamp, colour first-match, month cells, schema 7→8 repair), static curl smoke (200 + BS8). No Puppeteer / Playwright / jsdom.
+
+
+### 1.77 Base files and backup: `apps/office/base/` (Office), release BS9
+- Why: BS8 added everyday views and filters, but there was still no full backup of a Base (including pictures and links), no Excel round-trip, and no way to bring in a JSON or SQLite dump or pass the current view to Spreadsheet — the last step planned to Jor in this Base series.
+- New `modules/base-files.js`. A `.hbase` backup is JSON `{ magic: "hbase", version: 1, db, pics }` with picture blobs as Base64. File > Backup… / Restore backup… Restore asks in an in-app dialog: Replace everything (second confirm, clears the undo stack, not undoable) or Add as a copy (new table/row/picture ids, Link-to-record values remapped, names uniquified, undoable). `BasePics.exportAll` / `importAll` / `clearAll` support the picture part.
+- Excel import/export uses the Spreadsheet app's already-vendored SheetJS, lazy-loaded from `../spreadsheet/vendor/sheetjs/xlsx.full.min.js` (not copied, Spreadsheet files not edited). Import makes a new table per sheet (cap 20 sheets, 5 000 rows). Export Excel and Send to Spreadsheet write the current view's rows (query + header filters; pictures left out; links as display text).
+- Send to Spreadsheet: there is no Office hand-off convention (Spreadsheet only opens a file the user chooses; it has no sessionStorage / postMessage intake). Base downloads a workbook and explains that in an in-app dialog; if SheetJS cannot load, a CSV is saved instead.
+- Read-only JSON import (array of objects, named lists, or a Base-shaped `{tables}`) creates new tables; a `.hbase` JSON file still goes through Restore. Read-only SQLite import lazy-loads sql.js already vendored in DB Browser (`../../tools/db-browser/vendor/sqljs/`, not copied). The SQLite file is never written. A lone `file://` page may not load the wasm — serve the site. Schema stays at 8 (this release is files, not a new data shape).
+- `<title>Base BS9</title>`, `BASE_VERSION = "BS9"`, Base's own css/js `?v=BS9`. Shared Office files and Spreadsheet files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5` … `test-bs8` + new `test-bs9-helpers.js` (pack/parse, reject non-hbase, remap copy + links/pics, JSON shapes + row cap, AoA/SQL helpers, sheetAoA skips pictures), static curl smoke (200 + BS9). No Puppeteer / Playwright / jsdom.
+
+### 1.78 Numerology app, release NU1
+
+- New apps/tools/numerology (Tools, section 'Fun', row added after Astrology in
+  apps/tools/tools-apps.csv). Offline, no libraries. First run asks only for a
+  full name and date of birth, then shows the numbers. Large tap targets and
+  plain-language labels (Life Path, Name / Heart / Outer / Birthday numbers).
+- localStorage 'numerology-v1' {profiles[{id,name,dob}], current, theme auto/light/dark,
+  system pythagorean|chaldean}. Auto follows sites-hub.theme. Add/edit/delete with
+  in-app dialogs only.
+- Core numbers, master 11/22/33 kept unreduced: Life Path (birth date; reduce month,
+  day and year separately then add), Name / Destiny (all letters), Heart / Soul Urge
+  (vowels; Y is a vowel unless it sits next to A,E,I,O,U), Outer / Personality
+  (consonants), Birthday (day of month). Timing: Personal Year/Month/Day for today
+  (calendar year from 1 January, plus birth month and day). Compatibility of two
+  Life Path numbers from a fixed table. Name checker for a spelling.
+- Letter values: Western/Pythagorean (default, 1–9) or Chaldean (1–8, often used in
+  India), remembered. Maths in nu_calc.js (pure, node-testable). Tested with
+  `node --check` on every JS file, `node test_nu_calc.js`, and a static serve + curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= NU1. Readings labelled traditional, for fun, not facts.
+  Details: apps/tools/numerology/numerology_readme.md.
+
+  Note: 1.53–1.77 are already taken on main, so this section is 1.78.
+
+### 1.79 PDF Viewer OCR, release PV2
+
+- apps/lab/pdf-viewer only (current PV1 viewer, not pdf-viewer-old, not system/hub).
+  Scanned / image-only pages get an invisible selectable text layer so Find and
+  copy work. Native pdf.js text layer is used when a page already has 20+ letters
+  or digits; those pages are not OCR'd automatically.
+- OCR action (this page / pages without text / all pages) with progress and Cancel.
+  Auto-detects empty pages after open and offers OCR; never starts on its own.
+  In-app dialogs only. Copy all OCR text and Save as .txt. Language list is only
+  the traineddata already in the repo (English). IndexedDB cache `pdfviewer-ocr`
+  per document fingerprint + page + lang.
+- Reuses apps/office/ocr/vendor (tesseract.js 5.1.1 + eng.traineddata) by relative
+  path, lazy-loaded on first use, no CDN and no second copy of the wasm / model.
+  One page at a time, render scale capped at 2× / 2048 px, worker terminated when
+  the job ends. RELEASE/title/?v= PV2.
+- Limits: no searchable-PDF save; English only; engine needs http(s) (not file://);
+  print still uses page images. Details: apps/lab/pdf-viewer/README.md.
+
+### 1.80 PDF Tools merge and split, release P2
+
+- apps/office/pdf-tools only (P1 organiser). Open or drop several PDFs into the same
+  grid; Add appends more. Pages are tagged with a colour badge and the source file
+  name when more than one file is open. Drag reorders across files. Duplicate
+  (Ctrl+D) and insert blank (B, size of the neighbour, else A4). Extract selected
+  pages (Ctrl+E). Split from the menu: single pages, ranges such as 1-3, 7, or
+  every N pages. One file is a PDF; several files go in a .zip. All output still
+  goes through PTSave.save. Undo covers add, duplicate and blank (200 steps).
+- New pdf-tools_util.js (pure, node-testable: range parser, split plans, names,
+  sizes) and pdf-tools_zip.js (stored method-0 zip, adapted from Draftly, no new
+  library). Own form dialog for Split. In-app dialogs only. No new vendor.
+  pdf-lib 1.17.1 and read-only shared/vendor/pdfjs as in P1.
+- RELEASE/title/?v= P2 on this app's own CSS/JS only (Team 2 Office convention
+  after NV2, same as SH8/Slides/Base). Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: split-by-range leaves out unlisted pages; zip is stored not deflated;
+  form fields / bookmarks may drop when pages are copied; no password save.
+  Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
+  Note: 1.53–1.79 are already taken on main, so this section is 1.80.
+
+### 1.81 PDF Tools images to and from PDF, release P3
+
+- apps/office/pdf-tools only, on top of P2. Add JPG/PNG as pages (menu or drop)
+  with A4, Letter or fit-to-image, 0/10/20 mm margins, portrait or landscape.
+  Images are centred and contained. Export selected or all pages as PNG or JPG
+  (pdf.js render for PDF pages, long side capped at 1600 px; several files go
+  in a .zip). Double-click (or Enter) opens a zoomed preview at the same cap.
+  All output still goes through PTSave.save. In-app dialogs only.
+- New pdf-tools_images.js. Layout maths in pdf-tools_util.js (node-tested).
+  No new library; pdf-lib embedJpg/embedPng; stored zip from P2. Last paper,
+  margin, orientation and export format are kept in pdf-tools-settings-v1.
+- RELEASE/title/?v= P3 on this app's own CSS/JS only. Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: JPG/PNG only; unusual (e.g. CMYK) JPEGs may fail on save; export is
+  not full resolution; a plain click no longer toggles a single page off (so
+  double-click preview can work). Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
+### 1.82 PDF Tools stamp and tidy, release P4
+
+- apps/office/pdf-tools only, on top of P3. Stamp & tidy dialog (applied on
+  Save, not Extract or Split): page numbers (1 / Page 1 of N / 1 / N, position,
+  start, skip first page), text watermark (opacity, angle, size), header and
+  footer with {date} {page} {pages} {file}, Bates numbers (prefix, start, digits,
+  position, skip first), and title/author/subject metadata. Crop page edges
+  (CropBox, insets in mm, selected or all, undoable). Optional Shrink (image)
+  with a clear warning: pages are redrawn as JPEG (~120 dpi, long side capped
+  at 1600 px) and text becomes unselectable. No password encryption.
+- New pdf-tools_stamp.js. Number formats, crop box, watermark origin and
+  templates in pdf-tools_util.js (node-tested). Helvetica / WinAnsi only.
+  All output still through PTSave.save. In-app dialogs only. No new library.
+- RELEASE/title/?v= P4 on this app's own CSS/JS only. Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: stamps skipped on Extract/Split; crop thumbs stay uncropped; crop is
+  on the original page box; Shrink is rasterisation, not a smart compressor;
+  unusual characters become ?. Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
+### 1.83 PDF Tools fill and sign, release P5
+
+- apps/office/pdf-tools only, on top of P4. Fill existing AcroForm fields
+  (pdf-lib getForm / setText / check / select, optional flatten on Save).
+  Light page editor (menu Sign & annotate, or Write or sign on the preview):
+  add text, a highlight rectangle, a box/outline, and a signature, then move
+  or resize. Signatures are drawn on a pointer canvas or typed, stored on the
+  device (localStorage, up to 8), and placed on a page. Marks are one undo
+  step per page when you press Done. All output still through PTSave.save.
+  In-app dialogs only. No new library.
+- New pdf-tools_sign.js. Visual↔media coordinate maths (for page rotation) in
+  pdf-tools_util.js (node-tested). Helvetica / WinAnsi for typed page text.
+- RELEASE/title/?v= P5 on this app's own CSS/JS only. Tested with `node --check`,
+  `node test_pdf_tools_util.js`, and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- Limits: no XFA; some fields may skip; flatten can fail on odd widgets;
+  duplicated pages share source field values; no comment threads or free ink
+  beyond the signature pad; unusual original crop boxes may not match the
+  overlay. Details: apps/office/pdf-tools/pdf-tools_readme.md.
+
+### 1.84 Sun Position app, release SP1
+
+- New apps/tools/sun-position (Tools, section 'Time', row added after Calendar Maker in
+  apps/tools/tools-apps.csv). Offline, no libraries. Opens on Diphu; in-app place picker
+  for GPS, a compact city list (Indian state and UT capitals plus major world cities, each
+  with an IANA time zone), typed latitude and longitude, and saved places.
+- localStorage 'sun-position-v1' {theme auto/light/dark, tzMode ist|place, places[],
+  currentPlace, askedPlace}. Auto follows sites-hub.theme. Dialogs in-app only.
+- Times default to IST; "This place" uses the city's zone, or the zone saved with a GPS /
+  custom place (device zone or one you pick). Date picker and time slider; Now is a live
+  view refreshed every 15 seconds (no render loop).
+- Compass dial: N at the top, today's above-horizon arc, sun at azimuth and elevation
+  (centre = zenith, rim = horizon). Times list: sunrise, sunset, solar noon, day length,
+  first and last light (civil twilight), golden hour (elevation -4..6) and blue hour
+  (-6..-4). Polar day and night are labelled when the sun does not set or rise.
+- Maths in sp_calc.js (NOAA Solar Calculator / Meeus, pure, node-testable), official
+  rise/set at a 90.833° zenith. Tested with `node --check` on every JS file,
+  `node test_sp_calc.js` (Delhi, Guwahati, London, Tromsø, plus the 2003-10-17 Golden, CO
+  NOAA/NREL example), and a static serve + curl smoke test. No Puppeteer, Playwright or
+  jsdom.
+- RELEASE/title/?v= SP1. Details: apps/tools/sun-position/sun-position_readme.md.
+
+  Note: 1.53–1.83 are already taken on main, so this section is 1.84.
+
+### 1.85 Sun Position plan tools, release SP2
+
+- apps/tools/sun-position only. Plan tab added (Now | Plan). Date, time slider and Now stay
+  shared above both tabs. Shadow height is remembered in sun-position-v1.shadowH (metres).
+- Shadow: length and ground direction at the chosen instant (height / tan(elevation)); a
+  dashed arrow is drawn on the dial opposite the sun. No shadow when the sun is down.
+- Year chart (SVG): sunrise/sunset daylight band for the current place and year, solstices
+  and equinoxes marked, longest and shortest days named. Polar day and night leave gaps or
+  a full-height band.
+- Sun-path diagram (polar, same zenith-centre projection as the dial): monthly curves for
+  the 21st of each month and clock-hour lines, plus a best year-round fixed solar-panel
+  tilt and azimuth (clear-sky cosine of incidence, no weather model).
+- Save picture: in-app dialog writes the dial, year chart or sun path as a PNG (SVG drawn
+  onto a canvas, no new library).
+- Maths still in sp_calc.js (yearDaylight, solsticesEquinoxes, sunPathDiagram, bestPanel).
+  Tested with `node --check`, `node test_sp_calc.js`, and a static serve + curl smoke test.
+  No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= SP2. Details: apps/tools/sun-position/sun-position_readme.md.
+
+### 1.86 Sun Position point, moon and alerts, release SP3
+
+- apps/tools/sun-position only. Point tab added (Now | Plan | Point). Phone mode uses
+  DeviceOrientation (webkitCompassHeading, deviceorientationabsolute, or 360-alpha), plus
+  the iOS permission request on a user tap. Magnetic heading is corrected to true north
+  with a copy of Compass WMM2025 (sp_wmm.js; Lab compass files are not edited). Camera /
+  back-of-phone elevation comes from beta and gamma. An arrow and short text guide you to
+  the sun; the heading-up dial also marks the moon and sunrise/sunset directions. No
+  compass: north-up marks still show. Orientation updates are throttled (~12 Hz), not a
+  render loop.
+- Moon in sp_calc.js (Meeus ch. 47 main terms, nutation, topocentric parallax): azimuth,
+  elevation, phase name and illumination, moonrise/moonset by scanning the local day.
+  Tested against AA example 47.a (1992-04-12), the 2026-01-03 full moon and 2026-01-18
+  new moon, and Delhi 2026-11-10 rise/set.
+- Optional alerts while the app is open: 15 minutes before sunrise, sunset or golden hour.
+  Notification API when allowed, otherwise (or as well) an in-app banner. Preference stored
+  in sun-position-v1.alerts. Nothing is sent when the tab is in the background.
+- Tested with `node --check`, `node test_sp_calc.js`, and a static serve + curl smoke test.
+  No Puppeteer, Playwright or jsdom.
+- RELEASE/title/?v= SP3. Details: apps/tools/sun-position/sun-position_readme.md.
+
+### 1.87 Video Player, release VPL1
+
+- New apps/media/video-player (Media → Video, row added after Screen Recorder in
+  apps/media/media-apps.csv). Minimal player: the video and one thin control bar
+  that hides while playing (mouse move or tap brings it back). Open file, open
+  folder (webkitdirectory) or drag and drop. A folder shows a hideable side list,
+  sorted naturally. Offline, no libraries, no thumbnails. Object URLs are revoked.
+- Resume per file in localStorage 'video-player-resume-v1', keyed by name+size,
+  written at most every 2 s and on pause / hide / page leave. Near the end, the
+  saved position is cleared. Settings (theme, subtitle size, volume, speed) in
+  'video-player-v1'. Auto theme follows sites-hub.theme, else the device setting.
+- SRT / VTT subtitles: a file with the same base name in the folder is picked up;
+  or Load subtitle… in the ⋯ menu. SRT is converted to VTT (video-player_helpers.js)
+  and attached as a blob URL track. Size S / M / L. Speed 0.5×–2×. Skip 10 s.
+  Picture-in-picture where the browser allows it. Plays the next video in the folder.
+- Keyboard: Space, ← → (10 s), ↑ ↓ (volume), F, M. In-app dialogs only. A plain
+  message is shown when the browser cannot play the file (error / canPlayType).
+  Plays what the browser supports (usually MP4 H.264, WebM, some MKV).
+- Title / RELEASE / ?v= VPL1. Tested with `node --check`, `node test_vpl_helpers.js`
+  (SRT→VTT, natural sort, subtitle name matching, time formatting) and a static
+  serve + curl smoke test. No Puppeteer, Playwright or jsdom.
+  Details: apps/media/video-player/video-player_readme.md.
+
+  Note: 1.53–1.86 are already taken on main, so this section is 1.87.
+
+### 1.88 Video Player, release VPL2
+
+- apps/media/video-player only (VPL1 player). Branch apps/vpl2-video-player.
+  Title / RELEASE / ?v= VPL2. The main control bar is unchanged. New controls
+  live in the ⋯ settings panel (and an Add to queue item on the Open menu).
+- Subtitle colour (white / yellow / cyan / black), background (off / dark / solid)
+  and position (top / middle / bottom, via VTT cue.line). Timing shift ±0.1 s
+  (clamped ±30 s) rewrites the VTT with shiftVtt() in video-player_helpers.js
+  and re-attaches the track.
+- Audio track picker is shown only when video.audioTracks has more than one
+  track (Safari and some Chromium builds). Other browsers hide the row.
+- The folder or file list is the queue. Add to queue appends more files.
+  Shuffle (a shuffled play order; the current file stays first) and repeat
+  one or all. A–B loop: Set A / Set B / Clear; playback jumps from B back to A.
+  Sleep timer 15 / 30 / 45 / 60 minutes pauses playback (and leaves full screen).
+- Settings (colour, background, position, shift, shuffle, repeat) are stored in
+  'video-player-v1'. A–B and the sleep timer are session-only and clear when
+  another file is loaded (sleep is not cleared on a new file).
+- Tested with `node --check`, `node test_vpl_helpers.js` (including parseTs,
+  formatTs, shiftVtt) and a static serve + curl smoke test. No Puppeteer,
+  Playwright or jsdom. Details: apps/media/video-player/video-player_readme.md.
+
+### 1.89 Video Player, release VPL3
+
+- apps/media/video-player only (VPL1 + VPL2). Branch apps/vpl3-video-player.
+  Title / RELEASE / ?v= VPL3. The main control bar is unchanged. New tools
+  live in the ⋯ settings panel. "Send to Video Editor" was left out.
+- Save the current frame as PNG (one-shot canvas, then revoked). Bookmarks
+  with an optional note, stored per file in localStorage 'video-player-marks-v1'
+  (keyed by name+size, up to 40 marks per file and 80 files). Click a bookmark
+  to jump to that time.
+- Brightness and contrast (CSS filter, 50–200%, default 100). Zoom to fill
+  (object-fit cover) and rotate 90° (0 / 90 / 180 / 270; width/height are
+  swapped so a sideways phone video still fits). Volume boost up to 200%
+  through a Web Audio GainNode, created only when boost goes above 100%.
+- File info in the same panel: name, resolution, duration, size and type.
+  Picture and boost settings are stored in 'video-player-v1'.
+- formatSize() lives in video-player_helpers.js. Tested with `node --check`,
+  `node test_vpl_helpers.js` (including formatSize) and a static serve + curl
+  smoke test. No Puppeteer, Playwright or jsdom.
+  Details: apps/media/video-player/video-player_readme.md.
+
+### 1.90 Image Converter, release CI1
+
+- New Media app at `apps/media/image-converter/` (Photo section, after
+  GIF Maker). Branch `apps/ci1-image-converter`. RELEASE / title / `?v=`
+  = CI1. Storage key `image-converter-v1` `{theme, format, resize, …}`.
+  Auto follows Hub `sites-hub.theme` / `sites-hub.themeAuto` live.
+- Add photos with a file picker, a folder picker (`webkitdirectory`), or
+  drag and drop. Converts between JPG, PNG and WebP. AVIF is offered only
+  after `canvas.toBlob('image/avif')` actually returns an AVIF blob.
+- Resize by longest side, by percent, or to an exact W×H (aspect ratio
+  kept by default; optional "don't enlarge"). Quality slider, or a target
+  such as under 100 KB found by a binary search on quality (eight tries).
+- Location and camera data are stripped by re-encoding on a canvas.
+  Orientation is fixed with `createImageBitmap` `imageOrientation:
+  'from-image'` when the bitmap size shows it was applied, otherwise an
+  EXIF Orientation fallback (`ic_exif.js`).
+- The list shows each file's size before and after, plus the total saved.
+  Download one file, or all as a store-only zip (`ic_zip.js`, no library).
+  Rename pattern `{name}_{n}` with zero padding (`{nnn}` for a fixed width).
+- One photo is converted at a time. Bitmaps, working canvases and object
+  URLs are released after each file so a large batch stays light on a
+  4 GB Celeron. Working size is capped at 8192 px.
+- In-app dialogs only (no alert/confirm/prompt). Fully offline, no CDN.
+  iPhone HEIC is rejected with an in-app note (no HEIC library).
+- Tested with `node --check` on every JS file, `node tests/ci1.test.cjs`
+  (resize math, rename pattern, quality search, zip CRC / round-trip,
+  EXIF orientation fixtures) and a static curl smoke test. No Puppeteer,
+  Playwright or jsdom.
+- The Media page tile comes from `apps/media/media-apps.csv`. The Hub
+  menu catalog needs a Team 1 / Main Builder `hub_appindex_gen.py
+  --catalog-only` run before the new app shows in the Hub flyout.
+- 1.53–1.89 are already taken on main, so this note is
+  numbered 1.90.
+
+
+### 1.91 Image Converter presets and quick edits, release CI2
+
+- Presets and edits on `apps/media/image-converter/` (CI1). Branch
+  `apps/ci2-image-converter`. RELEASE / title / `?v=` = CI2.
+- One-tap presets: WhatsApp (JPG, longest side 1600, quality 80),
+  Instagram (JPG, 1080, 1:1 crop, quality 85), Email (JPG, 1280, under
+  200 KB), Indian form passport photo (413×531 px, 7:9 crop, under
+  40 KB, white background) and signature (300×80, under 30 KB, white
+  background). Users can save and delete their own presets in
+  localStorage (`image-converter-v1.customPresets`).
+- Crop to a ratio (1:1, 4:5, 16:9, passport 7:9) with a draggable box
+  on the selected photo. Other photos in the batch get a centred crop
+  of the same ratio. Rotate 90° and flip horizontal / vertical on the
+  selected photo (`ic_edit.js` crop and rotate math).
+- Text watermark or a logo image, with position, opacity, size and
+  colour. A background colour (default white) fills transparent pixels
+  when the output is JPG or AVIF.
+- New files: `ic_presets.js`, `ic_edit.js`, `tests/ci2.test.cjs`.
+  In-app dialogs only. No CDN.
+- Tested with `node --check` on every JS file, `node tests/ci1.test.cjs`
+  and `node tests/ci2.test.cjs` (preset data, crop / ratio / rotate
+  size, watermark placement), and a static curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+
+
+### 1.92 Image Converter inspect and extras, release CI3
+
+- Inspect and extras on `apps/media/image-converter/` (CI1+CI2). Branch
+  `apps/ci3-image-converter`. RELEASE / title / `?v=` = CI3.
+- Photo info viewer: `ic_exif.js` describes camera, date and GPS from
+  a JPEG, with a privacy warning when a location is present. When
+  saving as JPG, optional "Keep date", "Keep camera" and "Keep
+  location (GPS)" write a minimal EXIF block back into the new file
+  (`writeJpegExif`). GPS is off by default and asks once before it is
+  turned on. Maker notes, lens data, ICC profiles and thumbnails are
+  not copied — only the fields the user ticks.
+- Icon set maker: from the selected photo (with current rotate / flip
+  / crop), an ICO containing PNG entries (`ic_ico.js`) plus a zip of
+  16, 32, 48, 64, 128 and 256 px PNGs.
+- SVG files are rasterised to the chosen output format and size. A
+  GIF uses its first frame (noted in the list). Copy a photo as a
+  data URL / Base64 (clipboard, or an in-app textarea if the
+  clipboard is blocked).
+- iPhone HEIC is not included; a standing in-app note and the drop
+  handler say so.
+- New files: `ic_ico.js`, `tests/ci3.test.cjs`. In-app dialogs only.
+  No CDN.
+- Tested with `node --check` on every JS file, `node tests/ci1.test.cjs`,
+  `ci2.test.cjs` and `ci3.test.cjs` (EXIF write/parse including GPS
+  hemispheres, keep-only-date, strip, ICO header and PNG-entry
+  round-trip) and a static curl smoke test. No Puppeteer, Playwright
+  or jsdom.
+
+### 1.93 Invoice Maker, release INV1
+
+- New Office app at `apps/office/invoice-maker/` (Office → Hub Office, after Spreadsheet).
+  Branch `apps/inv1-invoice-maker`. RELEASE / title / `?v=` = INV1.
+- GST tax invoices, quotes / estimates, receipts and bills of supply, all offline on
+  this device. Business profile (name, address, GSTIN, phone, email, logo, signature,
+  bank / UPI) and a client list are saved in localStorage (`invoice-maker-v1`).
+- Auto numbering with a prefix and financial-year reset, e.g. `INV/2026-27/001`
+  (year starts 1 April). Line items: description, HSN/SAC, qty, unit, rate, discount
+  (rupees) and GST % (0 / 5 / 12 / 18 / 28). CGST+SGST when the place of supply is
+  the same state as the business, otherwise IGST. Optional round-off to the nearest
+  rupee, and the total in Indian words (lakh / crore). Notes, terms and a due date.
+- Live A4 preview with Classic / Modern / Minimal templates and an accent colour.
+  Print uses a print stylesheet. Save as PDF lazy-loads the jsPDF already vendored
+  in Draftly (`apps/office/draftly/vendor/jspdf.umd.min.js`); if that fails, Print
+  can still save as PDF from the browser dialog. An optional UPI QR lazy-loads
+  `shared/vendor/qrcode.js` when a UPI ID is saved.
+- History with search, Paid / Unpaid, duplicate, edit and delete (in-app confirm).
+  JSON backup export / import, and a CSV of the history. Auto / Light / Dark theme:
+  Auto follows `sites-hub.theme`, else the device. In-app dialogs only
+  (`apps/office/shared/office-dialog.js`, not modified).
+- New files: `index.html`, `invoice-maker.html/.css/.js`, `inv_calc.js`,
+  `test_inv_calc.js`, `invoice-maker_readme.md`, `invoice-maker_icon.svg`.
+  A row was added to `apps/office/office-apps.csv`. `apps/office/shared/` was not
+  edited. Main Builder still needs to regenerate `hub_catalog.js` /
+  `hub_appindex.js` after this is on main.
+- Tested with `node --check` on every JS file, `node test_inv_calc.js` (GST split,
+  totals and round-off, amount in words, FY numbering), and a static curl smoke
+  test. No Puppeteer, Playwright or jsdom.
+- 1.53–1.92 are already taken on main, so this note is numbered 1.93.
+
+
+### 1.94 Expense Tracker, release EXT1
+
+- New Office app at `apps/office/expense-tracker/` (Office → Hub Office, after
+  Slides). Branch `apps/ext1-expense-tracker`. RELEASE / title / `?v=` = EXT1.
+- Offline spending and income tracker, no libraries. Quick add: amount in ₹,
+  category, date (default today), note and payment mode (Cash / UPI / Card / Bank).
+  Default Indian expense categories: Food, Groceries, Transport, Fuel, Bills, Rent,
+  Shopping, Health, Education, Entertainment, Other. Default income categories:
+  Salary, Business, Interest, Other income. Categories are editable (name, emoji,
+  colour). Amounts use Indian grouping (1,23,456.00).
+- Entries are listed by day, with search and filters (month, category, mode). Edit
+  an entry, or delete it after an in-app confirm. Month summary shows income, spent
+  and balance. A monthly budget overall and per category has a progress bar and an
+  over-budget warning. Canvas charts (no libraries): category donut and daily
+  spending bars for the month.
+- Recurring monthly entries (rent, bills, salary) are added automatically once their
+  date has arrived. A 31st becomes the last day of shorter months. Deleting one
+  generated occurrence does not bring it back, and does not stop later months.
+- CSV export and import (Date, Type, Amount, Category, Note, Mode). JSON backup and
+  restore (restore replaces what is on this device). Storage is localStorage
+  `expense-tracker-v1` with guarded writes and an in-app toast if a save fails.
+- Auto / Light / Dark theme: Auto follows `sites-hub.theme`, else the device.
+  In-app dialogs only (no `alert` / `confirm` / `prompt`). A row was added to
+  `apps/office/office-apps.csv`. `apps/office/shared/` was not edited. Main Builder
+  still needs to regenerate `hub_catalog.js` / `hub_appindex.js` after this is on
+  main. Details: apps/office/expense-tracker/expense-tracker_readme.md.
+- New files: `index.html`, `expense-tracker.html/.css/.js`, `ex_core.js`,
+  `test_ex_core.js`, `expense-tracker_readme.md`, `expense-tracker_icon.svg`.
+  Maths in `ex_core.js` (pure, node-testable). Tested with `node --check` on every
+  JS file, `node test_ex_core.js` (Indian number format, month totals, budget math,
+  recurring expansion, CSV parse/export), and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- 1.53–1.93 are already taken on main, so this note is numbered 1.94.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

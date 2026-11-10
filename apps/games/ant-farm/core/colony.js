@@ -1,17 +1,26 @@
-// Colony: ants (dig, forage, carry, haul, rest), queen, brood.
+// Colony: ants (dig, forage, carry, haul, rest, soldier), queen, brood.
 // AF2: digging follows dig jobs (w.tips) so tunnels stay 1 cell wide, branch,
 // and sometimes end in a side chamber. Uses world.js (AF.addTip, AF.fields).
 // AF3: nurses carry eggs from the queen to the brood room; egg -> larva -> pupa -> ant
 // (capped at AF.MAXANTS); foragers sleep in the nest at night; food falls from the sky.
+// AF-4d: soldiers, aging, winter-aware food and laying, useful side chambers.
 (function () {
   var W = AF.W, H = AF.H, S = AF.SURF, DAY = 60;
   AF.DAY = DAY; AF.MAXANTS = 300;                  // ui.js lowers the cap with lowGraphics (weak phones)
   AF.addAnt = function (w, x, y, role) {
     var a = { cx: x, cy: y, nx: x, ny: y, p: 0, st: role === 'nurse' ? 'rest' : role, role: role, t: 1 + w.r() * 3,
-      hx: 0, hy: 1, dig: 0, load: 0, trip: 0, dir: w.r() < .5 ? 1 : -1, ph: w.r() * 6, ang: 0, spd: 3 + w.r(), tip: null };
+      hx: 0, hy: 1, dig: 0, load: 0, trip: 0, dir: w.r() < .5 ? 1 : -1, ph: w.r() * 6, ang: 0, spd: 3 + w.r(), tip: null,
+      age: 0, life: (AF.DAY || 60) * (26 + w.r() * 10) };
     w.ants.push(a); return a;
   };
-  AF.pickRole = function (w) { var v = w.r(); return v < 0.55 ? 'forage' : v < 0.88 ? 'dig' : 'nurse'; };
+  AF.pickRole = function (w) {
+    var v = w.r(), n = w.ants.length, s = 0, i;
+    for (i = 0; i < n; i++) if (w.ants[i].role === 'soldier') s++;
+    if (n >= 18 && s < Math.max(2, n * 0.1) && v < 0.22) return 'soldier';
+    if (v < 0.52) return 'forage';
+    if (v < 0.84) return 'dig';
+    return 'nurse';
+  };
   AF.seedColony = function (w) { for (var i = 0; i < 12; i++) AF.addAnt(w, w.qx + (i % 5) - 2, w.qy, i < 5 ? 'forage' : i < 10 ? 'dig' : 'nurse'); };
 
   function fv(f, x, y) { return AF.walk(w0, x, y) ? f[y * W + x] : -1; }
@@ -29,7 +38,7 @@
     if (o.length) { var p = o[w.r() * o.length | 0]; a.nx = p[0]; a.ny = p[1]; }
   }
   function heading(w, a) { var v = w.r(); if (v < 0.4) { a.hx = 0; a.hy = 1; } else if (v < 0.62) { a.hx = 1; a.hy = 0; } else if (v < 0.92) { a.hx = -1; a.hy = 0; } else { a.hx = 0; a.hy = -1; } }
-  function nearFood(w, x) { var b = null, bd = 11; for (var i = 0; i < w.food.length; i++) { var d = Math.abs(w.food[i].x - x); if (w.food[i].amt > 0 && d < bd) { bd = d; b = w.food[i]; } } return b; }
+  function nearFood(w, x) { var b = null, bd = 16; for (var i = 0; i < w.food.length; i++) { var d = Math.abs(w.food[i].x - x); if (w.food[i].amt > 0 && d < bd) { bd = d; b = w.food[i]; } } return b; }
   function budget(w) { return w.dug < Math.min(1400, 160 + w.ants.length * 8); }
 
   // AF2 dig jobs ---------------------------------------------------------
@@ -68,7 +77,7 @@
       for (var k = 0; k < 4; k++) { x = p[0] + AF.N4[k][0]; y = p[1] + AF.N4[k][1]; var n = y * W + x;
         if (!seen[n] && inR(x, y)) { seen[n] = 1; q.push([x, y]); } } }
     if (cells.length < 6) return false;
-    var room = { x: cx, y: cy, rx: rx, ry: ry, kind: 'side', cells: cells, i: 0 };
+    var room = { x: cx, y: cy, rx: rx, ry: ry, kind: AF.pickRoomKind ? AF.pickRoomKind(w) : 'side', cells: cells, i: 0 };
     w.rooms.push(room); AF.addTip(w, ex, ey, mx, my, 0).room = room; return true;
   }
   AF.endTip = function (w, t) {
@@ -118,8 +127,8 @@
     if (a.st === 'carry' || a.st === 'home') {
       if (a.load === 2) { var i = a.cy * W + a.cx; w.ph[i] = Math.min(1, w.ph[i] + 0.6); }
       if (w.distN[a.cy * W + a.cx] <= 1 && w.distN[a.cy * W + a.cx] >= 0) {
-        if (a.load === 2) { w.stored++; w.collected = (w.collected || 0) + 1; }
-        a.load = 0; a.st = 'rest'; a.t = 1 + w.r() * 3; return;
+        if (a.load === 2) { var got = a.carryAmt || 2; w.stored += got; w.collected = (w.collected || 0) + got; }
+        a.load = 0; a.carryAmt = 0; a.st = 'rest'; a.t = 1 + w.r() * 3; return;
       }
       if (!descend(w, a, w.distN)) randStep(w, a); return;
     }
@@ -131,11 +140,11 @@
       if (!descend(w, a, w.distS)) randStep(w, a); return;
     }
     if (a.st === 'forage') {
-      if (AF.nightAmt(w) > 0.3) { a.st = 'home'; return; }      // AF3: sleep in the nest at night
+      if (AF.nightAmt(w) > 0.18) { a.st = 'home'; return; }      // AF-4b: head in at dusk so they are clearly inside at night
       if (!atSurf) { if (!descend(w, a, w.distS)) randStep(w, a); return; }
-      if (a.trip > 35) { a.st = 'home'; a.trip = 0; return; }
+      if (a.trip > 48) { a.st = 'home'; a.trip = 0; return; }
       var f = nearFood(w, a.cx);
-      if (f && Math.abs(f.x - a.cx) <= 1) { f.amt--; a.load = 2; a.st = 'carry'; a.trip = 0; return; }
+      if (f && Math.abs(f.x - a.cx) <= 1) { var take = Math.min(2, f.amt); f.amt -= take; a.load = 2; a.carryAmt = take; a.st = 'carry'; a.trip = 0; return; }
       if (f) a.dir = f.x > a.cx ? 1 : -1;
       else {
         var ahead = w.ph[a.cy * W + a.cx + a.dir] || 0, back = w.ph[a.cy * W + a.cx - a.dir] || 0;
@@ -158,9 +167,40 @@
       if (w.distT && w.distT[a.cy * W + a.cx] >= 0) { if (!descend(w, a, w.distT)) randStep(w, a); return; }
       randStep(w, a); return;
     }
+    if (a.role === 'soldier' || a.st === 'guard' || a.st === 'patrol') { soldierAct(w, a); return; }
     // rest / nurse
     if (a.role === 'nurse') { nurse(w, a); return; }
     a.st = a.role; a.t = 2 + w.r() * 3;
+  }
+
+  function soldierAct(w, a) {
+    var atSurf = a.cy === S - 1, pred = w.pred, br = AF.hasRoom && AF.hasRoom(w, 'barracks');
+    if (pred && pred.st !== 'flee' && pred.st !== 'gone') {
+      a.st = 'guard';
+      if (atSurf) {
+        if (Math.abs(a.cx + 0.5 - pred.x) <= 2.2) { pred.fear = (pred.fear || 0) + 1; a.t = 0.3; return; }
+        a.dir = pred.x > a.cx ? 1 : -1;
+        var gx = a.cx + a.dir; if (gx >= 0 && gx < W) a.nx = gx;
+        return;
+      }
+      if (!descend(w, a, w.distS)) randStep(w, a); return;
+    }
+    if (AF.nightAmt(w) > 0.18 || (AF.winterAmt && AF.winterAmt(w) > 0.75)) {
+      if (br && w.distR && w.distR[a.cy * W + a.cx] > 2) { if (!descend(w, a, w.distR)) randStep(w, a); return; }
+      a.st = 'rest'; a.t = 1 + w.r() * 2; return;
+    }
+    a.st = 'patrol';
+    if (!atSurf) { if (!descend(w, a, w.distS)) randStep(w, a); return; }
+    if (a.trip > 18) { a.st = 'home'; a.trip = 0; return; }
+    var ex = (w.ents && w.ents[0] != null) ? w.ents[0] : w.ex, i, d, bd;
+    if (w.ents && w.ents.length) {
+      ex = w.ents[0]; bd = Math.abs(a.cx - ex);
+      for (i = 1; i < w.ents.length; i++) { d = Math.abs(a.cx - w.ents[i]); if (d < bd) { bd = d; ex = w.ents[i]; } }
+    }
+    if (Math.abs(a.cx - ex) > 10) a.dir = a.cx < ex ? 1 : -1;
+    else if (w.r() < 0.05) a.dir = -a.dir;
+    var nx = a.cx + a.dir; if (nx < 0 || nx >= W) { a.dir = -a.dir; return; }
+    a.nx = nx;
   }
 
   AF.step = function (w, dt) {
@@ -169,7 +209,7 @@
     w.tipT -= dt; if (w.tipT <= 0) { w.tipT = 2.5; if (w.tips.length < Math.min(8, 2 + w.ants.length / 25) && budget(w)) newTip(w); }
     for (var i = 0; i < w.ants.length; i++) {
       var a = w.ants[i]; a.ph += dt * 14;
-      if (a.st === 'forage') a.trip += dt;
+      if (a.st === 'forage' || a.st === 'patrol') a.trip += dt;
       if (a.dig > 0) { a.dig -= dt; if (a.dig <= 0) { var tp = a.tip; a.tip = null; if (tp) tp.busy = false;
         if (w.g[a.dy * W + a.dx] === 1) { AF.set(w, a.dx, a.dy, 0); w.dug++; w.needField = true; a.load = 1; a.st = 'haul'; if (tp) tipDug(w, tp, a.dx, a.dy); } } continue; }
       if (a.st === 'rest' && a.t > 0) { a.t -= dt; continue; }
@@ -180,12 +220,33 @@
     }
     // pheromone decay
     w.phT += dt; if (w.phT > 0.5) { w.phT = 0; var ph = w.ph; for (i = 0; i < ph.length; i++) if (ph[i] > 0) { ph[i] *= 0.93; if (ph[i] < 0.01) ph[i] = 0; } }
-    // food upkeep
-    w.stored = Math.max(0, w.stored - dt * (0.004 * w.ants.length + 0.02 * countStage(w, 'larva')));
-    // queen
+    // AF-4b: wet soil dries (surface faster than deep); mark dirty so the cache repaints
+    w.dryT = (w.dryT || 0) + dt;
+    if (w.dryT > 0.5) {
+      var dryDt = w.dryT, wet = w.wet, y, rate, nv; w.dryT = 0;
+      for (i = S * W; i < wet.length; i++) if (wet[i] > 0) {
+        y = i / W | 0; rate = 0.022 * (y < S + 5 ? 1.5 : 0.7);
+        nv = wet[i] - rate * dryDt; if (nv < 0.008) nv = 0;
+        if (nv !== wet[i]) { wet[i] = nv; w.dirty.push(i); }
+      }
+    }
+    if (w.splash) { w.splash.t -= dt; if (w.splash.t <= 0) w.splash = null; }
+    // aging: workers live ~26-36 colony days; the last 8 are kept so a colony never dies out
+    for (i = w.ants.length - 1; i >= 0; i--) {
+      a = w.ants[i]; a.age = (a.age || 0) + dt;
+      if (w.ants.length > 8 && a.age > (a.life == null ? AF.DAY * 30 : a.life)) {
+        if (a.tip) a.tip.busy = false;
+        w.ants.splice(i, 1); w.dead = (w.dead || 0) + 1;
+      }
+    }
+    // food upkeep (a little hungrier in winter; pantry rooms raise the cap)
+    var win = AF.winterAmt ? AF.winterAmt(w) : 0, cap = AF.foodCap ? AF.foodCap(w) : 220;
+    w.stored = Math.max(0, Math.min(cap, w.stored - dt * ((0.0022 + 0.0008 * win) * w.ants.length + 0.01 * countStage(w, 'larva'))));
+    // queen (slower in winter unless a warm chamber is finished)
     w.laidT -= dt;
-    if (w.laidT <= 0 && w.stored >= 3 && w.ants.length + w.brood.length < AF.MAXANTS) {
-      w.stored -= 1; w.laidT = AF.nightAmt(w) > 0.3 ? 4 : 6;     // the queen lays faster at night
+    if (w.laidT <= 0 && w.stored >= 2 && w.ants.length + w.brood.length < AF.MAXANTS) {
+      var warm = AF.hasRoom && AF.hasRoom(w, 'warmth'), slow = win > 0.5 ? (warm ? 1.2 : 1.55) : 1;
+      w.stored -= 1; w.laidT = (AF.nightAmt(w) > 0.3 ? 6 : 9) * slow;
       w.brood.push({ x: w.qx + (w.r() * 6 - 3), y: w.qy + 1.4 + w.r() * 0.8, age: 0, stage: 'egg', room: 'q' });
     }
     for (i = w.brood.length - 1; i >= 0; i--) {
@@ -206,9 +267,23 @@
       if (f.y >= S - 0.6) { w.falls.splice(i, 1); landFood(w, f.x, f.amt); }
     }
     w.natT -= dt;                                               // now and then a leaf or berry drops by itself (daytime)
-    if (w.natT <= 0) { w.natT = 18 + w.r() * 18; if (AF.nightAmt(w) < 0.3 && w.food.length + w.falls.length < 4) AF.dropFood(w, 4 + w.r() * (W - 8), 12); }
+    if (w.natT <= 0) {
+      var scarce = w.stored < 10, night = AF.nightAmt(w) > 0.3, season = AF.season ? AF.season(w) : 'spring';
+      var capF = win > 0.6 ? 2 : (night ? 3 : (season === 'spring' || season === 'summer' ? 8 : 6));
+      w.natT = (win > 0.6 ? 16 : (scarce ? 7 : 10)) + w.r() * (win > 0.6 ? 10 : (scarce ? 6 : 10));
+      if (w.food.length + w.falls.length < capF && (scarce || (win <= 0.6 && (!night || w.r() < 0.35)) || (win > 0.6 && w.r() < 0.2)))
+        AF.dropFood(w, 4 + w.r() * (W - 8), win > 0.6 ? 6 : (night ? 10 : (scarce || season === 'spring' ? 18 : 16)));
+    }
     for (i = w.food.length - 1; i >= 0; i--) if (w.food[i].amt <= 0) w.food.splice(i, 1);
+    w.histT = (w.histT || 0) + dt;
+    if (w.histT >= 2) {
+      w.histT = 0; if (!w.hist) w.hist = [];
+      w.hist.push({ t: w.t, ants: w.ants.length, brood: w.brood.length, stored: w.stored });
+      if (w.hist.length > 480) w.hist.splice(0, w.hist.length - 480);
+    }
+    if (AF.tickLife) AF.tickLife(w, dt);
   };
+
   function countStage(w, s) { var n = 0; for (var i = 0; i < w.brood.length; i++) if (w.brood[i].stage === s) n++; return n; }
   AF.countStage = countStage;
   function soak(w, cx) {
@@ -225,5 +300,33 @@
   }
   // Tap / natural drop: the food falls from the top of the sky, then lands as a pile.
   AF.dropFood = function (w, x, amt) { if (w.falls.length < 12) w.falls.push({ x: x, y: 0, vy: 0, amt: amt || 25, spin: w.r() * 6 }); };
+  AF.playerDig = function (w, x, y) {
+    var W = AF.W, H = AF.H, S = AF.SURF;
+    x = Math.round(x); y = Math.round(y);
+    if (x < 1 || x >= W - 1 || y < S || y >= H - 1) return false;
+    if (w.g[y * W + x] !== 1) return false;
+    var open = y === S || AF.walk(w, x - 1, y) || AF.walk(w, x + 1, y) || AF.walk(w, x, y - 1) || AF.walk(w, x, y + 1);
+    if (!open) return false;
+    AF.set(w, x, y, 0); w.dug++; w.tun.push(y * W + x); w.needField = true;
+    var mx = Math.max(0, Math.min(W - 1, (w.ents && w.ents[0] != null) ? w.ents[0] : (w.ex || x)));
+    w.mound[mx] = Math.min(6, w.mound[mx] + 0.1);
+    return true;
+  };
+  AF.hitAnt = function (w, x, y) {
+    var best = null, bd = 0.9, i, a, ax, ay, d;
+    if (Math.hypot((w.qx + 0.5) - x, (w.qy + 1.0) - y) < 1.8) return { kind: 'queen' };
+    for (i = 0; i < w.ants.length; i++) {
+      a = w.ants[i]; ax = a.cx + (a.nx - a.cx) * a.p + 0.5; ay = a.cy + (a.ny - a.cy) * a.p + 0.5;
+      if (AF.antDrawY) ay = AF.antDrawY(w, ax, ay);
+      d = Math.hypot(ax - x, ay - y); if (d < bd) { bd = d; best = { kind: 'ant', ant: a, i: i }; }
+    }
+    return best;
+  };
+  AF.hitRoom = function (w, x, y) {
+    var i, r, u, v;
+    for (i = 0; i < w.rooms.length; i++) { r = w.rooms[i]; u = (x - r.x) / (r.rx || 3); v = (y - r.y) / (r.ry || 2); if (u * u + v * v <= 1.05) return r; }
+    return null;
+  };
+
   AF.dropWater = function (w, x) { w.drops.push({ x: x, y: 0, vy: 0 }); };
 })();
