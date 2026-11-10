@@ -1,4 +1,4 @@
-/* Node tests for Sun Position SP1 (sp_calc.js).
+/* Node tests for Sun Position SP1/SP2 (sp_calc.js).
    Run: node test_sp_calc.js
    No DOM, no jsdom, no browser.
    Times and angles are checked against the NOAA Solar Calculator method
@@ -229,6 +229,42 @@ var path = Sp.dayPath(DELHI.lat, DELHI.lon, 2026, 11, 10, 20);
 ok('day path has many samples', path.length > 20);
 ok('some path samples are above the horizon', path.some(function (s) { return s.elevation > 0; }));
 ok('some path samples are below the horizon', path.some(function (s) { return s.elevation < 0; }));
+
+
+/* ---- SP2 year series, solstices, panel ---- */
+var yearDel = Sp.yearDaylight(DELHI.lat, DELHI.lon, 2026, DELHI.tz);
+ok('Delhi 2026 has 365 days', yearDel.length === 365, String(yearDel.length));
+var marks = Sp.solsticesEquinoxes(yearDel);
+ok('June solstice is in June', marks.june && marks.june.m === 6, marks.june && (marks.june.m + '-' + marks.june.d));
+ok('December solstice is in December', marks.december && marks.december.m === 12, marks.december && (marks.december.m + '-' + marks.december.d));
+ok('March equinox is in March', marks.march && marks.march.m === 3, marks.march && (marks.march.m + '-' + marks.march.d));
+ok('September equinox is in September', marks.september && marks.september.m === 9, marks.september && (marks.september.m + '-' + marks.september.d));
+ok('Delhi longest day around June', marks.longest && marks.longest.m === 6, marks.longest && (marks.longest.m + '-' + marks.longest.d));
+ok('Delhi shortest day around December', marks.shortest && marks.shortest.m === 12, marks.shortest && (marks.shortest.m + '-' + marks.shortest.d));
+ok('Delhi June day is longer than December', marks.longest.dayLengthMinutes > marks.shortest.dayLengthMinutes + 3 * 60,
+  String(marks.longest.dayLengthMinutes) + ' vs ' + String(marks.shortest.dayLengthMinutes));
+/* Equinox day length is a little over 12h because of refraction and the sun's radius. */
+ok('Delhi March equinox day is near 12h', marks.march.dayLengthMinutes > 11 * 60 + 50 && marks.march.dayLengthMinutes < 12 * 60 + 25, String(marks.march.dayLengthMinutes));
+
+var yearTr = Sp.yearDaylight(TROMSO.lat, TROMSO.lon, 2026, TROMSO.tz);
+var polarDays = yearTr.filter(function (d) { return d.polar === 'day'; }).length;
+var polarNights = yearTr.filter(function (d) { return d.polar === 'night'; }).length;
+ok('Tromsø has many midsummer polar days', polarDays > 50, String(polarDays));
+ok('Tromsø has many midwinter polar nights', polarNights > 40, String(polarNights));
+
+var pathDiag = Sp.sunPathDiagram(DELHI.lat, DELHI.lon, 2026, DELHI.tz);
+ok('sun path has 12 monthly curves', pathDiag.months.length === 12);
+ok('June 21 path has points above the horizon', pathDiag.months[5].points.some(function (p) { return p.elevation > 0; }));
+ok('hour lines include 12:00', !!pathDiag.hours[12] && pathDiag.hours[12].length === 12);
+
+var panelDel = Sp.bestPanel(DELHI.lat, DELHI.lon, 2026);
+ok('Delhi panel faces south', panelDel.facing === 'south', JSON.stringify(panelDel));
+approx('Delhi panel azimuth near 180°', panelDel.azimuth, 180, 25, 'deg');
+ok('Delhi panel tilt is between 15° and 40° (near latitude 29°)', panelDel.tilt >= 15 && panelDel.tilt <= 40, String(panelDel.tilt));
+
+var panelSyd = Sp.bestPanel(-33.869, 151.209, 2026); /* Sydney */
+ok('Sydney panel faces north', panelSyd.facing === 'north', JSON.stringify(panelSyd));
+ok('Sydney panel tilt is between 15° and 45°', panelSyd.tilt >= 15 && panelSyd.tilt <= 45, String(panelSyd.tilt));
 
 if (fails.length) {
   console.log('\nFAILED ' + fails.length + ' tests:');

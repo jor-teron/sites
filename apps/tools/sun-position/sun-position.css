@@ -1,4 +1,4 @@
-/* SP1 Sun Position — one accent, flat light/dark, large tap targets */
+/* SP2 Sun Position — one accent, flat light/dark, large tap targets */
 :root{--bg:#f4f1eb;--fg:#1c1915;--card:#fffdf8;--mut:#6b6560;--acc:#c47b12;--line:#e5dfd4;--sun:#e8a020;--arc:#e8c46a}
 html.dark{--bg:#141820;--fg:#efe8dc;--card:#1c222c;--mut:#9aa3ad;--acc:#e8a63a;--line:#2c3440;--sun:#f0b429;--arc:#8a6a28}
 *{box-sizing:border-box}
@@ -70,3 +70,28 @@ html.dark #tabs button.on{color:#141820}
 #tabs[hidden]{display:none}
 button:focus-visible,.field:focus-visible,#timeSl:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 @media (min-width:520px){.stat .big{font-size:32px}}
+
+#tabs{display:flex}
+.whenbar{margin:4px 0 10px}
+.unit{color:var(--mut);min-width:4em}
+.cardblock{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}
+.cardblock h2{margin-top:0}
+.shadowout{font-weight:600;margin:8px 0 0;font-variant-numeric:tabular-nums}
+.svgwrap{overflow:hidden;margin:8px -4px 0}
+#yearSvg,#pathSvg{width:100%;height:auto;display:block}
+#yearSvg .band{fill:var(--arc);opacity:.45}
+#yearSvg .rise,#yearSvg .set{fill:none;stroke:var(--acc);stroke-width:1.4}
+#yearSvg .set{stroke:var(--mut)}
+#yearSvg .axis{stroke:var(--line);stroke-width:1}
+#yearSvg .lbl{fill:var(--mut);font:10px system-ui,sans-serif}
+#yearSvg .mark{stroke:var(--acc);stroke-width:1;stroke-dasharray:2 2}
+#yearSvg .marklab{fill:var(--fg);font:9px system-ui,sans-serif;text-anchor:middle}
+#pathSvg .face{fill:var(--bg);stroke:var(--line);stroke-width:2}
+#pathSvg .horizon{fill:none;stroke:var(--line);stroke-width:1.2}
+#pathSvg .month{fill:none;stroke:var(--acc);stroke-width:1.2;opacity:.85}
+#pathSvg .month.win{stroke:var(--mut);opacity:.7}
+#pathSvg .hour{fill:none;stroke:var(--line);stroke-width:1;opacity:.8}
+#pathSvg .hlbl{fill:var(--mut);font:9px system-ui,sans-serif;text-anchor:middle}
+#pathSvg .lb{fill:var(--fg);font:600 14px system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle}
+#dial .shadow{stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}
+#dial .shadow-head{fill:var(--mut)}
