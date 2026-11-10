@@ -34,6 +34,7 @@ const PTSave = {
     async function libOf(src) {
       if (cache.has(src.id)) return cache.get(src.id);
       const doc = await PDFDocument.load(src.bytes, { updateMetadata: false });
+      if (PT.Sign) PT.Sign.applyFields(doc, src.id, !!opts.flatten);
       cache.set(src.id, doc);
       return doc;
     }
@@ -62,6 +63,9 @@ const PTSave = {
         const base = pg.getRotation().angle || 0;
         pg.setRotation(degrees((((base + p.rot) % 360) + 360) % 360));
         out.addPage(pg);
+      }
+      if (p.annots && p.annots.length && PT.Sign) {
+        await PT.Sign.drawOn(out, out.getPages()[out.getPageCount() - 1], p);
       }
       if (i && i % 8 === 0) await new Promise((r) => setTimeout(r, 0));
     }

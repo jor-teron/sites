@@ -148,6 +148,9 @@ PT.Thumbs = (() => {
       let cropb = el.querySelector('.cropped');
       if (p.crop && !cropb) { cropb = document.createElement('span'); cropb.className = 'cropped'; cropb.textContent = 'Crop'; el.appendChild(cropb); }
       else if (cropb && !p.crop) cropb.remove();
+      let mark = el.querySelector('.marked');
+      if (p.annots && p.annots.length && !mark) { mark = document.createElement('span'); mark.className = 'marked'; mark.textContent = 'Mark'; el.appendChild(mark); }
+      else if (mark && !(p.annots && p.annots.length)) mark.remove();
       if (src && src.kind === 'blank') markBlank(el, p);
       else if (src && src.kind === 'image' && (src.thumb || urls.has(keyOf(p)))) setImg(el, src.thumb || urls.get(keyOf(p)));
       else if (urls.has(keyOf(p))) setImg(el, urls.get(keyOf(p)));

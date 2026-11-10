@@ -110,6 +110,7 @@ PT.Images = (() => {
       S.sel.clear(); S.anchor = null;
       PT.Edit.reset();
       if (PT.Stamp) PT.Stamp.reset();
+      if (PT.Sign) PT.Sign.reset();
     }
     const n = pages.length;
     if (started) {
