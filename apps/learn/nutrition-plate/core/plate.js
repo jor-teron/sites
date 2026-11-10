@@ -74,10 +74,10 @@
     if (row) row.qty = qty; else return add(next, id, qty);
     return next;
   }
-  function totals(plate) {
+  function addUp(rows) {
     const t = emptyTotals();
-    normalize(plate).forEach(row => {
-      const f = food(row.id); if (!f) return;
+    rows.forEach(row => {
+      const f = food(row.id); if (!f || !row.qty) return;
       t.items += 1; t.portions += row.qty; t.g += f.g * row.qty;
       NUTRIENTS.forEach(k => { t[k] += f[k] * row.qty; });
       const g = t.groups[f.group]; g.g += f.g * row.qty; g.kcal += f.kcal * row.qty; g.portions += row.qty;
@@ -85,6 +85,23 @@
     NUTRIENTS.forEach(k => { t[k] = Math.round(t[k] * 10) / 10; });
     t.g = Math.round(t.g);
     t.kcal = Math.round(t.kcal);
+    Object.values(t.groups).forEach(g => { g.kcal = Math.round(g.kcal * 10) / 10; g.g = Math.round(g.g); });
+    return t;
+  }
+  function totals(plate) { return addUp(normalize(plate)); }
+  function sumTotals(parts) {
+    const t = emptyTotals();
+    parts.forEach(part => {
+      t.items += part.items; t.portions += part.portions; t.g += part.g;
+      NUTRIENTS.forEach(k => { t[k] += part[k]; });
+      Object.keys(t.groups).forEach(id => {
+        t.groups[id].g += part.groups[id].g;
+        t.groups[id].kcal += part.groups[id].kcal;
+        t.groups[id].portions += part.groups[id].portions;
+      });
+    });
+    NUTRIENTS.forEach(k => { t[k] = Math.round(t[k] * 10) / 10; });
+    t.g = Math.round(t.g); t.kcal = Math.round(t.kcal);
     Object.values(t.groups).forEach(g => { g.kcal = Math.round(g.kcal * 10) / 10; g.g = Math.round(g.g); });
     return t;
   }
@@ -119,5 +136,5 @@
     return row ? row[1] : id;
   }
   return { NUTRIENTS, LABELS, MAX_QTY, MAX_ITEMS, DIETS, validateFood, allowed, filterFoods,
-    food, normalize, add, setQty, totals, balance, plateWeight, IDEAL, groupLabel, foods: D };
+    food, normalize, add, setQty, addUp, totals, sumTotals, balance, plateWeight, IDEAL, groupLabel, foods: D };
 });

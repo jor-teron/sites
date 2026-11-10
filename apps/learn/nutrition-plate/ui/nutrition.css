@@ -45,3 +45,22 @@ dialog::backdrop{background:#0009}dialog label{margin:12px 0}
 @media(min-width:801px){.plate-col{position:sticky;top:8px}.food-grid{max-height:calc(100dvh - 240px);overflow:auto}}@media(max-width:800px){.workspace{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.food-grid{grid-template-columns:repeat(auto-fill,minmax(136px,1fr))}}
 @media(max-width:540px){main{padding:16px 12px 30px}h1{font-size:.95rem;gap:6px}h1 img{width:26px;height:26px}.lrn-head{padding:8px 10px}h2{font-size:1.15rem}.stats{grid-template-columns:1fr 1fr}.guide{grid-template-columns:1fr;justify-items:center}.pie{width:120px;height:120px}}
 @media(max-height:430px){main{padding-top:10px}.intro h2{font-size:1.15rem}.lrn-head{padding:6px 10px}.plate-drop{min-height:140px}}
+
+.person,.panel{margin:16px 0;padding:14px;border:1px solid var(--line);background:var(--panel);border-radius:14px}
+.meals{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
+.meals button{flex:1 1 140px}.meals button[aria-selected=true],.meals button[aria-pressed=true]{background:var(--accent);color:var(--bg);font-weight:700}
+#progress h2{margin-bottom:8px}.bars{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.prog{font-size:.82rem}.prog span,.prog strong{display:inline}.prog strong{float:right}
+.prog.over strong,.tips p{color:#c45c2a}:root.light .prog.over strong,:root.light .tips p{color:#9a3b12}
+.prog .bar{clear:both;margin:4px 0 0}.prog .bar i{background:var(--accent)}.prog.over .bar i{background:#c45c2a}
+.tips{margin:0 0 16px}.tips p{margin:6px 0;padding:8px 12px;background:var(--soft);border-radius:10px;border-left:4px solid var(--accent)}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}.saved-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.saved-row{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:8px 0;min-height:44px}
+.saved-row span{flex:1;min-width:0;overflow-wrap:anywhere}.actions{display:flex;justify-content:end;gap:10px;margin-top:16px}
+.primary{background:var(--accent);color:var(--bg);font-weight:700}h3{margin:0 0 8px;font-size:1rem}
+@media(max-width:540px){.bars,.saved-cols{grid-template-columns:1fr}.person{padding:12px}}
+
+.notice summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;color:var(--text)}
+.notice p{margin:8px 0 0}
+@media(max-width:800px){.notice{margin-top:8px}.intro h2{font-size:1.2rem}.intro p{margin-bottom:8px}}
+@media(max-height:430px){.notice:not([open]){padding:6px 14px}.person{margin:8px 0;padding:10px}}
