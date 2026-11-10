@@ -1432,7 +1432,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   not full resolution; a plain click no longer toggles a single page off (so
   double-click preview can work). Details: apps/office/pdf-tools/pdf-tools_readme.md.
 
-### 1.69 PDF Tools stamp and tidy, release P4
+### 1.82 PDF Tools stamp and tidy, release P4
 
 - apps/office/pdf-tools only, on top of P3. Stamp & tidy dialog (applied on
   Save, not Extract or Split): page numbers (1 / Page 1 of N / 1 / N, position,
