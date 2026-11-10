@@ -46,6 +46,7 @@ window.HUB_APP_INDEX = {
   "demolisher": ["Games", "apps/games/demolisher/", "Demolisher", "apps/games/demolisher/demolisher_icon.png", 0, "Side-scrolling action: smash buildings and fight enemies with physics weapons"],
   "sling-birds": ["Games", "apps/games/sling-birds/", "Sling Birds", "apps/games/sling-birds/sling-birds_icon.png", 0, "Physics slingshot: launch birds to knock down towers and defeat the pigs"],
   "pacman": ["Games", "apps/games/pacman/", "Pacman", "apps/games/pacman/pacman_icon.png", 0, "Maze chase: eat every dot and dodge the ghosts - power pellets turn the tables"],
+  "jigsaw": ["Games", "apps/games/jigsaw/", "Jigsaw", "apps/games/jigsaw/jigsaw_icon.png", 0, "Join shaped pieces from six original pictures or your own photo"],
   "garden-guard": ["Games", "apps/games/garden-guard/", "Garden Guard", "apps/games/garden-guard/garden-guard_icon.png", 0, "Grow a garden defence across five lawns with sun makers and frosty shooters"],
   "sweet-swap": ["Games", "apps/games/sweet-swap/", "Sweet Swap", "apps/games/sweet-swap/sweet-swap_icon.png", 0, "Swap colourful candy shapes to match three and chain cascades across score challenges"],
   "breakout": ["Games", "apps/games/breakout/", "Breakout", "apps/games/breakout/breakout_icon.png", 0, "Clear brick layouts with a paddle and ball - catch powers and survive endless levels"],
