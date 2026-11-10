@@ -78,7 +78,7 @@ test('targets rise with activity and stay within a plausible range', () => {
   assert.equal(sed.prot, act.prot);
   T.ages.forEach(age => T.activities.forEach(actn => {
     const g = T.targets(age.id, actn.id);
-    assert.ok(g.kcal >= 1400 && g.kcal <= 3000);
+    assert.ok(g.kcal >= 1300 && g.kcal <= 3400);
     assert.ok(g.prot >= 20 && g.fibre >= 15 && g.ca >= 600);
     assert.equal(g.sugar, Math.round(0.10 * g.kcal / 4));
   }));
@@ -138,4 +138,95 @@ test('restore recovers missing fields and rejects bad JSON; saves need names', (
   let state = Day.fresh();
   for (let i = 0; i < 20; i++) state = Day.savePlate(state, 'P' + i);
   assert.throws(() => Day.savePlate(state, 'one more'));
+});
+
+test('targets are sex-specific and unspecified uses the mid-point', () => {
+  const f = T.targets('adult', 'moderate', 'female');
+  const m = T.targets('adult', 'moderate', 'male');
+  const u = T.targets('adult', 'moderate', 'unspecified');
+  const two = T.targets('adult', 'moderate');
+  assert.equal(f.fe, 29);
+  assert.equal(m.fe, 19);
+  assert.equal(u.fe, 24);
+  assert.equal(u.kcal, 2300);
+  assert.equal(u.kcal, Math.round((f.kcal + m.kcal) / 2));
+  assert.equal(u.fe, Math.round((f.fe + m.fe) / 2));
+  assert.equal(two.sex, 'unspecified');
+  assert.ok(m.kcal > f.kcal);
+  assert.equal(T.targets('preteen', 'moderate', 'female').fe, 28);
+  assert.equal(T.targets('preteen', 'moderate', 'male').fe, 16);
+  assert.equal(T.targets('older', 'moderate', 'female').fe, T.targets('older', 'moderate', 'male').fe);
+  assert.equal(T.targets('teen', 'active', 'unspecified').kcal, 3000);
+});
+
+test('old saves without sex still load, with mid-point targets', () => {
+  const recovered = Day.restore(JSON.stringify({
+    person: { age: 'teen', activity: 'active', diet: 'egg' },
+    meal: 'lunch',
+    meals: { breakfast: [{ id: 'idli', qty: 2 }], lunch: [], snack: [], dinner: [] }
+  }));
+  assert.equal(recovered.person.sex, 'unspecified');
+  assert.equal(recovered.person.age, 'teen');
+  assert.equal(recovered.meals.breakfast[0].id, 'idli');
+  assert.equal(recovered.scores.guess, 0);
+  const g = T.targets(recovered.person.age, recovered.person.activity, recovered.person.sex);
+  assert.equal(g.kcal, 3000);
+  assert.equal(g.sex, 'unspecified');
+});
+
+const G = require('../core/games.js');
+
+test('guess-the-calories offers four unique choices including the true value', () => {
+  const rng = G.rngFrom(42);
+  const used = [];
+  for (let i = 0; i < G.GUESS_N; i++) {
+    const q = G.guessQuestion(used, rng);
+    used.push(q.id);
+    assert.equal(q.choices.length, 4);
+    assert.equal(new Set(q.choices).size, 4);
+    assert(q.choices.includes(q.kcal), q.id + ' missing ' + q.kcal);
+    assert.equal(G.gradeGuess(q, q.kcal).correct, true);
+    const wrong = q.choices.find(n => n !== q.kcal);
+    assert.equal(G.gradeGuess(q, wrong).correct, false);
+    assert.equal(G.gradeGuess(q, wrong).answer, q.kcal);
+  }
+  assert.equal(new Set(used).size, G.GUESS_N);
+});
+
+test('each fix-this-plate start is unbalanced and its documented fix balances it', () => {
+  const good = NP.add(NP.add(NP.add(NP.add([], 'roti', 2), 'dal_tadka', 1), 'mixed_sabzi', 1), 'salad', 1);
+  assert.equal(G.isBalanced(good), true);
+  assert.equal(G.issues([]).length > 0, true);
+  assert.equal(G.CHALLENGES.length, 5);
+  G.CHALLENGES.forEach(row => {
+    const ch = G.challenge(row.id);
+    assert.equal(G.isBalanced(ch.start), false);
+    assert(G.issues(ch.start).length > 0, row.id + ' should list issues');
+    ch.bank.forEach(id => assert(F.byId[id], row.id + ' bank ' + id));
+    let plate = ch.start;
+    ch.fix.forEach(step => { plate = G.applyFix(plate, step); });
+    assert.equal(G.isBalanced(plate), true, row.id + ' fix: ' + G.issues(plate).join('; '));
+  });
+});
+
+test('healthier-swaps answers are in the choices and grade correctly', () => {
+  G.SWAPS.forEach(row => {
+    assert(F.byId[row.from], row.from);
+    assert(row.choices.includes(row.answer));
+    row.choices.forEach(id => assert(F.byId[id], id));
+    const from = F.byId[row.from], ans = F.byId[row.answer];
+    assert(ans.kcal < from.kcal || ans.sugar < from.sugar || ans.fibre > from.fibre, row.id + ' should look healthier');
+  });
+  const rng = G.rngFrom(7);
+  const used = [];
+  for (let i = 0; i < G.SWAP_N; i++) {
+    const q = G.swapQuestion(used, rng);
+    used.push(q.id);
+    assert.equal(G.gradeSwap(q, q.answer).correct, true);
+    const wrong = q.choices.find(id => id !== q.answer);
+    const grade = G.gradeSwap(q, wrong);
+    assert.equal(grade.correct, false);
+    assert.equal(grade.answer, q.answer);
+    assert(grade.why);
+  }
 });

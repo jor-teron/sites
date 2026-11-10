@@ -1,4 +1,4 @@
-# Nutrition Plate — NP-1a / NP-1b
+# Nutrition Plate — NP-1a / NP-1b / NP-1c
 
 Learn app for building Indian meal plates and planning a day.
 Entry: `index.html` → `nutrition-plate.html`; standalone or Hub window.
@@ -24,14 +24,26 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
 ## The day and the person (NP-1b)
 
 - Plan breakfast, lunch, snacks and dinner as one day.
-- Age group, activity and diet set a rough daily target from ICMR-NIN style
-  mid-points (not sex-specific). Sugar is a keep-below amount (~10% of energy).
+- Age group, sex, activity and diet set a rough daily target from ICMR-NIN style
+  figures. Sex is female, male, or prefer not to say (the mid-point, including for
+  iron). Sugar is a keep-below amount (~10% of energy).
 - Progress bars compare the whole day with that target. Short tips include
   “add a protein”, “too much sugar” and “add vegetables”.
 - `learn.nutrition-plate.v1` stores the current day, person settings, and up to
   20 named plates and 20 named days on this device.
 - This is an educational guide, not medical advice. Needs vary by sex, body size,
   health and life stage.
+
+## Games and polish (NP-1c)
+
+- Guess the calories: eight questions, four energy choices, best score saved.
+- Fix this plate: five unbalanced plates; add or remove foods until the
+  balanced-plate guide is met.
+- Healthier swaps: eight questions on lighter or higher-fibre alternatives.
+- How to use explains portions, the plate guide, sex-specific targets and saves.
+- On phones the 150-food library uses group chips, a compact list, and
+  collapsible groups so it is not one long scroll.
+- Bowl icons for dals and sabzis are drawn distinctly (colour, garnish or shape).
 
 `learn.nutrition-plate.theme`: absent = Auto (System), following the Hub
 through the existing read-only HubTheme helper. The app opens Windowed with
@@ -53,4 +65,4 @@ NODE_PATH=/workspace/arw-test-deps/node_modules node apps/learn/nutrition-plate/
 The browser script needs `puppeteer-core`, `/usr/bin/google-chrome`, and
 `/workspace/np_review` for screenshots. It covers adding by tap, meals,
 targets, save/load, persistence, 390×844 / 844×390 / desktop, light and dark,
-and 44 px buttons.
+games, How to use, sex-specific targets, the compact phone library, and 44 px buttons.

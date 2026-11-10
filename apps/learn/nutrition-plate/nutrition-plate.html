@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#3d6b3a">
-<title>Nutrition Plate NP-1b</title>
+<title>Nutrition Plate NP-1c</title>
 <link rel="icon" href="nutrition-plate_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.nutrition-plate.theme"></script>
 <link rel="stylesheet" href="ui/nutrition.css">
@@ -13,10 +13,21 @@
 <div class="lrn">
 <header class="lrn-head">
   <h1><img src="nutrition-plate_icon.png" width="32" height="32" alt="">Nutrition Plate</h1>
+  <div class="modes lrn-mode" role="tablist" aria-label="App sections">
+    <button type="button" id="mode-plate" data-m="plate" aria-pressed="true">Plate</button>
+    <button type="button" id="mode-games" data-m="games" aria-pressed="false">Games</button>
+    <button type="button" id="mode-help" data-m="help" aria-pressed="false">How to use</button>
+  </div>
   <button id="back" class="lrn-qc">‹ Learn</button>
   <button id="settings" class="lrn-qc" aria-label="Settings">⚙</button>
 </header>
 <main>
+  <details class="notice">
+    <summary>Educational guide, not medical advice</summary>
+    <p>Figures are rounded guides based on IFCT 2017 food tables and ICMR-NIN style daily targets. They are approximate, not a lab test, and they are not a diet prescription. Needs vary by sex, body size, health and life stage — including pregnancy and illness. Speak to a qualified professional for personal advice.</p>
+  </details>
+
+  <section id="view-plate">
   <div class="intro">
     <div>
       <p class="eyebrow">LEARN / HEALTH</p>
@@ -24,20 +35,17 @@
       <p>Everyday Indian foods, with approximate nutrients and a balanced-plate guide.</p>
     </div>
   </div>
-  <details class="notice">
-    <summary>Educational guide, not medical advice</summary>
-    <p>Figures are rounded guides based on IFCT 2017 food tables and ICMR-NIN style daily targets. They are approximate, not a lab test, and they are not a diet prescription. Needs vary by sex, body size, health and life stage — including pregnancy and illness. Speak to a qualified professional for personal advice.</p>
-  </details>
   <section class="person" aria-label="Who this day is for">
     <h2>Who this day is for</h2>
     <div class="filters person-fields">
       <label>Age group<select id="age"></select></label>
+      <label>Sex<select id="sex"></select></label>
       <label>Activity<select id="activity"></select></label>
       <label>Diet<select id="diet"></select></label>
     </div>
     <p id="target-note" class="muted"></p>
   </section>
-  <div id="meals" class="meals lrn-mode" role="tablist" aria-label="Meals of the day"></div>
+  <div id="meals" class="meals" role="tablist" aria-label="Meals of the day"></div>
   <section id="progress" aria-label="Day progress"></section>
   <p id="tips" class="tips" aria-live="polite"></p>
   <section class="workspace">
@@ -50,12 +58,12 @@
     </div>
     <div class="library-col">
       <h2>Food library</h2>
-      <div class="filters" aria-label="Search and filter foods">
+      <div class="filters" aria-label="Search foods">
         <label>Search<input id="search" type="search" placeholder="roti, dal, mango…" autocomplete="off"></label>
-        <label>Food group<select id="group"><option value="all">All groups</option></select></label>
       </div>
+      <div id="chips" class="chips" role="toolbar" aria-label="Food groups"></div>
       <p id="lib-count" class="muted"></p>
-      <div id="library" class="food-grid"></div>
+      <div id="library"></div>
     </div>
   </section>
   <section class="saved panel" aria-label="Saved plates and days">
@@ -70,9 +78,32 @@
     </div>
     <p class="muted">Saved meals stay in this browser only. Clearing site data removes them.</p>
   </section>
+  </section>
+
+  <section id="view-games" hidden>
+    <h2>Games</h2>
+    <p class="hint">Practise reading a plate. Figures are still approximate guides, not medical advice.</p>
+    <div id="game-picks" class="game-picks"></div>
+    <div id="game-play" class="game-play"></div>
+  </section>
+
+  <section id="view-help" hidden>
+    <h2>How to use</h2>
+    <ol class="how-to">
+      <li><strong>Add foods.</strong> Search or pick a food group, then tap a food to add one portion, or drag it onto the plate. Use + and − to change the amount.</li>
+      <li><strong>Portions</strong> are everyday measures: 1 roti, 1 katori, 1 cup or 1 piece. Nutrient figures are rounded guides from Indian food tables (IFCT 2017), not a laboratory test.</li>
+      <li><strong>The balanced-plate guide</strong> uses food weight, so vegetables stay visible: about half vegetables and fruit, one quarter grains, and one quarter protein (dal, sprouts, eggs, fish or meat), with milk or curd on the side. Oils, snacks and sweets should stay small.</li>
+      <li><strong>Plan a day.</strong> Switch between breakfast, lunch, snacks and dinner. Set age, sex, activity and diet for a rough daily target. Bars and short tips compare the whole day with that target.</li>
+      <li><strong>Sex and targets.</strong> Targets follow ICMR-NIN style figures and stay approximate. Iron is higher for most females from the pre-teen years to adulthood. Prefer not to say uses the mid-point of the female and male figures. Older adults use the same iron figure for both.</li>
+      <li><strong>Games.</strong> Guess the calories of a food, fix an unbalanced plate by adding and removing foods, or pick a healthier swap. Best scores stay on this device.</li>
+      <li><strong>Save.</strong> Named plates and days are stored in this browser only.</li>
+    </ol>
+    <p class="notice">This is an educational guide, not medical advice. Needs vary by sex, body size, health and life stage — including pregnancy and illness. Speak to a qualified professional for personal advice.</p>
+  </section>
+
   <p id="status" role="status"></p>
 </main>
-<footer>NP-1b · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer>
+<footer>NP-1c · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer>
 </div>
 <dialog id="settings-dialog">
 <h2>Settings</h2>
@@ -98,6 +129,7 @@
 <script src="core/plate.js"></script>
 <script src="core/targets.js"></script>
 <script src="core/day.js"></script>
+<script src="core/games.js"></script>
 <script src="ui/icons.js"></script>
 <script src="ui/app.js"></script>
 </body>

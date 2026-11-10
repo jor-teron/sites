@@ -14,15 +14,16 @@
   const copy = v => JSON.parse(JSON.stringify(v));
   function emptyMeals() { return { breakfast: [], lunch: [], snack: [], dinner: [] }; }
   function fresh() {
-    return { version: 1, person: { age: 'adult', activity: 'moderate', diet: 'all' },
-      meals: emptyMeals(), meal: 'breakfast', plates: [], days: [] };
+    return { version: 1, person: { age: 'adult', activity: 'moderate', diet: 'all', sex: 'unspecified' },
+      meals: emptyMeals(), meal: 'breakfast', plates: [], days: [], scores: { guess: 0, plate: 0, swaps: 0 } };
   }
   function cleanMeal(list) { return NP.normalize(list); }
   function cleanPerson(p) {
     const age = T.ages.some(a => a.id === (p && p.age)) ? p.age : 'adult';
     const activity = T.activities.some(a => a.id === (p && p.activity)) ? p.activity : 'moderate';
     const diet = T.diets.some(d => d.id === (p && p.diet)) ? p.diet : 'all';
-    return { age, activity, diet };
+    const sex = T.sexes.some(s => s.id === (p && p.sex)) ? p.sex : 'unspecified';
+    return { age, activity, diet, sex };
   }
   function cleanSavedPlate(row) {
     if (!row || typeof row.id !== 'string' || typeof row.name !== 'string') return null;
@@ -45,6 +46,12 @@
     mealIds.forEach(id => { state.meals[id] = cleanMeal(raw.meals && raw.meals[id]); });
     state.plates = Array.isArray(raw.plates) ? raw.plates.map(cleanSavedPlate).filter(Boolean).slice(0, MAX_SAVED) : [];
     state.days = Array.isArray(raw.days) ? raw.days.map(cleanSavedDay).filter(Boolean).slice(0, MAX_SAVED) : [];
+    const sc = raw.scores && typeof raw.scores === 'object' ? raw.scores : {};
+    state.scores = {
+      guess: Number.isInteger(sc.guess) && sc.guess >= 0 ? Math.min(8, sc.guess) : 0,
+      plate: Number.isInteger(sc.plate) && sc.plate >= 0 ? Math.min(20, sc.plate) : 0,
+      swaps: Number.isInteger(sc.swaps) && sc.swaps >= 0 ? Math.min(8, sc.swaps) : 0
+    };
     return state;
   }
   function dayTotals(meals) {
@@ -61,7 +68,7 @@
     return out;
   }
   function tips(meals, person) {
-    const t = dayTotals(meals), g = T.targets(person.age, person.activity);
+    const t = dayTotals(meals), g = T.targets(person.age, person.activity, person.sex);
     const out = [];
     if (!t.portions) out.push('Start a meal — add foods from the library to breakfast, lunch, snacks or dinner.');
     else {

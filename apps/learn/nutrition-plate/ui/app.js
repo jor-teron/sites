@@ -1,12 +1,14 @@
-/* NP-1b: plate builder, day planner, targets and local saves. User text uses textContent. */
+/* NP-1c: plate builder, day planner, games, How to use. User text uses textContent. */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
   const el = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
   const fmt = (n) => { const d = Number.isInteger(n) ? 1 : 10; return (Math.round(n * d) / d).toString(); };
-  let state = NPDay.fresh(), saveKind = 'plate', message = '';
+  let state = NPDay.fresh(), saveKind = 'plate', message = '', view = 'plate', groupFilter = 'all';
+  let openGroups = new Set(['grains']), game = null, compactMql = matchMedia('(max-width: 800px)');
   try { const text = localStorage.getItem(NPDay.KEY); if (text) state = NPDay.restore(text); }
   catch (_) { message = 'Saved data could not be read. A new day was started.'; }
+  if (!state.scores) state.scores = { guess: 0, plate: 0, swaps: 0 };
   const plate = () => state.meals[state.meal];
   function status(text) { message = text || message; $('status').textContent = message; }
   function save() {
@@ -19,20 +21,49 @@
     box.value = value;
   }
   fillSelect('age', NPTargets.ages, state.person.age);
+  fillSelect('sex', NPTargets.sexes, state.person.sex);
   fillSelect('activity', NPTargets.activities, state.person.activity);
   fillSelect('diet', NPTargets.diets, state.person.diet);
-  NP.foods.groups.forEach(([id, name]) => { const o = el('option', name); o.value = id; $('group').append(o); });
-  function library() {
-    const foods = NP.filterFoods($('search').value, $('group').value, state.person.diet);
-    const box = $('library'); box.replaceChildren();
-    $('lib-count').textContent = foods.length + ' food' + (foods.length === 1 ? '' : 's');
-    foods.forEach(food => {
-      const btn = el('button', null, 'food'); btn.type = 'button'; btn.draggable = true; btn.dataset.id = food.id;
-      btn.append(NPIcons.make(food.icon, 80), el('strong', food.name), el('small', food.portion + ' · ' + food.kcal + ' kcal'));
-      btn.addEventListener('click', () => addFood(food.id));
-      btn.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/plain', food.id); ev.dataTransfer.effectAllowed = 'copy'; });
+
+  function foodBtn(food, compact) {
+    const btn = el('button', null, 'food'); btn.type = 'button'; btn.draggable = true; btn.dataset.id = food.id;
+    btn.append(NPIcons.make(food.icon, compact ? 64 : 80), el('strong', food.name),
+      el('small', food.portion + ' · ' + food.kcal + ' kcal'));
+    btn.addEventListener('click', () => addFood(food.id));
+    btn.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/plain', food.id); ev.dataTransfer.effectAllowed = 'copy'; });
+    return btn;
+  }
+  function chips() {
+    const box = $('chips'); box.replaceChildren();
+    [['all', 'All groups']].concat(NP.foods.groups).forEach(([id, name]) => {
+      const btn = el('button', name); btn.type = 'button'; btn.dataset.group = id;
+      btn.setAttribute('aria-pressed', groupFilter === id ? 'true' : 'false');
+      btn.onclick = () => { groupFilter = id; library(); };
       box.append(btn);
     });
+  }
+  function library() {
+    chips();
+    const q = $('search').value, foods = NP.filterFoods(q, groupFilter, state.person.diet);
+    const box = $('library'); box.replaceChildren();
+    $('lib-count').textContent = foods.length + ' food' + (foods.length === 1 ? '' : 's');
+    const compact = compactMql.matches, searching = !!(q || '').trim();
+    const mount = (items, parent) => {
+      const grid = el('div', null, compact ? 'food-list' : 'food-grid');
+      items.forEach(food => grid.append(foodBtn(food, compact)));
+      parent.append(grid);
+    };
+    if (groupFilter === 'all' && !searching && compact) {
+      NP.foods.groups.forEach(([id, name]) => {
+        const items = foods.filter(f => f.group === id);
+        if (!items.length) return;
+        const det = el('details', null, 'food-group');
+        det.open = openGroups.has(id);
+        det.addEventListener('toggle', () => { if (det.open) openGroups.add(id); else openGroups.delete(id); });
+        det.append(el('summary', name + ' · ' + items.length));
+        mount(items, det); box.append(det);
+      });
+    } else mount(foods, box);
   }
   function addFood(id) {
     try { state.meals[state.meal] = NP.add(plate(), id); status('Added ' + NP.food(id).name + '.'); save(); render(); }
@@ -104,10 +135,11 @@
     const guide = el('div', null, 'guide'); guide.append(pie, legend); box.append(guide);
   }
   function progress() {
-    const t = NPDay.dayTotals(state.meals), g = NPTargets.targets(state.person.age, state.person.activity);
+    const t = NPDay.dayTotals(state.meals), g = NPTargets.targets(state.person.age, state.person.activity, state.person.sex);
     const box = $('progress'); box.replaceChildren();
     box.append(el('h2', 'Today against a rough daily target'));
-    $('target-note').textContent = 'Rough target: about ' + g.kcal + ' kcal, ' + g.prot + ' g protein, under ' + g.sugar + ' g sugar. Approximate ICMR-NIN style mid-point; needs vary by sex and body size.';
+    const mid = state.person.sex === 'unspecified' ? ' Mid-point used when sex is not given.' : '';
+    $('target-note').textContent = 'Rough target: about ' + g.kcal + ' kcal, ' + g.prot + ' g protein, ' + g.fe + ' mg iron, under ' + g.sugar + ' g sugar. Approximate ICMR-NIN style figures.' + mid + ' Needs vary by body size, health and life stage.';
     const grid = el('div', null, 'bars');
     const rows = [
       ['kcal', 'Energy (kcal)', t.kcal, g.kcal, false],
@@ -147,21 +179,204 @@
     savedList($('saved-plates'), state.plates, id => { state = NPDay.loadPlate(state, id); save(); render(); status('Plate loaded into this meal.'); },
       id => { state = NPDay.deletePlate(state, id); save(); render(); status('Saved plate deleted.'); }, 'No saved plates yet.');
     savedList($('saved-days'), state.days, id => { state = NPDay.loadDay(state, id); fillSelect('age', NPTargets.ages, state.person.age);
+      fillSelect('sex', NPTargets.sexes, state.person.sex);
       fillSelect('activity', NPTargets.activities, state.person.activity); fillSelect('diet', NPTargets.diets, state.person.diet);
       save(); render(); status('Day loaded.'); },
       id => { state = NPDay.deleteDay(state, id); save(); render(); status('Saved day deleted.'); }, 'No saved days yet.');
   }
-  function render() { meals(); renderPlate(); mealTotals(); balance(); progress(); saved(); library(); status(message); }
+  function showView(id) {
+    view = id;
+    ['plate', 'games', 'help'].forEach(name => {
+      const sec = $('view-' + name), btn = $('mode-' + name);
+      sec.hidden = name !== id;
+      btn.setAttribute('aria-pressed', name === id ? 'true' : 'false');
+    });
+    if (id === 'games') renderGames();
+    status('');
+  }
+
+  function gamePicks() {
+    const box = $('game-picks'); box.replaceChildren();
+    const items = [
+      ['guess', 'Guess the calories', 'A food is shown. Pick the closest energy figure.', state.scores.guess, NPGames.GUESS_N],
+      ['fix', 'Fix this plate', 'An unbalanced plate is shown. Add and remove foods until it is balanced.', state.scores.plate, NPGames.CHALLENGES.length],
+      ['swaps', 'Healthier swaps', 'Pick the lighter or higher-fibre swap for a common food.', state.scores.swaps, NPGames.SWAP_N]
+    ];
+    items.forEach(([id, title, blurb, best, of]) => {
+      const card = el('button', null, 'game-card'); card.type = 'button'; card.dataset.game = id;
+      card.append(el('strong', title), el('p', blurb), el('small', 'Best ' + best + ' / ' + of));
+      card.onclick = () => startGame(id);
+      box.append(card);
+    });
+  }
+  function startGame(kind) {
+    const rng = NPGames.rngFrom(Date.now() % 1e9);
+    if (kind === 'guess') game = { kind, i: 0, score: 0, used: [], q: null, locked: false, rng };
+    else if (kind === 'swaps') game = { kind, i: 0, score: 0, used: [], q: null, locked: false, rng };
+    else {
+      const first = NPGames.CHALLENGES[0];
+      game = { kind: 'fix', i: 0, score: 0, challenge: NPGames.challenge(first.id), plate: first.start.map(r => ({ ...r })) };
+    }
+    renderGames();
+  }
+  function nextGuess() {
+    game.q = NPGames.guessQuestion(game.used, game.rng);
+    game.used.push(game.q.id); game.locked = false;
+  }
+  function nextSwap() {
+    game.q = NPGames.swapQuestion(game.used, game.rng);
+    game.used.push(game.q.id); game.locked = false;
+  }
+  function recordBest(key, score, of) {
+    if (score > state.scores[key]) { state.scores[key] = score; save(); }
+    return 'Score ' + score + ' / ' + of + '. Best ' + state.scores[key] + ' / ' + of + '.';
+  }
+  function foodLine(id, extra) {
+    const food = NP.food(id), row = el('div', null, 'served');
+    row.append(NPIcons.make(food.icon, 72), el('strong', food.name), el('small', '  ' + food.portion + (extra || '')));
+    return row;
+  }
+  function renderGuess(play) {
+    if (!game.q && game.i < NPGames.GUESS_N) nextGuess();
+    if (game.i >= NPGames.GUESS_N && !game.q) {
+      play.append(el('h3', 'Guess the calories'), el('p', recordBest('guess', game.score, NPGames.GUESS_N)));
+      const again = el('button', 'Play again'); again.type = 'button'; again.onclick = () => startGame('guess'); play.append(again);
+      return;
+    }
+    const q = game.q;
+    play.append(el('h3', 'Guess the calories · ' + (game.i + 1) + ' / ' + NPGames.GUESS_N));
+    play.append(el('p', 'About how many calories are in this portion?'));
+    play.append(foodLine(q.id));
+    const choices = el('div', null, 'choices');
+    q.choices.forEach(n => {
+      const btn = el('button', n + ' kcal'); btn.type = 'button'; btn.dataset.kcal = String(n);
+      btn.disabled = game.locked;
+      btn.onclick = () => {
+        if (game.locked) return;
+        const grade = NPGames.gradeGuess(q, n); game.locked = true;
+        if (grade.correct) { game.score += 1; status('Correct — ' + q.name + ' is ' + grade.answer + ' kcal.'); }
+        else status('This portion is ' + grade.answer + ' kcal.');
+        choices.querySelectorAll('button').forEach(b => {
+          b.disabled = true;
+          if (Number(b.dataset.kcal) === grade.answer) b.classList.add('correct');
+          if (Number(b.dataset.kcal) === n && !grade.correct) b.classList.add('wrong');
+        });
+      };
+      choices.append(btn);
+    });
+    play.append(choices);
+    const next = el('button', game.i + 1 >= NPGames.GUESS_N ? 'See score' : 'Next'); next.type = 'button'; next.className = 'primary'; next.disabled = !game.locked;
+    next.onclick = () => { if (!game.locked) return; game.i += 1; game.q = null; renderGames(); };
+    play.append(next);
+  }
+  function renderSwaps(play) {
+    if (!game.q && game.i < NPGames.SWAP_N) nextSwap();
+    if (game.i >= NPGames.SWAP_N && !game.q) {
+      play.append(el('h3', 'Healthier swaps'), el('p', recordBest('swaps', game.score, NPGames.SWAP_N)));
+      const again = el('button', 'Play again'); again.type = 'button'; again.onclick = () => startGame('swaps'); play.append(again);
+      return;
+    }
+    const q = game.q;
+    play.append(el('h3', 'Healthier swaps · ' + (game.i + 1) + ' / ' + NPGames.SWAP_N));
+    play.append(el('p', 'Which is the healthier swap for this food?'));
+    play.append(foodLine(q.from));
+    const choices = el('div', null, 'choices');
+    q.choices.forEach(id => {
+      const food = NP.food(id), btn = el('button', null, 'food-choice'); btn.type = 'button'; btn.dataset.id = id; btn.disabled = game.locked;
+      btn.append(NPIcons.make(food.icon, 64), el('strong', food.name));
+      btn.onclick = () => {
+        if (game.locked) return;
+        const grade = NPGames.gradeSwap(q, id); game.locked = true;
+        status(grade.correct ? 'Good swap. ' + grade.why : grade.why);
+        if (grade.correct) game.score += 1;
+        choices.querySelectorAll('button').forEach(b => {
+          b.disabled = true;
+          if (b.dataset.id === grade.answer) b.classList.add('correct');
+          if (b.dataset.id === id && !grade.correct) b.classList.add('wrong');
+        });
+      };
+      choices.append(btn);
+    });
+    play.append(choices);
+    const why = el('p', game.locked ? q.why : '', 'muted'); why.id = 'swap-why'; play.append(why);
+    const next = el('button', game.i + 1 >= NPGames.SWAP_N ? 'See score' : 'Next'); next.type = 'button'; next.className = 'primary'; next.disabled = !game.locked;
+    next.onclick = () => { if (!game.locked) return; game.i += 1; game.q = null; renderGames(); };
+    play.append(next);
+  }
+  function renderFix(play) {
+    if (game.finished) {
+      play.append(el('h3', 'Fix this plate'), el('p', recordBest('plate', game.score, NPGames.CHALLENGES.length)));
+      const again = el('button', 'Play again'); again.type = 'button'; again.onclick = () => startGame('fix'); play.append(again);
+      return;
+    }
+    const ch = game.challenge, current = game.plate, done = NPGames.isBalanced(current);
+    play.append(el('h3', 'Fix this plate · ' + (game.i + 1) + ' / ' + NPGames.CHALLENGES.length));
+    play.append(el('p', ch.blurb));
+    const list = el('div', null, 'fix-plate');
+    if (!current.length) list.append(el('p', 'The plate is empty. Add foods from the list below.', 'empty'));
+    current.forEach(row => {
+      const food = NP.food(row.id), card = el('div', null, 'served');
+      const mid = el('div'); mid.append(el('strong', food.name), el('small', '  ×' + row.qty + '  ' + food.portion));
+      const rm = el('button', 'Remove'); rm.type = 'button'; rm.disabled = done;
+      rm.onclick = () => { game.plate = NP.setQty(game.plate, row.id, row.qty - 1); renderGames(); };
+      card.append(NPIcons.make(food.icon, 64), mid, rm); list.append(card);
+    });
+    play.append(list);
+    const notes = el('div', null, 'tips');
+    if (done) notes.append(el('p', 'This plate now matches the balanced-plate guide. Well done.'));
+    else NPGames.issues(current).forEach(text => notes.append(el('p', text)));
+    play.append(notes);
+    if (!done) {
+      play.append(el('h3', 'Add or swap in'));
+      const bank = el('div', null, 'bank');
+      ch.bank.forEach(id => {
+        const food = NP.food(id), btn = el('button', null, 'food-choice'); btn.type = 'button';
+        btn.append(NPIcons.make(food.icon, 56), el('strong', food.name));
+        btn.onclick = () => {
+          try { game.plate = NP.add(game.plate, id, 1); renderGames(); }
+          catch (err) { status(err.message); }
+        };
+        bank.append(btn);
+      });
+      play.append(bank);
+    } else {
+      game.cleared = game.cleared || {};
+      if (!game.cleared[ch.id]) { game.score += 1; game.cleared[ch.id] = true; }
+      const next = el('button', game.i + 1 >= NPGames.CHALLENGES.length ? 'See score' : 'Next plate'); next.type = 'button'; next.className = 'primary';
+      next.onclick = () => {
+        game.i += 1;
+        if (game.i >= NPGames.CHALLENGES.length) {
+          game.finished = true; status(recordBest('plate', game.score, NPGames.CHALLENGES.length));
+        } else {
+          const row = NPGames.CHALLENGES[game.i];
+          game.challenge = NPGames.challenge(row.id); game.plate = row.start.map(r => ({ ...r }));
+        }
+        renderGames();
+      };
+      play.append(next);
+    }
+  }
+  function renderGames() {
+    gamePicks();
+    const play = $('game-play'); play.replaceChildren();
+    if (!game) { play.append(el('p', 'Choose a game to begin.', 'muted')); return; }
+    if (game.kind === 'guess') renderGuess(play);
+    else if (game.kind === 'swaps') renderSwaps(play);
+    else renderFix(play);
+  }
+
+  function render() { meals(); renderPlate(); mealTotals(); balance(); progress(); saved(); library(); }
   const drop = $('plate');
   drop.addEventListener('dragover', ev => { ev.preventDefault(); drop.classList.add('over'); ev.dataTransfer.dropEffect = 'copy'; });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
   drop.addEventListener('drop', ev => { ev.preventDefault(); drop.classList.remove('over'); addFood(ev.dataTransfer.getData('text/plain')); });
   $('search').addEventListener('input', library);
-  $('group').addEventListener('change', library);
-  ['age', 'activity', 'diet'].forEach(id => $(id).addEventListener('change', () => {
-    state.person = NPDay.cleanPerson({ age: $('age').value, activity: $('activity').value, diet: $('diet').value });
+  ['age', 'sex', 'activity', 'diet'].forEach(id => $(id).addEventListener('change', () => {
+    state.person = NPDay.cleanPerson({ age: $('age').value, sex: $('sex').value, activity: $('activity').value, diet: $('diet').value });
     save(); render();
   }));
+  compactMql.addEventListener('change', library);
+  ['plate', 'games', 'help'].forEach(name => { $('mode-' + name).onclick = () => showView(name); });
   function openSave(kind, title, suggestion) {
     saveKind = kind; $('name-title').textContent = title; $('save-name').value = suggestion; $('name-dialog').showModal(); $('save-name').focus();
   }
