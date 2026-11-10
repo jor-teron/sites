@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- legacy: <title>Spreadsheet</title> -->
-  <title>Spreadsheet SH8</title>
+  <title>Spreadsheet SH9</title>
   <link rel="icon" href="spreadsheet_icon.png">
-  <link rel="stylesheet" href="spreadsheet.css?v=SH8">
+  <link rel="stylesheet" href="spreadsheet.css?v=SH9">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-colour.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH8">
-  <link rel="stylesheet" href="spreadsheet_page.css?v=SH8">
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH9">
+  <link rel="stylesheet" href="spreadsheet_page.css?v=SH9">
 </head>
 <body>
   <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS by ../shared/office-ribbon.js) -->
@@ -150,8 +150,18 @@
 
   <!-- Formula bar: its own row -->
   <div class="toolbar sheet-formula-row" id="sheet-formula-row">
+    <button type="button" class="sheet-fx-btn" id="btn-fx" title="Insert function" aria-label="Insert function" aria-haspopup="dialog">fx</button>
     <span class="eq-mark">=</span>
-    <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar">
+    <input id="formula-bar" type="text" placeholder="A1+B1" aria-label="Formula bar" autocomplete="off">
+  </div>
+  <div id="fx-hint" class="fx-hint" hidden></div>
+  <div id="fx-picker" class="fx-picker" hidden role="dialog" aria-label="Function picker">
+    <div class="fx-picker-head">
+      <strong>Insert function</strong>
+      <button type="button" class="fx-picker-close" data-fx-close="1" title="Close" aria-label="Close">×</button>
+    </div>
+    <input id="fx-picker-q" type="search" placeholder="Search functions" aria-label="Search functions" autocomplete="off">
+    <div id="fx-picker-list" class="fx-picker-list"></div>
   </div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
   <div class="sheet-footer" id="sheet-footer">
@@ -172,32 +182,33 @@
   <script src="../shared/office-colour.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="spreadsheet_config.js?v=SH8"></script>
-  <script src="spreadsheet_formula.js?v=SH8"></script>
-  <script src="spreadsheet_functions.js?v=SH8"></script>
-  <script src="spreadsheet_refs.js?v=SH8"></script>
-  <script src="spreadsheet_state.js?v=SH8"></script>
-  <script src="spreadsheet_storage.js?v=SH8"></script>
-  <script src="spreadsheet_files.js?v=SH8"></script>
-  <script src="spreadsheet_grid.js?v=SH8"></script>
-  <script src="spreadsheet_edit.js?v=SH8"></script>
-  <script src="spreadsheet_fill.js?v=SH8"></script>
-  <script src="spreadsheet_toolbar.js?v=SH8"></script>
-  <script src="spreadsheet_settings.js?v=SH8"></script>
-  <script src="spreadsheet_page.js?v=SH8"></script>
-  <script src="spreadsheet_ribbon.js?v=SH8"></script>
-  <script src="spreadsheet_logic.js?v=SH8"></script>
-  <script src="spreadsheet_format.js?v=SH8"></script>
-  <script src="spreadsheet_undo.js?v=SH8"></script>
-  <script src="spreadsheet_select.js?v=SH8"></script>
-  <script src="spreadsheet_clipboard.js?v=SH8"></script>
-  <script src="spreadsheet_rows.js?v=SH8"></script>
-  <script src="spreadsheet_sheets.js?v=SH8"></script>
-  <script src="spreadsheet_sort.js?v=SH8"></script>
-  <script src="spreadsheet_resize.js?v=SH8"></script>
-  <script src="spreadsheet_keys.js?v=SH8"></script>
-  <script src="spreadsheet_xlsx.js?v=SH8"></script>
-  <script src="spreadsheet_hub.js?v=SH8"></script>
-  <script src="spreadsheet_quick.js?v=SH8"></script>
+  <script src="spreadsheet_config.js?v=SH9"></script>
+  <script src="spreadsheet_formula.js?v=SH9"></script>
+  <script src="spreadsheet_functions.js?v=SH9"></script>
+  <script src="spreadsheet_fx.js?v=SH9"></script>
+  <script src="spreadsheet_refs.js?v=SH9"></script>
+  <script src="spreadsheet_state.js?v=SH9"></script>
+  <script src="spreadsheet_storage.js?v=SH9"></script>
+  <script src="spreadsheet_files.js?v=SH9"></script>
+  <script src="spreadsheet_grid.js?v=SH9"></script>
+  <script src="spreadsheet_edit.js?v=SH9"></script>
+  <script src="spreadsheet_fill.js?v=SH9"></script>
+  <script src="spreadsheet_toolbar.js?v=SH9"></script>
+  <script src="spreadsheet_settings.js?v=SH9"></script>
+  <script src="spreadsheet_page.js?v=SH9"></script>
+  <script src="spreadsheet_ribbon.js?v=SH9"></script>
+  <script src="spreadsheet_logic.js?v=SH9"></script>
+  <script src="spreadsheet_format.js?v=SH9"></script>
+  <script src="spreadsheet_undo.js?v=SH9"></script>
+  <script src="spreadsheet_select.js?v=SH9"></script>
+  <script src="spreadsheet_clipboard.js?v=SH9"></script>
+  <script src="spreadsheet_rows.js?v=SH9"></script>
+  <script src="spreadsheet_sheets.js?v=SH9"></script>
+  <script src="spreadsheet_sort.js?v=SH9"></script>
+  <script src="spreadsheet_resize.js?v=SH9"></script>
+  <script src="spreadsheet_keys.js?v=SH9"></script>
+  <script src="spreadsheet_xlsx.js?v=SH9"></script>
+  <script src="spreadsheet_hub.js?v=SH9"></script>
+  <script src="spreadsheet_quick.js?v=SH9"></script>
 </body>
 </html>

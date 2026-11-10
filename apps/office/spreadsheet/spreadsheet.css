@@ -351,3 +351,81 @@ th.frozen-cell, td.row-num.frozen-cell { background: var(--head); }
 .sheet-tab-item:disabled { opacity: 0.4; cursor: default; }
 
 .of-ribbon .of-group-label { color: var(--muted); font-size: 11px; padding: 0 4px; }
+
+
+/* SH9: function picker and formula hint */
+.sheet-fx-btn {
+  flex: 0 0 auto;
+  min-width: 32px;
+  padding: 4px 8px !important;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.fx-hint, .fx-picker {
+  position: fixed;
+  z-index: 50;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px var(--shadow);
+  font-size: 12px;
+  max-height: min(320px, 50vh);
+  overflow: auto;
+}
+.fx-hint { padding: 8px 10px; }
+.fx-hint .fx-sig { font-family: Consolas, monospace; font-size: 12px; }
+.fx-hint .fx-sig strong { color: var(--sel); font-weight: 700; }
+.fx-help { color: var(--muted); margin: 4px 0; }
+.fx-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.fx-item:hover, .fx-item:focus { background: var(--hover); }
+.fx-item span { display: block; }
+.fx-item-sig, .fx-item-hint { color: var(--muted); font-size: 11px; }
+.fx-picker { padding: 8px; width: min(440px, calc(100vw - 16px)); }
+.fx-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.fx-picker-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+#fx-picker-q {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--input);
+  color: var(--text);
+  font: inherit;
+}
+.fx-picker-list { max-height: min(260px, 40vh); overflow: auto; }
+.fx-cat {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 8px 10px 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+@media print { .fx-hint, .fx-picker, .sheet-fx-btn { display: none !important; } }

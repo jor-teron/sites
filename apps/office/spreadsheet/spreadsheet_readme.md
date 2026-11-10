@@ -9,7 +9,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet.html` / `spreadsheet.css`: layout, toolbar, look, print
 - `spreadsheet_config.js`: settings and on-screen text
 - `spreadsheet_formula.js`: formula parser / evaluator (no `eval`) and dependency-aware recalc
-- `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`)
+- `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`), plus FX_CATALOG for the hint/picker
+- `spreadsheet_fx.js`: SH9 formula hint while typing, and the fx function picker
 - `spreadsheet_refs.js`: cell refs and ranges, `$` refs, ref shifting and adjusting
 - `spreadsheet_state.js`: shared state (cells, selection, widths), blank grid, styles, status
 - `spreadsheet_storage.js`: save / load in the browser
@@ -38,7 +39,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 
 ## 3. Behaviour rules
 - **Cells:** a click selects. Typing replaces the text; F2 or double-click edits and keeps it. Enter commits and moves down, Tab moves right (Shift+Tab left). Esc cancels the edit.
-- **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3).
+- **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list.
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
 - **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, insert/delete, sort, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
@@ -75,7 +76,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
 localStorage key `sheet-v3` (workbook: sheets, active sheet, cells, styles, formats, widths, freeze, hidden). An older `sheet-v2` (or `sheet-v1`) save is copied into Sheet1 on first load and left in place as a backup; later loads use only `sheet-v3`. Page setup is `sheet-v3-page`, with `sheet-v2-page` as a fallback. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
 
 ## 6. Errors
-- In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#ERR` (formula not understood).
+- In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#ERR` (formula not understood).
 - Status line: "Save failed" (storage full or blocked), "Can't insert: the last row / column has data".
 
 ## 7. Screen sizes
@@ -140,3 +141,16 @@ The grid is still 26 × 100; this release does not add rows or columns.
 - **Status bar:** Average, Count and Sum for numeric cells in the selection.
 - **Saving:** `sheet-v3`. A `sheet-v2` save is migrated once into Sheet1; the old key is not deleted. New / Clear uses an in-app confirm (no `window.confirm`).
 - Title, `SHEET_VERSION` and `?v=` on this app's own css/js are SH8.
+
+## SH9 — more formulas, hint and function picker
+The grid is still 26 × 100.
+
+- **Lookups:** `VLOOKUP`, `HLOOKUP`, `XLOOKUP`, `INDEX`, `MATCH`. They work with `Sheet2!A1:C10` ranges. Approximate `VLOOKUP` / `HLOOKUP` (the default, last argument TRUE) needs the first column / row in ascending order. Exact match uses FALSE and returns `#N/A` when nothing matches. `XLOOKUP` default is exact; an optional fallback is used when there is no match. `match_mode` 0 exact, −1 exact or next smaller, 1 exact or next larger, 2 wildcard. `search_mode` −1 searches last to first.
+- **Conditional aggregates:** `SUMIF`, `SUMIFS`, `COUNTIF`, `COUNTIFS`, `AVERAGEIF`. Criteria can be a value, `">10"`, `"<>x"`, or a wildcard (`*` and `?`; `~` escapes).
+- **Logic:** `AND`, `OR`, `NOT`, `IFS`, `SWITCH`. The literals `TRUE` and `FALSE` are accepted in formulas (and count as 1 and 0 in arithmetic).
+- **Text:** `MID`, `FIND` (case-sensitive, 1-based), `SUBSTITUTE`, `PROPER`, `TEXT` (a useful subset of formats: `0.00`, `0%`, `yyyy-mm-dd`, `dd/mm/yyyy`, …), `TEXTJOIN`.
+- **Dates:** `DATE`, `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DATEDIF`, `EDATE`. `DATE` / `TODAY` / `EDATE` return `YYYY-MM-DD`. Month or day overflow rolls over (`DATE(2024,13,1)` is `2025-01-01`). A number is treated as an Excel serial; dates from 1 March 1900 match Excel (the 1900 leap-year bug is not reproduced).
+- **Math:** `ROUNDUP`, `ROUNDDOWN`, `MEDIAN`, `RANK`, `RAND`, `RANDBETWEEN`.
+- **Hint / picker:** while a formula is being typed in a cell or the formula bar, a hint lists the current function and highlights the argument. The **fx** button opens a searchable in-app list; picking a function inserts `NAME(`.
+- Title, `SHEET_VERSION` and `?v=` on this app's own css/js are SH9. Storage is still `sheet-v3` (no new saved fields).
+- **Limits:** `TEXT` only covers the formats listed above (not every Excel custom format). `AVERAGEIFS` is also implemented but is not in the plan list. `RAND` / `RANDBETWEEN` change on every recalculation. Approximate lookup on an unsorted first column follows Excel and can return the wrong row. Date serials before 1 March 1900 may be a day off Excel.
