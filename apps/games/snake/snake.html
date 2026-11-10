@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Snake SNR1a</title>
+  <title>Snake • SNK-T1</title>
   <link rel="icon" href="snake_icon.png" />
+  <script src="../../../shared/theme/hub_theme.js"></script>
   <link rel="stylesheet" href="ui/snake.css" />
 </head>
 <body>
@@ -14,7 +15,8 @@
     <span id="wrap-ind" class="wrap-off" title="Wrap walls">WRAP</span>
     <span id="best">BEST 0</span>
   </div>
-  <div id="help">←→↑↓ move · A/Space boost · B/X wrap · Start/Enter pause · Select/Esc restart</div>
+  <button id="theme-open" class="ui" type="button" aria-haspopup="dialog">Theme</button>
+  <div id="help"><span id="theme-name"></span><span id="help-line"></span></div>
   <button id="dpad-toggle" class="ui" type="button" aria-pressed="false" title="Show D-pad">✛</button>
   <div id="dpad" class="ui" hidden>
     <button type="button" data-dir="up" class="d-up" aria-label="Up">▲</button>
@@ -29,12 +31,21 @@
       <p id="sub" class="sub"></p>
     </div>
   </div>
+  <dialog id="theme-settings" class="ui" aria-labelledby="theme-title">
+    <form method="dialog" class="settings-heading"><div><h2 id="theme-title">Choose a look</h2><p>Same game. Ten different skins.</p></div><button aria-label="Close settings">✕</button></form>
+    <label class="auto-option"><input type="radio" name="visual-theme" value="auto"> Auto <small>Follow Hub: light → Minimal Flat, dark → Classic Nokia</small></label>
+    <div id="theme-grid" class="theme-grid"></div>
+    <p class="settings-note">Saved on this device. Reduced motion is respected. Gameplay is the same in every theme.</p>
+    <p id="theme-status" role="status"></p>
+  </dialog>
   <script src="core/config.js"></script>
   <script src="core/core.js"></script>
   <script src="core/hub.js"></script>
   <script src="core/game.js"></script>
   <script src="core/input.js"></script>
   <script src="core/touch.js"></script>
+  <script src="ui/themes.js"></script>
+  <script src="ui/theme-settings.js"></script>
   <script src="core/render.js"></script>
   <script src="core/main.js"></script>
 </body>

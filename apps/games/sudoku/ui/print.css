@@ -1,0 +1,51 @@
+/* SUDO-P1: print isolation; these rules never restyle the playable board. */
+#sp-print-root { display: none; }
+#sp-dialog { color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; width: min(760px, calc(100vw - 20px)); max-height: calc(100dvh - 24px); padding: 16px; overflow: auto; }
+#sp-dialog::backdrop { background: #0009; }
+#sp-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#sp-dialog h2 { margin: 0; font-size: 1.25rem; }
+#sp-dialog p { font-size: .87rem; }
+#sp-dialog button, #sp-dialog input, #sp-dialog select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--muted); border-radius: 6px; padding: 8px; min-height: 44px; min-width: 0; }
+#sp-dialog button { cursor: pointer; }
+#sp-dialog button:disabled { opacity: .5; }
+#sp-dialog label { display: flex; flex-direction: column; gap: 5px; font-size: .9rem; min-width: 0; }
+.sp-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sp-controls .sp-wide { grid-column: 1 / -1; }
+#sp-dialog .sp-check { flex-direction: row; align-items: center; }
+#sp-dialog .sp-check input { flex: 0 0 22px; margin: 0; }
+.sp-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#sp-puzzle, #sp-answer { font-weight: bold !important; border: 2px solid var(--accent) !important; }
+#sp-status { overflow-wrap: anywhere; }
+#sp-preview { margin-top: 12px; overflow: hidden; background: #bbb; }
+/* Physical dimensions leave 1 mm below each sheet to absorb printer rounding. */
+.sp-sheet { box-sizing: border-box; width: 190mm; height: 276mm; color: #000; background: #fff; color-scheme: light; font: 10pt Arial, sans-serif; display: flex; flex-direction: column; break-after: page; page-break-after: always; break-inside: avoid; page-break-inside: avoid; }
+.sp-sheet[data-paper="Letter"] { width: 195.9mm; height: 258.4mm; }
+.sp-heading { flex: 0 0 8mm; text-align: center; font-size: 13pt; font-weight: bold; }
+.sp-sheet footer { flex: 0 0 9mm; padding-top: 2mm; text-align: center; font-size: 8pt; line-height: 1.25; }
+.sp-grids { display: grid; flex: 1; min-height: 0; grid-template-columns: 1fr; grid-template-rows: 1fr; gap: 6mm; }
+.sp-slot { margin: 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; break-inside: avoid; }
+.sp-slot h3 { height: 6mm; margin: 0; font: bold 10pt Arial, sans-serif; }
+.sp-grid { display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); width: var(--sp-size, 174mm); height: var(--sp-size, 174mm); flex-shrink: 0; border: .65mm solid #000; background: #fff; font-size: calc(var(--sp-size, 174mm) / 16); }
+.sp-grid span { display: flex; align-items: center; justify-content: center; min-width: 0; border-right: .18mm solid #000; border-bottom: .18mm solid #000; }
+.sp-grid span:nth-child(9n) { border-right: 0; }
+.sp-grid span:nth-child(n+73) { border-bottom: 0; }
+.sp-grid .sp-right { border-right: .65mm solid #000; }
+.sp-grid .sp-bottom { border-bottom: .65mm solid #000; }
+.sp-n2 { --sp-size: 112mm; }
+.sp-n2 .sp-grids { grid-template-rows: repeat(2, 1fr); }
+.sp-n4 { --sp-size: 90mm; }
+.sp-n4 .sp-grids { grid-template: repeat(2, 1fr) / repeat(2, 1fr); }
+.sp-n6 { --sp-size: 73mm; }
+.sp-n6 .sp-grids { grid-template: repeat(3, 1fr) / repeat(2, 1fr); }
+.sp-n9 { --sp-size: 55mm; }
+.sp-n9 .sp-grids { grid-template: repeat(3, 1fr) / repeat(3, 1fr); }
+.sp-sheet[data-paper="Letter"].sp-n2 { --sp-size: 104mm; }
+.sp-sheet[data-paper="Letter"].sp-n6 { --sp-size: 68mm; }
+@media print {
+  html, body { margin: 0 !important; padding: 0 !important; min-height: 0 !important; background: #fff !important; color: #000 !important; }
+  body > :not(#sp-print-root) { display: none !important; }
+  #sp-dialog { display: none !important; }
+  #sp-print-root { display: block; }
+  .sp-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .sp-sheet * { box-sizing: border-box; text-shadow: none !important; box-shadow: none !important; }
+}

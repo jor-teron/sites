@@ -1,7 +1,10 @@
 /*
- * base-form.js  (BS1, BS4)
+ * base-form.js  (BS1, BS4, BS5, BS6: related-records panel)
  * Form view: one record at a time with big fields (phone friendly). Prev / Next / New.
  * BS4: no Delete button here any more; delete a record from Home > Records ⋯ (typed confirm).
+ * BS5: Long text is a textarea, Picture is shown large, Link is clickable, required fields
+ *   are marked with *, Auto-number ID is read-only.
+ * BS6: related-records panel (inbound links + jump + add-related) is drawn under the form.
  * Walks the same filtered + sorted list as the grid. Arrow keys (outside inputs) also move.
  * API: BaseForm.render()
  */
@@ -10,7 +13,7 @@ var BaseForm = (function () {
   function render() {
     var wrap = document.getElementById("form-wrap"), t = BaseStore.table();
     wrap.textContent = "";
-    if (!t) return BaseUI.renderEmpty(wrap);
+    if (!t) { try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {} return BaseUI.renderEmpty(wrap); }
     var rows = BaseGrid.visibleRows(t), i = Math.max(0, Math.min(rows.length - 1, BASE.formIndex));
     var sel = rows.map(function (r) { return r.id; }).indexOf(BASE.selRow);
     if (sel >= 0) i = sel;
@@ -20,8 +23,9 @@ var BaseForm = (function () {
     else {
       BASE.selRow = r.id;
       t.fields.forEach(function (f) {
-        var l = document.createElement("label"); l.textContent = f.name;
-        var inp = BaseGrid.inputFor(f, r.v[f.id], function (v) { r.v[f.id] = v; BaseStore.save(); });
+        var l = document.createElement("label"); l.textContent = f.name + (f.required ? " *" : "");
+        if (f.required) l.className = "base-req";
+        var inp = BaseGrid.inputFor(f, r.v[f.id], null, "form", r);
         box.appendChild(l); box.appendChild(inp);
       });
     }
@@ -33,8 +37,10 @@ var BaseForm = (function () {
     nav.appendChild(btn("Next ▶", "", function () { go(1); }));
     nav.appendChild(btn("+ New", "primary", BaseUI.addRow));
     box.appendChild(nav); wrap.appendChild(box);
+    try { if (typeof BaseLinks !== "undefined") BaseLinks.renderRelated(); } catch (e) {}
     BaseUI.status(t.name + " · record " + pos.textContent);
-    var first = box.querySelector("input"); if (first && BASE.focusForm) { first.focus(); BASE.focusForm = false; }
+    var first = box.querySelector("input:not([readonly]):not([type=checkbox]):not([type=file]), select, textarea");
+    if (first && BASE.focusForm) { first.focus(); BASE.focusForm = false; }
     BaseForm.go = go;
   }
   document.addEventListener("keydown", function (e) {

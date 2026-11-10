@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Garden Guard GG-1a. Original code-drawn garden and cloth / iron invaders. No external art. -->
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Garden Guard · GG-1a</title><link rel="icon" href="garden-guard_icon.png"><link rel="stylesheet" href="ui/style.css"></head>
+<body><main id="app">
+  <header><a class="back" href="../games.html" aria-label="Back to Games">‹</a><h1>Garden Guard <small>GG-1a</small></h1>
+    <b class="sun-count" title="Collected sun">☀ <span id="sun">50</span></b>
+    <label class="level-label"><span class="sr">Level</span><select id="level" aria-label="Level"></select></label>
+    <button id="pause" title="Pause (P or Escape)">Pause</button><button id="help" aria-label="How to play">?</button><span id="gear"></span>
+  </header>
+  <nav id="seeds" aria-label="Choose a seed"></nav>
+  <div id="field"><canvas id="board" tabindex="0" role="application" aria-label="Garden: select a seed then a free tile. Arrow keys choose a tile; Enter plants; C collects sun."></canvas></div>
+  <div id="waves" role="progressbar" aria-label="Wave progress" aria-valuemin="0" aria-valuemax="100"><div class="track"><i id="wave-fill"></i><span id="flags"></span></div><b id="wave-label"></b></div>
+  <p id="message" role="status">Select Sun Flower then tap a tile. Collect glowing suns.</p>
+  <p class="rotate">Landscape gives a larger lawn · or play small here. Tap suns to collect.</p>
+</main>
+<div id="overlay" class="overlay" hidden><section class="card" role="dialog" aria-modal="true" aria-labelledby="card-title" tabindex="-1">
+  <h2 id="card-title"></h2><div id="card-body"></div><div id="card-actions"></div>
+</section></div>
+<script src="../common/settings/games-settings.js"></script><script src="core/data.js"></script>
+<script src="core/levels.js"></script><script src="core/engine.js"></script><script src="core/storage.js"></script>
+<script src="ui/settings.js"></script><script src="ui/render.js"></script><script src="ui/app.js"></script>
+</body></html>
