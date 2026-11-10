@@ -1,4 +1,4 @@
-/* Web MCP — wm_config.js: all constants and magic values in one place. MCP1 */
+/* Web MCP — wm_config.js: all constants and magic values in one place. MCP2 */
 (function (root) {
   'use strict';
 
@@ -9,9 +9,9 @@
     /* MCP initialize.serverInfo.name (stable id for clients). */
     SERVER_NAME: 'web-mcp',
     /* MCP initialize.serverInfo.version for this release. */
-    SERVER_VERSION: '1.0.0',
+    SERVER_VERSION: '1.1.0',
     /* Release tag shown in the header. */
-    RELEASE: 'MCP1',
+    RELEASE: 'MCP2',
     /* Protocol versions we accept, newest first. */
     PROTOCOL_VERSIONS: ['2025-06-18', '2025-03-26', '2024-11-05'],
     /* Fallback when the client omits a version or sends an unknown one. */
@@ -67,6 +67,125 @@
     RECONNECT_MAX_MS: 30000,
     /* How long to wait for a hello-ok from the relay, in milliseconds. */
     HELLO_TIMEOUT_MS: 8000,
+
+    /* Default run_command timeout, in seconds, when the caller omits timeout. */
+    CMD_DEFAULT_TIMEOUT_SEC: 30,
+    /* Hard cap, in seconds, on a run_command timeout. */
+    CMD_MAX_TIMEOUT_SEC: 120,
+    /* Combined stdout+stderr cap, in bytes, for one run_command call. */
+    CMD_MAX_OUTPUT_BYTES: 200 * 1024,
+    /* Marker appended to stdout when the combined output cap is hit. */
+    CMD_TRUNC_MARK: '\n[truncated]\n',
+    /* Max files copied into MEMFS for one command; extras are skipped. */
+    CMD_MAX_STAGE_FILES: 2000,
+    /* Max total bytes copied into MEMFS for one command; extras are skipped. */
+    CMD_MAX_STAGE_BYTES: 16 * 1024 * 1024,
+    /* A single file larger than this is skipped and mentioned in the result. */
+    CMD_MAX_STAGE_FILE_BYTES: 2 * 1024 * 1024,
+    /* MEMFS directory that mirrors the staged folder or cwd subtree. */
+    CMD_MEMFS_ROOT: '/work',
+    /* Exit code used when the worker is killed for exceeding the timeout (like GNU timeout). */
+    CMD_TIMEOUT_EXIT: 124,
+    /* Max characters accepted in a run_command command string. */
+    CMD_MAX_COMMAND_CHARS: 8192,
+    /* Worker script URL, relative to the Web MCP page. */
+    CMD_WORKER: 'wm_cmd_worker.js',
+    /* Vendored BusyBox loader, relative to the Web MCP page (and to the worker). */
+    CMD_BUSYBOX_JS: 'vendor/busybox/busybox.js',
+    /* Vendored BusyBox wasm, relative to the Web MCP page (and to the worker). */
+    CMD_BUSYBOX_WASM: 'vendor/busybox/busybox.wasm',
+    /* The 89 BusyBox 1.36.1 applets in this wasm (same list as vendor/busybox/APPLETS.txt). */
+    CMD_APPLETS: [
+      '[',
+      '[[',
+      'ascii',
+      'awk',
+      'base64',
+      'basename',
+      'bc',
+      'bunzip2',
+      'bzcat',
+      'bzip2',
+      'cal',
+      'cat',
+      'cksum',
+      'cmp',
+      'comm',
+      'cp',
+      'crc32',
+      'cut',
+      'date',
+      'dc',
+      'diff',
+      'dirname',
+      'dos2unix',
+      'du',
+      'echo',
+      'egrep',
+      'expand',
+      'expr',
+      'factor',
+      'false',
+      'fgrep',
+      'find',
+      'fold',
+      'grep',
+      'gunzip',
+      'gzip',
+      'head',
+      'hexdump',
+      'ln',
+      'ls',
+      'md5sum',
+      'mkdir',
+      'mktemp',
+      'mv',
+      'nl',
+      'od',
+      'paste',
+      'printenv',
+      'printf',
+      'pwd',
+      'readlink',
+      'realpath',
+      'rev',
+      'rm',
+      'rmdir',
+      'sed',
+      'seq',
+      'sha1sum',
+      'sha256sum',
+      'sha3sum',
+      'sha512sum',
+      'shuf',
+      'sleep',
+      'sort',
+      'split',
+      'stat',
+      'strings',
+      'sum',
+      'tac',
+      'tail',
+      'tar',
+      'tee',
+      'test',
+      'touch',
+      'tr',
+      'true',
+      'truncate',
+      'tsort',
+      'uname',
+      'unexpand',
+      'uniq',
+      'unix2dos',
+      'unzip',
+      'usleep',
+      'wc',
+      'whoami',
+      'xxd',
+      'yes',
+      'zcat'
+    ],
 
     /* Exact error text when the folder is missing or permission was not granted. */
     PERMISSION_ERROR: 'permission needed: click Allow in Web MCP',

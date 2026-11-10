@@ -1,0 +1,11 @@
+Web MCP vendor/busybox — BusyBox 1.36.1 (GPL-2.0)
+
+This directory is a copy of apps/system/terminal/bin, not a cross-link.
+
+BusyBox is free software licensed under the GNU General Public License
+version 2. The corresponding source is:
+
+  https://busybox.net/downloads/busybox-1.36.1.tar.bz2
+
+The build configuration used to produce busybox.wasm is in .config.
+See BUILD.md for the toolchain, rebuild steps, and the same .config.

@@ -1,10 +1,11 @@
-/* Web MCP — wm_tools.js: file tools matching Linux MCP v2 names and schemas. MCP1 */
+/* Web MCP — wm_tools.js: file tools plus run_command, matching Linux MCP v2 names. MCP2 */
 (function (root) {
   'use strict';
 
   /* Shared config and path helper, from the global or via require() in tests. */
   var C = root.WM_CONFIG || (typeof require === 'function' ? require('./wm_config.js') : {});
   var P = root.WMPaths || (typeof require === 'function' ? require('./wm_paths.js') : {});
+  var Cmd = root.WMCmd || (typeof require === 'function' ? require('./wm_cmd.js') : null);
 
   /**
    * Replace old_string with new_string in text. Errors if old_string is missing
@@ -48,11 +49,28 @@
   }
 
   /**
-   * Build the MCP tool list (file tools only; run_command arrives in MCP2).
-   * Schemas match Linux MCP v2: old_string/new_string, src/dest, create_parents.
+   * Build the MCP tool list (file tools plus run_command).
+   * File-tool schemas match Linux MCP v2: old_string/new_string, src/dest, create_parents.
    */
   function toolDefs() {
+    /* Long run_command description, including the applet list and supported syntax. */
+    var runDesc = (Cmd && typeof Cmd.toolDescription === 'function')
+      ? Cmd.toolDescription()
+      : 'Run a BusyBox command inside the picked folder. There is no sh -c.';
     return [
+      {
+        name: 'run_command',
+        description: runDesc,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            command: { type: 'string', description: 'Command to run (no sh -c; see tool description for supported syntax)' },
+            cwd: { type: 'string', description: 'Working directory inside the picked folder' },
+            timeout: { type: 'number', description: 'Seconds (default 30, max 120)' }
+          },
+          required: ['command']
+        }
+      },
       {
         name: 'read_file',
         description: 'Read a UTF-8 text file inside the picked folder (invalid bytes replaced). Capped at 1MB.',
@@ -139,14 +157,22 @@
    */
   function argPath(args) {
     if (!args || typeof args !== 'object') return '';
-    return args.path || args.src || args.dest || '';
+    if (args.command) {
+      var cmd = String(args.command);
+      return cmd.length > 80 ? cmd.slice(0, 77) + '...' : cmd;
+    }
+    return args.path || args.src || args.dest || args.cwd || '';
   }
 
   /**
-   * Bind the six file tools to a filesystem object (real WMFS, or a fake in tests).
+   * Bind the file tools and run_command to a filesystem object (real WMFS, or a fake in tests).
    * Each tool checks permission first and then containment via WMPaths.
+   * cmd overrides the default WMCmd runner (used in tests).
    */
-  function createTools(fs) {
+  function createTools(fs, cmd) {
+    /* Command runner used by run_command; falls back to the page's WMCmd. */
+    var runner = cmd || Cmd;
+
     /* Shared "is the folder allowed?" gate used by every tool. */
     function requireReady() {
       if (!fs || typeof fs.isReady !== 'function' || !fs.isReady()) {
@@ -221,6 +247,15 @@
       return fs.deletePath(rel, { recursive: !!(args && args.recursive) });
     }
 
+    /* run_command: {command, cwd?, timeout?} — BusyBox-WASM, same argument names as Linux v2. */
+    async function run_command(args) {
+      requireReady();
+      if (!runner || typeof runner.run !== 'function') {
+        throw new Error('run_command is not available');
+      }
+      return runner.run(fs, args || {});
+    }
+
     /* move_path: {src, dest} — also accepts path as src and dst as dest. */
     async function move_path(args) {
       requireReady();
@@ -238,6 +273,7 @@
     }
 
     return {
+      run_command: run_command,
       read_file: read_file,
       write_file: write_file,
       edit_file: edit_file,

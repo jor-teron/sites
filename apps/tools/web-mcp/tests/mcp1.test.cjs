@@ -168,8 +168,8 @@ async function rpcTests() {
 
   var listed = await R.dispatch({ jsonrpc: '2.0', id: 4, method: 'tools/list' }, tools);
   var names = listed.reply.result.tools.map(function (t) { return t.name; }).sort();
-  assertEq(names.join(','), 'delete_path,edit_file,list_dir,move_path,read_file,write_file', 'tools/list names');
-  assert(names.indexOf('run_command') < 0, 'tools/list has no run_command in MCP1');
+  assertEq(names.join(','), 'delete_path,edit_file,list_dir,move_path,read_file,run_command,write_file', 'tools/list names');
+  assert(names.indexOf('run_command') >= 0, 'tools/list includes run_command');
 
   var read = await R.dispatch({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'read_file', arguments: { path: 'readme.txt' } } }, tools);
   assertEq(read.reply.result.isError, false, 'read_file ok');
@@ -354,7 +354,8 @@ async function relayTests() {
     assertEq(listedJson.id, 7, 'tools/list preserves id');
     var toolNames = listedJson.result.tools.map(function (t) { return t.name; });
     assert(toolNames.indexOf('read_file') >= 0, 'round trip tools/list has read_file');
-    assertEq(toolNames.length, 6, 'round trip tools/list has 6 tools');
+    assertEq(toolNames.length, 7, 'round trip tools/list has 7 tools');
+    assert(toolNames.indexOf('run_command') >= 0, 'round trip tools/list has run_command');
 
     var read = await httpPost(port, '/mcp/' + pin, JSON.stringify({
       jsonrpc: '2.0', id: 8, method: 'tools/call',

@@ -1,4 +1,4 @@
-/* Web MCP — wm_rpc.js: MCP JSON-RPC dispatch (initialize, ping, tools/list, tools/call). MCP1 */
+/* Web MCP — wm_rpc.js: MCP JSON-RPC dispatch (initialize, ping, tools/list, tools/call). MCP2 */
 (function (root) {
   'use strict';
 
@@ -34,8 +34,8 @@
       capabilities: { tools: {} },
       serverInfo: { name: C.SERVER_NAME, version: C.SERVER_VERSION },
       instructions:
-        'Browser MCP file tools. Paths stay inside the folder picked in the Web MCP tab. ' +
-        'The tab must stay open. If you see a permission error, click Allow in Web MCP.'
+        'Browser MCP file tools and BusyBox run_command. Paths stay inside the folder picked in the Web MCP tab. ' +
+        'run_command has no sh -c and no network. The tab must stay open. If you see a permission error, click Allow in Web MCP.'
     };
   }
 

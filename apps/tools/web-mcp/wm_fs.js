@@ -1,4 +1,4 @@
-/* Web MCP — wm_fs.js: File System Access folder handle, IndexedDB, permission, file ops. MCP1 */
+/* Web MCP — wm_fs.js: File System Access folder handle, IndexedDB, permission, file ops. MCP2 */
 (function (root) {
   'use strict';
 
@@ -409,7 +409,156 @@
     return { src: src.path, dest: dest.path };
   }
 
-  /* Public filesystem API used by wm_tools and the UI. */
+  /**
+   * Resolve a directory handle for a relative path (the root handle when rel is the folder root).
+   */
+  async function dirFor(rel, create) {
+    if (!rel || rel.isRoot) return rootHandle;
+    return getDir(rel.parts, !!create);
+  }
+
+  /**
+   * Walk the picked folder or a cwd subtree and collect files to stage into MEMFS.
+   * Files over maxFileBytes, and anything past the file/byte caps, are skipped
+   * and listed in skipped. Returns { dirs, files, skipped, bytes }.
+   */
+  async function walkStage(rel, caps) {
+    caps = caps || {};
+    /* Maximum number of files whose bytes will be staged. */
+    var maxFiles = caps.maxFiles || 2000;
+    /* Maximum total staged bytes. */
+    var maxBytes = caps.maxBytes || (16 * 1024 * 1024);
+    /* Per-file cap; larger files are skipped rather than stalling the walk. */
+    var maxFileBytes = caps.maxFileBytes || (2 * 1024 * 1024);
+    /* Directory relative paths under the walk root. */
+    var dirs = [];
+    /* Staged files: { path, data } with paths relative to the walk root. */
+    var files = [];
+    /* Files (or leftover entries) that were not staged, with a reason. */
+    var skipped = [];
+    /* Running total of staged bytes. */
+    var bytes = 0;
+    /* True once a cap has been hit; later files are skipped. */
+    var capped = false;
+
+    /**
+     * Walk one directory handle. parentPath is '.' at the walk root.
+     */
+    async function walk(dir, parentPath) {
+      var kids = [];
+      var it = dir.values();
+      var step;
+      while (true) {
+        step = await it.next();
+        if (step.done) break;
+        kids.push(step.value);
+      }
+      kids.sort(function (a, b) {
+        var an = a.name || '';
+        var bn = b.name || '';
+        return an < bn ? -1 : an > bn ? 1 : 0;
+      });
+      var i;
+      for (i = 0; i < kids.length; i++) {
+        var handle = kids[i];
+        var relPath = parentPath === '.' ? handle.name : parentPath + '/' + handle.name;
+        if (handle.kind === 'directory') {
+          dirs.push(relPath);
+          await walk(handle, relPath);
+          continue;
+        }
+        if (handle.kind !== 'file') {
+          skipped.push({ path: relPath, reason: 'not a regular file', size: 0 });
+          continue;
+        }
+        var file;
+        try {
+          file = await handle.getFile();
+        } catch (err) {
+          skipped.push({ path: relPath, reason: (err && err.message) || 'unreadable', size: 0 });
+          continue;
+        }
+        if (file.size > maxFileBytes) {
+          skipped.push({ path: relPath, reason: 'file larger than ' + maxFileBytes + ' bytes', size: file.size });
+          continue;
+        }
+        if (capped || files.length >= maxFiles || bytes + file.size > maxBytes) {
+          capped = true;
+          skipped.push({ path: relPath, reason: 'staging cap reached', size: file.size });
+          continue;
+        }
+        var buf = new Uint8Array(await file.arrayBuffer());
+        files.push({ path: relPath, data: buf });
+        bytes += buf.length;
+      }
+    }
+
+    var start = await dirFor(rel, false);
+    await walk(start, '.');
+    return { dirs: dirs, files: files, skipped: skipped, bytes: bytes };
+  }
+
+  /**
+   * Write raw bytes to a file, creating parent directories when asked.
+   */
+  async function writeBytes(rel, data, opts) {
+    opts = opts || {};
+    var split = P.splitPath(rel);
+    if (split.isRoot) throw new Error('refusing to overwrite the picked folder');
+    var dir = await getDir(split.dirs, opts.createParents !== false);
+    var fileHandle = await dir.getFileHandle(split.name, { create: true });
+    var writable = await fileHandle.createWritable();
+    await writable.write(data);
+    await writable.close();
+    return { path: rel.path, bytes: data ? data.length : 0 };
+  }
+
+  /**
+   * Apply a MEMFS write-back diff under a walk root (the picked folder or cwd).
+   * Returns { files, deleted, dirs } counts of successful operations.
+   */
+  async function applyDiff(rel, diff) {
+    /* Counts reported back to run_command. */
+    var wroteFiles = 0;
+    var wroteDirs = 0;
+    var deleted = 0;
+    if (!diff) return { files: 0, deleted: 0, dirs: 0 };
+    /* Resolve a path relative to the walk root back into a folder-relative WMPaths result. */
+    function resolveUnder(path) {
+      var prefix = rel && !rel.isRoot ? rel.path + '/' : '';
+      return P.requirePath(prefix + path);
+    }
+    var i;
+    for (i = 0; i < (diff.mkdirs || []).length; i++) {
+      var dirRel = resolveUnder(diff.mkdirs[i]);
+      await getDir(dirRel.parts, true);
+      wroteDirs += 1;
+    }
+    for (i = 0; i < (diff.writes || []).length; i++) {
+      var w = diff.writes[i];
+      if (!w.data) continue;
+      var fileRel = resolveUnder(w.path);
+      await writeBytes(fileRel, w.data, { createParents: true });
+      wroteFiles += 1;
+    }
+    for (i = 0; i < (diff.deletes || []).length; i++) {
+      var delRel = resolveUnder(diff.deletes[i]);
+      try {
+        await deletePath(delRel, { recursive: false });
+        deleted += 1;
+      } catch (_) { /* already gone */ }
+    }
+    for (i = 0; i < (diff.rmdirs || []).length; i++) {
+      var rmRel = resolveUnder(diff.rmdirs[i]);
+      try {
+        await deletePath(rmRel, { recursive: true });
+        deleted += 1;
+      } catch (_) { /* already gone or not empty after files were removed */ }
+    }
+    return { files: wroteFiles, deleted: deleted, dirs: wroteDirs };
+  }
+
+  /* Public filesystem API used by wm_tools, wm_cmd, and the UI. */
   var api = {
     init: init,
     pick: pick,
@@ -421,9 +570,12 @@
     isSupported: isSupported,
     readFile: readFile,
     writeFile: writeFile,
+    writeBytes: writeBytes,
     listDir: listDir,
     deletePath: deletePath,
-    movePath: movePath
+    movePath: movePath,
+    walkStage: walkStage,
+    applyDiff: applyDiff
   };
   root.WMFS = api;
   if (typeof module !== 'undefined' && module.exports) {

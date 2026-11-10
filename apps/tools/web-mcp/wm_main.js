@@ -1,4 +1,4 @@
-/* Web MCP — wm_main.js: boot the page, wire buttons, bind tools to the relay link. MCP1 */
+/* Web MCP — wm_main.js: boot the page, wire buttons, bind tools to the relay link. MCP2 */
 (function (root) {
   'use strict';
 
@@ -119,7 +119,7 @@
         var pin = pinEl ? pinEl.value : '';
         var url = relayEl ? relayEl.value : '';
         /* Bind the real filesystem tools for this session. */
-        var tools = Tools.createTools(FS);
+        var tools = Tools.createTools(FS, root.WMCmd);
         Link.connect(url, pin, tools, UI.addLog);
       });
     }
