@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Video Editor VD1</title>
+  <title>Video Editor VD2</title>
   <meta name="color-scheme" content="light dark">
   <link rel="icon" href="video-editor_icon.png">
   <script>
@@ -27,17 +27,21 @@
       } catch (e) { /* ok */ }
     })();
   </script>
-  <link rel="stylesheet" href="ve_base.css?v=VD1">
-  <link rel="stylesheet" href="ve_range.css?v=VD1">
+  <link rel="stylesheet" href="ve_base.css?v=VD2">
+  <link rel="stylesheet" href="ve_range.css?v=VD2">
 </head>
 <body>
   <div class="app" id="app">
     <header class="app-header">
       <h1>Video Editor</h1>
-      <div class="seg" id="themeSeg" role="group" aria-label="Theme">
-        <button type="button" data-v="auto">Auto</button>
-        <button type="button" data-v="light">Light</button>
-        <button type="button" data-v="dark">Dark</button>
+      <div class="header-actions">
+        <span class="save-state" id="saveState" hidden></span>
+        <button type="button" class="header-btn" id="projectsBtn">Projects</button>
+        <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+          <button type="button" data-v="auto">Auto</button>
+          <button type="button" data-v="light">Light</button>
+          <button type="button" data-v="dark">Dark</button>
+        </div>
       </div>
     </header>
 
@@ -45,16 +49,16 @@
       <section class="empty-stage" id="uploadSection">
         <label for="videoInput" class="drop-zone">
           <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-          <span>Choose a video file or drag it here</span>
-          <span class="hint">Any format this browser can play. Cut and export stay on this device.</span>
-          <input type="file" id="videoInput" accept="video/*" hidden>
+          <span>Choose video files or drag them here</span>
+          <span class="hint">Any format this browser can play. You can add more clips, cut, join and save a project on this device.</span>
+          <input type="file" id="videoInput" accept="video/*" multiple hidden>
         </label>
       </section>
 
       <section class="editor-stage hidden" id="editorSection">
         <div class="video-area">
-          <div class="video-frame">
-            <video id="videoPreview" playsinline preload="auto"></video>
+          <div class="video-frame" id="videoFrame">
+            <canvas id="exportCanvas" class="hidden" aria-hidden="true"></canvas>
           </div>
         </div>
 
@@ -65,7 +69,30 @@
             <button type="button" id="frameFwdBtn" class="btn secondary-btn icon-btn" aria-label="Next frame" title="Next frame (Right)">&#8250;</button>
             <div class="time-readout">
               <span id="curTime">0:00.0</span><span class="mute"> / </span><span id="srcDur">0:00.0</span>
-              <span class="edited-dur">Edited <strong id="editDur">0:00.0</strong></span>
+            </div>
+          </div>
+
+          <div class="seq-block">
+            <div class="seq-seek range-track" id="seqTrack" role="group" aria-label="Sequence">
+              <div class="range-rail" aria-hidden="true"></div>
+              <div class="range-fill" id="seqFill" aria-hidden="true"></div>
+              <button type="button" class="playhead" id="seqPlayhead" role="slider"
+                aria-label="Sequence playhead" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
+            </div>
+            <div class="clip-strip" id="clipStrip" aria-label="Clips"></div>
+          </div>
+
+          <div class="clip-bar">
+            <span class="clip-label" id="clipLabel">No clip</span>
+            <button type="button" id="addClipBtn" class="btn secondary-btn" title="Add another video">Add</button>
+            <button type="button" id="splitBtn" class="btn secondary-btn" title="Split at the playhead (S)">Split</button>
+            <button type="button" id="deleteClipBtn" class="btn secondary-btn" title="Remove this clip from the track">Delete clip</button>
+            <button type="button" id="moveLeftBtn" class="btn secondary-btn icon-btn" aria-label="Move clip left" title="Move left">&#8249;&#8249;</button>
+            <button type="button" id="moveRightBtn" class="btn secondary-btn icon-btn" aria-label="Move clip right" title="Move right">&#8250;&#8250;</button>
+            <div class="seg fade-seg" id="fadeSeg" role="group" aria-label="Fade between clips">
+              <button type="button" data-v="0">Fade off</button>
+              <button type="button" data-v="0.5">0.5s</button>
+              <button type="button" data-v="1">1s</button>
             </div>
           </div>
 
@@ -75,7 +102,7 @@
               <span class="sel-dur">Selection <strong id="selDur">0:00.0</strong></span>
               <button type="button" class="time-chip" id="endChip" title="Out point — tap to type a time">0:00.0</button>
             </div>
-            <div class="range-track" id="rangeTrack" role="group" aria-label="Timeline">
+            <div class="range-track" id="rangeTrack" role="group" aria-label="Selected clip timeline">
               <div class="range-rail" aria-hidden="true"></div>
               <div class="range-removed-layer" id="rangeRemoved" aria-hidden="true"></div>
               <div class="range-fill" id="rangeFill" aria-hidden="true"></div>
@@ -84,7 +111,7 @@
               <button type="button" class="range-handle" id="handleEnd" role="slider"
                 aria-label="Out point" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
               <button type="button" class="playhead" id="playhead" role="slider"
-                aria-label="Playhead" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
+                aria-label="Clip playhead" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></button>
             </div>
           </div>
 
@@ -96,7 +123,7 @@
             <button type="button" id="undoBtn" class="btn secondary-btn" title="Undo (Ctrl+Z)" disabled>Undo</button>
             <button type="button" id="redoBtn" class="btn secondary-btn" title="Redo (Ctrl+Y)" disabled>Redo</button>
             <button type="button" id="exportBtn" class="btn primary-btn">Export</button>
-            <button type="button" id="resetBtn" class="btn text-btn">Choose another video</button>
+            <button type="button" id="resetBtn" class="btn text-btn">New project</button>
           </div>
         </aside>
       </section>
@@ -111,13 +138,15 @@
     </div>
   </div>
 
-  <script src="ve_helpers.js?v=VD1"></script>
-  <script src="ve_edits.js?v=VD1"></script>
-  <script src="ve_theme.js?v=VD1"></script>
-  <script src="ve_dlg.js?v=VD1"></script>
-  <script src="ve_range.js?v=VD1"></script>
-  <script src="ve_export.js?v=VD1"></script>
-  <script src="ve_ui.js?v=VD1"></script>
-  <script src="ve_main.js?v=VD1"></script>
+  <script src="ve_helpers.js?v=VD2"></script>
+  <script src="ve_edits.js?v=VD2"></script>
+  <script src="ve_seq.js?v=VD2"></script>
+  <script src="ve_theme.js?v=VD2"></script>
+  <script src="ve_dlg.js?v=VD2"></script>
+  <script src="ve_range.js?v=VD2"></script>
+  <script src="ve_store.js?v=VD2"></script>
+  <script src="ve_export.js?v=VD2"></script>
+  <script src="ve_ui.js?v=VD2"></script>
+  <script src="ve_main.js?v=VD2"></script>
 </body>
 </html>

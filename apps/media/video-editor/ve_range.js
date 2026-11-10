@@ -1,4 +1,4 @@
-/* Video Editor — ve_range.js: timeline with in/out handles, playhead, cuts. VD1 */
+/* Video Editor — ve_range.js: timeline with in/out handles, playhead, cuts, sequence seek. VD1+VD2 */
 (function (root) {
   'use strict';
 
@@ -262,5 +262,84 @@
     };
   }
 
-  root.VERange = { create: createRange };
+  /**
+   * A simple seek bar over a duration (global sequence). Click/drag seeks.
+   * @param {object} opts
+   * @param {HTMLElement} opts.track
+   * @param {HTMLElement} opts.fill
+   * @param {HTMLElement} opts.playhead
+   * @param {(t:number) => void} [opts.onSeek]
+   */
+  function createSeek(opts) {
+    var H = root.VEHelpers;
+    var track = opts.track;
+    var fill = opts.fill;
+    var playhead = opts.playhead;
+    var onSeek = opts.onSeek || function () {};
+    var duration = 0;
+    var current = 0;
+    var dragging = false;
+
+    function paint() {
+      var r = H.timeToRatio(current, duration) * 100;
+      if (fill) fill.style.width = r + '%';
+      if (playhead) {
+        playhead.style.left = r + '%';
+        playhead.setAttribute('aria-valuemin', '0');
+        playhead.setAttribute('aria-valuemax', String(duration));
+        playhead.setAttribute('aria-valuenow', String(current.toFixed(2)));
+        playhead.setAttribute('aria-valuetext', H.formatTime(current));
+      }
+    }
+
+    function timeFromEvent(ev) {
+      var rect = track.getBoundingClientRect();
+      var x = (ev.clientX != null ? ev.clientX : 0) - rect.left;
+      return H.pixelToTime(x, rect.width, duration);
+    }
+
+    function setDuration(d) {
+      duration = Math.max(0, Number(d) || 0);
+      current = Math.max(0, Math.min(duration, current));
+      paint();
+    }
+
+    function setCurrent(t) {
+      var v = Number(t);
+      if (!isFinite(v)) v = 0;
+      current = Math.max(0, Math.min(duration, v));
+      paint();
+    }
+
+    function onDown(ev) {
+      if (duration <= 0) return;
+      if (ev.button != null && ev.button !== 0) return;
+      dragging = true;
+      if (track.setPointerCapture) track.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+      var t = timeFromEvent(ev);
+      setCurrent(t);
+      onSeek(current);
+    }
+    function onMove(ev) {
+      if (!dragging) return;
+      var t = timeFromEvent(ev);
+      setCurrent(t);
+      onSeek(current);
+    }
+    function onUp(ev) {
+      if (!dragging) return;
+      dragging = false;
+      try { track.releasePointerCapture && track.releasePointerCapture(ev.pointerId); } catch (_) { /* ok */ }
+    }
+
+    track.addEventListener('pointerdown', onDown);
+    track.addEventListener('pointermove', onMove);
+    track.addEventListener('pointerup', onUp);
+    track.addEventListener('pointercancel', onUp);
+    paint();
+    return { setDuration: setDuration, setCurrent: setCurrent, paint: paint };
+  }
+
+  root.VERange = { create: createRange, createSeek: createSeek };
 })(typeof window !== 'undefined' ? window : globalThis);

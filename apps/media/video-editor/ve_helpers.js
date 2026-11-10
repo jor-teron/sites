@@ -1,4 +1,4 @@
-/* Video Editor — ve_helpers.js: time format/parse, clamp, pixel↔time, names. VD1 */
+/* Video Editor — ve_helpers.js: time format/parse, clamp, pixel↔time, names, ids. VD1+VD2 */
 (function (root) {
   'use strict';
 
@@ -142,6 +142,25 @@
     return /\.(mp4|webm|mkv|mov|ogv|ogg|avi|m4v|3gp|mpeg|mpg|wmv)$/i.test(file.name || '');
   }
 
+  function uid(prefix) {
+    return String(prefix || '') + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function formatBytes(n) {
+    var b = Number(n);
+    if (!isFinite(b) || b < 0) b = 0;
+    if (b < 1024) return Math.round(b) + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + ' MB';
+    return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+
   var api = {
     MIN_GAP: MIN_GAP,
     MIN_EXPORT: MIN_EXPORT,
@@ -155,7 +174,10 @@
     timeToPixel: timeToPixel,
     frameStep: frameStep,
     exportName: exportName,
-    isVideoFile: isVideoFile
+    isVideoFile: isVideoFile,
+    uid: uid,
+    formatBytes: formatBytes,
+    escapeHtml: escapeHtml
   };
 
   root.VEHelpers = api;
