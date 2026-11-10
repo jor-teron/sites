@@ -87,10 +87,14 @@ Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
+Image Converter, image-converter/, , , Photo, Convert resize and compress photos: JPG PNG WebP - strip location - download a zip
 Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
 Music Player,    music-player/,    , , Audio, Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
+Video Player,    video-player/,    , , Video, Play your own videos: subtitles - speed - resume - picture-in-picture
+Video Editor,   video-editor/,    , , Video, Cut and export a video: in and out marks - cut or keep a selection - undo and redo
 3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
+3D Builder,      3d-builder/,      , , 3D, Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d
 News,            news/,            , , Read, Latest headlines from Google News India in story cards
 `,
   "Office": `# Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
@@ -100,8 +104,10 @@ News,            news/,            , , Read, Latest headlines from Google News I
 name, path, icon, newtab, section, description
 Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
+Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
+Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
@@ -145,6 +151,7 @@ Unit Converter,        unit-converter/,                   , , Calculators, Conve
 Stopwatch,             stopwatch/,       , , Time, Stopwatch with laps and an analog or digital display
 Calendar,              calendar/,        , , Time, Month and year calendar with Indian holidays list
 Calendar Maker,        calendar-maker/,  , , Time, Design and print a one-page A4 year calendar (PDF)
+Sun Position,          sun-position/,    sun-position/sun-position_icon.svg, , Time, Sunrise sunset and sun direction for any place and time - works offline
 My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
 Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
 Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
@@ -158,8 +165,11 @@ DB Browser,            db-browser/,    , , Files, Browse and query SQLite .db fi
 Web MCP,               web-mcp/,         , , AI, Browser MCP server: Grok edits files and runs BusyBox commands in a folder you pick
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
+Password Manager,     password-manager/, password-manager/password-manager_icon.svg, , Security, Encrypted vault for logins cards notes and Wi-Fi - stays on this device
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
+Numerology,            numerology/,      numerology/numerology_icon.svg, , Fun, Life Path and name numbers from your birth date - traditional readings for fun
+Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
