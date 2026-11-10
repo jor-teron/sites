@@ -8,6 +8,7 @@
        Export PDF = the same print window with "Save as PDF" as the destination (the app shows a hint first).
      SLPrint.build(deck) / SLPrint.clear(): the view alone (tests: page.pdf after build).
      SL7: run(deck, { notes: true }) prints notes pages (A4-ish: a smaller slide plus the speaker notes), not the default 16:9 slide pages.
+     SL8: run(deck, { hidden: true }) includes hidden slides; the default is to skip them (if every slide is hidden they are all printed).
    A print started from the browser's own menu builds the view synchronously on beforeprint (pictures already in memory; never notes pages unless Print notes pages… was used). */
 (function () {
   'use strict';
@@ -27,29 +28,32 @@
     setPage(notes);
     var b = el(); if (!b || !deck) return 0;
     var th = deck.theme || 'light', html = '', i;
+    var list = deck.slides || [];
+    if (!o.hidden && list.some(function (s) { return !s.hide; })) list = list.filter(function (s) { return !s.hide; });
+    var ctx = { slides: list, master: deck.master, theme: th, name: deck.name };
     b.textContent = '';
     if (notes) {
-      for (i = 0; i < deck.slides.length; i++) html += '<div class="pp notes"><div class="np-meta"></div><div class="np-slide"><div class="slide sv pv"></div></div><pre class="np-notes"></pre></div>';
+      for (i = 0; i < list.length; i++) html += '<div class="pp notes"><div class="np-meta"></div><div class="np-slide"><div class="slide sv pv"></div></div><pre class="np-notes"></pre></div>';
       b.innerHTML = html;
       [].forEach.call(b.querySelectorAll('.pp.notes'), function (pg, i) {
-        var s = deck.slides[i];
-        pg.querySelector('.np-meta').textContent = (deck.name || 'Slides') + '  ·  Slide ' + (i + 1) + ' of ' + deck.slides.length;
+        var s = list[i];
+        pg.querySelector('.np-meta').textContent = (deck.name || 'Slides') + '  ·  Slide ' + (i + 1) + ' of ' + list.length;
         var slide = pg.querySelector('.np-slide .slide');
-        SLEdit.paint(slide, s, i, { show: true }, th, 'slide sv pv');
+        SLEdit.paint(slide, s, i, { show: true, deck: ctx }, th, 'slide sv pv');
         slide.style.transform = 'scale(' + (160 * 3.779527559 / 960) + ')'; /* 160mm at 96dpi ≈ 3.78 px/mm */
         slide.setAttribute('aria-label', 'Slide ' + (i + 1));
         pg.querySelector('.np-notes').textContent = window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || '');
       });
     } else {
-      deck.slides.forEach(function () { html += '<div class="pp"><div class="slide sv pv"></div></div>'; });
+      list.forEach(function () { html += '<div class="pp"><div class="slide sv pv"></div></div>'; });
       b.innerHTML = html;
       [].forEach.call(b.querySelectorAll('.pp > .slide'), function (s, i) {
-        SLEdit.paint(s, deck.slides[i], i, { show: true }, th, 'slide sv pv');
+        SLEdit.paint(s, list[i], i, { show: true, deck: ctx }, th, 'slide sv pv');
         s.setAttribute('aria-label', 'Slide ' + (i + 1));
       });
     }
     built = true;
-    return deck.slides.length;
+    return list.length;
   }
   function clear() {
     var b = el(); if (b) b.textContent = '';

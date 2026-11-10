@@ -1,4 +1,4 @@
-/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes + SL5 rich text / lists / text boxes + SL6 shapes, tables, arrange + SL7 notes, presenter view, pen, transitions — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+/* Hub Office Slides SL1–SL8 (themes, master/footer, hide, sections) — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
 :root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
 :root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
 *{box-sizing:border-box}
@@ -82,7 +82,33 @@ body.in-hub #top{display:none}
    SL3 ships Light (the defaults below) and Dark; a new theme is one more .slide.th-<id> rule + an SLSave.THEMES entry. */
 .slide{--s-bg:#fff;--s-tc:#111827;--s-fg:#1f2430;--s-acc:#f97316;--s-mut:#6b7280;--s-ph:#9aa3ae;--s-em:#b6bcc6;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
 .slide.th-dark{--s-bg:#16181d;--s-tc:#f3f4f6;--s-fg:#d1d5db;--s-acc:#60a5fa;--s-mut:#9aa3ae;--s-ph:#6b7280;--s-em:#4b5563}
-.slide{width:960px;height:540px;background:var(--s-bg);color:var(--s-fg);border-radius:4px;box-shadow:0 4px 18px var(--shade),0 0 0 1px var(--line);display:flex;flex-direction:column;padding:44px 64px 40px;overflow:hidden;font-family:var(--s-fb)}
+.slide.th-ocean{--s-bg:#f0f9ff;--s-tc:#0c4a6e;--s-fg:#0f172a;--s-acc:#0369a1;--s-mut:#4b6b80;--s-ph:#7aa0b5;--s-em:#bae6fd;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.slide.th-forest{--s-bg:#f4f7ef;--s-tc:#1a2e14;--s-fg:#243022;--s-acc:#3f6b3a;--s-mut:#5c6d56;--s-ph:#8a9a84;--s-em:#d5e0c8;--s-ft:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-fb:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-tw:700;--s-line:3px}
+.slide.th-sunset{--s-bg:#fff7ed;--s-tc:#7c2d12;--s-fg:#431407;--s-acc:#c2410c;--s-mut:#9a6248;--s-ph:#c4a090;--s-em:#fed7aa;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.slide.th-slate{--s-bg:#f4f5f7;--s-tc:#0f172a;--s-fg:#1e293b;--s-acc:#334155;--s-mut:#64748b;--s-ph:#94a3b8;--s-em:#cbd5e1;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.slide.th-paper{--s-bg:#faf6ee;--s-tc:#1c1917;--s-fg:#292524;--s-acc:#9a3412;--s-mut:#78716c;--s-ph:#a8a29e;--s-em:#e7e5e4;--s-ft:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-fb:Georgia,"Palatino Linotype",Palatino,"Times New Roman",serif;--s-tw:700;--s-line:3px}
+.slide.th-midnight{--s-bg:#0b1220;--s-tc:#f8fafc;--s-fg:#e2e8f0;--s-acc:#fbbf24;--s-mut:#94a3b8;--s-ph:#64748b;--s-em:#1e293b;--s-ft:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-fb:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--s-tw:700;--s-line:3px}
+.s-foot{position:absolute;left:48px;right:48px;bottom:12px;display:flex;align-items:baseline;gap:16px;font:500 14px/1.2 var(--s-fb);color:var(--s-mut);pointer-events:none;z-index:6;min-height:18px}
+.s-foot[hidden]{display:none!important}
+.s-foot .s-foot-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-foot .s-foot-date,.s-foot .s-foot-num{flex:none;font-variant-numeric:tabular-nums}
+.s-foot .s-foot-num{margin-left:auto}
+.th-swatches{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.th-swatches button{width:22px;height:22px;padding:0;border-radius:11px;border:1px solid var(--line);cursor:pointer;background:var(--card)}
+.th-swatches button[aria-pressed=true]{box-shadow:0 0 0 2px var(--acc)}
+.th.hide-slide{opacity:.45}
+.th.hide-slide .mini-s{outline:1px dashed var(--mut)}
+.th .hid-badge{position:absolute;right:4px;top:4px;z-index:3;font:600 9px/1 system-ui,sans-serif;background:var(--card);color:var(--mut);border-radius:3px;padding:2px 4px;border:1px solid var(--line)}
+.sec{display:flex;align-items:center;gap:4px;padding:4px 6px 2px;margin:4px 0 0;position:relative;flex:none}
+.sec-fold{width:22px;height:22px;border:0;background:none;color:var(--fg);cursor:pointer;border-radius:6px;padding:0;font-size:12px}
+.sec-name{flex:1;min-width:0;border:0;background:none;color:var(--fg);font:600 12px system-ui,sans-serif;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 0}
+.sec-n{font:12px/1 system-ui,sans-serif;color:var(--mut);flex:none}
+.sec-up,.sec-down{width:20px;height:20px;border:0;background:none;color:var(--mut);cursor:pointer;border-radius:5px;padding:0;font-size:11px}
+.sec-fold:hover,.sec-name:hover,.sec-up:hover,.sec-down:hover{background:var(--of-hover,color-mix(in srgb,var(--fg) 8%,transparent))}
+.sec.lifted{opacity:.35}
+#master .set-row input[type=text],#master .set-row input[type=date],#master .set-row select{height:28px;max-width:220px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--fg);padding:0 8px}
+#master .row{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.slide{position:relative;width:960px;height:540px;background:var(--s-bg);color:var(--s-fg);border-radius:4px;box-shadow:0 4px 18px var(--shade),0 0 0 1px var(--line);display:flex;flex-direction:column;padding:44px 64px 40px;overflow:hidden;font-family:var(--s-fb)}
 .s-title,.sv .t{flex:none;font:var(--s-tw) 44px/1.18 var(--s-ft);color:var(--s-tc);padding:4px 0 10px;margin:0 0 14px;border-bottom:var(--s-line) solid var(--s-acc);min-height:66px;overflow:hidden}
 .s-title{width:100%;border-top:0;border-left:0;border-right:0;outline:none;resize:none;background:transparent;display:block}
 .s-cols{flex:1;min-height:0;display:flex;gap:48px}
@@ -338,6 +364,9 @@ html.presenting #app>*:not(#show){visibility:hidden}
   #warn{margin:0 8px 6px}
   #stage{justify-content:flex-start;padding-top:10px}
   #notes{height:96px}
+  .sec{flex-direction:column;align-items:flex-start;min-width:72px;padding:2px 4px}
+  .sec-up,.sec-down{display:none}
+
   #show.presenter #show-aside{width:min(280px,42vw);padding:8px 8px 64px}
   #show-time{font-size:20px}
 }

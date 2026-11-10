@@ -16,6 +16,9 @@
      tables = [{ id, x, y, w, h, header, border, bw, fill, hfill, cells:[[{doc}]], z }]. Older fmt 4 / 3 / no-fmt records open unchanged.
    SL7: fmt = 6; notes (plain text), trans = none|fade|push|wipe, ink = kept pen strokes (only when the presenter chose Keep ink).
      Older fmt 5 / 4 / 3 / no-fmt records open unchanged (empty notes, trans none, no ink).
+   SL8: fmt = 7; more deck themes (colour + font sets; the app chrome stays System / Light / Dark); master = { footer, number, date, when, skipTitle };
+     per-slide hide, foot (''|hide|show), footer override, sec (section id); deck.sections = [{ id, name, fold }].
+     Older fmt 6 / 5 / 4 / 3 / no-fmt records open unchanged (Light/Dark themes kept, master off, no sections, no hidden slides).
    If storage is missing, full or throws, Slides keeps working in memory (SLSave.memOnly) and shows a banner
    (once, dismissable): changes then last only until the page closes (use Export). Saves never throw.
    Auto-save: SLSave.saveDeck(deck) is debounced 400 ms; flush() writes now (also on pagehide / hidden). */
@@ -58,7 +61,8 @@
     ['pic', 'Picture + Caption'], ['to', 'Title Only'], ['blank', 'Blank']];
   /* SL3 ships two deck themes. To add one: an entry here + a .slide.th-<id> rule in slides.css (the CSS variables
      --s-bg --s-tc --s-fg --s-acc --s-mut --s-ph --s-em --s-ft --s-fb --s-tw --s-line). Unknown ids load as 'light'. */
-  var THEMES = [['light', 'Light'], ['dark', 'Dark']];
+  var THEMES = [['light', 'Light'], ['dark', 'Dark'], ['ocean', 'Ocean'], ['forest', 'Forest'],
+    ['sunset', 'Sunset'], ['slate', 'Slate'], ['paper', 'Paper'], ['midnight', 'Midnight']];
   function ids(a) { return a.map(function (x) { return x[0]; }); }
   var LAY_IDS = ids(LAYOUTS), THEME_IDS = ids(THEMES);
   function num(x, lo, hi, d) { x = +x; return isFinite(x) ? Math.max(lo, Math.min(hi, Math.round(x * 10) / 10)) : d; }
@@ -89,7 +93,11 @@
       shapes: shapes, tables: tables,
       notes: window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || '').slice(0, 4000),
       trans: window.SLPresent ? SLPresent.cleanTrans(s.trans || s.transition) : 'none',
-      ink: window.SLPresent ? SLPresent.cleanInk(s.ink) : [] };
+      ink: window.SLPresent ? SLPresent.cleanInk(s.ink) : [],
+      hide: !!s.hide,
+      foot: window.SLMaster ? SLMaster.cleanFoot(s.foot) : (s.foot === 'hide' || s.foot === 'show' ? s.foot : ''),
+      footer: window.SLMaster ? SLMaster.cleanFooterText(s.footer) : String(s.footer || '').slice(0, 200),
+      sec: typeof s.sec === 'string' ? s.sec.slice(0, 20) : '' };
   }
   /* a deep copy of text / boxes; pictures share the (immutable) bitmap data. Used by Duplicate and Undo */
   function cloneSlide(s, newIds) {
@@ -103,7 +111,11 @@
       tables: (s.tables || []).map(function (tb) { var q = window.SLDraw ? SLDraw.cloneTable(tb, newIds) : Object.assign({}, tb); if (newIds) q.id = uid(); else if (!q.id && tb.id) q.id = tb.id; return q; }),
       notes: window.SLPresent ? SLPresent.cleanNotes(s.notes) : String(s.notes || ''),
       trans: window.SLPresent ? SLPresent.cleanTrans(s.trans) : (s.trans || 'none'),
-      ink: window.SLPresent ? SLPresent.cloneInk(s.ink) : (s.ink ? JSON.parse(JSON.stringify(s.ink)) : [])
+      ink: window.SLPresent ? SLPresent.cloneInk(s.ink) : (s.ink ? JSON.parse(JSON.stringify(s.ink)) : []),
+      hide: !!s.hide,
+      foot: window.SLMaster ? SLMaster.cleanFoot(s.foot) : (s.foot || ''),
+      footer: window.SLMaster ? SLMaster.cleanFooterText(s.footer) : String(s.footer || ''),
+      sec: typeof s.sec === 'string' ? s.sec : ''
     });
     c.tboxes = c.texts;
     if (newIds) c.id = uid();
@@ -111,7 +123,7 @@
   }
   /* what goes to localStorage: pictures stored in IndexedDB lose their (long) src */
   function slim(d) {
-    var o = Object.assign({}, d, { fmt: 6 });
+    var o = Object.assign({}, d, { fmt: 7 });
     o.slides = d.slides.map(function (s) {
       if (!s.pics || !s.pics.length) return s;
       return Object.assign({}, s, { pics: s.pics.map(function (p) {
@@ -126,13 +138,17 @@
     d = d && typeof d === 'object' ? d : {};
     var out = { id: str(d.id, 20) || id || uid(), name: str(d.name, 80).trim() || 'Untitled deck',
       created: +d.created || Date.now(), updated: +d.updated || Date.now(), cur: 0,
-      theme: THEME_IDS.indexOf(d.theme) >= 0 ? d.theme : 'light', slides: [] };
+      theme: THEME_IDS.indexOf(d.theme) >= 0 ? d.theme : 'light',
+      master: window.SLMaster ? SLMaster.cleanMaster(d.master) : { footer: '', number: false, date: false, when: '', skipTitle: true },
+      sections: window.SLMaster ? SLMaster.cleanSections(d.sections) : [],
+      slides: [] };
     var seen = {};
     (Array.isArray(d.slides) ? d.slides : []).slice(0, 500).forEach(function (s) {
       var c = cleanSlide(s); if (seen[c.id]) c.id = uid(); seen[c.id] = 1; out.slides.push(c);
     });
     if (!out.slides.length) out.slides.push(cleanSlide({}));
     out.cur = Math.max(0, Math.min(out.slides.length - 1, d.cur | 0));
+    if (window.SLMaster) out.sections = SLMaster.normalize(out);
     return out;
   }
   function index() {
@@ -176,7 +192,7 @@
   Object.assign(SL, {
     KEYS: { SET: SET, IDX: IDX, DECK: DK },
     uid: uid, cleanDeck: cleanDeck, cleanSlide: cleanSlide, cleanPic: cleanPic, cloneSlide: cloneSlide,
-    LAYOUTS: LAYOUTS, THEMES: THEMES,
+    LAYOUTS: LAYOUTS, THEMES: THEMES, THEME_IDS: THEME_IDS,
     /* every picture key used by any saved deck (start-up clean-up of the picture store) */
     picKeys: function () {
       var keep = {};
@@ -190,8 +206,9 @@
     list: function () { return index().decks; },
     currentId: function () { return index().current; },
     load: function (id) { var d = rd(DK + id); return d ? cleanDeck(d, id) : null; },
-    newDeck: function (name, slides, theme) {
-      var d = cleanDeck({ id: uid(), name: name, slides: slides || [{}], theme: theme });
+    newDeck: function (name, slides, theme, extra) {
+      extra = extra || {};
+      var d = cleanDeck({ id: uid(), name: name, slides: slides || [{}], theme: theme, master: extra.master, sections: extra.sections });
       pending = d; flush(); return d;
     },
     saveDeck: function (d) { pending = d; clearTimeout(t); t = setTimeout(flush, 400); },
