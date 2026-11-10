@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!-- INV1 Invoice Maker: GST invoices, quotes, receipts and bills of supply. Logic: inv_calc.js, invoice-maker.js. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Invoice Maker · INV1</title>
+  <link rel="icon" href="invoice-maker_icon.svg">
+  <link rel="stylesheet" href="../shared/office-dialog.css">
+  <link rel="stylesheet" href="invoice-maker.css?v=INV1">
+  <script>try{var s=JSON.parse(localStorage.getItem('invoice-maker-v1')||'{}'),m=(s.settings&&s.settings.theme)||'auto',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='auto'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <h1>Invoice Maker</h1>
+    <nav id="nav">
+      <button type="button" class="nav on" data-view="editor">New</button>
+      <button type="button" class="nav" data-view="history">History</button>
+      <button type="button" class="nav" data-view="clients">Clients</button>
+      <button type="button" class="nav" data-view="business">My business</button>
+      <button type="button" class="nav" data-view="settings">Settings</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="view on" id="view-editor">
+      <div class="editor-grid">
+        <div class="form-col" id="formCol">
+          <div class="row wrap">
+            <label class="grow">Type
+              <select id="docType"></select>
+            </label>
+            <label class="grow">Number
+              <input id="docNumber" maxlength="40" autocomplete="off">
+            </label>
+            <label>Date
+              <input id="docDate" type="date">
+            </label>
+            <label>Due date
+              <input id="docDue" type="date">
+            </label>
+          </div>
+          <div class="row wrap">
+            <label class="grow">Client
+              <select id="clientSel"></select>
+            </label>
+            <button type="button" class="btn ghost" id="btnNewClient">New client</button>
+            <label class="grow">Place of supply
+              <select id="posSel"></select>
+            </label>
+          </div>
+          <div class="billto" id="billTo"></div>
+          <div class="table-scroll">
+            <table class="lines" id="lineTable">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>HSN/SAC</th>
+                  <th>Qty</th>
+                  <th>Unit</th>
+                  <th>Rate</th>
+                  <th>Disc. (₹)</th>
+                  <th>GST %</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="lineBody"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn ghost" id="btnAddLine">Add line</button>
+          <div class="row wrap">
+            <label class="grow">Notes
+              <textarea id="docNotes" rows="2" maxlength="800"></textarea>
+            </label>
+            <label class="grow">Terms
+              <textarea id="docTerms" rows="2" maxlength="800"></textarea>
+            </label>
+          </div>
+          <div class="row wrap acts">
+            <button type="button" class="btn" id="btnSave">Save</button>
+            <button type="button" class="btn ghost" id="btnPrint">Print</button>
+            <button type="button" class="btn ghost" id="btnPdf">Save as PDF</button>
+            <button type="button" class="btn ghost" id="btnPaid">Mark paid</button>
+            <button type="button" class="btn ghost" id="btnNew">New document</button>
+          </div>
+          <p class="note" id="editMsg"></p>
+        </div>
+        <div class="preview-col">
+          <div class="preview-bar">
+            <span>Preview</span>
+            <label>Template
+              <select id="tplSel">
+                <option value="classic">Classic</option>
+                <option value="modern">Modern</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </label>
+            <label>Colour
+              <input id="accentIn" type="color" value="#0f5c4c">
+            </label>
+          </div>
+          <div id="previewPane"><div id="sheet" class="tpl-classic"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-history">
+      <h2>History</h2>
+      <div class="row wrap">
+        <input id="histSearch" class="grow" type="search" placeholder="Search number, client or type" autocomplete="off">
+        <select id="histStatus">
+          <option value="">All</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="paid">Paid</option>
+        </select>
+      </div>
+      <div class="table-scroll">
+        <table class="list" id="histTable">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="histBody"></tbody>
+        </table>
+      </div>
+      <p class="note" id="histEmpty">No documents yet. Save one from New.</p>
+      <div class="row wrap acts">
+        <button type="button" class="btn ghost" id="btnCsv">Export CSV</button>
+      </div>
+    </section>
+
+    <section class="view" id="view-clients">
+      <h2>Clients</h2>
+      <div class="card-form" id="clientForm">
+        <input type="hidden" id="clId">
+        <div class="row wrap">
+          <label class="grow">Name<input id="clName" maxlength="80" autocomplete="organization"></label>
+          <label class="grow">GSTIN<input id="clGstin" maxlength="15" autocomplete="off" class="mono"></label>
+        </div>
+        <label>Address<textarea id="clAddr" rows="2" maxlength="300"></textarea></label>
+        <div class="row wrap">
+          <label class="grow">State<select id="clState"></select></label>
+          <button type="button" class="btn" id="btnSaveClient">Save client</button>
+          <button type="button" class="btn ghost" id="btnClearClient">Clear</button>
+        </div>
+        <p class="note" id="clWarn"></p>
+      </div>
+      <ul class="plain" id="clientList"></ul>
+      <p class="note" id="clEmpty">No clients yet.</p>
+    </section>
+
+    <section class="view" id="view-business">
+      <h2>My business</h2>
+      <div class="card-form">
+        <div class="row wrap">
+          <label class="grow">Business name<input id="bizName" maxlength="80" autocomplete="organization"></label>
+          <label class="grow">GSTIN<input id="bizGstin" maxlength="15" autocomplete="off" class="mono"></label>
+        </div>
+        <label>Address<textarea id="bizAddr" rows="2" maxlength="300"></textarea></label>
+        <div class="row wrap">
+          <label class="grow">State<select id="bizState"></select></label>
+          <label class="grow">Phone<input id="bizPhone" maxlength="20" autocomplete="tel"></label>
+          <label class="grow">Email<input id="bizEmail" maxlength="80" autocomplete="email"></label>
+        </div>
+        <div class="row wrap">
+          <label class="grow">Account name<input id="bizAccName" maxlength="80"></label>
+          <label class="grow">Account no.<input id="bizAccNo" maxlength="24" class="mono"></label>
+          <label class="grow">IFSC<input id="bizIfsc" maxlength="11" class="mono"></label>
+        </div>
+        <div class="row wrap">
+          <label class="grow">Bank name<input id="bizBank" maxlength="80"></label>
+          <label class="grow">UPI ID<input id="bizUpi" maxlength="80" placeholder="name@bank"></label>
+        </div>
+        <div class="row wrap imgs">
+          <div>
+            <p class="lab">Logo</p>
+            <img id="logoPrev" class="thumb" alt="">
+            <div class="row">
+              <button type="button" class="btn ghost" id="btnLogo">Choose logo</button>
+              <button type="button" class="btn ghost" id="btnLogoClr">Remove</button>
+            </div>
+            <input id="logoFile" type="file" accept="image/*" hidden>
+          </div>
+          <div>
+            <p class="lab">Signature</p>
+            <img id="signPrev" class="thumb sign" alt="">
+            <div class="row">
+              <button type="button" class="btn ghost" id="btnSign">Choose signature</button>
+              <button type="button" class="btn ghost" id="btnSignClr">Remove</button>
+            </div>
+            <input id="signFile" type="file" accept="image/*" hidden>
+          </div>
+        </div>
+        <div class="row acts">
+          <button type="button" class="btn" id="btnSaveBiz">Save business</button>
+        </div>
+        <p class="note" id="bizWarn"></p>
+      </div>
+    </section>
+
+    <section class="view" id="view-settings">
+      <h2>Theme</h2>
+      <div class="seg" id="themeSeg">
+        <button type="button" data-v="auto">Auto</button>
+        <button type="button" data-v="light">Light</button>
+        <button type="button" data-v="dark">Dark</button>
+      </div>
+      <p class="note">Auto follows the Hub theme, or the device if the Hub has not set one.</p>
+      <h2>Numbering</h2>
+      <div class="row wrap">
+        <label>Tax Invoice prefix<input id="pxInv" maxlength="12"></label>
+        <label>Quote prefix<input id="pxQt" maxlength="12"></label>
+        <label>Receipt prefix<input id="pxRct" maxlength="12"></label>
+        <label>Bill of Supply prefix<input id="pxBos" maxlength="12"></label>
+        <label>Digits<input id="pxWidth" type="number" min="2" max="6" step="1"></label>
+        <label>Default due (days)<input id="dueDays" type="number" min="0" max="365" step="1"></label>
+      </div>
+      <p class="note">Numbers look like INV/2026-27/001 and start again at 001 in each financial year (1 April).</p>
+      <h2>Defaults</h2>
+      <label class="check"><input type="checkbox" id="setRound"> Round the total to the nearest rupee</label>
+      <label class="check"><input type="checkbox" id="setQr"> Show a UPI QR when a UPI ID is saved</label>
+      <label>Default notes<textarea id="setNotes" rows="2" maxlength="800"></textarea></label>
+      <label>Default terms<textarea id="setTerms" rows="2" maxlength="800"></textarea></label>
+      <div class="row acts">
+        <button type="button" class="btn" id="btnSaveSet">Save settings</button>
+      </div>
+      <h2>Backup</h2>
+      <p class="note">Everything stays on this device. A backup is a JSON file you can keep or move to another computer. CSV is the history list only.</p>
+      <div class="row wrap acts">
+        <button type="button" class="btn ghost" id="btnBackup">Export JSON backup</button>
+        <button type="button" class="btn ghost" id="btnRestore">Import JSON backup</button>
+        <button type="button" class="btn ghost" id="btnCsv2">Export history CSV</button>
+      </div>
+      <input id="backupFile" type="file" accept="application/json,.json" hidden>
+      <p class="note small">Release <span id="rel"></span> · offline · nothing is uploaded</p>
+    </section>
+  </main>
+</div>
+<div id="toast" hidden></div>
+<script src="../shared/office-dialog.js"></script>
+<script src="inv_calc.js?v=INV1"></script>
+<script src="invoice-maker.js?v=INV1"></script>
+</body>
+</html>
