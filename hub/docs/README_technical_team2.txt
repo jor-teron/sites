@@ -3008,14 +3008,14 @@ Next week (waiting for Jor):
     - next new game
   - Test private-code phone join on a real device
 
-================================================================================
-10. READ ALOUD (apps/tools/read-aloud) — RA1 (added 10 Nov 2026)
-================================================================================
-Standalone Tools app. Jor asked for a reader inside the Hub (for News), then
-for it to be a standalone app, not a News-app button. Built by Hub Apps
-Builder 2 after "do RA1". Local commit only at the time of writing.
+### 1.54 Read Aloud app, release RA1
+Standalone Tools app at apps/tools/read-aloud/. Jor asked for a reader inside
+the Hub (for News), then for it to be a standalone app, not a News-app button.
+Built by Hub Apps Builder 2 after "do RA1". First written at the end of this
+file as "10. READ ALOUD"; renumbered to 1.54 because Part 2 Apps sections use
+1.xx, and 1.53 is reserved for VD1 (Video Editor) in a parallel worktree (not
+on this branch).
 
-Shipped in this file set (RA1):
 - Path: apps/tools/read-aloud/. Tile in apps/tools/tools-apps.csv (Language),
   icon read-aloud/read-aloud_icon.svg. tools.html is CSV-driven and was not
   changed. Hub catalog / hub_appindex.js was not regenerated (Hub-owned).
@@ -3036,12 +3036,36 @@ Shipped in this file set (RA1):
   0.75x-2x (default 1), pitch 0.5-1.5, only-new toggle, theme Auto / Light /
   Dark (Auto follows the Hub via shared/theme/hub_theme.js, live). Voice test.
 - In-app dialogs only. Light: vanilla JS, no CDN, browser speechSynthesis.
-- Tests: node --check on every JS file, a Node sentence-splitter helper
-  check (no DOM), static serve + curl 200, grep for RELEASE / RA1.
-  No Puppeteer, Playwright, or jsdom.
+- Tests: node --check, Node sentence-splitter helper check (no DOM), static
+  serve + curl 200, grep for RELEASE. No Puppeteer, Playwright, or jsdom.
 
-Later, if Jor wants them: RA2 could add PDF and web-page reading, plus a
-sleep timer. Full article text is still a maybe (publishers often block it).
+### 1.55 Read Aloud PDF, web page, sleep timer, release RA2
+Built by Hub Apps Builder 2 after "RA2 code", on top of RA1 (section 1.54),
+branch apps/ra2-read-aloud. Local commit only at the time of writing.
 
-If VD1 (Video Editor) also appended a section numbered 10 in a parallel
-worktree, keep both sections on merge and renumber one of them.
+- Release id RA2 in <title>, RELEASE, and ?v=RA2 on the app's own css/js.
+- PDF source: open a .pdf from the device; text extracted page by page with
+  Mozilla pdf.js 3.11.174 (legacy UMD, Apache-2.0) from shared/vendor/pdfjs
+  (the same copy PDF Tools uses; referenced by relative path, not copied into
+  this app). Loaded lazily only when a PDF is opened. Page indicator and Go
+  to page. Scanned PDFs with no text layer show an in-app message and point
+  to the Office OCR app. OCR is out of scope.
+- Web source: paste a URL, fetch through api.allorigins.win (raw, then /get),
+  the News HTML-capable relay. feedrapp.info is RSS-only and is not used.
+  Extract readable text with regex/string parsing (prefer <article>, else
+  p/h1-h3 in main or body; strip nav, footer, aside, script, style). Title
+  is shown and read. Clear in-app error if the relay fails or the site
+  blocks it. This often fails.
+- News "Read article": tries the story link (Google News redirects are
+  resolved when possible). On failure, an in-app message is shown and the
+  headline is read instead.
+- Sleep timer: Off, 5/10/15/30/60 minutes, or end of the current item, with
+  a countdown chip in the player bar (also in Settings). Stops after the
+  current sentence when time is up.
+- Word count and estimated reading time (~160 wpm, scaled by speed) for
+  Text, PDF and Web. Last source tab and per-source position remembered
+  (PDF file is not stored; reopen it after a reload).
+- Tests: node --check on every JS file, ra_helpers_test.js (sentence split,
+  word count, HTML-to-text, Google URL decode; no DOM / jsdom), static serve
+  + curl 200 including shared/vendor/pdfjs/pdf.min.js, grep for RELEASE /
+  RA2. No Puppeteer, Playwright, or jsdom.

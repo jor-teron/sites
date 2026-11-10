@@ -1,7 +1,8 @@
-/* Read Aloud RA1 -- ra_text.js: strip basic markdown symbols and split text into sentences.
-   No DOM. Usable from Node (module.exports) for a syntax/helper check. */
+/* Read Aloud RA2 -- ra_text.js: strip basic markdown symbols, split text into sentences,
+   word count and estimated reading time. No DOM. Usable from Node (module.exports). */
 var RAText = (function () {
   var ABBR = /^(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|e\.g|i\.e|U\.S|U\.K|No|Vol|pp|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)$/i;
+  var WPM = 160;
 
   function stripMd(s) {
     s = String(s || '').replace(/\r\n/g, '\n');
@@ -50,6 +51,38 @@ var RAText = (function () {
     return out;
   }
 
-  return { stripMd: stripMd, sentences: sentences };
+  function wordCount(s) {
+    s = String(s || '').trim();
+    if (!s) return 0;
+    return s.split(/\s+/).filter(Boolean).length;
+  }
+
+  function etaMinutes(words, rate) {
+    words = +words || 0;
+    rate = +rate || 1;
+    if (rate < 0.1) rate = 0.1;
+    if (words <= 0) return 0;
+    return words / (WPM * rate);
+  }
+
+  function etaLabel(words, rate) {
+    var m = etaMinutes(words, rate);
+    if (!words) return '';
+    if (m < 0.75) return 'less than a minute';
+    var n = Math.max(1, Math.round(m));
+    return 'about ' + n + ' min';
+  }
+
+  function metaLine(text, rate, extra) {
+    var w = wordCount(text);
+    var n = sentences(String(text || '').replace(/\s+/g, ' ').trim()).length;
+    var parts = [];
+    if (extra) parts.push(extra);
+    if (w) parts.push(w + (w === 1 ? ' word' : ' words') + ' · ' + etaLabel(w, rate));
+    if (n) parts.push(n + (n === 1 ? ' sentence' : ' sentences'));
+    return parts.join(' · ');
+  }
+
+  return { stripMd: stripMd, sentences: sentences, wordCount: wordCount, etaMinutes: etaMinutes, etaLabel: etaLabel, metaLine: metaLine, WPM: WPM };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = RAText;
