@@ -1,4 +1,4 @@
-/* Remote — rm_config.js: every constant for the RM2 connections list and SFTP browse, each one commented. */
+/* Remote — rm_config.js: every constant for the RM3 connections list, SFTP browse and transfers, each one commented. */
 (function (root) {
   'use strict';
 
@@ -7,7 +7,7 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Remote',
     /* Release tag shown next to the title. */
-    RELEASE: 'RM2',
+    RELEASE: 'RM3',
     /* localStorage key for the saved connections list. Passwords are never stored under this key. */
     LS_CONNS: 'remote-conns-v1',
     /* Shared Hub theme key — read only, never written by this app. */
@@ -84,10 +84,26 @@
     SFTP_ERR_HOSTKEY: 'The server host key changed. If that is expected, remove its line from sftp_known_hosts next to the relay.',
     /* Short security warning drawn on the connect sheet and in the README. */
     SFTP_SECURITY_NOTE: 'This relay logs in for you and sees the password and files. Run it only on your own machine, LAN or VPN.',
-    /* Hint under a file's details: downloads arrive in RM3. */
-    SFTP_FILE_HINT: 'Download arrives in RM3.',
-    /* Confirm text used if a tab is closed while a transfer is running (hook for RM3). */
-    TAB_CLOSE_BUSY: 'A transfer is running. Close this tab and disconnect anyway?'
+    /* Hint under a file's details when a download is available. */
+    SFTP_FILE_HINT: 'Save this file to this device.',
+    /* Confirm text used if a tab is closed while a transfer is running. */
+    TAB_CLOSE_BUSY: 'A transfer is running. Close this tab and disconnect anyway?',
+    /* Maximum length of the optional start folder (sent as root on open). */
+    MAX_FOLDER: 255,
+    /* Minimum viewport width, in pixels, at which the local+server two-pane layout appears. */
+    TWO_PANE_MIN: 900,
+    /* Fallback relay file-size cap, in bytes, when the open reply has no max (relay default is 100 MB). */
+    SFTP_DEFAULT_MAX: 100 * 1024 * 1024,
+    /* Confirm text for deleting a file. */
+    DELETE_FILE: 'Delete this file?',
+    /* Confirm text for recursively deleting a folder (the relay supports recursive:true). */
+    DELETE_FOLDER: 'Delete this folder and everything inside it?',
+    /* Shown when a new-folder or rename name is illegal. */
+    BAD_NAME: 'Enter a name without / or ..',
+    /* Progress label for a cancelled queue. */
+    XFER_CANCELLED: 'Cancelled.',
+    /* Overwrite question; the name is filled in by the UI. */
+    OVERWRITE_ASK: ' already exists. Overwrite it?'
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */

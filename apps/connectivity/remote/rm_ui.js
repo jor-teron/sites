@@ -1,4 +1,4 @@
-/* Remote — rm_ui.js: DOM for the RM2 connections list, session tabs, editor, toast and overflow menu. */
+/* Remote — rm_ui.js: DOM for the RM3 connections list, session tabs, editor, toast and overflow menu. */
 (function (root) {
   'use strict';
 
@@ -227,6 +227,7 @@
       f.elements.user.value = conn && conn.user ? conn.user : '';
       f.elements.relay.value = conn && conn.relay ? conn.relay : '';
       f.elements.token.value = conn && conn.token ? conn.token : '';
+      f.elements.folder.value = conn && conn.folder ? conn.folder : '';
       f.elements.group.value = conn && conn.group ? conn.group : '';
       f.elements.notes.value = conn && conn.notes ? conn.notes : '';
       portProtocol = proto;
@@ -265,6 +266,7 @@
         user: f.elements.user.value,
         relay: relayRaw.trim() ? (norm.ok ? norm.url : relayRaw) : '',
         token: f.elements.token.value,
+        folder: f.elements.folder.value,
         group: f.elements.group.value,
         notes: f.elements.notes.value,
         _relayNorm: norm

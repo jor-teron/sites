@@ -1,4 +1,4 @@
-/* Remote — rm_main.js: start the RM2 connections list, tabs and SFTP browse once the page has loaded. */
+/* Remote — rm_main.js: start the RM3 connections list, tabs, SFTP browse and transfers once the page has loaded. */
 (function (root) {
   'use strict';
 

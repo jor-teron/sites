@@ -9,6 +9,10 @@
  * Reply: { id:0, ok:true, root, max } or { id:0, ok:false, code, error }
  * Later: { id, op, path:["a","b"], ... } answered in order as { id, ok:true, ... } or { id, ok:false, code, error }.
  * list returns entries: [{ name, isDir, size, mtime }] (mtime in ms). stat returns isDir, size, mtime.
+ * read  → JSON { id, ok:true, size } then ONE binary frame with the bytes. There is no chunking.
+ * write → JSON { id, op:"write", path, size } then ONE binary frame; reply { id, ok }.
+ * mkdir, rename (to:[...], fails with exists), delete (recursive:true for a non-empty folder).
+ * A file larger than max (from the open reply, default 100 MB) is refused with code toobig.
  * Error codes: token, allow, reach, auth, hostkey, notfound, denied, exists, toobig, bad, failed.
  *
  * No DOM, so node can unit-test message building/parsing and a fake WebSocket. Passwords are held
@@ -43,12 +47,34 @@
     return m;
   }
 
-  /* Parse a relay frame. Text is JSON; anything else is treated as a binary payload (for later reads). */
+  /* Parse a relay frame. Text is JSON; anything else is treated as a binary payload (for reads). */
   function parseReply(raw) {
     if (typeof raw !== 'string') return { binary: true, data: raw };
     try { return JSON.parse(raw); } catch (e) {
       return { ok: false, code: 'bad', error: 'the relay sent invalid JSON' };
     }
+  }
+
+  /* Byte length of an ArrayBuffer, TypedArray, or similar payload. */
+  function byteLength(data) {
+    if (!data) return 0;
+    if (typeof data.byteLength === 'number') return data.byteLength;
+    if (typeof data.size === 'number') return data.size;
+    if (typeof data.length === 'number') return data.length;
+    return 0;
+  }
+
+  /* Human label for the relay max, e.g. "100 MB". */
+  function maxLabel(max) {
+    var n = Number(max) || 0;
+    var mb = Math.max(1, Math.round(n / 1048576));
+    return mb + ' MB';
+  }
+
+  /* Clear message when a file is over the relay max. */
+  function tooBigMessage(name, size, max) {
+    var who = name || 'This file';
+    return who + ' is larger than the relay limit (' + maxLabel(max) + ').';
   }
 
   /* Turn a relay error code (and optional message) into a clear sentence plus a README hint. */
@@ -71,7 +97,8 @@
       var r = error || C.SFTP_ERR_REACH_RELAY || "Can't reach the relay.";
       return /README/.test(r) ? r : r + hint;
     }
-    if (c === 'notfound' || c === 'denied' || c === 'exists' || c === 'toobig' || c === 'bad' || c === 'failed') {
+    if (c === 'toobig') return error || ('This file is larger than the relay limit.' + hint);
+    if (c === 'notfound' || c === 'denied' || c === 'exists' || c === 'bad' || c === 'failed') {
       return error || (c + hint);
     }
     return (error || ('SFTP error: ' + c)) + hint;
@@ -89,7 +116,7 @@
   /**
    * Open a session to the relay and log in.
    * opts: { relay, token, host, port, user, pass, root, WebSocket, openMs }.
-   * Returns a Promise of a client: { root, max, list, stat, ping, close, isOpen, isBusy }.
+   * Returns a Promise of a client: { root, max, list, stat, read, write, mkdir, rename, remove, ping, close, isOpen, isBusy }.
    */
   function connect(opts) {
     opts = opts || {};
@@ -112,12 +139,15 @@
       var seq = 0;
       var timer;
       var pending = 0;
-
-      /* In-flight requests (id -> {resolve, reject, op}). */
+      /* In-flight requests (id -> {resolve, reject, op, reply}). */
       var waitMap = {};
+      /* Reads whose JSON reply arrived and which are waiting for the following binary frame, in order. */
+      var binWait = [];
+
       function rejectAll(err) {
         var q = waitMap;
         waitMap = {};
+        binWait = [];
         Object.keys(q).forEach(function (id) {
           try { q[id].reject(err); } catch (e) { /* handler threw */ }
         });
@@ -125,11 +155,10 @@
       }
 
       function finishOpen(err, client) {
-        if (ready || closed && !client) {
-          /* Open already settled. */
-        }
+        if (ready) return;
         clearTimeout(timer);
         if (err) {
+          if (closed) return;
           closed = true;
           try { if (ws) ws.close(); } catch (e) { /* already closed */ }
           reject(err);
@@ -145,7 +174,7 @@
         reject(fail('reach', C.SFTP_ERR_REACH_RELAY));
         return;
       }
-      /* The relay may send a binary frame after a later read; RM2 only uses JSON. */
+      /* Reads arrive as a JSON frame followed by one ArrayBuffer frame. */
       if (ws) ws.binaryType = 'arraybuffer';
 
       var openMs = opts.openMs != null ? opts.openMs : (C.SFTP_OPEN_MS || 25000);
@@ -188,13 +217,31 @@
             reject(fail(m.code, m.error));
             return;
           }
+          /* Largest file the relay will read or write, in bytes. */
+          var max = +m.max || (C.SFTP_DEFAULT_MAX || 0);
           /* Build the live client once login succeeds. */
           var client = {
             root: m.root || '',
-            max: +m.max || 0,
+            max: max,
             list: function (path) { return req('list', path).then(function (r) { return r.entries || []; }); },
             stat: function (path) { return req('stat', path); },
             ping: function () { return req('ping', []); },
+            /* Read a file. Resolves to an ArrayBuffer. The whole file is one frame; there is no chunking. */
+            read: function (path) {
+              return req('read', path).then(function (r) { return r.data; });
+            },
+            /* Write a file. data is an ArrayBuffer or TypedArray sent as one binary frame after the JSON. */
+            write: function (path, data, name) {
+              var size = byteLength(data);
+              if (max && size > max) {
+                return Promise.reject(fail('toobig', tooBigMessage(name || (path && path[path.length - 1]), size, max)));
+              }
+              return req('write', path, { size: size }, data || new ArrayBuffer(0));
+            },
+            mkdir: function (path) { return req('mkdir', path); },
+            rename: function (path, to) { return req('rename', path, { to: to }); },
+            /* Delete a file, or a folder. recursive true is required for a folder with contents. */
+            remove: function (path, recursive) { return req('delete', path, { recursive: !!recursive }); },
             close: function () {
               if (closed) return;
               closed = true;
@@ -208,17 +255,36 @@
           finishOpen(null, client);
           return;
         }
-        if (m.binary) return;
+        /* Binary frame: the body of the oldest outstanding read. */
+        if (m.binary) {
+          var br = binWait.shift();
+          if (!br) return;
+          delete waitMap[br.id];
+          pending = Math.max(0, pending - 1);
+          br.resolve(Object.assign({}, br.reply, { data: m.data }));
+          return;
+        }
         var w = waitMap[m.id];
         if (!w) return;
+        if (!m.ok) {
+          delete waitMap[m.id];
+          pending = Math.max(0, pending - 1);
+          w.reject(fail(m.code, m.error));
+          return;
+        }
+        /* A successful read is followed by one binary frame; keep the waiter on the bin queue. */
+        if (w.op === 'read') {
+          w.reply = m;
+          binWait.push(w);
+          return;
+        }
         delete waitMap[m.id];
         pending = Math.max(0, pending - 1);
-        if (!m.ok) w.reject(fail(m.code, m.error));
-        else w.resolve(m);
+        w.resolve(m);
       };
 
-      /* Send an op after the session is open. */
-      function req(op, path, extra) {
+      /* Send an op after the session is open. body, if given, is the write payload (one binary frame). */
+      function req(op, path, extra, body) {
         if (closed || !ws || ws.readyState !== 1) {
           return Promise.reject(fail('reach', 'the relay closed the connection'));
         }
@@ -228,7 +294,10 @@
         var p = new Promise(function (res, rej) {
           waitMap[id] = { resolve: res, reject: rej, op: op };
         });
-        try { ws.send(JSON.stringify(buildRequest(id, op, path, extra))); } catch (e) {
+        try {
+          ws.send(JSON.stringify(buildRequest(id, op, path, extra)));
+          if (op === 'write') ws.send(body || new ArrayBuffer(0));
+        } catch (e) {
           delete waitMap[id];
           pending = Math.max(0, pending - 1);
           return Promise.reject(fail('reach', 'the relay closed the connection'));
@@ -244,6 +313,9 @@
     buildRequest: buildRequest,
     parseReply: parseReply,
     explainError: explainError,
+    tooBigMessage: tooBigMessage,
+    maxLabel: maxLabel,
+    byteLength: byteLength,
     connect: connect
   };
   root.RMSftpClient = api;

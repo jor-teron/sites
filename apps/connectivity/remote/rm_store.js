@@ -1,6 +1,7 @@
 /* Remote — rm_store.js: saved connections in localStorage 'remote-conns-v1'. No DOM, so node can unit-test it.
- * Each entry is { id, name, protocol, host, port, user, relay, token?, group, notes }. Passwords are never stored.
+ * Each entry is { id, name, protocol, host, port, user, relay, token?, folder?, group, notes }. Passwords are never stored.
  * An optional relay token is stored only when the user saves it (editor, or the connect-sheet tick box).
+ * folder is the optional SFTP start folder, sent as root in the relay open message.
  * This app is standalone: it does not read SSH or VNC storage keys, and it does not link to those apps.
  * Store.make(storage, now) -> { list, get, save, remove, duplicate, exportJSON, importJSON, search, grouped,
  *   clean, defaultPort, portAfterProtocolChange, tapAction }.
@@ -84,6 +85,12 @@
     /* Optional group and notes, just trimmed and capped. */
     var group = str(h.group, C.MAX_GROUP);
     var notes = str(h.notes, C.MAX_NOTES);
+    /* Optional SFTP start folder, sent as the open message's root. ".." is rejected. */
+    var folderRaw = str(h.folder, C.MAX_FOLDER || 255).replace(/\\/g, '/');
+    var folderParts = folderRaw.split('/').filter(function (n) { return n && n !== '.'; });
+    if (folderParts.indexOf('..') >= 0) return 'Start folder cannot contain ..';
+    var folder = folderParts.join('/');
+    if (folderRaw.charAt(0) === '/' && folder) folder = '/' + folder;
     /* Optional relay token. Never stored unless the caller passed one; passwords are ignored. */
     var token = str(h.token, C.MAX_TOKEN || 200);
     /* Name, or a simple default from user@host or the host alone. */
@@ -100,6 +107,7 @@
       notes: notes
     };
     if (token) out.token = token;
+    if (folder) out.folder = folder;
     return out;
   }
 
@@ -192,6 +200,7 @@
         user: c.user,
         relay: c.relay,
         token: c.token,
+        folder: c.folder,
         group: c.group,
         notes: c.notes
       });
@@ -228,6 +237,7 @@
           user: raw.user,
           relay: raw.relay,
           token: raw.token,
+          folder: raw.folder,
           group: raw.group,
           notes: raw.notes
         });

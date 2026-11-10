@@ -1,5 +1,6 @@
 /* Remote — rm_sftp_path.js: SFTP path, breadcrumb, sort and size/date helpers. No DOM, so node can test it.
- * Paths are arrays of names, matching hub/relay/sftp_relay.py (no "/", ".", or "..").
+ * Paths are arrays of names, matching hub/relay/sftp_relay.py (no "/", ".", or ".." in a segment).
+ * normalizeRoot prepares the connection start folder for the open message (slashes allowed there).
  */
 (function (root) {
   'use strict';
@@ -75,6 +76,22 @@
     return (x / 1073741824).toFixed(1) + ' GB';
   }
 
+
+  /**
+   * Prepare a typed start folder for the relay open "root" field.
+   * Backslashes become slashes, "." is dropped, ".." is rejected. A leading slash is kept
+   * so an absolute folder still works. Empty means the account home.
+   */
+  function normalizeRoot(raw) {
+    var s = raw == null ? '' : String(raw).trim().replace(/\\/g, '/');
+    if (!s) return { ok: true, value: '' };
+    var segs = s.split('/').filter(function (n) { return n && n !== '.'; });
+    if (segs.some(function (n) { return n === '..'; })) return { ok: false, value: '', reason: 'Start folder cannot contain ..' };
+    var value = segs.join('/');
+    if (s.charAt(0) === '/' && value) value = '/' + value;
+    return { ok: true, value: value };
+  }
+
   /* Local date/time for an mtime in milliseconds, or an empty string. */
   function formatTime(ms) {
     var t = Number(ms) || 0;
@@ -92,7 +109,8 @@
     breadcrumbs: breadcrumbs,
     sortEntries: sortEntries,
     formatSize: formatSize,
-    formatTime: formatTime
+    formatTime: formatTime,
+    normalizeRoot: normalizeRoot
   };
   root.RMSftpPath = api;
   if (typeof module !== 'undefined' && module.exports) {

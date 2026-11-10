@@ -1,4 +1,4 @@
-/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM2 */
+/* Remote — rm_base.css: theme vars, 48px targets, jelly press, reduced motion. RM3 */
 
 /* Light defaults, then overridden by a Hub or device dark theme. */
 :root,
@@ -503,4 +503,108 @@ label.check input {
 
 @media (prefers-reduced-motion: reduce) {
   .entry { animation: none; }
+}
+
+
+/* --- RM3: transfers, row overflow, two-pane, progress --- */
+
+.entry.selected { border-color: var(--accent); }
+.entry .more {
+  flex: 0 0 auto;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+#sftp-list.drop-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+  border-radius: 18px;
+}
+
+.xfer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.xfer[hidden] { display: none; }
+
+.progress-track {
+  flex: 1 1 120px;
+  height: 10px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+#sftp-progress-text { flex: 1 1 140px; margin: 0; }
+
+#entry-menu {
+  position: absolute;
+  z-index: 8;
+  min-width: 180px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--surface-2);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px #0003;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+#entry-menu[hidden] { display: none; }
+
+#entry-menu button {
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+#entry-menu button:hover { background: var(--surface-2); }
+#entry-menu .danger-text { color: var(--danger); }
+
+#sftp-panes { display: block; }
+.pane-title { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); margin: 0 0 8px; }
+.pane-server { display: none; }
+
+#sftp-local { display: none; }
+
+@media (min-width: 900px) {
+  #sftp-panes.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  #sftp-panes.split #sftp-local {
+    display: block;
+    border-right: 1px solid var(--surface-2);
+    padding-right: 14px;
+  }
+  #sftp-panes.split .pane-server { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar { transition: none; }
 }

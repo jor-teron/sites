@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
-  Remote — RM2: connections list plus Remmina-style tabs and an SFTP folder browser.
+  Remote — RM3: connections list, Remmina-style tabs, SFTP browse, transfers and file management.
   SFTP talks JSON over a WebSocket to hub/relay/sftp_relay.py (Remote has its own client; it does
-  not import shared/fs). Passwords are never stored. A relay token is stored only if you choose to.
-  SSH, VNC and FTP rows still show an honest "coming" toast. The app is standalone: it does not
-  open the old SSH or VNC apps.
+  not import shared/fs). Read/write are one binary frame per file, up to the relay max. Passwords
+  are never stored. A relay token is stored only if you choose to.
+  SSH, VNC and FTP rows still show an honest "coming" toast. The app is standalone.
   Styles: rm_base.css. Modules: rm_config.js, rm_url.js, rm_store.js, rm_tabs.js, rm_sftp_path.js,
-  rm_sftp_client.js, rm_sftp_view.js, rm_ui.js, rm_main.js.
+  rm_sftp_client.js, rm_sftp_xfer.js, rm_sftp_view.js, rm_ui.js, rm_main.js.
   Connections are stored in localStorage 'remote-conns-v1'.
 -->
 <html lang="en">
@@ -25,14 +25,14 @@
       <a class="back jelly" href="../connectivity.html">Back</a>
       <img src="rm_icon.svg" alt="">
       <h1>Remote</h1>
-      <span class="tag">RM2</span>
+      <span class="tag">RM3</span>
       <button type="button" id="btn-add" class="jelly">Add</button>
     </header>
 
     <nav id="tabs" class="tabs" aria-label="Sessions"></nav>
 
     <section id="view-list">
-      <p class="hint">One list for SSH, VNC, SFTP and FTP. SFTP opens a folder browser; SSH, VNC and FTP viewers arrive later.</p>
+      <p class="hint">One list for SSH, VNC, SFTP and FTP. SFTP can browse, transfer and manage files. SSH, VNC and FTP viewers arrive later.</p>
       <p class="hint warn" id="security-note">This SFTP relay logs in for you and sees the password and files. Run it only on your own machine, LAN or VPN.</p>
 
       <input id="search" class="search" type="search" placeholder="Search connections" autocomplete="off" spellcheck="false" aria-label="Search connections">
@@ -51,11 +51,36 @@
       <div class="sftp-bar">
         <button type="button" id="sftp-up" class="ghost jelly">Up</button>
         <button type="button" id="sftp-refresh" class="ghost jelly">Refresh</button>
+        <button type="button" id="sftp-upload" class="jelly">Upload</button>
+        <button type="button" id="sftp-mkdir" class="ghost jelly">New folder</button>
+        <button type="button" id="sftp-open-local" class="ghost jelly" hidden>Open local folder</button>
+        <input id="sftp-file-input" type="file" multiple hidden>
         <nav id="sftp-crumbs" class="crumbs" aria-label="Folder path"></nav>
       </div>
+      <div id="sftp-progress" class="xfer" hidden>
+        <div class="progress-track" aria-hidden="true"><div id="sftp-progress-bar" class="progress-bar"></div></div>
+        <p id="sftp-progress-text" class="hint"></p>
+        <button type="button" id="sftp-cancel" class="ghost jelly">Cancel</button>
+      </div>
       <p id="sftp-status" class="hint"></p>
-      <div id="sftp-list" aria-label="Folder contents"></div>
-      <p id="sftp-empty" class="hint" hidden>This folder is empty.</p>
+      <div id="sftp-panes">
+        <div id="sftp-local" hidden>
+          <h2 class="pane-title">This device</h2>
+          <div class="sftp-bar">
+            <button type="button" id="local-up" class="ghost jelly">Up</button>
+            <button type="button" id="local-upload" class="ghost jelly">Upload selected</button>
+            <button type="button" id="local-download" class="ghost jelly">Download here</button>
+          </div>
+          <nav id="local-crumbs" class="crumbs" aria-label="Local folder path"></nav>
+          <div id="local-list" aria-label="Local folder"></div>
+          <p id="local-empty" class="hint" hidden>This folder is empty.</p>
+        </div>
+        <div id="sftp-remote">
+          <h2 class="pane-title pane-server">Server</h2>
+          <div id="sftp-list" aria-label="Folder contents"></div>
+          <p id="sftp-empty" class="hint" hidden>This folder is empty.</p>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -74,6 +99,8 @@
       <label class="field">Host<input id="f-host" name="host" maxlength="255" required placeholder="192.168.1.8" autocomplete="off" spellcheck="false"></label>
       <label class="field">Port<input id="f-port" name="port" type="number" min="1" max="65535" value="22" inputmode="numeric"></label>
       <label class="field">User<input id="f-user" name="user" maxlength="64" placeholder="optional" autocomplete="username" spellcheck="false"></label>
+      <label class="field">Start folder<input id="f-folder" name="folder" maxlength="255" placeholder="optional, e.g. projects or /var/www" autocomplete="off" spellcheck="false"></label>
+      <p class="hint">SFTP only. Sent as the relay start folder (root). Leave empty for the account home.</p>
       <label class="field">Relay URL<input id="f-relay" name="relay" maxlength="500" placeholder="ws://192.168.1.8:8023 or wss://host:8023" autocomplete="off" spellcheck="false"></label>
       <p id="relay-hint" class="hint">Optional. Accepts ws:// or wss://, or a bare host. SFTP uses the relay on port 8023.</p>
       <label class="field">Relay token<input id="f-token" name="token" maxlength="200" placeholder="optional, or enter it when you connect" autocomplete="off" spellcheck="false"></label>
@@ -109,9 +136,33 @@
     <p class="hint">Path: <span id="file-path"></span></p>
     <p class="hint">Size: <span id="file-size"></span></p>
     <p class="hint">Modified: <span id="file-date"></span></p>
-    <p id="file-hint" class="hint">Download arrives in RM3.</p>
+    <p id="file-hint" class="hint"></p>
     <div class="row">
-      <button type="button" id="btn-file-close" class="jelly">Close</button>
+      <button type="button" id="btn-file-download" class="jelly">Download</button>
+      <button type="button" id="btn-file-close" class="ghost jelly">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="name-dlg">
+    <form id="name-form">
+      <h2 id="name-dlg-title">Name</h2>
+      <label class="field">Name<input id="name-dlg-input" maxlength="255" autocomplete="off" spellcheck="false"></label>
+      <p id="name-dlg-err" class="form-err" hidden></p>
+      <div class="row">
+        <button type="button" id="name-cancel" class="ghost jelly">Cancel</button>
+        <button type="submit" id="name-ok" class="jelly">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="overwrite-dlg">
+    <h2>File exists</h2>
+    <p id="overwrite-text" class="hint"></p>
+    <div class="row">
+      <button type="button" id="ov-overwrite" class="jelly">Overwrite</button>
+      <button type="button" id="ov-skip" class="ghost jelly">Skip</button>
+      <button type="button" id="ov-all" class="ghost jelly">Overwrite all</button>
+      <button type="button" id="ov-cancel" class="ghost jelly">Cancel</button>
     </div>
   </dialog>
 
@@ -121,6 +172,8 @@
     <button type="button" id="menu-del" role="menuitem" class="jelly danger-text">Delete</button>
   </div>
 
+  <div id="entry-menu" hidden role="menu" aria-label="File actions"></div>
+
   <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
   <script src="rm_config.js"></script>
@@ -129,6 +182,7 @@
   <script src="rm_tabs.js"></script>
   <script src="rm_sftp_path.js"></script>
   <script src="rm_sftp_client.js"></script>
+  <script src="rm_sftp_xfer.js"></script>
   <script src="rm_sftp_view.js"></script>
   <script src="rm_ui.js"></script>
   <script src="rm_main.js"></script>

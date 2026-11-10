@@ -30,7 +30,7 @@ var Tabs = require(path.join(app, 'rm_tabs.js'));
 var Path = require(path.join(app, 'rm_sftp_path.js'));
 var Client = require(path.join(app, 'rm_sftp_client.js'));
 
-assertEq(C.RELEASE, 'RM2', 'release tag is RM2');
+assert(/^RM\d+$/.test(C.RELEASE), 'release tag is RMn');
 assertEq(C.CONNECTIONS_TAB_ID, 'connections', 'connections tab id');
 assert(C.SFTP_SECURITY_NOTE && /password/.test(C.SFTP_SECURITY_NOTE), 'security note mentions password');
 
