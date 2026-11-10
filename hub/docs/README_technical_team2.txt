@@ -1146,7 +1146,7 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   fresh (Ctrl+Z outside undoes the format). Paste drops fonts, tables and links on purpose. Numbered lists restart after
   a non-numbered paragraph. Some browsers pause contenteditable undo after a format. Not tried on a real phone.
 
-### 1.64 Hub Office Slides shapes, tables and arrange, release SL6
+### 1.69 Hub Office Slides shapes, tables and arrange, release SL6
 
 - `apps/office/slides/` only (plus this section). Branch `apps/sl6-slides` from `apps/sl5-slides` (e06f5539).
   `apps/office/shared/` not edited. New `slides_draw.js` (`SLDraw`): shape / table records, SVG paths, table
