@@ -5,7 +5,8 @@ Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, noti
 
 Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 5, 'pics' store),
 `base-types.js` (field types, validation, conversion, auto-number), `base-history.js` (in-memory undo/redo),
-`base-pics.js` (picture resize + blob store), `base-fields.js` (Fields / Add field dialogs and edit commit),
+`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard),
+`base-fields.js` (Fields / Add field dialogs and edit commit),
 `base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view),
 `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs),
 `base-ui.js` (ribbon, settings, commands, boot), `base_hub.js` (Hub title-bar bridge, same v:1 protocol as Spreadsheet).
@@ -56,4 +57,13 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 - Changing a field's type shows how many values would be lost, then asks you to confirm. Queries, sort, search, totals and CSV handle the new types (Currency is included in totals and exported as a plain number; Choice supports = and ≠; Picture columns are left out of CSV, with a note).
 - Existing BS4 databases in IndexedDB `office-base` load unchanged. A schema version (5) is stored; the first BS5 open writes a backup and migrates in place.
 
-**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. Shared Office files were not edited.
+## BS6 (links between tables)
+- **Link to record** field: points at another table (or the same one). Single or several records, picked in an in-app search dialog. The cell shows the linked record's display field as a chip you can open; Change / Clear (and × on a multi link) edit it. Undo covers these edits.
+- **Lookup** field: a read-only column pulled from the linked record (for example an Order can show the Customer's Village). If several records are linked, the values are joined.
+- **Related records** panel (under the grid and the form, when a record is selected): lists records in other tables that link here, with Open and + Add (creates a new record already linked to this one).
+- **Queries** can use a Link to record (= / ≠ / empty) and “Link ▸ field” paths, for example Expenses where Customer ▸ Village contains “Diphu”. A row matches if any of its linked records do.
+- **Delete guard:** if other records or tables link to what you are deleting, the typed-confirm dialog lists them and the button becomes “Clear links and delete…”. Cancel keeps everything. Record deletes (including the cleared links) stay undoable; deleting a whole table still cannot be undone.
+- CSV export writes the linked records' display text (several names joined with “; ”), not raw ids. Picture columns are still left out.
+- Existing BS5 databases load unchanged. Schema becomes 6; the first BS6 open writes a backup and migrates in place.
+
+**Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a URL-type Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. A Link to record whose table (or record) was removed shows as “(missing)” until you clear or repick it. Lookups only follow one link (they don't chain). CSV import still creates a new table and cannot rebuild links from names. Shared Office files were not edited.

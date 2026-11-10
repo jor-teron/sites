@@ -1,5 +1,5 @@
 /*
- * base-query.js  (BS2, BS5: new field types in the builder)
+ * base-query.js  (BS2, BS5, BS6: query across a Link to record)
  * Query builder (no SQL typing): pick table, condition rows (field / operator / value), AND/OR,
  * sort field + direction, fields to show. Run = grid shows only matching rows + chosen fields
  * (cells stay editable; edits go to the real table). Saved queries live in BASE.db.queries
@@ -9,16 +9,19 @@
  * BS5: Choice fields accept = and ≠ (and is empty / is not empty); Currency and Auto-number ID
  *   use the number operators; Email / Phone / Link / Long text use the text operators;
  *   Picture only has is empty / is not empty.
+ * BS6: Link to record accepts = ≠ / is empty / is not empty (value is a record). The field list
+ *   also includes “Link ▸ field” paths so you can filter by a column on the linked record
+ *   (a row matches if any of its linked records do). Lookup uses the source field's operators.
  * API: BaseQuery.open(), .close(), .run(q), .clear(), .filter(t, rows), .shown(t), .active(),
  *      .save(), .rename(), .remove(), .pick(id), .toggleSql(), .renderPicker()
  */
 var BaseQuery = (function () {
   var OPS = [
-    { id: "eq", label: "=", sql: "=", types: "text number date choice" }, { id: "ne", label: "≠", sql: "<>", types: "text number date choice" },
+    { id: "eq", label: "=", sql: "=", types: "text number date choice ref" }, { id: "ne", label: "≠", sql: "<>", types: "text number date choice ref" },
     { id: "gt", label: ">", sql: ">", types: "number date" }, { id: "lt", label: "<", sql: "<", types: "number date" },
     { id: "ge", label: ">=", sql: ">=", types: "number date" }, { id: "le", label: "<=", sql: "<=", types: "number date" },
     { id: "has", label: "contains", types: "text" }, { id: "sw", label: "starts with", types: "text" },
-    { id: "empty", label: "is empty", types: "text number date choice picture" }, { id: "full", label: "is not empty", types: "text number date choice picture" },
+    { id: "empty", label: "is empty", types: "text number date choice picture ref" }, { id: "full", label: "is not empty", types: "text number date choice picture ref" },
     { id: "yes", label: "is yes", types: "bool" }, { id: "no", label: "is no", types: "bool" }
   ];
   var draft = null, showSql = false;
@@ -26,8 +29,10 @@ var BaseQuery = (function () {
   function el(tag, cls, txt) { var n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; }
   function toast(m) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, 2500); }
   function queries() { if (!BASE.db.queries) BASE.db.queries = []; return BASE.db.queries; }
-  function fieldOf(t, id) { return t.fields.filter(function (f) { return f.id === id; })[0]; }
+  function allFields(t) { return typeof BaseLinks !== "undefined" ? BaseLinks.queryFields(t) : (t.fields || []); }
+  function fieldOf(t, id) { return allFields(t).filter(function (f) { return f.id === id; })[0]; }
   function opOf(id) { return OPS.filter(function (o) { return o.id === id; })[0]; }
+  function typeOf(t, f) { return (f && typeof BaseLinks !== "undefined") ? BaseLinks.resolvedType(t, f) : (f && f.type); }
   function group(type) { return typeof BaseTypes !== "undefined" ? BaseTypes.queryGroup(type) : type; }
   function opsFor(type) { var g = group(type); return OPS.filter(function (o) { return o.types.split(" ").indexOf(g) >= 0; }); }
   function active() { var q = BASE.query, t = BaseStore.table(); return q && t && q.table === t.id ? q : null; }
@@ -35,12 +40,13 @@ var BaseQuery = (function () {
   function copy(q) { return JSON.parse(JSON.stringify(q)); }
 
   /* ---- evaluation ---- */
-  function test(c, f, v) {
-    var o = c.op, empty = v === "" || v == null;
+  function testOne(c, f, v, typ) {
+    var o = c.op, empty = v === "" || v == null || (Array.isArray(v) && !v.length);
+    typ = typ || f.type;
     if (o === "yes") return !!v; if (o === "no") return !v;
     if (o === "empty") return empty; if (o === "full") return !empty;
     var a = v, b = c.val;
-    if (group(f.type) === "number") { if (empty || b === "" || isNaN(+b)) return o === "ne" && !empty; a = +a; b = +b; }
+    if (group(typ) === "number") { if (empty || b === "" || isNaN(+b)) return o === "ne" && !empty; a = +a; b = +b; }
     else { a = String(a == null ? "" : a).toLowerCase(); b = String(b == null ? "" : b).toLowerCase(); }
     switch (o) {
       case "eq": return a === b; case "ne": return a !== b;
@@ -50,37 +56,49 @@ var BaseQuery = (function () {
     }
     return true;
   }
+  /* A condition matches if ANY resolved value matches (so a multi-link of “Asha or Raju” works). */
+  function test(c, f, row, t) {
+    var typ = typeOf(t, f);
+    var vs;
+    if (typeof BaseLinks !== "undefined" && (f.type === "ref" || f.type === "lookup" || f._via)) vs = BaseLinks.resolve(t, f, row);
+    else vs = [row.v ? row.v[f.id] : ""];
+    if (c.op === "empty") return !vs.length || vs.every(function (v) { return testOne(c, f, v, typ); });
+    if (c.op === "full") return vs.length && vs.some(function (v) { return testOne(c, f, v, typ); });
+    if (c.op === "ne") return vs.every(function (v) { return testOne(c, f, v, typ); });
+    if (!vs.length) return testOne(c, f, "", typ);
+    return vs.some(function (v) { return testOne(c, f, v, typ); });
+  }
   function filter(t, rows) {
     var q = active(); if (!q) return rows;
     var cs = q.conds.filter(function (c) { return fieldOf(t, c.field) && opOf(c.op); });
     if (cs.length) rows = rows.filter(function (r) {
-      var res = cs.map(function (c) { var f = fieldOf(t, c.field); return test(c, f, r.v[f.id]); });
+      var res = cs.map(function (c) { var f = fieldOf(t, c.field); return test(c, f, r, t); });
       return q.join === "or" ? res.indexOf(true) >= 0 : res.indexOf(false) < 0;
     });
     return rows;
   }
   function shown(t) {
     var q = active(); if (!q || !q.show || !q.show.length) return t.fields;
-    var s = t.fields.filter(function (f) { return q.show.indexOf(f.id) >= 0; });
+    var s = allFields(t).filter(function (f) { return q.show.indexOf(f.id) >= 0; });
     return s.length ? s : t.fields;
   }
 
   /* ---- SQL text (learning only) ---- */
   function qi(n) { return /^[A-Za-z_][A-Za-z0-9_]*$/.test(n) ? n : '"' + n.replace(/"/g, '""') + '"'; }
-  function lit(f, v) { return group(f.type) === "number" && v !== "" && !isNaN(+v) ? String(+v) : "'" + String(v).replace(/'/g, "''") + "'"; }
+  function lit(f, v, typ) { typ = typ || f.type; return group(typ) === "number" && v !== "" && !isNaN(+v) ? String(+v) : "'" + String(v).replace(/'/g, "''") + "'"; }
   function condSql(t, c) {
     var f = fieldOf(t, c.field), o = opOf(c.op); if (!f || !o) return "";
-    var n = qi(f.name);
+    var n = qi(f.name), typ = typeOf(t, f);
     if (o.id === "yes") return n + " = TRUE"; if (o.id === "no") return n + " = FALSE";
     if (o.id === "empty") return "(" + n + " IS NULL OR " + n + " = '')";
     if (o.id === "full") return "(" + n + " IS NOT NULL AND " + n + " <> '')";
     if (o.id === "has") return n + " LIKE '%" + String(c.val).replace(/'/g, "''") + "%'";
     if (o.id === "sw") return n + " LIKE '" + String(c.val).replace(/'/g, "''") + "%'";
-    return n + " " + o.sql + " " + lit(f, c.val);
+    return n + " " + o.sql + " " + lit(f, c.val, typ);
   }
   function sql(q) {
     var t = BASE.db.tables.filter(function (x) { return x.id === q.table; })[0]; if (!t) return { text: "", parts: [] };
-    var show = t.fields.filter(function (f) { return q.show.indexOf(f.id) >= 0; });
+    var show = allFields(t).filter(function (f) { return q.show.indexOf(f.id) >= 0; });
     var all = !show.length || show.length === t.fields.length;
     var sel = all ? "*" : show.map(function (f) { return qi(f.name); }).join(", ");
     var where = q.conds.map(function (c) { return condSql(t, c); }).filter(Boolean);
@@ -118,19 +136,25 @@ var BaseQuery = (function () {
     draft.conds.forEach(function (c, i) {
       var row = el("div", "bq-row"), f = fieldOf(t, c.field) || t.fields[0];
       if (!f) return; c.field = f.id;
-      var ops = opsFor(f.type); if (!opOf(c.op) || ops.indexOf(opOf(c.op)) < 0) c.op = ops[0].id;
+      var typ = typeOf(t, f);
+      var ops = opsFor(typ); if (!ops.length) ops = opsFor("text"); if (!opOf(c.op) || ops.indexOf(opOf(c.op)) < 0) c.op = ops[0].id;
       if (i > 0) row.appendChild(el("span", "bq-join", draft.join.toUpperCase()));
-      row.appendChild(sel(t.fields.map(function (x) { return [x.id, x.name]; }), f.id, "bq-sel", function (v) { c.field = v; c.val = ""; render(); }));
+      row.appendChild(sel(allFields(t).map(function (x) { return [x.id, x.name]; }), f.id, "bq-sel", function (v) { c.field = v; c.val = ""; render(); }));
       row.appendChild(sel(ops.map(function (o) { return [o.id, o.label]; }), c.op, "bq-sel", function (v) { c.op = v; render(); }));
       if (["empty", "full", "yes", "no"].indexOf(c.op) < 0) {
         if (f.type === "choice") {
           var opts = [["", "—"]].concat((f.options || []).map(function (o) { return [o, o]; }));
           if (c.val && (f.options || []).indexOf(c.val) < 0) opts.push([c.val, c.val]);
           row.appendChild(sel(opts, c.val == null ? "" : c.val, "bq-val", function (v) { c.val = v; if (showSql) renderSql(); }));
+        } else if (f.type === "ref" && typeof BaseLinks !== "undefined") {
+          var tt = BaseLinks.targetTable(f);
+          var ropts = [["", "—"]].concat((tt ? tt.rows : []).map(function (r) { return [r.id, BaseLinks.recordLabel(tt, r, f)]; }));
+          if (c.val && !ropts.some(function (o) { return o[0] === c.val; })) ropts.push([c.val, "(missing)"]);
+          row.appendChild(sel(ropts, c.val == null ? "" : c.val, "bq-val", function (v) { c.val = v; if (showSql) renderSql(); }));
         } else {
           var inp = el("input", "bq-val");
-          var g = group(f.type);
-          inp.type = g === "number" ? "number" : f.type === "date" ? "date" : f.type === "email" ? "email" : "text";
+          var g = group(typ);
+          inp.type = g === "number" ? "number" : typ === "date" ? "date" : typ === "email" ? "email" : "text";
           if (g === "number") inp.step = "any"; inp.value = c.val == null ? "" : c.val; inp.placeholder = "value";
           inp.addEventListener("input", function () { c.val = inp.value; if (showSql) renderSql(); });
           inp.addEventListener("keydown", function (e) { if (e.key === "Enter") run(); });
@@ -156,16 +180,16 @@ var BaseQuery = (function () {
     /* sort */
     box.appendChild(el("div", "bq-label", "Sort by"));
     var sr = el("div", "bq-row");
-    sr.appendChild(sel([["", "(no sort)"]].concat(t.fields.map(function (x) { return [x.id, x.name]; })), draft.sort ? draft.sort.field : "", "bq-sel", function (v) { draft.sort = v ? { field: v, dir: draft.sort ? draft.sort.dir : 1 } : null; render(); }));
+    sr.appendChild(sel([["", "(no sort)"]].concat(allFields(t).map(function (x) { return [x.id, x.name]; })), draft.sort ? draft.sort.field : "", "bq-sel", function (v) { draft.sort = v ? { field: v, dir: draft.sort ? draft.sort.dir : 1 } : null; render(); }));
     if (draft.sort) sr.appendChild(sel([["1", "Ascending (A→Z, 1→9)"], ["-1", "Descending (Z→A, 9→1)"]], String(draft.sort.dir), "bq-sel", function (v) { draft.sort.dir = +v; render(); }));
     box.appendChild(sr);
 
     /* fields to show */
     box.appendChild(el("div", "bq-label", "Fields to show"));
-    var fr = el("div", "bq-row bq-checks");
-    t.fields.forEach(function (f) {
+    var fr = el("div", "bq-row bq-checks"), af = allFields(t);
+    af.forEach(function (f) {
       var l = el("label", "bq-check"), cb = el("input"); cb.type = "checkbox"; cb.checked = draft.show.indexOf(f.id) >= 0;
-      cb.addEventListener("change", function () { draft.show = t.fields.filter(function (x) { return x === f ? cb.checked : draft.show.indexOf(x.id) >= 0; }).map(function (x) { return x.id; }); if (showSql) renderSql(); });
+      cb.addEventListener("change", function () { draft.show = af.filter(function (x) { return x === f ? cb.checked : draft.show.indexOf(x.id) >= 0; }).map(function (x) { return x.id; }); if (showSql) renderSql(); });
       l.appendChild(cb); l.appendChild(document.createTextNode(" " + f.name)); fr.appendChild(l);
     });
     box.appendChild(fr);

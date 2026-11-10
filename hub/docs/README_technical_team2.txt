@@ -835,6 +835,16 @@ Sources: `git ls-tree` / `git show` / `git grep` on origin/main, `git log origin
 - `<title>Base BS5</title>`, `BASE_VERSION = "BS5"`, Base's own css/js `?v=BS5`. Shared Office files untouched. No build bump.
 - Tests: `node --check` on changed JS, a static curl smoke test (200 + BS5), and pure-helper Node tests for validation, auto-number and the undo stack (no Puppeteer / Playwright / jsdom).
 
+### 1.65 Base links between tables: `apps/office/base/` (Office), release BS6
+- Why: BS5 added field types and rules but tables still could not point at each other, so a real little database (Orders → Customers) was out of reach.
+- New `modules/base-links.js` (pure helpers + in-app record picker, jump, add-related, related-records panel). New types: `ref` (Link to record: `{to, multi?, display?}`, value is a row id or an array of ids) and `lookup` (read-only `{via, src}`, computed from the linked record(s), not stored). The URL field stays `link`.
+- Record picker: in-app `dlg-*` dialog with search, single-click (or tick + OK when multi). Chips in the grid/form jump to the linked record; Change / Clear / × edit the link. Undo covers link edits (JSON snapshots already include arrays).
+- Related-records panel (`#related-wrap`): inbound links grouped by table and field, with Open and + Add (new row pre-filled with this record). Queries gain “Link ▸ field” paths and = / ≠ / empty on a `ref`; a row matches if any linked record does. CSV export writes display text, not ids.
+- Delete guard in `base-delete.js`: if others link to the record or table, the typed-confirm dialog lists them and the button becomes “Clear links and delete…”. Cancel keeps everything. `BaseLinks.clearLinksTo` runs first. Record deletes stay undoable; table deletes still clear the undo stack.
+- Data: `schema: 6`. Existing schema 5 (and older) records in IndexedDB `office-base` load unchanged; first open writes `db-backup` and migrates in place. Repair keeps arrays of strings on `ref` fields (other arrays are dropped). IndexedDB version stays 2.
+- `<title>Base BS6</title>`, `BASE_VERSION = "BS6"`, Base's own css/js `?v=BS6`. Shared Office files untouched. No build bump.
+- Tests: `node --check` on changed JS, `test-bs5-helpers.js` + new `test-bs6-helpers.js` (display, lookup, inbound, clear, delete impact, schema 5→6 repair), static curl smoke (200 + BS6). No Puppeteer / Playwright / jsdom.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

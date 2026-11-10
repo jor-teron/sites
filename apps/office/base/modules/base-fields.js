@@ -1,5 +1,5 @@
 /*
- * base-fields.js  (BS5)
+ * base-fields.js  (BS5, BS6: Link to record + Lookup in Fields…)
  * Add / edit field dialogs (rules, Choice options, retype preview) and the commit path used by
  * the grid and form (undo session, required / unique / format checks, invalid marks).
  * Dialogs use the shared dlg-* look and stay in-app (no alert/confirm).
@@ -42,7 +42,7 @@ var BaseFields = (function () {
   function apply(t, f, r, value, ev) {
     ev = ev || "input";
     if (!t || !f || !r) return false;
-    if (f.type === "id") return false;
+    if (f.type === "id" || f.type === "lookup") return false;
     touch(f, r);
     var T = types(), prev = r.v[f.id], v = value;
     if (T && (f.type === "currency" || f.type === "number") && ev !== "live") {
@@ -63,7 +63,14 @@ var BaseFields = (function () {
         else if (res.warn) toast(res.warn, 3200);
       }
     }
-    var same = (v === prev) || (v === "" && (prev == null || prev === "")) || (typeof v === "number" && v === +prev);
+    var same;
+    if (f.type === "ref") {
+      var ia = (typeof BaseLinks !== "undefined" ? BaseLinks.ids(v) : []).join("\n");
+      var ib = (typeof BaseLinks !== "undefined" ? BaseLinks.ids(prev) : []).join("\n");
+      same = ia === ib;
+    } else {
+      same = (v === prev) || (v === "" && (prev == null || prev === "")) || (typeof v === "number" && v === +prev);
+    }
     if (!same) {
       r.v[f.id] = v;
       commitStep("Edit " + f.name);
@@ -92,6 +99,62 @@ var BaseFields = (function () {
     optBox.appendChild(el("span", "base-f-hint", "Choice options"));
     optBox.appendChild(optTa);
     box.appendChild(optBox);
+    var refBox = el("div", "base-f-ref");
+    var toSel = el("select", "dlg-input base-f-to");
+    var tables = (typeof BASE !== "undefined" && BASE.db && BASE.db.tables) ? BASE.db.tables : [];
+    var z0 = el("option", null, tables.length ? "Choose a table…" : "No tables"); z0.value = ""; toSel.appendChild(z0);
+    tables.forEach(function (tb) { var o = el("option", null, tb.name); o.value = tb.id; toSel.appendChild(o); });
+    if (f && f.to) toSel.value = f.to;
+    refBox.appendChild(lab("Link to table", toSel));
+    var multi = el("input"); multi.type = "checkbox"; multi.className = "base-f-multi"; multi.checked = !!(f && f.multi);
+    var multiL = el("label", "base-f-check"); multiL.appendChild(multi); multiL.appendChild(document.createTextNode(" Allow several records"));
+    refBox.appendChild(multiL);
+    var disp = el("select", "dlg-input base-f-display");
+    refBox.appendChild(lab("Show this field", disp));
+    box.appendChild(refBox);
+    var lookBox = el("div", "base-f-look");
+    var viaSel = el("select", "dlg-input base-f-via");
+    var srcSel = el("select", "dlg-input base-f-src");
+    lookBox.appendChild(lab("From this link", viaSel));
+    lookBox.appendChild(lab("Show this field", srcSel));
+    lookBox.appendChild(el("div", "base-f-hint", "Lookups are read-only. Add a Link to record field first if the list is empty."));
+    box.appendChild(lookBox);
+    function fillDisplay() {
+      var tt = tables.filter(function (x) { return x.id === toSel.value; })[0];
+      var keep = disp.value || (f && f.display) || "";
+      disp.textContent = "";
+      var any = el("option", null, tt ? "(default)" : "—"); any.value = ""; disp.appendChild(any);
+      if (tt) (tt.fields || []).forEach(function (sf) {
+        if (sf.type === "picture" || sf.type === "ref" || sf.type === "lookup") return;
+        var o = el("option", null, sf.name); o.value = sf.id; disp.appendChild(o);
+      });
+      if (keep && [].some.call(disp.options, function (o) { return o.value === keep; })) disp.value = keep;
+    }
+    function fillViaSrc() {
+      var host = (typeof BaseStore !== "undefined") ? BaseStore.table() : null;
+      var keepV = viaSel.value || (f && f.via) || "", keepS = srcSel.value || (f && f.src) || "";
+      viaSel.textContent = ""; srcSel.textContent = "";
+      var e0 = el("option", null, "Choose a link…"); e0.value = ""; viaSel.appendChild(e0);
+      var refs = host ? (host.fields || []).filter(function (x) { return x.type === "ref" && (!f || x.id !== f.id); }) : [];
+      refs.forEach(function (rf) { var o = el("option", null, rf.name); o.value = rf.id; viaSel.appendChild(o); });
+      if (keepV && [].some.call(viaSel.options, function (o) { return o.value === keepV; })) viaSel.value = keepV;
+      function fillSrc() {
+        var rf = host && (host.fields || []).filter(function (x) { return x.id === viaSel.value; })[0];
+        var tt = rf && typeof BaseLinks !== "undefined" ? BaseLinks.targetTable(rf) : null;
+        var keep = srcSel.value || keepS;
+        srcSel.textContent = "";
+        var s0 = el("option", null, tt ? "Choose a field…" : "—"); s0.value = ""; srcSel.appendChild(s0);
+        if (tt) (tt.fields || []).forEach(function (sf) {
+          if (sf.type === "picture" || sf.type === "ref" || sf.type === "lookup") return;
+          var o = el("option", null, sf.name); o.value = sf.id; srcSel.appendChild(o);
+        });
+        if (keep && [].some.call(srcSel.options, function (o) { return o.value === keep; })) srcSel.value = keep;
+      }
+      viaSel.onchange = fillSrc;
+      fillSrc();
+    }
+    toSel.addEventListener("change", fillDisplay);
+    fillDisplay(); fillViaSrc();
     var def = el("input", "dlg-input base-f-def"); def.type = "text";
     def.value = f && f.def != null ? String(f.def) : "";
     def.placeholder = "Optional";
@@ -107,8 +170,11 @@ var BaseFields = (function () {
     function sync() {
       var ty = typ.value;
       optBox.hidden = ty !== "choice";
-      defLab.hidden = ty === "id" || ty === "picture";
-      rules.hidden = ty === "id";
+      refBox.hidden = ty !== "ref";
+      lookBox.hidden = ty !== "lookup";
+      defLab.hidden = ty === "id" || ty === "picture" || ty === "ref" || ty === "lookup";
+      rules.hidden = ty === "id" || ty === "lookup";
+      uniqL.hidden = ty === "ref" && multi.checked;
       if (ty === "id") {
         next.hidden = false;
         next.textContent = f && f.type === "id" && f.next ? ("Next number: " + f.next + " (never reused)") : "Existing records will be numbered 1, 2, 3… in their current order.";
@@ -118,7 +184,7 @@ var BaseFields = (function () {
       else if (ty === "number" || ty === "currency") { def.type = "text"; def.placeholder = ty === "currency" ? "e.g. 1500" : "Optional"; }
       else { def.type = "text"; def.placeholder = "Optional"; }
     }
-    typ.addEventListener("change", sync); sync();
+    typ.addEventListener("change", sync); multi.addEventListener("change", sync); sync();
     box._read = function () {
       return {
         id: f ? f.id : "",
@@ -127,7 +193,12 @@ var BaseFields = (function () {
         options: optTa.value.split(/\r?\n/),
         def: def.value,
         required: req.checked,
-        unique: uniq.checked,
+        unique: uniq.checked && !(typ.value === "ref" && multi.checked),
+        to: toSel.value,
+        multi: multi.checked,
+        display: disp.value,
+        via: viaSel.value,
+        src: srcSel.value,
         existed: !!f,
         was: f ? f.type : ""
       };
@@ -187,11 +258,15 @@ var BaseFields = (function () {
     var f = old || { id: BaseStore.uid(), name: spec.name };
     f.name = spec.name;
     f.type = spec.type;
-    if (spec.required && spec.type !== "id") f.required = true; else delete f.required;
-    if (spec.unique && spec.type !== "id") f.unique = true; else delete f.unique;
+    if (spec.required && spec.type !== "id" && spec.type !== "lookup") f.required = true; else delete f.required;
+    if (spec.unique && spec.type !== "id" && spec.type !== "lookup" && !(spec.type === "ref" && spec.multi)) f.unique = true; else delete f.unique;
     if (spec.type === "choice") f.options = BaseStore.normOptions(spec.options);
     else delete f.options;
-    if (spec.type !== "id" && spec.type !== "picture" && spec.def != null && String(spec.def).trim() !== "") {
+    if (spec.type === "ref") { f.to = spec.to || ""; if (spec.multi) f.multi = true; else delete f.multi; if (spec.display) f.display = spec.display; else delete f.display; }
+    else { delete f.to; delete f.multi; delete f.display; }
+    if (spec.type === "lookup") { f.via = spec.via || ""; f.src = spec.src || ""; }
+    else { delete f.via; delete f.src; }
+    if (spec.type !== "id" && spec.type !== "picture" && spec.type !== "ref" && spec.type !== "lookup" && spec.def != null && String(spec.def).trim() !== "") {
       f.def = (spec.type === "bool")
         ? /^(yes|true|y|1)$/i.test(String(spec.def).trim())
         : ((spec.type === "number" || spec.type === "currency") && T ? (BaseTypes.parseCurrency(spec.def) || spec.def) : spec.def);
@@ -219,19 +294,33 @@ var BaseFields = (function () {
     if (f.type === toType) return;
     if (toType === "id") { f.type = "id"; BaseTypes.fillAutoIds(t, f); return; }
     t.rows.forEach(function (r) {
-      var c = BaseTypes.convert(r.v[f.id], f.type, toType);
+      var c = BaseTypes.convert(r.v[f.id], f.type, toType, f);
       r.v[f.id] = c.fill ? "" : c.value;
     });
     f.type = toType;
     if (toType !== "id") delete f.next;
     if (toType !== "choice") delete f.options;
+    if (toType !== "ref") { delete f.to; delete f.multi; delete f.display; }
+    if (toType !== "lookup") { delete f.via; delete f.src; }
   }
 
+  function checkSpecs(vals, adding) {
+    if (!adding && !vals.some(function (v) { return v.name; })) return "Keep at least one field";
+    if (adding && (!vals[0] || !vals[0].name)) return "Enter a name";
+    var i, v;
+    for (i = 0; i < vals.length; i++) {
+      v = vals[i];
+      if (!v.name) continue;
+      if (v.type === "ref" && !v.to) return "Choose a table for “" + v.name + "” to link to.";
+      if (v.type === "lookup" && (!v.via || !v.src)) return "Choose a link and a field for the lookup “" + v.name + "”.";
+    }
+    return "";
+  }
   function add() {
     var t = BaseStore.table(); if (!t) return;
     var card = fieldCard(null, t.fields.length);
     openDialog({ title: "Add field", message: "New values use the default (if you set one). Auto-number ID is read-only and counts up, never reusing a deleted number.", cards: [card], okLabel: "Add field",
-      validate: function (vals) { return vals[0] && vals[0].name ? "" : "Enter a name"; }
+      validate: function (vals) { return checkSpecs(vals, true); }
     }).then(function (vals) {
       if (!vals) return;
       var spec = vals[0];
@@ -267,6 +356,8 @@ var BaseFields = (function () {
         applyRetype(t, f, to);
       } else if (!prev) {
         t.rows.forEach(function (r) { r.v[f.id] = types() ? BaseTypes.defaultValue(f) : (f.type === "bool" ? false : ""); });
+      } else if (f.type === "ref" && typeof BaseLinks !== "undefined") {
+        t.rows.forEach(function (r) { r.v[f.id] = BaseLinks.normalize(r.v[f.id], !!f.multi); });
       }
       next.push(f);
     });
@@ -277,7 +368,7 @@ var BaseFields = (function () {
     var t = BaseStore.table(); if (!t) return;
     var cards = t.fields.map(function (f, i) { return fieldCard(f, i); });
     openDialog({ title: "Fields of " + t.name, message: "Rename, change the type, or set Required / Default / Unique. Clear a name to delete that field.", cards: cards, okLabel: "Apply",
-      validate: function (vals) { return vals.some(function (v) { return v.name; }) ? "" : "Keep at least one field"; }
+      validate: function (vals) { return checkSpecs(vals, false); }
     }).then(function (vals) {
       if (!vals) return;
       var changes = [], idCount = 0;
