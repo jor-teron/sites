@@ -1723,6 +1723,41 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.53–1.92 are already taken on main, so this note is numbered 1.93.
 
 
+### 1.94 Expense Tracker, release EXT1
+
+- New Office app at `apps/office/expense-tracker/` (Office → Hub Office, after
+  Slides). Branch `apps/ext1-expense-tracker`. RELEASE / title / `?v=` = EXT1.
+- Offline spending and income tracker, no libraries. Quick add: amount in ₹,
+  category, date (default today), note and payment mode (Cash / UPI / Card / Bank).
+  Default Indian expense categories: Food, Groceries, Transport, Fuel, Bills, Rent,
+  Shopping, Health, Education, Entertainment, Other. Default income categories:
+  Salary, Business, Interest, Other income. Categories are editable (name, emoji,
+  colour). Amounts use Indian grouping (1,23,456.00).
+- Entries are listed by day, with search and filters (month, category, mode). Edit
+  an entry, or delete it after an in-app confirm. Month summary shows income, spent
+  and balance. A monthly budget overall and per category has a progress bar and an
+  over-budget warning. Canvas charts (no libraries): category donut and daily
+  spending bars for the month.
+- Recurring monthly entries (rent, bills, salary) are added automatically once their
+  date has arrived. A 31st becomes the last day of shorter months. Deleting one
+  generated occurrence does not bring it back, and does not stop later months.
+- CSV export and import (Date, Type, Amount, Category, Note, Mode). JSON backup and
+  restore (restore replaces what is on this device). Storage is localStorage
+  `expense-tracker-v1` with guarded writes and an in-app toast if a save fails.
+- Auto / Light / Dark theme: Auto follows `sites-hub.theme`, else the device.
+  In-app dialogs only (no `alert` / `confirm` / `prompt`). A row was added to
+  `apps/office/office-apps.csv`. `apps/office/shared/` was not edited. Main Builder
+  still needs to regenerate `hub_catalog.js` / `hub_appindex.js` after this is on
+  main. Details: apps/office/expense-tracker/expense-tracker_readme.md.
+- New files: `index.html`, `expense-tracker.html/.css/.js`, `ex_core.js`,
+  `test_ex_core.js`, `expense-tracker_readme.md`, `expense-tracker_icon.svg`.
+  Maths in `ex_core.js` (pure, node-testable). Tested with `node --check` on every
+  JS file, `node test_ex_core.js` (Indian number format, month totals, budget math,
+  recurring expansion, CSV parse/export), and a static serve + curl smoke test. No
+  Puppeteer, Playwright or jsdom.
+- 1.53–1.93 are already taken on main, so this note is numbered 1.94.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
