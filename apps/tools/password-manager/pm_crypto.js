@@ -1,6 +1,8 @@
-/* Password Manager PW1 — Web Crypto vault (PBKDF2-SHA256 + AES-GCM-256).
+/* Password Manager PW2 — Web Crypto vault (PBKDF2-SHA256 + AES-GCM-256).
    No separate password hash: a successful GCM decrypt is the proof.
-   The AES key is non-extractable. Header: {v, kdf, iter, salt, iv, ct} (b64). */
+   The AES key is non-extractable. Crypto header: {v:1, kdf, iter, salt, iv, ct} (b64).
+   Vault JSON version 2 adds tags, custom fields, passwordChanged and tombstones.
+   Encrypted backup files wrap the same header in {type, format, exported, hint, ...header}. */
 (function (root) {
   'use strict';
 
@@ -8,6 +10,9 @@
   var SALT_LEN = 16;
   var IV_LEN = 12;
   var KDF = 'PBKDF2-SHA256';
+  var HEADER_VERSION = 1;
+  var VAULT_VERSION = 2;
+  var BACKUP_TYPE = 'hub-password-manager-backup';
   var enc = new TextEncoder();
   var dec = new TextDecoder();
 
@@ -69,7 +74,7 @@
     var pt = enc.encode(JSON.stringify(vaultObj));
     return subtle().subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, pt).then(function (ctBuf) {
       return {
-        v: 1,
+        v: HEADER_VERSION,
         kdf: KDF,
         iter: iter || ITER_DEFAULT,
         salt: b64enc(saltU8),
@@ -113,15 +118,134 @@
     });
   }
 
+  function defaultSettings() {
+    return {
+      autoLockMin: 5,
+      lockHiddenMin: 0,
+      clipboardSec: 30
+    };
+  }
+
   function emptyVault() {
     return {
-      version: 1,
-      settings: {
-        autoLockMin: 5,
-        lockHiddenMin: 0,
-        clipboardSec: 30
-      },
-      entries: []
+      version: VAULT_VERSION,
+      settings: defaultSettings(),
+      entries: [],
+      tombstones: []
+    };
+  }
+
+  function migrateEntry(e) {
+    if (!e || typeof e !== 'object') return e;
+    if (!Array.isArray(e.tags)) e.tags = [];
+    else {
+      e.tags = e.tags.map(function (t) { return String(t || '').trim(); }).filter(Boolean);
+    }
+    if (!Array.isArray(e.fields)) e.fields = [];
+    else {
+      e.fields = e.fields.map(function (f) {
+        if (!f || typeof f !== 'object') return null;
+        return {
+          id: f.id || (root.PMUtil && PMUtil.uid ? PMUtil.uid() : String(Math.random()).slice(2)),
+          name: String(f.name || ''),
+          value: String(f.value || ''),
+          hidden: !!f.hidden
+        };
+      }).filter(Boolean);
+    }
+    if (e.password && !e.passwordChanged) {
+      e.passwordChanged = e.updated || e.created || '';
+    }
+    if (!e.created) e.created = e.updated || '';
+    if (!e.updated) e.updated = e.created || '';
+    return e;
+  }
+
+  // Upgrade a decrypted vault JSON to the current format. Safe to call more than once.
+  function migrateVault(vault) {
+    if (!vault || typeof vault !== 'object' || Array.isArray(vault)) {
+      return emptyVault();
+    }
+    var out = vault;
+    var ver = Number(out.version) || 1;
+    if (!out.settings || typeof out.settings !== 'object') out.settings = defaultSettings();
+    if (!Array.isArray(out.entries)) out.entries = [];
+    if (ver < 2) {
+      out.entries = out.entries.map(migrateEntry);
+      if (!Array.isArray(out.tombstones)) out.tombstones = [];
+      out.version = 2;
+    } else {
+      out.entries = out.entries.map(migrateEntry);
+      if (!Array.isArray(out.tombstones)) out.tombstones = [];
+    }
+    return out;
+  }
+
+  function isHeader(obj) {
+    return !!(obj && obj.kdf && obj.salt && obj.iv && obj.ct);
+  }
+
+  // Wrap a crypto header as a downloadable backup object (still encrypted).
+  function packBackup(header, extra) {
+    extra = extra || {};
+    if (!isHeader(header)) throw new Error('No encrypted vault to export');
+    return {
+      type: BACKUP_TYPE,
+      format: VAULT_VERSION,
+      exported: extra.exported || (new Date()).toISOString(),
+      hint: extra.hint ? String(extra.hint) : '',
+      v: header.v,
+      kdf: header.kdf,
+      iter: header.iter,
+      salt: header.salt,
+      iv: header.iv,
+      ct: header.ct
+    };
+  }
+
+  function backupToText(backup) {
+    return JSON.stringify(backup, null, 2);
+  }
+
+  // Accept a backup object, a raw crypto header, or a JSON string of either.
+  function parseBackup(input) {
+    var obj = input;
+    if (typeof input === 'string') {
+      var text = input.replace(/^\uFEFF/, '').trim();
+      if (!text) throw new Error('The backup file is empty');
+      try { obj = JSON.parse(text); }
+      catch (e) { throw new Error('This is not a Password Manager backup file'); }
+    }
+    if (!obj || typeof obj !== 'object') throw new Error('This is not a Password Manager backup file');
+    if (obj.type && obj.type !== BACKUP_TYPE) {
+      throw new Error('This file is not a Password Manager backup');
+    }
+    if (!isHeader(obj)) throw new Error('The backup file is missing the encrypted vault');
+    return {
+      type: obj.type || BACKUP_TYPE,
+      format: obj.format || 1,
+      exported: obj.exported || '',
+      hint: obj.hint ? String(obj.hint) : '',
+      header: {
+        v: obj.v,
+        kdf: obj.kdf,
+        iter: obj.iter,
+        salt: obj.salt,
+        iv: obj.iv,
+        ct: obj.ct
+      }
+    };
+  }
+
+  function cryptoHeaderOf(rec) {
+    if (!rec) return null;
+    return {
+      v: rec.v,
+      kdf: rec.kdf,
+      iter: rec.iter,
+      salt: rec.salt,
+      iv: rec.iv,
+      ct: rec.ct
     };
   }
 
@@ -130,6 +254,9 @@
     SALT_LEN: SALT_LEN,
     IV_LEN: IV_LEN,
     KDF: KDF,
+    HEADER_VERSION: HEADER_VERSION,
+    VAULT_VERSION: VAULT_VERSION,
+    BACKUP_TYPE: BACKUP_TYPE,
     b64enc: b64enc,
     b64dec: b64dec,
     randomBytes: randomBytes,
@@ -138,7 +265,15 @@
     decryptVault: decryptVault,
     encryptWithPassword: encryptWithPassword,
     decryptWithPassword: decryptWithPassword,
-    emptyVault: emptyVault
+    emptyVault: emptyVault,
+    defaultSettings: defaultSettings,
+    migrateEntry: migrateEntry,
+    migrateVault: migrateVault,
+    packBackup: packBackup,
+    backupToText: backupToText,
+    parseBackup: parseBackup,
+    isHeader: isHeader,
+    cryptoHeaderOf: cryptoHeaderOf
   };
 
   root.PMCrypto = api;

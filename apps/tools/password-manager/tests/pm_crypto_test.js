@@ -1,4 +1,4 @@
-/* Node tests for Password Manager PW1 (crypto, generator, lock delays, helpers).
+/* Node tests for Password Manager PW2 (crypto, generator, lock delays, helpers).
    Run: node apps/tools/password-manager/tests/pm_crypto_test.js
    No DOM, no jsdom, no browser. Needs Node 18+ (globalThis.crypto.subtle). */
 'use strict';
@@ -79,6 +79,53 @@ async function cryptoTests() {
   // b64 helpers
   var bytes = new Uint8Array([0, 1, 2, 254, 255]);
   eq('b64 round-trip', Array.from(PMCrypto.b64dec(PMCrypto.b64enc(bytes))), [0, 1, 2, 254, 255]);
+
+  // Vault format v1 → v2 migration
+  var v1 = { version: 1, settings: { autoLockMin: 15 }, entries: [{ id: 'a', type: 'login', title: 'Bank', password: 's3cret', updated: '2020-01-01T00:00:00.000Z' }] };
+  var v2 = PMCrypto.migrateVault(v1);
+  eq('migrated version', v2.version, 2);
+  ok('migrated tags array', Array.isArray(v2.entries[0].tags));
+  ok('migrated fields array', Array.isArray(v2.entries[0].fields));
+  eq('passwordChanged from updated', v2.entries[0].passwordChanged, '2020-01-01T00:00:00.000Z');
+  ok('tombstones array', Array.isArray(v2.tombstones));
+  eq('settings kept', v2.settings.autoLockMin, 15);
+  var empty = PMCrypto.migrateVault(null);
+  eq('null vault becomes v2', empty.version, 2);
+
+  var enc2 = await PMCrypto.encryptWithPassword(v2, password, 10000);
+  var packed = PMCrypto.packBackup(enc2.header, { hint: 'my hint', exported: '2026-11-10T00:00:00.000Z' });
+  eq('backup type', packed.type, 'hub-password-manager-backup');
+  eq('backup format', packed.format, 2);
+  eq('backup hint', packed.hint, 'my hint');
+  eq('backup has ct', typeof packed.ct, 'string');
+  var text = PMCrypto.backupToText(packed);
+  var parsed = PMCrypto.parseBackup(text);
+  eq('parse type', parsed.type, packed.type);
+  eq('parse hint', parsed.hint, 'my hint');
+  var decB = await PMCrypto.decryptWithPassword(parsed.header, password);
+  eq('backup decrypt title', decB.vault.entries[0].title, 'Bank');
+
+  var rawHeaderOk = false;
+  try {
+    var rawParsed = PMCrypto.parseBackup(JSON.stringify(enc2.header));
+    var decRaw = await PMCrypto.decryptWithPassword(rawParsed.header, password);
+    rawHeaderOk = decRaw.vault.entries[0].title === 'Bank';
+  } catch (e) { rawHeaderOk = false; }
+  ok('plain header also importable', rawHeaderOk);
+
+  var bad = false;
+  try { PMCrypto.parseBackup('{"type":"nope"}'); } catch (e) { bad = true; }
+  ok('rejects unknown backup type', bad);
+
+  // Rekey: encrypt with new password, old header kept as prev, both decrypt to the same vault.
+  var rekey = await PMCrypto.encryptWithPassword(v2, 'new horse battery', 10000);
+  var oldDec = await PMCrypto.decryptWithPassword(enc2.header, password);
+  var newDec = await PMCrypto.decryptWithPassword(rekey.header, 'new horse battery');
+  eq('rekey old still works', oldDec.vault.entries[0].title, 'Bank');
+  eq('rekey new works', newDec.vault.entries[0].title, 'Bank');
+  var newWrong = false;
+  try { await PMCrypto.decryptWithPassword(rekey.header, password); } catch (e) { newWrong = true; }
+  ok('old password cannot open new header', newWrong);
 }
 
 function genTests() {

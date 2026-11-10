@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Password Manager PW1</title>
+  <title>Password Manager PW2</title>
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'self'">
   <link rel="icon" href="password-manager_icon.svg">
-  <script src="pm_theme.js?v=PW1"></script>
-  <link rel="stylesheet" href="pm_base.css?v=PW1">
+  <script src="pm_theme.js?v=PW2"></script>
+  <link rel="stylesheet" href="pm_base.css?v=PW2">
 </head>
 <body>
   <div class="app" id="app">
@@ -17,7 +17,7 @@
       <div class="gate-card">
         <h2>Create a master password</h2>
         <p class="gate-lead">This vault stays on this device. Everything in it is encrypted with your master password.</p>
-        <p class="warn">If you forget the master password, the vault cannot be recovered. There is no reset and no back-up email. Write it down and keep it somewhere safe, or wait for the encrypted backup in a later release.</p>
+        <p class="warn">If you forget the master password, the vault cannot be recovered. There is no reset and no back-up email. Write it down and keep it somewhere safe, or keep an encrypted backup from Settings somewhere safe.</p>
         <label class="field">
           <span class="field-label">Master password</span>
           <input id="setupPw" type="password" autocomplete="new-password" spellcheck="false" minlength="8">
@@ -60,6 +60,7 @@
       <header class="app-header">
         <h1>Password Manager</h1>
         <div class="header-actions">
+          <button type="button" class="btn secondary-btn slim-btn" id="healthBtn">Health</button>
           <button type="button" class="btn secondary-btn slim-btn" id="settingsBtn">Settings</button>
           <button type="button" class="btn secondary-btn slim-btn" id="lockBtn" title="Lock now (Ctrl+L)">Lock</button>
           <div class="seg" id="themeSeg" role="group" aria-label="Theme">
@@ -71,7 +72,7 @@
       </header>
 
       <div class="toolbar">
-        <input class="search" id="searchBox" type="search" placeholder="Search title, username or website" autocomplete="off" spellcheck="false">
+        <input class="search" id="searchBox" type="search" placeholder="Search title, username, website or tag" autocomplete="off" spellcheck="false">
         <div class="filters" id="filterBar" role="tablist" aria-label="Filter"></div>
         <button type="button" class="btn primary-btn slim-btn" id="addBtn">Add</button>
       </div>
@@ -99,13 +100,16 @@
 
   <noscript><p>Password Manager needs JavaScript.</p></noscript>
 
-  <script src="pm_util.js?v=PW1"></script>
-  <script src="pm_crypto.js?v=PW1"></script>
-  <script src="pm_store.js?v=PW1"></script>
-  <script src="pm_gen.js?v=PW1"></script>
-  <script src="pm_lock.js?v=PW1"></script>
-  <script src="pm_dlg.js?v=PW1"></script>
-  <script src="pm_ui.js?v=PW1"></script>
-  <script src="pm_main.js?v=PW1"></script>
+  <script src="pm_util.js?v=PW2"></script>
+  <script src="pm_crypto.js?v=PW2"></script>
+  <script src="pm_store.js?v=PW2"></script>
+  <script src="pm_gen.js?v=PW2"></script>
+  <script src="pm_lock.js?v=PW2"></script>
+  <script src="pm_dlg.js?v=PW2"></script>
+  <script src="pm_csv.js?v=PW2"></script>
+  <script src="pm_health.js?v=PW2"></script>
+  <script src="pm_merge.js?v=PW2"></script>
+  <script src="pm_ui.js?v=PW2"></script>
+  <script src="pm_main.js?v=PW2"></script>
 </body>
 </html>

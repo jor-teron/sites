@@ -1,5 +1,7 @@
-/* Password Manager PW1 — IndexedDB wrapper for the encrypted vault blob.
-   Database name: pwmanager. The decrypted vault is never written here. */
+/* Password Manager PW2 — IndexedDB wrapper for the encrypted vault blob.
+   Database name: pwmanager. The decrypted vault is never written here.
+   A `prev` crypto header is kept during a master-password change so an
+   interrupted rekey can still be unlocked with the old or new password. */
 (function (root) {
   'use strict';
 
@@ -95,7 +97,15 @@
     };
   }
 
+  function copyHeader(h) {
+    if (!h) return null;
+    if (!h.ct || !h.salt || !h.iv) return null;
+    return { v: h.v, kdf: h.kdf, iter: h.iter, salt: h.salt, iv: h.iv, ct: h.ct };
+  }
+
   // Merge a fresh crypto header with the plain-text hint and fail metadata.
+  // extra.prev  — keep a previous header during a master-password change.
+  // extra.dropPrev — remove any previous header after a verified rekey.
   function mergeHeader(prev, header, extra) {
     extra = extra || {};
     var rec = {
@@ -109,6 +119,13 @@
       fails: extra.fails != null ? extra.fails : (prev && prev.fails) || 0,
       delayUntil: extra.delayUntil != null ? extra.delayUntil : (prev && prev.delayUntil) || 0
     };
+    if (extra.dropPrev) {
+      // no prev
+    } else if (extra.prev) {
+      rec.prev = copyHeader(extra.prev);
+    } else if (prev && prev.prev) {
+      rec.prev = copyHeader(prev.prev);
+    }
     return rec;
   }
 
@@ -118,6 +135,7 @@
     saveRecord: saveRecord,
     hasVault: hasVault,
     cryptoHeader: cryptoHeader,
+    copyHeader: copyHeader,
     mergeHeader: mergeHeader
   };
 

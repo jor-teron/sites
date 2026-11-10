@@ -1,4 +1,4 @@
-/* Password Manager PW1 — screens, list, detail, settings, clipboard. */
+/* Password Manager PW2 — screens, list, detail, settings, clipboard, backup, health, tags. */
 (function (root) {
   'use strict';
 
@@ -18,6 +18,7 @@
     vault: null,
     filter: 'all',
     query: '',
+    tagFilter: '',
     selectedId: null,
     dirty: false,
     busy: false,
@@ -74,6 +75,7 @@
     state.selectedId = null;
     state.dirty = false;
     state.filter = 'all';
+    state.tagFilter = '';
     state.query = '';
     var detail = $('detailPane');
     if (detail) detail.innerHTML = '';
@@ -188,12 +190,25 @@
   /* ---------- list / filter ---------- */
 
   function matches(e) {
-    if (!e) return false;
+    if (!e || e.deleted) return false;
     if (state.filter === 'fav' && !e.favourite) return false;
     if (state.filter !== 'all' && state.filter !== 'fav' && e.type !== state.filter) return false;
+    if (state.tagFilter) {
+      var tags = Array.isArray(e.tags) ? e.tags : [];
+      var want = state.tagFilter.toLowerCase();
+      if (!tags.some(function (t) { return String(t).toLowerCase() === want; })) return false;
+    }
     var q = state.query.trim().toLowerCase();
     if (!q) return true;
-    var hay = [e.title, e.username, e.url].join('\n').toLowerCase();
+    var hay = [e.title, e.username, e.url, e.notes, e.ssid, e.cardholder].join('\n').toLowerCase();
+    if (Array.isArray(e.tags)) hay += '\n' + e.tags.join('\n').toLowerCase();
+    if (Array.isArray(e.fields)) {
+      e.fields.forEach(function (f) {
+        if (!f) return;
+        hay += '\n' + String(f.name || '').toLowerCase();
+        if (!f.hidden) hay += '\n' + String(f.value || '').toLowerCase();
+      });
+    }
     return hay.indexOf(q) !== -1;
   }
 
@@ -209,13 +224,45 @@
     });
   }
 
+  function allTags() {
+    var seen = Object.create(null);
+    var list = [];
+    ((state.vault && state.vault.entries) || []).forEach(function (e) {
+      if (!e || e.deleted || !Array.isArray(e.tags)) return;
+      e.tags.forEach(function (t) {
+        t = String(t || '').trim();
+        if (!t) return;
+        var k = t.toLowerCase();
+        if (seen[k]) return;
+        seen[k] = true;
+        list.push(t);
+      });
+    });
+    list.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+    return list;
+  }
+
   function renderFilters() {
     var bar = $('filterBar');
     if (!bar) return;
-    bar.innerHTML = FILTERS.map(function (f) {
+    var html = FILTERS.map(function (f) {
       return '<button type="button" class="chip' + (state.filter === f.id ? ' on' : '') +
         '" data-filter="' + f.id + '">' + U().escapeHtml(f.label) + '</button>';
     }).join('');
+    var tags = allTags();
+    if (tags.length) {
+      html += '<span class="filter-gap" aria-hidden="true"></span>';
+      html += '<button type="button" class="chip' + (!state.tagFilter ? ' on' : '') +
+        '" data-tag="">All tags</button>';
+      html += tags.map(function (t) {
+        var on = state.tagFilter.toLowerCase() === t.toLowerCase();
+        return '<button type="button" class="chip' + (on ? ' on' : '') +
+          '" data-tag="' + U().escapeHtml(t) + '">#' + U().escapeHtml(t) + '</button>';
+      }).join('');
+    } else {
+      state.tagFilter = '';
+    }
+    bar.innerHTML = html;
   }
 
   function renderList() {
@@ -241,6 +288,9 @@
         '</span>' +
         '<span class="entry-title">' + U().escapeHtml(U().entryTitle(e)) + '</span>' +
         '<span class="entry-sub">' + U().escapeHtml(U().entrySub(e)) + '</span>' +
+        (Array.isArray(e.tags) && e.tags.length
+          ? '<span class="entry-tags">' + U().escapeHtml(e.tags.map(function (t) { return '#' + t; }).join(' ')) + '</span>'
+          : '') +
       '</button>';
     }).join('');
   }
@@ -251,6 +301,69 @@
     var list = (state.vault && state.vault.entries) || [];
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
     return null;
+  }
+
+  function parseTags(raw) {
+    var seen = Object.create(null);
+    var out = [];
+    String(raw || '').split(',').forEach(function (t) {
+      t = t.replace(/^#/, '').trim();
+      if (!t) return;
+      var k = t.toLowerCase();
+      if (seen[k]) return;
+      seen[k] = true;
+      out.push(t);
+    });
+    return out;
+  }
+
+  function readCustomFields(form) {
+    var rows = form.querySelectorAll('[data-custom-field]');
+    var out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var nameEl = row.querySelector('[data-cf="name"]');
+      var valEl = row.querySelector('[data-cf="value"]');
+      var hidEl = row.querySelector('[data-cf="hidden"]');
+      var name = nameEl ? nameEl.value.trim() : '';
+      var value = valEl ? valEl.value : '';
+      if (!name && !value) continue;
+      out.push({
+        id: row.getAttribute('data-id') || U().uid(),
+        name: name || 'Field',
+        value: value,
+        hidden: !!(hidEl && hidEl.checked)
+      });
+    }
+    return out;
+  }
+
+  function customFieldsHtml(fields) {
+    fields = Array.isArray(fields) ? fields : [];
+    var rows = fields.map(function (f) {
+      f = f || {};
+      var id = U().escapeHtml(f.id || U().uid());
+      var hidden = !!f.hidden;
+      return '<div class="custom-field" data-custom-field data-id="' + id + '">' +
+        '<input data-cf="name" type="text" autocomplete="off" spellcheck="false" placeholder="Field name" value="' +
+          U().escapeHtml(f.name || '') + '">' +
+        '<span class="field-row">' +
+          '<input data-cf="value" type="' + (hidden ? 'password' : 'text') + '"' +
+            (hidden ? ' data-secret="1"' : '') +
+            ' autocomplete="off" spellcheck="false" placeholder="Value" value="' +
+            U().escapeHtml(f.value || '') + '">' +
+          (hidden ? '<button type="button" class="btn secondary-btn slim-btn" data-act="toggle-vis">Show</button>' : '') +
+          '<button type="button" class="btn secondary-btn slim-btn" data-act="copy-cf">Copy</button>' +
+        '</span>' +
+        '<label class="fav-check"><input data-cf="hidden" type="checkbox"' + (hidden ? ' checked' : '') + '> Hidden</label>' +
+        '<button type="button" class="btn secondary-btn slim-btn" data-act="remove-field">Remove</button>' +
+      '</div>';
+    }).join('');
+    return '<div class="custom-fields" id="customFields">' +
+      '<span class="field-label">Custom fields</span>' +
+      '<div id="customFieldList">' + rows + '</div>' +
+      '<button type="button" class="btn secondary-btn slim-btn" data-act="add-field">Add field</button>' +
+    '</div>';
   }
 
   function readForm() {
@@ -268,9 +381,13 @@
       title: get('title').trim(),
       favourite: !!(fav && fav.checked),
       notes: get('notes'),
+      tags: parseTags(get('tags')),
+      fields: readCustomFields(form),
       created: form.getAttribute('data-created') || U().nowIso(),
       updated: U().nowIso()
     };
+    var totpEl = form.querySelector('[name="totp"]');
+    if (totpEl && totpEl.value.trim()) ev.totp = totpEl.value.trim();
     if (type === 'login') {
       ev.username = get('username');
       ev.password = get('password');
@@ -369,6 +486,15 @@
       html += field({ name: 'notes', label: 'Notes', value: e.notes || '', type: 'textarea', rows: 3 });
     }
 
+    html += field({
+      name: 'tags',
+      label: 'Tags',
+      value: Array.isArray(e.tags) ? e.tags.join(', ') : '',
+      placeholder: 'work, banking — comma-separated',
+      copy: false
+    });
+    html += customFieldsHtml(e.fields);
+
     var openBtn = '';
     if (type === 'login') {
       openBtn = '<button type="button" class="btn secondary-btn" id="openSiteBtn">Open site</button>';
@@ -409,7 +535,34 @@
         copyText(el ? el.value : '', btn);
       } else if (act === 'generate') {
         openGenerator(btn);
+      } else if (act === 'add-field') {
+        var list = $('customFieldList');
+        if (list) {
+          var wrap = document.createElement('div');
+          wrap.innerHTML = customFieldsHtml([{ id: U().uid(), name: '', value: '', hidden: false }]);
+          var row = wrap.querySelector('[data-custom-field]');
+          if (row) list.appendChild(row);
+          markDirty();
+        }
+      } else if (act === 'remove-field') {
+        var cf = btn.closest('[data-custom-field]');
+        if (cf && cf.parentNode) cf.parentNode.removeChild(cf);
+        markDirty();
+      } else if (act === 'copy-cf') {
+        var row = btn.closest('[data-custom-field]');
+        var val = row && row.querySelector('[data-cf="value"]');
+        copyText(val ? val.value : '', btn);
       }
+    });
+    form.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || t.getAttribute('data-cf') !== 'hidden') return;
+      var row = t.closest('[data-custom-field]');
+      var inp = row && row.querySelector('[data-cf="value"]');
+      if (!inp) return;
+      inp.type = t.checked ? 'password' : 'text';
+      if (t.checked) inp.setAttribute('data-secret', '1');
+      else inp.removeAttribute('data-secret');
     });
     var save = $('saveEntryBtn');
     if (save) save.addEventListener('click', function () { saveEntry(false); });
@@ -500,10 +653,18 @@
     }
     ev.updated = U().nowIso();
     if (found >= 0) {
-      ev.created = state.vault.entries[found].created || ev.created;
+      var prev = state.vault.entries[found];
+      ev.created = prev.created || ev.created;
+      if (!ev.totp && prev.totp) ev.totp = prev.totp;
+      if ((prev.password || '') === (ev.password || '')) {
+        ev.passwordChanged = prev.passwordChanged || prev.created || ev.created;
+      } else {
+        ev.passwordChanged = ev.updated;
+      }
       state.vault.entries[found] = ev;
     } else {
       ev.created = ev.created || U().nowIso();
+      ev.passwordChanged = ev.passwordChanged || ev.updated;
       state.vault.entries.push(ev);
     }
     return saveEncrypted().then(function () {
@@ -544,6 +705,11 @@
       if (!ok) return;
       var id = ev && ev.id || state.selectedId;
       state.vault.entries = (state.vault.entries || []).filter(function (e) { return e.id !== id; });
+      state.vault.tombstones = (state.vault.tombstones || []).filter(function (t) { return t.id !== id; });
+      state.vault.tombstones.push({ id: id, updated: U().nowIso(), deleted: true });
+      if (root.PMMerge && PMMerge.collectTombstones) {
+        state.vault.tombstones = PMMerge.collectTombstones(state.vault.tombstones, []);
+      }
       return saveEncrypted().then(function () {
         state.selectedId = null;
         state.dirty = false;
@@ -698,6 +864,334 @@
     });
   }
 
+  function pickFile(accept) {
+    return new Promise(function (resolve) {
+      var inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = accept || '*/*';
+      inp.style.position = 'fixed';
+      inp.style.left = '-9999px';
+      document.body.appendChild(inp);
+      var done = false;
+      function finish(file) {
+        if (done) return;
+        done = true;
+        try { document.body.removeChild(inp); } catch (_) { /* */ }
+        resolve(file || null);
+      }
+      inp.addEventListener('change', function () { finish(inp.files && inp.files[0]); });
+      window.addEventListener('focus', function () {
+        setTimeout(function () { if (!done && (!inp.files || !inp.files.length)) finish(null); }, 600);
+      }, { once: true });
+      inp.click();
+    });
+  }
+
+  function readFileText(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file) { reject(new Error('No file selected')); return; }
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result || '')); };
+      r.onerror = function () { reject(new Error('Could not read that file')); };
+      r.readAsText(file);
+    });
+  }
+
+  function downloadText(name, text, mime) {
+    var blob = new Blob([text], { type: mime || 'application/json' });
+    var a = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      try { document.body.removeChild(a); } catch (_) { /* */ }
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  function exportBackup() {
+    if (!state.rec || !PMStore.hasVault(state.rec)) {
+      PMDlg.message('Nothing to export', 'Unlock the vault first.');
+      return;
+    }
+    try {
+      var backup = PMCrypto.packBackup(PMStore.cryptoHeader(state.rec), {
+        hint: state.rec.hint || '',
+        exported: U().nowIso()
+      });
+      var day = (backup.exported || '').slice(0, 10) || 'vault';
+      downloadText('password-manager-backup-' + day + '.pwvault', PMCrypto.backupToText(backup), 'application/json');
+      PMDlg.message(
+        'Backup saved',
+        'The file is still encrypted with your master password. Keep it somewhere safe. Anyone who has both the file and the password can read the vault.'
+      );
+    } catch (err) {
+      PMDlg.message('Could not export', (err && err.message) || '');
+    }
+  }
+
+  function applyIncomingVault(incoming, mode, title) {
+    if (!root.PMMerge) return Promise.reject(new Error('Merge helper is missing'));
+    var result = PMMerge.mergeVaults(state.vault, incoming, mode);
+    state.vault = PMCrypto.migrateVault(result.vault);
+    return saveEncrypted().then(function () {
+      state.selectedId = null;
+      state.dirty = false;
+      renderFilters();
+      renderList();
+      renderDetail();
+      PMDlg.message(title || 'Import finished', PMMerge.summaryText(result.summary));
+      return result.summary;
+    });
+  }
+
+  function importBackup() {
+    if (!state.vault || !state.key) {
+      PMDlg.message('Unlock first', 'Unlock the vault before importing a backup.');
+      return;
+    }
+    pickFile('.pwvault,application/json,.json').then(function (file) {
+      if (!file) return null;
+      return readFileText(file).then(function (text) {
+        var parsed;
+        try { parsed = PMCrypto.parseBackup(text); }
+        catch (err) {
+          PMDlg.message('Could not open backup', (err && err.message) || '');
+          return null;
+        }
+        var hintLine = parsed.hint ? ('Hint: ' + parsed.hint + '\n\n') : '';
+        var html = '<p>' + U().escapeHtml(hintLine) +
+          'This file is encrypted. Enter the master password that was used when it was exported.</p>' +
+          '<label class="field"><span class="field-label">Backup password</span>' +
+          '<input id="backupPw" type="password" autocomplete="off" spellcheck="false"></label>' +
+          '<p class="dlg-note">Merge keeps your current entries and takes the newer one when both sides have the same item. Replace throws away the entries now in this vault.</p>';
+        PMDlg.open({
+          title: 'Import encrypted backup',
+          html: html,
+          wide: true,
+          actions: [
+            { label: 'Cancel', cls: 'secondary-btn' },
+            { label: 'Merge', cls: 'secondary-btn', fn: function () { runBackupImport(parsed, 'merge'); return false; } },
+            { label: 'Replace', cls: 'danger-btn', fn: function () { confirmReplace(parsed); return false; } }
+          ],
+          onOpen: function () { var el = $('backupPw'); if (el) el.focus(); }
+        });
+      });
+    }).catch(function (err) {
+      PMDlg.message('Could not import', (err && err.message) || '');
+    });
+  }
+
+  function confirmReplace(parsed) {
+    PMDlg.confirm(
+      'Replace the whole vault?',
+      'Every entry now in this vault will be removed and replaced by the backup. This cannot be undone. The master password on this device stays the same.',
+      'Replace',
+      'danger-btn'
+    ).then(function (ok) {
+      if (ok) runBackupImport(parsed, 'replace');
+      else importBackupRedo(parsed);
+    });
+  }
+
+  function importBackupRedo(parsed) {
+    // After cancelling replace, just tell the user to start again if needed — keep it simple.
+  }
+
+  function runBackupImport(parsed, mode) {
+    var pw = ($('backupPw') && $('backupPw').value) || '';
+    if (!pw) {
+      PMDlg.message('Password needed', 'Enter the password for this backup file.');
+      return;
+    }
+    PMDlg.close();
+    setBusy(true, '');
+    PMCrypto.decryptWithPassword(parsed.header, pw).then(function (res) {
+      var incoming = PMCrypto.migrateVault(res.vault);
+      pw = '';
+      setBusy(false, '');
+      return applyIncomingVault(incoming, mode, mode === 'replace' ? 'Vault replaced' : 'Backup merged');
+    }).catch(function (err) {
+      setBusy(false, '');
+      PMDlg.message('Could not decrypt backup', (err && err.message) || 'Wrong password, or the file is damaged.');
+    });
+  }
+
+  function importCsv() {
+    if (!state.vault || !state.key) {
+      PMDlg.message('Unlock first', 'Unlock the vault before importing a CSV file.');
+      return;
+    }
+    pickFile('.csv,text/csv,text/plain').then(function (file) {
+      if (!file) return;
+      return readFileText(file).then(function (text) {
+        var result = PMCsv.importCsv(text);
+        if (!result.entries.length) {
+          PMDlg.message('No entries found', (result.warnings && result.warnings[0]) || 'This does not look like a Chrome, Firefox or Bitwarden CSV export.');
+          return;
+        }
+        var warn = 'This CSV file is not encrypted. Delete the file after a successful import so the passwords are not left in plain text.';
+        var extra = result.warnings && result.warnings.length ? '\n\n' + result.warnings.join('\n') : '';
+        var msg = 'Found ' + result.entries.length + ' entries in a ' + result.format + ' export' +
+          (result.skipped ? (' (' + result.skipped + ' rows skipped)') : '') + '. ' + warn + extra;
+        PMDlg.open({
+          title: 'Import CSV',
+          text: msg,
+          wide: true,
+          actions: [
+            { label: 'Cancel', cls: 'secondary-btn' },
+            { label: 'Import', cls: 'primary-btn', fn: function () {
+              var incoming = { version: 2, settings: state.vault.settings, entries: result.entries, tombstones: [] };
+              applyIncomingVault(incoming, 'merge', 'CSV imported');
+            } }
+          ]
+        });
+      });
+    }).catch(function (err) {
+      PMDlg.message('Could not import CSV', (err && err.message) || '');
+    });
+  }
+
+  function openHealth() {
+    if (!state.vault) return;
+    var report = PMHealth.check(state.vault.entries || []);
+    var c = report.counts;
+    function section(title, items, fmt) {
+      if (!items.length) return '';
+      return '<h3 class="health-h">' + U().escapeHtml(title) + ' (' + items.length + ')</h3><ul class="health-list">' +
+        items.map(function (it) {
+          return '<li><button type="button" class="linkish" data-open="' + U().escapeHtml(it.id) + '">' +
+            U().escapeHtml(fmt(it)) + '</button></li>';
+        }).join('') + '</ul>';
+    }
+    var html = '<p class="dlg-note">Weak means under about 40 bits of entropy. Old means the password was last changed more than a year ago.</p>';
+    if (!c.weak && !c.reused && !c.old) {
+      html += '<p>No problems found in ' + c.checked + ' entries.</p>';
+    } else {
+      html += section('Weak or empty passwords', report.weak, function (it) {
+        return it.title + (it.reason === 'empty' ? ' — no password' : (' — ~' + it.bits + ' bits'));
+      });
+      html += section('Reused passwords', report.reused, function (it) {
+        return it.title + (it.also && it.also.length ? (' — also used in ' + it.also.join(', ')) : '');
+      });
+      html += section('Old passwords', report.old, function (it) {
+        return it.title + ' — ' + it.ageDays + ' days';
+      });
+    }
+    PMDlg.open({
+      title: 'Vault health',
+      html: html,
+      wide: true,
+      actions: [{ label: 'Close', cls: 'primary-btn' }],
+      onOpen: function () {
+        var body = $('dlgBody');
+        if (!body) return;
+        body.addEventListener('click', function (e) {
+          var b = e.target && e.target.closest && e.target.closest('[data-open]');
+          if (!b) return;
+          var id = b.getAttribute('data-open');
+          PMDlg.close();
+          state.selectedId = id;
+          renderList();
+          renderDetail();
+        });
+      }
+    });
+  }
+
+  function openChangeMaster() {
+    if (!state.vault || !state.key || !state.rec) return;
+    var html =
+      '<p class="dlg-note">The vault is re-encrypted with the new password. If this is interrupted, either the old or the new password will still unlock it. The master password stays the only key; there is no recovery if both are forgotten.</p>' +
+      '<label class="field"><span class="field-label">Current master password</span>' +
+        '<input id="chgOld" type="password" autocomplete="off" spellcheck="false"></label>' +
+      '<label class="field"><span class="field-label">New master password</span>' +
+        '<input id="chgNew" type="password" autocomplete="new-password" spellcheck="false" minlength="8"></label>' +
+      '<p class="meter" id="chgMeter"></p>' +
+      '<label class="field"><span class="field-label">Confirm new master password</span>' +
+        '<input id="chgNew2" type="password" autocomplete="new-password" spellcheck="false" minlength="8"></label>' +
+      '<label class="field"><span class="field-label">Optional hint (stored in plain text)</span>' +
+        '<input id="chgHint" type="text" autocomplete="off" spellcheck="false" value="' +
+          U().escapeHtml((state.rec && state.rec.hint) || '') + '"></label>';
+    PMDlg.open({
+      title: 'Change master password',
+      html: html,
+      wide: true,
+      actions: [
+        { label: 'Cancel', cls: 'secondary-btn' },
+        { label: 'Change password', cls: 'primary-btn', fn: function () { runChangeMaster(); return false; } }
+      ],
+      onOpen: function () {
+        var inp = $('chgNew');
+        var m = $('chgMeter');
+        if (inp) inp.addEventListener('input', function () {
+          if (!m) return;
+          var st = PMGen.strength(inp.value);
+          m.className = 'meter ' + st.cls;
+          if (!inp.value) { m.textContent = ''; return; }
+          var extra = inp.value.length < 8 ? ' (use at least 8 characters)' : '';
+          m.textContent = 'Strength: ' + st.label + (st.bitsLabel ? ' (' + st.bitsLabel + ')' : '') + extra;
+        });
+        var old = $('chgOld');
+        if (old) old.focus();
+      }
+    });
+  }
+
+  function runChangeMaster() {
+    var oldPw = ($('chgOld') && $('chgOld').value) || '';
+    var newPw = ($('chgNew') && $('chgNew').value) || '';
+    var new2 = ($('chgNew2') && $('chgNew2').value) || '';
+    var hint = ($('chgHint') && $('chgHint').value) || '';
+    if (!oldPw) { PMDlg.message('Current password needed', 'Enter the current master password.'); return; }
+    if (newPw.length < 8) { PMDlg.message('Too short', 'Use at least 8 characters for the new master password.'); return; }
+    if (newPw !== new2) { PMDlg.message('Passwords do not match', 'The two new passwords are not the same.'); return; }
+    if (hint && hint.toLowerCase().indexOf(newPw.toLowerCase()) !== -1) {
+      PMDlg.message('Hint not allowed', 'The hint must not contain the new master password.');
+      return;
+    }
+    var iter = (state.rec && state.rec.iter) || PMCrypto.ITER_DEFAULT;
+    var prevHeader = PMStore.cryptoHeader(state.rec);
+    PMDlg.close();
+    setBusy(true, '');
+    PMCrypto.decryptWithPassword(prevHeader, oldPw).then(function () {
+      return PMCrypto.encryptWithPassword(state.vault, newPw, iter);
+    }).then(function (packed) {
+      var rec1 = PMStore.mergeHeader(state.rec, packed.header, {
+        hint: hint,
+        fails: 0,
+        delayUntil: 0,
+        prev: prevHeader
+      });
+      return PMStore.saveRecord(rec1).then(function () {
+        return PMCrypto.decryptWithPassword(PMStore.cryptoHeader(rec1), newPw).then(function () {
+          var rec2 = PMStore.mergeHeader(rec1, packed.header, {
+            hint: hint,
+            fails: 0,
+            delayUntil: 0,
+            dropPrev: true
+          });
+          return PMStore.saveRecord(rec2).then(function (saved) {
+            state.rec = saved;
+            state.key = packed.key;
+            oldPw = newPw = new2 = '';
+            setBusy(false, '');
+            PMDlg.message('Master password changed', 'The vault is now encrypted with the new master password.');
+          });
+        });
+      });
+    }).catch(function (err) {
+      setBusy(false, '');
+      var msg = (err && err.message) || '';
+      if (/operation-specific|decrypt|OperationError|bad/i.test(String(err && (err.name || err.message) || err))) {
+        msg = 'The current master password is wrong.';
+      }
+      PMDlg.message('Could not change password', msg || 'The vault was left as it was.');
+    });
+  }
+
   function openSettings() {
     var s = settings();
     var html =
@@ -721,16 +1215,20 @@
           '<option value="60"' + (s.clipboardSec === 60 ? ' selected' : '') + '>60 seconds</option>' +
           '<option value="0"' + (s.clipboardSec === 0 ? ' selected' : '') + '>Don\'t clear</option>' +
         '</select></label>' +
-      '<p class="field-label" style="margin:12px 0 6px">Theme</p>' +
+      '<p class="field-label">Theme</p>' +
       '<div class="seg" id="themeSegDlg" role="group" aria-label="Theme">' +
         '<button type="button" data-v="auto">Auto</button>' +
         '<button type="button" data-v="light">Light</button>' +
         '<button type="button" data-v="dark">Dark</button>' +
       '</div>' +
-      '<p class="dlg-note">Auto follows the Hub theme. A forgotten master password cannot be recovered.</p>';
-
-    // Avoid inline style for CSP style-src 'self' — I used a style attribute! Remove it.
-    html = html.replace(' style="margin:12px 0 6px"', '');
+      '<div class="set-actions">' +
+        '<button type="button" class="btn secondary-btn" id="setHealth">Vault health</button>' +
+        '<button type="button" class="btn secondary-btn" id="setExport">Export encrypted backup</button>' +
+        '<button type="button" class="btn secondary-btn" id="setImport">Import encrypted backup</button>' +
+        '<button type="button" class="btn secondary-btn" id="setCsv">Import Chrome / Firefox / Bitwarden CSV</button>' +
+        '<button type="button" class="btn secondary-btn" id="setMaster">Change master password</button>' +
+      '</div>' +
+      '<p class="dlg-note">Auto follows the Hub theme. A forgotten master password cannot be recovered. An encrypted backup is the only way to restore a vault onto another device or browser.</p>';
 
     PMDlg.open({
       title: 'Settings',
@@ -752,28 +1250,38 @@
       ],
       onOpen: function () {
         var seg = $('themeSegDlg');
-        if (!seg || !root.PMTheme) return;
-        function paint() {
-          var mode = PMTheme.getMode();
-          var buttons = seg.querySelectorAll('button');
-          for (var i = 0; i < buttons.length; i++) {
-            buttons[i].classList.toggle('on', buttons[i].getAttribute('data-v') === mode);
-          }
-        }
-        paint();
-        seg.addEventListener('click', function (e) {
-          var b = e.target && e.target.closest && e.target.closest('button');
-          if (!b) return;
-          PMTheme.setMode(b.getAttribute('data-v'));
-          paint();
-          var main = $('themeSeg');
-          if (main) {
-            var bs = main.querySelectorAll('button');
-            for (var j = 0; j < bs.length; j++) {
-              bs[j].classList.toggle('on', bs[j].getAttribute('data-v') === PMTheme.getMode());
+        if (seg && root.PMTheme) {
+          function paint() {
+            var mode = PMTheme.getMode();
+            var buttons = seg.querySelectorAll('button');
+            for (var i = 0; i < buttons.length; i++) {
+              buttons[i].classList.toggle('on', buttons[i].getAttribute('data-v') === mode);
             }
           }
-        });
+          paint();
+          seg.addEventListener('click', function (e) {
+            var b = e.target && e.target.closest && e.target.closest('button');
+            if (!b) return;
+            PMTheme.setMode(b.getAttribute('data-v'));
+            paint();
+            var main = $('themeSeg');
+            if (main) {
+              var bs = main.querySelectorAll('button');
+              for (var j = 0; j < bs.length; j++) {
+                bs[j].classList.toggle('on', bs[j].getAttribute('data-v') === PMTheme.getMode());
+              }
+            }
+          });
+        }
+        function bind(id, fn) {
+          var b = $(id);
+          if (b) b.addEventListener('click', function () { PMDlg.close(); fn(); });
+        }
+        bind('setHealth', openHealth);
+        bind('setExport', exportBackup);
+        bind('setImport', importBackup);
+        bind('setCsv', importCsv);
+        bind('setMaster', openChangeMaster);
       }
     });
   }
@@ -856,6 +1364,48 @@
     }
   }
 
+  function tryUnlockHeader(header, password) {
+    return PMCrypto.decryptWithPassword(header, password);
+  }
+
+  function applyUnlockedVault(vault) {
+    var v = PMCrypto.migrateVault(vault && typeof vault === 'object' ? vault : PMCrypto.emptyVault());
+    state.vault = v;
+    return v;
+  }
+
+  function finishUnlock(rec, res, usedPrev) {
+    var cleared = PMLock.clearFails(rec);
+    var extra = { hint: cleared.hint, fails: 0, delayUntil: 0 };
+    var header = rec;
+    var note = '';
+    if (usedPrev) {
+      // Rekey was interrupted and the user unlocked with the previous password.
+      // Roll main back to prev so only one password works.
+      header = rec.prev;
+      extra.dropPrev = true;
+      note = 'A master password change was interrupted, so the previous password was used. You can change it again in Settings.';
+    } else if (rec && rec.prev) {
+      extra.dropPrev = true;
+    }
+    rec = PMStore.mergeHeader(rec, header, extra);
+    state.key = res.key;
+    var wasVer = Number((res.vault && res.vault.version) || 0);
+    applyUnlockedVault(res.vault);
+    var migrated = wasVer < 2;
+    return PMStore.saveRecord(rec).then(function (saved) {
+      state.rec = saved;
+      if (migrated) return saveEncrypted();
+    }).then(function () {
+      if ($('unlockPw')) $('unlockPw').value = '';
+      setBusy(false, '');
+      enterApp();
+      if (note) {
+        setTimeout(function () { PMDlg.message('Password change interrupted', note); }, 0);
+      }
+    });
+  }
+
   function doUnlock() {
     if (state.busy) return;
     var rec = state.rec;
@@ -875,20 +1425,15 @@
       return;
     }
     setBusy(true, 'Unlocking…');
-    PMCrypto.decryptWithPassword(PMStore.cryptoHeader(rec), pw).then(function (res) {
-      var cleared = PMLock.clearFails(rec);
-      rec = PMStore.mergeHeader(rec, rec, cleared);
-      return PMStore.saveRecord(rec).then(function (saved) {
-        state.rec = saved;
-        state.key = res.key;
-        state.vault = res.vault && typeof res.vault === 'object' ? res.vault : PMCrypto.emptyVault();
-        if (!state.vault.settings) state.vault.settings = PMCrypto.emptyVault().settings;
-        if (!Array.isArray(state.vault.entries)) state.vault.entries = [];
-        if ($('unlockPw')) $('unlockPw').value = '';
-        pw = '';
-        setBusy(false, '');
-        enterApp();
-      });
+    tryUnlockHeader(PMStore.cryptoHeader(rec), pw).then(function (res) {
+      return finishUnlock(rec, res, false);
+    }).catch(function (err) {
+      if (rec && rec.prev) {
+        return tryUnlockHeader(rec.prev, pw).then(function (res) {
+          return finishUnlock(rec, res, true);
+        });
+      }
+      throw err;
     }).catch(function () {
       var failed = PMLock.applyFail(rec);
       rec = PMStore.mergeHeader(rec, rec, failed);
@@ -917,6 +1462,8 @@
     if (lockBtn) lockBtn.addEventListener('click', function () { if (root.PMLock) PMLock.lockNow(); else onLocked(); });
     var setBtn = $('settingsBtn');
     if (setBtn) setBtn.addEventListener('click', openSettings);
+    var healthBtn = $('healthBtn');
+    if (healthBtn) healthBtn.addEventListener('click', openHealth);
     var search = $('searchBox');
     if (search) {
       search.addEventListener('input', function () {
@@ -927,6 +1474,13 @@
     var filters = $('filterBar');
     if (filters) {
       filters.addEventListener('click', function (e) {
+        var tagBtn = e.target && e.target.closest && e.target.closest('[data-tag]');
+        if (tagBtn) {
+          state.tagFilter = tagBtn.getAttribute('data-tag') || '';
+          renderFilters();
+          renderList();
+          return;
+        }
         var b = e.target && e.target.closest && e.target.closest('[data-filter]');
         if (!b) return;
         state.filter = b.getAttribute('data-filter');
