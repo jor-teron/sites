@@ -8,7 +8,10 @@ function autoColWidth() {
   var wrap = document.getElementById("sheet-wrap");
   var free = (wrap ? wrap.clientWidth : 1200) - CFG.colWidth.rowHead;
   var fixed = 0, nAuto = 0, c;
-  for (c = 0; c < COLS; c++) { if (colWidths[c]) fixed += colWidths[c]; else nAuto++; }
+  for (c = 0; c < COLS; c++) {
+    if (hiddenCols && hiddenCols[c]) continue;
+    if (colWidths[c]) fixed += colWidths[c]; else nAuto++;
+  }
   return nAuto ? Math.max(CFG.colWidth.auto, Math.floor((free - fixed) / nAuto)) : CFG.colWidth.auto;
 }
 
@@ -23,6 +26,7 @@ function applyWidths() {
     total += w;
   }
   table.style.width = total + "px";
+  if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
 }
 
 SHEET_INIT.push(function () {

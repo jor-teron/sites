@@ -21,5 +21,7 @@ DB Browser,            db-browser/,    , , Files, Browse and query SQLite .db fi
 Web MCP,               web-mcp/,         , , AI, Browser MCP server: Grok edits files and runs BusyBox commands in a folder you pick
 Altimeter,             altimeter/,          , , Weather, GPS altitude from your phone location - needs location permission
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
+Password Manager,     password-manager/, password-manager/password-manager_icon.svg, , Security, Encrypted vault for logins cards notes and Wi-Fi - stays on this device
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
+Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings

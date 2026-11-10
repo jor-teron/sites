@@ -129,18 +129,20 @@ function highlightSel() {
   }
   if (inpGrid[selR] && inpGrid[selR][selC]) inpGrid[selR][selC].parentNode.classList.add(CLS.selected);
   if (multi) setStatus(rangeLabel());
+  if (typeof updateStats === "function") updateStats();
 }
 
 /**
  * Apply style object to a td + input
  */
-function applyLook(td, inp, st) {
+function applyLook(td, inp, st, r, c) {
   inp.style.textAlign = st.align || CFG.defaultStyle.align;
   inp.style.fontWeight = st.bold ? CFG.boldWeight : "";
   inp.style.fontStyle = st.italic ? "italic" : "";
   inp.style.textDecoration = st.underline ? "underline" : "";
   td.style.background = st.bg || "";
   inp.style.color = st.color || "";
+  if (typeof styleApplyLook === "function") styleApplyLook(td, inp, st, r, c);
 }
 
 /**
@@ -150,9 +152,9 @@ function paintCell(r, c) {
   var inp = inpGrid[r] && inpGrid[r][c];
   if (!inp) return;
   var td = inp.parentNode, st = cellStyle(r, c), v = cells[r][c].value;
-  applyLook(td, inp, st);
+  if (inp !== document.activeElement) inp.value = formatCellValue(v, st.fmt);
+  applyLook(td, inp, st, r, c);
   if (inp === document.activeElement) return;
-  inp.value = formatCellValue(v, st.fmt);
   if (v === ERR || CFG.errorValues.indexOf(v) !== -1) td.classList.add(CLS.error);
   else td.classList.remove(CLS.error);
 }
@@ -162,7 +164,9 @@ function paintCell(r, c) {
  */
 function paintAll() {
   var r, c;
+  if (typeof STYLE_CF_STATS !== "undefined") STYLE_CF_STATS = {};
   for (r = 0; r < ROWS; r++) {
     for (c = 0; c < COLS; c++) paintCell(r, c);
   }
+  if (typeof applyMerges === "function") applyMerges();
 }
