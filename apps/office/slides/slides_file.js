@@ -9,7 +9,11 @@
                      "pictures": [ { "src": "data:image/webp;base64,...", "x", "y", "w", "h", "fit": "cover" } ] } ] }
    layout: title | tc | two | sec | pic | to | blank (missing = tc); theme missing = light; x / y / w / h in 960 x 540
    design px; fit cover = crop to fill, contain = fit. Pictures are data URLs inside the file (png / jpeg / webp / gif).
-   Import limit is 40 MB now (pictures), 50 pictures per slide. Version-1 files open unchanged (legacy limit was 5 MB). */
+   Import limit is 40 MB now (pictures), 50 pictures per slide. Version-1 files open unchanged (legacy limit was 5 MB).
+   SL5 writes version 3 (and reads 1, 2 and 3): title stays a plain string; optional titleRuns / titleAlign when styled.
+   bullets / bullets2 stay [{ text, level }] and may add runs / align; optional list / list2 / align / align2 (list:
+   bullets | numbers | none). texts: [{ x, y, w, h, bullets, list, align, fill, border, z }] in 960 x 540 design px
+   (aliases textboxes / tboxes still read). A higher version than 3 is refused. */
 (function () {
   'use strict';
   var MAX_BYTES = 40 * 1024 * 1024, MAX_SLIDES = 500, MAX_BULLETS = 200;   /* legacy (SL1 / SL2): MAX_BYTES = 5 MB */
@@ -29,16 +33,41 @@
     }).join('\n');
   }
   function toJSON(deck) {
-    /* legacy (SL1 / SL2): version 1, slides: [{ title, bullets }] */
+    /* legacy (SL1 / SL2): version 1, slides: [{ title, bullets }]. SL3: version 2 + theme, layout, bullets2, background, pictures. */
     return {
-      format: 'hub-slides', version: 2, name: deck.name, created: iso(deck.created), updated: iso(deck.updated || Date.now()),
+      format: 'hub-slides', version: 3, name: deck.name, created: iso(deck.created), updated: iso(deck.updated || Date.now()),
       theme: deck.theme || 'light',
       slides: deck.slides.map(function (s) {
-        var o = { layout: s.layout || 'tc', title: s.title, bullets: toBullets(s.body) };
-        if (s.body2) o.bullets2 = toBullets(s.body2);
+        var titleOut = SLText.titleOut(s.title);
+        var o = { layout: s.layout || 'tc', title: titleOut.text, bullets: SLText.toFileBullets(s.body) };
+        if (titleOut.runs) o.titleRuns = titleOut.runs;
+        if (titleOut.align) o.titleAlign = titleOut.align;
+        var blist = SLText.boxList(s.body), balign = SLText.boxAlign(s.body);
+        if (blist && blist !== 'bullet') o.list = blist === 'number' ? 'numbers' : (blist === 'none' ? 'none' : blist);
+        /* default body list on title / sec / pic is none; say so when it is still bullets */
+        if ((s.layout === 'title' || s.layout === 'sec' || s.layout === 'pic') && blist === 'bullet') o.list = 'bullets';
+        if (balign) o.align = balign;
+        if (SLText.has(s.body2)) {
+          o.bullets2 = SLText.toFileBullets(s.body2);
+          var l2 = SLText.boxList(s.body2), a2 = SLText.boxAlign(s.body2);
+          if (l2 && l2 !== 'bullet') o.list2 = l2 === 'number' ? 'numbers' : l2;
+          if (a2) o.align2 = a2;
+        }
         if (s.bg) o.background = s.bg;
         var pics = (s.pics || []).filter(function (p) { return !!p.src; });
-        if (pics.length) o.pictures = pics.map(function (p) { return { src: p.src, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit }; });
+        if (pics.length) o.pictures = pics.map(function (p) {
+          var q = { src: p.src, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit };
+          if (p.z) q.z = p.z; return q;
+        });
+        var tbs = (s.texts || s.tboxes || []).map(function (tb) {
+          var box = SLText.cleanBox(tb), q = { x: box.x, y: box.y, w: box.w, h: box.h, bullets: SLText.toFileBullets(box.doc, { list: SLText.boxList(box.doc) || 'none' }) };
+          if (box.id) q.id = box.id;
+          var tl = SLText.boxList(box.doc); if (tl && tl !== 'none') q.list = tl === 'number' ? 'numbers' : (tl === 'bullet' ? 'bullets' : tl);
+          var ta = SLText.boxAlign(box.doc); if (ta) q.align = ta;
+          if (box.fill) q.fill = box.fill; if (box.border) q.border = box.border; if (box.z != 1) q.z = box.z;
+          return q;
+        });
+        if (tbs.length) o.texts = tbs;
         return o;
       })
     };
@@ -50,17 +79,33 @@
     var j; try { j = JSON.parse(text.replace(/^\uFEFF/, '')); } catch (_) { return { error: 'This is not a Slides file (not valid JSON).' }; }
     if (!j || typeof j !== 'object' || Array.isArray(j)) return { error: 'This is not a Slides file.' };
     if (j.format !== 'hub-slides') return { error: 'This is not a Slides file (format is not "hub-slides").' };
-    if ((+j.version || 0) > 2) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
+    if ((+j.version || 0) > 3) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
     if (!Array.isArray(j.slides)) return { error: 'The file has no slides list.' };
     var slides = j.slides.slice(0, MAX_SLIDES).map(function (s) {
       s = s && typeof s === 'object' ? s : {};
-      var o = { title: String(s.title == null ? '' : s.title).replace(/[\r\n]+/g, ' ').slice(0, 300), body: fromBullets(s.bullets) };
-      /* SL3 fields (version 2); anything missing or wrong falls back to the SL1 / SL2 defaults in SLSave.cleanSlide */
+      var lay = typeof s.layout === 'string' ? s.layout : 'tc';
+      var bl = (lay === 'title' || lay === 'sec' || lay === 'pic') ? 'none' : 'bullet';
+      var titleSrc = s.title;
+      if (s.titleRuns || s.titleAlign) titleSrc = { text: typeof s.title === 'string' ? s.title : (s.title && s.title.text), runs: s.titleRuns || (s.title && s.title.runs), align: s.titleAlign || (s.title && s.title.align) };
+      var o = { title: SLText.fromFileTitle(titleSrc), body: SLText.fromFileBullets(s.bullets != null ? s.bullets : s.body, { list: s.list || bl, max: 5000 }) };
+      if (s.align) o.body = SLText.setAlign(o.body, s.align);
+      /* SL3 fields (version 2); SL5 rich runs / list / align / texts (version 3). Missing or wrong → SLSave.cleanSlide defaults. */
       if (typeof s.layout === 'string') o.layout = s.layout;
-      if (Array.isArray(s.bullets2)) o.body2 = fromBullets(s.bullets2);
+      if (s.bullets2 != null) {
+        o.body2 = SLText.fromFileBullets(s.bullets2, { list: s.list2 || 'bullet', max: 5000 });
+        if (s.align2) o.body2 = SLText.setAlign(o.body2, s.align2);
+      }
       if (typeof s.background === 'string') o.bg = s.background;
       if (Array.isArray(s.pictures)) o.pics = s.pictures.slice(0, 50).filter(function (p) { return p && SLPics.validSrc(p.src); })
-        .map(function (p) { return { src: p.src, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit }; });
+        .map(function (p) { return { src: p.src, x: p.x, y: p.y, w: p.w, h: p.h, iw: p.iw, ih: p.ih, fit: p.fit, z: p.z }; });
+      var rawT = s.texts || s.textboxes || s.tboxes;
+      if (Array.isArray(rawT)) o.texts = rawT.map(function (tb) {
+        if (!tb || typeof tb !== 'object') return tb;
+        if (tb.doc) return tb;
+        var doc = tb.bullets != null ? SLText.fromFileBullets(tb.bullets, { list: tb.list || 'none', max: 2000 }) : SLText.fromPlain(tb.text || '', { max: 2000, list: tb.list || 'none' });
+        if (tb.align) doc = SLText.setAlign(doc, tb.align);
+        return { id: tb.id, x: tb.x, y: tb.y, w: tb.w, h: tb.h, doc: doc, fill: tb.fill, border: tb.border, z: tb.z };
+      });
       return SLSave.cleanSlide(o);
     });
     var t = Date.parse(j.created);

@@ -1,10 +1,11 @@
-# Hub Office Slides (Office → Hub Office) — release SL4
-<!-- legacy: release SL3 · release SL2 -->
+# Hub Office Slides (Office → Hub Office) — release SL5
+<!-- legacy: release SL4 · release SL3 · release SL2 -->
 
 A basic slide editor. Static, no build step, no libraries, works from `file://`. Built to stay light on a Celeron / 4 GB
-laptop: only the slide being edited is live (two textareas), thumbnails are plain text in the slide design scaled down
-(up to 9 bullets each), saving is debounced (400 ms) and one deck is one localStorage record. Pictures (SL3) are kept
-in IndexedDB, so the deck record stays small.
+laptop: only the slide being edited is live (contenteditable title and body, plus any free text boxes), thumbnails are
+the same slide design scaled down (up to 9 bullets each), saving is debounced (400 ms) and one deck is one localStorage
+record. Pictures (SL3) are kept in IndexedDB, so the deck record stays small. SL5 stores formatted text as structured
+runs (not raw HTML).
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -15,8 +16,24 @@ in IndexedDB, so the deck record stays small.
 - **Delete**: only in the ⋯ menu (red **Delete slide…**), and it always asks with an in-app dialog that starts on Cancel.
   There is no Delete-key shortcut on the slide list. A deck keeps at least one slide. ⋯ also has Duplicate slide.
 - **Editing**: each slide is a 16:9 canvas (960 × 540 design pixels, scaled to fit). Title on top (Enter / ↓ goes to the
-  bullets). Bullets: one per line. Tab indents the line(s) one level, Shift+Tab (or Backspace at the start) outdents,
+  bullets). Body: one paragraph per line. Tab indents the line(s) one level, Shift+Tab (or Backspace at the start) outdents,
   Enter keeps the indent and Enter on an empty indented bullet outdents it.
+- **Text styling (SL5)**: bold, italic, underline, strikethrough, font size (presets plus A− / A+, Ctrl+Shift+> / <),
+  text colour, highlight, and left / centre / right alignment. Home has a Format group; on a text selection a small
+  floating bar also appears. Ctrl+B / I / U while typing. Paste is plain text, or HTML run through a strict sanitiser
+  (only b/i/u/s/span colours and sizes, and paragraphs). Formatting is stored as runs, never as unsanitised HTML.
+- **Lists (SL5)**: a per-box toggle for bullets, numbers (1. 2. 3.; nested a. b., then i. ii.) or none. Title + Content
+  and Two Columns default to bullets; Title / Section Header / Picture + Caption body text defaults to none.
+- **Free text boxes (SL5)**: Insert → Text box (or ⋯) adds a box you can put anywhere on any layout. Drag to move, use
+  the same 8 handles as pictures to resize (Shift keeps the shape). Double-click or Enter (when selected) to type.
+  Delete, optional fill and border, and bring forward / send back (z-order with pictures). A slide holds a `texts`
+  array (50 boxes max).
+- **Rich text (SL5)**: the title, body / bullets, subtitle / caption and free text boxes are rich text, not plain
+  textareas. **Home** has a Format group: **B** / **I** / **U** / **S** (strikethrough), font size (a list, plus A− / A+
+  or Ctrl+Shift+< / >), text colour, highlight, align left / centre / right (Ctrl+L / E / R), list type (• bullets, 1. 2. 3.
+  with a. b. c. on the next level, or none) and **Tx** Clear formatting. A small floating toolbar appears when you select
+  text. Ctrl+B / I / U work while typing. Paste is sanitised (plain text, or a strict allowlist of tags mapped to the
+  model); pasting a picture still works as in SL3.
 - **Decks**: the deck name (top left) opens the deck menu: New deck, Open deck… (list of decks on this device),
   Rename deck…, Import .hslides…, Export .hslides, Delete deck… (red, in-app confirm). Slides reopens the last deck.
   Dropping a .hslides file on the window imports it too.
@@ -66,15 +83,20 @@ in IndexedDB, so the deck record stays small.
   **Dark**: background, title and body fonts and colours, and an accent (title rule, bullet dots). It applies to every
   slide. The same sheet has **This slide's background**: Theme (default), 9 colours or any colour, for the current slide only.
   More themes can be added later (one CSS rule + one entry, see below).
-- **Undo / Redo (SL3)**: Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) outside the text boxes, or ⋯ → Undo / Redo, for pictures
-  (insert, move, resize, crop / fit, delete), layouts, backgrounds and the theme (50 steps, per deck; going to the slide
-  it changed). Inside the title and text boxes the browser's own text undo works as before.
-- **Present** shows layouts, themes, backgrounds and pictures exactly as the editor (the same CSS and the same
-  placement; checked box by box in the tests).
-- **Ribbon (SL4)**: the shared Office ribbon (`../shared/office-ribbon.js`, like Draftly and Spreadsheet). **File** = the
+- **Undo / Redo (SL3, SL5)**: Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) outside the text boxes, or ⋯ → Undo / Redo, for pictures
+  (insert, move, resize, crop / fit, delete), **free text boxes** (add, move, resize, delete) and **formatting** (SL5),
+  plus layouts, backgrounds and the theme (50 steps, per deck; going to the slide it changed). Inside the title and text
+  boxes the browser's own text undo works as before for typing.
+- **Free text boxes (SL5)**: **Insert → Text box** (or ⋯) adds a box to any slide, including Blank. Click to select it,
+  drag to move, drag a handle to resize (Shift keeps the shape), arrows nudge (Shift = 10), Delete removes it, double-click
+  or Enter edits the text, Esc ends editing then deselects. Boxes sit above pictures. Up to 50 per slide.
+- **Present** shows layouts, themes, backgrounds, pictures and SL5 styling / text boxes exactly as the editor (the same
+  CSS and the same placement; one renderer).
+- **Ribbon (SL4, SL5)**: the shared Office ribbon (`../shared/office-ribbon.js`, like Draftly and Spreadsheet). **File** = the
   deck menu (New, Open, Rename, Import, Export .hslides, **Export PDF…**, **Print…**, Settings, Delete deck). Tabs:
-  - **Home**: ＋ New slide | ▾ (with a layout), ▦ Layout, Duplicate, Delete slide (asks), ▲ / ▼, Undo, Redo
-  - **Insert**: 🖼 Picture, New slide with layout…
+  - **Home**: ＋ New slide | ▾ (with a layout), ▦ Layout, **Format** (SL5: bold / italic / underline / strikethrough, size,
+    colour, highlight, align, lists, clear), Duplicate, Delete slide (asks), ▲ / ▼, Undo, Redo
+  - **Insert**: 🖼 Picture, **Aa Text box** (SL5), New slide with layout…
   - **Design**: deck theme **Light / Dark**, **Slide background…**
   - **Slide Show**: **From beginning**, **From current slide**
   The last tab is remembered. The deck name next to the tabs renames the deck. **⋯** at the end of the ribbon keeps
@@ -92,8 +114,21 @@ in IndexedDB, so the deck record stays small.
 - **Settings (⚙)**: Theme System / Light / Dark (dark is the default; System follows the Hub's `sites-hub.theme`, then the
   device), storage state, keyboard list (with the Present keys) and About. In-app dialogs only. SL2 adds no new setting.
 
-## The .hslides file (open format, version 2 since SL3)
-SL3 writes version 2 and reads versions 1 and 2. Version 2 adds, all optional (a missing field = the SL1 / SL2 default):
+## The .hslides file (open format, version 3 since SL5)
+SL5 writes version 3 and reads versions 1, 2 and 3. A file with a higher version than the app knows is refused with a message.
+Version 3 keeps the version-2 shape so a plain (unstyled) deck still has a string `title` and `{ text, level }` bullets, and
+adds the rich-text and free-box fields, all optional (a missing field = plain text / no boxes):
+- `title` stays a string; if the title is styled, `titleRuns` is `[{ "text", "b", "i", "u", "s", "size", "color", "hl" }]`
+  and `titleAlign` is `"left"` | `"center"` | `"right"`. A title written as a document `{ "paragraphs": [...] }` is also accepted.
+- `bullets` / `bullets2` stay `[{ "text", "level" }]`. A bullet may add `runs` (same shape as `titleRuns`) and `align`.
+- `list` / `list2`: `"bullets"` | `"numbers"` | `"none"` (missing = bullets, or none on Title / Section Header / Picture + Caption).
+  Numbered lists show 1. 2. 3. at level 0 and a. b. c. at the next level.
+- `align` / `align2`: `"left"` | `"center"` | `"right"` for the whole box when every paragraph shares it.
+- `texts`: `[{ "id", "x", "y", "w", "h", "bullets", "list", "align", "fill", "border", "z" }]`, 50 per slide max, in 960 × 540
+  design pixels. `textboxes` and `tboxes` are accepted as aliases on import. `fill` / `border` are optional `#rrggbb`.
+- Unknown keys are ignored. Export always writes version 3. An SL4 app refuses version-3 files ("newer version").
+
+Version 2 (SL3 / SL4) adds, all optional (a missing field = the SL1 / SL2 default):
 - top level `theme`: `"light"` | `"dark"` (missing or unknown = light)
 - per slide `layout`: `title` | `tc` | `two` | `sec` | `pic` | `to` | `blank` (missing or unknown = `tc`, Title + Content);
   `bullets2` (right column of Two Columns, same shape as `bullets`); `background`: `"#rrggbb"` (missing = the theme's);
@@ -119,7 +154,7 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   ]
 }
 ```
-- `format` must be `"hub-slides"`. `version` is 1 (SL3 writes 2); a file with a higher version than the app knows is refused with a message.
+- `format` must be `"hub-slides"`. `version` is 1 (SL3 / SL4 write 2, SL5 writes 3); a file with a higher version than the app knows is refused with a message.
 - `slides[].title`: text (line breaks become spaces, 300 characters max).
 - `slides[].bullets[]`: `{ "text", "level" }`, level 0 = top bullet, 1 = indented once (SL1 has two levels; higher counts as 1).
   A plain string is accepted as a level-0 bullet. Empty text = an empty line on the slide.
@@ -131,10 +166,16 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 ## Storage (localStorage, the one save module `slides_save.js`)
 - `slides-settings-v1` = `{ theme }`
 - `slides-decks-v1` = `{ current, decks: [{ id, name, updated, count }] }` (newest first)
-- `slides-deck-v1:<id>` = `{ id, name, created, updated, cur, slides: [{ id, title, body }] }`; `body` is the bullet text,
-  one bullet per line, a leading TAB = level 1.
+- `slides-deck-v1:<id>` = `{ id, name, created, updated, cur, slides: [{ id, title, body }] }`; a legacy `body` is the bullet text,
+  one bullet per line, a leading TAB = level 1. SL5 migrates those strings to rich documents on load (plain runs, nothing dropped).
 - SL3 adds to the deck record `fmt: 3` and `theme`, and per slide `layout`, `body2`, `bg` and `pics: [{ id, key, x, y, w, h,
   iw, ih, fit, inl }]`. SL1 / SL2 records (no `fmt`) open unchanged: Light, Title + Content, no pictures.
+- SL5 uses `fmt: 4`. In memory, `title` / `body` / `body2` are rich documents (`{ paragraphs:[{ runs, level, align, list }] }`);
+  a plain string on an older record is migrated on load, nothing is dropped. `texts` (also kept as `tboxes` for the editor)
+  holds free text boxes. Pictures may have `z`.
+- SL5 writes `fmt: 4`. `title`, `body` and `body2` are documents `{ paragraphs:[{ runs:[{ text, b, i, u, s, size, color, hl }],
+  level, align, list }] }`. `texts` (also kept as `tboxes`) is `[{ id, x, y, w, h, doc, fill, border, z }]`. Older fmt 3 / no-fmt
+  records open unchanged.
 - Pictures: IndexedDB `hub-slides-pics`, store `pics`, key = content hash of the data URL, value `{ src, at }`. The deck
   record keeps only the key. If IndexedDB is missing or fails, the picture stays inside the record (`inl: true`, the
   data URL in `src`) — then localStorage can fill up sooner. On start (after 4 s) pictures that no deck uses any more and
@@ -144,31 +185,37 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 
 ## Files
 - `slides.html`, `slides.css`, `index.html` (redirect), `slides_icon.png` (192 px), `slides_readme.md`
-- `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback
-- `slides_file.js` (`SLFile`): .hslides export / import and checks
-- `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, title, bullets (mirror dots), Tab / Shift+Tab, layouts (placeholders),
-  picture select / move / resize / crop, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
-  the thumbnails, the pickers and Present
+- `slides_text.js` (`SLText`, SL5): the rich-text model (runs + paragraphs, not raw HTML), paste sanitising, `.hslides` v3 helpers. No DOM (safe to test in Node).
+- `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load
+- `slides_file.js` (`SLFile`): .hslides export / import and checks (writes v3, reads v1–v3)
+- `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, contenteditable title / body / text boxes, Tab / Shift+Tab, layouts (placeholders),
+  picture and text-box select / move / resize / crop, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
+  the thumbnails, the pickers, Present and Print
 - `slides_pics.js` (`SLPics`, SL3): picture decode, downscale and re-encode, IndexedDB store, blob URLs, clean-up
 - `slides_show.js` (`SLShow`, SL2): Present: full screen / overlay, fit, keys, taps, swipes, jump, end screen, idle fade, wake lock
 - `slides_list.js` (`SLList`): thumbnails, selection, drag to reorder
 - `slides_print.js` (`SLPrint`, SL4): the print view (#print, one page per slide) and print / PDF
 - `slides_hub.js` (`SLHub`, SL4): Hub app-bar bridge (tabs, deck name, File, Settings)
-- `slides_app.js`: top bar, ribbon, Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture insert
+- `slides_app.js`: top bar, ribbon, Format group + mini toolbar, Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture and text-box insert
   (file / paste / drop), undo / redo; `window.Slides` (helpers for tests)
 
-## Limits (SL1 – SL4)
+## Limits (SL1 – SL5)
 - Long text can run past the bottom of the slide; it scrolls
   inside the slide but is not shrunk to fit.
 - Present: no transitions, speaker notes, presenter view, second-screen output or timer; text that runs past the bottom
   of a slide is cut off in the show (it is not shrunk). Tested headless with emulated touch and a stubbed wake lock only.
-- App Undo / Redo covers pictures, layouts, backgrounds and the theme only; text uses the browser's undo inside each box.
+- App Undo / Redo covers pictures, text boxes (add / move / resize / delete), formatting, layouts, backgrounds and the theme;
+  typing uses the browser's undo inside each box. Applying a format from the ribbon re-renders the box, so the browser's
+  typing undo for that box may start fresh; Ctrl+Z outside the box undoes the format.
 - Pictures live in IndexedDB on this device: another device only gets them through Export / Import. Animated GIFs become
   still pictures. Thumbnails draw the full stored picture (fine for normal decks; a deck with very many large pictures
   uses more memory). Pictures cannot be rotated, layered (front / back) or cropped to a custom area.
 - Two deck themes in SL3 (Light, Dark); no custom fonts.
-<!-- legacy (SL3): The Office ribbon, the Undo / Redo / Save / Print bar, the Hub title bar and printing / PDF come with SL4. -->
+<!-- legacy (SL4): Rich text, numbered lists and free text boxes come with SL5. -->
 - PDF goes through the browser's print window ("Save as PDF"); there is no one-click PDF download. Ctrl+Z with nothing
   to undo does nothing (the ⋯ / ribbon buttons are greyed out). Printing was tested headless (page.pdf), not on a real printer.
+- Rich text is a simple model (bold / italic / underline / strikethrough, size, colour, highlight, align, list). It does not
+  carry fonts, tables or links. Web paste is sanitised; some source formatting will be dropped on purpose. Numbered lists
+  restart after a non-numbered paragraph. A scanned look (text as a picture) is not OCR'd.
 - Decks live in this browser's localStorage (about 5 MB for everything); use Export for backups or to move a deck.
 - Touch drag was tested with emulated touch only, not yet on a real phone.

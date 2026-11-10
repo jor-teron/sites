@@ -1,4 +1,4 @@
-/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
+/* Hub Office Slides SL1 + SL2 Present + SL3 layouts, pictures, themes + SL5 rich text / lists / text boxes — Stopwatch style, dark default. Slide list on the left (a strip on top on phones), controls on the right. */
 :root{--bg:#f6f7f9;--fg:#15181d;--mut:#6b7280;--card:#fff;--line:#e3e6ea;--acc:#2563eb;--good:#16a34a;--bad:#dc2626;--hot:#f97316;--shade:rgba(0,0,0,.08)}
 :root.dark{--bg:#111316;--fg:#eef0f3;--mut:#9aa3ae;--card:#1c1f24;--line:#2b3037;--acc:#60a5fa;--good:#4ade80;--bad:#f87171;--hot:#fb923c;--shade:rgba(0,0,0,.4)}
 *{box-sizing:border-box}
@@ -85,28 +85,42 @@ body.in-hub #top{display:none}
 .s-body{position:absolute;inset:0;margin:0;border:0;outline:none;resize:none;background:transparent;font:400 28px/1.4 var(--s-fb);padding:2px 0 0 40px;white-space:pre-wrap;overflow-wrap:break-word;word-wrap:break-word;tab-size:7;-moz-tab-size:7;overflow-y:auto;scrollbar-width:none;color:var(--s-fg);letter-spacing:normal}
 .s-body::-webkit-scrollbar{display:none}
 .s-title::placeholder,.s-body::placeholder{color:var(--s-ph)}
-.s-mirror{color:transparent;pointer-events:none;overflow:hidden;user-select:none}
-.s-mirror .ln{min-height:1.4em}
-.s-mirror .d{position:relative}
-.s-mirror .d::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
-.s-mirror .ln.l1 .d::before{width:8px;height:8px;top:.58em;left:-26px;background:transparent;border:2px solid var(--s-mut)}
-textarea.s-title:focus,textarea.s-body:focus{background:transparent}
+/* SL5: contenteditable boxes (legacy SL1–SL4: textareas + a transparent .s-mirror for the dots) */
+ .s-ed{outline:none;caret-color:currentColor}
+.s-title.s-ed{position:relative;overflow:hidden;overflow-y:auto}
+.s-ed.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none;position:absolute;left:0;right:8px;top:4px;white-space:pre-wrap}
+.s-body.s-ed.empty::before{left:40px;top:2px}
+.s-body-wrap.plain .s-body.s-ed.empty::before,.s-body.s-ed.empty:not(.has-list)::before{left:0}
+.s-ed .p,.sv .t .p,.sv .b .p,.tbox-in .p{position:relative;min-height:1.4em;margin:0}
+.r.b{font-weight:700}
+.r.i{font-style:italic}
+.r.u{text-decoration:underline}
+.r.s{text-decoration:line-through}
+.r.u.s{text-decoration:underline line-through}
+.s-ed:focus{background:transparent}
 .s-body:focus{box-shadow:none}
 /* static slide view (.sv): thumbnails and Present use the same renderer (SLEdit.html) and design */
 .mini-in .slide,.mini-in.slide{box-shadow:none;border-radius:0}
 .sv .t{white-space:nowrap;text-overflow:ellipsis}
 .sv .t.empty{color:var(--s-em)}
 .sv .b{flex:1;min-width:0;font:400 28px/1.4 var(--s-fb);color:var(--s-fg);padding:2px 0 0 40px}
-.sv .b div{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
-.sv .b div::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
-.sv .b div.l1{padding-left:48px}
-.sv .b div.l1::before{left:22px;width:8px;height:8px;background:transparent;border:2px solid var(--s-mut)}
-.sv .b div.e::before,.sv .b.plain div::before{display:none}
+.sv .b .p,.s-ed.s-body .p{position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.4em}
+.s-ed.s-body .p{white-space:pre-wrap;overflow:visible;text-overflow:clip}
+/* SL5 list markers (editor, thumbnails, Present, Print): bullet dots or 1. 2. / a. b. */
+.s-ed .p.l1,.sv .b .p.l1,.tbox-in .p.l1{padding-left:48px}
+.s-ed .p.l2,.sv .b .p.l2,.tbox-in .p.l2{padding-left:96px}
+.s-ed .p.bullet::before,.sv .b .p.bullet::before,.tbox-in .p.bullet::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
+.s-ed .p.l1.bullet::before,.sv .b .p.l1.bullet::before,.tbox-in .p.l1.bullet::before{left:22px;width:8px;height:8px;top:.58em;background:transparent;border:2px solid var(--s-mut)}
+.s-ed .p.l2.bullet::before,.sv .b .p.l2.bullet::before,.tbox-in .p.l2.bullet::before{left:70px;width:6px;height:6px;top:.62em;background:var(--s-mut);border:0;border-radius:50%}
+.s-ed .p.number::before,.sv .b .p.number::before,.tbox-in .p.number::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}
+.s-ed .p.l1.number::before,.sv .b .p.l1.number::before,.tbox-in .p.l1.number::before{left:0;width:40px}
+.s-ed .p.l2.number::before,.sv .b .p.l2.number::before,.tbox-in .p.l2.number::before{left:48px;width:40px}
+.s-ed .p.none::before,.sv .b .p.none::before,.sv .t .p::before,.tbox-in .p.none::before{content:none;display:none}
 /* Present (.pv): long titles and bullets wrap like in the editor */
 .pv .t{white-space:normal;overflow-wrap:break-word}
-.pv .b div{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
-/* plain text placeholders (subtitle, section text, caption): no dots, no indent */
-.s-body-wrap.plain .s-body,.sv .b.plain{padding-left:0}
+.pv .b .p{white-space:pre-wrap;overflow:visible;overflow-wrap:break-word;text-overflow:clip}
+/* plain text placeholders (subtitle, section text, caption): no gutter unless the box has a list */
+.s-body-wrap.plain .s-body:not(.has-list),.sv .b.plain:not(.has-list){padding-left:0}
 /* SL3 layouts. Title */
 .slide.lay-title{justify-content:center}
 .lay-title .s-title,.lay-title .t{font-size:56px;text-align:center;border-bottom:0;margin:0;padding:4px 0 6px;min-height:76px}
@@ -137,7 +151,18 @@ textarea.s-title:focus,textarea.s-body:focus{background:transparent}
 .pic.miss{background:repeating-linear-gradient(45deg,rgba(156,163,175,.25) 0 10px,transparent 10px 20px);outline:1px dashed #9ca3af}
 #pics .pic{pointer-events:auto;cursor:move;touch-action:none}
 #pics .pic.sel{outline:var(--ol,2px) solid #2563eb}
-.selbox{position:absolute;pointer-events:none}
+/* SL5 free text boxes (above pictures) */
+.tboxes{position:absolute;inset:0;pointer-events:none;z-index:3}
+.tbox{position:absolute;overflow:hidden;box-sizing:border-box;background:transparent}
+#tboxes .tbox{pointer-events:auto;cursor:move;touch-action:none}
+#tboxes .tbox.sel{outline:var(--ol,2px) solid #2563eb}
+#tboxes .tbox.editing{cursor:text;touch-action:auto;outline:var(--ol,2px) solid #2563eb}
+.tbox-in{width:100%;height:100%;overflow:auto;padding:8px 14px;font:400 24px/1.35 var(--s-fb);color:var(--s-fg);outline:none;scrollbar-width:none;box-sizing:border-box;cursor:inherit}
+.tbox-in::-webkit-scrollbar{display:none}
+.tbox-in.has-list{padding-left:48px}
+.tbox-in.empty::before{content:attr(data-ph);color:var(--s-ph);pointer-events:none}
+#tbbar{flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.selbox{position:absolute;pointer-events:none;z-index:4}
 .selbox .h{position:absolute;width:var(--hs,14px);height:var(--hs,14px);margin:calc(var(--hs,14px) / -2) 0 0 calc(var(--hs,14px) / -2);background:#fff;border:var(--ol,2px) solid #2563eb;border-radius:50%;pointer-events:auto;touch-action:none;box-sizing:border-box}
 .h-nw{left:0;top:0;cursor:nwse-resize}.h-n{left:50%;top:0;cursor:ns-resize}.h-ne{left:100%;top:0;cursor:nesw-resize}.h-e{left:100%;top:50%;cursor:ew-resize}
 .h-se{left:100%;top:100%;cursor:nwse-resize}.h-s{left:50%;top:100%;cursor:ns-resize}.h-sw{left:0;top:100%;cursor:nesw-resize}.h-w{left:0;top:50%;cursor:ew-resize}
@@ -243,6 +268,26 @@ html.presenting #app>*:not(#show){visibility:hidden}
    @media (max-width:480px){#b-lay,#b-theme,#b-add .lbl{display:none}} @media (max-width:380px){#b-up,#b-down{display:none}}
    SL4: every ribbon control stays; the row scrolls sideways and ⋯ (sticky) has them all too. */
 @media (max-width:480px){#of-ribbon #b-add .lbl,#of-ribbon #b-pic .lbl,#of-ribbon #b-show .lbl,#of-ribbon #r-show0 .lbl{display:none}}
+
+/* SL5 Format group, colour popovers, mini toolbar */
+#of-ribbon .fmt{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:2px}
+#of-ribbon .fmt select{height:26px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);font:12px system-ui,sans-serif;max-width:68px;margin:0 2px}
+#of-ribbon .fmt button[aria-pressed=true]{background:var(--acc);color:#fff}
+#f-color{font-weight:700;text-decoration:underline;text-underline-offset:2px}
+#f-left,#f-right,#f-center{letter-spacing:-.04em;font-weight:700}
+.fmt-pop{position:fixed;z-index:35;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;box-shadow:0 8px 30px rgba(0,0,0,.3);display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:232px}
+.fmt-pop[hidden]{display:none!important}
+.fmt-pop button{width:22px;height:22px;border-radius:11px;border:1px solid var(--line);padding:0;cursor:pointer;background:var(--card)}
+.fmt-pop button.auto{width:auto;padding:0 8px;border-radius:11px;font-size:12px;color:var(--fg)}
+.fmt-pop button.on{box-shadow:0 0 0 2px var(--acc)}
+.fmt-pop label{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--mut)}
+.fmt-pop input[type=color]{width:28px;height:22px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--card);cursor:pointer}
+.mini-fmt{position:fixed;z-index:34;display:flex;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.mini-fmt[hidden]{display:none!important}
+.mini-fmt button{height:28px;min-width:28px;border:0;background:none;color:var(--fg);border-radius:6px;cursor:pointer;font:600 13px system-ui,sans-serif}
+.mini-fmt button[aria-pressed=true]{background:var(--acc);color:#fff}
+.mini-fmt button:hover{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+@media (max-width:760px){#of-ribbon .fmt select{max-width:52px}}
 /* SL4 print / PDF: only the print view (slides_print.js), one 960 x 540 page per slide = 10in x 5.625in at 96 px/in */
 #print{display:none}
 @media print{
@@ -255,3 +300,7 @@ html.presenting #app>*:not(#show){visibility:hidden}
   #print .slide{position:absolute;left:0;top:0;border-radius:0;box-shadow:none}
   #print,#print *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* aliases if a list class is written in the long form */
+.s-ed .p.bullets::before,.sv .b .p.bullets::before,.tbox-in .p.bullets::before{content:"";position:absolute;left:-28px;top:.5em;width:11px;height:11px;border-radius:50%;background:var(--s-acc)}
+.s-ed .p.numbers::before,.sv .b .p.numbers::before,.tbox-in .p.numbers::before{content:attr(data-n);position:absolute;left:-40px;width:36px;top:0;text-align:right;font-size:.8em;font-weight:600;color:var(--s-acc);line-height:1.4}

@@ -15,7 +15,7 @@
   function item(s, i) {
     var li = document.createElement('li');
     li.className = 'th' + (i === cur ? ' cur' : ''); li.dataset.i = i;
-    li.setAttribute('aria-label', 'Slide ' + (i + 1) + (s.title ? ': ' + s.title : ''));
+    li.setAttribute('aria-label', 'Slide ' + (i + 1) + (SLText.has(s.title) ? ': ' + SLText.plain(s.title, { single: true }) : ''));
     li.setAttribute('aria-current', i === cur ? 'true' : 'false');
     /* legacy (SL1 / SL2): '<div class="mini-in slide sv" style="transform:scale(..)">' + SLEdit.html(..) + '</div>' */
     li.innerHTML = '<span class="num">' + (i + 1) + '</span><div class="mini-s"><div class="mini-in slide sv"></div></div>';
@@ -33,7 +33,7 @@
   function update(i) {
     var li = inEl.children[i]; if (!li || !slides[i]) return;
     SLEdit.paint(li.querySelector('.mini-in'), slides[i], i, { max: MAX_LINES }, th(), 'mini-in slide sv');
-    li.setAttribute('aria-label', 'Slide ' + (i + 1) + (slides[i].title ? ': ' + slides[i].title : ''));
+    li.setAttribute('aria-label', 'Slide ' + (i + 1) + (SLText.has(slides[i].title) ? ': ' + SLText.plain(slides[i].title, { single: true }) : ''));
   }
   function reveal() {
     var li = inEl.children[cur]; if (!li) return;
