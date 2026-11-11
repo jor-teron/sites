@@ -128,7 +128,10 @@ Draftly.storage.isBlankUnsaved = function isBlankUnsaved(html) {
   return Draftly.storage.isEmptyHtml(html);
 };
 
-/* Write the open document under its name. If the name box changed, the record moves (rename). */
+/* Write the open document under its name. If the name box changed, the record moves (rename).
+   (before HOW1) this IndexedDB write was the native document save. Writer now replaces
+   Draftly.storage.save from draftly-how.js (the original stays on saveLegacy). This body
+   still runs for the HO2 check, which loads this file without draftly-how.js. */
 Draftly.storage.save = function save() {
   var cfg = Draftly.config;
   if (!cfg || !Draftly.pages) return Promise.resolve();

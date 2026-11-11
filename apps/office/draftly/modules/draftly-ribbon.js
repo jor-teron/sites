@@ -72,10 +72,14 @@ Draftly.ribbon.rename = function rename() {
     /* DF15-B1 legacy (toast before the move; save could overwrite a doc with that name):
     if (Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + v);
     */
-    /* DF15-B1: save now; a name taken by another document opens the clash dialog instead. */
-    return Draftly.storage.save().then(function (n) {
-      if (n === v && Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + v);
-      return n === v;
+    /* DF15-B1: save now; a name taken by another document opens the clash dialog instead.
+       (before HOW1) return Draftly.storage.save().then(function (n) { if (n === v && Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + v); return n === v; }); */
+    var p = Draftly.how ? Draftly.how.autosave() : Draftly.storage.save();
+    return p.then(function (n) {
+      var name = n && n.name ? n.name : n;
+      var want = Draftly.how ? Draftly.how.stem(v) : v;
+      if (name === want && Draftly.ui && Draftly.ui.showToast) Draftly.ui.showToast('Renamed to ' + name);
+      return name === want;
     });
   });
 };
@@ -179,10 +183,12 @@ Draftly.ribbon.init = function init() {
   }
   /* File > Rename: a dialog (standalone and in the hub). The name box itself still edits in place. */
   bind('renameBtn', function () { Draftly.ribbon.rename(); });
-  /* DF15-B1: typing a new name in the name box saves (and checks for a clash) when the box is left. */
+  /* DF15-B1: typing a new name in the name box saves (and checks for a clash) when the box is left.
+     HOW1: storage.save writes the .how file (draftly-how.js). */
   var nameBox = document.getElementById('fileNameInput');
   if (nameBox) nameBox.addEventListener('change', function () {
-    if (Draftly.app && Draftly.app.ready && Draftly.storage.currentName() !== Draftly.storage.loadedName) Draftly.storage.save().catch(function () {});
+    /* (before HOW1) if (Draftly.app && Draftly.app.ready && Draftly.storage.currentName() !== Draftly.storage.loadedName) Draftly.storage.save().catch(function () {}); */
+    if (Draftly.app && Draftly.app.ready && Draftly.storage.currentName() !== Draftly.storage.loadedName && Draftly.how) Draftly.how.autosave();
   });
   bind('deleteCurrentBtn', function () {
     var name = Draftly.storage.loadedName || Draftly.storage.currentName();

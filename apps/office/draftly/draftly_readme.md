@@ -7,6 +7,29 @@ Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage k
 
 The name on screen is Writer: the page title, the header next to the icon, Settings → About, PDF title and creator, the Hub Office tile, and the name sent to the Hub title bar. IndexedDB is still `draftly`. localStorage keys such as `draftly_settings` and `draftly_last_name` are still those keys. The Hub id is still `draftly`. Replaced lines are commented with `(before DF24)` and were not deleted.
 
+## HOW1 — .how files
+
+`.how` (Hub Office Writer) is the default native file. It is one UTF-8 JSON file, readable in a text editor, with no zip and no new library.
+
+| Field | What it holds |
+| --- | --- |
+| `format` | `"how"` |
+| `version` | `1`. Any other version is refused. |
+| `name`, `created`, `updated` | Document name and times |
+| `html` | The document, including formatting. Images are embedded as `data:` URLs. |
+| `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. |
+| `page` | Size (`A4` or `Legal`), orientation, margin preset, custom centimetres, page numbers on/off and position |
+
+File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged.
+
+**In the Hub**, Save, Save As and autosave write the browser's Local drive, folder **Documents**. That is the same disk the Files app shows. Documents is created the first time a file is saved. Writer reopens the newest `.how` in Documents when it starts inside the Hub. Recent lists those files. A double-click on a `.how` in Files opens Writer on that file (the Hub id is still `draftly`).
+
+**Outside the Hub**, Save uses the browser's save picker when the browser has one, and otherwise downloads the `.how` file. Autosave outside the Hub continues only into a file you already picked. It does not download on each keystroke.
+
+### Legacy (before HOW1)
+
+The old native copy was IndexedDB database `draftly`, store `documents` (`name`, `html`, `hf`, `updated`), plus the localStorage crash copy `draftly-backup`. Writer does not migrate those records and does not open them. The old load, Recent, backup and IndexedDB save calls are still in the source, commented with `(before HOW1)`. `Draftly.storage.save` is still the IndexedDB function so the shared save-failure check can run it; while Writer is open, `draftly-how.js` replaces it and keeps the original on `Draftly.storage.saveLegacy`. Theme, margins and the other localStorage prefs are unchanged. Open .docx still uses the Word reader.
+
 ## 1. What it is
 An offline document editor laid out as fixed A4 pages, like a word processor. Text flows from page to page line by line. Documents autosave in the browser and download as PDF or DOCX. Plain JavaScript, no internet needed, works from `file://`.
 
@@ -43,6 +66,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-zoom.js`: document zoom
 - `modules/draftly-headerfooter.js`: Header & Footer (left / centre / right slots, fields {page} {pages} {date}, saved with each document; the Page-tab page-number buttons write {page} into the footer)
 - `modules/draftly-margins.js`: Custom margins dialog (0.5–5 cm per side, "Same for all"; a global pref like Normal / Narrow)
+- `modules/draftly-how.js` (HOW1): `.how` read/write, Hub Documents autosave, standalone picker or download
 - `modules/draftly-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S
 - `modules/draftly-format.js`: Home-tab formatting buttons, selects, shortcuts, toolbar sync
 - `modules/draftly-ribbon.js`: ribbon tabs and File menu (File > Rename asks with a dialog; File > Dark mode / Light mode toggles the theme, same `draftly_theme` pref as the top-row button)
@@ -68,11 +92,9 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - **Type:** Times New Roman (machine font), else the built-in Tinos, then Liberation Serif, then serif. Size list 8–36 (default 12 pt). Line height 1.6.
 - **Formatting:** bold, italic, underline, align left / centre / right, lists (• bullet, 1 2 3, a b c, A B C; suffix `.` `,` `)` or none for numbered lists, display only).
 - **Paste (DF16):** formatted. Bold, italic, underline, strike, sup/sub, colour, highlight, font size (nearest Draftly size), headings, lists, links, tables and pasted images are kept; everything else is cleaned out. Ctrl+Shift+V pastes plain text, and a **Paste as text** chip appears after a formatted paste.
-- **Saving:**
-  - Autosave 0.8 s after typing stops, when closing the tab, and on the Save button or Ctrl/Cmd+S ("Saved <name>").
-  - Documents are kept in IndexedDB by the name in the name box, and saving overwrites that name. An empty name box gets `Doc_YYYY_MM_DD_HH-MM`. Typing a new name and saving makes a new document.
-  - On start the last opened document loads (else the newest one, else a welcome page).
-- **Recent (clock button):** lists saved documents newest first; tap one to open it.
+- **Saving (HOW1):** see the HOW1 section. Autosave is 0.8 s after typing stops. In the Hub the file is `Documents/<name>.how` on the Local drive. Outside the Hub, Save downloads or uses the save picker. An empty name box gets `Doc_YYYY_MM_DD_HH-MM`.
+- **Recent:** in the Hub, lists `.how` files in Documents, newest first.
+- **Before HOW1:** documents were IndexedDB records. Those are not opened any more.
 - **PDF:** one image per page, true A4 in the current orientation, light colours, no marks. Named after the document. Text in the PDF isn't selectable.
 - **DOCX:** a real Word document (text in `word/document.xml`, so Word, LibreOffice, Google Docs and viewers all show it) with the same A4 size, orientation, margins and font; Word re-paginates it. Kept: headings, bold / italic / underline / strike, colours and highlight, font and size, sub / superscript, links, alignment, indent, bullet and numbered lists (nested), tables (borders, shading, merged cells), images (PNG / JPEG / GIF), horizontal rules, page breaks, header / footer. Merge (Export all, zip or combined) uses the same writer, so the merged values are in the file.
 - **Print:** each page prints as one A4 sheet exactly as on screen (browser dialog; Save as PDF also works there).
@@ -118,7 +140,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 Works inside the hub and responds to its phone D-pad, but the hub's key presses are synthetic: only shortcuts the app handles itself work (e.g. Ctrl+S / B / I / U, Enter, Esc). Browser actions such as typing letters, moving the caret or undo don't happen.
 
 ## 5. Saved data
-- IndexedDB database `draftly`, store `documents` (one record per name: `name`, `html`, `updated`).
+- **HOW1:** a `.how` file (see the HOW1 section). In the Hub it lives in Local → Documents.
+- IndexedDB database `draftly`, store `documents`, is no longer read or written by Writer (before HOW1). The database name is unchanged.
 - localStorage:
   - `draftly_last_name`: last opened document
   - `draftly_theme`: `dark` / `light`
