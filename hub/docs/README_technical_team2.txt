@@ -1851,6 +1851,26 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.97 is NL4, so this note is numbered 1.98.
 
 
+### 1.99 AG44 Agent MCP
+
+- Agent (`apps/lab/agent/`) gains Settings → MCP Servers. `app/core/mcp.js` is a small Streamable
+  HTTP client (JSON-RPC 2.0 via fetch POST): initialize, notifications/initialized, tools/list
+  (follows nextCursor) and tools/call. It accepts application/json and text/event-stream, sends
+  `Accept: application/json, text/event-stream`, and keeps `Mcp-Session-Id`. Protocol version
+  starts at `2025-06-18` and falls back to `2025-03-26` then `2024-11-05`. An optional bearer
+  key stays in localStorage on this device.
+- Tools join the existing `HR.tools` registry as `<serverslug>__<toolname>` (sanitized, max 64).
+  The model sees them like built-in tools while the server is on and connected. Off or unreachable
+  servers are skipped quietly; the settings row shows connected, a short error, or off. Each call
+  uses the Approve / Deny card unless that server is set to Always allow. Delete uses `HR.confirm`.
+- This talks to the Web MCP relay (`POST /mcp/<PIN>`, JSON in, JSON out). No local stdio and no
+  helper bridge. Service worker version is `agent-ag44` (legacy line keeps `agent-ag42`). New
+  files are on the precache shell list. `app/api/hub/` was not edited. No new libraries.
+- Checked with `node --check` and `node apps/lab/agent/tests/ag44.test.cjs` (mocked fetch), plus
+  the existing Agent node tests. No browser runner and no paid API.
+- 1.98 is RM7, so this note is numbered 1.99.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

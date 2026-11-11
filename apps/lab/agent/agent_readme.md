@@ -12,7 +12,8 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `ui/main.css` — theme variables (`html[data-ht]`), layout; `ui/components.css` — buttons, bubbles, Thinking box, error cards, dialog, notice cards; `ui/steps.css` — steps pane; `ui/chats.css` — Chats drawer
 - `app/core/migrate.js` — AG1 one-time carry-over from the old Harness names (storage keys, folder handle, `harness/` data folder)
 - `app/core/messages.js` — `HR.msgs`: the open chat's history (AG4: per chat via `set()`, saved by `HR.chats`), roles user / assistant (+`tool_calls`) / tool, `toApi()` (recent turns in full, older ones as a trimmed note), `splitThink()`
-- `app/core/tools.js` — `HR.tools`: registry of `{name, description, parameters (JSON schema), where:'browser', run(args, ctx), available?}`, `schemas()` for Ollama
+- `app/core/tools.js` — `HR.tools`: registry of `{name, description, parameters (JSON schema), where:'browser', run(args, ctx), available?}`, `schemas()` for Ollama. AG44 `forget()` drops remote MCP tools on re-sync
+- `app/core/mcp.js` — AG44 `HR.mcp`: remote MCP over Streamable HTTP (initialize, tools/list, tools/call). No stdio and no helper bridge
 - `app/core/perms.js` — AG3 `HR.perms`: Settings → Permissions (`allowed(tool)`, `auto(kind)`, `memory()`)
 - `app/core/loop.js` — `HR.loop.run()`: the one agent loop (model + tools → run tool calls → append `tool` results → repeat; step limit, Stop, no-tools retry)
 - `app/core/prompt.js` — `HR.prompt.system()`: the user's `agent/prompts/system.md` (created from the shipped default on first use) + a live "Current settings" section + memory from `HR.mem.block()`, read on every call
@@ -59,6 +60,7 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/meter.js` — AG5 `HR.meter`: token / context meter above the composer
 - `usage.html`, `ui/usage.css`, `app/gui/usageview.js` — AG30 Usage page (`HR.usageView`): Token usage & spending, and Rates. AG7–AG29 this view was Settings → Usage
 - `app/gui/confirm.js` — AG42 `HR.confirm`: in-app confirm dialog (`<dialog>` opened with `showModal()`), used instead of the browser confirm
+- `app/gui/mcpset.js` — AG44 Settings → MCP Servers (add / edit / delete, on/off, status, tool list, Refresh)
 - `app/gui/chats.js` — AG4 `HR.chats`: Chats drawer (new, switch, rename, delete), resume last chat, per-chat provider + model. AG27 rename uses `UiDialog.ask` (the Hub dialog), not `window.prompt`
 - `app/gui/chatsearch.js` — AG8 `HR.chatSearch`: search box in the 💬 drawer (title + message text), snippet results, jump to the hit
 - `app/main.js` — `HR.notify` (Hub cards, local fallback) + boot
@@ -570,3 +572,37 @@ Its version is `agent-ag42`.
   is still used only if a refresh fails before the old picture addresses are thrown away.
 - Nothing under `app/api/hub/` was changed. Those files still fall back to the browser confirm when the shared
   dialog script is missing. Agent's provider page loads that shared dialog, so the fallback is not the normal path.
+
+## AG44 — Remote MCP servers
+
+Settings → **MCP Servers** adds remote MCP servers. The agent talks to them with Streamable HTTP
+(JSON-RPC 2.0 `POST`s). There is no local stdio client and no helper bridge.
+
+For each server that is switched on, Agent does `initialize` (protocol `2025-06-18`, then `2025-03-26`,
+then `2024-11-05` if the server refuses the newer one), then `notifications/initialized`, then
+`tools/list` (it follows `nextCursor`). A later tool call is `tools/call`. The request asks for
+`application/json, text/event-stream` and accepts either a JSON body or an SSE body (`data:` lines).
+A `Mcp-Session-Id` response header is sent back on the next posts. An optional bearer key is sent as
+`Authorization: Bearer` and is stored only in this browser (`localStorage` `agent.mcp`), the same way
+other provider keys stay on the device.
+
+Each tool is registered on the existing tool list as `<serverslug>__<toolname>` (letters, digits, `_`
+and `-`, at most 64 characters). The description starts with the server name. The parameters are the
+tool's `inputSchema`. The model only sees a tool while that server is on and the last sync connected.
+`HR.perms` still applies, the same as for built-in tools. A server that is off, or that cannot be
+reached, is skipped: the status dot shows off, connected, or a short error, and the chat does not get
+an error card. Sync runs when the app starts, when a server is switched on or off, and from **Refresh**.
+
+Every MCP tool call uses the existing Approve / Deny card, which shows the server, the tool and the
+arguments. **Always allow** on that server skips the card. Delete asks with the in-app confirm dialog.
+
+This matches our Web MCP relay: the server URL is the relay's `https://<host>/mcp/<PIN>`, which answers
+JSON-RPC `POST`s with `application/json`. With no servers saved, or while offline, Agent behaves as before.
+
+`app/core/mcp.js` and `app/gui/mcpset.js` are in `agent.html`, so the service worker precaches them.
+Its version is `agent-ag44`.
+
+### Legacy code notes — AG44
+- The service worker keeps `AG44 Legacy: VER = 'agent-ag42'`. The previous `VER = 'agent-ag42'` line is commented with `(before AG44)`.
+- The previous Approve card lines (no MCP kind) stay in `app/gui/approve.js`, commented with `(before AG44)`.
+- Nothing under `app/api/hub/` was changed.

@@ -37,6 +37,16 @@
 .set-more[open]{padding-bottom:12px}
 .usage-in{padding:0;max-width:none;overflow:visible}
 .set-back{display:none}
+/* AG44: MCP server rows in Settings. Dot: muted = off / checking, green = connected, red = error. */
+.mcp-item{border-bottom:1px solid var(--line);padding:8px 0}
+.mcp-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mcp-main{flex:1 1 140px;min-width:0;text-align:left;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:4px 0}
+.mcp-name{font-weight:600;font-size:14px}
+.mcp-sub{font-size:12px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcp-dot{width:10px;height:10px;border-radius:50%;background:var(--mut);flex:none;display:inline-block}
+.mcp-dot.ok{background:var(--ok)}.mcp-dot.err{background:var(--err)}
+.mcp-tools{margin:0 0 4px 18px}.mcp-tools ul{margin:4px 0;padding-left:18px}.mcp-tools li{margin:3px 0;font-size:13px;overflow-wrap:anywhere}
+#mcpDlg .sw{margin-top:12px}
 @media (max-width:759px){
   .set-wrap{grid-template-columns:1fr}.set-nav{border-right:0}
   .setpage .set-grid{display:none}

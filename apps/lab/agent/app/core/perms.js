@@ -9,7 +9,7 @@ HR.perms = (function () {
     if (name === 'run_shell') return on('allowShell');
     if (name === 'web_search' || name === 'web_fetch') return HR.set.get('allowWeb') !== 'off';   /* AG6 */
     if (name === 'memory_read' || name === 'memory_append' || name === 'memory_search' || name === 'memory_semantic_search') return on('memory');   /* AG33/AG34 */
-    return true;
+    return true;   /* AG44: MCP tools are server__name. They are not special-cased here; the server switch and available() hide them. */
   }
   /* AG40: only 'write' and 'shell' can be auto-approved; trash, rename and writes into user/ always show the card.
      AG40 Legacy: auto(kind) used autoWrite for every non-shell kind. */
