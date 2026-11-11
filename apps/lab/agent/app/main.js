@@ -34,6 +34,8 @@ HR.set.applyTheme();
 /* AG9: read the Hub's keys first (in-memory only; at most 1.5 s), then boot */
 Promise.race([HR.hubKeys.load().catch(function () {}), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () {
   HR.set.init();
+  if (HR.mcpSet) HR.mcpSet.init();   /* AG44: remote MCP; sync stays quiet when nothing is on */
+  else if (HR.mcp) HR.mcp.sync();
   HR.set.applyDisplay();
   HR.steps.init();
   HR.chat.init();

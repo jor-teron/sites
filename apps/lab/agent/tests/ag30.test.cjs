@@ -186,7 +186,7 @@ test('AG30 page, navigation, service worker and readme', () => {
   assert.match(html, /AG30 Legacy:/);
   assert.match(html, /id="sc_usage"/); /* kept only in the legacy comment */
   for (const id of ['sc_model', 'sc_folder', 'sc_know', 'sc_perms', 'sc_web', 'sc_helper', 'sc_display', 'sc_usage', 'sc_adv']) assert.match(live, new RegExp('id="' + id + '"'));
-  assert.equal(live.match(/class="scard"/g).length, 9);   // AG38: + sc_know, sc_usage
+  assert.equal(live.match(/class="scard"/g).length, 10);   // AG38: 9 cards; AG44 adds sc_mcp
   assert.match(live, /id="webCredits"/);
   assert.match(live, /id="setSteps"/);
   assert.ok(live.indexOf('id="setSteps"') < live.indexOf('id="setCtx"'));

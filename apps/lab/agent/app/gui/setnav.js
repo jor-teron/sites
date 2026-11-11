@@ -1,7 +1,9 @@
 /* Agent — app/gui/setnav.js: full-page Settings navigation (AG38). HR.setNav.
    Like Hub Settings: categories on the left, the chosen section on the right. Categories are the existing
-   <details class="scard"> cards (ids sc_model, sc_folder, sc_know, sc_perms, sc_web, sc_helper, sc_display, sc_usage,
-   sc_adv), so every control, id and storage key is unchanged; their summaries become the section titles (no collapsing).
+   <details class="scard"> cards (ids sc_model, sc_folder, sc_know, sc_perms, sc_web, sc_helper, sc_mcp, sc_display,
+   sc_usage, sc_adv). AG44 adds sc_mcp. Their summaries become the section titles (no collapsing).
+   Older cards keep their controls, ids and storage keys.
+   (before AG44) the id list was sc_model, sc_folder, sc_know, sc_perms, sc_web, sc_helper, sc_display, sc_usage, sc_adv.
    The nav also links API & Providers (providers.html, AG37). Last category: localStorage 'agent.setCard' (same key as AG10).
    Narrow (<760px): the category list first; picking one shows that section with "‹ Categories" (body class set-sec).
    open(name) opens Settings at a category ('usage' or 'sc_usage'); '#settings/<name>' in the URL does the same on load

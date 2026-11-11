@@ -11,8 +11,11 @@
    AG28: VER agent-ag28 so install picks up the step limit (0 = unlimited, no 30 cap) and the 128000 context default.
    AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
    AG30: VER agent-ag30 so install precaches usage.html (the Usage page) and the files it links.
+   AG44: VER agent-ag44 so install precaches app/core/mcp.js and app/gui/mcpset.js (remote MCP).
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag42', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+var FILES = 'agent-files', VER = 'agent-ag44', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+/* AG44 Legacy: VER = 'agent-ag42'. AG44 adds app/core/mcp.js and app/gui/mcpset.js (agent.html src=; install precaches them with the shell list). */
+// (before AG44) var FILES = 'agent-files', VER = 'agent-ag42', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];
 /* AG42 Legacy: VER = 'agent-ag40'. AG42 adds app/gui/confirm.js (agent.html and image.html src=; install precaches it with the shell list). */
 // (before AG42) var FILES = 'agent-files', VER = 'agent-ag40', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];
 /* AG37 Legacy: VER = 'agent-ag36', PAGES without providers.html. AG37 adds providers.html and app/api/ (own runtime). */
@@ -36,6 +39,7 @@ function shellList() {
     var urls = PAGES.concat(['index.html', 'agent_icon.png']), re = /\s(?:src|href)="([^"#:]+)"/g, m, h = hs.join('\n');
     while ((m = re.exec(h))) if (!/^(\/\/|data:|mailto:)/.test(m[1])) urls.push(m[1]);
     urls = urls.concat(PROMPTS);
+    urls = urls.concat(['app/core/mcp.js', 'app/gui/mcpset.js']);   /* AG44: shell list, also linked from agent.html */
     return urls.map(function (u) { return bare(new URL(u, BASE).href); }).filter(function (u, i, a) { return a.indexOf(u) === i; });
   });
 }

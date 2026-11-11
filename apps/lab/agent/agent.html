@@ -26,6 +26,7 @@
   AG38: Settings is a full page: categories on the left, the chosen section on the right (narrow: list, then section
   with ‹ Categories). 📊 opens Settings › Usage; usage.html redirects there. Knowledge & Search is its own category.
   AG42: app/gui/confirm.js (HR.confirm) loads before knowview, semview and chats. In-app dialog, not the browser confirm.
+  AG44: remote MCP servers (app/core/mcp.js, Settings card MCP Servers, app/gui/mcpset.js). Streamable HTTP only.
   AG21: ☆/★ (#barFav) favourite chat models, '⭐ Favourites' group on top of the Model dropdown.
   AG18: Provider + Model dropdowns in the top row (app/gui/modelbar.js, ui/modelbar.css); 🔍 opens the picker; the chip is hidden.
   AG10: Settings = collapsible cards (ui/settings.css); inside the Hub key / base fields hide behind "Keys come from Hub › API Keys".
@@ -199,6 +200,12 @@
     </div>
     <p class="hint">Start it in a terminal: <code>bash helper/agent-helper.sh</code> (127.0.0.1 only, needs socat or ncat). Every command asks first.</p>
   </div></details>
+  <details class="scard" id="sc_mcp"><summary><span class="sc-i">🔌</span>MCP Servers</summary><div class="sc-b">   <!-- AG44 -->
+    <p class="hint">Remote MCP servers over Streamable HTTP. Their tools join the agent while the server is on and reachable. Works with the Web MCP relay (<code>/mcp/&lt;PIN&gt;</code>). No local stdio.</p>
+    <div id="mcpList"></div>
+    <div class="ec-row start"><button type="button" class="hb wide" id="btnMcpAdd">Add server</button><button type="button" class="hb wide" id="btnMcpRefresh">Refresh</button></div>
+    <p class="hint" id="mcpStat"></p>
+  </div></details>
   <details class="scard" id="sc_display"><summary><span class="sc-i">🎨</span>Display</summary><div class="sc-b">
     <h3>Theme</h3><div class="seg" id="setTheme" role="radiogroup" aria-label="Theme"></div>
     <div class="sw"><span>Show thinking<small>The folded Thinking box</small></span><div id="set_showThink"></div></div>
@@ -237,6 +244,18 @@
   </div>
   </div>
 </dialog>
+<dialog id="mcpDlg" class="dlg" aria-labelledby="mcpTitle">   <!-- AG44: add / edit a remote MCP server. Delete uses HR.confirm. -->
+  <h2 id="mcpTitle">Add MCP server</h2>
+  <form id="mcpForm">
+    <input id="mcpName" class="inp gap" type="text" maxlength="80" spellcheck="false" placeholder="Name" aria-label="Server name" autocomplete="off">
+    <input id="mcpUrl" class="inp gap" type="url" spellcheck="false" placeholder="https://example.com/mcp/PIN" aria-label="Server URL" autocomplete="off">
+    <input id="mcpKey" class="inp gap" type="password" spellcheck="false" placeholder="Bearer key (optional)" aria-label="Bearer key" autocomplete="off">
+    <div class="sw"><span>Always allow<small>Skip the Approve card for this server</small></span><button type="button" class="tg" id="mcpAlways" role="switch" aria-checked="false" aria-label="Always allow"></button></div>
+    <p class="hint" id="mcpFormHint"></p>
+    <p class="hint">The key stays in this browser and is sent only to this server as Authorization: Bearer.</p>
+    <div class="ec-row"><button type="button" class="hb wide" id="mcpCancel">Cancel</button><button type="submit" class="hb wide" id="mcpSave">Save</button></div>
+  </form>
+</dialog>
 <dialog id="pick" class="dlg pick" aria-labelledby="pickTitle">
   <div class="dlg-head"><h2 id="pickTitle">Model for this chat</h2><button type="button" class="hb" id="btnModels" title="Reload models" aria-label="Reload models">↻</button><button type="button" class="hb" id="pickClose" aria-label="Close">✕</button></div>
   <div class="seg" id="pickProv" role="radiogroup" aria-label="Provider"></div>
@@ -247,6 +266,7 @@
 <script src="app/core/migrate.js"></script>
 <script src="app/core/messages.js"></script>
 <script src="app/core/tools.js"></script>
+<script src="app/core/mcp.js"></script>   <!-- AG44: remote MCP client (Streamable HTTP) -->
 <script src="app/core/perms.js"></script>
 <script src="app/core/loop.js"></script>
 <script src="prompts/prompt_fallback.js"></script>   <!-- AG29: generated copy of prompts/prompt_*.txt; file:// and failed loads -->
@@ -318,6 +338,7 @@
 <script src="app/gui/meter.js"></script>
 <script src="app/gui/edit.js"></script>
 <script src="app/gui/usageview.js"></script>
+<script src="app/gui/mcpset.js"></script>   <!-- AG44: Settings › MCP Servers -->
 <script src="app/main.js"></script>
 </body>
 </html>
