@@ -1,8 +1,12 @@
 /*
  * Tables — grid, tabs, filters, CSV and local save.
  * TB1: the grid. TB2: card view, the record panel, and Link columns.
- * Data rules live in tables_model.js. Dialogs are in-app (shared OfficeDialog
- * plus a small <dialog> for import, choice lists and link setup). No alert/confirm/prompt.
+ * TB4: the grid matches Spreadsheet (borders, header, row numbers, selection,
+ * compact rows, sheet tabs). Column headers are one line, "Name (Type)".
+ * Date cells are plain text, not <input type="date"> (that control showed
+ * year 0001). Data rules live in tables_model.js. Dialogs are in-app
+ * (shared OfficeDialog plus a small <dialog> for import, choice lists and
+ * link setup). No alert/confirm/prompt.
  */
 (function () {
   'use strict';
@@ -162,7 +166,8 @@
       render({ focus: true });
       return;
     }
-    if (typed != null && col.type !== 'text' && col.type !== 'number') typed = null;
+    /* (before TB4) if (typed != null && col.type !== 'text' && col.type !== 'number') typed = null; */
+    if (typed != null && col.type !== 'text' && col.type !== 'number' && col.type !== 'date') typed = null;
     st.edit = {
       rowId: row.id,
       colId: col.id,
@@ -665,7 +670,9 @@
   }
 
   function columnMenu(col, anchor) {
+    var table = current();
     var items = [
+      { label: table && filterIsOn(table, col) ? 'Filter (on)' : 'Filter', run: function () { openFilter(col, anchor); } },
       { label: 'Rename', run: function () { renameColumn(col); } },
       { label: 'Change type', run: function () { changeType(col); } }
     ];
@@ -715,7 +722,8 @@
       input.inputMode = 'decimal';
       input.placeholder = 'Number';
     } else if (col.type === 'date') {
-      input.placeholder = 'YYYY-MM-DD or DD/MM/YYYY';
+      /* (before TB4) input.placeholder = 'YYYY-MM-DD or DD/MM/YYYY'; */
+      input.placeholder = '2026-11-11, 11/11/2026 or 11 Nov 2026';
     } else {
       input.placeholder = 'Text';
     }
@@ -765,6 +773,15 @@
     render();
   }
 
+  function columnLabel(col, dir) {
+    var label = el('span', 'col-label');
+    label.appendChild(el('span', 'col-title', col.name));
+    label.appendChild(el('span', 'col-type', ' (' + (M.TYPE_LABELS[col.type] || 'Text') + ')'));
+    if (dir === 'asc') label.appendChild(el('span', 'col-sort', ' ▲'));
+    else if (dir === 'desc') label.appendChild(el('span', 'col-sort', ' ▼'));
+    return label;
+  }
+
   function headerCell(table, col) {
     var th = el('th');
     th.scope = 'col';
@@ -774,31 +791,45 @@
     var wrap = el('div', 'col-head');
     var sortBtn = el('button', 'col-name');
     sortBtn.type = 'button';
-    sortBtn.title = 'Sort ' + col.name;
+    var full = M.headerLabel(col);
+    sortBtn.title = 'Sort ' + full;
+    sortBtn.setAttribute('aria-label', 'Sort ' + full);
+    /* (before TB4)
     sortBtn.appendChild(el('span', null, col.name));
     sortBtn.appendChild(el('small', null, M.TYPE_LABELS[col.type] + (dir === 'asc' ? '  ▲' : dir === 'desc' ? '  ▼' : '')));
+    */
+    sortBtn.appendChild(columnLabel(col, dir));
+    var held = false;
+    var hold = 0;
     sortBtn.addEventListener('mousedown', function (e) { e.stopPropagation(); });
-    sortBtn.addEventListener('click', function () { toggleSort(col.id); });
-    var filterBtn = el('button', 'icon-btn' + (filterIsOn(table, col) ? ' on' : ''), '▾');
-    filterBtn.type = 'button';
-    filterBtn.title = 'Filter ' + col.name;
-    filterBtn.setAttribute('aria-label', 'Filter ' + col.name);
-    filterBtn.addEventListener('mousedown', function (e) { e.stopPropagation(); });
-    filterBtn.addEventListener('click', function () {
-      if (pop && pop.getAttribute('data-for') === 'filter:' + col.id) { closePop(); return; }
-      openFilter(col, filterBtn);
+    sortBtn.addEventListener('click', function () {
+      if (held) { held = false; return; }
+      toggleSort(col.id);
     });
-    var more = el('button', 'icon-btn', '⋯');
+    sortBtn.addEventListener('touchstart', function () {
+      held = false;
+      hold = setTimeout(function () {
+        held = true;
+        columnMenu(col, sortBtn);
+      }, 550);
+    });
+    sortBtn.addEventListener('touchend', function () { clearTimeout(hold); });
+    sortBtn.addEventListener('touchmove', function () { clearTimeout(hold); });
+    /* (before TB4) a separate ▾ filter button sat beside ⋯, which stacked the name and the type. */
+    var more = el('button', 'icon-btn col-menu' + (filterIsOn(table, col) ? ' on' : ''), '⋯');
     more.type = 'button';
-    more.title = 'Column options';
-    more.setAttribute('aria-label', 'Options for ' + col.name);
+    more.title = filterIsOn(table, col) ? 'Column options (filter on)' : 'Column options';
+    more.setAttribute('aria-label', 'Options for ' + full);
     more.addEventListener('mousedown', function (e) { e.stopPropagation(); });
     more.addEventListener('click', function () {
       if (pop && pop.getAttribute('data-for') === 'menu:' + col.id) { closePop(); return; }
       columnMenu(col, more);
     });
+    th.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      columnMenu(col, more);
+    });
     wrap.appendChild(sortBtn);
-    wrap.appendChild(filterBtn);
     wrap.appendChild(more);
     th.appendChild(wrap);
     return th;
@@ -811,7 +842,10 @@
       fillLinkCell(td, row, col, active);
       return;
     }
-    if (active) td.classList.add('active');
+    if (active) {
+      td.classList.add('active');
+      td.classList.add('selected');
+    }
     td.setAttribute('aria-selected', active ? 'true' : 'false');
     if (col.type === 'yesno' && !editing) {
       var box = document.createElement('input');
@@ -842,11 +876,15 @@
           field.appendChild(opt);
         }
         field.value = st.edit.draft || '';
+      /* (before TB4) native date input. The year segment starts at 0001, and
+         new Date(1, month, day) is year 1901, so the check failed and the
+         cell showed "07/05/0001" with "not saved".
       } else if (col.type === 'date') {
         field = document.createElement('input');
         field.type = 'date';
         field.value = /^\d{4}-\d{2}-\d{2}$/.test(st.edit.draft || '') ? st.edit.draft : '';
         field.setAttribute('aria-label', col.name);
+      */
       } else {
         field = document.createElement('input');
         field.type = 'text';
@@ -855,6 +893,10 @@
         field.spellcheck = false;
         field.setAttribute('aria-label', col.name);
         if (col.type === 'number') field.inputMode = 'decimal';
+        if (col.type === 'date') {
+          field.placeholder = '2026-11-11, 11/11/2026 or 11 Nov 2026';
+          field.setAttribute('inputmode', 'text');
+        }
       }
       td.appendChild(field);
       if (st.edit.warn) {
@@ -906,7 +948,9 @@
       return;
     }
     var head = el('tr');
-    var corner = el('th', 'rowh', '#');
+    /* (before TB4) var corner = el('th', 'rowh', '#'); */
+    var corner = el('th', 'rowh corner');
+    corner.setAttribute('aria-label', 'Row numbers');
     corner.scope = 'col';
     head.appendChild(corner);
     for (var c = 0; c < table.columns.length; c++) head.appendChild(headerCell(table, table.columns[c]));
@@ -937,7 +981,8 @@
       (function (row, index) {
         var tr = el('tr');
         if (st.selected[row.id]) tr.className = 'on';
-        var rh = el('td', 'rowh');
+        /* (before TB4) var rh = el('td', 'rowh'); */
+        var rh = el('td', 'rowh row-num');
         var pick = el('div', 'row-pick');
         var cb = document.createElement('input');
         cb.type = 'checkbox';
@@ -957,7 +1002,8 @@
         rh.appendChild(pick);
         tr.appendChild(rh);
         for (var i = 0; i < table.columns.length; i++) {
-          var cell = el('td');
+          /* (before TB4) var cell = el('td'); */
+          var cell = el('td', 'cell');
           fillCell(cell, row, table.columns[i]);
           tr.appendChild(cell);
         }
@@ -1012,7 +1058,8 @@
     host.textContent = '';
     for (var i = 0; i < db.tables.length; i++) {
       (function (table) {
-        var button = el('button', 'tab', table.name);
+        /* (before TB4) var button = el('button', 'tab', table.name); */
+        var button = el('button', 'tab sheet-tab' + (table.id === db.activeId ? ' on' : ''), table.name);
         button.type = 'button';
         button.setAttribute('role', 'tab');
         button.title = table.name;
@@ -1324,7 +1371,10 @@
   }
 
   function fillLinkCell(td, row, col, active) {
-    if (active) td.classList.add('active');
+    if (active) {
+      td.classList.add('active');
+      td.classList.add('selected');
+    }
     td.setAttribute('aria-selected', active ? 'true' : 'false');
     td.tabIndex = active ? 0 : -1;
     var text = M.display('link', row.cells[col.id], col, db);
@@ -1536,9 +1586,12 @@
     var wrap = el('div', 'card-tool');
     var sortBtn = el('button', 'col-name');
     sortBtn.type = 'button';
-    sortBtn.title = 'Sort ' + col.name;
+    sortBtn.title = 'Sort ' + M.headerLabel(col);
+    /* (before TB4)
     sortBtn.appendChild(el('span', null, col.name));
     sortBtn.appendChild(el('small', null, M.TYPE_LABELS[col.type] + (dir === 'asc' ? ' ▲' : dir === 'desc' ? ' ▼' : '')));
+    */
+    sortBtn.appendChild(columnLabel(col, dir));
     sortBtn.addEventListener('click', function () { toggleSort(col.id); });
     var filterBtn = el('button', 'icon-btn' + (filterIsOn(table, col) ? ' on' : ''), '▾');
     filterBtn.type = 'button';
@@ -1757,10 +1810,20 @@
       wrap.appendChild(area);
     } else {
       var input = el('input');
+      /* (before TB4)
       input.type = col.type === 'date' ? 'date' : 'text';
       if (col.type === 'number') input.inputMode = 'decimal';
       if (col.type === 'date') input.value = /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : '';
       else input.value = value == null ? '' : M.display(col.type, value, col, db);
+      */
+      input.type = 'text';
+      if (col.type === 'number') input.inputMode = 'decimal';
+      if (col.type === 'date') {
+        input.placeholder = '2026-11-11, 11/11/2026 or 11 Nov 2026';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+      }
+      input.value = value == null ? '' : M.display(col.type, value, col, db);
       input.setAttribute('aria-label', col.name);
       input.autocomplete = 'off';
       editor.read = function () { return input.value; };

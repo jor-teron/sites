@@ -3,8 +3,10 @@
  * TB1: types, sort, filter, search, CSV, save shape. Storage key tables-v1.
  * TB2: stable row ids (already on TB1 rows; migration fills any that are missing),
  * Link columns, backlinks, and the same visible-row list for the card view.
- * The storage key stays tables-v1. Link fields are optional, so older saves load
- * and the next edit writes them back to the same key. Nothing is deleted.
+ * TB4: date entry matches Spreadsheet (ISO, D/M/YYYY, day month-name year).
+ * Dates stay ISO YYYY-MM-DD. Year 0001 is never stored. The storage key stays
+ * tables-v1. Link fields are optional, so older saves load and the next edit
+ * writes them back to the same key. Nothing is deleted.
  * Legacy: cell values that fail their column type are dropped, never stored.
  */
 (function (root) {
@@ -64,6 +66,7 @@
     return isFinite(n) ? n : null;
   }
 
+  /* (before TB4)
   function parseDate(raw) {
     if (raw == null) return null;
     var s = String(raw).trim();
@@ -86,6 +89,104 @@
     var dt = new Date(y, mo - 1, d);
     if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
     return y + '-' + pad2(mo) + '-' + pad2(d);
+  }
+  */
+
+  /* Month names for "11 Nov 2026". Spreadsheet's fxParseDate does not read
+     these; TB4 accepts them because that is how a date is typed. */
+  var MONTHS = {
+    jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3,
+    apr: 4, april: 4, may: 5, jun: 6, june: 6, jul: 7, july: 7,
+    aug: 8, august: 8, sep: 9, sept: 9, september: 9, oct: 10, october: 10,
+    nov: 11, november: 11, dec: 12, december: 12
+  };
+
+  /* Calendar date as YYYY-MM-DD. Years 0–99 are rejected: Date() would turn
+     them into 1900–1999, and a native date field shows that mistake as 0001.
+     Impossible days (2026-02-30) are rejected, not rolled over. */
+  function isoFromParts(y, mo, d) {
+    if (y !== (y | 0) || mo !== (mo | 0) || d !== (d | 0)) return null;
+    if (y < 1000 || y > 9999) return null;
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    var dt = new Date(Date.UTC(y, mo - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+    return y + '-' + pad2(mo) + '-' + pad2(d);
+  }
+
+  /* Same Excel serial as spreadsheet fxParseDate (1899-12-30 + days). */
+  function isoFromExcelSerial(n) {
+    if (typeof n !== 'number' || !isFinite(n)) return null;
+    var ms = Math.round((n - 25569) * 86400000);
+    var dt = new Date(ms);
+    if (isNaN(dt.getTime())) return null;
+    return isoFromParts(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+  }
+
+  function monthNumber(name) {
+    return MONTHS[String(name || '').toLowerCase()] || 0;
+  }
+
+  function parseDate(raw) {
+    if (raw == null || raw === '') return null;
+    if (typeof raw === 'number') return isoFromExcelSerial(raw);
+    var s = String(raw).trim();
+    if (!s) return null;
+    var m;
+    var y;
+    var mo;
+    var d;
+    /* Spreadsheet: YYYY-M-D with an optional time. Tables keeps the date. */
+    m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(s);
+    if (m) return isoFromParts(+m[1], +m[2], +m[3]);
+    /* Spreadsheet: D/M/YYYY, D-M-YYYY or D.M.YYYY. Day first.
+       If the month is > 12 and the day is <= 12, the two are swapped. */
+    m = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/.exec(s);
+    if (m) {
+      d = +m[1];
+      mo = +m[2];
+      y = +m[3];
+      if (mo > 12 && d <= 12) {
+        var swap = d;
+        d = mo;
+        mo = swap;
+      }
+      return isoFromParts(y, mo, d);
+    }
+    /* 11 Nov 2026, 11 November 2026, 7 May, 2026, 11-Nov-2026. */
+    m = /^(\d{1,2})(?:st|nd|rd|th)?[\s\-]+([A-Za-z]+),?[\s\-]+(\d{4})$/.exec(s);
+    if (m) {
+      mo = monthNumber(m[2]);
+      if (!mo) return null;
+      return isoFromParts(+m[3], mo, +m[1]);
+    }
+    /* Nov 11, 2026 and November 11 2026. */
+    m = /^([A-Za-z]+)[\s\-]+(\d{1,2})(?:st|nd|rd|th)?,?[\s\-]+(\d{4})$/.exec(s);
+    if (m) {
+      mo = monthNumber(m[1]);
+      if (!mo) return null;
+      return isoFromParts(+m[3], mo, +m[2]);
+    }
+    /* Spreadsheet coerces a typed number to an Excel serial before fxParseDate.
+       A bare 2026 is that serial (1905-07-18), not the year 2026. */
+    if (/^-?\d+(?:\.\d+)?$/.test(s)) return isoFromExcelSerial(Number(s));
+    return null;
+  }
+
+  /* Spreadsheet Date format (formatCellValue fmt "date"): YYYY-MM-DD. */
+  function formatDate(value) {
+    return parseDate(value) || '';
+  }
+
+  function headerLabel(nameOrCol, type) {
+    var name = nameOrCol;
+    var kind = type;
+    if (nameOrCol && typeof nameOrCol === 'object') {
+      name = nameOrCol.name;
+      kind = nameOrCol.type;
+    }
+    name = String(name == null ? '' : name).trim() || 'Column';
+    kind = TYPE_LABELS[normalizeType(kind)] || TYPE_LABELS.text;
+    return name + ' (' + kind + ')';
   }
 
   function parseYesNo(raw) {
@@ -155,7 +256,8 @@
     }
     if (type === 'date') {
       var d = parseDate(raw);
-      if (!d) return { ok: false, message: 'Use a date like 2026-11-11' };
+      /* (before TB4) if (!d) return { ok: false, message: 'Use a date like 2026-11-11' }; */
+      if (!d) return { ok: false, message: 'Use a date like 2026-11-11, 11/11/2026 or 11 Nov 2026' };
       return { ok: true, value: d };
     }
     if (type === 'yesno') {
@@ -222,6 +324,11 @@
       return linkText(db, col, value, (depth || 0) + 1);
     }
     if (type === 'yesno') return value === true ? 'Yes' : 'No';
+    /* (before TB4) dates were String(value), which showed whatever was stored. */
+    if (type === 'date') {
+      var shown = formatDate(value);
+      return shown || String(value);
+    }
     if (type === 'number') {
       if (typeof value === 'number' && isFinite(value)) {
         var s = String(value);
@@ -957,7 +1064,9 @@
     if (all(function (v) { return /^(yes|no|y|n|true|false)$/i.test(v); })) {
       return { type: 'yesno', options: [] };
     }
-    if (all(function (v) { return parseDate(v) != null && (/^\d{4}-\d{2}-\d{2}$/.test(v) || /^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}$/.test(v)); })) {
+    /* (before TB4) if (all(function (v) { return parseDate(v) != null && (/^\d{4}-\d{2}-\d{2}$/.test(v) || /^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}$/.test(v)); })) { */
+    /* A column of plain numbers stays a number. A bare serial is only a date once the column is already a date. */
+    if (all(function (v) { return parseDate(v) != null && !/^-?\d+(?:\.\d+)?$/.test(v); })) {
       return { type: 'date', options: [] };
     }
     if (all(function (v) { return parseNumber(v) != null; })) return { type: 'number', options: [] };
@@ -1261,6 +1370,8 @@
     validate: validate,
     parseNumber: parseNumber,
     parseDate: parseDate,
+    formatDate: formatDate,
+    headerLabel: headerLabel,
     parseYesNo: parseYesNo,
     display: display,
     cleanOptions: cleanOptions,
