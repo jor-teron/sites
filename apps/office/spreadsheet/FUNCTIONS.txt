@@ -17,6 +17,20 @@ CELL / TEXT
   SUBSTITUTE(text, old, new, [n])
   TEXT(value, format)             0.00, 0%, yyyy-mm-dd, dd/mm/yyyy
   TEXTJOIN(delim, ignore_empty, text, ...)
+  CHAR(number)          character for a code from 1 to 255. CHAR(10) is a line break.
+                        CHAR(65) is A. A code outside 1–255 is #VALUE!.
+  TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])
+                        split text by col_delimiter across columns and by
+                        row_delimiter down rows. The result spills (see below).
+                        ignore_empty TRUE skips empty pieces (default FALSE).
+                        match_mode 1 ignores case (default 0, case-sensitive).
+                        A shorter row is filled with pad_with (default #N/A).
+                        An empty col_delimiter and no row_delimiter is #VALUE!.
+                        text may be one cell. A range is #VALUE!.
+                        One string delimiter each. Array constants such as
+                        {",",";"} are not accepted. Quotes are ordinary
+                        characters (this is not a CSV parse). CHAR(10) works
+                        as a row delimiter.
 
 MATH
   +  -  *  /  ^
@@ -68,6 +82,9 @@ ARRAYS / SPILL (SH13, extended in SH14)
                     distinct rows (or columns if by_col is TRUE), first one kept.
                     exactly_once TRUE keeps only values that appear once.
                     Text match ignores case. Nothing left is #CALC!.
+  TEXTSPLIT(...)        full arguments under CELL / TEXT. The grid spills.
+                        A blocked spill is #SPILL!. Nothing left after
+                        ignore_empty is #VALUE!.
   A1#               the whole current spill of A1
   A 1×1 result is an ordinary value. SUM(SEQUENCE(5)) adds the array.
   Arguments may be a range, an A1# spill, or an array from another function
@@ -161,7 +178,8 @@ ERRORS
   #LOOP!    circular reference (A1=B1, B1=A1)
   #N/A      lookup not found, or IFS/SWITCH with no match
   #VALUE!   wrong type of argument (e.g. FIND with no match, a bad date,
-            or a SORT / FILTER array of the wrong size)
+            or a SORT / FILTER array of the wrong size, TEXTSPLIT with no
+            delimiter or a range, or CHAR outside 1–255)
   #SPILL!   an array result cannot spill (a cell in the way, a merged cell, or past the grid)
   #CALC!    FILTER found no rows (and if_empty was left out), or UNIQUE
             with exactly_once found nothing

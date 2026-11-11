@@ -21,6 +21,8 @@
  * INDIRECT(text) is volatile, like RAND / NOW: it runs on every recalc. The cells
  * named by the text are dependencies (so a later formula is picked up, and a loop
  * is #LOOP!). A bad address is #REF!.
+ * SH15: TEXTSPLIT returns a 2D array and spills through the same engine. CHAR
+ * is an ordinary text function. No new parser (no array constants, no CSV quotes).
  */
 
 /* Formula error tokens shown in cells */

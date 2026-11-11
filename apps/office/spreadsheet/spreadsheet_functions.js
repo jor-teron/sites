@@ -9,6 +9,9 @@
  * by the numeric aggregates, so SUM(SEQUENCE(3)+1) and SUM(FILTER(...)) work.
  * SH16: ROW, COLUMN and INDIRECT. No-arg ROW/COLUMN use the position passed in
  * as `at` (the formula cell). INDIRECT resolves text to a cell or a range.
+ * SH15: TEXTSPLIT spills through the SH13 engine. CHAR(n) is the character
+ * for a code from 1 to 255 (CHAR(10) is a line break). Delimiters are one
+ * string each; this parser has no array constants and no CSV quotes.
  */
 
 /**
@@ -467,6 +470,10 @@ function evalFunc(name, args, at) {
   if (n === "ROW") return fxRow(args, at);
   if (n === "COLUMN") return fxColumn(args, at);
   if (n === "INDIRECT") return fxIndirect(args);
+
+  /* SH15 */
+  if (n === "CHAR") return fxChar(args);
+  if (n === "TEXTSPLIT") return fxTextSplit(args);
 
   return ERR;
 }
@@ -1500,6 +1507,143 @@ function fxIndirect(args) {
   return spillWrap(rows);
 }
 
+/* ---- SH15 CHAR and TEXTSPLIT ---- */
+
+/* Character for a code from 1 to 255. CHAR(10) is a line break, CHAR(65) is A.
+   Outside that range, or not a number, is #VALUE!. */
+function fxChar(args) {
+  var n;
+  if (!args.length || String(args[0]).trim() === "") return ERR_VALUE;
+  n = fxReadNum(args[0], false);
+  if (isErrorValue(n)) return n;
+  n = n < 0 ? Math.ceil(n) : Math.floor(n);
+  if (n < 1 || n > 255) return ERR_VALUE;
+  return String.fromCharCode(n);
+}
+
+/* Where `delim` sits in `text` at or after `from`. Case-fold compares equal
+   length slices, so a delimiter is not a regular expression. */
+function fxDelimAt(text, delim, from, ignoreCase) {
+  var n = delim.length, i, slice, needle;
+  if (!n) return -1;
+  needle = ignoreCase ? delim.toLowerCase() : delim;
+  for (i = from; i + n <= text.length; i++) {
+    slice = text.substring(i, i + n);
+    if ((ignoreCase ? slice.toLowerCase() : slice) === needle) return i;
+  }
+  return -1;
+}
+
+/* Split `text` on every `delim`. Empty pieces stay unless ignoreEmpty.
+   An empty delimiter is not used here (the caller treats that as "do not split"). */
+function fxSplitParts(text, delim, ignoreCase, ignoreEmpty) {
+  var parts, i, at, kept, k;
+  if (!delim) return ignoreEmpty && text === "" ? [] : [text];
+  if (!ignoreCase) parts = text.split(delim);
+  else {
+    parts = [];
+    i = 0;
+    for (;;) {
+      at = fxDelimAt(text, delim, i, true);
+      if (at < 0) { parts.push(text.slice(i)); break; }
+      parts.push(text.slice(i, at));
+      i = at + delim.length;
+      if (i >= text.length) { parts.push(""); break; }
+    }
+  }
+  if (!ignoreEmpty) return parts;
+  kept = [];
+  for (k = 0; k < parts.length; k++) if (parts[k] !== "") kept.push(parts[k]);
+  return kept;
+}
+
+/* One TEXTSPLIT value.
+   mode "text": a blank argument is #VALUE!.
+   mode "delim": a blank argument means "no delimiter" ("").
+   mode "pad": keep the value as-is (a number stays a number).
+   A range, or any array that is not 1×1, is #VALUE!. One cell is its value. */
+function fxSplitOne(arg, mode) {
+  var token, parsed, arr, v, cell;
+  if (arg == null || String(arg).trim() === "") return mode === "delim" ? "" : ERR_VALUE;
+  token = String(arg).trim();
+  parsed = parseRefToken(token);
+  if (parsed) {
+    if (parsed.error) return parsed.error;
+    if (!parsed.list || parsed.list.length !== 1) return ERR_VALUE;
+    cell = parsed.list[0];
+    v = rawVal(cell.r, cell.c, cell.si);
+    if (mode !== "pad") {
+      if (isErrorValue(v)) return v;
+      return v == null ? "" : String(v);
+    }
+    return v;
+  }
+  arr = typeof arrayFromToken === "function" ? arrayFromToken(token) : null;
+  if (arr) {
+    if (arr.rows.length !== 1 || !arr.rows[0] || arr.rows[0].length !== 1) return ERR_VALUE;
+    v = arr.rows[0][0];
+    if (mode !== "pad") {
+      if (isErrorValue(v)) return v;
+      return v == null ? "" : String(v);
+    }
+    return v;
+  }
+  try { v = evalExpr(token); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR;
+  }
+  if (isSpillArray(v)) {
+    if (v.rows.length !== 1 || !v.rows[0] || v.rows[0].length !== 1) return ERR_VALUE;
+    v = v.rows[0][0];
+  }
+  if (mode !== "pad") {
+    if (isErrorValue(v)) return v;
+    return v == null ? "" : String(v);
+  }
+  return v;
+}
+
+/* TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])
+   Row delimiter first, then each row by the column delimiter. Plain split:
+   quotes are ordinary characters. No array-constant delimiter ({",",";"}).
+   Empty column delimiter and no row delimiter is #VALUE!. A range is #VALUE!. */
+function fxTextSplit(args) {
+  var text, colD, rowD, skip, mode, pad, lines, grid, i, cells, w, r, row;
+  if (!args || !args.length) return ERR;
+  text = fxSplitOne(args[0], "text");
+  if (isErrorValue(text)) return text;
+  colD = fxSplitOne(args.length > 1 ? args[1] : "", "delim");
+  if (isErrorValue(colD)) return colD;
+  rowD = fxSplitOne(args.length > 2 ? args[2] : "", "delim");
+  if (isErrorValue(rowD)) return rowD;
+  if (colD === "" && rowD === "") return ERR_VALUE;
+  skip = fxReadBool(args.length > 3 ? args[3] : null, false);
+  if (isErrorValue(skip)) return skip;
+  mode = fxReadNum(args.length > 4 ? args[4] : null, true, 0);
+  if (isErrorValue(mode)) return mode;
+  if (mode !== 0 && mode !== 1) return ERR_VALUE;
+  if (args.length > 5 && String(args[5]).trim() !== "") {
+    pad = fxSplitOne(args[5], "pad");
+    if (isErrorValue(pad)) return pad;
+  } else pad = ERR_NA;
+  lines = rowD ? fxSplitParts(text, rowD, mode === 1, skip) : [text];
+  grid = [];
+  w = 0;
+  for (i = 0; i < lines.length; i++) {
+    cells = colD ? fxSplitParts(lines[i], colD, mode === 1, skip) : [lines[i]];
+    if (!cells.length) continue;
+    if (cells.length > w) w = cells.length;
+    grid.push(cells);
+  }
+  if (!grid.length || !w) return ERR_VALUE;
+  for (r = 0; r < grid.length; r++) {
+    row = grid[r];
+    while (row.length < w) row.push(pad);
+  }
+  return spillWrap(grid);
+}
+
 /* Catalog used by the formula hint and the function picker (SH9). */
 var FX_CATALOG = [
   { name: "SUM", cat: "Math", sig: "SUM(range, ...)", hint: "Add numbers." },
@@ -1554,6 +1698,8 @@ var FX_CATALOG = [
   { name: "CONCAT", cat: "Text", sig: "CONCAT(text, ...)", hint: "Join text values." },
   { name: "TEXTJOIN", cat: "Text", sig: "TEXTJOIN(delimiter, ignore_empty, text, ...)", hint: "Join text with a delimiter. ignore_empty TRUE skips blanks." },
   { name: "TEXT", cat: "Text", sig: "TEXT(value, format)", hint: "Format a number or date as text. Examples: 0.00, 0%, yyyy-mm-dd, dd/mm/yyyy." },
+  { name: "CHAR", cat: "Text", sig: "CHAR(number)", hint: "The character for a code from 1 to 255. CHAR(10) is a line break. CHAR(65) is A. A code outside that range is #VALUE!." },
+  { name: "TEXTSPLIT", cat: "Text", sig: "TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])", hint: "Split text across columns and down rows. It spills. ignore_empty TRUE skips empty pieces. match_mode 1 ignores case. Short rows are padded (default #N/A). No delimiter, or a range, is #VALUE!." },
   { name: "TODAY", cat: "Date", sig: "TODAY()", hint: "Today's date as YYYY-MM-DD." },
   { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and time." },
   { name: "DATE", cat: "Date", sig: "DATE(year, month, day)", hint: "Build a date. Month or day overflow rolls over (DATE(2024,13,1) is 2025-01-01)." },

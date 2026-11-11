@@ -1900,6 +1900,16 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.101 is SH14, so this note is numbered 1.102.
 
 
+### 1.103 SH15 Spreadsheet TEXTSPLIT
+
+- apps/office/spreadsheet only, plus this section. Grid stays 26 × 100. Storage stays sheet-v4.
+- TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with]) splits text across columns and down rows and spills through the SH13 engine. The row delimiter is applied first. A blocked spill is #SPILL!. ignore_empty TRUE skips empty pieces (default FALSE). match_mode 1 is case-insensitive (default 0). A shorter row is padded with pad_with (default #N/A). If ignore_empty removes every piece, the result is #VALUE!.
+- An empty column delimiter and no row delimiter is #VALUE!. Text may be one cell; a range is #VALUE!. CHAR(n) is new: the character for a code from 1 to 255. CHAR(10) is a line break and works as a row delimiter. CHAR(65) is A.
+- Delimiters are one string each. The parser has no array constants, so {",",";"} is not a delimiter list. Splits are plain: quotes are not treated as CSV. The fx picker lists CHAR and TEXTSPLIT. Title / SHEET_VERSION / ?v= stay SH14 (no cache bump). Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh15-textsplit.js, plus the existing SH9–SH16 node tests. No browser runner.
+- 1.102 is SH16, so this note is numbered 1.103.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
