@@ -8,8 +8,10 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 ## 2. Files
 - `spreadsheet.html` / `spreadsheet.css`: layout, toolbar, look, print
 - `spreadsheet_config.js`: settings and on-screen text
-- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, and SH13 spill
-- `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`), plus FX_CATALOG for the hint/picker
+<!-- (before SH16): - `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, SH13 spill, and SH14 array math -->
+- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, SH13 spill, SH14 array math, and SH16 ROW / COLUMN / INDIRECT
+<!-- (before SH15): - `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`), plus FX_CATALOG for the hint/picker -->
+- `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`), plus FX_CATALOG for the hint/picker. SH15 adds `TEXTSPLIT` and `CHAR`
 - `spreadsheet_fx.js`: SH9 formula hint while typing, and the fx function picker
 - `spreadsheet_refs.js`: cell refs and ranges, `$` refs, ref shifting and adjusting
 - `spreadsheet_state.js`: shared state (cells, selection, widths), blank grid, styles, status
@@ -42,7 +44,9 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 
 ## 3. Behaviour rules
 - **Cells:** a click selects. Typing replaces the text; F2 or double-click edits and keeps it. Enter commits and moves down, Tab moves right (Shift+Tab left). Esc cancels the edit.
-- **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list.
+<!-- (before SH16): - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`). -->
+<!-- (before SH15): - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`). `ROW` and `COLUMN` give the row or column of this cell, or of a reference. `INDIRECT` turns text into a reference and recalculates whenever any cell changes. -->
+- **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`). `ROW` and `COLUMN` give the row or column of this cell, or of a reference. `INDIRECT` turns text into a reference and recalculates whenever any cell changes. `TEXTSPLIT` splits text across columns and down rows and spills. `CHAR` returns the character for a code; `CHAR(10)` is a line break.
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
 - **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, merge, conditional formatting, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
@@ -80,7 +84,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
 localStorage key `sheet-v4` (workbook: sheets, charts, active sheet, cells, styles, formats, widths, freeze, hidden, filters, validation, merges, conditional formats). An older `sheet-v3` / `sheet-v2` / `sheet-v1` save is migrated into v4 on first load and left in place as a backup; later loads use only `sheet-v4`. Page setup is `sheet-v4-page`, with `sheet-v3-page` then `sheet-v2-page` as fallbacks. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
 
 ## 6. Errors
-- In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#SPILL!` (an array result cannot spill), `#ERR` (formula not understood).
+- In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#SPILL!` (an array result cannot spill), `#CALC!` (FILTER matched nothing, or UNIQUE with exactly_once kept nothing), `#ERR` (formula not understood).
 - Status line: "Save failed" (storage full or blocked), "Can't insert: the last row / column has data".
 
 ## 7. Screen sizes
@@ -201,4 +205,40 @@ The grid is still 26 × 100. Storage is still `sheet-v4`. Ghost cells are not a 
 - **Hint / picker:** SEQUENCE and RANDARRAY are in the function list, under Arrays, with argument hints.
 - **Files:** save / load keeps the formula only. CSV exports formulas too, so a ghost is blank in the file. XLSX export writes the anchor formula (and the cached top-left value) and does not write ghosts, so a re-import does not block the spill. Charts read spilled values; choosing the anchor cell charts the whole spill.
 - Title, `SHEET_VERSION` and `?v=` are SH13.
-- **Limits:** array arithmetic (`=SEQUENCE(3)+1`) is `#VALUE!`. Sorting uses stored cells, so a ghost sorts as blank and the spill is recomputed afterwards. `RANDARRAY` changes on every recalculation. Copy of a ghost copies an empty stored cell; copy the source formula to spill again.
+- **Limits:** array arithmetic (`=SEQUENCE(3)+1`) was `#VALUE!` in SH13; SH14 evaluates it. Sorting uses stored cells, so a ghost sorts as blank and the spill is recomputed afterwards. `RANDARRAY` changes on every recalculation. Copy of a ghost copies an empty stored cell; copy the source formula to spill again.
+
+## SH14 — SORT, SORTBY, FILTER, UNIQUE
+The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields.
+
+- **SORT(array, [sort_index], [sort_order], [by_col])** sorts rows by a 1-based column (default 1). `sort_order` 1 is ascending (default) and −1 is descending. `by_col` TRUE sorts columns by a row instead. Numbers come first, then text A–Z ignoring case, and blanks stay last in both directions. Equal keys keep their original order. A bad index, an order other than 1 or −1, or a non-boolean `by_col` is `#VALUE!`.
+- **SORTBY(array, by_array1, [order1], [by_array2, order2], …)** sorts by one or more keys. A key that is one column tall as the array sorts rows; a key that is one row wide as the array sorts columns. Later keys break ties. An order argument is 1 or −1; leave it out to sort ascending. A key of a different size, or keys that mix row and column direction, is `#VALUE!`.
+- **FILTER(array, include, [if_empty])** keeps rows when `include` is a column of the same height, or columns when it is a row of the same width. TRUE / FALSE and numbers work (0 is left out, any other number is kept). `(B2:B50>100)*(C2:C50="x")` is AND and `+` is OR, because a comparison is 1 or 0 once it is multiplied or added. No match and no `if_empty` is `#CALC!`. A provided `if_empty` is returned instead (a value or an array). A different size, or a block that is both multiple rows and multiple columns, is `#VALUE!`.
+- **UNIQUE(array, [by_col], [exactly_once])** returns distinct rows, or distinct columns when `by_col` is TRUE, in first-seen order. Text is compared ignoring case. A typed number and the same number as text count as the same value. `exactly_once` TRUE keeps only rows or columns that occur once; if that set is empty the result is `#CALC!`.
+- **Array math:** a range or array with `= <> < > <= >=` or `+ - * /` against a scalar, or against another array of the same shape, is element by element and spills when it is the whole formula. `=SEQUENCE(3)+1` spills 2, 3, 4. A different shape is `#VALUE!`. A formula that never produces an array (`=A1+B1`, `=1+2`) still uses the scalar parser and is not slower. `=A1>1` on a single cell is still `#ERR`, as before.
+- **Arguments** may be a range, an `A1#` spill, or an array returned by another function (`SORT(UNIQUE(A2:A50))`, `SUM(FILTER(...))`).
+- **Hint / picker:** SORT, SORTBY, FILTER and UNIQUE are in the function list, under Arrays, with argument hints. `#CALC!` is in the error list.
+- Title, `SHEET_VERSION` and `?v=` are SH14.
+- **Limits:** arrays of different shapes are not broadcast (`#VALUE!`). `SORT`'s `sort_index` is one column or row; use `SORTBY` for more keys. A blank cell inside an array sum or product counts as 0; a blank single cell in `=A1+1` is still `#ERR`. The Data tab's sort still reads stored cells, so a ghost sorts as blank until the spill is drawn again.
+
+## SH16 — ROW, COLUMN, INDIRECT
+The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields.
+
+- **ROW([ref])** with no argument is the row number of the cell that holds the formula (1-based). `ROW(B5)` is 5. `ROW(A1:A5)` spills 1, 2, 3, 4, 5 down the column. A reference that covers several rows spills one number per row. `ROW(A1#)` uses the rows of that spill.
+- **COLUMN([ref])** with no argument is the column number of the formula cell (A is 1). `COLUMN(C1)` is 3. `COLUMN(A1:C1)` spills 1, 2, 3 across the row. A reference that covers several columns spills one number per column.
+- **INDIRECT(text)** turns text into a reference: `INDIRECT("B2")`, `INDIRECT("B"&2)`, `INDIRECT("A1:A3")`. Used alone, a range spills. Inside `SUM` (and the other aggregates) it is that range. A bad address, or one outside A–Z × 1–100, is `#REF!`. It is volatile, like `RAND` and `NOW`: it is calculated again whenever any cell changes, and the cells it names are dependencies even when the address is built from text. A circular reference is `#LOOP!`.
+- **Hint / picker:** ROW, COLUMN and INDIRECT are in the function list, under Lookup, with argument hints.
+- Legacy: title, `SHEET_VERSION` and `?v=` stay SH14. This release does not bump the cache token. Storage stays `sheet-v4`.
+- **Limits:** `INDIRECT` reads A1-style addresses (a cell, a range, or `A1#`), not R1C1. `ROW(1)` is `#VALUE!` because 1 is not a reference. A range passed to `ROW` spills row numbers, not one number per cell. `ROW(INDIRECT("B5"))` is `#VALUE!` as well: `INDIRECT` yields the cell's value (or a spilled range), and `ROW` / `COLUMN` need the reference written in the formula.
+
+## SH15 — TEXTSPLIT and CHAR
+The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields.
+
+- **TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])** splits `text` by `col_delimiter` across columns and by `row_delimiter` down rows. The row delimiter is applied first; each of those pieces is then split by the column delimiter. The result spills through the SH13 engine. A blocked spill (a filled cell, a merge, another spill, or past the grid) is `#SPILL!` and writes nothing else. A 1×1 result is an ordinary value.
+- **ignore_empty** TRUE skips empty pieces, including a blank row from a repeated row delimiter (default FALSE, which keeps the blank). If that removes every piece, the result is `#VALUE!`. **match_mode** 1 compares delimiters ignoring case (default 0, case-sensitive). Any other match mode is `#VALUE!`. A shorter row is filled out to the widest row with **pad_with** (default `#N/A`).
+- **Delimiters** are one string each: a quoted string, or one cell. An empty column delimiter with no row delimiter is `#VALUE!`. An empty column delimiter with a row delimiter splits into a single column. The formula parser does not accept array constants, so `{",",";"}` is not a list of delimiters.
+- **text** may be a string or one cell. A range, or any array that is not a single value, is `#VALUE!`. An error in that cell is returned as that error.
+- **CHAR(number)** is the character for a code from 1 to 255. `CHAR(10)` is a line break and can be the row delimiter. `CHAR(65)` is A. A code outside 1–255 is `#VALUE!`. `CHAR` uses the Unicode code point, so a code Excel maps through an old ANSI page may differ; 10 and the ASCII letters match.
+- **Quotes** are ordinary characters. `TEXTSPLIT` does not treat a comma inside quotes as one field (no CSV parse).
+- **Hint / picker:** CHAR and TEXTSPLIT are in the function list, under Text, with argument hints.
+- Legacy: title, `SHEET_VERSION` and `?v=` stay SH14. This release does not bump the cache token. Storage stays `sheet-v4`.
+- **Limits:** one delimiter string for columns and one for rows (not a list). No CSV quote rules. `CHAR` is code points 1–255, not Excel's Windows-1252 page. A result that does not fit is `#SPILL!`.

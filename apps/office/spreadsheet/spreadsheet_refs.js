@@ -467,8 +467,77 @@ function rewriteSheetRefs(formula, oldName, newName) {
 }
 
 /**
+ * Cells named by a literal address (INDIRECT("A1"), INDIRECT("A1:A3"), INDIRECT("A1#")).
+ * A built address ("B"&n) is not known yet; the evaluator records it while running.
+ * fromSi is the formula's sheet. Out-of-grid text adds nothing (#REF! at run time).
+ */
+function addAddressTextDeps(text, fromSi, add) {
+  var s = String(text || "").trim(), sheet = null, rest = s, i, name, ch, si;
+  var parts, a, b, r, c, r1, r2, c1, c2, idm;
+  if (!s || typeof add !== "function") return;
+  if (s.charAt(0) === "'") {
+    name = "";
+    i = 1;
+    while (i < s.length) {
+      ch = s.charAt(i);
+      if (ch === "'") {
+        if (s.charAt(i + 1) === "'") { name += "'"; i += 2; continue; }
+        if (s.charAt(i + 1) === "!") { sheet = name; rest = s.slice(i + 2); break; }
+        return;
+      }
+      name += ch;
+      i++;
+    }
+    if (sheet == null) return;
+  } else {
+    idm = s.match(/^([^!]+)!(.+)$/);
+    if (idm && idm[1].indexOf(":") < 0) { sheet = idm[1]; rest = idm[2]; }
+  }
+  if (sheet != null) {
+    si = typeof findSheetIndex === "function" ? findSheetIndex(sheet) : -1;
+    if (si < 0) return;
+  } else si = fromSi;
+  rest = String(rest || "").trim();
+  if (rest.charAt(rest.length - 1) === "#" && rest.indexOf(":") < 0) rest = rest.slice(0, -1).trim();
+  if (rest.indexOf(":") >= 0) {
+    parts = rest.split(":");
+    if (parts.length !== 2) return;
+    a = parseAddr(parts[0]);
+    b = parseAddr(parts[1]);
+    if (!a || !b) return;
+    r1 = Math.min(a.r, b.r); r2 = Math.max(a.r, b.r);
+    c1 = Math.min(a.c, b.c); c2 = Math.max(a.c, b.c);
+    for (r = r1; r <= r2; r++) for (c = c1; c <= c2; c++) add(si, r, c);
+    return;
+  }
+  a = parseAddr(rest);
+  if (!a) return;
+  add(si, a.r, a.c);
+}
+
+/* SH16: INDIRECT("A1") hides the ref inside quotes, so mapRefs does not see it. */
+function indirectLiteralDeps(f, fromSi, add) {
+  var src, guard, call, arg, m;
+  if (typeof findFormulaCall !== "function") return;
+  src = String(f).charAt(0) === "=" ? String(f).slice(1) : String(f);
+  if (src.toUpperCase().indexOf("INDIRECT") < 0) return;
+  guard = 0;
+  while (guard++ < 40 && src) {
+    call = findFormulaCall(src);
+    if (!call) break;
+    if (String(call.name).toUpperCase() === "INDIRECT") {
+      arg = String(call.args || "").trim();
+      m = arg.match(/^"([^"]*)"$/);
+      if (m) addAddressTextDeps(m[1], fromSi, add);
+    }
+    src = src.slice(0, call.start) + "0" + src.slice(call.end);
+  }
+}
+
+/**
  * Cells a formula refers to (single refs and ranges inside the sheet), as
  * global indexes: sheet * (ROWS*COLS) + r*COLS + c. fromSi is the formula's sheet.
+ * SH16: also the cells named by a literal INDIRECT("A1") / INDIRECT("A1:A3").
  */
 function formulaDeps(f, fromSi) {
   var out = [], seen = {};
@@ -489,6 +558,7 @@ function formulaDeps(f, fromSi) {
     }
     return refToken(x);
   });
+  indirectLiteralDeps(f, fromSi, add);
   return out;
 }
 
