@@ -1880,6 +1880,36 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Checked with node --check and node apps/office/spreadsheet/test-sh13-spill.js, plus the existing SH9–SH12 node tests. No browser runner.
 
 
+### 1.101 SH14 Spreadsheet SORT, SORTBY, FILTER, UNIQUE
+
+- apps/office/spreadsheet only, plus this section. Grid stays 26 × 100. Storage stays sheet-v4.
+- SORT, SORTBY, FILTER and UNIQUE match Excel's arguments and spill through the SH13 engine. Sort order 1 is ascending and -1 descending; numbers come before text (case ignored), blanks stay last, and ties keep their order. FILTER's include is a same-height column or a same-width row; no match and no if_empty is #CALC! (added to the error list). A wrong size is #VALUE!. UNIQUE compares rows (or columns), ignoring text case; exactly_once with nothing left is #CALC!.
+- Ranges and arrays do element-wise = <> < > <= >= and + - * / against a scalar or a same-size array, so B2:B50>100, (B2:B50>100)*(C2:C50="x") and SEQUENCE(3)+1 spill. Scalar formulas still use the number parser only. Arguments may be a range, an A1# spill, or an array from another function.
+- The fx picker lists the four functions. Title / SHEET_VERSION / ?v=: SH14. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh14-sort-filter.js, plus the existing SH9–SH13 node tests. No browser runner.
+- 1.100 is SH13, so this note is numbered 1.101.
+
+
+### 1.102 SH16 Spreadsheet ROW/COLUMN/INDIRECT
+
+- apps/office/spreadsheet only, plus this section. Grid stays 26 × 100. Storage stays sheet-v4.
+- ROW() is the row of the formula cell. ROW(B5) is 5. ROW(A1:A5) spills 1..5 down the column through the SH13 spill engine. ROW(A1#) uses the rows of that spill. COLUMN() is the column of the formula cell (A is 1). COLUMN(C1) is 3. COLUMN(A1:C1) spills 1..3 across the row.
+- INDIRECT(text) turns text into a reference: INDIRECT("B2"), INDIRECT("B"&2), INDIRECT("A1:A3"). Alone, a range spills. Inside SUM it is that range. A bad or out-of-grid address is #REF!. It is volatile, like RAND and NOW, so it recalculates whenever any cell changes and the cells it names stay dependencies (including a built address). A circular reference is #LOOP!.
+- The evaluator passes the formula cell's position into functions so no-arg ROW/COLUMN can see it. The fx picker lists the three functions. Title / SHEET_VERSION / ?v= stay SH14 (no cache bump). Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh16-row-column-indirect.js, plus the existing SH9–SH14 node tests. No browser runner.
+- 1.101 is SH14, so this note is numbered 1.102.
+
+
+### 1.103 SH15 Spreadsheet TEXTSPLIT
+
+- apps/office/spreadsheet only, plus this section. Grid stays 26 × 100. Storage stays sheet-v4.
+- TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with]) splits text across columns and down rows and spills through the SH13 engine. The row delimiter is applied first. A blocked spill is #SPILL!. ignore_empty TRUE skips empty pieces (default FALSE). match_mode 1 is case-insensitive (default 0). A shorter row is padded with pad_with (default #N/A). If ignore_empty removes every piece, the result is #VALUE!.
+- An empty column delimiter and no row delimiter is #VALUE!. Text may be one cell; a range is #VALUE!. CHAR(n) is new: the character for a code from 1 to 255. CHAR(10) is a line break and works as a row delimiter. CHAR(65) is A.
+- Delimiters are one string each. The parser has no array constants, so {",",";"} is not a delimiter list. Splits are plain: quotes are not treated as CSV. The fx picker lists CHAR and TEXTSPLIT. Title / SHEET_VERSION / ?v= stay SH14 (no cache bump). Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh15-textsplit.js, plus the existing SH9–SH16 node tests. No browser runner.
+- 1.102 is SH16, so this note is numbered 1.103.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

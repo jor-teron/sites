@@ -1,10 +1,17 @@
 /*
  * spreadsheet_functions.js
- * Formula function library: evalFunc(name, args) for every function listed in FUNCTIONS.txt,
+ * Formula function library: evalFunc(name, args, at) for every function listed in FUNCTIONS.txt,
  * plus the IF comparison helper. Used by the evaluator in spreadsheet_formula.js.
  * SH9 adds lookups, SUMIF/COUNTIF/AVERAGEIF, logic, extra text and date functions,
  * MEDIAN/RANK/RAND, plus FX_CATALOG for the formula hint and function picker.
  * SH13: SEQUENCE and RANDARRAY return 2D arrays (spillWrap). Any function may.
+ * SH14: SORT, SORTBY, FILTER, UNIQUE. Array expressions (+, comparisons) are accepted
+ * by the numeric aggregates, so SUM(SEQUENCE(3)+1) and SUM(FILTER(...)) work.
+ * SH16: ROW, COLUMN and INDIRECT. No-arg ROW/COLUMN use the position passed in
+ * as `at` (the formula cell). INDIRECT resolves text to a cell or a range.
+ * SH15: TEXTSPLIT spills through the SH13 engine. CHAR(n) is the character
+ * for a code from 1 to 255 (CHAR(10) is a line break). Delimiters are one
+ * string each; this parser has no array constants and no CSV quotes.
  */
 
 /**
@@ -32,9 +39,12 @@ function pad2(n) {
 }
 
 /**
- * Evaluate one function call
+ * Evaluate one function call.
+ * SH16: `at` is the formula cell {r, c, si} (0-based). Only ROW/COLUMN with no
+ * argument need it. Other functions ignore it.
  */
-function evalFunc(name, args) {
+/* (before SH16): function evalFunc(name, args) { */
+function evalFunc(name, args, at) {
   var n = name.toUpperCase();
   var nums, i, acc, a0, a1, list, t, v;
 
@@ -45,7 +55,10 @@ function evalFunc(name, args) {
       if (list) nums = nums.concat(list);
       else {
         v = evalExpr(args[i]);
+        /* (before SH14):
         if (typeof v === "number" && !isNaN(v)) nums.push(v);
+        */
+        fxPushNums(nums, v);
       }
     }
     if (n === "COUNT") return nums.length;
@@ -75,7 +88,16 @@ function evalFunc(name, args) {
         }
       } else {
         v = evalExpr(args[i]);
+        /* (before SH14):
         if (v !== "" && v !== null && v !== undefined) acc++;
+        */
+        if (isSpillArray(v)) {
+          for (a0 = 0; a0 < v.rows.length; a0++) {
+            for (a1 = 0; a1 < v.rows[a0].length; a1++) {
+              if (v.rows[a0][a1] !== "" && v.rows[a0][a1] != null) acc++;
+            }
+          }
+        } else if (v !== "" && v !== null && v !== undefined) acc++;
       }
     }
     return acc;
@@ -391,7 +413,10 @@ function evalFunc(name, args) {
       if (list) nums = nums.concat(list);
       else {
         v = evalExpr(args[i]);
+        /* (before SH14):
         if (typeof v === "number" && !isNaN(v)) nums.push(v);
+        */
+        fxPushNums(nums, v);
       }
     }
     if (!nums.length) return ERR_NUM;
@@ -434,7 +459,40 @@ function evalFunc(name, args) {
   if (n === "SEQUENCE") return fxSequence(args);
   if (n === "RANDARRAY") return fxRandArray(args);
 
+  /* SH14 dynamic-array lookups. Wrong shape or a bad option is #VALUE!.
+     FILTER with nothing included and no if_empty is #CALC!. */
+  if (n === "SORT") return fxSort(args);
+  if (n === "SORTBY") return fxSortBy(args);
+  if (n === "FILTER") return fxFilter(args);
+  if (n === "UNIQUE") return fxUnique(args);
+
+  /* SH16 */
+  if (n === "ROW") return fxRow(args, at);
+  if (n === "COLUMN") return fxColumn(args, at);
+  if (n === "INDIRECT") return fxIndirect(args);
+
+  /* SH15 */
+  if (n === "CHAR") return fxChar(args);
+  if (n === "TEXTSPLIT") return fxTextSplit(args);
+
   return ERR;
+}
+
+/* Numbers inside a scalar or a spilled array. An error inside an array fails the call. */
+function fxPushNums(nums, v) {
+  var r, c, cell;
+  if (isSpillArray(v)) {
+    for (r = 0; r < v.rows.length; r++) {
+      for (c = 0; c < v.rows[r].length; c++) {
+        cell = v.rows[r][c];
+        if (isErrorValue(cell)) fail(cell);
+        if (typeof cell === "number" && !isNaN(cell)) nums.push(cell);
+        else if (cell !== "" && cell != null && !isNaN(Number(cell)) && String(Number(cell)) === String(cell)) nums.push(Number(cell));
+      }
+    }
+    return;
+  }
+  if (typeof v === "number" && !isNaN(v)) nums.push(v);
 }
 
 function fxNumFrom(x) {
@@ -538,6 +596,359 @@ function fxRandArray(args) {
     out.push(row);
   }
   return spillWrap(out);
+}
+
+/* ---- SH14 SORT, SORTBY, FILTER, UNIQUE ---- */
+
+/* A plain number, or text the sheet stored for a typed number ("10"). TRUE/FALSE stay text. */
+function fxAsNumber(v) {
+  var s, n;
+  if (typeof v === "boolean") return v ? 1 : 0;
+  if (typeof v === "number") return isFinite(v) ? v : null;
+  if (typeof v !== "string") return null;
+  s = v.trim();
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+  n = Number(s);
+  return isFinite(n) ? n : null;
+}
+
+function fxMatrixFromSpill(v) {
+  var grid = [], r, c, row;
+  for (r = 0; r < v.rows.length; r++) {
+    row = [];
+    for (c = 0; c < v.rows[r].length; c++) row.push({ r: -1, c: -1, si: -1, v: v.rows[r][c] });
+    grid.push(row);
+  }
+  return { rows: v.rows.length, cols: v.rows[0].length, cells: grid };
+}
+
+/* A range, an A1# / @@ array, an expression, or a scalar (as 1×1). */
+function fxArgKind(arg) {
+  var token, parsed, mat, v, multi, direct;
+  if (arg == null || String(arg).trim() === "") return { empty: true };
+  token = String(arg).trim();
+  direct = false;
+  try {
+    if (typeof arrayFromToken === "function" && arrayFromToken(token)) direct = true;
+    else {
+      parsed = parseRefToken(token);
+      if (parsed) {
+        if (parsed.error) return { error: parsed.error };
+        direct = true;
+      }
+    }
+    if (direct) {
+      mat = rangeMatrix(token);
+      if (!mat || !mat.rows || !mat.cols) return { error: ERR_VALUE };
+      multi = mat.rows * mat.cols > 1;
+      return { mat: mat, multi: multi, single: !multi, scalar: multi ? undefined : mat.cells[0][0].v };
+    }
+  } catch (e) {
+    if (e instanceof CellError) return { error: e.value };
+    return { error: ERR_VALUE };
+  }
+  try { v = evalExpr(token); }
+  catch (e2) {
+    if (e2 instanceof CellError) return { error: e2.value };
+    return { error: ERR_VALUE };
+  }
+  if (isErrorValue(v)) return { error: v };
+  if (isSpillArray(v)) {
+    mat = fxMatrixFromSpill(v);
+    multi = mat.rows * mat.cols > 1;
+    return { mat: mat, multi: multi, single: !multi, scalar: multi ? undefined : mat.cells[0][0].v };
+  }
+  return {
+    scalar: v, single: true, multi: false,
+    mat: { rows: 1, cols: 1, cells: [[{ r: -1, c: -1, si: -1, v: v }]] }
+  };
+}
+
+function fxReadMatrix(arg) {
+  var k = fxArgKind(arg);
+  if (k.error) return k.error;
+  if (k.empty || !k.mat) return ERR_VALUE;
+  return k.mat;
+}
+
+function fxMatrixSpill(mat) {
+  var rows = [], r, c, row;
+  for (r = 0; r < mat.rows; r++) {
+    row = [];
+    for (c = 0; c < mat.cols; c++) row.push(mat.cells[r][c].v);
+    rows.push(row);
+  }
+  return spillWrap(rows);
+}
+
+/* Numbers (and numeric text) first, then text A–Z ignoring case, blanks last.
+   Descending flips the value inside a type only, so blanks stay last. */
+function fxSortRank(v) {
+  var n;
+  if (isErrorValue(v)) return { err: v };
+  if (v == null || (typeof v === "string" && v.trim() === "")) return { t: 2 };
+  n = fxAsNumber(v);
+  if (n != null) return { t: 0, n: n };
+  return { t: 1, s: String(v).toLowerCase() };
+}
+
+function fxRankCmp(a, b, order) {
+  var ka = fxSortRank(a), kb = fxSortRank(b), d;
+  if (ka.err || kb.err) return 0;
+  if (ka.t !== kb.t) return ka.t - kb.t;
+  if (ka.t === 2) return 0;
+  if (ka.t === 0) d = ka.n < kb.n ? -1 : ka.n > kb.n ? 1 : 0;
+  else d = ka.s < kb.s ? -1 : ka.s > kb.s ? 1 : 0;
+  return order < 0 ? -d : d;
+}
+
+function fxOrderIndices(n, specs) {
+  var idx = [], i, s, v;
+  for (s = 0; s < specs.length; s++) {
+    for (i = 0; i < specs[s].vals.length; i++) {
+      v = specs[s].vals[i];
+      if (isErrorValue(v)) return v;
+    }
+  }
+  for (i = 0; i < n; i++) idx.push(i);
+  idx.sort(function (a, b) {
+    var k, d;
+    for (k = 0; k < specs.length; k++) {
+      d = fxRankCmp(specs[k].vals[a], specs[k].vals[b], specs[k].order);
+      if (d) return d;
+    }
+    return a - b;
+  });
+  return idx;
+}
+
+function fxPermute(mat, idx, dir) {
+  var rows = [], r, c, i;
+  if (isErrorValue(idx)) return idx;
+  if (!idx.length) return ERR_CALC;
+  if (dir === "row") {
+    for (i = 0; i < idx.length; i++) {
+      rows[i] = [];
+      for (c = 0; c < mat.cols; c++) rows[i][c] = mat.cells[idx[i]][c].v;
+    }
+  } else {
+    for (r = 0; r < mat.rows; r++) {
+      rows[r] = [];
+      for (i = 0; i < idx.length; i++) rows[r][i] = mat.cells[r][idx[i]].v;
+    }
+  }
+  return spillWrap(rows);
+}
+
+/* "row" = reorder rows using a column key. "col" = reorder columns using a row key. */
+function fxByDir(mat, by) {
+  var vertical, horizontal;
+  if (!by || by.rows < 1 || by.cols < 1) return ERR_VALUE;
+  if (by.rows > 1 && by.cols > 1) return ERR_VALUE;
+  vertical = by.cols === 1 && by.rows === mat.rows;
+  horizontal = by.rows === 1 && by.cols === mat.cols;
+  if (vertical) return "row";
+  if (horizontal) return "col";
+  return ERR_VALUE;
+}
+
+function fxKeyVals(by, dir) {
+  var vals = [], i;
+  if (dir === "row") {
+    for (i = 0; i < by.rows; i++) vals.push(by.cells[i][0].v);
+  } else {
+    for (i = 0; i < by.cols; i++) vals.push(by.cells[0][i].v);
+  }
+  return vals;
+}
+
+function fxAsOrder(v) {
+  var n;
+  if (isErrorValue(v)) return v;
+  n = fxAsNumber(v);
+  if (n === 1 || n === -1) return n;
+  return ERR_VALUE;
+}
+
+function fxSort(args) {
+  var mat, index, order, byCol, vals, i, n, dir;
+  if (!args || !args.length) return ERR;
+  mat = fxReadMatrix(args[0]);
+  if (isErrorValue(mat)) return mat;
+  if (!mat || !mat.rows || !mat.cols) return ERR_VALUE;
+  index = fxReadNum(args.length > 1 ? args[1] : "", true, 1);
+  order = fxReadNum(args.length > 2 ? args[2] : "", true, 1);
+  byCol = fxReadBool(args.length > 3 ? args[3] : "", false);
+  if (isErrorValue(index)) return index;
+  if (isErrorValue(order)) return order;
+  if (isErrorValue(byCol)) return byCol;
+  if (order !== 1 && order !== -1) return ERR_VALUE;
+  index = Math.floor(index);
+  vals = [];
+  if (byCol) {
+    if (index < 1 || index > mat.rows) return ERR_VALUE;
+    dir = "col";
+    n = mat.cols;
+    for (i = 0; i < n; i++) vals.push(mat.cells[index - 1][i].v);
+  } else {
+    if (index < 1 || index > mat.cols) return ERR_VALUE;
+    dir = "row";
+    n = mat.rows;
+    for (i = 0; i < n; i++) vals.push(mat.cells[i][index - 1].v);
+  }
+  return fxPermute(mat, fxOrderIndices(n, [{ vals: vals, order: order }]), dir);
+}
+
+function fxSortBy(args) {
+  var mat, i, by, nxt, order, d, dir, specs, n;
+  if (!args || args.length < 2) return ERR_VALUE;
+  mat = fxReadMatrix(args[0]);
+  if (isErrorValue(mat)) return mat;
+  if (!mat || !mat.rows || !mat.cols) return ERR_VALUE;
+  i = 1;
+  dir = null;
+  specs = [];
+  while (i < args.length) {
+    by = fxArgKind(args[i]);
+    if (by.error) return by.error;
+    if (by.empty || !by.mat) return ERR_VALUE;
+    i++;
+    order = 1;
+    if (i < args.length) {
+      nxt = fxArgKind(args[i]);
+      if (nxt.error) return nxt.error;
+      if (nxt.multi) {
+        /* the next by_array; this key keeps ascending */
+      } else if (nxt.empty) {
+        order = 1;
+        i++;
+      } else {
+        order = fxAsOrder(nxt.scalar);
+        if (isErrorValue(order)) return order;
+        i++;
+      }
+    }
+    d = fxByDir(mat, by.mat);
+    if (isErrorValue(d)) return d;
+    if (dir == null) dir = d;
+    else if (dir !== d) return ERR_VALUE;
+    specs.push({ vals: fxKeyVals(by.mat, d), order: order });
+  }
+  if (!specs.length) return ERR_VALUE;
+  n = dir === "row" ? mat.rows : mat.cols;
+  return fxPermute(mat, fxOrderIndices(n, specs), dir);
+}
+
+function fxIncludeFlag(v) {
+  var n;
+  if (isErrorValue(v)) return v;
+  if (v === true) return true;
+  if (v === false) return false;
+  if (typeof v === "number") return isFinite(v) && v !== 0;
+  if (v == null || (typeof v === "string" && v.trim() === "")) return false;
+  if (typeof v === "string" && /^TRUE$/i.test(v.trim())) return true;
+  if (typeof v === "string" && /^FALSE$/i.test(v.trim())) return false;
+  n = fxAsNumber(v);
+  if (n != null) return n !== 0;
+  return ERR_VALUE;
+}
+
+function fxLooseValue(arg) {
+  var k = fxArgKind(arg);
+  if (k.error) return k.error;
+  if (k.empty) return "";
+  if (k.multi) return fxMatrixSpill(k.mat);
+  if (k.scalar !== undefined) return k.scalar;
+  if (k.mat) return fxMatrixSpill(k.mat);
+  return ERR_VALUE;
+}
+
+function fxFilter(args) {
+  var mat, inc, dir, i, f, keep, vertical, horizontal, n;
+  if (!args || args.length < 2) return ERR;
+  mat = fxReadMatrix(args[0]);
+  if (isErrorValue(mat)) return mat;
+  if (!mat || !mat.rows || !mat.cols) return ERR_VALUE;
+  inc = fxReadMatrix(args[1]);
+  if (isErrorValue(inc)) return inc;
+  if (!inc || !inc.rows || !inc.cols) return ERR_VALUE;
+  if (inc.rows > 1 && inc.cols > 1) return ERR_VALUE;
+  vertical = inc.cols === 1 && inc.rows === mat.rows;
+  horizontal = inc.rows === 1 && inc.cols === mat.cols;
+  if (vertical) dir = "row";
+  else if (horizontal) dir = "col";
+  else return ERR_VALUE;
+  n = dir === "row" ? mat.rows : mat.cols;
+  keep = [];
+  for (i = 0; i < n; i++) {
+    f = fxIncludeFlag(dir === "row" ? inc.cells[i][0].v : inc.cells[0][i].v);
+    if (typeof f !== "boolean") return f;
+    if (f) keep.push(i);
+  }
+  if (!keep.length) {
+    if (args.length < 3) return ERR_CALC;
+    return fxLooseValue(args[2]);
+  }
+  return fxPermute(mat, keep, dir);
+}
+
+function fxSameVal(a, b) {
+  var na, nb, aBlank, bBlank;
+  if (isErrorValue(a) || isErrorValue(b)) return String(a) === String(b);
+  aBlank = a == null || (typeof a === "string" && a.trim() === "");
+  bBlank = b == null || (typeof b === "string" && b.trim() === "");
+  if (aBlank || bBlank) return aBlank && bBlank;
+  na = fxAsNumber(a);
+  nb = fxAsNumber(b);
+  if (na != null || nb != null) return na != null && nb != null && na === nb;
+  return String(a).toLowerCase() === String(b).toLowerCase();
+}
+
+function fxLineOf(mat, i, byCol) {
+  var out = [], k;
+  if (!byCol) {
+    for (k = 0; k < mat.cols; k++) out.push(mat.cells[i][k].v);
+  } else {
+    for (k = 0; k < mat.rows; k++) out.push(mat.cells[k][i].v);
+  }
+  return out;
+}
+
+function fxLineEq(a, b) {
+  var i;
+  if (a.length !== b.length) return false;
+  for (i = 0; i < a.length; i++) if (!fxSameVal(a[i], b[i])) return false;
+  return true;
+}
+
+function fxUnique(args) {
+  var mat, byCol, once, n, lines, i, j, keep, count;
+  if (!args || !args.length) return ERR;
+  mat = fxReadMatrix(args[0]);
+  if (isErrorValue(mat)) return mat;
+  if (!mat || !mat.rows || !mat.cols) return ERR_VALUE;
+  byCol = fxReadBool(args.length > 1 ? args[1] : "", false);
+  once = fxReadBool(args.length > 2 ? args[2] : "", false);
+  if (isErrorValue(byCol)) return byCol;
+  if (isErrorValue(once)) return once;
+  n = byCol ? mat.cols : mat.rows;
+  lines = [];
+  for (i = 0; i < n; i++) lines.push(fxLineOf(mat, i, byCol));
+  keep = [];
+  if (!once) {
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < i; j++) if (fxLineEq(lines[i], lines[j])) break;
+      if (j === i) keep.push(i);
+    }
+  } else {
+    for (i = 0; i < n; i++) {
+      count = 0;
+      for (j = 0; j < n; j++) if (fxLineEq(lines[i], lines[j])) count++;
+      if (count === 1) keep.push(i);
+    }
+  }
+  if (!keep.length) return ERR_CALC;
+  return fxPermute(mat, keep, byCol ? "col" : "row");
 }
 
 /* ---- SH9 function helpers (pure; used by evalFunc and the tests) ---- */
@@ -995,6 +1406,244 @@ function fxTextDate(dt, fmt) {
   return out;
 }
 
+/* ---- SH16 ROW, COLUMN, INDIRECT ---- */
+
+/* Position of the formula cell. `at` is what the evaluator passed in. */
+function fxHere(at) {
+  return {
+    r: at && typeof at.r === "number" ? at.r : (typeof evalRow === "number" ? evalRow : 0),
+    c: at && typeof at.c === "number" ? at.c : (typeof evalCol === "number" ? evalCol : 0)
+  };
+}
+
+/* Bounds of a reference argument, including an A1# spill. Not a ref → #VALUE!.
+   Out of the sheet → #REF!. */
+function fxRefSpan(token) {
+  var parsed, i, cell, r1, r2, c1, c2;
+  parsed = parseRefToken(String(token == null ? "" : token).trim());
+  if (!parsed) return { error: ERR_VALUE };
+  if (parsed.error) return { error: parsed.error };
+  if (!parsed.list || !parsed.list.length) return { error: ERR_REF };
+  r1 = r2 = parsed.list[0].r;
+  c1 = c2 = parsed.list[0].c;
+  for (i = 1; i < parsed.list.length; i++) {
+    cell = parsed.list[i];
+    if (cell.r < r1) r1 = cell.r;
+    if (cell.r > r2) r2 = cell.r;
+    if (cell.c < c1) c1 = cell.c;
+    if (cell.c > c2) c2 = cell.c;
+  }
+  return { r1: r1, r2: r2, c1: c1, c2: c2, si: parsed.list[0].si };
+}
+
+function fxRow(args, at) {
+  var span, rows, r, here;
+  if (args.length > 1) return ERR_VALUE;
+  if (!args.length || String(args[0]).trim() === "") {
+    here = fxHere(at);
+    return here.r + 1;
+  }
+  span = fxRefSpan(args[0]);
+  if (span.error) return span.error;
+  if (span.r1 === span.r2) return span.r1 + 1;
+  rows = [];
+  for (r = span.r1; r <= span.r2; r++) rows.push([r + 1]);
+  return spillWrap(rows);
+}
+
+function fxColumn(args, at) {
+  var span, row, c, here;
+  if (args.length > 1) return ERR_VALUE;
+  if (!args.length || String(args[0]).trim() === "") {
+    here = fxHere(at);
+    return here.c + 1;
+  }
+  span = fxRefSpan(args[0]);
+  if (span.error) return span.error;
+  if (span.c1 === span.c2) return span.c1 + 1;
+  row = [];
+  for (c = span.c1; c <= span.c2; c++) row.push(c + 1);
+  return spillWrap([row]);
+}
+
+/* Text → reference. One cell is its value. A range is an array (spills, and
+   SUM / the other aggregates accept it). Bad text or a cell off the grid is #REF!.
+   Every cell named is a dependency so a later edit, or a formula that runs
+   later in this recalc, is picked up. A loop throws #LOOP!. */
+function fxIndirect(args) {
+  var v, text, parsed, i, cell, r, c, r1, r2, c1, c2, si, rows, row;
+  if (!args.length || String(args[0] == null ? "" : args[0]).trim() === "") return ERR_REF;
+  try { v = evalExpr(args[0]); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR;
+  }
+  if (isSpillArray(v)) return ERR_REF;
+  if (isErrorValue(v)) return v;
+  text = String(v == null ? "" : v).trim();
+  if (!text) return ERR_REF;
+  parsed = parseRefToken(text);
+  if (!parsed || parsed.error || !parsed.list || !parsed.list.length) return ERR_REF;
+  r1 = r2 = parsed.list[0].r;
+  c1 = c2 = parsed.list[0].c;
+  si = parsed.list[0].si;
+  for (i = 1; i < parsed.list.length; i++) {
+    cell = parsed.list[i];
+    if (cell.si !== si) return ERR_REF;
+    if (cell.r < r1) r1 = cell.r;
+    if (cell.r > r2) r2 = cell.r;
+    if (cell.c < c1) c1 = cell.c;
+    if (cell.c > c2) c2 = cell.c;
+  }
+  for (r = r1; r <= r2; r++) {
+    for (c = c1; c <= c2; c++) noteDynamicDep(si, r, c);
+  }
+  rows = [];
+  for (r = r1; r <= r2; r++) {
+    row = [];
+    for (c = c1; c <= c2; c++) row.push(rawVal(r, c, si));
+    rows.push(row);
+  }
+  return spillWrap(rows);
+}
+
+/* ---- SH15 CHAR and TEXTSPLIT ---- */
+
+/* Character for a code from 1 to 255. CHAR(10) is a line break, CHAR(65) is A.
+   Outside that range, or not a number, is #VALUE!. */
+function fxChar(args) {
+  var n;
+  if (!args.length || String(args[0]).trim() === "") return ERR_VALUE;
+  n = fxReadNum(args[0], false);
+  if (isErrorValue(n)) return n;
+  n = n < 0 ? Math.ceil(n) : Math.floor(n);
+  if (n < 1 || n > 255) return ERR_VALUE;
+  return String.fromCharCode(n);
+}
+
+/* Where `delim` sits in `text` at or after `from`. Case-fold compares equal
+   length slices, so a delimiter is not a regular expression. */
+function fxDelimAt(text, delim, from, ignoreCase) {
+  var n = delim.length, i, slice, needle;
+  if (!n) return -1;
+  needle = ignoreCase ? delim.toLowerCase() : delim;
+  for (i = from; i + n <= text.length; i++) {
+    slice = text.substring(i, i + n);
+    if ((ignoreCase ? slice.toLowerCase() : slice) === needle) return i;
+  }
+  return -1;
+}
+
+/* Split `text` on every `delim`. Empty pieces stay unless ignoreEmpty.
+   An empty delimiter is not used here (the caller treats that as "do not split"). */
+function fxSplitParts(text, delim, ignoreCase, ignoreEmpty) {
+  var parts, i, at, kept, k;
+  if (!delim) return ignoreEmpty && text === "" ? [] : [text];
+  if (!ignoreCase) parts = text.split(delim);
+  else {
+    parts = [];
+    i = 0;
+    for (;;) {
+      at = fxDelimAt(text, delim, i, true);
+      if (at < 0) { parts.push(text.slice(i)); break; }
+      parts.push(text.slice(i, at));
+      i = at + delim.length;
+      if (i >= text.length) { parts.push(""); break; }
+    }
+  }
+  if (!ignoreEmpty) return parts;
+  kept = [];
+  for (k = 0; k < parts.length; k++) if (parts[k] !== "") kept.push(parts[k]);
+  return kept;
+}
+
+/* One TEXTSPLIT value.
+   mode "text": a blank argument is #VALUE!.
+   mode "delim": a blank argument means "no delimiter" ("").
+   mode "pad": keep the value as-is (a number stays a number).
+   A range, or any array that is not 1×1, is #VALUE!. One cell is its value. */
+function fxSplitOne(arg, mode) {
+  var token, parsed, arr, v, cell;
+  if (arg == null || String(arg).trim() === "") return mode === "delim" ? "" : ERR_VALUE;
+  token = String(arg).trim();
+  parsed = parseRefToken(token);
+  if (parsed) {
+    if (parsed.error) return parsed.error;
+    if (!parsed.list || parsed.list.length !== 1) return ERR_VALUE;
+    cell = parsed.list[0];
+    v = rawVal(cell.r, cell.c, cell.si);
+    if (mode !== "pad") {
+      if (isErrorValue(v)) return v;
+      return v == null ? "" : String(v);
+    }
+    return v;
+  }
+  arr = typeof arrayFromToken === "function" ? arrayFromToken(token) : null;
+  if (arr) {
+    if (arr.rows.length !== 1 || !arr.rows[0] || arr.rows[0].length !== 1) return ERR_VALUE;
+    v = arr.rows[0][0];
+    if (mode !== "pad") {
+      if (isErrorValue(v)) return v;
+      return v == null ? "" : String(v);
+    }
+    return v;
+  }
+  try { v = evalExpr(token); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR;
+  }
+  if (isSpillArray(v)) {
+    if (v.rows.length !== 1 || !v.rows[0] || v.rows[0].length !== 1) return ERR_VALUE;
+    v = v.rows[0][0];
+  }
+  if (mode !== "pad") {
+    if (isErrorValue(v)) return v;
+    return v == null ? "" : String(v);
+  }
+  return v;
+}
+
+/* TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])
+   Row delimiter first, then each row by the column delimiter. Plain split:
+   quotes are ordinary characters. No array-constant delimiter ({",",";"}).
+   Empty column delimiter and no row delimiter is #VALUE!. A range is #VALUE!. */
+function fxTextSplit(args) {
+  var text, colD, rowD, skip, mode, pad, lines, grid, i, cells, w, r, row;
+  if (!args || !args.length) return ERR;
+  text = fxSplitOne(args[0], "text");
+  if (isErrorValue(text)) return text;
+  colD = fxSplitOne(args.length > 1 ? args[1] : "", "delim");
+  if (isErrorValue(colD)) return colD;
+  rowD = fxSplitOne(args.length > 2 ? args[2] : "", "delim");
+  if (isErrorValue(rowD)) return rowD;
+  if (colD === "" && rowD === "") return ERR_VALUE;
+  skip = fxReadBool(args.length > 3 ? args[3] : null, false);
+  if (isErrorValue(skip)) return skip;
+  mode = fxReadNum(args.length > 4 ? args[4] : null, true, 0);
+  if (isErrorValue(mode)) return mode;
+  if (mode !== 0 && mode !== 1) return ERR_VALUE;
+  if (args.length > 5 && String(args[5]).trim() !== "") {
+    pad = fxSplitOne(args[5], "pad");
+    if (isErrorValue(pad)) return pad;
+  } else pad = ERR_NA;
+  lines = rowD ? fxSplitParts(text, rowD, mode === 1, skip) : [text];
+  grid = [];
+  w = 0;
+  for (i = 0; i < lines.length; i++) {
+    cells = colD ? fxSplitParts(lines[i], colD, mode === 1, skip) : [lines[i]];
+    if (!cells.length) continue;
+    if (cells.length > w) w = cells.length;
+    grid.push(cells);
+  }
+  if (!grid.length || !w) return ERR_VALUE;
+  for (r = 0; r < grid.length; r++) {
+    row = grid[r];
+    while (row.length < w) row.push(pad);
+  }
+  return spillWrap(grid);
+}
+
 /* Catalog used by the formula hint and the function picker (SH9). */
 var FX_CATALOG = [
   { name: "SUM", cat: "Math", sig: "SUM(range, ...)", hint: "Add numbers." },
@@ -1027,6 +1676,9 @@ var FX_CATALOG = [
   { name: "HLOOKUP", cat: "Lookup", sig: "HLOOKUP(lookup_value, table, row_index, [range_lookup])", hint: "Look across the first row and return a value from the same column." },
   { name: "XLOOKUP", cat: "Lookup", sig: "XLOOKUP(lookup_value, lookup_range, return_range, [if_not_found], [match_mode], [search_mode])", hint: "Look up a value and return the matching item. match_mode 0 is exact (default)." },
   { name: "INDEX", cat: "Lookup", sig: "INDEX(range, row, [column])", hint: "Value at a row (and column) in a range. 1-based." },
+  { name: "ROW", cat: "Lookup", sig: "ROW([reference])", hint: "Row number of this cell, or of a reference. A range spills one number per row. A1# uses that spill." },
+  { name: "COLUMN", cat: "Lookup", sig: "COLUMN([reference])", hint: "Column number of this cell (A is 1), or of a reference. A range spills one number per column." },
+  { name: "INDIRECT", cat: "Lookup", sig: "INDIRECT(text)", hint: "The cell or range named by text, such as \"B2\" or \"B\"&2. A range spills and works inside SUM. A bad address is #REF!. Recalculates whenever any cell changes." },
   { name: "MATCH", cat: "Lookup", sig: "MATCH(lookup_value, range, [match_type])", hint: "Relative position of a value. Type 0 is exact, 1 (default) is the largest less than or equal." },
   { name: "SUMIF", cat: "Lookup", sig: "SUMIF(range, criteria, [sum_range])", hint: "Sum cells that meet a condition." },
   { name: "SUMIFS", cat: "Lookup", sig: "SUMIFS(sum_range, criteria_range1, criteria1, ...)", hint: "Sum cells that meet every condition." },
@@ -1046,6 +1698,8 @@ var FX_CATALOG = [
   { name: "CONCAT", cat: "Text", sig: "CONCAT(text, ...)", hint: "Join text values." },
   { name: "TEXTJOIN", cat: "Text", sig: "TEXTJOIN(delimiter, ignore_empty, text, ...)", hint: "Join text with a delimiter. ignore_empty TRUE skips blanks." },
   { name: "TEXT", cat: "Text", sig: "TEXT(value, format)", hint: "Format a number or date as text. Examples: 0.00, 0%, yyyy-mm-dd, dd/mm/yyyy." },
+  { name: "CHAR", cat: "Text", sig: "CHAR(number)", hint: "The character for a code from 1 to 255. CHAR(10) is a line break. CHAR(65) is A. A code outside that range is #VALUE!." },
+  { name: "TEXTSPLIT", cat: "Text", sig: "TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])", hint: "Split text across columns and down rows. It spills. ignore_empty TRUE skips empty pieces. match_mode 1 ignores case. Short rows are padded (default #N/A). No delimiter, or a range, is #VALUE!." },
   { name: "TODAY", cat: "Date", sig: "TODAY()", hint: "Today's date as YYYY-MM-DD." },
   { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and time." },
   { name: "DATE", cat: "Date", sig: "DATE(year, month, day)", hint: "Build a date. Month or day overflow rolls over (DATE(2024,13,1) is 2025-01-01)." },
@@ -1056,7 +1710,11 @@ var FX_CATALOG = [
   { name: "DATEDIF", cat: "Date", sig: "DATEDIF(start, end, unit)", hint: "Difference. Unit Y, M, D, YM, MD or YD. Start must be on or before end." },
   { name: "EDATE", cat: "Date", sig: "EDATE(start, months)", hint: "The date a number of months before or after start." },
   { name: "SEQUENCE", cat: "Arrays", sig: "SEQUENCE(rows, [cols], [start], [step])", hint: "A grid of numbers. Defaults: 1 column, start at 1, step 1. Spills into empty cells to the right and below. Zero or negative size is #VALUE!." },
-  { name: "RANDARRAY", cat: "Arrays", sig: "RANDARRAY([rows], [cols], [min], [max], [whole])", hint: "A grid of random numbers. Defaults: 1×1, from 0 up to 1, decimals. whole TRUE returns integers from min to max inclusive. Spills." }
+  { name: "RANDARRAY", cat: "Arrays", sig: "RANDARRAY([rows], [cols], [min], [max], [whole])", hint: "A grid of random numbers. Defaults: 1×1, from 0 up to 1, decimals. whole TRUE returns integers from min to max inclusive. Spills." },
+  { name: "SORT", cat: "Arrays", sig: "SORT(array, [sort_index], [sort_order], [by_col])", hint: "Sort rows (or columns if by_col is TRUE). sort_order 1 is ascending, -1 is descending. Numbers, then text ignoring case, blanks last. Ties keep their order. Spills." },
+  { name: "SORTBY", cat: "Arrays", sig: "SORTBY(array, by_array1, [sort_order1], [by_array2, sort_order2], ...)", hint: "Sort by one or more arrays of the same height (or width). Order 1 is ascending, -1 descending. A different size is #VALUE!. Spills." },
+  { name: "FILTER", cat: "Arrays", sig: "FILTER(array, include, [if_empty])", hint: "Keep rows where include is a matching TRUE/FALSE column, or columns where it is a matching row. No match returns if_empty, or #CALC! if it is omitted. A different size is #VALUE!." },
+  { name: "UNIQUE", cat: "Arrays", sig: "UNIQUE(array, [by_col], [exactly_once])", hint: "Distinct rows, or columns if by_col is TRUE. exactly_once TRUE keeps values that appear only once. Text match ignores case. Spills." }
 ];
 
 function fxFindName(name) {
