@@ -107,6 +107,8 @@ function makeSheet(name) {
     condFormats: [],
     charts: [],
     freeze: { rows: 0, cols: 0 },
+    /* HOS1: row heights in px, null = automatic. Saved in the .hos file. */
+    heights: (function () { var a = [], i; for (i = 0; i < ROWS; i++) a.push(null); return a; })(),
     sel: [CFG.start.row, CFG.start.col, CFG.start.row, CFG.start.col, CFG.start.mode]
   };
 }
@@ -154,6 +156,7 @@ function emptyGrid() {
     s.filterHidden[r] = false;
   }
   for (c = 0; c < COLS; c++) { s.widths[c] = null; s.hiddenCols[c] = false; }
+  if (s.heights) { for (r = 0; r < ROWS; r++) s.heights[r] = null; }
   s.freeze.rows = 0;
   s.freeze.cols = 0;
   s.filters = { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} };

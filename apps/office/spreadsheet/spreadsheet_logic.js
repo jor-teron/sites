@@ -28,7 +28,7 @@ function afterChange() {
 function boot() {
   var i;
   emptyWorkbook();
-  loadStore();
+  /* (before HOS1) loadStore(); */
   recalcAll();
   if (typeof applyFilters === "function") {
     var si;

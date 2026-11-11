@@ -37,9 +37,19 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
     var t = document.querySelector("#of-tabs .of-tab[aria-selected='true']");
     return t ? t.getAttribute("data-tab") : "home";
   }
+  /* (before HOS1) the title was localStorage 'spreadsheet-name':
   H.title = function () { try { return localStorage.getItem(H.NAME_KEY) || H.DEFAULT_NAME; } catch (e) { return H.DEFAULT_NAME; } };
   H.setTitle = function (v) {
     try { localStorage.setItem(H.NAME_KEY, v || H.DEFAULT_NAME); } catch (e) {}
+    sendTitle();
+  };
+  */
+  H.title = function () {
+    if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.stemName) return SHEET_HOS.stemName() || H.DEFAULT_NAME;
+    return H.DEFAULT_NAME;
+  };
+  H.setTitle = function (v) {
+    if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.noteStem) SHEET_HOS.noteStem(v || H.DEFAULT_NAME);
     sendTitle();
   };
 

@@ -63,6 +63,9 @@ function duplicateSheet(idx) {
     copy.widths[c] = src.widths[c];
     copy.hiddenCols[c] = !!src.hiddenCols[c];
   }
+  if (src.heights && copy.heights) {
+    for (r = 0; r < ROWS; r++) copy.heights[r] = typeof src.heights[r] === "number" ? src.heights[r] : null;
+  }
   copy.freeze = { rows: src.freeze.rows || 0, cols: src.freeze.cols || 0 };
   copy.filters = typeof cloneFilters === "function" ? cloneFilters(src.filters) : JSON.parse(JSON.stringify(src.filters || { on: false, r1: 0, r2: 0, c1: 0, c2: 0, cols: {} }));
   copy.validations = typeof cloneValidations === "function" ? cloneValidations(src.validations) : JSON.parse(JSON.stringify(src.validations || []));

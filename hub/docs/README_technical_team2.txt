@@ -2105,6 +2105,55 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/draftly/draftly_readme.md` (HOW1 section, legacy notes).
 - 1.108 is DF24, so this note is numbered 1.109.
 
+### 1.110 HOS1 Spreadsheet .hos files
+
+- Spreadsheet (`apps/office/spreadsheet/`, Hub id `spreadsheet`) now keeps a
+  workbook in one `.hos` file. The file is UTF-8 JSON: `format` `"hos"`,
+  `version` `1`, `name`, `created`, `updated`, `active`, `cols`, `rows`,
+  `page` (paper, orientation, margins, print gridlines, headings, fit width),
+  `settings` (file-owned options; version 1 writes `{}` — theme, ribbon, hover
+  tabs, formula bar and default font stay in `spreadsheet_settings`) and
+  `sheets`. Each sheet has the cells (formula, value, style, including SH17
+  borders and number formats), merges, column widths, row heights, frozen
+  panes, hidden rows and columns, filters, validation, conditional formatting,
+  charts and the last selection. No zip, no new library, no CDN. Version other
+  than 1 is refused. Old `localStorage` `sheet-v4` / `sheet-v3` / `sheet-v2` /
+  `sheet-v1` workbooks, `sheet-v4-page` and `spreadsheet-name` are not migrated
+  and are not opened.
+- Save, Save As and autosave write `.hos`. Inside the Hub they write the
+  browser Local drive (OPFS, `FsDrives.handle('local')` + `FsOps.writeFile`),
+  folder `Documents`, the same folder the Files app calls Documents. The folder
+  is created on first save. Outside the Hub, Save uses `showSaveFilePicker`
+  when the browser has it, otherwise a download. Autosave outside the Hub only
+  continues into a file already picked. Autosave waits 0.8 s. A blank new
+  workbook is not written until it has content, or Save As. In-app dialogs only
+  (name clash, Save As, New / Clear). No `window.alert` / `confirm` / `prompt`.
+- Open `.hos` (File menu, drop, or the page hash from Files) restores the
+  workbook. In the Hub, startup opens the newest `.hos` in Documents when no
+  file hash is present. Open XLSX / CSV, Export CSV, Export XLSX and Print are
+  unchanged. An `.xlsx` open becomes its own `.hos` (it does not overwrite the
+  file that was open). CSV import still edits the current sheet. Replaced
+  `localStorage` load/save calls are commented with `(before HOS1)` and were
+  not deleted. `serializeWorkbook` / `applyWorkbookPayload` stay for the
+  existing sheet tests. The Documents helper is
+  `apps/office/shared/office-native.js` (the same approach as HOW1). Writer's
+  `draftly-how.js` is unchanged.
+- Files association: `shared/fs/filetypes.js` maps `.hos` to app id
+  `spreadsheet` (display name Spreadsheet, url `apps/office/spreadsheet/`).
+  `apps/system/files/files_actions.js` already opens a `file: true` app with
+  `FsRef.openIn`, so a double-click opens Spreadsheet on that file. `.how`
+  still opens Writer. Display copy only in `apps/office/office-apps.csv`,
+  `hub/core/hub_catalog.js` and `hub/core/hub_appindex.js` (the id, path and
+  icon stay). No `desktop/` edit. No `?v=` and no version or build bump
+  (`SHEET_VERSION` stays `SH14`).
+- Checked with `node --check` on the edited scripts,
+  `node apps/office/spreadsheet/test-hos1-format.js` (round-trip of a `.hos`
+  workbook: formulas, styles, borders, merges, row heights, two sheets),
+  the existing `node apps/office/spreadsheet/test-sh*.js` files, and
+  `node apps/office/draftly/test-how1-format.js`. No browser runner.
+- Details: `apps/office/spreadsheet/spreadsheet_readme.md` (HOS1 section, legacy notes).
+- 1.109 is HOW1, so this note is numbered 1.110.
+
 
 ## 2. Releases (PR → what)
 

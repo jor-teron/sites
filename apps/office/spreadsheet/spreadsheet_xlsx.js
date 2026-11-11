@@ -131,14 +131,27 @@ function importXlsxFile(file) {
     workbook = { sheets: sheets, active: 0 };
     bindActiveSheet();
     selR = selC = extR = extC = 0; selMode = "cell";
+    /* HOS1: Open XLSX replaces the workbook, so it becomes its own .hos file
+       instead of overwriting the one that was open. CSV import still edits
+       the current sheet. */
+    if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.detach) {
+      SHEET_HOS.detach();
+      SHEET_HOS.skipWrite = true;
+    }
     afterChange();
+    if (typeof saveStore === "function") clearTimeout(saveStore._t);
+    var saved = Promise.resolve();
+    if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.detach) {
+      SHEET_HOS.skipWrite = false;
+      saved = SHEET_HOS.save({ unique: true });
+    }
     if (typeof applyWidths === "function") applyWidths();
     if (typeof renderSheetTabs === "function") renderSheetTabs();
     highlightSel();
     var msg = "Loaded " + sheets.length + " sheet" + (sheets.length === 1 ? "" : "s");
     if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + cap + ")";
     if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped";
-    xlsxToast(msg);
+    saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
   }).catch(function (e) { xlsxToast("Could not open file: " + e.message); });
 }
 

@@ -5,6 +5,32 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 
 **Name note:** "Sheetly" is a possible future name, considered to match Draftly and Notely. For now the app is still called Spreadsheet and the folder and file names are unchanged.
 
+## HOS1 — .hos files
+
+`.hos` (Hub Office Spreadsheet) is the default native file. It is one UTF-8 JSON file, readable in a text editor, with no zip and no new library.
+
+| Field | What it holds |
+| --- | --- |
+| `format` | `"hos"` |
+| `version` | `1`. Any other version is refused. A `sheet-v4` record is refused. |
+| `name`, `created`, `updated` | Workbook name and times |
+| `active`, `cols`, `rows` | Which sheet is open, and the grid size (26 × 100) |
+| `page` | Paper, orientation, margins, print gridlines, headings, fit-to-width |
+| `settings` | Options that belong to the file. Version 1 keeps this object empty. Theme, ribbon, hover tabs, the formula bar and the default font stay in `spreadsheet_settings` and are not written here. |
+| `sheets` | Every sheet (see below) |
+
+Each sheet holds `name`, sparse `cells` (`r`, `c`, `formula`, `value`, and `style` only where it differs from the default), `widths`, `heights` (row heights in px, `null` = automatic), `hiddenRows`, `hiddenCols`, `freeze`, `sel`, `filters`, `validations`, `merges`, `condFormats` and `charts`. A cell style includes SH17 borders (`bt`, `br`, `bb`, `bl`, including `"auto"`) and the number format (`fmt`).
+
+File → **Save** and **Save As** write `.hos`. File → **Open .hos**, or dropping a `.hos` on the page, restores that workbook. **Open (XLSX / CSV)**, **Export CSV**, **Export XLSX** and **Print** are unchanged. Opening an `.xlsx` starts a new `.hos` so it does not replace the file that was already open. CSV import still edits the current sheet.
+
+**In the Hub**, Save, Save As and autosave write the browser's Local drive, folder **Documents**. That is the same disk the Files app shows. Documents is created the first time a file is saved. Spreadsheet reopens the newest `.hos` in Documents when it starts inside the Hub. A double-click on a `.hos` in Files opens Spreadsheet on that file (the Hub id is still `spreadsheet`). Autosave waits 0.8 s after the last change. A blank new workbook is not written until it has something in it, or you choose Save As.
+
+**Outside the Hub**, Save uses the browser's save picker when the browser has one, and otherwise downloads the `.hos` file. Autosave outside the Hub continues only into a file you already picked. It does not download on each edit.
+
+### Legacy (before HOS1)
+
+The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page` (page setup, with `sheet-v3-page` and `sheet-v2-page` as fallbacks) and `spreadsheet-name` (the title). Older `sheet-v3` / `sheet-v2` / `sheet-v1` keys were migrated into `sheet-v4` on load. Spreadsheet does not migrate those records and does not open them. The old load and save calls are still in the source, commented with `(before HOS1)`. `serializeWorkbook` and `applyWorkbookPayload` stay, so the existing sheet tests can still build a workbook in memory. App Settings stay in `spreadsheet_settings`. Open `.xlsx` / `.csv` still uses the same readers.
+
 ## 2. Files
 - `spreadsheet.html` / `spreadsheet.css`: layout, toolbar, look, print
 - `spreadsheet_config.js`: settings and on-screen text
@@ -15,7 +41,9 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `spreadsheet_fx.js`: SH9 formula hint while typing, and the fx function picker
 - `spreadsheet_refs.js`: cell refs and ranges, `$` refs, ref shifting and adjusting
 - `spreadsheet_state.js`: shared state (cells, selection, widths), blank grid, styles, status
-- `spreadsheet_storage.js`: save / load in the browser
+- `spreadsheet_storage.js`: workbook shape. (before HOS1) this wrote `localStorage` `sheet-v4`
+- `spreadsheet_hos.js` (HOS1): `.hos` read/write, Hub Documents autosave, standalone picker or download
+- `../shared/office-native.js` (HOS1): Hub Documents folder and the save picker, shared with the HOW1 approach
 - `spreadsheet_files.js`: CSV import / export, print
 - `spreadsheet_grid.js`: builds the grid, header clicks, selection highlight, painting cells
 - `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear
@@ -67,7 +95,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - **CSV:** Export CSV downloads the active sheet (formulas, trailing empty rows/columns trimmed; hidden rows/columns are included). Import CSV loads a file onto the active sheet, starting at A1. Other sheets are left alone.
 <!-- (before SH17): - **Print / PDF:** browser print dialog; choose Save as PDF. -->
 - **Print / PDF:** browser print dialog; choose Save as PDF. Borders you set are printed in that style and colour. Page → Gridlines draws a light grey line only on edges that have no border of their own. With gridlines off, those edges are blank and the borders you set still print.
-- **Saving:** automatic after every change.
+<!-- (before HOS1): - **Saving:** automatic after every change. -->
+- **Saving (HOS1):** see the HOS1 section. Autosave is 0.8 s after the last change. In the Hub the file is `Documents/<name>.hos` on the Local drive. Outside the Hub, Save downloads or uses the save picker.
 
 ## 4. Keyboard
 - Arrows move; Shift+arrows extend the block
@@ -84,7 +113,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 Works inside the hub and responds to its phone D-pad, but the hub's key presses are synthetic: only shortcuts the app handles itself work (arrows move, Start = Enter, Select = Esc); browser actions such as the system clipboard don't, so a hub paste uses the app's internal copy.
 
 ## 5. Saved data
-localStorage key `sheet-v4` (workbook: sheets, charts, active sheet, cells, styles, formats, widths, freeze, hidden, filters, validation, merges, conditional formats). An older `sheet-v3` / `sheet-v2` / `sheet-v1` save is migrated into v4 on first load and left in place as a backup; later loads use only `sheet-v4`. Page setup is `sheet-v4-page`, with `sheet-v3-page` then `sheet-v2-page` as fallbacks. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
+<!-- (before HOS1): localStorage key `sheet-v4` (workbook: sheets, charts, active sheet, cells, styles, formats, widths, freeze, hidden, filters, validation, merges, conditional formats). An older `sheet-v3` / `sheet-v2` / `sheet-v1` save is migrated into v4 on first load and left in place as a backup; later loads use only `sheet-v4`. Page setup is `sheet-v4-page`, with `sheet-v3-page` then `sheet-v2-page` as fallbacks. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data. -->
+**HOS1:** a `.hos` file (see the HOS1 section). In the Hub it lives in Local → Documents. `sheet-v4`, `sheet-v4-page` and `spreadsheet-name` are no longer read or written. App Settings stay in `spreadsheet_settings`. To start again, use New / Clear (asks first; can be undone) or delete the `.hos` file.
 
 ## 6. Errors
 - In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#SPILL!` (an array result cannot spill), `#CALC!` (FILTER matched nothing, or UNIQUE with exactly_once kept nothing), `#ERR` (formula not understood).

@@ -26,7 +26,22 @@ function applyWidths() {
     total += w;
   }
   table.style.width = total + "px";
+  applyRowHeights();
   if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
+}
+
+/* HOS1: a row height from the .hos file. null keeps the automatic row. */
+function applyRowHeights() {
+  var table = document.querySelector("table." + CLS.table);
+  var s = workbook && workbook.sheets[workbook.active];
+  if (!table || !s || !s.heights) return;
+  var rows = table.rows, r, h;
+  for (r = 0; r < ROWS; r++) {
+    if (!rows[r + 1]) break;
+    h = s.heights[r];
+    var next = (typeof h === "number" && h > 0) ? (h + "px") : "";
+    if (rows[r + 1].style.height !== next) rows[r + 1].style.height = next;
+  }
 }
 
 SHEET_INIT.push(function () {

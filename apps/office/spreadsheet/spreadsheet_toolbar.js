@@ -51,6 +51,7 @@ function wireUi() {
       undoRecord("clear-all");
       emptyWorkbook();
       selR = selC = extR = extC = 0; selMode = "cell";
+      if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.prepareNew) SHEET_HOS.prepareNew();
       afterChange();
       if (typeof applyWidths === "function") applyWidths();
       if (typeof renderSheetTabs === "function") renderSheetTabs();
@@ -63,6 +64,11 @@ function wireUi() {
   document.getElementById("file-import").addEventListener("change", function (ev) {
     var file = ev.target.files[0];
     if (!file) return;
+    if (/\.hos$/i.test(file.name) && typeof SHEET_HOS !== "undefined" && SHEET_HOS.openFile) {
+      SHEET_HOS.openFile(file, null);
+      ev.target.value = "";
+      return;
+    }
     if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
     var reader = new FileReader();
     reader.onload = function () { importCsvText(String(reader.result)); };
