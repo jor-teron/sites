@@ -397,3 +397,32 @@ html.hub-bar-off-update.hub-upd-ready body:not(.wm-desktop) #header #cat-btn::af
 }
 body:not(.wm-desktop) #header #cat-btn { position: relative; }   (H52b: anchor for the Update dot)
 */
+
+/* H145: full-screen blur behind the browser's Leave / Cancel box (HubCloseGuard in wm_taskbar.js).
+   Class is set in the same beforeunload turn, only when the native prompt is actually requested.
+   pointer-events: none so the overlay never traps input after Cancel. Best-effort: some browsers
+   freeze the page before this paints. Transition is none so the blur can appear before the box
+   (also respects prefers-reduced-motion and the Hub motion setting). */
+html.hub-leave-blur::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg, #121418) 40%, rgba(0, 0, 0, 0.45));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: none;
+}
+html.hub-light.hub-leave-blur::after {
+  background: color-mix(in srgb, var(--bg, #e8eaed) 50%, rgba(0, 0, 0, 0.22));
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html.hub-leave-blur::after { background: color-mix(in srgb, var(--bg, #121418) 25%, rgba(0, 0, 0, 0.62)); }
+  html.hub-light.hub-leave-blur::after { background: color-mix(in srgb, var(--bg, #e8eaed) 35%, rgba(0, 0, 0, 0.38)); }
+}
+html.hub-motion-reduced.hub-leave-blur::after,
+html.hub-motion-off.hub-leave-blur::after { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  html.hub-leave-blur::after { transition: none; }
+}

@@ -41,6 +41,9 @@
  *   window.__hubAllowUnload() skips the prompt for a Hub reload). Fullscreen button #wm-fs on the right of
  *   the bar, just before the clock (sites-hub.showFsBtn, default on, '0' = off; hidden when the browser has
  *   no Fullscreen API). Settings → Desktop; live via HubPrefs.apply() → __hubSyncFsBtn.
+ * - H145: when the close prompt is actually requested, html.hub-leave-blur paints a full-screen blur behind
+ *   the browser's Leave / Cancel box (best-effort; some browsers freeze the page first). Cancel, or a later
+ *   focus / pointer / key / visibility change, plus a 0 ms timer, removes it. CSS in wm.css.
  * Redraws on 'hub-wm-change' (wm_windows.js). Look in wm.css.
  */
 (function () {
@@ -48,6 +51,9 @@
 
   // H144: ask before closing the Desktop Hub. The handler reads the setting and join state live.
   // Intentional Hub reloads / navigations call window.__hubAllowUnload() first so the prompt is skipped.
+  // H145: when the native prompt is actually requested, html.hub-leave-blur is added in the same turn so a
+  // full-screen blur can paint behind the browser box. A 0 ms timer plus focus / pointerdown / keydown /
+  // visibilitychange remove it after Cancel. Quiet closes (setting off, joined / ?join, __hubAllowUnload) do nothing.
   window.HubCloseGuard = (function () {
     let skip = false;
     function allow() { skip = true; }
@@ -62,14 +68,48 @@
       try { return localStorage.getItem('sites-hub.askClose') !== '0'; } catch (_) { return true; }
     }
     function shouldPrompt() { return askOn() && !joined() && !skip; }
+    // function onBeforeUnload(e) {   (before H145)
+    //   if (!shouldPrompt()) return;
+    //   e.preventDefault();
+    //   e.returnValue = '';
+    // }
+    const BLUR = 'hub-leave-blur';
+    const CLEAR_EV = ['focus', 'pointerdown', 'keydown', 'visibilitychange'];
+    let blurTimer = 0;
+    function clearLeaveBlur() {
+      try {
+        const root = document.documentElement;
+        if (root && root.classList) root.classList.remove(BLUR);
+      } catch (_) {}
+      if (blurTimer) { try { clearTimeout(blurTimer); } catch (_) {} blurTimer = 0; }
+      CLEAR_EV.forEach((k) => {
+        try { window.removeEventListener(k, clearLeaveBlur, true); } catch (_) {}
+        try { document.removeEventListener(k, clearLeaveBlur, true); } catch (_) {}
+      });
+    }
+    function showLeaveBlur() {
+      clearLeaveBlur();
+      try {
+        const root = document.documentElement;
+        if (!root || !root.classList) return;
+        root.classList.add(BLUR);
+      } catch (_) { return; }
+      CLEAR_EV.forEach((k) => {
+        try { window.addEventListener(k, clearLeaveBlur, true); } catch (_) {}
+        try { document.addEventListener(k, clearLeaveBlur, true); } catch (_) {}
+      });
+      try { blurTimer = setTimeout(clearLeaveBlur, 0); } catch (_) { blurTimer = 0; }
+    }
     function onBeforeUnload(e) {
       if (!shouldPrompt()) return;
       e.preventDefault();
       e.returnValue = '';
+      showLeaveBlur();
     }
     window.addEventListener('beforeunload', onBeforeUnload);
     window.__hubAllowUnload = allow;
-    return { allow: allow, joined: joined, askOn: askOn, shouldPrompt: shouldPrompt, onBeforeUnload: onBeforeUnload };
+    return { allow: allow, joined: joined, askOn: askOn, shouldPrompt: shouldPrompt, onBeforeUnload: onBeforeUnload,
+      showLeaveBlur: showLeaveBlur, clearLeaveBlur: clearLeaveBlur };
   })();
 
   // H144: taskbar fullscreen toggle (API used by the button below and by tests)
