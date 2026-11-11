@@ -1975,6 +1975,38 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/tables/tables_readme.md`.
 - 1.104 is TB1, so this note is numbered 1.105.
 
+### 1.106 TB4 Tables spreadsheet look and dates
+
+- Tables at `apps/office/tables/` is drawn like Spreadsheet. TB1 and TB2 behaviour for
+  text, number, yes/no, choice and links is unchanged. No `?v=` cache buster and no build
+  bump. Title stays Tables. Plain HTML/CSS/JS, no libraries and no CDN. `apps/office/shared/`
+  was not edited. Spreadsheet and Base were not edited. Only this app and this note were touched.
+- The grid copies Spreadsheet’s variables into `tables.css` (not by editing Spreadsheet):
+  13px Segoe UI, 30px rows, 1px borders, header background, row-number gutter, 2px selection
+  outline, toolbar buttons, and sheet tabs in the footer. Light and dark use the same colours.
+  Cards still work.
+- A column header is one line, `Name (Type)`, for example `Due (Date)` or `date (Date)`.
+  The type is smaller and lighter. A long label ellipsizes. Clicking the name still sorts.
+  ⋯, right-click, or a long press opens the column menu (filter, rename, type, delete).
+- Dates are plain text, not `<input type="date">`. That control left the year as `0001`
+  (`07/05/0001`) and the validator then refused it (“Use a date like 2026-11-11 — not saved”),
+  because `new Date(1, month, day)` is year 1901, not year 1. Accepted text matches Spreadsheet’s
+  `fxParseDate`: `YYYY-MM-DD` (optional time, date kept), `D/M/YYYY` with `/`, `-` or `.`
+  (day first, swap when the month is > 12 and the day is <= 12), and an Excel serial
+  (`46336` is 2026-11-10). Also `11 Nov 2026`, `11 November 2026`, `7 May 2026`, `Nov 11, 2026`.
+  Display is Spreadsheet’s Date format, `YYYY-MM-DD`. Storage stays ISO. Years must be
+  1000–9999, so `07/05/0001` is not saved and is not rewritten to 1901. 30 February is rejected.
+  Sort and filter compare the real date.
+- The storage key stays `tables-v1` (no `tables-v2`). Old ISO dates load as they are. A date
+  cell that held `11/11/2026` or `11 Nov 2026` is read as ISO on load. Replaced code is
+  commented with `(before TB4)` and was not deleted.
+- Checked with `node --check` on `tables_model.js`, `tables.js`, `test-tb1.js`, `test-tb2.js`
+  and `test-tb4.js`, then `node test-tb1.js`, `node test-tb2.js` and `node test-tb4.js`
+  (date parse and display, year 0001, ISO storage, old `tables-v1` load, date sort and filter,
+  header label text). No browser runner.
+- Details: `apps/office/tables/tables_readme.md`.
+- 1.105 is TB2, so this note is numbered 1.106.
+
 
 ## 2. Releases (PR → what)
 

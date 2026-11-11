@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- TB1 Tables: a simple database that works like a spreadsheet. Logic: tables_model.js, tables.js.
-     TB2 adds a card view, a record panel, and Link columns. Same files, no cache buster. -->
+     TB2 adds a card view, a record panel, and Link columns. Same files, no cache buster.
+     TB4: grid look matches Spreadsheet. Sheet tabs sit in the footer. No cache buster. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -55,8 +56,8 @@
 
   <div id="banner" class="banner" hidden></div>
 
-  <div class="grid-wrap" id="grid-wrap" tabindex="0" aria-label="Table grid">
-    <table class="grid" id="grid">
+  <div class="grid-wrap sheet-wrap" id="grid-wrap" tabindex="0" aria-label="Table grid">
+    <table class="grid sheet" id="grid">
       <thead id="thead"></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -84,6 +85,7 @@
     </div>
   </div>
 
+  <!-- (before TB4)
   <div class="tabs-bar">
     <div class="tabs" id="tabs" role="tablist" aria-label="Tables"></div>
     <button type="button" id="btn-add-table" class="tab-add">+ Table</button>
@@ -92,6 +94,13 @@
   <footer class="status">
     <span id="count">No rows</span>
     <span id="status" aria-live="polite"></span>
+  </footer>
+  -->
+  <footer class="tabs-bar sheet-footer">
+    <div class="tabs sheet-tabs" id="tabs" role="tablist" aria-label="Tables"></div>
+    <button type="button" id="btn-add-table" class="tab-add sheet-tab-add" title="Add table" aria-label="Add table">+</button>
+    <span id="count" class="sheet-stats">No rows</span>
+    <span id="status" class="status" aria-live="polite"></span>
   </footer>
 
   <script src="../shared/office-dialog.js"></script>
