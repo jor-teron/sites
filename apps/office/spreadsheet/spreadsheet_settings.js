@@ -12,7 +12,7 @@
  */
 var SHEET_SETTINGS_KEY = "spreadsheet_settings";
 var SHEET_THEME_KEY = "spreadsheet_theme";      // resolved 'dark' | 'light' for other readers
-var SHEET_VERSION = "SH13";                     // legacy: "SH12" / "SH11" / "SH10" / "SH9"
+var SHEET_VERSION = "SH14";                     // legacy: "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
 var SHEET_FONTS = ["Segoe UI", "Arial", "Calibri", "Times New Roman", "Consolas"];
 var SHEET_SIZES = [11, 12, 13, 14, 16, 18];
 var SHEET_SETTINGS = null;
