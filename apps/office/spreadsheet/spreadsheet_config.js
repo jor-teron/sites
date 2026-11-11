@@ -18,7 +18,7 @@ const SPREADSHEET_CONFIG = {
     mode: "cell",                        // "cell" | "col" | "row"
   },
 
-  // localStorage
+  // (before HOS1) localStorage keys. HOS1 does not read or write them.
   storage: {
     key: "sheet-v4",                     // current save key (workbook: sheets + charts)
     legacyKey: "sheet-v3",               // SH8–SH11 workbook, migrated (left in place)

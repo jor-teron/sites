@@ -1,7 +1,7 @@
 /*
  * Files actions (apps/system/files/files_actions.js) — everything that changes or opens files:
  * open, Open with (shared/fs/filetypes.js: pictures + videos → the Viewer app in its own window
- * via shared/fs/fs_ref.js, text → Notely, .how → Writer, others → Download / text view), cut / copy / paste and
+ * via shared/fs/fs_ref.js, text → Notely, .how → Writer, .hos → Spreadsheet, others → Download / text view), cut / copy / paste and
  * drag-moves (also between drives: Local ↔ added folder), upload, new folder, rename, delete,
  * download, properties. Name clashes ask Replace / Keep both / Skip ("Do this for all");
  * copying into the same folder keeps both ("name (2).txt"). Long jobs show the progress bar
@@ -43,6 +43,7 @@
     else if (id === 'notely') toNotely(e);
     else if (id === 'viewer') { window.FsRef.openIn(a.url, refOf(e)); say('Opened in Viewer'); }
     /* (before HOW1) else if (a) opened the app without the file. .how now opens Writer on that file. */
+    /* HOS1: .hos uses this same hand-off and opens Spreadsheet (filetypes.js). */
     else if (a && a.file && a.url && window.FsRef) { window.FsRef.openIn(a.url, refOf(e)); say('Opened in ' + a.name); }
     else if (a) {   // the app can't take a file: just open it
       const hub = hubWin();

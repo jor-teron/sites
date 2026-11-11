@@ -33,7 +33,8 @@ function undoSnapshot() {
         validations: sh.validations ? JSON.parse(JSON.stringify(sh.validations)) : [],
         merges: sh.merges ? JSON.parse(JSON.stringify(sh.merges)) : [],
         condFormats: sh.condFormats ? JSON.parse(JSON.stringify(sh.condFormats)) : [],
-        charts: sh.charts ? JSON.parse(JSON.stringify(sh.charts)) : []
+        charts: sh.charts ? JSON.parse(JSON.stringify(sh.charts)) : [],
+        heights: sh.heights ? sh.heights.slice() : null
       };
     })
   });
@@ -76,6 +77,9 @@ function undoRestore(snap) {
     sh.merges = src.merges ? JSON.parse(JSON.stringify(src.merges)) : [];
     sh.condFormats = src.condFormats ? JSON.parse(JSON.stringify(src.condFormats)) : [];
     sh.charts = src.charts ? JSON.parse(JSON.stringify(src.charts)) : [];
+    if (src.heights && sh.heights) {
+      for (r = 0; r < ROWS; r++) sh.heights[r] = typeof src.heights[r] === "number" ? src.heights[r] : null;
+    }
     workbook.sheets.push(sh);
   }
   workbook.active = Math.max(0, Math.min(workbook.sheets.length - 1, d.active | 0));

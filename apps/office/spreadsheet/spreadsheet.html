@@ -36,10 +36,14 @@
   <!-- File menu: Draftly look (../shared/office-tools.css .file-item, icons from office-icons.js) -->
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
     <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-open-hos" data-icon="fileOpen"><span>Open .hos</span></button>
+    <input id="hos-file" type="file" accept=".hos,application/json" hidden>
     <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / CSV)</span>
       <input id="file-import" type="file" accept=".xlsx,.xls,.csv,text/csv,text/plain" hidden>
     </label>
     <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-save-as" data-icon="fileSave"><span>Save As</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx" data-icon="fileExport"><span>Export XLSX</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button>
@@ -308,5 +312,10 @@
   <script src="spreadsheet_xlsx.js?v=SH14"></script>
   <script src="spreadsheet_hub.js?v=SH14"></script>
   <script src="spreadsheet_quick.js?v=SH14"></script>
+  <script src="../../../shared/fs/fs_drives.js"></script>
+  <script src="../../../shared/fs/fs_ops.js"></script>
+  <script src="../../../shared/fs/fs_ref.js"></script>
+  <script src="../shared/office-native.js"></script>
+  <script src="spreadsheet_hos.js"></script>
 </body>
 </html>

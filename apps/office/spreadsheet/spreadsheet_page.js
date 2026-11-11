@@ -2,8 +2,9 @@
  * spreadsheet_page.js
  * Page tab (print layout only): orientation, paper, margins (presets + custom cm),
  * gridlines / headings / fit-to-width when printing, Print. Uses ../shared/office-page.js for
- * paper and margin data, the @page rule and the custom-margins dialog. Settings are saved in
- * localStorage next to the sheet (key CFG.storage.key + "-page"); they don't touch cells or undo.
+ * paper and margin data, the @page rule and the custom-margins dialog.
+ * (before HOS1) settings were saved in localStorage (key CFG.storage.key + "-page").
+ * HOS1 stores page setup in the .hos file. They don't touch cells or undo.
  * Print look: body classes print-no-grid / print-headings / print-fit (spreadsheet_page.css).
  */
 var PAGE_STORE_KEY = CFG.storage.key + "-page";
@@ -16,13 +17,16 @@ var PAGE_DEFAULTS = {
 var pageSetup = Object.assign({}, PAGE_DEFAULTS);
 
 function loadPageSetup() {
-  var raw, d;
+  var d = null;
+  /* (before HOS1) localStorage sheet-v4-page, then sheet-v3-page, then sheet-v2-page:
+  var raw;
   try {
     raw = localStorage.getItem(PAGE_STORE_KEY);
     if (!raw) raw = localStorage.getItem("sheet-v3-page");
     if (!raw) raw = localStorage.getItem("sheet-v2-page");
     d = raw ? JSON.parse(raw) : null;
   } catch (e) { d = null; }
+  */
   pageSetup = Object.assign({}, PAGE_DEFAULTS, d || {});
   if (pageSetup.orientation !== "landscape") pageSetup.orientation = "portrait";
   if (!OfficePage.papers[pageSetup.paper]) pageSetup.paper = PAGE_DEFAULTS.paper;
@@ -31,7 +35,9 @@ function loadPageSetup() {
 }
 
 function savePageSetup() {
-  try { localStorage.setItem(PAGE_STORE_KEY, JSON.stringify(pageSetup)); } catch (e) {}
+  /* (before HOS1) try { localStorage.setItem(PAGE_STORE_KEY, JSON.stringify(pageSetup)); } catch (e) {} */
+  if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.applying) return;
+  if (typeof saveStore === "function") saveStore();
 }
 
 /* The @page rule for the current settings */

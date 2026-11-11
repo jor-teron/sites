@@ -24,10 +24,15 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
     redo: redo,
     canUndo: function () { return UNDO.past.length > 0; },
     canRedo: function () { return UNDO.future.length > 0; },
-    save: function () {
+    /* (before HOS1) save: function () {
       var st = document.getElementById("status");
       saveStore();
       return !(st && st.textContent === TXT.saveFailed);
+    }, */
+    save: function () {
+      if (typeof saveStore === "function") clearTimeout(saveStore._t);
+      var p = (typeof SHEET_HOS !== "undefined" && SHEET_HOS.save) ? SHEET_HOS.save({ explicit: true }) : Promise.resolve({ ok: false });
+      return p.then(function (res) { return !(res && res.ok === false); }, function () { return false; });
     },
     print: printSheet,
     undoKey: function () { return !!clipTarget(); },

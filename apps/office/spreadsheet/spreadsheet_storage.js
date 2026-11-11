@@ -1,8 +1,8 @@
 /*
  * spreadsheet_storage.js
- * Save / load the workbook in localStorage (SH12: sheet-v4).
- * Older sheet-v3 / v2 / v1 saves are migrated into v4 on first load and left
- * in place as a backup; later loads use only v4. Charts live on each sheet.
+ * Workbook shape (sheets, cells, charts) used by the .hos file (HOS1,
+ * spreadsheet_hos.js). (before HOS1) this file wrote localStorage sheet-v4
+ * and, on load, migrated sheet-v3 / v2 / v1. Those keys are not read.
  */
 
 function serializeSheet(s) {
@@ -99,15 +99,25 @@ function uniqueName(name, used) {
 }
 
 /**
- * Save the workbook (and column widths, freeze, hidden, active sheet)
+ * Save the workbook. HOS1: a .hos file (debounced autosave). The localStorage
+ * write is kept below and is not called.
  */
 function saveStore() {
+  /* (before HOS1) localStorage sheet-v4 write:
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(serializeWorkbook()));
     setStatus(TXT.saved);
   } catch (e) {
     setStatus(TXT.saveFailed);
   }
+  */
+  if (typeof SHEET_HOS === "undefined" || !SHEET_HOS || !SHEET_HOS.autosave) return;
+  if (SHEET_HOS.applying || SHEET_HOS.skipWrite) return;
+  clearTimeout(saveStore._t);
+  saveStore._t = setTimeout(function () {
+    saveStore._t = null;
+    SHEET_HOS.autosave().then(function () {}, function () {});
+  }, 800);
 }
 
 function loadLegacyGrid(data) {
@@ -151,10 +161,12 @@ function applyWorkbookPayload(data) {
 }
 
 /**
- * Load the workbook. sheet-v4 wins. If it is missing, a sheet-v3 / v2 / v1
+ * (before HOS1) Load the workbook. sheet-v4 wins. If it is missing, a sheet-v3 / v2 / v1
  * save is migrated into v4 and the old key is left in place as a backup.
+ * HOS1 does not call this and does not migrate those keys.
  */
 function loadStore() {
+  /* (before HOS1) localStorage sheet-v4 / v3 / v2 / v1 load and migrate:
   var keys = [STORE_KEY, CFG.storage.legacyKey, CFG.storage.legacyKey1, CFG.storage.legacyKey2], k, raw, data, i;
   try {
     for (i = 0; i < keys.length; i++) {
@@ -173,4 +185,6 @@ function loadStore() {
   } catch (e) {
     return false;
   }
+  */
+  return false;
 }
