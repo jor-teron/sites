@@ -1880,6 +1880,43 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Checked with node --check and node apps/office/spreadsheet/test-sh13-spill.js, plus the existing SH9–SH12 node tests. No browser runner.
 
 
+### 1.104 TB1 Tables app
+
+- New Office app at `apps/office/tables/` (Office → Hub Office, after Base). A simple
+  database that looks and works like a spreadsheet, and an easier alternative to Base.
+  Base was not edited. Branch `cursor/tb1-tables-app-f835`. No `?v=` cache buster and
+  no build bump. Title is Tables. Plain HTML/CSS/JS, no libraries and no CDN.
+- Several tables, each a tab: add, rename, delete. Delete asks with the shared
+  Office dialog (`OfficeDialog.confirm`), not `alert` / `confirm` / `prompt`.
+  `apps/office/shared/` was not edited.
+- Grid: click a cell and type. Enter moves down, Tab across, arrows move. Add row,
+  delete row(s), add / rename / delete column. One type per column, chosen for the
+  whole column: Text, Number, Date, Yes/No (checkbox), Choice (a list you can edit).
+  A value that does not fit shows a small in-cell warning and is not stored.
+- Search across the top filters the current table. Each column has a filter:
+  contains, equals, greater than / less than for numbers and dates, and checked
+  for Yes/No. Click the column name to sort ascending, then descending. Blanks stay
+  last. The row count is shown. An empty table explains how to start.
+- CSV import makes a new table, guesses column types, and lets you change them
+  before creating it. CSV export downloads the current table. Quoted fields, doubled
+  quotes and line breaks inside quotes are kept. Save is automatic in localStorage
+  under `tables-v1` (offline, this device only). Theme Auto follows `sites-hub.theme`,
+  else the device.
+- Touch and keyboard, and the layout wraps on a phone. The grid draws at most 300
+  rows at a time; Show earlier rows and Show later rows reach the rest. Import
+  keeps at most 5000 data rows and refuses a file over 2 MB.
+- New files: `index.html` (redirect only), `tables.html`, `tables.css`, `tables.js`,
+  `tables_model.js`, `test-tb1.js`, `tables_readme.md`, `tables_icon.svg`. A row was
+  added to `apps/office/office-apps.csv` (name Tables, path `tables/`, icon
+  `tables/tables_icon.svg`, section Hub Office). Hub-owned catalog files were not
+  edited. Hub Main Bot still needs to regenerate `hub/core/hub_catalog.js` and
+  `hub/core/hub_appindex.js` after this is on main, using that CSV row.
+- Details: `apps/office/tables/tables_readme.md`. Checked with `node --check` on
+  `tables_model.js`, `tables.js` and `test-tb1.js`, and `node test-tb1.js` (types,
+  sort, filter, search, quoted CSV, save/load). No browser runner.
+- 1.100 is the previous Apps section, so this note is numbered 1.104.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
