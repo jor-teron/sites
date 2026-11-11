@@ -1871,6 +1871,15 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.98 is RM7, so this note is numbered 1.99.
 
 
+### 1.100 SH13 Spreadsheet spill and SEQUENCE
+
+- apps/office/spreadsheet only (plus this section). Grid stays 26 columns (A–Z) × 100 rows.
+- Dynamic arrays: a formula may return a 2D array. The anchor keeps the top-left value; the rest spills into empty cells (display-only ghosts, not saved). A blocked spill (filled cell, merge, other spill, or past the grid) shows #SPILL! and writes nothing. Ghosts clear when the result shrinks. Other formulas can read a ghost. A1# is the current spill. SEQUENCE and RANDARRAY match Excel's argument order; bad or non-positive sizes are #VALUE!. SUM(SEQUENCE(...)) works. Circular refs stay #LOOP!.
+- Ghosts are faded; selecting the source outlines the spill. The fx picker lists both functions. XLSX writes the anchor formula only, so import does not block the spill. Charts read spilled values. Storage stays sheet-v4.
+- Title / SHEET_VERSION / ?v=: SH13. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh13-spill.js, plus the existing SH9–SH12 node tests. No browser runner.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

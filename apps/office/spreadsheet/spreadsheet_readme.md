@@ -8,7 +8,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 ## 2. Files
 - `spreadsheet.html` / `spreadsheet.css`: layout, toolbar, look, print
 - `spreadsheet_config.js`: settings and on-screen text
-- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`) and dependency-aware recalc
+- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, and SH13 spill
 - `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`), plus FX_CATALOG for the hint/picker
 - `spreadsheet_fx.js`: SH9 formula hint while typing, and the fx function picker
 - `spreadsheet_refs.js`: cell refs and ranges, `$` refs, ref shifting and adjusting
@@ -80,7 +80,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
 localStorage key `sheet-v4` (workbook: sheets, charts, active sheet, cells, styles, formats, widths, freeze, hidden, filters, validation, merges, conditional formats). An older `sheet-v3` / `sheet-v2` / `sheet-v1` save is migrated into v4 on first load and left in place as a backup; later loads use only `sheet-v4`. Page setup is `sheet-v4-page`, with `sheet-v3-page` then `sheet-v2-page` as fallbacks. To reset, use New / Clear (asks first; can be undone) or delete the key / clear site data.
 
 ## 6. Errors
-- In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#ERR` (formula not understood).
+- In cells: `#DIV/0!` (divide by 0), `#NUM!` (too large / not a number), `#REF!` (outside the sheet or a deleted cell), `#LOOP!` (circular reference), `#N/A` (lookup / IFS / SWITCH not found), `#VALUE!` (wrong type of argument), `#SPILL!` (an array result cannot spill), `#ERR` (formula not understood).
 - Status line: "Save failed" (storage full or blocked), "Can't insert: the last row / column has data".
 
 ## 7. Screen sizes
@@ -191,3 +191,14 @@ The grid is still 26 × 100.
 - **Saving:** `sheet-v4`. A `sheet-v3` (or v2 / v1) save is migrated once and left in place. Charts are stored as type, range, title and position — they are redrawn from the current cell values when the file is opened.
 - Title, `SHEET_VERSION` and `?v=` are SH12.
 - **Limits:** charts are not written to XLSX or CSV. There are no trendlines, secondary axes, or chart styles beyond the four types. Labels longer than 8 characters are trimmed on the axis. A pie slice smaller than 4% of the total has no label. Charts sit over the grid (they are not in a cell) and print with the sheet but without the move bar.
+
+## SH13 — spill, SEQUENCE and RANDARRAY
+The grid is still 26 × 100. Storage is still `sheet-v4`. Ghost cells are not a saved field.
+
+- **Spill:** any function may return a 2D array. The top-left value is the formula cell; the rest is drawn in the cells to the right and below (ghosts). Ghosts are display-only: they are not stored, not part of undo snapshots, and not written by copy, fill or sort. Typing into a ghost stores that entry and the source shows `#SPILL!`. The same happens when a target is already filled, merged, another spill, or past the grid. Nothing is written on a failed spill. When the result shrinks, old ghosts disappear. Other formulas read ghosts normally (`=A2` is the spilled value). `A1#` is the whole current spill of A1. A 1×1 array is an ordinary value. `SUM(SEQUENCE(5))` (and the other range aggregates) accept an array. Circular formulas are still `#LOOP!`.
+- **SEQUENCE(rows, [cols], [start], [step])** fills numbers across, then down. Defaults are 1 column, start 1, step 1. **RANDARRAY([rows], [cols], [min], [max], [whole])** fills random numbers. Defaults are 1×1, from 0 to 1, decimals. `whole` TRUE returns integers from min to max inclusive. A bad argument, or a zero or negative size, is `#VALUE!`. A result bigger than the grid, or that does not fit where it was entered, is `#SPILL!` (the array is not allocated past the grid).
+- **Look:** ghosts are faded (light and dark). Selecting the source cell draws a thin outline around the spill, in the theme selection colour.
+- **Hint / picker:** SEQUENCE and RANDARRAY are in the function list, under Arrays, with argument hints.
+- **Files:** save / load keeps the formula only. CSV exports formulas too, so a ghost is blank in the file. XLSX export writes the anchor formula (and the cached top-left value) and does not write ghosts, so a re-import does not block the spill. Charts read spilled values; choosing the anchor cell charts the whole spill.
+- Title, `SHEET_VERSION` and `?v=` are SH13.
+- **Limits:** array arithmetic (`=SEQUENCE(3)+1`) is `#VALUE!`. Sorting uses stored cells, so a ghost sorts as blank and the spill is recomputed afterwards. `RANDARRAY` changes on every recalculation. Copy of a ghost copies an empty stored cell; copy the source formula to spill again.

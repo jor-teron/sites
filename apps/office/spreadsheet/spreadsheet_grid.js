@@ -128,6 +128,7 @@ function highlightSel() {
     if (rn) rn.classList.add(CLS.band);
   }
   if (inpGrid[selR] && inpGrid[selR][selC]) inpGrid[selR][selC].parentNode.classList.add(CLS.selected);
+  if (typeof paintSpillOutline === "function") paintSpillOutline();
   if (multi) setStatus(rangeLabel());
   if (typeof updateStats === "function") updateStats();
 }
@@ -151,12 +152,45 @@ function applyLook(td, inp, st, r, c) {
 function paintCell(r, c) {
   var inp = inpGrid[r] && inpGrid[r][c];
   if (!inp) return;
-  var td = inp.parentNode, st = cellStyle(r, c), v = cells[r][c].value;
+  var td = inp.parentNode, st = cellStyle(r, c);
+  /* (before SH13): var v = cells[r][c].value; ghosts were not visible */
+  var v = typeof displayedVal === "function" ? displayedVal(r, c, workbook.active) : cells[r][c].value;
+  var ghost = typeof ghostAt === "function" && ghostAt(workbook.active, r, c);
   if (inp !== document.activeElement) inp.value = formatCellValue(v, st.fmt);
   applyLook(td, inp, st, r, c);
+  td.classList.toggle("spill-ghost", !!ghost);
   if (inp === document.activeElement) return;
   if (v === ERR || CFG.errorValues.indexOf(v) !== -1) td.classList.add(CLS.error);
   else td.classList.remove(CLS.error);
+}
+
+/* Thin outline around the spill of the selected anchor cell. */
+function paintSpillOutline() {
+  var nodes, i, info, r, c, td, parts, r2, c2;
+  nodes = document.querySelectorAll("td.spill-mark");
+  for (i = 0; i < nodes.length; i++) {
+    nodes[i].classList.remove("spill-mark");
+    nodes[i].style.removeProperty("--spill-mark");
+  }
+  if (typeof spillAnchorInfo !== "function" || !workbook) return;
+  info = spillAnchorInfo(workbook.active, selR, selC);
+  if (!info || !inpGrid[selR]) return;
+  r2 = selR + info.h - 1;
+  c2 = selC + info.w - 1;
+  for (r = selR; r <= r2; r++) {
+    for (c = selC; c <= c2; c++) {
+      if (!inpGrid[r] || !inpGrid[r][c]) continue;
+      td = inpGrid[r][c].parentNode;
+      parts = [];
+      if (r === selR) parts.push("inset 0 1px 0 0 var(--sel)");
+      if (r === r2) parts.push("inset 0 -1px 0 0 var(--sel)");
+      if (c === selC) parts.push("inset 1px 0 0 0 var(--sel)");
+      if (c === c2) parts.push("inset -1px 0 0 0 var(--sel)");
+      if (!parts.length) continue;
+      td.classList.add("spill-mark");
+      td.style.setProperty("--spill-mark", parts.join(", "));
+    }
+  }
 }
 
 /**
@@ -169,4 +203,5 @@ function paintAll() {
     for (c = 0; c < COLS; c++) paintCell(r, c);
   }
   if (typeof applyMerges === "function") applyMerges();
+  if (typeof paintSpillOutline === "function") paintSpillOutline();
 }

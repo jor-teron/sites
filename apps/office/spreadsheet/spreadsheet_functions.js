@@ -4,6 +4,7 @@
  * plus the IF comparison helper. Used by the evaluator in spreadsheet_formula.js.
  * SH9 adds lookups, SUMIF/COUNTIF/AVERAGEIF, logic, extra text and date functions,
  * MEDIAN/RANK/RAND, plus FX_CATALOG for the formula hint and function picker.
+ * SH13: SEQUENCE and RANDARRAY return 2D arrays (spillWrap). Any function may.
  */
 
 /**
@@ -428,7 +429,115 @@ function evalFunc(name, args) {
     return a0 + Math.floor(Math.random() * (a1 - a0 + 1));
   }
 
+  /* SH13: dynamic arrays. Bad arguments return #VALUE! (a string, so IFERROR can see it).
+     A size bigger than the grid returns #SPILL! without allocating a huge array. */
+  if (n === "SEQUENCE") return fxSequence(args);
+  if (n === "RANDARRAY") return fxRandArray(args);
+
   return ERR;
+}
+
+function fxNumFrom(x) {
+  if (typeof x === "number") return x;
+  if (x === "" || x == null) return NaN;
+  var n = Number(x);
+  return isNaN(n) ? NaN : n;
+}
+
+/* Read a number argument. missingOk uses dflt when the argument was left out. */
+function fxReadNum(arg, missingOk, dflt) {
+  if (arg == null || String(arg).trim() === "") return missingOk ? dflt : ERR_VALUE;
+  var v;
+  try { v = evalExpr(arg); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR_VALUE;
+  }
+  if (isSpillArray(v)) return ERR_VALUE;
+  if (isErrorValue(v)) return v;
+  if (typeof v === "string" && /^TRUE$/i.test(v)) v = 1;
+  else if (typeof v === "string" && /^FALSE$/i.test(v)) v = 0;
+  if (v === "" || v == null) return ERR_VALUE;
+  var n = typeof v === "number" ? v : Number(String(v).trim());
+  if (typeof n !== "number" || isNaN(n) || !isFinite(n)) return ERR_VALUE;
+  return n;
+}
+
+function fxReadBool(arg, dflt) {
+  if (arg == null || String(arg).trim() === "") return dflt;
+  var v;
+  try { v = evalExpr(arg); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR_VALUE;
+  }
+  if (isSpillArray(v)) return ERR_VALUE;
+  if (isErrorValue(v)) return v;
+  if (v === true || v === 1 || /^TRUE$/i.test(String(v))) return true;
+  if (v === false || v === 0 || /^FALSE$/i.test(String(v))) return false;
+  return ERR_VALUE;
+}
+
+/* Positive integer size. Zero, negative, or non-numeric → #VALUE!. */
+function fxReadSize(arg, missingOk, dflt) {
+  var n = fxReadNum(arg, missingOk, dflt);
+  if (isErrorValue(n)) return n;
+  n = n < 0 ? Math.ceil(n) : Math.floor(n);
+  if (n <= 0) return ERR_VALUE;
+  return n;
+}
+
+function fxSequence(args) {
+  var rows = fxReadSize(args[0], false);
+  var cols = fxReadSize(args[1], true, 1);
+  var start = fxReadNum(args[2], true, 1);
+  var step = fxReadNum(args[3], true, 1);
+  if (isErrorValue(rows)) return rows;
+  if (isErrorValue(cols)) return cols;
+  if (isErrorValue(start)) return start;
+  if (isErrorValue(step)) return step;
+  if (typeof ROWS === "number" && (rows > ROWS || cols > COLS)) return ERR_SPILL;
+  var out = [], r, c, row, n = start;
+  for (r = 0; r < rows; r++) {
+    row = [];
+    for (c = 0; c < cols; c++) {
+      if (!isFinite(n)) return ERR_NUM;
+      row.push(n);
+      n = n + step;
+    }
+    out.push(row);
+  }
+  return spillWrap(out);
+}
+
+function fxRandArray(args) {
+  var rows = fxReadSize(args[0], true, 1);
+  var cols = fxReadSize(args[1], true, 1);
+  var min = fxReadNum(args[2], true, 0);
+  var max = fxReadNum(args[3], true, 1);
+  var whole = fxReadBool(args[4], false);
+  if (isErrorValue(rows)) return rows;
+  if (isErrorValue(cols)) return cols;
+  if (isErrorValue(min)) return min;
+  if (isErrorValue(max)) return max;
+  if (isErrorValue(whole)) return whole;
+  if (whole) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+  }
+  if (min > max) return ERR_VALUE;
+  if (typeof ROWS === "number" && (rows > ROWS || cols > COLS)) return ERR_SPILL;
+  var out = [], r, c, row, val;
+  for (r = 0; r < rows; r++) {
+    row = [];
+    for (c = 0; c < cols; c++) {
+      if (whole) val = min + Math.floor(Math.random() * (max - min + 1));
+      else val = min + Math.random() * (max - min);
+      row.push(val);
+    }
+    out.push(row);
+  }
+  return spillWrap(out);
 }
 
 /* ---- SH9 function helpers (pure; used by evalFunc and the tests) ---- */
@@ -510,6 +619,16 @@ function fxEvalCriteria(arg) {
 }
 
 function rangeMatrix(token) {
+  var arr = typeof arrayFromToken === "function" ? arrayFromToken(token) : null;
+  if (arr) {
+    var gridA = [], ra, ca, rowA;
+    for (ra = 0; ra < arr.rows.length; ra++) {
+      rowA = [];
+      for (ca = 0; ca < arr.rows[ra].length; ca++) rowA.push({ r: -1, c: -1, si: -1, v: arr.rows[ra][ca] });
+      gridA.push(rowA);
+    }
+    return { rows: arr.rows.length, cols: arr.rows[0].length, cells: gridA, si: -1 };
+  }
   var parsed = parseRefToken(token), list, r1, r2, c1, c2, r, c, grid, row;
   if (!parsed) return null;
   if (parsed.error) fail(parsed.error);
@@ -547,10 +666,11 @@ function fxIfAgg(kind, args) {
     for (c = 0; c < cols; c++) {
       if (!fxMatchCriteria(critRange.cells[r][c].v, crit)) continue;
       cell = valRange.cells[r][c];
-      v = rawVal(cell.r, cell.c, cell.si);
+      /* (before SH13) v = rawVal(cell.r, cell.c, cell.si); arrays have no grid address */
+      v = cell.r < 0 ? cell.v : rawVal(cell.r, cell.c, cell.si);
       if (isErrorValue(v)) fail(v);
       if (kind === "COUNTIF") { n++; continue; }
-      v = numVal(cell.r, cell.c, cell.si);
+      v = cell.r < 0 ? fxNumFrom(cell.v) : numVal(cell.r, cell.c, cell.si);
       if (isNaN(v)) continue;
       acc += v;
       n++;
@@ -585,7 +705,8 @@ function fxIfsAgg(kind, args) {
       }
       if (!ok) continue;
       if (kind === "COUNT") { n++; continue; }
-      v = numVal(sumRange.cells[r][c].r, sumRange.cells[r][c].c, sumRange.cells[r][c].si);
+      /* (before SH13) v = numVal(sumRange.cells[r][c].r, sumRange.cells[r][c].c, sumRange.cells[r][c].si); */
+      v = sumRange.cells[r][c].r < 0 ? fxNumFrom(sumRange.cells[r][c].v) : numVal(sumRange.cells[r][c].r, sumRange.cells[r][c].c, sumRange.cells[r][c].si);
       if (isNaN(v)) continue;
       acc += v;
       n++;
@@ -933,7 +1054,9 @@ var FX_CATALOG = [
   { name: "DAY", cat: "Date", sig: "DAY(date)", hint: "Day of the month." },
   { name: "WEEKDAY", cat: "Date", sig: "WEEKDAY(date, [return_type])", hint: "Day of the week. Type 1 (default): Sunday=1. Type 2: Monday=1. Type 3: Monday=0." },
   { name: "DATEDIF", cat: "Date", sig: "DATEDIF(start, end, unit)", hint: "Difference. Unit Y, M, D, YM, MD or YD. Start must be on or before end." },
-  { name: "EDATE", cat: "Date", sig: "EDATE(start, months)", hint: "The date a number of months before or after start." }
+  { name: "EDATE", cat: "Date", sig: "EDATE(start, months)", hint: "The date a number of months before or after start." },
+  { name: "SEQUENCE", cat: "Arrays", sig: "SEQUENCE(rows, [cols], [start], [step])", hint: "A grid of numbers. Defaults: 1 column, start at 1, step 1. Spills into empty cells to the right and below. Zero or negative size is #VALUE!." },
+  { name: "RANDARRAY", cat: "Arrays", sig: "RANDARRAY([rows], [cols], [min], [max], [whole])", hint: "A grid of random numbers. Defaults: 1×1, from 0 up to 1, decimals. whole TRUE returns integers from min to max inclusive. Spills." }
 ];
 
 function fxFindName(name) {

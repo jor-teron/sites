@@ -39,6 +39,21 @@ MATH
   RAND()
   RANDBETWEEN(bottom, top)
 
+ARRAYS / SPILL (SH13)
+  A formula may return a grid. The top-left value stays in the formula cell;
+  the rest spills into empty cells to the right and below (display only).
+  Those ghost cells are not saved as values. Typing into one blocks the spill.
+  SEQUENCE(rows, [cols], [start], [step])
+                    defaults: cols 1, start 1, step 1
+                    SEQUENCE(3) is 1, 2, 3 down the column
+                    SEQUENCE(2, 3, 10, 2) is 10 12 14 / 16 18 20
+  RANDARRAY([rows], [cols], [min], [max], [whole])
+                    defaults: 1×1, min 0, max 1, decimals
+                    whole TRUE returns integers from min to max, inclusive
+  A1#               the whole current spill of A1
+  A 1×1 result is an ordinary value. SUM(SEQUENCE(5)) adds the array.
+  Zero or a negative size is #VALUE!. A result that does not fit is #SPILL!.
+
 LOGIC
   IF(cond, then, else)
   ISBLANK(cell)
@@ -105,6 +120,7 @@ ERRORS
   #LOOP!    circular reference (A1=B1, B1=A1)
   #N/A      lookup not found, or IFS/SWITCH with no match
   #VALUE!   wrong type of argument (e.g. FIND with no match, a bad date)
+  #SPILL!   an array result cannot spill (a cell in the way, a merged cell, or past the grid)
   #ERR      formula not understood
 
 FORMULA HINT / PICKER (SH9)
