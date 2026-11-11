@@ -1,7 +1,10 @@
 /*
- * Tables TB1 — pure data model (no DOM).
- * Used by tables.js in the browser and by test-tb1.js in Node.
- * Storage key: tables-v1. First release; there is no older key to migrate.
+ * Tables model — pure data (no DOM).
+ * TB1: types, sort, filter, search, CSV, save shape. Storage key tables-v1.
+ * TB2: stable row ids (already on TB1 rows; migration fills any that are missing),
+ * Link columns, backlinks, and the same visible-row list for the card view.
+ * The storage key stays tables-v1. Link fields are optional, so older saves load
+ * and the next edit writes them back to the same key. Nothing is deleted.
  * Legacy: cell values that fail their column type are dropped, never stored.
  */
 (function (root) {
@@ -9,13 +12,15 @@
 
   var STORAGE_KEY = 'tables-v1';
   var VERSION = 1;
-  var TYPES = ['text', 'number', 'date', 'yesno', 'choice'];
+  // var TYPES = ['text', 'number', 'date', 'yesno', 'choice']; // (before TB2)
+  var TYPES = ['text', 'number', 'date', 'yesno', 'choice', 'link'];
   var TYPE_LABELS = {
     text: 'Text',
     number: 'Number',
     date: 'Date',
     yesno: 'Yes/No',
-    choice: 'Choice'
+    choice: 'Choice',
+    link: 'Link'
   };
 
   var seq = 0;
@@ -96,7 +101,49 @@
     return value == null || value === '';
   }
 
-  function validate(type, raw, options) {
+  function linkCtx(col, db, extra) {
+    var src = extra || col || {};
+    return {
+      db: db || null,
+      linkTable: src.linkTable ? String(src.linkTable) : '',
+      multiple: !!src.multiple
+    };
+  }
+
+  function linkIds(raw) {
+    var list = Array.isArray(raw) ? raw : (raw == null || raw === '' ? [] : [raw]);
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] == null) continue;
+      var id = String(list[i]).trim();
+      if (!id || seen[id]) continue;
+      seen[id] = 1;
+      out.push(id);
+    }
+    return out;
+  }
+
+  function validateLink(raw, ctx) {
+    ctx = ctx || {};
+    var multiple = !!ctx.multiple;
+    var ids = linkIds(raw);
+    if (!ids.length) return { ok: true, value: null };
+    if (!multiple && ids.length > 1) {
+      if (ctx.loose) ids = [ids[0]];
+      else return { ok: false, message: 'This column holds one link' };
+    }
+    if (ctx.loose) return { ok: true, value: multiple ? ids : ids[0] };
+    if (!ctx.linkTable) return { ok: false, message: 'Choose a table to link to' };
+    var target = ctx.db ? findTable(ctx.db, ctx.linkTable) : null;
+    if (!target) return { ok: false, message: 'That table is not in this file' };
+    for (var i = 0; i < ids.length; i++) {
+      if (!findRow(target, ids[i])) return { ok: false, message: 'Pick a record from the list' };
+    }
+    return { ok: true, value: multiple ? ids : ids[0] };
+  }
+
+  function validate(type, raw, options, ctx) {
     type = normalizeType(type);
     if (isBlank(raw)) return { ok: true, value: null };
     if (typeof raw === 'string' && raw.trim() === '') return { ok: true, value: null };
@@ -116,6 +163,7 @@
       if (b == null) return { ok: false, message: 'Choose yes or no' };
       return { ok: true, value: b };
     }
+    if (type === 'link') return validateLink(raw, ctx);
     var choice = String(raw).trim();
     var opts = options || [];
     var match = null;
@@ -129,6 +177,7 @@
     return { ok: true, value: match };
   }
 
+  /* (before TB2)
   function display(type, value) {
     if (isBlank(value)) return '';
     type = normalizeType(type);
@@ -142,7 +191,48 @@
     }
     return String(value);
   }
+  */
+  function linkLabel(db, col, rowId, depth) {
+    var target = db && col && col.linkTable ? findTable(db, col.linkTable) : null;
+    if (!target) return '';
+    var row = findRow(target, rowId);
+    if (!row) return '';
+    if (!target.columns.length) return '(blank)';
+    var first = target.columns[0];
+    var text = display(first.type, row.cells[first.id], first, db, depth);
+    return text ? text : '(blank)';
+  }
 
+  function linkText(db, col, value, depth) {
+    var ids = Array.isArray(value) ? value : [value];
+    var parts = [];
+    for (var i = 0; i < ids.length; i++) {
+      if (ids[i] == null || ids[i] === '') continue;
+      var label = linkLabel(db, col, ids[i], depth);
+      if (label) parts.push(label);
+    }
+    return parts.join(', ');
+  }
+
+  function display(type, value, col, db, depth) {
+    if (isBlank(value) || (Array.isArray(value) && !value.length)) return '';
+    type = normalizeType(type);
+    if (type === 'link') {
+      if ((depth || 0) > 6) return '';
+      return linkText(db, col, value, (depth || 0) + 1);
+    }
+    if (type === 'yesno') return value === true ? 'Yes' : 'No';
+    if (type === 'number') {
+      if (typeof value === 'number' && isFinite(value)) {
+        var s = String(value);
+        if (s.indexOf('e') !== -1 || s.indexOf('E') !== -1) return String(Math.round(value * 1e10) / 1e10);
+        return s;
+      }
+    }
+    return String(value);
+  }
+
+  /* (before TB2)
   function column(name, type, options) {
     var c = {
       id: uid('c'),
@@ -150,6 +240,20 @@
       type: normalizeType(type)
     };
     if (c.type === 'choice') c.options = cleanOptions(options);
+    return c;
+  }
+  */
+  function column(name, type, options, extra) {
+    var c = {
+      id: uid('c'),
+      name: String(name == null ? '' : name).trim() || 'Column',
+      type: normalizeType(type)
+    };
+    if (c.type === 'choice') c.options = cleanOptions(options);
+    if (c.type === 'link') {
+      c.linkTable = extra && extra.linkTable ? String(extra.linkTable) : '';
+      c.multiple = !!(extra && extra.multiple);
+    }
     return c;
   }
 
@@ -233,6 +337,39 @@
     return { ok: true, table: table };
   }
 
+  function scrubLinkIds(db, tableId, rowIds) {
+    if (!db || !db.tables) return;
+    var drop = null;
+    if (rowIds) {
+      drop = {};
+      for (var i = 0; i < rowIds.length; i++) drop[rowIds[i]] = 1;
+    }
+    for (var t = 0; t < db.tables.length; t++) {
+      var table = db.tables[t];
+      for (var c = 0; c < table.columns.length; c++) {
+        var col = table.columns[c];
+        if (col.type !== 'link' || col.linkTable !== tableId) continue;
+        for (var r = 0; r < table.rows.length; r++) {
+          var row = table.rows[r];
+          var value = row.cells[col.id];
+          if (value == null || value === '') continue;
+          if (!drop) {
+            row.cells[col.id] = null;
+            continue;
+          }
+          if (Array.isArray(value)) {
+            var kept = [];
+            for (var k = 0; k < value.length; k++) if (!drop[value[k]]) kept.push(value[k]);
+            row.cells[col.id] = kept.length ? kept : null;
+          } else if (drop[value]) {
+            row.cells[col.id] = null;
+          }
+        }
+      }
+    }
+  }
+
+  /* (before TB2)
   function deleteTable(db, id) {
     var next = [];
     var found = false;
@@ -245,9 +382,30 @@
     if (db.activeId === id) db.activeId = next.length ? next[0].id : null;
     return { ok: true };
   }
+  */
+  function deleteTable(db, id) {
+    var next = [];
+    var found = false;
+    for (var i = 0; i < db.tables.length; i++) {
+      if (db.tables[i].id === id) found = true;
+      else next.push(db.tables[i]);
+    }
+    if (!found) return { ok: false, message: 'No such table' };
+    scrubLinkIds(db, id, null);
+    db.tables = next;
+    if (db.activeId === id) db.activeId = next.length ? next[0].id : null;
+    return { ok: true };
+  }
 
+  /* (before TB2)
   function addColumn(table, name, type, options) {
     var col = column(name, type, options);
+    table.columns.push(col);
+    return col;
+  }
+  */
+  function addColumn(table, name, type, options, extra) {
+    var col = column(name, type, options, extra);
     table.columns.push(col);
     return col;
   }
@@ -274,6 +432,14 @@
     return { ok: true };
   }
 
+  function rawForRetype(col, value, newType, db) {
+    if (isBlank(value) || (Array.isArray(value) && !value.length)) return null;
+    if (newType === 'link') return value;
+    if (col.type === 'link') return display(col.type, value, col, db);
+    return display(col.type, value);
+  }
+
+  /* (before TB2)
   function countRetypeClears(table, colId, type, options) {
     var col = findColumn(table, colId);
     if (!col) return 0;
@@ -288,7 +454,26 @@
     }
     return cleared;
   }
+  */
+  function countRetypeClears(table, colId, type, options, extra, db) {
+    var col = findColumn(table, colId);
+    if (!col) return 0;
+    type = normalizeType(type);
+    var opts = type === 'choice' ? cleanOptions(options) : [];
+    var ctx = type === 'link' ? linkCtx(null, db, extra || { linkTable: col.linkTable, multiple: col.multiple }) : null;
+    var cleared = 0;
+    for (var i = 0; i < table.rows.length; i++) {
+      var value = table.rows[i].cells[col.id];
+      var raw = rawForRetype(col, value, type, db);
+      if (raw == null) continue;
+      var res = validate(type, raw, opts, ctx);
+      if (!res.ok) cleared += 1;
+      else if (type === 'link' && ctx && !ctx.multiple && Array.isArray(value) && linkIds(value).length > 1) cleared += 1;
+    }
+    return cleared;
+  }
 
+  /* (before TB2)
   function setColumnType(table, colId, type, options) {
     var col = findColumn(table, colId);
     if (!col) return { ok: false, message: 'No such column' };
@@ -315,7 +500,45 @@
     else delete col.options;
     return { ok: true, cleared: cleared };
   }
+  */
+  function setColumnType(table, colId, type, options, extra, db) {
+    var col = findColumn(table, colId);
+    if (!col) return { ok: false, message: 'No such column' };
+    type = normalizeType(type);
+    var opts = type === 'choice' ? cleanOptions(options) : [];
+    var ctx = type === 'link' ? linkCtx(null, db, extra || { linkTable: col.linkTable, multiple: col.multiple }) : null;
+    var cleared = 0;
+    for (var i = 0; i < table.rows.length; i++) {
+      var row = table.rows[i];
+      var value = row.cells[col.id];
+      var raw = rawForRetype(col, value, type, db);
+      if (raw == null) {
+        row.cells[col.id] = null;
+        continue;
+      }
+      var res = validate(type, raw, opts, ctx);
+      if (!res.ok) {
+        row.cells[col.id] = null;
+        cleared += 1;
+      } else {
+        if (type === 'link' && ctx && !ctx.multiple && Array.isArray(value) && linkIds(value).length > 1) cleared += 1;
+        row.cells[col.id] = res.value;
+      }
+    }
+    col.type = type;
+    if (type === 'choice') col.options = opts;
+    else delete col.options;
+    if (type === 'link') {
+      col.linkTable = ctx.linkTable || '';
+      col.multiple = !!ctx.multiple;
+    } else {
+      delete col.linkTable;
+      delete col.multiple;
+    }
+    return { ok: true, cleared: cleared };
+  }
 
+  /* (before TB2)
   function addRow(table, rawCells) {
     var cells = {};
     for (var i = 0; i < table.columns.length; i++) {
@@ -329,7 +552,22 @@
     table.rows.push(row);
     return row;
   }
+  */
+  function addRow(table, rawCells, db) {
+    var cells = {};
+    for (var i = 0; i < table.columns.length; i++) {
+      var col = table.columns[i];
+      cells[col.id] = null;
+      if (!rawCells || !Object.prototype.hasOwnProperty.call(rawCells, col.id)) continue;
+      var res = validate(col.type, rawCells[col.id], col.options, linkCtx(col, db));
+      cells[col.id] = res.ok ? res.value : null;
+    }
+    var row = makeRow(cells);
+    table.rows.push(row);
+    return row;
+  }
 
+  /* (before TB2)
   function deleteRows(table, ids) {
     var drop = {};
     for (var i = 0; i < ids.length; i++) drop[ids[i]] = 1;
@@ -342,7 +580,22 @@
     table.rows = next;
     return removed;
   }
+  */
+  function deleteRows(table, ids, db) {
+    var drop = {};
+    for (var i = 0; i < ids.length; i++) drop[ids[i]] = 1;
+    var next = [];
+    var removed = 0;
+    for (var r = 0; r < table.rows.length; r++) {
+      if (drop[table.rows[r].id]) removed += 1;
+      else next.push(table.rows[r]);
+    }
+    table.rows = next;
+    if (db) scrubLinkIds(db, table.id, ids);
+    return removed;
+  }
 
+  /* (before TB2)
   function setCell(table, rowId, colId, raw) {
     var col = findColumn(table, colId);
     var row = findRow(table, rowId);
@@ -353,7 +606,19 @@
     row.cells[col.id] = res.value;
     return { ok: true, value: res.value };
   }
+  */
+  function setCell(table, rowId, colId, raw, db) {
+    var col = findColumn(table, colId);
+    var row = findRow(table, rowId);
+    if (!col || !row) return { ok: false, message: 'That cell is not in this table' };
+    var before = row.cells[col.id];
+    var res = validate(col.type, raw, col.options, linkCtx(col, db));
+    if (!res.ok) return { ok: false, message: res.message, value: before };
+    row.cells[col.id] = res.value;
+    return { ok: true, value: res.value };
+  }
 
+  /* (before TB2)
   function rowMatchesSearch(table, row, query) {
     var q = String(query == null ? '' : query).trim().toLowerCase();
     if (!q) return true;
@@ -364,7 +629,19 @@
     }
     return false;
   }
+  */
+  function rowMatchesSearch(table, row, query, db) {
+    var q = String(query == null ? '' : query).trim().toLowerCase();
+    if (!q) return true;
+    for (var i = 0; i < table.columns.length; i++) {
+      var col = table.columns[i];
+      var text = display(col.type, row.cells[col.id], col, db).toLowerCase();
+      if (text.indexOf(q) !== -1) return true;
+    }
+    return false;
+  }
 
+  /* (before TB2)
   function cellMatchesFilter(col, value, filter) {
     if (!filter || !filter.op) return true;
     var op = filter.op;
@@ -400,6 +677,49 @@
     }
     return true;
   }
+  */
+  function cellMatchesFilter(col, value, filter, db) {
+    if (!filter || !filter.op) return true;
+    var op = filter.op;
+    if (op === 'checked') return value === true;
+    if (op === 'unchecked') return value !== true;
+    var raw = filter.value;
+    if (raw == null || String(raw).trim() === '') return true;
+    if (col.type === 'link') {
+      var shown = display('link', value, col, db).toLowerCase();
+      var needle = String(raw).trim().toLowerCase();
+      if (op === 'contains') return shown.indexOf(needle) !== -1;
+      if (op === 'equals') return shown === needle;
+      return true;
+    }
+    if (op === 'contains') {
+      return display(col.type, value, col, db).toLowerCase().indexOf(String(raw).trim().toLowerCase()) !== -1;
+    }
+    if (op === 'equals') {
+      if (col.type === 'number') {
+        var n = parseNumber(raw);
+        return n != null && value === n;
+      }
+      if (col.type === 'date') {
+        var d = parseDate(raw);
+        return d != null && value === d;
+      }
+      if (col.type === 'yesno') {
+        var b = parseYesNo(raw);
+        return b != null && value === b;
+      }
+      return display(col.type, value, col, db).toLowerCase() === String(raw).trim().toLowerCase();
+    }
+    if (op === 'gt' || op === 'lt') {
+      if (col.type !== 'number' && col.type !== 'date') return true;
+      if (isBlank(value)) return false;
+      var bound = col.type === 'number' ? parseNumber(raw) : parseDate(raw);
+      if (bound == null) return true;
+      if (op === 'gt') return value > bound;
+      return value < bound;
+    }
+    return true;
+  }
 
   function compareValues(type, a, b) {
     if (type === 'number' || type === 'date') {
@@ -411,6 +731,7 @@
     return String(a).toLowerCase().localeCompare(String(b).toLowerCase());
   }
 
+  /* (before TB2)
   function sortRows(table, rows, colId, dir) {
     var col = findColumn(table, colId);
     if (!col) return rows.slice();
@@ -430,7 +751,39 @@
     });
     return indexed.map(function (item) { return item.row; });
   }
+  */
+  function sortRows(table, rows, colId, dir, db) {
+    var col = findColumn(table, colId);
+    if (!col) return rows.slice();
+    var sign = dir === 'desc' ? -1 : 1;
+    var indexed = rows.map(function (row, index) { return { row: row, index: index }; });
+    indexed.sort(function (A, B) {
+      var av = A.row.cells[col.id];
+      var bv = B.row.cells[col.id];
+      var aEmpty;
+      var bEmpty;
+      var cmp;
+      if (col.type === 'link') {
+        var at = display('link', av, col, db);
+        var bt = display('link', bv, col, db);
+        aEmpty = at === '';
+        bEmpty = bt === '';
+        cmp = compareValues('text', at, bt);
+      } else {
+        aEmpty = isBlank(av);
+        bEmpty = isBlank(bv);
+        cmp = compareValues(col.type, av, bv);
+      }
+      if (aEmpty && bEmpty) return A.index - B.index;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
+      if (cmp === 0) return A.index - B.index;
+      return cmp * sign;
+    });
+    return indexed.map(function (item) { return item.row; });
+  }
 
+  /* (before TB2)
   function visibleRows(table, query, filters, sort) {
     if (!table) return [];
     var list = filters || [];
@@ -446,6 +799,27 @@
     });
     if (sort && sort.colId) rows = sortRows(table, rows, sort.colId, sort.dir);
     return rows;
+  }
+  */
+  function visibleRows(table, query, filters, sort, db) {
+    if (!table) return [];
+    var list = filters || [];
+    var rows = table.rows.filter(function (row) {
+      if (!rowMatchesSearch(table, row, query, db)) return false;
+      for (var i = 0; i < list.length; i++) {
+        var filter = list[i];
+        var col = findColumn(table, filter.colId);
+        if (!col) continue;
+        if (!cellMatchesFilter(col, row.cells[col.id], filter, db)) return false;
+      }
+      return true;
+    });
+    if (sort && sort.colId) rows = sortRows(table, rows, sort.colId, sort.dir, db);
+    return rows;
+  }
+
+  function cardRows(table, query, filters, sort, db) {
+    return visibleRows(table, query, filters, sort, db);
   }
 
   function opsFor(type) {
@@ -529,6 +903,7 @@
     return rows;
   }
 
+  /* (before TB2)
   function toCsv(table) {
     var lines = [];
     lines.push(table.columns.map(function (col) { return csvField(col.name); }).join(','));
@@ -536,6 +911,18 @@
       var row = table.rows[r];
       lines.push(table.columns.map(function (col) {
         return csvField(display(col.type, row.cells[col.id]));
+      }).join(','));
+    }
+    return lines.join('\n') + (lines.length ? '\n' : '');
+  }
+  */
+  function toCsv(table, db) {
+    var lines = [];
+    lines.push(table.columns.map(function (col) { return csvField(col.name); }).join(','));
+    for (var r = 0; r < table.rows.length; r++) {
+      var row = table.rows[r];
+      lines.push(table.columns.map(function (col) {
+        return csvField(display(col.type, row.cells[col.id], col, db));
       }).join(','));
     }
     return lines.join('\n') + (lines.length ? '\n' : '');
@@ -619,6 +1006,8 @@
     return { ok: true, columns: columns, rows: body };
   }
 
+  /* (before TB2) CSV import could only create text, number, date, yesno and choice.
+     A requested type of link is stored as text so import never creates a Link column.
   function tableFromPreview(preview, spec) {
     spec = spec || {};
     var defs = spec.columns || preview.columns;
@@ -627,6 +1016,20 @@
       return column(
         def.name != null ? def.name : fallback.name,
         def.type != null ? def.type : fallback.type,
+        def.options != null ? def.options : fallback.options
+      );
+    });
+  */
+  function tableFromPreview(preview, spec) {
+    spec = spec || {};
+    var defs = spec.columns || preview.columns;
+    var cols = defs.map(function (def, index) {
+      var fallback = preview.columns[index] || { name: 'Column', type: 'text', options: [] };
+      var type = def.type != null ? def.type : fallback.type;
+      if (String(type || '').toLowerCase() === 'link') type = 'text';
+      return column(
+        def.name != null ? def.name : fallback.name,
+        type,
         def.options != null ? def.options : fallback.options
       );
     });
@@ -682,6 +1085,10 @@
         type: normalizeType(src.type)
       };
       if (col.type === 'choice') col.options = cleanOptions(src.options);
+      if (col.type === 'link') {
+        col.linkTable = src.linkTable ? String(src.linkTable) : '';
+        col.multiple = !!src.multiple;
+      }
       columns.push(col);
     }
     var rows = [];
@@ -701,7 +1108,9 @@
           cells[col.id] = null;
           continue;
         }
-        var res = validate(col.type, srcCells[col.id], col.options);
+        var res = col.type === 'link'
+          ? validateLink(srcCells[col.id], { multiple: col.multiple, loose: true })
+          : validate(col.type, srcCells[col.id], col.options);
         cells[col.id] = res.ok ? res.value : null;
       }
       rows.push({ id: rowId, cells: cells });
@@ -731,7 +1140,85 @@
     var activeId = data.activeId ? String(data.activeId) : null;
     if (!seen[activeId]) activeId = tables.length ? tables[0].id : null;
     var theme = data.theme === 'light' || data.theme === 'dark' ? data.theme : 'auto';
-    return { version: VERSION, activeId: activeId, theme: theme, tables: tables };
+    var db = { version: VERSION, activeId: activeId, theme: theme, tables: tables };
+    settleLinks(db);
+    return db;
+  }
+
+  function settleLinks(db) {
+    if (!db || !db.tables) return;
+    for (var t = 0; t < db.tables.length; t++) {
+      var table = db.tables[t];
+      for (var c = 0; c < table.columns.length; c++) {
+        var col = table.columns[c];
+        if (col.type !== 'link') continue;
+        for (var r = 0; r < table.rows.length; r++) {
+          var row = table.rows[r];
+          var res = validateLink(row.cells[col.id], linkCtx(col, db));
+          row.cells[col.id] = res.ok ? res.value : null;
+        }
+      }
+    }
+  }
+
+  function migrate(data) {
+    return load(data);
+  }
+
+  function backlinks(db, tableId, rowId, includeSame) {
+    var out = [];
+    if (!db || !db.tables || rowId == null || rowId === '') return out;
+    for (var t = 0; t < db.tables.length; t++) {
+      var table = db.tables[t];
+      if (!includeSame && table.id === tableId) continue;
+      for (var c = 0; c < table.columns.length; c++) {
+        var col = table.columns[c];
+        if (col.type !== 'link' || col.linkTable !== tableId) continue;
+        for (var r = 0; r < table.rows.length; r++) {
+          var row = table.rows[r];
+          var value = row.cells[col.id];
+          var ids = Array.isArray(value) ? value : (value ? [value] : []);
+          var hit = false;
+          for (var k = 0; k < ids.length; k++) if (ids[k] === rowId) hit = true;
+          if (!hit) continue;
+          var label = '';
+          if (table.columns.length) {
+            var first = table.columns[0];
+            label = display(first.type, row.cells[first.id], first, db);
+          }
+          out.push({
+            tableId: table.id,
+            tableName: table.name,
+            columnId: col.id,
+            columnName: col.name,
+            rowId: row.id,
+            label: label || '(blank)'
+          });
+        }
+      }
+    }
+    return out;
+  }
+
+  function linksPointingAt(db, tableId, rowIds) {
+    var n = 0;
+    var ids = rowIds || [];
+    for (var i = 0; i < ids.length; i++) n += backlinks(db, tableId, ids[i], true).length;
+    return n;
+  }
+
+  function linkChoices(db, col, query) {
+    var target = db && col ? findTable(db, col.linkTable) : null;
+    if (!target) return [];
+    var q = String(query == null ? '' : query).trim().toLowerCase();
+    var out = [];
+    for (var i = 0; i < target.rows.length; i++) {
+      var row = target.rows[i];
+      var label = linkLabel(db, col, row.id, 0) || '(blank)';
+      if (q && label.toLowerCase().indexOf(q) === -1) continue;
+      out.push({ id: row.id, label: label });
+    }
+    return out;
   }
 
   function saveTo(storage, db) {
@@ -781,6 +1268,11 @@
     cellMatchesFilter: cellMatchesFilter,
     sortRows: sortRows,
     visibleRows: visibleRows,
+    cardRows: cardRows,
+    backlinks: backlinks,
+    linksPointingAt: linksPointingAt,
+    linkChoices: linkChoices,
+    migrate: migrate,
     opsFor: opsFor,
     parseCsv: parseCsv,
     toCsv: toCsv,

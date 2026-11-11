@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- TB1 Tables: a simple database that works like a spreadsheet. Logic: tables_model.js, tables.js. -->
+<!-- TB1 Tables: a simple database that works like a spreadsheet. Logic: tables_model.js, tables.js.
+     TB2 adds a card view, a record panel, and Link columns. Same files, no cache buster. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -36,6 +37,11 @@
   </header>
 
   <div class="toolbar" role="toolbar" aria-label="Table">
+    <div class="view-toggle" role="group" aria-label="Layout">
+      <button type="button" id="btn-view-grid" aria-pressed="true">Grid</button>
+      <button type="button" id="btn-view-cards" aria-pressed="false">Cards</button>
+    </div>
+    <button type="button" id="btn-new-record">New record</button>
     <button type="button" id="btn-add-row">+ Row</button>
     <button type="button" id="btn-del-row">− Row</button>
     <button type="button" id="btn-add-col">+ Column</button>
@@ -54,6 +60,28 @@
       <thead id="thead"></thead>
       <tbody id="tbody"></tbody>
     </table>
+  </div>
+
+  <div class="cards-wrap" id="cards-wrap" hidden>
+    <div class="card-tools" id="card-tools" role="toolbar" aria-label="Sort and filter"></div>
+    <div class="cards" id="cards" tabindex="0" aria-label="Records"></div>
+  </div>
+
+  <div id="record-panel" class="record-panel" hidden>
+    <div class="record-sheet" role="dialog" aria-modal="true" aria-labelledby="record-title">
+      <div class="record-head">
+        <h2 id="record-title">Record</h2>
+        <button type="button" id="record-close">Close</button>
+      </div>
+      <div class="record-body" id="record-body"></div>
+      <div class="record-actions">
+        <button type="button" id="record-prev">Previous</button>
+        <button type="button" id="record-next">Next</button>
+        <button type="button" id="record-delete" class="danger">Delete record</button>
+        <span class="grow"></span>
+        <button type="button" id="record-save">Save</button>
+      </div>
+    </div>
   </div>
 
   <div class="tabs-bar">
