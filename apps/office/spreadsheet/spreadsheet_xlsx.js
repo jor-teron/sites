@@ -13,6 +13,8 @@
  * library would allow it; SheetJS Community Edition usually does not write
  * them, so they stay reliable in the app's own sheet-v3 save. Number / date
  * formats are written on cell.z, which CE does keep.
+ * SH17: a border colour of "auto" (and the old default #000000) is written as
+ * black (000000). Import still does not read cell styles. Merges are unchanged.
  * SH13: spill ghosts are not stored, so export writes the anchor formula only
  * (plus that cell's cached top-left value). Import still loads formulas and values.
  */
@@ -50,7 +52,13 @@ function xlsxCellStyle(st) {
   }
   if (st.bt || st.br || st.bb || st.bl) {
     s.border = {};
-    function edge(col) { return col ? { style: "thin", color: { rgb: String(col).replace("#", "").toUpperCase() } } : undefined; }
+    function edge(col) {
+      /* (before SH17): return col ? { style: "thin", color: { rgb: String(col).replace("#", "").toUpperCase() } } : undefined; */
+      var rgb = typeof styleBorderExportColor === "function"
+        ? styleBorderExportColor(col)
+        : String(col).replace("#", "").toUpperCase();
+      return col ? { style: "thin", color: { rgb: rgb } } : undefined;
+    }
     if (st.bt) s.border.top = edge(st.bt);
     if (st.br) s.border.right = edge(st.br);
     if (st.bb) s.border.bottom = edge(st.bb);

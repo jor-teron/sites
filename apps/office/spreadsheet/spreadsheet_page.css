@@ -9,8 +9,18 @@
   body:not(.print-headings) td.row-num,
   body:not(.print-headings) col.row-head { display: none !important; }
   body:not(.print-headings) col.row-head { visibility: collapse; }
-  /* Gridlines */
+  /* Gridlines. User borders (bd-t / bd-r / bd-b / bd-l) keep the colour set on the cell. */
+  /* (before SH17):
   body.print-no-grid td.cell { border-color: #fff !important; }
   body:not(.print-no-grid) td.cell { border-color: #999 !important; }
+  */
+  body.print-no-grid td.cell:not(.bd-t) { border-top-color: #fff !important; }
+  body.print-no-grid td.cell:not(.bd-r) { border-right-color: #fff !important; }
+  body.print-no-grid td.cell:not(.bd-b) { border-bottom-color: #fff !important; }
+  body.print-no-grid td.cell:not(.bd-l) { border-left-color: #fff !important; }
+  body:not(.print-no-grid) td.cell:not(.bd-t) { border-top-color: #999 !important; }
+  body:not(.print-no-grid) td.cell:not(.bd-r) { border-right-color: #999 !important; }
+  body:not(.print-no-grid) td.cell:not(.bd-b) { border-bottom-color: #999 !important; }
+  body:not(.print-no-grid) td.cell:not(.bd-l) { border-left-color: #999 !important; }
   .sheet-wrap { padding: 0 !important; background: #fff !important; }
 }

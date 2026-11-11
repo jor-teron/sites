@@ -1,6 +1,9 @@
 /*
- * spreadsheet_style.js  (SH11)
+ * spreadsheet_style.js  (SH11, SH17)
  * Merge cells, borders, font size, wrap, conditional formatting, format painter.
+ * SH17: user borders keep their own colour in print and when gridlines are off.
+ * The Borders button writes "auto" (black on paper and in the light theme,
+ * light on the dark theme). A saved #000 / #000000 from SH11 is the same auto colour.
  * Pure helpers at the top (Node tests). UI uses in-app panels only.
  */
 
@@ -135,9 +138,90 @@ function styleCondLook(rules, r, c, get, stats) {
   return null;
 }
 
+/** True for the Borders button colour and for the old SH11 default black. */
+function styleBorderIsAuto(color) {
+  var c = String(color || "").replace(/\s+/g, "").toLowerCase();
+  return c === "auto" || c === "#000" || c === "#000000";
+}
+
 function styleBorderCss(color) {
   if (!color) return "";
+  /* (before SH17): return "1px solid " + color; */
+  if (styleBorderIsAuto(color)) return "1px solid var(--user-border)";
   return "1px solid " + color;
+}
+
+/** RGB hex for XLSX. Auto (and the old default black) is black on paper. */
+function styleBorderExportColor(color) {
+  var c = String(color || "").replace(/\s+/g, "");
+  if (!c) return "";
+  if (styleBorderIsAuto(c)) return "000000";
+  return c.replace(/^#/, "").toUpperCase();
+}
+
+/**
+ * Edges of one cell. The anchor of a merge shows the outer edges of the whole
+ * merge (right from the right-hand cell, bottom from the last row).
+ */
+function styleVisibleEdges(st, merge, r, c, get) {
+  var top = (st && st.bt) || "";
+  var right = (st && st.br) || "";
+  var bottom = (st && st.bb) || "";
+  var left = (st && st.bl) || "";
+  var rightCell, botCell;
+  if (!merge || r !== merge.r1 || c !== merge.c1 || typeof get !== "function") {
+    return { bt: top, br: right, bb: bottom, bl: left };
+  }
+  rightCell = get(merge.r1, merge.c2) || {};
+  botCell = get(merge.r2, merge.c1) || {};
+  return {
+    bt: top,
+    bl: left,
+    br: rightCell.br || right,
+    bb: botCell.bb || bottom
+  };
+}
+
+function styleSameMerge(a, b) {
+  return !!(a && b && a === b);
+}
+
+/**
+ * Borders to draw. With border-collapse the upper / left cell wins a shared
+ * edge, so a Top or Left border is copied onto that neighbour when the
+ * neighbour has no border of its own. Internal edges of a merge are not copied.
+ */
+function stylePaintEdges(r, c, get, merges, rows, cols) {
+  var st = get(r, c) || {};
+  var mine = styleMergeAt(merges, r, c);
+  var e = styleVisibleEdges(st, mine, r, c, get);
+  var n, nm;
+  if (!e.bb && r + 1 < rows) {
+    n = get(r + 1, c) || {};
+    nm = styleMergeAt(merges, r + 1, c);
+    if (n.bt && !styleSameMerge(nm, mine) && (!nm || nm.r1 === r + 1)) e.bb = n.bt;
+  }
+  if (!e.br && c + 1 < cols) {
+    n = get(r, c + 1) || {};
+    nm = styleMergeAt(merges, r, c + 1);
+    if (n.bl && !styleSameMerge(nm, mine) && (!nm || nm.c1 === c + 1)) e.br = n.bl;
+  }
+  return e;
+}
+
+function styleApplyBorderSide(td, prop, cls, color) {
+  if (!td || !td.style || !td.classList) return;
+  if (color) {
+    td.classList.add(cls);
+    if (td.setAttribute) td.setAttribute("data-" + cls, "1");
+    if (td.style.setProperty) td.style.setProperty(prop, styleBorderCss(color), "important");
+    else td.style[prop] = styleBorderCss(color);
+  } else {
+    td.classList.remove(cls);
+    if (td.removeAttribute) td.removeAttribute("data-" + cls);
+    if (td.style.removeProperty) td.style.removeProperty(prop);
+    else td.style[prop] = "";
+  }
 }
 
 /* ---------- workbook / UI ---------- */
@@ -224,7 +308,9 @@ function unmergeSelection() {
 }
 
 function applyBorders(mode, color) {
-  var g = selRange(), col = color || "#000000";
+  var g = selRange();
+  /* (before SH17): var col = color || "#000000"; */
+  var col = color || "auto";
   undoRecord("border");
   forSelection(function (r, c) {
     var st = cellStyle(r, c);
@@ -249,11 +335,24 @@ function applyBorders(mode, color) {
 
 function styleApplyLook(td, inp, st, r, c) {
   var face, editing, cf, get;
+  var edges, merges;
   inp.style.fontSize = st.fontSize ? (st.fontSize + "px") : "";
+  /* (before SH17):
   td.style.borderTop = styleBorderCss(st.bt);
   td.style.borderRight = styleBorderCss(st.br);
   td.style.borderBottom = styleBorderCss(st.bb);
   td.style.borderLeft = styleBorderCss(st.bl);
+  */
+  edges = { bt: st.bt, br: st.br, bb: st.bb, bl: st.bl };
+  if (typeof cellStyle === "function" && typeof ROWS === "number") {
+    merges = (typeof workbook !== "undefined" && workbook && workbook.sheets && workbook.sheets[workbook.active])
+      ? workbook.sheets[workbook.active].merges : null;
+    edges = stylePaintEdges(r, c, function (rr, cc) { return cellStyle(rr, cc) || {}; }, merges, ROWS, COLS);
+  }
+  styleApplyBorderSide(td, "border-top", "bd-t", edges.bt);
+  styleApplyBorderSide(td, "border-right", "bd-r", edges.br);
+  styleApplyBorderSide(td, "border-bottom", "bd-b", edges.bb);
+  styleApplyBorderSide(td, "border-left", "bd-l", edges.bl);
   td.classList.toggle("wrap", !!st.wrap);
   editing = document.activeElement === inp && !inp.readOnly;
   face = td.querySelector(".cell-face");
@@ -391,6 +490,65 @@ function styleRemoveCf(i) {
   saveStore();
 }
 
+function styleToggleBorderMenu(open) {
+  var menu = document.getElementById("bd-menu");
+  var btn = document.getElementById("btn-borders");
+  var first;
+  if (!menu || !btn) return;
+  menu.hidden = !open;
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (!open) return;
+  var r = btn.getBoundingClientRect();
+  var left = r.left;
+  if (typeof window !== "undefined" && window.innerWidth) left = Math.min(left, window.innerWidth - 168);
+  menu.style.left = Math.max(8, left) + "px";
+  menu.style.top = (r.bottom + 4) + "px";
+  first = menu.querySelector("button");
+  if (first && first.focus) first.focus();
+}
+
+function styleInitBorderMenu() {
+  var btn = document.getElementById("btn-borders");
+  var menu = document.getElementById("bd-menu");
+  var bd = document.getElementById("bd-sel");
+  if (!btn || !menu || btn._bd) return;
+  btn._bd = true;
+  btn.addEventListener("click", function () {
+    styleToggleBorderMenu(menu.hidden);
+  });
+  menu.addEventListener("click", function (ev) {
+    var item = ev.target.closest ? ev.target.closest("[data-border]") : null;
+    var mode;
+    if (!item) return;
+    mode = item.getAttribute("data-border");
+    styleToggleBorderMenu(false);
+    if (bd) {
+      bd.value = mode;
+      bd.dispatchEvent(new Event("change", { bubbles: true }));
+    } else {
+      applyBorders(mode, "auto");
+    }
+  });
+  if (!document.documentElement._bdMenu) {
+    document.documentElement._bdMenu = true;
+    document.addEventListener("click", function (ev) {
+      var m = document.getElementById("bd-menu");
+      var b = document.getElementById("btn-borders");
+      if (!m || m.hidden) return;
+      if (b && (ev.target === b || (b.contains && b.contains(ev.target)))) return;
+      if (m.contains && m.contains(ev.target)) return;
+      styleToggleBorderMenu(false);
+    });
+    document.addEventListener("keydown", function (ev) {
+      var m = document.getElementById("bd-menu");
+      if (ev.key === "Escape" && m && !m.hidden) {
+        styleToggleBorderMenu(false);
+        ev.preventDefault();
+      }
+    });
+  }
+}
+
 function initStyleTools() {
   var bd, fs, i, sizes = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24];
   onBtn("btn-merge", mergeSelection);
@@ -407,9 +565,11 @@ function initStyleTools() {
   bd = document.getElementById("bd-sel");
   if (bd) bd.addEventListener("change", function () {
     if (!bd.value) return;
-    applyBorders(bd.value, "#000000");
+    /* (before SH17): applyBorders(bd.value, "#000000"); */
+    applyBorders(bd.value, "auto");
     bd.value = "";
   });
+  styleInitBorderMenu();
   fs = document.getElementById("font-size-sel");
   if (fs) {
     if (!fs.options.length) {

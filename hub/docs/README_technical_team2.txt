@@ -2007,6 +2007,37 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/tables/tables_readme.md`.
 - 1.105 is TB2, so this note is numbered 1.106.
 
+### 1.107 SH17 Spreadsheet borders on screen and in print
+
+- Spreadsheet at `apps/office/spreadsheet/` only, plus this section. Grid stays 26 × 100.
+  Storage stays `sheet-v4`. Title, `SHEET_VERSION` and `?v=` stay SH14 (no cache bump).
+  No new libraries and no CDN. `hub/`, `desktop/`, `apps/office/shared/`, `apps/system`,
+  `hub.html`, `index.html` and the catalogs were not edited.
+- User borders did not print as set. The print rules
+  `body.print-no-grid td.cell { border-color: #fff !important }` and
+  `body:not(.print-no-grid) td.cell { border-color: #999 !important }` overrode the
+  inline border colour. Each bordered side is now marked `bd-t`, `bd-r`, `bd-b`, `bd-l`
+  (and `data-bd-*`). Those rules skip marked sides, so the set style and colour print
+  whether gridlines are on or off. Gridlines on is a light grey line on unmarked edges;
+  gridlines off leaves unmarked edges blank. The on-screen gridlines-off rule no longer
+  clears a marked side.
+- The auto border colour is black in the light theme and on paper, and `#f0f0f0` in the
+  dark theme, so it is stronger than the grid (`#d9dde5` light, `#3a3a3a` dark). A border
+  saved as `#000000` or `#000` uses that auto colour. Any other stored colour is used as
+  written. With collapsed borders, a Top or Left border is drawn on the upper or left
+  cell when that cell has no border of its own. A merged cell shows the outer edges of
+  the merge. XLSX still writes `!merges`. Auto and the old default black export as thin
+  `000000` on `cell.s`; SheetJS CE still does not read styles.
+- The Home tab Borders control is a tool button with an inline SVG. It opens All,
+  Outside, Inside, Top, Bottom, Left, Right and No border. `#bd-sel` stays in the page,
+  hidden, and a choice sets it and fires `change`. The old visible select is commented
+  with `(before SH17)` and was not deleted.
+- Checked with `node --check` on the spreadsheet scripts that this release edits, then
+  `node apps/office/spreadsheet/test-sh17-borders.js` and the existing SH9–SH16 node
+  tests. No browser runner.
+- Details: `apps/office/spreadsheet/spreadsheet_readme.md`.
+- 1.106 is TB4, so this note is numbered 1.107.
+
 
 ## 2. Releases (PR → what)
 
