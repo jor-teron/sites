@@ -1946,6 +1946,35 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   sort, filter, search, quoted CSV, save/load). No browser runner.
 - 1.103 is SH15, so this note is numbered 1.104.
 
+### 1.105 TB2 Tables card view and linked tables
+
+- Tables at `apps/office/tables/` gains a card view and a Link column. TB1 on main is unchanged
+  in behaviour for text, number, date, yes/no and choice. No `?v=` cache buster and no build
+  bump. Title stays Tables. Plain HTML/CSS/JS, no libraries and no CDN. `apps/office/shared/`
+  was not edited. Base was not edited. Only this app and this note were touched.
+- Grid / Cards toggles the current table. Cards show one record each, with field labels, and
+  stack in one column on a phone. Click, tap, Enter or Space opens an in-app record panel
+  (not `alert` / `confirm` / `prompt`). The panel edits every field with the same type checks
+  as the grid, and has Previous, Next and Delete record. Delete uses `OfficeDialog.confirm`.
+  New record opens the panel empty. Search, filters and sort use the same row list as the grid.
+  Arrow keys move between cards.
+- Column type Link stores the target row’s stable id and shows that table’s first column.
+  The picker is an in-app searchable list. A column can allow several links. The record panel
+  lists Linked from (rows in other tables that point here); choosing one jumps to that record.
+  Deleting a target row, or a table, clears links to it and the confirm says so. Renaming a
+  table or a column keeps the stored ids. Search and filters on a Link column use the display
+  text. CSV export writes that text. CSV import never creates a Link column.
+- Row ids were already on TB1 rows. Load gives an id to any row that lacks one and keeps it.
+  The storage key stays `tables-v1` (no `tables-v2`). A TB1 save is migrated in place on the
+  next edit; the key is not removed.
+- Replaced code is commented with `(before TB2)` and was not deleted.
+- Checked with `node --check` on `tables_model.js`, `tables.js`, `test-tb1.js` and `test-tb2.js`,
+  then `node test-tb1.js` and `node test-tb2.js` (row ids and TB1 migration, link set / display /
+  search, multi-link, backlinks, delete target clears links, rename keeps links, card filter and
+  sort uses the same list, CSV). No browser runner.
+- Details: `apps/office/tables/tables_readme.md`.
+- 1.104 is TB1, so this note is numbered 1.105.
+
 
 ## 2. Releases (PR → what)
 

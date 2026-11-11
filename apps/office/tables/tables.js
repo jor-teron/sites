@@ -1,7 +1,8 @@
 /*
- * Tables TB1 — grid, tabs, filters, CSV and local save.
+ * Tables — grid, tabs, filters, CSV and local save.
+ * TB1: the grid. TB2: card view, the record panel, and Link columns.
  * Data rules live in tables_model.js. Dialogs are in-app (shared OfficeDialog
- * plus a small <dialog> for import and choice lists). No alert/confirm/prompt.
+ * plus a small <dialog> for import, choice lists and link setup). No alert/confirm/prompt.
  */
 (function () {
   'use strict';
@@ -21,7 +22,9 @@
     active: null,
     edit: null,
     viewStart: 0,
-    banner: ''
+    banner: '',
+    viewMode: {},
+    panel: null
   };
 
   function el(tag, cls, text) {
@@ -50,7 +53,8 @@
   function matching() {
     var table = current();
     if (!table) return [];
-    return M.visibleRows(table, st.search, filtersOf(table), st.sort[table.id] || null);
+    // (before TB2) return M.visibleRows(table, st.search, filtersOf(table), st.sort[table.id] || null);
+    return M.visibleRows(table, st.search, filtersOf(table), st.sort[table.id] || null, db);
   }
 
   function windowed(rows) {
@@ -147,6 +151,10 @@
   }
 
   function beginEdit(row, col, typed) {
+    if (col.type === 'link') {
+      openLinkPickerForCell(row, col);
+      return;
+    }
     if (st.edit && st.edit.rowId === row.id && st.edit.colId === col.id && typed == null) return;
     if (!commitEdit({ silent: true })) return;
     st.active = { rowId: row.id, colId: col.id };
@@ -235,6 +243,11 @@
 
   function onCellKey(e, row, col) {
     var key = e.key;
+    if (col.type === 'link' && (key === 'Enter' || key === 'F2' || key === ' ')) {
+      e.preventDefault();
+      openLinkPickerForCell(row, col);
+      return;
+    }
     if (key === 'Enter' || key === 'F2') {
       e.preventDefault();
       if (col.type === 'yesno') toggleYes(row, col);
@@ -311,10 +324,20 @@
 
   function removeRows(ids) {
     var table = current();
-    var n = M.deleteRows(table, ids);
+    // (before TB2) var n = M.deleteRows(table, ids);
+    var n = M.deleteRows(table, ids, db);
     st.selected = {};
     st.active = null;
     st.anchor = null;
+    if (st.panel && st.panel.mode === 'edit') {
+      for (var i = 0; i < ids.length; i++) {
+        if (ids[i] === st.panel.rowId) {
+          st.panel = null;
+          $('record-panel').hidden = true;
+          break;
+        }
+      }
+    }
     scheduleSave();
     render();
     setStatus(n === 1 ? 'Row deleted.' : n + ' rows deleted.');
@@ -336,9 +359,14 @@
       removeRows(ids);
       return;
     }
+    var pointed = M.linksPointingAt(db, table.id, ids);
+    var note = '';
+    if (pointed === 1) note = ' 1 link to it will be cleared.';
+    else if (pointed > 1) note = ' ' + pointed + ' links to these records will be cleared.';
     OfficeDialog.confirm({
       title: 'Delete rows',
-      message: ids.length === 1 ? 'Delete this row?' : 'Delete ' + ids.length + ' rows?',
+      // (before TB2) message: ids.length === 1 ? 'Delete this row?' : 'Delete ' + ids.length + ' rows?',
+      message: (ids.length === 1 ? 'Delete this row?' : 'Delete ' + ids.length + ' rows?') + note,
       okLabel: 'Delete',
       danger: true
     }).then(function (yes) { if (yes) removeRows(ids); });
@@ -369,7 +397,12 @@
   function switchTable(id) {
     if (db.activeId === id) return;
     if (!commitEdit({ silent: true })) return;
+    if (st.panel && st.panel.mode === 'edit' && !commitPanel()) return;
     closePop();
+    if (st.panel) {
+      st.panel = null;
+      $('record-panel').hidden = true;
+    }
     db.activeId = id;
     st.search = '';
     $('search').value = '';
@@ -421,9 +454,15 @@
   function deleteTable() {
     var table = current();
     if (!table || !commitEdit()) return;
+    var rowIds = [];
+    for (var i = 0; i < table.rows.length; i++) rowIds.push(table.rows[i].id);
+    var pointed = M.linksPointingAt(db, table.id, rowIds);
+    var message = 'Delete "' + table.name + '"? Its columns and rows will be removed from this device.';
+    if (pointed === 1) message += ' 1 link to its records will be cleared.';
+    else if (pointed > 1) message += ' ' + pointed + ' links to its records will be cleared.';
     OfficeDialog.confirm({
       title: 'Delete table',
-      message: 'Delete "' + table.name + '"? Its columns and rows will be removed from this device.',
+      message: message,
       okLabel: 'Delete table',
       danger: true
     }).then(function (yes) {
@@ -431,6 +470,7 @@
       M.deleteTable(db, table.id);
       st.selected = {};
       st.active = null;
+      closePanel();
       st.search = '';
       $('search').value = '';
       scheduleSave();
@@ -447,11 +487,17 @@
     return opts;
   }
 
+  /* (before TB2)
   function applyType(col, type, options) {
     var table = current();
     var cleared = M.countRetypeClears(table, col.id, type, options);
+  */
+  function applyType(col, type, options, extra) {
+    var table = current();
+    var cleared = M.countRetypeClears(table, col.id, type, options, extra, db);
     function go() {
-      var res = M.setColumnType(table, col.id, type, options);
+      // (before TB2) var res = M.setColumnType(table, col.id, type, options);
+      var res = M.setColumnType(table, col.id, type, options, extra, db);
       scheduleSave();
       render();
       if (res.cleared) {
@@ -497,6 +543,15 @@
         });
         return;
       }
+      if (v.type === 'link') {
+        askLink(null).then(function (spec) {
+          if (!spec) return;
+          M.addColumn(table, v.name, 'link', null, spec);
+          scheduleSave();
+          render();
+        });
+        return;
+      }
       M.addColumn(table, v.name, v.type);
       scheduleSave();
       render();
@@ -527,7 +582,14 @@
       ]
     }).then(function (v) {
       if (!v) return;
-      if (v.type === col.type && v.type !== 'choice') return;
+      if (v.type === col.type && v.type !== 'choice' && v.type !== 'link') return;
+      if (v.type === 'link') {
+        askLink(col.type === 'link' ? col : null).then(function (spec) {
+          if (!spec) return;
+          applyType(col, 'link', [], spec);
+        });
+        return;
+      }
       if (v.type === 'choice') {
         OfficeDialog.prompt({
           title: 'Choices',
@@ -608,6 +670,17 @@
       { label: 'Change type', run: function () { changeType(col); } }
     ];
     if (col.type === 'choice') items.push({ label: 'Edit choices', run: function () { editChoices(col); } });
+    if (col.type === 'link') {
+      items.push({
+        label: 'Link settings',
+        run: function () {
+          askLink(col).then(function (spec) {
+            if (!spec) return;
+            applyType(col, 'link', [], spec);
+          });
+        }
+      });
+    }
     items.push({ label: 'Delete column', danger: true, run: function () { removeColumn(col); } });
     items.colId = col.id;
     openMenu(anchor, items);
@@ -734,6 +807,10 @@
   function fillCell(td, row, col) {
     var editing = st.edit && st.edit.rowId === row.id && st.edit.colId === col.id;
     var active = st.active && st.active.rowId === row.id && st.active.colId === col.id;
+    if (col.type === 'link') {
+      fillLinkCell(td, row, col, active);
+      return;
+    }
     if (active) td.classList.add('active');
     td.setAttribute('aria-selected', active ? 'true' : 'false');
     if (col.type === 'yesno' && !editing) {
@@ -836,7 +913,8 @@
     thead.appendChild(head);
     if (!table.columns.length) {
       var noCol = el('tr', 'hint-row');
-      var noColTd = el('td', null, 'Add a column to start. Each column has one type: Text, Number, Date, Yes/No or Choice.');
+      // (before TB2) var noColTd = el('td', null, 'Add a column to start. Each column has one type: Text, Number, Date, Yes/No or Choice.');
+      var noColTd = el('td', null, 'Add a column to start. Each column has one type: Text, Number, Date, Yes/No, Choice or Link.');
       noColTd.colSpan = 1;
       noCol.appendChild(noColTd);
       tbody.appendChild(noCol);
@@ -995,9 +1073,13 @@
     $('btn-rename').disabled = !table;
     $('btn-del-table').disabled = !table;
     $('btn-export').disabled = !table;
+    $('btn-new-record').disabled = !table || !table.columns.length;
+    $('btn-view-grid').disabled = !table;
+    $('btn-view-cards').disabled = !table;
     $('search').disabled = !table;
   }
 
+  /* (before TB2)
   function render(opts) {
     renderBanner();
     renderTabs();
@@ -1005,6 +1087,27 @@
     renderCount();
     paintActions();
     applyTheme();
+  }
+  */
+  function render(opts) {
+    renderBanner();
+    renderTabs();
+    var cards = modeOf() === 'cards';
+    $('grid-wrap').hidden = cards;
+    $('cards-wrap').hidden = !cards;
+    $('btn-view-grid').setAttribute('aria-pressed', cards ? 'false' : 'true');
+    $('btn-view-cards').setAttribute('aria-pressed', cards ? 'true' : 'false');
+    var showFocus = !!(opts && opts.focus) && !st.panel;
+    if (cards) renderCards({ focus: showFocus });
+    else renderGrid({ focus: showFocus });
+    renderCount();
+    paintActions();
+    applyTheme();
+    if (st.panel && !(opts && opts.keepPanel)) {
+      var body = $('record-body');
+      var typing = body && document.activeElement && body.contains(document.activeElement);
+      if (!typing) fillPanel();
+    }
   }
 
   function openDialog(o) {
@@ -1107,6 +1210,7 @@
         var type = el('select');
         type.setAttribute('aria-label', 'Type for ' + col.name);
         for (var t = 0; t < M.TYPES.length; t++) {
+          if (M.TYPES[t] === 'link') continue;
           var opt = el('option', null, M.TYPE_LABELS[M.TYPES[t]]);
           opt.value = M.TYPES[t];
           type.appendChild(opt);
@@ -1188,7 +1292,8 @@
   function exportCsv() {
     var table = current();
     if (!table || !commitEdit()) return;
-    var csv = '\uFEFF' + M.toCsv(table);
+    // (before TB2) var csv = '\uFEFF' + M.toCsv(table);
+    var csv = '\uFEFF' + M.toCsv(table, db);
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     var a = el('a');
     var name = String(table.name || 'table').replace(/[^\w\- ]+/g, '').trim() || 'table';
@@ -1201,7 +1306,731 @@
     setStatus('Exported ' + table.name + '.');
   }
 
+  function modeOf() {
+    var table = current();
+    if (!table) return 'grid';
+    return st.viewMode[table.id] === 'cards' ? 'cards' : 'grid';
+  }
+
+  function setMode(mode) {
+    var table = current();
+    if (!table) return;
+    if (!commitEdit({ silent: true })) return;
+    if (st.panel && st.panel.mode === 'edit' && !commitPanel()) return;
+    closePop();
+    st.viewMode[table.id] = mode === 'cards' ? 'cards' : 'grid';
+    st.viewStart = 0;
+    render({ focus: true });
+  }
+
+  function fillLinkCell(td, row, col, active) {
+    if (active) td.classList.add('active');
+    td.setAttribute('aria-selected', active ? 'true' : 'false');
+    td.tabIndex = active ? 0 : -1;
+    var text = M.display('link', row.cells[col.id], col, db);
+    td.appendChild(el('span', 'val' + (text ? '' : ' muted'), text || 'Choose'));
+    td.addEventListener('click', function () { openLinkPickerForCell(row, col, td); });
+    td.addEventListener('keydown', function (e) { onCellKey(e, row, col); });
+  }
+
+  function openLinkPickerForCell(row, col, anchor) {
+    if (st.edit && !commitEdit({ silent: true })) return;
+    st.active = { rowId: row.id, colId: col.id };
+    var hold = anchor && anchor.getBoundingClientRect ? anchor : $('grid-wrap');
+    openLinkPicker(col, row.cells[col.id], hold, function (value) {
+      var res = M.setCell(current(), row.id, col.id, value, db);
+      if (!res.ok) {
+        setStatus(res.message + '. The previous value was kept.');
+        render({ focus: true });
+        return;
+      }
+      scheduleSave();
+      render({ focus: true });
+    });
+  }
+
+  function openLinkPicker(col, selected, anchor, onPick) {
+    closePop();
+    var target = M.findTable(db, col.linkTable);
+    var box = el('div', 'pop filter-pop link-pop');
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', col.multiple ? 'Choose records' : 'Choose a record');
+    var heading = col.multiple ? 'Choose records' : 'Choose a record';
+    if (target) heading += ' from ' + target.name;
+    box.appendChild(el('div', 'pop-title', heading));
+    if (!target) {
+      box.appendChild(el('p', 'hint-block', 'The linked table is missing. Use Link settings to pick a table.'));
+      var shut = el('button', null, 'Close');
+      shut.type = 'button';
+      shut.addEventListener('click', closePop);
+      box.appendChild(shut);
+    } else {
+      var search = el('input');
+      search.type = 'search';
+      search.placeholder = 'Search ' + target.name;
+      search.setAttribute('aria-label', 'Search ' + target.name);
+      search.autocomplete = 'off';
+      var list = el('div', 'link-list');
+      var chosen = {};
+      var initial = selected == null || selected === '' ? [] : (Array.isArray(selected) ? selected.slice() : [selected]);
+      for (var i = 0; i < initial.length; i++) chosen[initial[i]] = 1;
+      function paint() {
+        list.textContent = '';
+        var choices = M.linkChoices(db, col, search.value);
+        var cap = 80;
+        var shown = choices.slice(0, cap);
+        if (!shown.length) {
+          list.appendChild(el('p', 'hint-block', target.rows.length ? 'No records match.' : 'No records in ' + target.name + ' yet.'));
+          return;
+        }
+        for (var n = 0; n < shown.length; n++) {
+          (function (choice) {
+            var button = el('button', 'pop-item' + (chosen[choice.id] ? ' on' : ''), choice.label);
+            button.type = 'button';
+            button.setAttribute('aria-pressed', chosen[choice.id] ? 'true' : 'false');
+            button.addEventListener('click', function () {
+              if (!col.multiple) {
+                closePop();
+                onPick(choice.id);
+                return;
+              }
+              if (chosen[choice.id]) delete chosen[choice.id];
+              else chosen[choice.id] = 1;
+              button.classList.toggle('on', !!chosen[choice.id]);
+              button.setAttribute('aria-pressed', chosen[choice.id] ? 'true' : 'false');
+            });
+            list.appendChild(button);
+          })(shown[n]);
+        }
+        if (choices.length > cap) {
+          list.appendChild(el('p', 'hint-block', 'Showing ' + cap + ' of ' + choices.length + '. Type to narrow.'));
+        }
+      }
+      search.addEventListener('input', paint);
+      search.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowDown') return;
+        var first = list.querySelector('button');
+        if (!first) return;
+        e.preventDefault();
+        first.focus();
+      });
+      box.appendChild(search);
+      box.appendChild(list);
+      paint();
+      var actions = el('div', 'pop-actions');
+      var clear = el('button', null, 'Clear');
+      clear.type = 'button';
+      clear.addEventListener('click', function () {
+        closePop();
+        onPick(null);
+      });
+      actions.appendChild(clear);
+      if (col.multiple) {
+        var done = el('button', null, 'Done');
+        done.type = 'button';
+        done.addEventListener('click', function () {
+          var out = [];
+          var seen = {};
+          for (var p = 0; p < initial.length; p++) {
+            if (chosen[initial[p]] && !seen[initial[p]]) {
+              out.push(initial[p]);
+              seen[initial[p]] = 1;
+            }
+          }
+          var all = M.linkChoices(db, col, '');
+          for (var k = 0; k < all.length; k++) {
+            if (chosen[all[k].id] && !seen[all[k].id]) out.push(all[k].id);
+          }
+          closePop();
+          onPick(out.length ? out : null);
+        });
+        actions.appendChild(done);
+      }
+      box.appendChild(actions);
+      box._focus = search;
+    }
+    box.setAttribute('data-for', 'link:' + col.id);
+    document.body.appendChild(box);
+    placePop(box, anchor || $('grid-wrap'));
+    pop = box;
+    if (box._focus) box._focus.focus();
+    else {
+      var fallback = box.querySelector('button');
+      if (fallback) fallback.focus();
+    }
+  }
+
+  function askLink(existing) {
+    var body = el('div');
+    var label = el('label', 'dlg-label');
+    label.appendChild(el('span', null, 'Table this column links to'));
+    var sel = el('select', 'dlg-input');
+    for (var i = 0; i < db.tables.length; i++) {
+      var opt = el('option', null, db.tables[i].name);
+      opt.value = db.tables[i].id;
+      sel.appendChild(opt);
+    }
+    if (existing && existing.linkTable) sel.value = existing.linkTable;
+    label.appendChild(sel);
+    body.appendChild(label);
+    var multiLab = el('label', 'dlg-label check-line');
+    var multi = document.createElement('input');
+    multi.type = 'checkbox';
+    multi.checked = !!(existing && existing.multiple);
+    multiLab.appendChild(multi);
+    multiLab.appendChild(el('span', null, 'Allow more than one link'));
+    body.appendChild(multiLab);
+    return openDialog({
+      title: 'Link column',
+      message: 'A cell stores the other record’s id and shows that table’s first column.',
+      body: body,
+      okLabel: 'Save',
+      onOk: function () { return sel.value ? '' : 'Choose a table.'; }
+    }).then(function (ok) {
+      if (!ok) return null;
+      return { linkTable: sel.value, multiple: !!multi.checked };
+    });
+  }
+
+  function renderCards(opts) {
+    var tools = $('card-tools');
+    var host = $('cards');
+    var top = host.scrollTop;
+    tools.textContent = '';
+    host.textContent = '';
+    var table = current();
+    if (!table) {
+      host.appendChild(el('p', 'hint-block', 'No tables yet. Add a table to start.'));
+      return;
+    }
+    for (var c = 0; c < table.columns.length; c++) tools.appendChild(cardTool(table, table.columns[c]));
+    if (!table.columns.length) {
+      host.appendChild(el('p', 'hint-block', 'Add a column to start. Each column has one type: Text, Number, Date, Yes/No, Choice or Link.'));
+      return;
+    }
+    var all = matching();
+    var view = windowed(all);
+    if (view.start > 0) host.appendChild(pagerButton('Show earlier records', -1));
+    if (!view.rows.length) {
+      host.appendChild(el('p', 'hint-block', table.rows.length
+        ? 'No records match. Change the search or clear a column filter.'
+        : 'This table is empty. New record adds one. Search, filters and sort apply to these cards.'));
+    }
+    for (var r = 0; r < view.rows.length; r++) host.appendChild(recordCard(table, view.rows[r], view.start + r));
+    if (view.start + view.rows.length < view.total) host.appendChild(pagerButton('Show later records', 1));
+    host.scrollTop = top;
+    if (opts && opts.focus) {
+      var cards = host.querySelectorAll('.record-card');
+      var target = null;
+      for (var i = 0; i < cards.length; i++) {
+        if (st.active && cards[i].getAttribute('data-row') === st.active.rowId) target = cards[i];
+      }
+      if (!target && cards[0]) target = cards[0];
+      if (target) target.focus();
+    }
+  }
+
+  function cardTool(table, col) {
+    var sort = st.sort[table.id];
+    var dir = sort && sort.colId === col.id ? sort.dir : '';
+    var wrap = el('div', 'card-tool');
+    var sortBtn = el('button', 'col-name');
+    sortBtn.type = 'button';
+    sortBtn.title = 'Sort ' + col.name;
+    sortBtn.appendChild(el('span', null, col.name));
+    sortBtn.appendChild(el('small', null, M.TYPE_LABELS[col.type] + (dir === 'asc' ? ' ▲' : dir === 'desc' ? ' ▼' : '')));
+    sortBtn.addEventListener('click', function () { toggleSort(col.id); });
+    var filterBtn = el('button', 'icon-btn' + (filterIsOn(table, col) ? ' on' : ''), '▾');
+    filterBtn.type = 'button';
+    filterBtn.title = 'Filter ' + col.name;
+    filterBtn.setAttribute('aria-label', 'Filter ' + col.name);
+    filterBtn.addEventListener('click', function () {
+      if (pop && pop.getAttribute('data-for') === 'filter:' + col.id) { closePop(); return; }
+      openFilter(col, filterBtn);
+    });
+    wrap.appendChild(sortBtn);
+    wrap.appendChild(filterBtn);
+    return wrap;
+  }
+
+  function recordCard(table, row, index) {
+    var card = el('article', 'record-card');
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('data-row', row.id);
+    card.setAttribute('aria-label', 'Open record ' + (index + 1));
+    if ((st.panel && st.panel.rowId === row.id) || (st.active && st.active.rowId === row.id)) card.classList.add('on');
+    for (var i = 0; i < table.columns.length; i++) {
+      var col = table.columns[i];
+      var line = el('div', 'fld');
+      line.appendChild(el('b', null, col.name));
+      var text = M.display(col.type, row.cells[col.id], col, db);
+      line.appendChild(el('span', text ? null : 'muted', text || '—'));
+      card.appendChild(line);
+    }
+    function open() {
+      if (table.columns.length) st.active = { rowId: row.id, colId: table.columns[0].id };
+      openRecord(row.id);
+    }
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open();
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        var cards = $('cards').querySelectorAll('.record-card');
+        var idx = 0;
+        for (var n = 0; n < cards.length; n++) if (cards[n] === card) idx = n;
+        var step = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
+        var next = cards[idx + step];
+        if (next) next.focus();
+      }
+    });
+    return card;
+  }
+
+  function pagerButton(label, dir) {
+    var button = el('button', 'more-btn', label);
+    button.type = 'button';
+    button.addEventListener('click', function () {
+      if (!commitEdit({ silent: true })) return;
+      var total = matching().length;
+      st.viewStart = Math.max(0, Math.min(Math.max(0, total - CAP), st.viewStart + dir * CAP));
+      st.active = null;
+      render();
+    });
+    return button;
+  }
+
+  function openRecord(rowId) {
+    if (!commitEdit()) return;
+    closePop();
+    st.panel = { mode: 'edit', rowId: rowId, editors: [] };
+    render();
+    showPanel();
+  }
+
+  function openNewRecord() {
+    var table = current();
+    if (!table) { setStatus('Add a table first.'); return; }
+    if (!table.columns.length) { setStatus('Add a column first.'); return; }
+    if (!commitEdit()) return;
+    if (st.panel && st.panel.mode === 'edit' && !commitPanel()) return;
+    closePop();
+    st.panel = { mode: 'new', rowId: null, drafts: {}, editors: [] };
+    render();
+    showPanel();
+  }
+
+  function closePanel() {
+    st.panel = null;
+    var host = $('record-panel');
+    if (host) host.hidden = true;
+  }
+
+  function showPanel() {
+    var host = $('record-panel');
+    if (!host || !st.panel) return;
+    host.hidden = false;
+    fillPanel();
+    var first = $('record-body').querySelector('input, select, textarea, button');
+    if (first) first.focus();
+    else $('record-close').focus();
+  }
+
+  function panelRow() {
+    if (!st.panel || st.panel.mode !== 'edit') return null;
+    var table = current();
+    return table ? M.findRow(table, st.panel.rowId) : null;
+  }
+
+  function fieldValue(col) {
+    if (!st.panel) return null;
+    if (st.panel.mode === 'new') {
+      if (st.panel.drafts && Object.prototype.hasOwnProperty.call(st.panel.drafts, col.id)) return st.panel.drafts[col.id];
+      return null;
+    }
+    var row = panelRow();
+    return row ? row.cells[col.id] : null;
+  }
+
+  function fillPanel() {
+    var table = current();
+    var body = $('record-body');
+    body.textContent = '';
+    if (!table || !st.panel) { closePanel(); return; }
+    if (st.panel.mode === 'edit' && !panelRow()) {
+      closePanel();
+      setStatus('That record is no longer in this table.');
+      return;
+    }
+    var rows = matching();
+    var editing = st.panel.mode === 'edit';
+    $('record-save').hidden = editing;
+    $('record-delete').hidden = !editing;
+    $('record-prev').hidden = !editing;
+    $('record-next').hidden = !editing;
+    if (!editing) $('record-title').textContent = 'New record';
+    else {
+      var idx = -1;
+      for (var i = 0; i < rows.length; i++) if (rows[i].id === st.panel.rowId) idx = i;
+      $('record-title').textContent = idx === -1 ? 'Record' : 'Record ' + (idx + 1) + ' of ' + rows.length;
+      $('record-prev').disabled = !rows.length || idx === 0;
+      $('record-next').disabled = !rows.length || (idx >= 0 && idx >= rows.length - 1);
+    }
+    st.panel.editors = [];
+    if (!table.columns.length) {
+      body.appendChild(el('p', 'hint-block', 'Add a column before editing this record.'));
+      return;
+    }
+    for (var c = 0; c < table.columns.length; c++) body.appendChild(panelField(table.columns[c]));
+    if (editing) body.appendChild(backlinkSection(table, panelRow()));
+  }
+
+  function panelField(col) {
+    var wrap = el('div', 'record-field');
+    var lab = el('label', null, col.name);
+    lab.appendChild(el('small', null, ' · ' + (M.TYPE_LABELS[col.type] || col.type)));
+    wrap.appendChild(lab);
+    var value = fieldValue(col);
+    var hint = el('div', 'hint');
+    hint.hidden = true;
+    var editor = { col: col, hint: hint, read: function () { return null; }, focus: function () {} };
+    if (col.type === 'yesno') {
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      var state = value === true ? true : (value === false ? false : null);
+      box.checked = state === true;
+      box.indeterminate = state == null;
+      box.setAttribute('aria-label', col.name);
+      box.addEventListener('click', function (e) {
+        e.preventDefault();
+        state = state !== true;
+        box.checked = state === true;
+        box.indeterminate = false;
+        commitEditor(editor);
+      });
+      editor.read = function () { return state; };
+      editor.focus = function () { box.focus(); };
+      wrap.appendChild(box);
+    } else if (col.type === 'choice') {
+      var sel = document.createElement('select');
+      sel.setAttribute('aria-label', col.name);
+      var blank = el('option', null, '—');
+      blank.value = '';
+      sel.appendChild(blank);
+      var options = col.options || [];
+      for (var i = 0; i < options.length; i++) {
+        var opt = el('option', null, options[i]);
+        opt.value = options[i];
+        sel.appendChild(opt);
+      }
+      sel.value = value || '';
+      editor.read = function () { return sel.value; };
+      editor.focus = function () { sel.focus(); };
+      sel.addEventListener('change', function () { commitEditor(editor); });
+      wrap.appendChild(sel);
+    } else if (col.type === 'link') {
+      var currentLink = value;
+      var button = el('button', 'link-pick', M.display('link', currentLink, col, db) || 'Choose');
+      button.type = 'button';
+      button.addEventListener('click', function () {
+        openLinkPicker(col, currentLink, button, function (picked) {
+          currentLink = picked;
+          button.textContent = M.display('link', currentLink, col, db) || 'Choose';
+          commitEditor(editor);
+        });
+      });
+      editor.read = function () { return currentLink; };
+      editor.focus = function () { button.focus(); };
+      wrap.appendChild(button);
+    } else if (col.type === 'text') {
+      var area = el('textarea');
+      area.value = value == null ? '' : String(value);
+      area.setAttribute('aria-label', col.name);
+      editor.read = function () { return area.value; };
+      editor.focus = function () { area.focus(); };
+      area.addEventListener('blur', function () { commitEditor(editor); });
+      wrap.appendChild(area);
+    } else {
+      var input = el('input');
+      input.type = col.type === 'date' ? 'date' : 'text';
+      if (col.type === 'number') input.inputMode = 'decimal';
+      if (col.type === 'date') input.value = /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : '';
+      else input.value = value == null ? '' : M.display(col.type, value, col, db);
+      input.setAttribute('aria-label', col.name);
+      input.autocomplete = 'off';
+      editor.read = function () { return input.value; };
+      editor.focus = function () { input.focus(); };
+      input.addEventListener('change', function () { commitEditor(editor); });
+      input.addEventListener('blur', function () { commitEditor(editor); });
+      wrap.appendChild(input);
+    }
+    wrap.appendChild(hint);
+    st.panel.editors.push(editor);
+    return wrap;
+  }
+
+  function commitEditor(editor) {
+    if (!st.panel || !editor) return false;
+    var table = current();
+    if (!table) return false;
+    var res = M.validate(editor.col.type, editor.read(), editor.col.options, {
+      db: db,
+      linkTable: editor.col.linkTable,
+      multiple: !!editor.col.multiple
+    });
+    if (!res.ok) {
+      editor.hint.hidden = false;
+      editor.hint.textContent = res.message + ' — not saved';
+      setStatus(res.message + '. The previous value was kept.');
+      return false;
+    }
+    editor.hint.hidden = true;
+    editor.hint.textContent = '';
+    if (st.panel.mode === 'new') {
+      if (!st.panel.drafts) st.panel.drafts = {};
+      st.panel.drafts[editor.col.id] = res.value;
+      return true;
+    }
+    var row = panelRow();
+    if (!row) return false;
+    if (JSON.stringify(row.cells[editor.col.id]) === JSON.stringify(res.value)) return true;
+    var set = M.setCell(table, row.id, editor.col.id, res.value, db);
+    if (!set.ok) {
+      editor.hint.hidden = false;
+      editor.hint.textContent = set.message + ' — not saved';
+      setStatus(set.message + '. The previous value was kept.');
+      return false;
+    }
+    scheduleSave();
+    render({ keepPanel: true });
+    return true;
+  }
+
+  function commitPanel() {
+    var table = current();
+    if (!st.panel || !table) return false;
+    var editors = st.panel.editors || [];
+    var planned = [];
+    var bad = false;
+    for (var i = 0; i < editors.length; i++) {
+      var ed = editors[i];
+      var res = M.validate(ed.col.type, ed.read(), ed.col.options, {
+        db: db,
+        linkTable: ed.col.linkTable,
+        multiple: !!ed.col.multiple
+      });
+      if (!res.ok) {
+        bad = true;
+        ed.hint.hidden = false;
+        ed.hint.textContent = res.message + ' — not saved';
+      } else {
+        ed.hint.hidden = true;
+        ed.hint.textContent = '';
+        planned.push({ col: ed.col, value: res.value });
+      }
+    }
+    if (bad) return false;
+    if (st.panel.mode === 'new') {
+      var drafts = {};
+      for (var d = 0; d < planned.length; d++) drafts[planned[d].col.id] = planned[d].value;
+      st.panel.drafts = drafts;
+      return true;
+    }
+    var row = panelRow();
+    if (!row) return false;
+    for (var p = 0; p < planned.length; p++) {
+      var set = M.setCell(table, row.id, planned[p].col.id, planned[p].value, db);
+      if (!set.ok) {
+        setStatus(set.message + '. The previous value was kept.');
+        return false;
+      }
+    }
+    scheduleSave();
+    return true;
+  }
+
+  function focusPanelError() {
+    var editors = (st.panel && st.panel.editors) || [];
+    for (var i = 0; i < editors.length; i++) {
+      if (!editors[i].hint.hidden) {
+        editors[i].focus();
+        return;
+      }
+    }
+  }
+
+  function saveNewRecord() {
+    if (!st.panel || st.panel.mode !== 'new') return;
+    if (!commitPanel()) { focusPanelError(); return; }
+    var table = current();
+    var row = M.addRow(table, st.panel.drafts, db);
+    var rows = matching();
+    var visible = false;
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === row.id) visible = true;
+    if (!visible) {
+      st.search = '';
+      $('search').value = '';
+      st.filters[table.id] = {};
+      setStatus('Search and filters were cleared so the new record is visible.');
+    }
+    st.panel = { mode: 'edit', rowId: row.id, editors: [] };
+    if (table.columns.length) st.active = { rowId: row.id, colId: table.columns[0].id };
+    scheduleSave();
+    render();
+    showPanel();
+    if (visible) setStatus('Record added.');
+  }
+
+  function stepRecord(dir) {
+    if (!st.panel || st.panel.mode !== 'edit') return;
+    if (!commitPanel()) { focusPanelError(); return; }
+    var rows = matching();
+    var idx = -1;
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === st.panel.rowId) idx = i;
+    var next = idx === -1 ? (dir > 0 ? rows[0] : rows[rows.length - 1]) : rows[idx + dir];
+    if (!next) return;
+    st.panel = { mode: 'edit', rowId: next.id, editors: [] };
+    var table = current();
+    if (table && table.columns.length) st.active = { rowId: next.id, colId: table.columns[0].id };
+    render();
+    showPanel();
+  }
+
+  function deleteOpenRecord() {
+    if (!st.panel || st.panel.mode !== 'edit') return;
+    var table = current();
+    var row = panelRow();
+    if (!table || !row) return;
+    var pointed = M.linksPointingAt(db, table.id, [row.id]);
+    var message = 'Delete this record?';
+    if (pointed === 1) message += ' 1 link to it will be cleared.';
+    else if (pointed > 1) message += ' ' + pointed + ' links to it will be cleared.';
+    var rowId = row.id;
+    OfficeDialog.confirm({
+      title: 'Delete record',
+      message: message,
+      okLabel: 'Delete record',
+      danger: true
+    }).then(function (yes) {
+      if (!yes) return;
+      var rows = matching();
+      var idx = -1;
+      for (var i = 0; i < rows.length; i++) if (rows[i].id === rowId) idx = i;
+      M.deleteRows(table, [rowId], db);
+      scheduleSave();
+      var after = matching();
+      var neighbor = after[idx] || after[idx - 1] || null;
+      if (neighbor) {
+        st.panel = { mode: 'edit', rowId: neighbor.id, editors: [] };
+        if (table.columns.length) st.active = { rowId: neighbor.id, colId: table.columns[0].id };
+        render();
+        showPanel();
+      } else {
+        closePanel();
+        st.active = null;
+        render();
+      }
+      setStatus('Record deleted.');
+    });
+  }
+
+  function backlinkSection(table, row) {
+    var section = el('section', 'backlinks');
+    section.appendChild(el('h3', null, 'Linked from'));
+    var items = row ? M.backlinks(db, table.id, row.id) : [];
+    if (!items.length) {
+      section.appendChild(el('p', 'muted', 'No other records link here.'));
+      return section;
+    }
+    var list = el('ul', 'back-list');
+    for (var i = 0; i < items.length; i++) {
+      (function (item) {
+        var li = el('li');
+        var button = el('button', 'back-link', item.tableName + ' · ' + item.columnName + ' — ' + item.label);
+        button.type = 'button';
+        button.addEventListener('click', function () { jumpTo(item.tableId, item.rowId); });
+        li.appendChild(button);
+        list.appendChild(li);
+      })(items[i]);
+    }
+    section.appendChild(list);
+    return section;
+  }
+
+  function jumpTo(tableId, rowId) {
+    if (st.panel && st.panel.mode === 'edit' && !commitPanel()) { focusPanelError(); return; }
+    if (db.activeId !== tableId) {
+      db.activeId = tableId;
+      st.search = '';
+      $('search').value = '';
+      st.selected = {};
+      st.anchor = null;
+      st.viewStart = 0;
+      scheduleSave();
+    }
+    st.panel = { mode: 'edit', rowId: rowId, editors: [] };
+    var table = current();
+    if (table && table.columns.length) st.active = { rowId: rowId, colId: table.columns[0].id };
+    render();
+    showPanel();
+  }
+
+  function trapPanelTab(e) {
+    if (e.key !== 'Tab' || $('record-panel').hidden) return;
+    var nodes = $('record-panel').querySelectorAll('button, input, select, textarea');
+    var list = [];
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].disabled || nodes[i].hidden) continue;
+      if (nodes[i].offsetParent === null) continue;
+      list.push(nodes[i]);
+    }
+    if (!list.length) return;
+    if (e.shiftKey && document.activeElement === list[0]) {
+      e.preventDefault();
+      list[list.length - 1].focus();
+    } else if (!e.shiftKey && document.activeElement === list[list.length - 1]) {
+      e.preventDefault();
+      list[0].focus();
+    }
+  }
+
   function bind() {
+    $('btn-view-grid').addEventListener('click', function () { setMode('grid'); });
+    $('btn-view-cards').addEventListener('click', function () { setMode('cards'); });
+    $('btn-new-record').addEventListener('click', openNewRecord);
+    $('record-close').addEventListener('click', function () {
+      if (st.panel && st.panel.mode === 'edit' && !commitPanel()) return;
+      closePanel();
+      render({ focus: true });
+    });
+    $('record-prev').addEventListener('click', function () { stepRecord(-1); });
+    $('record-next').addEventListener('click', function () { stepRecord(1); });
+    $('record-delete').addEventListener('click', deleteOpenRecord);
+    $('record-save').addEventListener('click', saveNewRecord);
+    $('record-panel').addEventListener('mousedown', function (e) {
+      if (e.target !== $('record-panel')) return;
+      if (st.panel && st.panel.mode === 'edit' && !commitPanel()) return;
+      closePanel();
+      render({ focus: true });
+    });
+    $('record-panel').addEventListener('keydown', trapPanelTab);
+    $('cards').addEventListener('keydown', function (e) {
+      if (e.target !== $('cards')) return;
+      var card = $('cards').querySelector('.record-card');
+      if (!card) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        card.focus();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        card.click();
+      }
+    });
     $('btn-add-row').addEventListener('click', addRow);
     $('btn-del-row').addEventListener('click', deleteRows);
     $('btn-add-col').addEventListener('click', addColumn);
@@ -1217,6 +2046,10 @@
     });
     $('search').addEventListener('focus', function () {
       if (st.edit && !commitEdit()) $('search').blur();
+      if (st.panel && !commitPanel()) {
+        $('search').blur();
+        focusPanelError();
+      }
     });
     $('search').addEventListener('input', function (e) {
       if (st.edit) return;
@@ -1255,8 +2088,16 @@
         closePop();
         return;
       }
+      if (e.key === 'Escape' && st.panel && !$('record-panel').hidden) {
+        if (document.querySelector('dialog[open]')) return;
+        e.preventDefault();
+        if (st.panel.mode === 'edit' && !commitPanel()) return;
+        closePanel();
+        render({ focus: true });
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
-        if (e.target && e.target.tagName === 'TEXTAREA') return;
+        if (e.target && e.target.tagName === 'TEXTAREA' && !$('record-panel').contains(e.target)) return;
         if (document.querySelector('dialog[open]')) return;
         e.preventDefault();
         if (st.edit && !commitEdit()) return;
