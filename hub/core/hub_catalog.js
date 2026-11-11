@@ -106,6 +106,7 @@ Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages
 Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database with typed columns - saved on this device
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
 Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
