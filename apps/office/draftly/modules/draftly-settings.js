@@ -161,7 +161,8 @@ Draftly.settings.startBackup = function startBackup() {
   var S = Draftly.settings;
   clearInterval(S.timer); S.timer = null;
   if (S.s.backupSec > 0) S.timer = setInterval(function () {
-    if (Draftly.app.ready) Draftly.storage.writeBackup();
+    /* (before HOW1) if (Draftly.app.ready) Draftly.storage.writeBackup(); */
+    if (Draftly.app.ready && Draftly.how) Draftly.how.autosave();
   }, S.s.backupSec * 1000);
 };
 

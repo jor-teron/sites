@@ -78,7 +78,8 @@ window.HUB_APP_INDEX = {
   "3d-builder": ["Media", "apps/media/3d-builder/", "3D Builder", "apps/media/3d-builder/3d-builder_icon.png", 0, "Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d"],
   "news": ["Media", "apps/media/news/", "News", "apps/media/news/news_icon.png", 0, "Latest headlines from Google News India in story cards"],
   /* (before DF24) "draftly": ["Office", "apps/office/draftly/", "Draftly", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
-  "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"],
+  /* (before HOW1) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
+  "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"],
   "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Offline spreadsheet with formulas and styles - CSV import/export and print"],
   "invoice-maker": ["Office", "apps/office/invoice-maker/", "Invoice Maker", "apps/office/invoice-maker/invoice-maker_icon.png", 0, "GST invoices quotes and receipts - saved on this device and printed as PDF"],
   "base": ["Office", "apps/office/base/", "Base", "apps/office/base/base_icon.png", 0, "Small database app: tables - forms and queries like Access"],

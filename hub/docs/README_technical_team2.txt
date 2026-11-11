@@ -2069,6 +2069,42 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/draftly/draftly_readme.md`.
 - 1.107 is SH17, so this note is numbered 1.108.
 
+### 1.109 HOW1 Writer .how files
+
+- Writer (`apps/office/draftly/`, Hub id `draftly`) now keeps a document in one
+  `.how` file. The file is UTF-8 JSON: `format` `"how"`, `version` `1`, `name`,
+  `created`, `updated`, `html` (formatting and images as data URLs), `hf`
+  (header/footer slots) and `page` (size, orientation, margins, page numbers).
+  No zip, no new library, no CDN. Version other than 1 is refused. Old IndexedDB
+  documents are not migrated and are not opened.
+- Save, Save As and autosave write `.how`. Inside the Hub they write the
+  browser Local drive (OPFS, `FsDrives.handle('local')` + `FsOps.writeFile`),
+  folder `Documents`, the same folder the Files app calls Documents. The folder
+  is created on first save. Outside the Hub, Save uses `showSaveFilePicker`
+  when the browser has it, otherwise a download. Autosave outside the Hub only
+  continues into a file already picked. In-app dialogs only (name clash, Save
+  As, delete). No `window.alert` / `confirm` / `prompt`.
+- Open `.how` (File menu, drop, or the page hash from Files) restores the
+  document. In the Hub, startup opens the newest `.how` in Documents when no
+  file hash is present. Open `.docx`, Export DOCX, Export PDF and Print are
+  unchanged. Replaced IndexedDB load/save calls are commented with
+  `(before HOW1)` and were not deleted. `Draftly.storage.save` stays in
+  `draftly-storage.js` for the HO2 test; `draftly-how.js` points it at the
+  `.how` writer and keeps the original as `saveLegacy`.
+- Files association: `shared/fs/filetypes.js` maps `.how` to app id `draftly`
+  (display name Writer, url `apps/office/draftly/`). `apps/system/files/files_actions.js`
+  opens that file with `FsRef.openIn`, so a double-click opens Writer on it.
+  Display copy only in `apps/office/office-apps.csv`, `hub/core/hub_catalog.js`
+  and `hub/core/hub_appindex.js` (the id, path and icon stay). No `desktop/`
+  edit. No `?v=` and no version or build bump.
+- Checked with `node --check` on the edited scripts,
+  `node apps/office/draftly/test-how1-format.js` (round-trip of a `.how`
+  document, including an embedded image and page setup),
+  `node apps/office/draftly/test-df24-name.js`, and
+  `node apps/office/shared/tests/ho2.test.cjs`. No browser runner.
+- Details: `apps/office/draftly/draftly_readme.md` (HOW1 section, legacy notes).
+- 1.108 is DF24, so this note is numbered 1.109.
+
 
 ## 2. Releases (PR → what)
 

@@ -28,7 +28,11 @@
     redo: function () { D.history.redo(); },
     canUndo: function () { return D.history.canUndo(); },
     canRedo: function () { return D.history.redoStack.length > 0; },
-    save: function () { return D.storage.save().then(function () { return true; }); },
+    /* (before HOW1) save: function () { return D.storage.save().then(function () { return true; }); }, */
+    save: function () {
+      var p = (D.how && D.how.save) ? D.how.save({ explicit: true }) : D.storage.save();
+      return p.then(function (res) { return !(res && res.ok === false); });
+    },
     print: function () { D.export.printDocument(); },
     undoKey: function (ev) {
       var a = document.activeElement;

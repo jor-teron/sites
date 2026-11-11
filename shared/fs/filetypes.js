@@ -7,6 +7,7 @@
  * Apps (id → { name, icon, url, file }):
  *   viewer   apps/system/viewer/   images + videos; gets the file (FsRef hash, shared/fs/fs_ref.js)
  *   notely   apps/office/notely/  text; gets the file (sessionStorage 'notely-handoff', Files)
+ *   draftly  apps/office/draftly/ .how (Hub Office Writer); gets the file (FsRef hash)
  *   textview Files' own text view (no url)
  *   photo-editor / photo-editor-v2 / paint   file: false = "open app" only — they have no way to
  *            take a file from outside yet, so Files only opens the app (pick the file in it)
@@ -29,6 +30,8 @@
   const APPS = {
     viewer: { name: 'Viewer', icon: '\uD83D\uDDBC\uFE0F', url: 'apps/system/viewer/', file: true },
     notely: { name: 'Notely', icon: '\uD83D\uDCDD', url: 'apps/office/notely/', file: true },
+    /* HOW1: double-click a .how file opens Writer. Hub id stays draftly. */
+    draftly: { name: 'Writer', icon: '\u270D\uFE0F', url: 'apps/office/draftly/', file: true },
     textview: { name: 'Text view', icon: '\uD83D\uDCC4', url: '', file: true },
     'photo-editor-v2': { name: 'Photo Editor v2', icon: '\uD83C\uDFA8', url: 'apps/media/photo-editor-v2/', file: false },
     'photo-editor': { name: 'Photo Editor', icon: '\uD83C\uDFA8', url: 'apps/media/photo-editor/', file: false },
@@ -39,6 +42,8 @@
     video: ['viewer'],
     text: ['notely', 'textview']
   };
+  /* (before HOW1) extension had no app of its own; .how was "other" and downloaded. */
+  const BY_EXT = { how: ['draftly'] };
   const ext = (name) => { const m = /\.([^./\\]+)$/.exec(String(name || '')); return m ? m[1].toLowerCase() : ''; };
   function kind(name, mime) {
     const e = ext(name);
@@ -53,6 +58,7 @@
   }
   const mime = (name) => IMG[ext(name)] || VID[ext(name)] || '';
   const app = (id) => (APPS[id] ? Object.assign({ id }, APPS[id]) : null);
-  const apps = (name, type) => (BY_KIND[kind(name, type)] || []).map(app);
+  /* (before HOW1) const apps = (name, type) => (BY_KIND[kind(name, type)] || []).map(app); */
+  const apps = (name, type) => (BY_EXT[ext(name)] || BY_KIND[kind(name, type)] || []).map(app);
   window.FileTypes = { ext, kind, mime, apps, app };
 })();

@@ -77,10 +77,13 @@
       <button type="button" class="file-item" role="menuitem" id="newBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M12 10v7M8.5 13.5h7"/></svg><span>New</span></button>
       <button type="button" class="file-item" role="menuitem" id="renameBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/></svg><span>Rename</span></button>
       <button type="button" class="file-item" role="menuitem" id="deleteCurrentBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><span>Delete document</span></button>
+      <button type="button" class="file-item" role="menuitem" id="openHowBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .how</span></button>
+      <input type="file" id="howFile" accept=".how,application/json" hidden>
       <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx</span></button>
       <input type="file" id="docxFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
       <div class="file-sep" role="separator"></div>
       <button type="button" class="file-item" role="menuitem" id="saveBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save <kbd>Ctrl+S</kbd></span></button>
+      <button type="button" class="file-item" role="menuitem" id="saveAsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save As</span></button>
       <button type="button" class="file-item" role="menuitem" id="printBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg><span>Print <kbd>Ctrl+P</kbd></span></button>
       <button type="button" class="file-item" role="menuitem" id="exportDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export DOCX</span></button>
       <button type="button" class="file-item" role="menuitem" id="exportPdfBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export PDF</span></button>
@@ -412,6 +415,7 @@
   <script src="modules/draftly-docxopen.js"></script>
   <script src="modules/draftly-merge.js"></script>
   <script src="modules/draftly-merge-ui.js"></script>
+  <script src="modules/draftly-how.js"></script>
   <script src="modules/draftly-hub.js"></script>
   <script src="modules/draftly-quick.js"></script>
   <script src="modules/draftly-app.js"></script>

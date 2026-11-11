@@ -103,7 +103,8 @@ News,            news/,            , , Read, Latest headlines from Google News I
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
 # (before DF24) Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
-Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
+# (before HOW1) Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
+Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: native .how files - PDF or DOCX
 Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access

@@ -19,6 +19,7 @@ Draftly.docxopen.isDocx = function isDocx(f) {
   return !!f && (/\.docx$/i.test(f.name || '') || f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 };
 
+/* (before HOW1) IndexedDB save and listDocs around a .docx open:
 Draftly.docxopen.open = function open(file) {
   var ui = Draftly.ui, base = String(file.name || 'Document').replace(/\.docx$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document';
   ui.showToast('Opening ' + file.name + '…');
@@ -59,6 +60,44 @@ Draftly.docxopen.open = function open(file) {
     ui.showToast(e && e.userMessage ? e.userMessage : 'Could not open this .docx');
   });
 };
+*/
+Draftly.docxopen.open = function open(file) {
+  var ui = Draftly.ui, base = String(file.name || 'Document').replace(/\.docx$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document';
+  ui.showToast('Opening ' + file.name + '\u2026');
+  if (Draftly.app) clearTimeout(Draftly.app.inputTimer);
+  return file.arrayBuffer().then(function (buf) {
+    return Draftly.docxread.read(buf);
+  }).then(function (res) {
+    var prev = Draftly.how ? Draftly.how.autosave() : Promise.resolve();
+    return prev.catch(function () {}).then(function () { return res; });
+  }).then(function (res) {
+    var pg = res.page;
+    if (pg) {
+      if (pg.margins) ui.setPage(pg.size, 'custom', pg.margins); else ui.setPage(pg.size, Draftly.config.marginPreset, Draftly.config.marginCustom);
+      ui.setOrientation(pg.orient);
+    }
+    if (Draftly.how) { Draftly.how.dest = null; Draftly.how.created = 0; }
+    Draftly.storage.loadedName = '';
+    Draftly.storage.setCurrentName(base, false);
+    Draftly.pages.rebuildSinglePage();
+    var ed = Draftly.pages.firstEditor();
+    ed.innerHTML = res.html;
+    Draftly.editor.stripMarks(ed);
+    if (Draftly.hf) Draftly.hf.set(res.hf);
+    Draftly.pages.layoutAll();
+    Draftly.history.reset();
+    var stored = Draftly.how ? Draftly.how.save({ unique: true }) : Promise.resolve();
+    return stored.catch(function () {}).then(function () {
+      var msg = 'Opened ' + (Draftly.storage.currentName() || base);
+      if (res.notes && res.notes.length) msg += ' (simplified: ' + res.notes.slice(0, 2).join('; ') + (res.notes.length > 2 ? '\u2026' : '') + ')';
+      ui.showToast(msg);
+      return Draftly.storage.currentName();
+    });
+  }).catch(function (e) {
+    console.warn('draftly: docx open failed', e);
+    ui.showToast(e && e.userMessage ? e.userMessage : 'Could not open this .docx');
+  });
+};
 
 Draftly.docxopen.bind = function bind() {
   var D = Draftly.docxopen, btn = document.getElementById('openDocxBtn'), inp = document.getElementById('docxFile');
@@ -75,7 +114,8 @@ Draftly.docxopen.bind = function bind() {
     if (!hasFile(e)) return;
     var f = e.dataTransfer.files[0];
     if (D.isDocx(f)) { e.preventDefault(); D.open(f); }
-    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Draftly.ui.showToast('Drop a .docx file to open it'); }
+    else if (Draftly.how && Draftly.how.isHow(f)) { e.preventDefault(); Draftly.how.openFile(f, null); }
+    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Draftly.ui.showToast('Drop a .how or .docx file to open it'); }
   });
 };
 
