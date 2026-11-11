@@ -1,4 +1,11 @@
-# Draftly
+<!-- (before DF24) # Draftly -->
+# Writer
+
+Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage keys, message types, ids and URLs are unchanged, so saved documents and Hub links keep working.
+
+## DF24 — visible name
+
+The name on screen is Writer: the page title, the header next to the icon, Settings → About, PDF title and creator, the Hub Office tile, and the name sent to the Hub title bar. IndexedDB is still `draftly`. localStorage keys such as `draftly_settings` and `draftly_last_name` are still those keys. The Hub id is still `draftly`. Replaced lines are commented with `(before DF24)` and were not deleted.
 
 ## 1. What it is
 An offline document editor laid out as fixed A4 pages, like a word processor. Text flows from page to page line by line. Documents autosave in the browser and download as PDF or DOCX. Plain JavaScript, no internet needed, works from `file://`.
