@@ -360,6 +360,18 @@ h1 {
   height: var(--cell-h);
 }
 
+/* HOT1: drag the right edge of a header. The width is stored in the .hot file. */
+.col-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 4;
+  touch-action: none;
+}
+
 .col-name {
   flex: 1;
   min-width: 0;

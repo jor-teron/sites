@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <!-- TB1 Tables: a simple database that works like a spreadsheet. Logic: tables_model.js, tables.js.
      TB2 adds a card view, a record panel, and Link columns. Same files, no cache buster.
-     TB4: grid look matches Spreadsheet. Sheet tabs sit in the footer. No cache buster. -->
+     TB4: grid look matches Spreadsheet. Sheet tabs sit in the footer. No cache buster.
+     HOT1: native .hot files. No cache buster. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -14,8 +15,12 @@
   <script>
     (function () {
       try {
+        /* (before HOT1) the first paint read localStorage tables-v1 for the theme.
+           HOT1 does not load that key. Auto follows the Hub theme until a .hot file opens.
         var saved = JSON.parse(localStorage.getItem('tables-v1') || '{}');
         var mode = saved.theme || 'auto';
+        */
+        var mode = 'auto';
         var hub = localStorage.getItem('sites-hub.theme') || '';
         var dark = mode === 'dark' || (mode !== 'light' && (hub === 'dark' || (hub !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)));
         if (!dark) document.documentElement.classList.add('tb-light');
@@ -49,6 +54,10 @@
     <button type="button" id="btn-rename">Rename</button>
     <button type="button" id="btn-del-table" class="danger">Delete table</button>
     <span class="grow"></span>
+    <button type="button" id="btn-save">Save</button>
+    <button type="button" id="btn-save-as">Save As</button>
+    <button type="button" id="btn-open-hot">Open .hot</button>
+    <input id="hot-file" type="file" accept=".hot,application/json" hidden>
     <button type="button" id="btn-import">Import CSV</button>
     <button type="button" id="btn-export">Export CSV</button>
     <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
@@ -104,7 +113,12 @@
   </footer>
 
   <script src="../shared/office-dialog.js"></script>
+  <script src="../../../shared/fs/fs_drives.js"></script>
+  <script src="../../../shared/fs/fs_ops.js"></script>
+  <script src="../../../shared/fs/fs_ref.js"></script>
+  <script src="../shared/office-native.js"></script>
   <script src="tables_model.js"></script>
+  <script src="tables_hot.js"></script>
   <script src="tables.js"></script>
 </body>
 </html>

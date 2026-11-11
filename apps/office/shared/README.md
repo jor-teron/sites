@@ -12,7 +12,7 @@ Plain scripts, no build, work from `file://`. Each app keeps its own storage key
 - `office-native.js` (HOS1): Hub Local drive Documents save, open-from-hash, and the
   standalone save picker or download. Same path as Writer's HOW1 `.how` files
   (`apps/office/draftly/modules/draftly-how.js`, which keeps its own copy).
-  Spreadsheet's `.hos` files use `OfficeNative.create(...)`.
+  Spreadsheet's `.hos` files and Tables' `.hot` files use `OfficeNative.create(...)`.
 
 SH1 (moved from Draftly, used by Draftly and Spreadsheet). Colours come from the app's `--of-*`
 variables (`--of-bg, --of-text, --of-border, --of-group, --of-muted, --of-focus, --of-ui-font`);

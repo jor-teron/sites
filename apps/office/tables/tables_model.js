@@ -7,6 +7,9 @@
  * Dates stay ISO YYYY-MM-DD. Year 0001 is never stored. The storage key stays
  * tables-v1. Link fields are optional, so older saves load and the next edit
  * writes them back to the same key. Nothing is deleted.
+ * HOT1: the app does not call saveTo or loadFrom. A .hot file
+ * (tables_hot.js) is the native copy. These helpers stay so the TB tests
+ * can still round-trip the old shape. tables-v1 is not loaded or migrated.
  * Legacy: cell values that fail their column type are dropped, never stored.
  */
 (function (root) {
@@ -1330,6 +1333,9 @@
     return out;
   }
 
+  /* (before HOT1) the app saved with saveTo(localStorage, db) under tables-v1.
+     HOT1 does not call this. It stays so test-tb1.js, test-tb2.js and
+     test-tb4.js can still round-trip that shape. */
   function saveTo(storage, db) {
     storage.setItem(STORAGE_KEY, serialize(db));
   }
