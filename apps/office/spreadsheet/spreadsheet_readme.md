@@ -8,7 +8,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 ## 2. Files
 - `spreadsheet.html` / `spreadsheet.css`: layout, toolbar, look, print
 - `spreadsheet_config.js`: settings and on-screen text
-- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, SH13 spill, and SH14 array math
+<!-- (before SH16): - `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, SH13 spill, and SH14 array math -->
+- `spreadsheet_formula.js`: formula parser / evaluator (no `eval`), dependency-aware recalc, SH13 spill, SH14 array math, and SH16 ROW / COLUMN / INDIRECT
 - `spreadsheet_functions.js`: formula function library (everything in `FUNCTIONS.txt`), plus FX_CATALOG for the hint/picker
 - `spreadsheet_fx.js`: SH9 formula hint while typing, and the fx function picker
 - `spreadsheet_refs.js`: cell refs and ranges, `$` refs, ref shifting and adjusting
@@ -42,7 +43,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 
 ## 3. Behaviour rules
 - **Cells:** a click selects. Typing replaces the text; F2 or double-click edits and keeps it. Enter commits and moves down, Tab moves right (Shift+Tab left). Esc cancels the edit.
-- **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`).
+<!-- (before SH16): - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`). -->
+- **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`). `ROW` and `COLUMN` give the row or column of this cell, or of a reference. `INDIRECT` turns text into a reference and recalculates whenever any cell changes.
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
 - **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, merge, conditional formatting, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
@@ -215,3 +217,13 @@ The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields.
 - **Hint / picker:** SORT, SORTBY, FILTER and UNIQUE are in the function list, under Arrays, with argument hints. `#CALC!` is in the error list.
 - Title, `SHEET_VERSION` and `?v=` are SH14.
 - **Limits:** arrays of different shapes are not broadcast (`#VALUE!`). `SORT`'s `sort_index` is one column or row; use `SORTBY` for more keys. A blank cell inside an array sum or product counts as 0; a blank single cell in `=A1+1` is still `#ERR`. The Data tab's sort still reads stored cells, so a ghost sorts as blank until the spill is drawn again.
+
+## SH16 — ROW, COLUMN, INDIRECT
+The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields.
+
+- **ROW([ref])** with no argument is the row number of the cell that holds the formula (1-based). `ROW(B5)` is 5. `ROW(A1:A5)` spills 1, 2, 3, 4, 5 down the column. A reference that covers several rows spills one number per row. `ROW(A1#)` uses the rows of that spill.
+- **COLUMN([ref])** with no argument is the column number of the formula cell (A is 1). `COLUMN(C1)` is 3. `COLUMN(A1:C1)` spills 1, 2, 3 across the row. A reference that covers several columns spills one number per column.
+- **INDIRECT(text)** turns text into a reference: `INDIRECT("B2")`, `INDIRECT("B"&2)`, `INDIRECT("A1:A3")`. Used alone, a range spills. Inside `SUM` (and the other aggregates) it is that range. A bad address, or one outside A–Z × 1–100, is `#REF!`. It is volatile, like `RAND` and `NOW`: it is calculated again whenever any cell changes, and the cells it names are dependencies even when the address is built from text. A circular reference is `#LOOP!`.
+- **Hint / picker:** ROW, COLUMN and INDIRECT are in the function list, under Lookup, with argument hints.
+- Legacy: title, `SHEET_VERSION` and `?v=` stay SH14. This release does not bump the cache token. Storage stays `sheet-v4`.
+- **Limits:** `INDIRECT` reads A1-style addresses (a cell, a range, or `A1#`), not R1C1. `ROW(1)` is `#VALUE!` because 1 is not a reference. A range passed to `ROW` spills row numbers, not one number per cell. `ROW(INDIRECT("B5"))` is `#VALUE!` as well: `INDIRECT` yields the cell's value (or a spilled range), and `ROW` / `COLUMN` need the reference written in the formula.

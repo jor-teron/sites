@@ -1,12 +1,14 @@
 /*
  * spreadsheet_functions.js
- * Formula function library: evalFunc(name, args) for every function listed in FUNCTIONS.txt,
+ * Formula function library: evalFunc(name, args, at) for every function listed in FUNCTIONS.txt,
  * plus the IF comparison helper. Used by the evaluator in spreadsheet_formula.js.
  * SH9 adds lookups, SUMIF/COUNTIF/AVERAGEIF, logic, extra text and date functions,
  * MEDIAN/RANK/RAND, plus FX_CATALOG for the formula hint and function picker.
  * SH13: SEQUENCE and RANDARRAY return 2D arrays (spillWrap). Any function may.
  * SH14: SORT, SORTBY, FILTER, UNIQUE. Array expressions (+, comparisons) are accepted
  * by the numeric aggregates, so SUM(SEQUENCE(3)+1) and SUM(FILTER(...)) work.
+ * SH16: ROW, COLUMN and INDIRECT. No-arg ROW/COLUMN use the position passed in
+ * as `at` (the formula cell). INDIRECT resolves text to a cell or a range.
  */
 
 /**
@@ -34,9 +36,12 @@ function pad2(n) {
 }
 
 /**
- * Evaluate one function call
+ * Evaluate one function call.
+ * SH16: `at` is the formula cell {r, c, si} (0-based). Only ROW/COLUMN with no
+ * argument need it. Other functions ignore it.
  */
-function evalFunc(name, args) {
+/* (before SH16): function evalFunc(name, args) { */
+function evalFunc(name, args, at) {
   var n = name.toUpperCase();
   var nums, i, acc, a0, a1, list, t, v;
 
@@ -457,6 +462,11 @@ function evalFunc(name, args) {
   if (n === "SORTBY") return fxSortBy(args);
   if (n === "FILTER") return fxFilter(args);
   if (n === "UNIQUE") return fxUnique(args);
+
+  /* SH16 */
+  if (n === "ROW") return fxRow(args, at);
+  if (n === "COLUMN") return fxColumn(args, at);
+  if (n === "INDIRECT") return fxIndirect(args);
 
   return ERR;
 }
@@ -1389,6 +1399,107 @@ function fxTextDate(dt, fmt) {
   return out;
 }
 
+/* ---- SH16 ROW, COLUMN, INDIRECT ---- */
+
+/* Position of the formula cell. `at` is what the evaluator passed in. */
+function fxHere(at) {
+  return {
+    r: at && typeof at.r === "number" ? at.r : (typeof evalRow === "number" ? evalRow : 0),
+    c: at && typeof at.c === "number" ? at.c : (typeof evalCol === "number" ? evalCol : 0)
+  };
+}
+
+/* Bounds of a reference argument, including an A1# spill. Not a ref → #VALUE!.
+   Out of the sheet → #REF!. */
+function fxRefSpan(token) {
+  var parsed, i, cell, r1, r2, c1, c2;
+  parsed = parseRefToken(String(token == null ? "" : token).trim());
+  if (!parsed) return { error: ERR_VALUE };
+  if (parsed.error) return { error: parsed.error };
+  if (!parsed.list || !parsed.list.length) return { error: ERR_REF };
+  r1 = r2 = parsed.list[0].r;
+  c1 = c2 = parsed.list[0].c;
+  for (i = 1; i < parsed.list.length; i++) {
+    cell = parsed.list[i];
+    if (cell.r < r1) r1 = cell.r;
+    if (cell.r > r2) r2 = cell.r;
+    if (cell.c < c1) c1 = cell.c;
+    if (cell.c > c2) c2 = cell.c;
+  }
+  return { r1: r1, r2: r2, c1: c1, c2: c2, si: parsed.list[0].si };
+}
+
+function fxRow(args, at) {
+  var span, rows, r, here;
+  if (args.length > 1) return ERR_VALUE;
+  if (!args.length || String(args[0]).trim() === "") {
+    here = fxHere(at);
+    return here.r + 1;
+  }
+  span = fxRefSpan(args[0]);
+  if (span.error) return span.error;
+  if (span.r1 === span.r2) return span.r1 + 1;
+  rows = [];
+  for (r = span.r1; r <= span.r2; r++) rows.push([r + 1]);
+  return spillWrap(rows);
+}
+
+function fxColumn(args, at) {
+  var span, row, c, here;
+  if (args.length > 1) return ERR_VALUE;
+  if (!args.length || String(args[0]).trim() === "") {
+    here = fxHere(at);
+    return here.c + 1;
+  }
+  span = fxRefSpan(args[0]);
+  if (span.error) return span.error;
+  if (span.c1 === span.c2) return span.c1 + 1;
+  row = [];
+  for (c = span.c1; c <= span.c2; c++) row.push(c + 1);
+  return spillWrap([row]);
+}
+
+/* Text → reference. One cell is its value. A range is an array (spills, and
+   SUM / the other aggregates accept it). Bad text or a cell off the grid is #REF!.
+   Every cell named is a dependency so a later edit, or a formula that runs
+   later in this recalc, is picked up. A loop throws #LOOP!. */
+function fxIndirect(args) {
+  var v, text, parsed, i, cell, r, c, r1, r2, c1, c2, si, rows, row;
+  if (!args.length || String(args[0] == null ? "" : args[0]).trim() === "") return ERR_REF;
+  try { v = evalExpr(args[0]); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR;
+  }
+  if (isSpillArray(v)) return ERR_REF;
+  if (isErrorValue(v)) return v;
+  text = String(v == null ? "" : v).trim();
+  if (!text) return ERR_REF;
+  parsed = parseRefToken(text);
+  if (!parsed || parsed.error || !parsed.list || !parsed.list.length) return ERR_REF;
+  r1 = r2 = parsed.list[0].r;
+  c1 = c2 = parsed.list[0].c;
+  si = parsed.list[0].si;
+  for (i = 1; i < parsed.list.length; i++) {
+    cell = parsed.list[i];
+    if (cell.si !== si) return ERR_REF;
+    if (cell.r < r1) r1 = cell.r;
+    if (cell.r > r2) r2 = cell.r;
+    if (cell.c < c1) c1 = cell.c;
+    if (cell.c > c2) c2 = cell.c;
+  }
+  for (r = r1; r <= r2; r++) {
+    for (c = c1; c <= c2; c++) noteDynamicDep(si, r, c);
+  }
+  rows = [];
+  for (r = r1; r <= r2; r++) {
+    row = [];
+    for (c = c1; c <= c2; c++) row.push(rawVal(r, c, si));
+    rows.push(row);
+  }
+  return spillWrap(rows);
+}
+
 /* Catalog used by the formula hint and the function picker (SH9). */
 var FX_CATALOG = [
   { name: "SUM", cat: "Math", sig: "SUM(range, ...)", hint: "Add numbers." },
@@ -1421,6 +1532,9 @@ var FX_CATALOG = [
   { name: "HLOOKUP", cat: "Lookup", sig: "HLOOKUP(lookup_value, table, row_index, [range_lookup])", hint: "Look across the first row and return a value from the same column." },
   { name: "XLOOKUP", cat: "Lookup", sig: "XLOOKUP(lookup_value, lookup_range, return_range, [if_not_found], [match_mode], [search_mode])", hint: "Look up a value and return the matching item. match_mode 0 is exact (default)." },
   { name: "INDEX", cat: "Lookup", sig: "INDEX(range, row, [column])", hint: "Value at a row (and column) in a range. 1-based." },
+  { name: "ROW", cat: "Lookup", sig: "ROW([reference])", hint: "Row number of this cell, or of a reference. A range spills one number per row. A1# uses that spill." },
+  { name: "COLUMN", cat: "Lookup", sig: "COLUMN([reference])", hint: "Column number of this cell (A is 1), or of a reference. A range spills one number per column." },
+  { name: "INDIRECT", cat: "Lookup", sig: "INDIRECT(text)", hint: "The cell or range named by text, such as \"B2\" or \"B\"&2. A range spills and works inside SUM. A bad address is #REF!. Recalculates whenever any cell changes." },
   { name: "MATCH", cat: "Lookup", sig: "MATCH(lookup_value, range, [match_type])", hint: "Relative position of a value. Type 0 is exact, 1 (default) is the largest less than or equal." },
   { name: "SUMIF", cat: "Lookup", sig: "SUMIF(range, criteria, [sum_range])", hint: "Sum cells that meet a condition." },
   { name: "SUMIFS", cat: "Lookup", sig: "SUMIFS(sum_range, criteria_range1, criteria1, ...)", hint: "Sum cells that meet every condition." },

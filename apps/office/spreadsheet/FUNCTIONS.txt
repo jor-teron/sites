@@ -97,6 +97,20 @@ LOOKUP
   HLOOKUP(value, table, row, [approx])
   XLOOKUP(value, lookup, return, [if_not_found], [match_mode], [search_mode])
   INDEX(range, row, [column])
+  ROW([ref])                    no argument: row of the cell that holds the formula
+                                ROW(B5) is 5
+                                ROW(A1:A5) spills 1, 2, 3, 4, 5 down the column
+                                ROW(A1#) uses the rows of that spill
+  COLUMN([ref])                 no argument: column of the formula cell (A is 1)
+                                COLUMN(C1) is 3
+                                COLUMN(A1:C1) spills 1, 2, 3 across the row
+  INDIRECT(text)                the reference written in text
+                                INDIRECT("B2"), INDIRECT("B"&2)
+                                INDIRECT("A1:A3") is that range: it spills when it
+                                is the whole formula, and SUM(INDIRECT("A1:A3")) adds it
+                                a bad or out-of-grid address is #REF!
+                                calculated again whenever any cell changes, like RAND / NOW
+                                a circular reference is #LOOP!
   MATCH(value, range, [type])          0 exact; 1 largest ≤ (default); -1 smallest ≥
   SUMIF(range, criteria, [sum_range])
   SUMIFS(sum_range, range1, crit1, ...)

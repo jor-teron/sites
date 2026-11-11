@@ -1890,6 +1890,16 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.100 is SH13, so this note is numbered 1.101.
 
 
+### 1.102 SH16 Spreadsheet ROW/COLUMN/INDIRECT
+
+- apps/office/spreadsheet only, plus this section. Grid stays 26 × 100. Storage stays sheet-v4.
+- ROW() is the row of the formula cell. ROW(B5) is 5. ROW(A1:A5) spills 1..5 down the column through the SH13 spill engine. ROW(A1#) uses the rows of that spill. COLUMN() is the column of the formula cell (A is 1). COLUMN(C1) is 3. COLUMN(A1:C1) spills 1..3 across the row.
+- INDIRECT(text) turns text into a reference: INDIRECT("B2"), INDIRECT("B"&2), INDIRECT("A1:A3"). Alone, a range spills. Inside SUM it is that range. A bad or out-of-grid address is #REF!. It is volatile, like RAND and NOW, so it recalculates whenever any cell changes and the cells it names stay dependencies (including a built address). A circular reference is #LOOP!.
+- The evaluator passes the formula cell's position into functions so no-arg ROW/COLUMN can see it. The fx picker lists the three functions. Title / SHEET_VERSION / ?v= stay SH14 (no cache bump). Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh16-row-column-indirect.js, plus the existing SH9–SH14 node tests. No browser runner.
+- 1.101 is SH14, so this note is numbered 1.102.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

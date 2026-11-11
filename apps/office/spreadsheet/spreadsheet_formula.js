@@ -17,6 +17,10 @@
  * SH14: SORT, SORTBY, FILTER, UNIQUE. A range or array combined with a scalar,
  * or with a same-size array, uses element-wise + - * / ^ and comparisons.
  * A formula with no array still uses the scalar parser only.
+ * SH16: ROW() / COLUMN() with no argument use the formula cell (evalRow / evalCol).
+ * INDIRECT(text) is volatile, like RAND / NOW: it runs on every recalc. The cells
+ * named by the text are dependencies (so a later formula is picked up, and a loop
+ * is #LOOP!). A bad address is #REF!.
  */
 
 /* Formula error tokens shown in cells */
@@ -35,6 +39,16 @@ var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, 
 
 /* Array placeholders (@@n@@) share one bag per formula. Not a cell ref (no letter+digit). */
 var evalArrays = [];
+/* SH16: 0-based position of the formula being evaluated. ROW()/COLUMN() with no
+   argument read these. dynamicDepHook is set only during recalcAll. */
+var evalRow = 0;
+var evalCol = 0;
+var evalCellKey = -1;
+var dynamicDepHook = null;
+
+function noteDynamicDep(si, r, c) {
+  if (typeof dynamicDepHook === "function") dynamicDepHook(si, r, c);
+}
 /* Ghost spill overlay. Rebuilt on every recalc. Never written into the cell store. */
 var spillState = [];
 var spillTouchFlag = { on: false };
@@ -418,7 +432,8 @@ function evalExpr(expr) {
     name = call.name;
     /* put string literals back WITH their quotes so each argument stays a string */
     inside = call.args.replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
-    out = evalFunc(name, splitArgs(inside));
+    /* (before SH16): out = evalFunc(name, splitArgs(inside)); */
+    out = evalFunc(name, splitArgs(inside), { r: evalRow, c: evalCol, si: evalSheetIdx });
     /* SH13: any function may return a 2D array. 1×1 is already unwrapped. */
     if (isSpillArray(out)) {
       evalArrays.push(out);
@@ -747,10 +762,14 @@ function arrayMath(src, bag) {
 }
 
 /**
- * Evaluate a cell formula string
+ * Evaluate a cell formula string.
+ * SH16: row and col are the formula cell (0-based), for ROW() / COLUMN() with no argument.
  */
-function evalFormula(f) {
+/* (before SH16): function evalFormula(f) { */
+function evalFormula(f, row, col) {
   evalArrays = [];
+  if (typeof row === "number") evalRow = row;
+  if (typeof col === "number") evalCol = col;
   var s = String(f).trim();
   if (s.charAt(0) !== "=") return s;
   s = s.slice(1).trim();
@@ -841,8 +860,12 @@ function recalcAll() {
   var deps = [], users = [], readers = [], indeg = [], queue = [], done = 0, total = 0;
   var depCells = [], writeSeq = [], evalSeq = [], evalCount = [], dead = [], live = [];
   var prevEval = evalSheetIdx;
+  var indirectPass = false;
+  var seq = 1;
   spillTouchFlag.on = false;
   spillWake = null;
+  dynamicDepHook = null;
+  evalCellKey = -1;
   spillReset(ns);
   for (k = 0; k < n; k++) {
     users.push(null); readers.push(null); indeg.push(0); deps.push(null); depCells.push(null);
@@ -880,7 +903,35 @@ function recalcAll() {
       }
     }
   }
-  var seq = 1;
+  /* SH16: INDIRECT's target is not always written in the formula. Record it while
+     the formula runs, then a follow-up pass reads a value that was calculated later.
+     A target that already depends on this cell is a circular reference (#LOOP!). */
+  dynamicDepHook = function (si, r, c) {
+    var id, k, list, j, seen, stack, cur;
+    if (si < 0 || r < 0 || c < 0 || r >= ROWS || c >= COLS) fail(ERR_REF);
+    id = cellIndex(si, r, c);
+    k = evalCellKey;
+    if (k < 0) return;
+    if (id === k) fail(ERR_LOOP);
+    stack = [id];
+    seen = Object.create(null);
+    while (stack.length) {
+      cur = stack.pop();
+      if (cur === k) fail(ERR_LOOP);
+      if (seen[cur]) continue;
+      seen[cur] = 1;
+      list = depCells[cur];
+      if (!list) continue;
+      for (j = 0; j < list.length; j++) stack.push(list[j]);
+    }
+    list = depCells[k];
+    if (!list) return;
+    for (j = 0; j < list.length; j++) if (list[j] === id) { indirectPass = true; return; }
+    list.push(id);
+    if (!readers[id]) readers[id] = [];
+    readers[id].push(k);
+    indirectPass = true;
+  };
   function stale(k) {
     var list = depCells[k], j, id;
     if (dead[k] || !list) return false;
@@ -905,7 +956,10 @@ function recalcAll() {
     evalSeq[k] = seq;
     seq++;
     evalSheetIdx = si;
-    applyFormulaResult(si, r, c, evalFormula(sheets[si].cells[r][c].formula), writeSeq, seq);
+    evalCellKey = k;
+    /* (before SH16): applyFormulaResult(si, r, c, evalFormula(sheets[si].cells[r][c].formula), writeSeq, seq); */
+    applyFormulaResult(si, r, c, evalFormula(sheets[si].cells[r][c].formula, r, c), writeSeq, seq);
+    evalCellKey = -1;
     seq++;
   }
   for (i = 0; i < queue.length; i++) {
@@ -926,7 +980,8 @@ function recalcAll() {
       }
     }
   }
-  if (spillTouchFlag.on) {
+  /* (before SH16): if (spillTouchFlag.on) { */
+  if (spillTouchFlag.on || indirectPass) {
     var q = [], qset = Object.create(null), steps = 0, limit = live.length * 8 + 8;
     function poke(k) {
       if (k == null || dead[k] || qset[k]) return;
@@ -957,5 +1012,7 @@ function recalcAll() {
     }
     spillWake = null;
   }
+  dynamicDepHook = null;
+  evalCellKey = -1;
   evalSheetIdx = prevEval;
 }
