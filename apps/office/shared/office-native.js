@@ -6,7 +6,8 @@
          (created if missing); outside the Hub, the save picker or a
          download; open from a File, a drive ref, or the page hash.
          Writer keeps its own copy of this path so HOW1 stays as it
-         shipped. Spreadsheet (spreadsheet_hos.js) uses this helper.
+         shipped. Spreadsheet (spreadsheet_hos.js) and Tables
+         (tables_hot.js) use this helper.
          No new libraries. In-app dialogs only.
    ============================================================ */
 (function (root) {

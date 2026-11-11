@@ -1,5 +1,5 @@
 /*
- * Tables — grid, tabs, filters, CSV and local save.
+ * Tables — grid, tabs, filters, CSV and the .hot file.
  * TB1: the grid. TB2: card view, the record panel, and Link columns.
  * TB4: the grid matches Spreadsheet (borders, header, row numbers, selection,
  * compact rows, sheet tabs). Column headers are one line, "Name (Type)".
@@ -7,6 +7,8 @@
  * year 0001). Data rules live in tables_model.js. Dialogs are in-app
  * (shared OfficeDialog plus a small <dialog> for import, choice lists and
  * link setup). No alert/confirm/prompt.
+ * HOT1: Save / Save As / autosave write one .hot file (tables_hot.js).
+ * (before HOT1) the copy was localStorage tables-v1. That key is not loaded.
  */
 (function () {
   'use strict';
@@ -86,10 +88,12 @@
   function scheduleSave() {
     dirty = true;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(persist, 180);
+    /* (before HOT1) saveTimer = setTimeout(persist, 180); */
+    saveTimer = setTimeout(persist, 800);
   }
 
   function persist() {
+    /* (before HOT1) localStorage tables-v1 write:
     if (!dirty) return;
     try {
       localStorage.setItem(M.STORAGE_KEY, M.serialize(db));
@@ -98,6 +102,13 @@
       if (!cur || cur === 'Loaded from this device' || cur === 'Saved on this device') setStatus('Saved on this device');
     } catch (e) {
       setStatus('Could not save. Storage is full or blocked.');
+    }
+    */
+    if (!dirty) return;
+    if (window.TABLES_HOT && TABLES_HOT.autosave) {
+      TABLES_HOT.autosave().then(function (res) {
+        if (res && res.wrote) dirty = false;
+      }, function () {});
     }
   }
 
@@ -832,7 +843,60 @@
     wrap.appendChild(sortBtn);
     wrap.appendChild(more);
     th.appendChild(wrap);
+    applyColWidth(th, col);
+    th.appendChild(resizeGrip(th, col));
     return th;
+  }
+
+  /* HOT1: a stored column width, in px. Null keeps the default column. */
+  function applyColWidth(th, col) {
+    if (!col || col.width == null) return;
+    var px = col.width + 'px';
+    th.style.width = px;
+    th.style.minWidth = px;
+    var head = th.querySelector('.col-head');
+    if (head) head.style.minWidth = px;
+    var name = th.querySelector('.col-name');
+    if (name) name.style.maxWidth = 'none';
+  }
+
+  function resizeGrip(th, col) {
+    var grip = el('span', 'col-resize');
+    grip.title = 'Drag to resize';
+    grip.setAttribute('role', 'separator');
+    grip.setAttribute('aria-orientation', 'vertical');
+    grip.setAttribute('aria-label', 'Resize ' + (col.name || 'column'));
+    if (!window.PointerEvent) return grip;
+    grip.addEventListener('pointerdown', function (e) {
+      if (e.button != null && e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var startX = e.clientX;
+      var startW = th.getBoundingClientRect().width;
+      var moved = false;
+      function move(ev) {
+        var dx = ev.clientX - startX;
+        if (!moved && Math.abs(dx) < 2) return;
+        moved = true;
+        var w = Math.round(startW + dx);
+        if (w < 72) w = 72;
+        if (w > 480) w = 480;
+        col.width = w;
+        applyColWidth(th, col);
+      }
+      function up(ev) {
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', up);
+        grip.removeEventListener('pointercancel', up);
+        try { grip.releasePointerCapture(ev.pointerId); } catch (err) { /* already released */ }
+        if (moved) scheduleSave();
+      }
+      try { grip.setPointerCapture(e.pointerId); } catch (err) { /* no capture */ }
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', up);
+      grip.addEventListener('pointercancel', up);
+    });
+    return grip;
   }
 
   function fillCell(td, row, col) {
@@ -1368,6 +1432,7 @@
     st.viewMode[table.id] = mode === 'cards' ? 'cards' : 'grid';
     st.viewStart = 0;
     render({ focus: true });
+    scheduleSave();
   }
 
   function fillLinkCell(td, row, col, active) {
@@ -2159,6 +2224,14 @@
         render({ focus: true });
         return;
       }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && !e.altKey) {
+        if (document.querySelector('dialog[open]')) return;
+        e.preventDefault();
+        if (st.edit && !commitEdit()) return;
+        clearTimeout(saveTimer);
+        if (window.TABLES_HOT) TABLES_HOT.save({ explicit: true, saveAs: !!e.shiftKey });
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
         if (e.target && e.target.tagName === 'TEXTAREA' && !$('record-panel').contains(e.target)) return;
         if (document.querySelector('dialog[open]')) return;
@@ -2181,7 +2254,50 @@
     });
   }
 
+  function captureHot(session) {
+    var tables = [];
+    var i;
+    for (i = 0; i < db.tables.length; i++) {
+      var t = db.tables[i];
+      tables.push({
+        id: t.id,
+        name: t.name,
+        view: st.viewMode[t.id] === 'cards' ? 'cards' : 'grid',
+        columns: t.columns,
+        rows: t.rows
+      });
+    }
+    return {
+      created: session && session.created ? session.created : 0,
+      activeId: db.activeId,
+      settings: { theme: db.theme || 'auto' },
+      tables: tables
+    };
+  }
+
+  function applyHot(doc) {
+    var built = window.TablesHot && TablesHot.toDb ? TablesHot.toDb(doc) : null;
+    if (!built || !built.db) return;
+    db = built.db;
+    st.viewMode = built.views || {};
+    st.search = '';
+    st.filters = {};
+    st.sort = {};
+    st.selected = {};
+    st.anchor = null;
+    st.active = null;
+    st.edit = null;
+    st.viewStart = 0;
+    st.banner = '';
+    closePanel();
+    closePop();
+    var search = $('search');
+    if (search) search.value = '';
+    render();
+  }
+
   function boot() {
+    /* (before HOT1) localStorage tables-v1 load. HOT1 does not migrate that key.
     var loaded;
     try { loaded = M.loadFrom(localStorage); }
     catch (e) { loaded = { db: M.blankDb(), error: 'blocked' }; }
@@ -2194,6 +2310,20 @@
     bind();
     render();
     if (!loaded.error && !loaded.empty) setStatus('Loaded from this device');
+    */
+    db = M.blankDb();
+    bind();
+    render();
+    if (window.TablesHot && TablesHot.install) {
+      TablesHot.install({
+        capture: captureHot,
+        apply: applyHot,
+        toast: setStatus,
+        noteSaved: function (res) { setStatus(res && res.verb ? res.verb : 'Saved'); },
+        noteFailed: function () { setStatus('Could not save.'); },
+        beforeSave: function () { clearTimeout(saveTimer); }
+      });
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

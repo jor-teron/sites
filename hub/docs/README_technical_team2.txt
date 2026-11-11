@@ -2154,6 +2154,55 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/spreadsheet/spreadsheet_readme.md` (HOS1 section, legacy notes).
 - 1.109 is HOW1, so this note is numbered 1.110.
 
+### 1.111 HOT1 Tables .hot files
+
+- Tables (`apps/office/tables/`, Hub id `tables`) now keeps every table in one
+  `.hot` file. The file is UTF-8 JSON: `format` `"hot"`, `version` `1`, `name`,
+  `created`, `updated`, `activeId` (the open sheet tab), `settings` (file-owned
+  options; version 1 keeps `theme`: `auto`, `light` or `dark`) and `tables`
+  in sheet-tab order. Each table has `id`, `name`, `view` (`grid` or `cards`),
+  `columns` (id, name, type, width in px or `null`, choice `options`, and for
+  a Link column `linkTable` and `multiple`) and `rows` (stable id, cells keyed
+  by column id). A link cell stores the other row's id. Backlinks are not
+  stored again: they are calculated from those ids when the file is opened.
+  No zip, no new library, no CDN. Version other than 1 is refused. Old
+  `localStorage` `tables-v1` is not migrated and is not opened.
+- Save, Save As and autosave write `.hot`. Inside the Hub they write the
+  browser Local drive (OPFS, `FsDrives.handle('local')` + `FsOps.writeFile`),
+  folder `Documents`, the same folder the Files app calls Documents. The folder
+  is created on first save. Outside the Hub, Save uses `showSaveFilePicker`
+  when the browser has it, otherwise a download. Autosave outside the Hub only
+  continues into a file already picked. Autosave waits 0.8 s. A blank new file
+  (Table 1, the four starter columns, no rows, Grid, Auto) is not written until
+  it has content, or Save As. In-app dialogs only (name clash, Save As). No
+  `window.alert` / `confirm` / `prompt`.
+- Open `.hot` (Open .hot, drop, or the page hash from Files) restores the
+  tables, tab order, active tab, Grid/Cards per table, column widths, link
+  ids (and so the backlinks) and the theme. In the Hub, startup opens the
+  newest `.hot` in Documents when no file hash is present. Import CSV and
+  Export CSV are unchanged. CSV import still adds a table and still does not
+  create a Link column. Replaced `localStorage` load/save calls are commented
+  with `(before HOT1)` and were not deleted. `saveTo` / `loadFrom` stay in
+  `tables_model.js` for the TB1 / TB2 / TB4 tests. The Documents helper is
+  `apps/office/shared/office-native.js` (the same approach as HOW1 and HOS1).
+  Writer's `draftly-how.js` and Spreadsheet's `spreadsheet_hos.js` are unchanged.
+- Files association: `shared/fs/filetypes.js` maps `.hot` to app id `tables`
+  (display name Tables, url `apps/office/tables/`). `apps/system/files/files_actions.js`
+  already opens a `file: true` app with `FsRef.openIn`, so a double-click opens
+  Tables on that file. `.how` still opens Writer and `.hos` still opens
+  Spreadsheet. Display copy only in `apps/office/office-apps.csv`,
+  `hub/core/hub_catalog.js` and `hub/core/hub_appindex.js` (the id, path and
+  icon stay). No `desktop/` edit. No `?v=` and no version or build bump.
+  The page title stays `Tables`.
+- Checked with `node --check` on the edited scripts,
+  `node apps/office/tables/test-hot1-format.js` (round-trip of a `.hot`
+  file: links and backlinks, two tables, every column type, views, widths),
+  the existing `node apps/office/tables/test-tb1.js`, `test-tb2.js` and
+  `test-tb4.js`, `node apps/office/spreadsheet/test-hos1-format.js`, and
+  `node apps/office/draftly/test-how1-format.js`. No browser runner.
+- Details: `apps/office/tables/tables_readme.md` (HOT1 section, legacy notes).
+- 1.110 is HOS1, so this note is numbered 1.111.
+
 
 ## 2. Releases (PR → what)
 

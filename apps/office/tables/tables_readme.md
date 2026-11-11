@@ -1,8 +1,37 @@
-# Tables (TB1, TB2, TB4)
+# Tables (TB1, TB2, TB4, HOT1)
 
 A simple database that looks and works like a spreadsheet. It is an easier alternative to Base. Base is a separate app and was not changed.
 
 Plain HTML, CSS and JavaScript. No build, no libraries, no network. It works offline and from `file://`.
+
+## HOT1 — .hot files
+
+`.hot` (Hub Office Tables) is the default native file. It is one UTF-8 JSON file, readable in a text editor, with no zip and no new library.
+
+| Field | What it holds |
+| --- | --- |
+| `format` | `"hot"` |
+| `version` | `1`. Any other version is refused. A `tables-v1` record is refused. |
+| `name`, `created`, `updated` | File name and times |
+| `activeId` | Which sheet tab is open |
+| `settings` | Options that belong to the file. Version 1 keeps `theme` (`auto`, `light` or `dark`). Unknown keys are dropped. |
+| `tables` | Every table, in sheet-tab order (see below) |
+
+Each table holds `id`, `name`, `view` (`grid` or `cards`), `columns` and `rows`. A column holds `id`, `name`, `type` (text, number, date, yesno, choice, link), `width` (px, or `null` for the default; stored widths are 72–480), and for a choice the `options`, and for a link `linkTable` and `multiple`. A row holds a stable `id` and `cells` keyed by column id. A link cell stores the other row’s id (one id, or a list when the column allows several). Backlinks are not a second copy in the file: they are calculated from those ids when the file is opened, so Linked from comes back. Search text, column filters and sort are still for this tab only and are not in the file.
+
+**Save** and **Save As** write `.hot`. **Open .hot**, or dropping a `.hot` on the page, restores that file. **Import CSV** and **Export CSV** are unchanged. CSV import still adds a table to the file that is open. It still does not create a Link column.
+
+**In the Hub**, Save, Save As and autosave write the browser's Local drive, folder **Documents**. That is the same disk the Files app shows. Documents is created the first time a file is saved. Tables reopens the newest `.hot` in Documents when it starts inside the Hub. A double-click on a `.hot` in Files opens Tables on that file (the Hub id is still `tables`). Autosave waits 0.8 s after the last change. A blank new file (Table 1, the four starter columns, no rows, Grid, Auto theme) is not written until it has something in it, or you choose Save As.
+
+**Outside the Hub**, Save uses the browser's save picker when the browser has one, and otherwise downloads the `.hot` file. Autosave outside the Hub continues only into a file you already picked. It does not download on each edit.
+
+Ctrl+S saves. Ctrl+Shift+S is Save As. Name clashes and Save As use the in-app dialogs. There is no `alert`, `confirm` or `prompt`.
+
+Drag the right edge of a column header to set that column’s width. The width is kept in the file. Grid and Cards are kept per table.
+
+### Legacy (before HOT1)
+
+The old native copy was `localStorage` key `tables-v1` (tables, the active tab, and the theme). TB2 and TB4 migrated older rows in place into that same key. Tables does not migrate that record and does not open it. The old load and save calls are still in the source, commented with `(before HOT1)`. `saveTo` and `loadFrom` stay in `tables_model.js`, so `test-tb1.js`, `test-tb2.js` and `test-tb4.js` can still round-trip that shape. The app does not call them. Import CSV and Export CSV still use the same readers.
 
 ## 1. What it is
 
@@ -13,10 +42,13 @@ You keep several tables on this device. Each table is a tab. A table is a grid: 
 - `tables.html` — the app. `index.html` only redirects here (query and hash are kept).
 - `tables.css` — layout. Dark by default; Light and Auto sit on the same variables the Office dialogs use. TB4 copies the Spreadsheet grid variables into this file (cell size, header, selection, sheet tabs). Spreadsheet’s own CSS is not edited.
 - `tables.js` — the grid, tabs, filters and file buttons.
-- `tables_model.js` — types, sort, filter, search, CSV and the save shape. No DOM, so Node can test it.
+- `tables_model.js` — types, sort, filter, search, CSV and the old `tables-v1` shape. No DOM, so Node can test it. (before HOT1) the app wrote that key from here.
+- `tables_hot.js` (HOT1): `.hot` read/write, Hub Documents autosave, standalone picker or download.
+- `../shared/office-native.js` (HOS1, reused): Hub Documents folder and the save picker, the same approach as HOW1 and HOS1.
 - `test-tb1.js` — `node test-tb1.js`.
 - `test-tb2.js` — `node test-tb2.js`. Cards, links and the TB1 migration. No browser.
 - `test-tb4.js` — `node test-tb4.js`. Date parsing and display, the year-0001 case, old saves, date sort and filter, header labels. No browser.
+- `test-hot1-format.js` — `node test-hot1-format.js`. Round-trip of a `.hot` file: several tables, column types, links and backlinks, views, widths. No browser.
 - `tables_icon.svg` — icon for the Office tiles page.
 - `../shared/office-dialog.js` and `office-dialog.css` — in-app dialogs. Those shared files are not modified.
 
@@ -43,9 +75,9 @@ You keep several tables on this device. Each table is a tab. A table is a grid: 
 
 ## 5. Saving
 
-Automatic, on this device only, in `localStorage` under the key `tables-v1`. The saved object is version 1: tables, the active tab, and the theme (auto / light / dark). Auto follows the Hub theme (`sites-hub.theme`) when that is set, otherwise the device. If the saved text is damaged, Tables opens a blank table and leaves the old text in place until you edit. If storage is blocked or full, a banner says so and the tab still works until you close it.
+<!-- (before HOT1): Automatic, on this device only, in `localStorage` under the key `tables-v1`. The saved object is version 1: tables, the active tab, and the theme (auto / light / dark). Auto follows the Hub theme (`sites-hub.theme`) when that is set, otherwise the device. If the saved text is damaged, Tables opens a blank table and leaves the old text in place until you edit. If storage is blocked or full, a banner says so and the tab still works until you close it. To reset, delete the table or clear site data for this origin. -->
 
-To reset, delete the table or clear site data for this origin.
+**HOT1:** see the HOT1 section. Autosave is 0.8 s after the last change. In the Hub the file is `Documents/<name>.hot` on the Local drive. Outside the Hub, Save downloads or uses the save picker. Theme Auto still follows the Hub theme (`sites-hub.theme`) when that is set, otherwise the device. The theme is stored in the `.hot` file. To start again, delete the `.hot` file.
 
 ## 6. Keyboard and touch
 
@@ -58,14 +90,16 @@ To reset, delete the table or clear site data for this origin.
 - **TB1 is the first release.** There was no older Tables save before TB1. The only storage key is still `tables-v1`. A future change that cannot be read as this shape should use a new key (for example `tables-v2`) and leave `tables-v1` in place.
 - **TB2 did not add a new storage key.** TB1 rows already had stable ids. On load, any row that is missing an id is given one, and that id is kept on the next save. Link columns are extra fields on the same object. Opening a TB1 save does not delete it: the next edit writes the migrated rows back to `tables-v1`. There is no `tables-v2` key.
 - **TB4 did not add a new storage key.** Dates were already `YYYY-MM-DD` inside `tables-v1`. An old save loads as before. A date that was stored as text in a date column (`11/11/2026`, `11 Nov 2026`) is read as ISO on load; the next edit writes that ISO back to `tables-v1`. Year `0001` was never stored (the native picker rejected it). There is no `tables-v2` key. Replaced code is commented with `(before TB4)` and was not deleted. Spreadsheet, Base, and `apps/office/shared/` were not edited.
+- **HOT1 does not load `tables-v1`.** That was the owner’s decision: there is no migration and the old key is not opened. The load and save that used it are commented with `(before HOT1)` and were not deleted. `saveTo` / `loadFrom` stay for the TB1, TB2 and TB4 tests. The native file is `.hot` (see the HOT1 section). Replaced catalog lines are commented with `(before HOT1)` as well. No `?v=` was added. The Hub id stays `tables`.
 - **No `?v=` cache buster** on the stylesheet or scripts, and no app build number in the title. Some older Office apps still use `?v=` (Spreadsheet `?v=SH13`, Base `?v=BS9`). Tables does not.
 - **Base was not edited.** Tables does not read or write Base’s IndexedDB (`office-base`). Moving data between them is a CSV export from one and import into the other.
-- **Shared Office files were not edited.** Tables only uses the existing dialog helper. It does not use the ribbon, Quick Access bar or Hub title-bar bridge.
-- **Hub catalog.** The Office tiles page reads `apps/office/office-apps.csv`, which has a Tables row. The Hub launcher’s generated files (`hub/core/hub_catalog.js`, `hub/core/hub_appindex.js`) are Hub-owned and were not changed in this release. Until Hub Main Bot regenerates them, Tables shows on the Office tiles page but not in the Hub’s own catalog.
+<!-- (before HOT1): - **Shared Office files were not edited.** Tables only uses the existing dialog helper. It does not use the ribbon, Quick Access bar or Hub title-bar bridge. -->
+- **Shared Office files.** Tables uses the existing dialog helper and, since HOT1, `office-native.js` for the Documents folder and the save picker (a comment there names Tables; the helper’s behaviour is unchanged). It does not use the ribbon, Quick Access bar or Hub title-bar bridge. No new library was added.
+- **Hub catalog.** The Office tiles page reads `apps/office/office-apps.csv`. HOT1 updates the Tables description there and in `hub/core/hub_catalog.js` and `hub/core/hub_appindex.js` (display only: the id, path and icon stay). A `.hot` double-click is registered in `shared/fs/filetypes.js`. Files already opens a `file: true` app with `FsRef.openIn`.
 
 ## 8. Limits
 
-No formulas, no undo, and no cloud sync. Filters, sort, the search text and the Grid/Cards choice are forgotten on reload. CSV is comma-separated only. Dates typed as `DD/MM/YYYY` are day-first, matching Spreadsheet. A date with a month name needs a 4-digit year (`11 Nov 2026`, not `November 11`). Years before 1000 are refused, so `0001` cannot be stored. The grid and the cards paint 300 rows at a time; import stops at 5,000 data rows and 2 MB. Choice guessing only kicks in when a short value repeats (at least 4 cells, 6 different values or fewer). A picture and a file attachment are just text. A Link column (TB2) points at a record in this file; it is not a web address.
+No formulas, no undo, and no cloud sync. Filters, sort and the search text are forgotten when you reload or open a file. The Grid/Cards choice, column widths and the theme are kept in the `.hot` file. CSV is comma-separated only. Dates typed as `DD/MM/YYYY` are day-first, matching Spreadsheet. A date with a month name needs a 4-digit year (`11 Nov 2026`, not `November 11`). Years before 1000 are refused, so `0001` cannot be stored. The grid and the cards paint 300 rows at a time; import stops at 5,000 data rows and 2 MB. Choice guessing only kicks in when a short value repeats (at least 4 cells, 6 different values or fewer). A picture and a file attachment are just text. A Link column (TB2) points at a record in this file; it is not a web address.
 
 ## 9. TB2 — Cards and linked tables
 
