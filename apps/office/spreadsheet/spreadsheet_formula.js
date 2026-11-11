@@ -14,6 +14,9 @@
  * SH13: a function may return a 2D array. The anchor cell keeps the top-left value
  * and the rest is spilled into empty cells to the right and below (not stored).
  * A1# is the current spill of A1. #SPILL! when the block does not fit.
+ * SH14: SORT, SORTBY, FILTER, UNIQUE. A range or array combined with a scalar,
+ * or with a same-size array, uses element-wise + - * / ^ and comparisons.
+ * A formula with no array still uses the scalar parser only.
  */
 
 /* Formula error tokens shown in cells */
@@ -25,8 +28,10 @@ var ERR_LOOP = "#LOOP!";
 var ERR_NA = "#N/A";
 var ERR_VALUE = "#VALUE!";
 var ERR_SPILL = "#SPILL!";
+var ERR_CALC = "#CALC!";
 /* (before SH13): var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE]; */
-var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL];
+/* (before SH14): var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL]; */
+var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL, ERR_CALC];
 
 /* Array placeholders (@@n@@) share one bag per formula. Not a cell ref (no letter+digit). */
 var evalArrays = [];
@@ -44,6 +49,26 @@ function isSpillArray(v) {
 function spillWrap(rows) {
   if (!rows || !rows.length || !rows[0] || !rows[0].length) fail(ERR_VALUE);
   if (rows.length === 1 && rows[0].length === 1) return rows[0][0];
+  return { spill: 1, rows: rows };
+}
+
+/* A range used as an operand (A1:A3+1, B2:B10>100). 1×1 stays an array so the
+   comparison still runs; spillWrap unwraps it when the expression is finished. */
+function rangeRefToArray(x) {
+  var si = x.sheet == null ? evalSheetIdx : findSheetIndex(x.sheet);
+  var r1, r2, c1, c2, r, c, rows, row;
+  if (si < 0) fail(ERR_REF);
+  r1 = Math.min(x.r1, x.r2);
+  r2 = Math.max(x.r1, x.r2);
+  c1 = Math.min(x.c1, x.c2);
+  c2 = Math.max(x.c1, x.c2);
+  if (r1 < 0 || c1 < 0 || r2 >= ROWS || c2 >= COLS) fail(ERR_REF);
+  rows = [];
+  for (r = r1; r <= r2; r++) {
+    row = [];
+    for (c = c1; c <= c2; c++) row.push(rawVal(r, c, si));
+    rows.push(row);
+  }
   return { spill: 1, rows: rows };
 }
 
@@ -306,6 +331,46 @@ function pushStrings(s, bag) {
 }
 
 /**
+ * Innermost named call, with parentheses allowed inside the arguments.
+ * Depth is the paren depth of the name, so FILTER inside SUM is evaluated first.
+ */
+function findFormulaCall(s) {
+  var i, ch, depth = 0, inQ = false, best = null, start, name, j, dd, q, c2, open;
+  for (i = 0; i < s.length; i++) {
+    ch = s.charAt(i);
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (inQ) continue;
+    if (ch === "(") { depth++; continue; }
+    if (ch === ")") { if (depth > 0) depth--; continue; }
+    if (!/[A-Za-z]/.test(ch)) continue;
+    if (i > 0 && /[A-Za-z0-9_$]/.test(s.charAt(i - 1))) continue;
+    start = i;
+    while (i + 1 < s.length && /[A-Za-z0-9]/.test(s.charAt(i + 1))) i++;
+    name = s.slice(start, i + 1);
+    if (s.charAt(i + 1) !== "(") continue;
+    open = i + 1;
+    dd = 0;
+    q = false;
+    for (j = open; j < s.length; j++) {
+      c2 = s.charAt(j);
+      if (c2 === '"') { q = !q; continue; }
+      if (q) continue;
+      if (c2 === "(") dd++;
+      else if (c2 === ")") {
+        dd--;
+        if (dd === 0) {
+          if (!best || depth > best.depth) {
+            best = { name: name, args: s.slice(open + 1, j), start: start, end: j + 1, depth: depth };
+          }
+          break;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/**
  * Evaluate an expression (no leading =)
  */
 function evalExpr(expr) {
@@ -325,18 +390,39 @@ function evalExpr(expr) {
   if (s.indexOf(ERR_REF) !== -1) fail(ERR_REF);       // a ref removed by delete row / column
   /* $ is consumed by mapRefs; do not strip it globally (would break 'Sheet $1'!A1) */
 
-  var guard = 0;
+  // (before SH14) a call was /([A-Za-z][A-Za-z0-9]*)\(([^()]*)\)/ and s.replace(m[0], ...).
+  // Arguments could not contain parentheses, so FILTER(range, (a>1)*(b="x")) never ran.
+  // var guard = 0;
+  // while (guard++ < 40) {
+  //   m = s.match(/([A-Za-z][A-Za-z0-9]*)\(([^()]*)\)/);
+  //   if (!m) break;
+  //   name = m[1];
+  //   inside = m[2].replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
+  //   out = evalFunc(name, splitArgs(inside));
+  //   if (isSpillArray(out)) {
+  //     evalArrays.push(out);
+  //     s = s.replace(m[0], "@@" + (evalArrays.length - 1) + "@@");
+  //   } else {
+  //     if (typeof out === "number" && (isNaN(out) || !isFinite(out))) out = ERR_NUM;
+  //     if (typeof out === "boolean") out = out ? "TRUE" : "FALSE";
+  //     if (typeof out === "string") {
+  //       bag.push(out);
+  //       s = s.replace(m[0], "__S" + (bag.length - 1) + "__");
+  //     } else s = s.replace(m[0], String(out));
+  //   }
+  // }
+  var guard = 0, call, repl, liftRanges, av;
   while (guard++ < 40) {
-    m = s.match(/([A-Za-z][A-Za-z0-9]*)\(([^()]*)\)/);
-    if (!m) break;
-    name = m[1];
+    call = findFormulaCall(s);
+    if (!call) break;
+    name = call.name;
     /* put string literals back WITH their quotes so each argument stays a string */
-    inside = m[2].replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
+    inside = call.args.replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
     out = evalFunc(name, splitArgs(inside));
     /* SH13: any function may return a 2D array. 1×1 is already unwrapped. */
     if (isSpillArray(out)) {
       evalArrays.push(out);
-      s = s.replace(m[0], "@@" + (evalArrays.length - 1) + "@@");
+      repl = "@@" + (evalArrays.length - 1) + "@@";
     } else {
       /* (before SH13) every function result was a number, boolean or string */
       /* errors are kept as text here so an outer IFERROR can still see them */
@@ -344,14 +430,19 @@ function evalExpr(expr) {
       if (typeof out === "boolean") out = out ? "TRUE" : "FALSE";
       if (typeof out === "string") {
         bag.push(out);
-        s = s.replace(m[0], "__S" + (bag.length - 1) + "__");
+        repl = "__S" + (bag.length - 1) + "__";
       } else {
-        s = s.replace(m[0], String(out));
+        repl = String(out);
       }
     }
+    s = s.slice(0, call.start) + repl + s.slice(call.end);
   }
   if (arrayFromToken(s)) return arrayFromToken(s);
-  if (s.indexOf("@@") >= 0) fail(ERR_VALUE);
+  /* (before SH14): if (s.indexOf("@@") >= 0) fail(ERR_VALUE); */
+
+  /* Lift A1:B2 to an array only when this expression does math or already has an array.
+     A bare =A1:A3 stays text and is still #ERR. */
+  liftRanges = s.indexOf("@@") >= 0 || /<=|>=|<>|==|[<>=+\-*/^]/.test(s);
 
   /* SH8: resolve Sheet2!A1 / 'My Sheet'!A1 and ordinary A1 against evalSheetIdx */
   s = mapRefs("=" + s, function (x) {
@@ -367,7 +458,15 @@ function evalExpr(expr) {
       bag.push(String(sp));
       return "__S" + (bag.length - 1) + "__";
     }
-    if (x.range) return refToken(x);
+    if (x.range) {
+      if (liftRanges) {
+        sp = rangeRefToArray(x);
+        evalArrays.push(sp);
+        return "@@" + (evalArrays.length - 1) + "@@";
+      }
+      /* (before SH14): return refToken(x); a range beside + or > stayed as A1:B2 text */
+      return refToken(x);
+    }
     si = x.sheet == null ? evalSheetIdx : findSheetIndex(x.sheet);
     if (si < 0 || x.c1 < 0 || x.c1 >= COLS || x.r1 < 0 || x.r1 >= ROWS) fail(ERR_REF);
     rv = rawVal(x.r1, x.c1, si);
@@ -379,7 +478,13 @@ function evalExpr(expr) {
   }).slice(1);
 
   if (arrayFromToken(s)) return arrayFromToken(s);
-  if (s.indexOf("@@") >= 0) fail(ERR_VALUE);
+  /* (before SH14): if (s.indexOf("@@") >= 0) fail(ERR_VALUE); */
+  if (s.indexOf("@@") >= 0) {
+    if (s.indexOf("&") >= 0) fail(ERR_VALUE);
+    av = arrayMath(s, bag);
+    if (isSpillArray(av)) return spillWrap(av.rows);
+    return av;
+  }
 
   if (s.indexOf("&") >= 0) {
     out = s.split("&").map(function (part) {
@@ -470,6 +575,174 @@ function simpleMath(s) {
   }
   var result = sum();
   if (pos !== toks.length) bad();
+  return result;
+}
+
+/* ---- SH14 element-wise array math. Scalar formulas never reach this. ---- */
+
+function arrayToNum(v) {
+  var n, t;
+  if (isErrorValue(v)) return v;
+  if (v === true || (typeof v === "string" && /^TRUE$/i.test(v))) return 1;
+  if (v === false || (typeof v === "string" && /^FALSE$/i.test(v))) return 0;
+  if (typeof v === "number") {
+    if (!isFinite(v) || isNaN(v)) return ERR_NUM;
+    return v;
+  }
+  if (v == null || v === "") return 0;
+  t = String(v).trim();
+  if (t === "") return ERR_VALUE;
+  n = Number(t);
+  if (!isNaN(n) && isFinite(n)) return n;
+  return ERR_VALUE;
+}
+
+function arrayArith(op, a, b) {
+  var x, y, n;
+  if (isErrorValue(a)) return a;
+  if (isErrorValue(b)) return b;
+  x = arrayToNum(a);
+  y = arrayToNum(b);
+  if (isErrorValue(x)) return x;
+  if (isErrorValue(y)) return y;
+  if (op === "+") n = x + y;
+  else if (op === "-") n = x - y;
+  else if (op === "*") n = x * y;
+  else if (op === "/") {
+    if (y === 0) return ERR_DIV0;
+    n = x / y;
+  } else n = Math.pow(x, y);
+  if (typeof n !== "number" || isNaN(n) || !isFinite(n)) return ERR_NUM;
+  return roundNum(n);
+}
+
+function arrayFoldCmp(v) {
+  if (typeof v !== "string") return v;
+  if (v.trim() !== "" && !isNaN(Number(v))) return v;
+  return v.toLowerCase();
+}
+
+function arrayCmpOne(op, left, right) {
+  if (isErrorValue(left)) return left;
+  if (isErrorValue(right)) return right;
+  return cmp(op, arrayFoldCmp(left), arrayFoldCmp(right)) ? "TRUE" : "FALSE";
+}
+
+function arrayCombine(left, right, fn) {
+  var la = isSpillArray(left), ra = isSpillArray(right);
+  var rows, r, c, h, w, arr, scalar, leftScalar;
+  if (!la && !ra) return fn(left, right);
+  if (la && ra) {
+    if (left.rows.length !== right.rows.length || left.rows[0].length !== right.rows[0].length) fail(ERR_VALUE);
+    h = left.rows.length;
+    w = left.rows[0].length;
+    rows = [];
+    for (r = 0; r < h; r++) {
+      rows[r] = [];
+      for (c = 0; c < w; c++) rows[r][c] = fn(left.rows[r][c], right.rows[r][c]);
+    }
+    return { spill: 1, rows: rows };
+  }
+  arr = la ? left : right;
+  scalar = la ? right : left;
+  leftScalar = !la;
+  h = arr.rows.length;
+  w = arr.rows[0].length;
+  rows = [];
+  for (r = 0; r < h; r++) {
+    rows[r] = [];
+    for (c = 0; c < w; c++) {
+      rows[r][c] = leftScalar ? fn(scalar, arr.rows[r][c]) : fn(arr.rows[r][c], scalar);
+    }
+  }
+  return { spill: 1, rows: rows };
+}
+
+function arrayNeg(v) {
+  if (isSpillArray(v)) return arrayCombine(0, v, function (a, b) { return arrayArith("-", a, b); });
+  return arrayArith("-", 0, v);
+}
+
+function arrayTokenValue(t, bag) {
+  var m, v, n;
+  m = /^@@(\d+)@@$/.exec(t);
+  if (m) {
+    v = evalArrays[parseInt(m[1], 10)];
+    if (!isSpillArray(v)) fail(ERR_VALUE);
+    return v;
+  }
+  m = /^__S(\d+)__$/.exec(t);
+  if (m) {
+    v = bag[parseInt(m[1], 10)];
+    if (isErrorValue(v)) fail(v);
+    return v;
+  }
+  if (/^TRUE$/i.test(t)) return "TRUE";
+  if (/^FALSE$/i.test(t)) return "FALSE";
+  if (/^(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(t)) {
+    n = Number(t);
+    if (isNaN(n) || !isFinite(n)) fail(ERR_NUM);
+    return n;
+  }
+  fail(ERR);
+}
+
+/**
+ * Element-wise + - * / ^ and comparisons. Same-size arrays, or an array and a scalar.
+ * A different shape is #VALUE!. Comparison results are TRUE / FALSE.
+ */
+function arrayMath(src, bag) {
+  var s = String(src).trim();
+  var re = /@@\d+@@|__S\d+__|(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?|<=|>=|<>|==|=|<|>|\^|[+\-*/()]|TRUE|FALSE/gi;
+  var toks = [], m, last = 0, pos = 0;
+  while ((m = re.exec(s))) {
+    if (s.slice(last, m.index).replace(/\s+/g, "") !== "") fail(ERR);
+    toks.push(m[0]);
+    last = re.lastIndex;
+  }
+  if (s.slice(last).replace(/\s+/g, "") !== "") fail(ERR);
+  function peek() { return toks[pos]; }
+  function next() { return toks[pos++]; }
+  function primary() {
+    var t = next(), v;
+    if (t === undefined) fail(ERR);
+    if (t === "(") { v = comparison(); if (next() !== ")") fail(ERR); return v; }
+    if (t === "-") return arrayNeg(power());
+    if (t === "+") return power();
+    return arrayTokenValue(t, bag);
+  }
+  function power() {
+    var base = primary();
+    if (peek() === "^") { next(); return arrayCombine(base, power(), function (a, b) { return arrayArith("^", a, b); }); }
+    return base;
+  }
+  function product() {
+    var v = power(), op;
+    while (peek() === "*" || peek() === "/") {
+      op = next();
+      v = arrayCombine(v, power(), function (a, b) { return arrayArith(op, a, b); });
+    }
+    return v;
+  }
+  function sumExpr() {
+    var v = product(), op;
+    while (peek() === "+" || peek() === "-") {
+      op = next();
+      v = arrayCombine(v, product(), function (a, b) { return arrayArith(op, a, b); });
+    }
+    return v;
+  }
+  function comparison() {
+    var v = sumExpr(), op;
+    if (peek() === "<=" || peek() === ">=" || peek() === "<>" || peek() === "==" || peek() === "=" || peek() === "<" || peek() === ">") {
+      op = next();
+      if (op === "==") op = "=";
+      v = arrayCombine(v, sumExpr(), function (a, b) { return arrayCmpOne(op, a, b); });
+    }
+    return v;
+  }
+  var result = comparison();
+  if (pos !== toks.length) fail(ERR);
   return result;
 }
 

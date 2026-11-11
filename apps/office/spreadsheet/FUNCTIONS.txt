@@ -39,7 +39,7 @@ MATH
   RAND()
   RANDBETWEEN(bottom, top)
 
-ARRAYS / SPILL (SH13)
+ARRAYS / SPILL (SH13, extended in SH14)
   A formula may return a grid. The top-left value stays in the formula cell;
   the rest spills into empty cells to the right and below (display only).
   Those ghost cells are not saved as values. Typing into one blocks the spill.
@@ -50,8 +50,35 @@ ARRAYS / SPILL (SH13)
   RANDARRAY([rows], [cols], [min], [max], [whole])
                     defaults: 1×1, min 0, max 1, decimals
                     whole TRUE returns integers from min to max, inclusive
+  SORT(array, [sort_index], [sort_order], [by_col])
+                    sort_index is 1-based (default 1). sort_order 1 ascending
+                    (default), -1 descending. by_col TRUE sorts across.
+                    Numbers first, then text A–Z ignoring case, blanks last.
+                    Equal keys keep their original order.
+  SORTBY(array, by_array1, [sort_order1], [by_array2, sort_order2], ...)
+                    each by_array is one column of the same height, or one
+                    row of the same width. Order 1 or -1, as in SORT.
+                    A different size is #VALUE!.
+  FILTER(array, include, [if_empty])
+                    include is a TRUE/FALSE column of the same height (keeps
+                    rows) or a row of the same width (keeps columns).
+                    Numbers work too: 0 is false, anything else is true.
+                    No match and no if_empty is #CALC!. A different size is #VALUE!.
+  UNIQUE(array, [by_col], [exactly_once])
+                    distinct rows (or columns if by_col is TRUE), first one kept.
+                    exactly_once TRUE keeps only values that appear once.
+                    Text match ignores case. Nothing left is #CALC!.
   A1#               the whole current spill of A1
   A 1×1 result is an ordinary value. SUM(SEQUENCE(5)) adds the array.
+  Arguments may be a range, an A1# spill, or an array from another function
+  (SORT(UNIQUE(A2:A50)), SUM(FILTER(...))).
+  Array math (SH14), element by element, same shape or a scalar:
+    B2:B50>100
+    (B2:B50>100)*(C2:C50="x")     * is AND (TRUE is 1, FALSE is 0)
+    (B2:B50>100)+(C2:C50="x")     + is OR
+    SEQUENCE(3)+1                 spills 2, 3, 4
+  Comparisons are = <> < > <= >=. A different shape is #VALUE!.
+  A single cell plus a number is unchanged (no array step).
   Zero or a negative size is #VALUE!. A result that does not fit is #SPILL!.
 
 LOGIC
@@ -119,8 +146,11 @@ ERRORS
   #REF!     reference outside the sheet (e.g. A150), a deleted cell, or a missing sheet
   #LOOP!    circular reference (A1=B1, B1=A1)
   #N/A      lookup not found, or IFS/SWITCH with no match
-  #VALUE!   wrong type of argument (e.g. FIND with no match, a bad date)
+  #VALUE!   wrong type of argument (e.g. FIND with no match, a bad date,
+            or a SORT / FILTER array of the wrong size)
   #SPILL!   an array result cannot spill (a cell in the way, a merged cell, or past the grid)
+  #CALC!    FILTER found no rows (and if_empty was left out), or UNIQUE
+            with exactly_once found nothing
   #ERR      formula not understood
 
 FORMULA HINT / PICKER (SH9)

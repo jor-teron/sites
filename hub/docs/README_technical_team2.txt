@@ -1880,6 +1880,16 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Checked with node --check and node apps/office/spreadsheet/test-sh13-spill.js, plus the existing SH9–SH12 node tests. No browser runner.
 
 
+### 1.101 SH14 Spreadsheet SORT, SORTBY, FILTER, UNIQUE
+
+- apps/office/spreadsheet only, plus this section. Grid stays 26 × 100. Storage stays sheet-v4.
+- SORT, SORTBY, FILTER and UNIQUE match Excel's arguments and spill through the SH13 engine. Sort order 1 is ascending and -1 descending; numbers come before text (case ignored), blanks stay last, and ties keep their order. FILTER's include is a same-height column or a same-width row; no match and no if_empty is #CALC! (added to the error list). A wrong size is #VALUE!. UNIQUE compares rows (or columns), ignoring text case; exactly_once with nothing left is #CALC!.
+- Ranges and arrays do element-wise = <> < > <= >= and + - * / against a scalar or a same-size array, so B2:B50>100, (B2:B50>100)*(C2:C50="x") and SEQUENCE(3)+1 spill. Scalar formulas still use the number parser only. Arguments may be a range, an A1# spill, or an array from another function.
+- The fx picker lists the four functions. Title / SHEET_VERSION / ?v=: SH14. Details: apps/office/spreadsheet/spreadsheet_readme.md.
+- Checked with node --check and node apps/office/spreadsheet/test-sh14-sort-filter.js, plus the existing SH9–SH13 node tests. No browser runner.
+- 1.100 is SH13, so this note is numbered 1.101.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

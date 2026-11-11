@@ -109,7 +109,8 @@ const SPREADSHEET_CONFIG = {
 
   // Cell values painted with the error style (ERR "#ERR" from spreadsheet_formula.js is added by the logic)
   /* (before SH13): errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!", "#N/A", "#VALUE!"], */
-  errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!", "#N/A", "#VALUE!", "#SPILL!"],
+  /* (before SH14): errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!", "#N/A", "#VALUE!", "#SPILL!"], */
+  errorValues: ["#DIV/0!", "#NUM!", "#REF!", "#LOOP!", "#N/A", "#VALUE!", "#SPILL!", "#CALC!"],
 
   // On-screen text
   text: {
