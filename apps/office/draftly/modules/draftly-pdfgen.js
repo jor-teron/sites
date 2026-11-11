@@ -353,7 +353,8 @@ Draftly.pdfgen = (function () {
     if (!window.jspdf || !window.jspdf.jsPDF) return Promise.reject(new Error('jsPDF missing'));
     var g = geometry();
     var doc = new window.jspdf.jsPDF({ orientation: g.land ? 'landscape' : 'portrait', unit: 'mm', format: [Math.min(g.w, g.h), Math.max(g.w, g.h)], compress: true });
-    doc.setProperties({ title: opts.title || 'Draftly document', creator: 'Draftly (Hub)' });
+    /* (before DF24) doc.setProperties({ title: opts.title || 'Draftly document', creator: 'Draftly (Hub)' }); */
+    doc.setProperties({ title: opts.title || 'Writer document', creator: 'Writer (Hub)' });
     var i = 0;
     function next() {
       if (i >= parts.length) return Promise.resolve(doc);

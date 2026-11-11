@@ -25,7 +25,8 @@ Draftly.hub = {
   /* Message shapes: the one place to change if the hub's protocol changes. */
   shape: {
     ready: function () { return { type: 'hub-ready' }; },
-    app: function (s) { return { type: 'hub-app', app: 'Draftly', tabs: Draftly.hub.tabs, activeTab: s.tab, title: s.title }; },
+    /* (before DF24) app: function (s) { return { type: 'hub-app', app: 'Draftly', tabs: Draftly.hub.tabs, activeTab: s.tab, title: s.title }; }, */
+    app: function (s) { return { type: 'hub-app', app: 'Writer', tabs: Draftly.hub.tabs, activeTab: s.tab, title: s.title }; },
     tab: function (id) { return { type: 'hub-tab', id: id }; },
     title: function (v) { return { type: 'hub-title', value: v }; },
     actionPrefix: 'tab:'

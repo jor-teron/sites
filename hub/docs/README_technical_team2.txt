@@ -2038,6 +2038,37 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/spreadsheet/spreadsheet_readme.md`.
 - 1.106 is TB4, so this note is numbered 1.107.
 
+### 1.108 DF24 Writer (visible name; was Draftly)
+
+- The word processor at `apps/office/draftly/` is shown as Writer. The folder,
+  file names, IndexedDB name `draftly`, localStorage keys (`draftly_settings`,
+  `draftly_last_name`, `draftly_theme`, and the rest), message types (`hub-app`,
+  `hub-tab`, and the others), the Hub id `draftly`, and URLs stay as they were.
+  Saved documents and `#draftly` links keep working. `window.Draftly` stays.
+- Visible text: both page titles, the header brand, Settings → About
+  (`Writer` plus the same version), PDF title and creator, the noscript
+  “Open Writer” link, and the Hub title-bar name (`app` on `hub-app`, and the
+  Quick Access `app` name). The Office tile in `apps/office/office-apps.csv`
+  is Writer; the path is still `draftly/`.
+- `python3 hub/core/hub_appindex_gen.py --catalog-only` rewrote
+  `hub/core/hub_catalog.js` from the CSVs. `hub_appindex.js` keeps the id
+  `draftly` and the display name Writer (the full index script needs
+  Playwright; only this name was brought in line with the CSV). The legacy
+  archive row in `hub_apps.js` uses the same display name. `hub_profile.js`
+  has no display name: the id `draftly` and the storage keys stay.
+  `desktop/gamebar/hub-gamebar.js` and `desktop/wm/wm.css` mention Draftly
+  only in comments, so they were left. `tree.txt` and the historical Hub docs
+  were not edited.
+- Replaced lines are commented with `(before DF24)` and were not deleted.
+  Code comments that people do not see were left. No `?v=` and no version or
+  build bump. No new libraries and no CDN.
+- Checked with `node --check` on the edited scripts,
+  `node apps/office/draftly/test-df24-name.js`, and
+  `node apps/office/shared/tests/ho2.test.cjs` (it loads the settings and PDF
+  scripts). No browser runner.
+- Details: `apps/office/draftly/draftly_readme.md`.
+- 1.107 is SH17, so this note is numbered 1.108.
+
 
 ## 2. Releases (PR → what)
 

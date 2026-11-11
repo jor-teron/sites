@@ -22,7 +22,8 @@
     return t ? t.getAttribute('data-tab') : 'home';
   }
   OfficeQuick.register({
-    app: 'Draftly',
+    /* (before DF24) app: 'Draftly', */
+    app: 'Writer',
     undo: function () { D.history.undo(); },
     redo: function () { D.history.redo(); },
     canUndo: function () { return D.history.canUndo(); },

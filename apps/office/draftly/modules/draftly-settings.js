@@ -75,7 +75,8 @@ Draftly.settings.sections = function sections(s) {
       { key: 'autosave', type: 'switch', id: 'setAutosave', label: 'Autosave while typing' },
       { key: 'backupSec', type: 'select', id: 'setBackup', label: 'Backup copy', cast: Number, options: S.backups }
     ] },
-    { title: 'About', rows: [{ type: 'about', id: 'setVersion', text: 'Draftly ' + cfg.version }] }
+    /* (before DF24) { title: 'About', rows: [{ type: 'about', id: 'setVersion', text: 'Draftly ' + cfg.version }] } */
+    { title: 'About', rows: [{ type: 'about', id: 'setVersion', text: 'Writer ' + cfg.version }] }
   ];
 };
 

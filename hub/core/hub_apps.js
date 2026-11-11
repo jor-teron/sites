@@ -106,7 +106,8 @@ Media,    3D Viewer,             apps/media/3d-viewer/,                      ,  
 Media,    Draw,                  apps/media/draw/,                           ,         0,       0,      225
 Media,    Photo Editor v2,       apps/media/photo-editor-v2/,                ,         0,       0,      265
 Office,   Spreadsheet,           apps/office/spreadsheet/,                   ,         0,       0,      320
-Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
+(before DF24) Office,   Draftly,               apps/office/draftly/,                       ,         0,       0,      310
+Office,   Writer,                apps/office/draftly/,                       ,         0,       0,      310
 Office,   OCR,                   apps/office/ocr/,                           ,         0,       0,      360
 Office,   MS Word Diff,          apps/tools/msword_diff/,                    ,         0,       0,      440
 Office,   Notely,                apps/office/notely/,                        ,         0,       0,      450
