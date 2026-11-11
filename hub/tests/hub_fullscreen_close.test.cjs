@@ -1,4 +1,5 @@
 // H144 ask-before-closing + taskbar fullscreen toggle (desktop/wm/wm_taskbar.js).
+// H145: blur behind the browser leave prompt (html.hub-leave-blur).
 // Offline Node checks only (no browser, no network). Run: node --test hub/tests/hub_fullscreen_close.test.cjs
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -13,7 +14,8 @@ function ev() {
   const m = new Map();
   return {
     add(k, f) { if (!m.has(k)) m.set(k, []); m.get(k).push(f); },
-    fire(k, e) { (m.get(k) || []).forEach((f) => f(e)); },
+    remove(k, f) { const a = m.get(k) || []; const i = a.indexOf(f); if (i >= 0) a.splice(i, 1); },
+    fire(k, e) { (m.get(k) || []).slice().forEach((f) => f(e)); },
     has(k) { return (m.get(k) || []).length > 0; }
   };
 }
@@ -40,6 +42,7 @@ function load(opts) {
     return e;
   };
   const docEl = {
+    classList: new ClassList(),   // H145: html.hub-leave-blur
     requestFullscreen: (o.webkitOnly || o.requestFs === false) ? undefined : function () { calls.request++; doc.fullscreenElement = docEl; },
     webkitRequestFullscreen: o.webkitOnly ? function () { calls.webkitRequest++; doc.webkitFullscreenElement = docEl; } : undefined
   };
@@ -53,6 +56,7 @@ function load(opts) {
     webkitExitFullscreen: (o.webkitOnly || o.webkitExit) ? function () { calls.webkitExit++; doc.webkitFullscreenElement = null; } : undefined,
     getElementById: (id) => (o.full ? el(id) : null),   // default: early-return after APIs (no full taskbar)
     addEventListener: (k, f) => dev.add(k, f),
+    removeEventListener: (k, f) => dev.remove(k, f),
     createElement: (tag) => {
       const e = el('el-' + Math.random());
       e.tagName = String(tag).toUpperCase();
@@ -66,15 +70,31 @@ function load(opts) {
     __hubRemote: o.remote || undefined,
     HubMode: o.joined ? { joined: true } : undefined,
     addEventListener: (k, f) => wev.add(k, f),
+    removeEventListener: (k, f) => wev.remove(k, f),
     localStorage: {
       getItem: (k) => (store.has(k) ? store.get(k) : null),
       setItem: (k, v) => store.set(k, String(v)),
       removeItem: (k) => store.delete(k)
     }
   };
+  const timers = [];
+  let tid = 0;
+  function fakeSetTimeout(fn, ms) {
+    const id = ++tid;
+    timers.push({ id: id, fn: fn, ms: ms || 0 });
+    return id;
+  }
+  function fakeClearTimeout(id) {
+    const i = timers.findIndex((x) => x.id === id);
+    if (i >= 0) timers.splice(i, 1);
+  }
+  function flushTimers() {
+    const q = timers.splice(0);
+    q.forEach((x) => x.fn());
+  }
   const ctx = {
     window: win, document: doc, location: loc, localStorage: win.localStorage,
-    setTimeout, clearTimeout, console
+    setTimeout: fakeSetTimeout, clearTimeout: fakeClearTimeout, console
   };
   win.window = win;
   win.document = doc;
@@ -91,7 +111,7 @@ function load(opts) {
     win.HubFullscreen.paint(b, doc);
     return b;
   };
-  return { win, doc, store, calls, wev, dev, unload, btn, el, guard: win.HubCloseGuard, fs: win.HubFullscreen };
+  return { win, doc, store, calls, wev, dev, unload, btn, el, guard: win.HubCloseGuard, fs: win.HubFullscreen, timers, flushTimers };
 }
 
 function prompted(e) { return e.prevented === true && e.returnValue === ''; }
@@ -207,4 +227,48 @@ test('intentional Hub reload / navigation paths set the skip flag before leaving
     const t = fs.readFileSync(path.join(ROOT, rel), 'utf8');
     assert.match(t, /__hubAllowUnload/, rel + ' must call __hubAllowUnload before a deliberate leave');
   });
+});
+
+
+function hasBlur(p) { return p.doc.documentElement.classList.contains('hub-leave-blur'); }
+
+test('H145: prompting beforeunload adds hub-leave-blur; a quiet close does not', () => {
+  const on = load();
+  assert.equal(hasBlur(on), false);
+  assert.equal(prompted(on.unload()), true);
+  assert.equal(hasBlur(on), true);
+  on.store.set('sites-hub.askClose', '0');
+  on.guard.clearLeaveBlur();
+  assert.equal(hasBlur(on), false);
+  assert.equal(prompted(on.unload()), false);
+  assert.equal(hasBlur(on), false);
+  const joined = load({ search: '?join=12345' });
+  assert.equal(prompted(joined.unload()), false);
+  assert.equal(hasBlur(joined), false);
+  const skip = load();
+  skip.win.__hubAllowUnload();
+  assert.equal(prompted(skip.unload()), false);
+  assert.equal(hasBlur(skip), false);
+});
+
+test('H145: 0 ms timer and Cancel-path events remove the blur', () => {
+  const t = load();
+  assert.equal(prompted(t.unload()), true);
+  assert.equal(hasBlur(t), true);
+  assert.ok(t.timers.length >= 1);
+  t.flushTimers();
+  assert.equal(hasBlur(t), false);
+  assert.equal(t.timers.length, 0);
+
+  ['focus', 'pointerdown', 'keydown'].forEach((k) => {
+    const p = load();
+    assert.equal(prompted(p.unload()), true);
+    assert.equal(hasBlur(p), true);
+    p.wev.fire(k, {});
+    assert.equal(hasBlur(p), false, k + ' on window should clear the blur');
+  });
+  const vis = load();
+  assert.equal(prompted(vis.unload()), true);
+  vis.dev.fire('visibilitychange', {});
+  assert.equal(hasBlur(vis), false);
 });
