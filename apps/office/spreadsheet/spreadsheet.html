@@ -64,7 +64,25 @@
         <button type="button" id="btn-painter" title="Format painter (double-click to keep it on)">Painter</button>
       </div>
       <div class="of-group tool-group">
+        <!-- (before SH17):
         <select id="bd-sel" title="Borders" aria-label="Borders">
+          <option value="">Borders</option>
+          <option value="all">All</option>
+          <option value="outside">Outside</option>
+          <option value="inside">Inside</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="none">No border</option>
+        </select>
+        -->
+        <button type="button" class="tool-btn" id="btn-borders" title="Borders" aria-label="Borders" aria-haspopup="menu" aria-expanded="false" aria-controls="bd-menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16"/><path d="M4 12h16M12 4v16"/></svg>
+          Borders
+          <svg class="bd-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg>
+        </button>
+        <select id="bd-sel" class="bd-sel-keep" title="Borders" aria-label="Borders" hidden>
           <option value="">Borders</option>
           <option value="all">All</option>
           <option value="outside">Outside</option>
@@ -230,6 +248,16 @@
   <button type="button" id="data-valid-arrow" class="data-valid-arrow" hidden title="Pick a value" aria-label="Pick a value" aria-haspopup="listbox">▾</button>
   <div id="data-valid-list" class="data-panel" hidden role="listbox" aria-label="Allowed values"></div>
   <div id="style-cf" class="data-panel" hidden role="dialog" aria-label="Conditional formatting"></div>
+  <div id="bd-menu" class="bd-menu" role="menu" aria-label="Borders" hidden>
+    <button type="button" role="menuitem" data-border="all">All</button>
+    <button type="button" role="menuitem" data-border="outside">Outside</button>
+    <button type="button" role="menuitem" data-border="inside">Inside</button>
+    <button type="button" role="menuitem" data-border="top">Top</button>
+    <button type="button" role="menuitem" data-border="bottom">Bottom</button>
+    <button type="button" role="menuitem" data-border="left">Left</button>
+    <button type="button" role="menuitem" data-border="right">Right</button>
+    <button type="button" role="menuitem" data-border="none">No border</button>
+  </div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
   <div class="sheet-footer" id="sheet-footer">
     <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Sheets"></div>

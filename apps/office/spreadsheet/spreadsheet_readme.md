@@ -28,7 +28,8 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - `../shared/`: Office shared ribbon, dialog and page-setup files (see `apps/office/shared/README.md`)
 - `spreadsheet_logic.js`: small orchestrator (after-change pipeline, start-up)
 - `spreadsheet_format.js`: number and date / time display formats
-- `spreadsheet_style.js`: SH11 merge, borders, font size, wrap, conditional formatting, format painter
+<!-- (before SH17): - `spreadsheet_style.js`: SH11 merge, borders, font size, wrap, conditional formatting, format painter -->
+- `spreadsheet_style.js`: SH11 merge, borders, font size, wrap, conditional formatting, format painter. SH17 keeps those borders visible on screen and in print
 - `spreadsheet_charts.js`: SH12 column / bar / line / pie charts (canvas, no libraries)
 - `spreadsheet_undo.js`: undo / redo
 - `spreadsheet_select.js`: block selection (drag, Shift+click, Shift+arrows, select all)
@@ -61,9 +62,11 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 - **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. **Sort…** (SH10) sorts by up to three columns and can keep a header row.
 - **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency, Date (YYYY-MM-DD or DD/MM/YYYY), Time, Date and time. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
 - **Column widths:** drag the right edge of a column letter; double-click it to reset. Widths are saved.
-- **Styles:** align, bold, italic, underline, fill colour, text colour, font size, wrap, borders, merge, format painter, and conditional highlighting for the selection.
+<!-- (before SH17): - **Styles:** align, bold, italic, underline, fill colour, text colour, font size, wrap, borders, merge, format painter, and conditional highlighting for the selection. -->
+- **Styles:** align, bold, italic, underline, fill colour, text colour, font size, wrap, borders, merge, format painter, and conditional highlighting for the selection. Borders is a button on the Home tab (All, Outside, Inside, Top, Bottom, Left, Right, No border).
 - **CSV:** Export CSV downloads the active sheet (formulas, trailing empty rows/columns trimmed; hidden rows/columns are included). Import CSV loads a file onto the active sheet, starting at A1. Other sheets are left alone.
-- **Print / PDF:** browser print dialog; choose Save as PDF.
+<!-- (before SH17): - **Print / PDF:** browser print dialog; choose Save as PDF. -->
+- **Print / PDF:** browser print dialog; choose Save as PDF. Borders you set are printed in that style and colour. Page → Gridlines draws a light grey line only on edges that have no border of their own. With gridlines off, those edges are blank and the borders you set still print.
 - **Saving:** automatic after every change.
 
 ## 4. Keyboard
@@ -178,7 +181,8 @@ The grid is still 26 × 100. Storage is still `sheet-v3`; filters and validation
 The grid is still 26 × 100. Storage is still `sheet-v3`; merges and conditional-format rules are extra optional fields (an older v3 file still opens).
 
 - **Merge / Unmerge:** the top-left cell keeps its value; other cells in the block are cleared (undo restores them). Covered cells are hidden in the grid.
-- **Borders:** All, Outside, Inside, Top, Bottom, Left, Right, or No border, in black.
+<!-- (before SH17): - **Borders:** All, Outside, Inside, Top, Bottom, Left, Right, or No border, in black. -->
+- **Borders:** All, Outside, Inside, Top, Bottom, Left, Right, or No border. SH11 stored them as black. SH17 still reads that black and draws it as the auto colour (see SH17).
 - **Font size:** 8 to 24 px. **Wrap** shows a wrapped preview in the cell (the editor itself stays a single line while you type).
 - **Date / time formats:** YYYY-MM-DD, DD/MM/YYYY, HH:MM, and date+time, using the same date parser as the SH9 date functions.
 - **Highlight (conditional formatting):** a red–yellow–green or white–green colour scale, or highlight numbers above / below a value. Up to 20 rules on a sheet. A matching rule overrides the cell fill.
@@ -242,3 +246,14 @@ The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields.
 - **Hint / picker:** CHAR and TEXTSPLIT are in the function list, under Text, with argument hints.
 - Legacy: title, `SHEET_VERSION` and `?v=` stay SH14. This release does not bump the cache token. Storage stays `sheet-v4`.
 - **Limits:** one delimiter string for columns and one for rows (not a list). No CSV quote rules. `CHAR` is code points 1–255, not Excel's Windows-1252 page. A result that does not fit is `#SPILL!`.
+
+## SH17 — borders on screen and in print
+The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields. Title, `SHEET_VERSION` and `?v=` stay SH14.
+
+- **Print:** a border you set is printed in that style and colour, whether Page → Gridlines is on or off. Gridlines on draws a light grey (`#999`) line only on edges with no border of their own. Gridlines off leaves those edges blank. The old print rules set every cell's border colour with `!important`, which covered the inline border. Each bordered side is now marked (`bd-t`, `bd-r`, `bd-b`, `bd-l`, and the same `data-bd-*` attribute) and the print rules skip those sides.
+- **Screen:** the same marks keep Settings → gridlines off from clearing a border you set. The auto colour is black in the light theme and on paper (`#000000`, darker than the light grid `#d9dde5`) and light grey in the dark theme (`#f0f0f0`, lighter than the dark grid `#3a3a3a`). A border saved by SH11 as `#000000` or `#000` is that auto colour. Any other stored colour is used as written, on screen and in print.
+- **Shared edges:** the grid collapses two borders into one, and the upper or left cell wins. A Top or Left border is drawn on that neighbour when the neighbour has no border there, so it is not replaced by the gridline. A merged cell draws the outer edges of the whole merge (the right-hand cell's right border, the last row's bottom border).
+- **Borders button:** Home tab, an inline SVG (no CDN) and the word Borders. It opens the same eight choices. `#bd-sel` is still in the page, hidden, and a choice sets it and fires `change`, which applies the border. The old visible `<select>` is commented with `(before SH17)`.
+- **XLSX:** auto and the old default black are written as thin black (`000000`) on `cell.s`. Other colours are written as their hex. SheetJS Community Edition still does not read or write those styles; they stay in `sheet-v4`. Merged cells are still `!merges`.
+- **Legacy:** title, `SHEET_VERSION` and `?v=` stay SH14. This release does not bump the cache token. Storage stays `sheet-v4`.
+- **Limits:** borders are 1px solid. There is no colour or thickness picker. A merged cell shows the outer borders, not lines between the cells inside the merge. Conditional formatting is unchanged.
