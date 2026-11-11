@@ -50,6 +50,19 @@ function chartNum(v) {
   return isNaN(n) ? 0 : n;
 }
 
+/* Value shown in a cell, including a SH13 spill ghost. */
+function chartShown(grid, r, c) {
+  /* (before SH13): return grid[r] && grid[r][c] ? grid[r][c].value : ""; */
+  var si = -1, i;
+  if (typeof workbook !== "undefined" && workbook && workbook.sheets) {
+    for (i = 0; i < workbook.sheets.length; i++) {
+      if (workbook.sheets[i].cells === grid) { si = i; break; }
+    }
+  }
+  if (si >= 0 && typeof displayedVal === "function") return displayedVal(r, c, si);
+  return grid[r] && grid[r][c] ? grid[r][c].value : "";
+}
+
 /**
  * Read a range from a 2D cells grid (cells[r][c].value).
  * Auto-detects a header row when the first row has any non-numeric text
@@ -63,7 +76,7 @@ function chartExtractData(grid, range, opts) {
   if (!grid || r2 < r1 || c2 < c1) return { labels: [], series: [], title: "" };
   if (header == null) {
     for (c = c1; c <= c2; c++) {
-      v = grid[r1] && grid[r1][c] ? grid[r1][c].value : "";
+      v = chartShown(grid, r1, c);
       if (v !== "" && v != null && !chartIsNumber(v)) { firstRowText = true; break; }
     }
     header = firstRowText;
@@ -71,7 +84,7 @@ function chartExtractData(grid, range, opts) {
   var dataR1 = header ? r1 + 1 : r1;
   if (dataR1 <= r2) {
     for (r = dataR1; r <= r2; r++) {
-      v = grid[r] && grid[r][c1] ? grid[r][c1].value : "";
+      v = chartShown(grid, r, c1);
       if (v !== "" && v != null && !chartIsNumber(v)) { firstColText = true; break; }
     }
   }
@@ -81,14 +94,14 @@ function chartExtractData(grid, range, opts) {
       labels.push(String(c - c1 + 1));
     }
     series.push({ name: "Series 1", values: [] });
-    for (c = c1; c <= c2; c++) series[0].values.push(chartNum(grid[r1][c] && grid[r1][c].value));
+    for (c = c1; c <= c2; c++) series[0].values.push(chartNum(chartShown(grid, r1, c)));
     return { labels: labels, series: series, title: "" };
   }
   /* One column of numbers and no header. */
   if (!header && c1 === c2) {
     for (r = r1; r <= r2; r++) labels.push(String(r - r1 + 1));
     series.push({ name: "Series 1", values: [] });
-    for (r = r1; r <= r2; r++) series[0].values.push(chartNum(grid[r][c1] && grid[r][c1].value));
+    for (r = r1; r <= r2; r++) series[0].values.push(chartNum(chartShown(grid, r, c1)));
     return { labels: labels, series: series, title: "" };
   }
   var catCol = firstColText ? c1 : c1 - 1;
@@ -100,17 +113,19 @@ function chartExtractData(grid, range, opts) {
     firstColText = false;
   }
   for (r = dataR1; r <= r2; r++) {
-    labels.push(firstColText ? String((grid[r][c1] && grid[r][c1].value) || "") : String(r - dataR1 + 1));
+    labels.push(firstColText ? String(chartShown(grid, r, c1) || "") : String(r - dataR1 + 1));
   }
   for (c = seriesC1; c <= c2; c++) {
     var name = "Series " + (c - seriesC1 + 1);
-    if (header && grid[r1][c] && grid[r1][c].value != null && String(grid[r1][c].value) !== "") name = String(grid[r1][c].value);
+    var hv = chartShown(grid, r1, c);
+    if (header && hv != null && String(hv) !== "") name = String(hv);
     var values = [];
-    for (r = dataR1; r <= r2; r++) values.push(chartNum(grid[r][c] && grid[r][c].value));
+    for (r = dataR1; r <= r2; r++) values.push(chartNum(chartShown(grid, r, c)));
     series.push({ name: name, values: values });
   }
   var title = "";
-  if (header && firstColText && grid[r1][c1] && grid[r1][c1].value) title = String(grid[r1][c1].value);
+  var tv = chartShown(grid, r1, c1);
+  if (header && firstColText && tv) title = String(tv);
   return { labels: labels, series: series, title: title };
 }
 
@@ -379,7 +394,12 @@ function chartSelect(id) {
 
 function addChart(type) {
   var g = selRange(), s = workbook.sheets[workbook.active], ch, data;
-  if (g.r1 === g.r2 && g.c1 === g.c2) g = typeof usedArea === "function" ? usedArea() : g;
+  if (g.r1 === g.r2 && g.c1 === g.c2) {
+    /* (before SH13): g = typeof usedArea === "function" ? usedArea() : g; */
+    var sp = typeof spillAnchorInfo === "function" ? spillAnchorInfo(workbook.active, g.r1, g.c1) : null;
+    if (sp) g = { r1: g.r1, r2: g.r1 + sp.h - 1, c1: g.c1, c2: g.c1 + sp.w - 1 };
+    else g = typeof usedArea === "function" ? usedArea() : g;
+  }
   if (!g) { setStatus("Select a range with numbers to chart"); return; }
   if ((s.charts || []).length >= CHART_MAX) { setStatus("At most " + CHART_MAX + " charts on a sheet"); return; }
   data = chartExtractData(s.cells, g, {});

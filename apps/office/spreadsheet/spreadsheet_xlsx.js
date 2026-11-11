@@ -13,6 +13,8 @@
  * library would allow it; SheetJS Community Edition usually does not write
  * them, so they stay reliable in the app's own sheet-v3 save. Number / date
  * formats are written on cell.z, which CE does keep.
+ * SH13: spill ghosts are not stored, so export writes the anchor formula only
+ * (plus that cell's cached top-left value). Import still loads formulas and values.
  */
 function xlsxFmtZ(fmt) {
   if (fmt === "int") return "0";

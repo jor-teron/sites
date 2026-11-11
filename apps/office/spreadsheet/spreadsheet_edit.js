@@ -31,8 +31,12 @@ function bindCell(inp, r, c) {
     selC = c;
     if (!keepExtent) { extR = r; extC = c; selMode = "cell"; }
     inp.readOnly = true;
-    inp.value = cells[r][c].formula;
-    document.getElementById("formula-bar").value = cells[r][c].formula;
+    /* (before SH13): inp.value = cells[r][c].formula; a ghost has no formula, so it flashed blank */
+    var formulaText = cells[r][c].formula == null ? "" : String(cells[r][c].formula);
+    var ghost = typeof ghostAt === "function" ? ghostAt(workbook.active, r, c) : null;
+    if (formulaText === "" && ghost) inp.value = formatCellValue(ghost.value, cellStyle(r, c).fmt);
+    else inp.value = formulaText;
+    document.getElementById("formula-bar").value = formulaText;
     highlightSel();
     syncStyleUi();
   });

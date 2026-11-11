@@ -531,6 +531,15 @@ td.merge-hidden { display: none; }
 }
 
 
+/* SH13: spill ghosts are display-only; the selected anchor outlines its spill */
+td.cell.spill-ghost input[readonly] {
+  opacity: 0.62;
+}
+td.cell.spill-mark {
+  box-shadow: var(--spill-mark);
+  z-index: 1;
+}
+
 /* SH12: charts */
 #sheet-wrap { position: relative; }
 #chart-layer {

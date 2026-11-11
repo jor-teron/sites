@@ -11,6 +11,9 @@
  * which reads them from SPREADSHEET_CONFIG in spreadsheet_config.js.
  * Function library: spreadsheet_functions.js. Refs / ranges / ref shifting: spreadsheet_refs.js.
  * Supported: =expr, cell refs, ranges, listed functions, + - * / ^ &
+ * SH13: a function may return a 2D array. The anchor cell keeps the top-left value
+ * and the rest is spilled into empty cells to the right and below (not stored).
+ * A1# is the current spill of A1. #SPILL! when the block does not fit.
  */
 
 /* Formula error tokens shown in cells */
@@ -21,7 +24,236 @@ var ERR_REF = "#REF!";
 var ERR_LOOP = "#LOOP!";
 var ERR_NA = "#N/A";
 var ERR_VALUE = "#VALUE!";
-var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE];
+var ERR_SPILL = "#SPILL!";
+/* (before SH13): var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE]; */
+var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL];
+
+/* Array placeholders (@@n@@) share one bag per formula. Not a cell ref (no letter+digit). */
+var evalArrays = [];
+/* Ghost spill overlay. Rebuilt on every recalc. Never written into the cell store. */
+var spillState = [];
+var spillTouchFlag = { on: false };
+var spillWake = null;
+
+function isSpillArray(v) {
+  return !!(v && typeof v === "object" && v.spill === 1 && Array.isArray(v.rows) &&
+    v.rows.length && v.rows[0] && v.rows[0].length);
+}
+
+/* 1×1 is a normal value. Larger results stay arrays so the caller can spill them. */
+function spillWrap(rows) {
+  if (!rows || !rows.length || !rows[0] || !rows[0].length) fail(ERR_VALUE);
+  if (rows.length === 1 && rows[0].length === 1) return rows[0][0];
+  return { spill: 1, rows: rows };
+}
+
+function arrayFromToken(token) {
+  var m = String(token == null ? "" : token).trim().match(/^@@(\d+)@@$/);
+  if (!m || !evalArrays) return null;
+  var v = evalArrays[parseInt(m[1], 10)];
+  return isSpillArray(v) ? v : null;
+}
+
+function spillReset(ns) {
+  spillState = [];
+  var i;
+  for (i = 0; i < ns; i++) spillState.push({ ghosts: Object.create(null), anchors: Object.create(null) });
+}
+
+function ghostAt(si, r, c) {
+  var sh = spillState[si];
+  if (!sh) return null;
+  return sh.ghosts[r + "," + c] || null;
+}
+
+function spillAnchorInfo(si, r, c) {
+  var sh = spillState[si];
+  if (!sh) return null;
+  return sh.anchors[r + "," + c] || null;
+}
+
+function readDisplay(si, r, c) {
+  var g = ghostAt(si, r, c);
+  if (g) return g.value;
+  if (!workbook || !workbook.sheets[si]) return "";
+  var v = workbook.sheets[si].cells[r][c].value;
+  return v == null ? "" : v;
+}
+
+function displayedVal(r, c, si) {
+  if (si == null) {
+    si = (typeof workbook !== "undefined" && workbook) ? workbook.active : 0;
+  }
+  if (!spillState[si]) {
+    var grid = typeof cellsOf === "function" ? cellsOf(si) : null;
+    if (!grid || !grid[r] || !grid[r][c]) return "";
+    var v = grid[r][c].value;
+    return v == null ? "" : v;
+  }
+  return readDisplay(si, r, c);
+}
+
+function normSpill(v) {
+  if (typeof v === "number") {
+    if (!isFinite(v) || isNaN(v)) return ERR_NUM;
+    return roundNum(v);
+  }
+  if (v == null) return "";
+  return v;
+}
+
+function stampWrite(writeSeq, idx, seq) {
+  writeSeq[idx] = seq;
+  if (spillWake) spillWake(idx);
+}
+
+function clearAnchorGhosts(si, r, c) {
+  var sh = spillState[si];
+  if (!sh) return;
+  var a = sh.anchors[r + "," + c];
+  if (!a) return;
+  var i, g, k;
+  for (i = 0; i < a.cells.length; i++) {
+    g = a.cells[i];
+    k = g.r + "," + g.c;
+    if (sh.ghosts[k] && sh.ghosts[k].ar === r && sh.ghosts[k].ac === c) delete sh.ghosts[k];
+  }
+  delete sh.anchors[r + "," + c];
+}
+
+function userOccupied(si, r, c) {
+  var f = workbook.sheets[si].cells[r][c].formula;
+  return !(f == null || f === "");
+}
+
+function cellMerged(si, r, c) {
+  var merges = workbook.sheets[si].merges, i, m;
+  if (!merges) return false;
+  for (i = 0; i < merges.length; i++) {
+    m = merges[i];
+    if (m && r >= m.r1 && r <= m.r2 && c >= m.c1 && c <= m.c2) return true;
+  }
+  return false;
+}
+
+/**
+ * Write a formula result. Arrays spill right and down. A blocked spill
+ * (non-empty, merged, another ghost, or past the grid) shows #SPILL! and
+ * writes nothing else. Ghosts are display-only.
+ */
+function applyFormulaResult(si, r, c, result, writeSeq, seq) {
+  var grid = workbook.sheets[si].cells;
+  var watch = [], seen = Object.create(null);
+  function watchCell(rr, cc) {
+    var id;
+    if (rr < 0 || cc < 0 || rr >= ROWS || cc >= COLS) return;
+    id = rr + "," + cc;
+    if (seen[id]) return;
+    seen[id] = 1;
+    watch.push({ r: rr, c: cc, before: readDisplay(si, rr, cc) });
+  }
+  var old = spillAnchorInfo(si, r, c);
+  var i, rr, cc, rows = null, h = 0, w = 0;
+  watchCell(r, c);
+  if (old && old.cells) {
+    for (i = 0; i < old.cells.length; i++) watchCell(old.cells[i].r, old.cells[i].c);
+  }
+  if (isSpillArray(result)) {
+    rows = result.rows;
+    h = rows.length;
+    w = rows[0].length;
+    if (r + h <= ROWS && c + w <= COLS) {
+      for (rr = 0; rr < h; rr++) for (cc = 0; cc < w; cc++) watchCell(r + rr, c + cc);
+    }
+  }
+  clearAnchorGhosts(si, r, c);
+  if (rows) {
+    var fits = r + h <= ROWS && c + w <= COLS;
+    var blocked = !fits;
+    if (!blocked) {
+      for (rr = 0; rr < h && !blocked; rr++) {
+        for (cc = 0; cc < w; cc++) {
+          if (rr === 0 && cc === 0) continue;
+          if (cellMerged(si, r + rr, c + cc) || userOccupied(si, r + rr, c + cc) || ghostAt(si, r + rr, c + cc)) {
+            blocked = true;
+          }
+        }
+      }
+    }
+    if (blocked) {
+      grid[r][c].value = ERR_SPILL;
+    } else {
+      grid[r][c].value = normSpill(rows[0][0]);
+      var owned = [], sh = spillState[si], val;
+      for (rr = 0; rr < h; rr++) {
+        for (cc = 0; cc < w; cc++) {
+          if (rr === 0 && cc === 0) continue;
+          val = normSpill(rows[rr][cc]);
+          sh.ghosts[(r + rr) + "," + (c + cc)] = { ar: r, ac: c, value: val };
+          owned.push({ r: r + rr, c: c + cc });
+        }
+      }
+      if (owned.length) sh.anchors[r + "," + c] = { r: r, c: c, h: h, w: w, cells: owned };
+    }
+  } else {
+    grid[r][c].value = result;
+  }
+  var spilled = false;
+  for (i = 0; i < watch.length; i++) {
+    var cell = watch[i];
+    var after = readDisplay(si, cell.r, cell.c);
+    if (after !== cell.before) {
+      stampWrite(writeSeq, cellIndex(si, cell.r, cell.c), seq);
+      if (cell.r !== r || cell.c !== c) spilled = true;
+    }
+  }
+  /* A1# depends on the anchor. Wake those readers even when the top-left value stayed put. */
+  if (spilled) {
+    spillTouchFlag.on = true;
+    stampWrite(writeSeq, cellIndex(si, r, c), seq);
+  }
+}
+
+/* Whole spill of a cell, for the A1# operator. #REF! when it is not spilling. */
+function readSpillRef(x) {
+  var si = x.sheet == null ? evalSheetIdx : findSheetIndex(x.sheet);
+  if (si < 0 || x.r1 < 0 || x.c1 < 0 || x.r1 >= ROWS || x.c1 >= COLS) return ERR_REF;
+  var top = workbook.sheets[si].cells[x.r1][x.c1].value;
+  var info = spillAnchorInfo(si, x.r1, x.c1);
+  if (!info) return isErrorValue(top) ? top : ERR_REF;
+  if (isErrorValue(top)) return top;
+  var rows = [], rr, cc, row, v, g;
+  for (rr = 0; rr < info.h; rr++) {
+    row = [];
+    for (cc = 0; cc < info.w; cc++) {
+      if (rr === 0 && cc === 0) v = top;
+      else {
+        g = ghostAt(si, x.r1 + rr, x.c1 + cc);
+        if (!g || g.ar !== x.r1 || g.ac !== x.c1) return ERR_REF;
+        v = g.value;
+      }
+      if (isErrorValue(v)) return v;
+      row.push(v);
+    }
+    rows.push(row);
+  }
+  return spillWrap(rows);
+}
+
+function markSpillLoop(si, r, c, writeSeq, seq) {
+  var old = spillAnchorInfo(si, r, c);
+  var owned = old && old.cells ? old.cells.slice() : [];
+  var before = workbook.sheets[si].cells[r][c].value;
+  var i, g, after;
+  clearAnchorGhosts(si, r, c);
+  workbook.sheets[si].cells[r][c].value = ERR_LOOP;
+  if (before !== ERR_LOOP) stampWrite(writeSeq, cellIndex(si, r, c), seq);
+  for (i = 0; i < owned.length; i++) {
+    g = owned[i];
+    after = readDisplay(si, g.r, g.c);
+    if (after !== undefined) stampWrite(writeSeq, cellIndex(si, g.r, g.c), seq);
+  }
+}
 
 /* Thrown inside evaluation; evalFormula turns it into the cell's value */
 function CellError(value) { this.value = value; }
@@ -82,6 +314,8 @@ function evalExpr(expr) {
   if (expr === undefined || expr === null) return "";
   s = String(expr).trim();
   if (s === "") return "";
+  /* A bare array token (a function result, or A1#) is the value. */
+  if (arrayFromToken(s)) return arrayFromToken(s);
 
   if (/^".*"$/.test(s)) return s.slice(1, -1);
   if (/^(TRUE|FALSE)$/i.test(s)) return s.toUpperCase();
@@ -99,20 +333,40 @@ function evalExpr(expr) {
     /* put string literals back WITH their quotes so each argument stays a string */
     inside = m[2].replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
     out = evalFunc(name, splitArgs(inside));
-    /* errors are kept as text here so an outer IFERROR can still see them */
-    if (typeof out === "number" && (isNaN(out) || !isFinite(out))) out = ERR_NUM;
-    if (typeof out === "boolean") out = out ? "TRUE" : "FALSE";
-    if (typeof out === "string") {
-      bag.push(out);
-      s = s.replace(m[0], "__S" + (bag.length - 1) + "__");
+    /* SH13: any function may return a 2D array. 1×1 is already unwrapped. */
+    if (isSpillArray(out)) {
+      evalArrays.push(out);
+      s = s.replace(m[0], "@@" + (evalArrays.length - 1) + "@@");
     } else {
-      s = s.replace(m[0], String(out));
+      /* (before SH13) every function result was a number, boolean or string */
+      /* errors are kept as text here so an outer IFERROR can still see them */
+      if (typeof out === "number" && (isNaN(out) || !isFinite(out))) out = ERR_NUM;
+      if (typeof out === "boolean") out = out ? "TRUE" : "FALSE";
+      if (typeof out === "string") {
+        bag.push(out);
+        s = s.replace(m[0], "__S" + (bag.length - 1) + "__");
+      } else {
+        s = s.replace(m[0], String(out));
+      }
     }
   }
+  if (arrayFromToken(s)) return arrayFromToken(s);
+  if (s.indexOf("@@") >= 0) fail(ERR_VALUE);
 
   /* SH8: resolve Sheet2!A1 / 'My Sheet'!A1 and ordinary A1 against evalSheetIdx */
   s = mapRefs("=" + s, function (x) {
-    var si, rv;
+    var si, rv, sp;
+    if (x.spill) {
+      sp = readSpillRef(x);
+      if (isErrorValue(sp)) fail(sp);
+      if (isSpillArray(sp)) {
+        evalArrays.push(sp);
+        return "@@" + (evalArrays.length - 1) + "@@";
+      }
+      if (typeof sp === "number" && !isNaN(sp)) return String(sp);
+      bag.push(String(sp));
+      return "__S" + (bag.length - 1) + "__";
+    }
     if (x.range) return refToken(x);
     si = x.sheet == null ? evalSheetIdx : findSheetIndex(x.sheet);
     if (si < 0 || x.c1 < 0 || x.c1 >= COLS || x.r1 < 0 || x.r1 >= ROWS) fail(ERR_REF);
@@ -123,6 +377,9 @@ function evalExpr(expr) {
     bag.push(String(rv));
     return "__S" + (bag.length - 1) + "__";
   }).slice(1);
+
+  if (arrayFromToken(s)) return arrayFromToken(s);
+  if (s.indexOf("@@") >= 0) fail(ERR_VALUE);
 
   if (s.indexOf("&") >= 0) {
     out = s.split("&").map(function (part) {
@@ -220,6 +477,7 @@ function simpleMath(s) {
  * Evaluate a cell formula string
  */
 function evalFormula(f) {
+  evalArrays = [];
   var s = String(f).trim();
   if (s.charAt(0) !== "=") return s;
   s = s.slice(1).trim();
@@ -229,6 +487,7 @@ function evalFormula(f) {
   }
   try {
     var v = evalExpr(s);
+    if (isSpillArray(v)) return v;
     if (typeof v === "number") {
       if (!isFinite(v) || isNaN(v)) return ERR_NUM;
       return roundNum(v);
@@ -240,17 +499,82 @@ function evalFormula(f) {
   }
 }
 
+// (before SH13) scalar-only recalcAll. It wrote evalFormula straight into cell.value
+// and never spilled.
+// function recalcAll() {
+//   var sheets = workbook.sheets, ns = sheets.length, per = ROWS * COLS, n = ns * per;
+//   var r, c, k, i, f, si, grid, d, dr, dc, dsi;
+//   var deps = [], users = [], indeg = [], queue = [], done = 0, total = 0;
+//   var prevEval = evalSheetIdx;
+//   for (k = 0; k < n; k++) { users.push(null); indeg.push(0); deps.push(null); }
+//   for (si = 0; si < ns; si++) {
+//     grid = sheets[si].cells;
+//     for (r = 0; r < ROWS; r++) {
+//       for (c = 0; c < COLS; c++) {
+//         f = grid[r][c].formula;
+//         if (!isFormula(f)) grid[r][c].value = f == null ? "" : f;
+//       }
+//     }
+//   }
+//   for (si = 0; si < ns; si++) {
+//     grid = sheets[si].cells;
+//     for (r = 0; r < ROWS; r++) {
+//       for (c = 0; c < COLS; c++) {
+//         f = grid[r][c].formula;
+//         if (!isFormula(f)) continue;
+//         k = cellIndex(si, r, c);
+//         total++;
+//         deps[k] = formulaDeps(f, si);
+//         for (i = 0; i < deps[k].length; i++) {
+//           d = deps[k][i];
+//           dsi = indexSheet(d); dr = indexRow(d); dc = indexCol(d);
+//           if (!isFormula(sheets[dsi].cells[dr][dc].formula)) continue;
+//           indeg[k]++;
+//           (users[d] || (users[d] = [])).push(k);
+//         }
+//         if (indeg[k] === 0) queue.push(k);
+//       }
+//     }
+//   }
+//   for (i = 0; i < queue.length; i++) {
+//     k = queue[i];
+//     si = indexSheet(k); r = indexRow(k); c = indexCol(k);
+//     evalSheetIdx = si;
+//     sheets[si].cells[r][c].value = evalFormula(sheets[si].cells[r][c].formula);
+//     done++;
+//     if (users[k]) users[k].forEach(function (u) { if (--indeg[u] === 0) queue.push(u); });
+//   }
+//   if (done < total) {
+//     for (k = 0; k < n; k++) {
+//       if (deps[k] && indeg[k] > 0) {
+//         sheets[indexSheet(k)].cells[indexRow(k)][indexCol(k)].value = ERR_LOOP;
+//       }
+//     }
+//   }
+//   evalSheetIdx = prevEval;
+// }
+
 /**
  * Recalculate the whole workbook: plain cells first, then formulas in dependency
  * order across sheets (Sheet1!A1 may depend on Sheet2!B1). Formulas left over
  * after the topological sort sit on, or depend on, a cycle → #LOOP!.
+ * SH13: array results spill. A formula that read a ghost before the anchor ran
+ * is evaluated again. That second pass is skipped when nothing spilled, so a
+ * normal edit stays one evaluation per formula.
  */
 function recalcAll() {
   var sheets = workbook.sheets, ns = sheets.length, per = ROWS * COLS, n = ns * per;
   var r, c, k, i, f, si, grid, d, dr, dc, dsi;
-  var deps = [], users = [], indeg = [], queue = [], done = 0, total = 0;
+  var deps = [], users = [], readers = [], indeg = [], queue = [], done = 0, total = 0;
+  var depCells = [], writeSeq = [], evalSeq = [], evalCount = [], dead = [], live = [];
   var prevEval = evalSheetIdx;
-  for (k = 0; k < n; k++) { users.push(null); indeg.push(0); deps.push(null); }
+  spillTouchFlag.on = false;
+  spillWake = null;
+  spillReset(ns);
+  for (k = 0; k < n; k++) {
+    users.push(null); readers.push(null); indeg.push(0); deps.push(null); depCells.push(null);
+    writeSeq.push(0); evalSeq.push(0); evalCount.push(0); dead.push(0);
+  }
   for (si = 0; si < ns; si++) {
     grid = sheets[si].cells;
     for (r = 0; r < ROWS; r++) {
@@ -268,9 +592,12 @@ function recalcAll() {
         if (!isFormula(f)) continue;
         k = cellIndex(si, r, c);
         total++;
-        deps[k] = formulaDeps(f, si);
-        for (i = 0; i < deps[k].length; i++) {
-          d = deps[k][i];
+        depCells[k] = formulaDeps(f, si);
+        deps[k] = depCells[k];
+        for (i = 0; i < depCells[k].length; i++) {
+          d = depCells[k][i];
+          if (!readers[d]) readers[d] = [];
+          readers[d].push(k);
           dsi = indexSheet(d); dr = indexRow(d); dc = indexCol(d);
           if (!isFormula(sheets[dsi].cells[dr][dc].formula)) continue;
           indeg[k]++;
@@ -280,20 +607,82 @@ function recalcAll() {
       }
     }
   }
+  var seq = 1;
+  function stale(k) {
+    var list = depCells[k], j, id;
+    if (dead[k] || !list) return false;
+    for (j = 0; j < list.length; j++) {
+      id = list[j];
+      if (writeSeq[id] > evalSeq[k]) return true;
+    }
+    return false;
+  }
+  function runFormula(k) {
+    var si, r, c;
+    if (dead[k]) return;
+    si = indexSheet(k); r = indexRow(k); c = indexCol(k);
+    if (evalCount[k] >= 8) {
+      dead[k] = 1;
+      markSpillLoop(si, r, c, writeSeq, seq);
+      evalSeq[k] = seq;
+      seq++;
+      return;
+    }
+    evalCount[k]++;
+    evalSeq[k] = seq;
+    seq++;
+    evalSheetIdx = si;
+    applyFormulaResult(si, r, c, evalFormula(sheets[si].cells[r][c].formula), writeSeq, seq);
+    seq++;
+  }
   for (i = 0; i < queue.length; i++) {
     k = queue[i];
-    si = indexSheet(k); r = indexRow(k); c = indexCol(k);
-    evalSheetIdx = si;
-    sheets[si].cells[r][c].value = evalFormula(sheets[si].cells[r][c].formula);
+    runFormula(k);
+    live.push(k);
     done++;
     if (users[k]) users[k].forEach(function (u) { if (--indeg[u] === 0) queue.push(u); });
   }
   if (done < total) {
     for (k = 0; k < n; k++) {
       if (deps[k] && indeg[k] > 0) {
-        sheets[indexSheet(k)].cells[indexRow(k)][indexCol(k)].value = ERR_LOOP;
+        si = indexSheet(k); r = indexRow(k); c = indexCol(k);
+        markSpillLoop(si, r, c, writeSeq, seq);
+        dead[k] = 1;
+        evalSeq[k] = seq;
+        seq++;
       }
     }
+  }
+  if (spillTouchFlag.on) {
+    var q = [], qset = Object.create(null), steps = 0, limit = live.length * 8 + 8;
+    function poke(k) {
+      if (k == null || dead[k] || qset[k]) return;
+      if (!stale(k)) return;
+      qset[k] = 1;
+      q.push(k);
+    }
+    spillWake = function (idx) {
+      var list = readers[idx], j;
+      if (!list) return;
+      for (j = 0; j < list.length; j++) poke(list[j]);
+    };
+    for (i = 0; i < live.length; i++) poke(live[i]);
+    while (q.length && steps < limit) {
+      k = q.shift();
+      qset[k] = 0;
+      steps++;
+      if (dead[k] || !stale(k)) continue;
+      runFormula(k);
+    }
+    while (q.length) {
+      k = q.shift();
+      if (dead[k]) continue;
+      si = indexSheet(k); r = indexRow(k); c = indexCol(k);
+      dead[k] = 1;
+      markSpillLoop(si, r, c, writeSeq, seq);
+      seq++;
+    }
+    spillWake = null;
   }
   evalSheetIdx = prevEval;
 }

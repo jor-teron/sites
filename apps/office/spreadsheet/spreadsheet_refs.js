@@ -51,8 +51,17 @@ function cellsOfSafe(si) {
 /**
  * Numeric value of a cell, or NaN if blank/text
  */
+/* (before SH13) numVal read cells[r][c].value and ignored spilled ghosts.
 function numVal(r, c, si) {
   var v = cellsOfSafe(si)[r][c].value;
+  if (v === "" || v === null || v === undefined) return NaN;
+  if (typeof v === "number") return v;
+  var n = Number(v);
+  return isNaN(n) ? NaN : n;
+}
+*/
+function numVal(r, c, si) {
+  var v = rawVal(r, c, si);
   if (v === "" || v === null || v === undefined) return NaN;
   if (typeof v === "number") return v;
   var n = Number(v);
@@ -62,7 +71,18 @@ function numVal(r, c, si) {
 /**
  * Raw display value
  */
+/* (before SH13) rawVal read only the stored cell, so a spill ghost looked blank.
 function rawVal(r, c, si) {
+  var v = cellsOfSafe(si)[r][c].value;
+  if (v === undefined || v === null) return "";
+  return v;
+}
+*/
+function rawVal(r, c, si) {
+  if (si == null) si = typeof evalSheetIdx === "number" ? evalSheetIdx : 0;
+  if (r < 0 || c < 0 || r >= ROWS || c >= COLS) return "";
+  var g = typeof ghostAt === "function" ? ghostAt(si, r, c) : null;
+  if (g) return g.value;
   var v = cellsOfSafe(si)[r][c].value;
   if (v === undefined || v === null) return "";
   return v;
@@ -71,7 +91,18 @@ function rawVal(r, c, si) {
 /**
  * True if cell has no formula and no value
  */
+/* (before SH13) isEmpty ignored spill ghosts, so COUNTA skipped them.
 function isEmpty(r, c, si) {
+  var cell = cellsOfSafe(si)[r][c];
+  var f = cell.formula;
+  var v = cell.value;
+  return (f === "" || f == null) && (v === "" || v == null);
+}
+*/
+function isEmpty(r, c, si) {
+  if (si == null) si = typeof evalSheetIdx === "number" ? evalSheetIdx : 0;
+  var g = typeof ghostAt === "function" ? ghostAt(si, r, c) : null;
+  if (g) return g.value === "" || g.value == null;
   var cell = cellsOfSafe(si)[r][c];
   var f = cell.formula;
   var v = cell.value;
@@ -171,7 +202,31 @@ function parseRefToken(token) {
     si = typeof evalSheetIdx === "number" ? evalSheetIdx : 0;
   }
   rest = rest.trim();
-  var parts, a, b, list, k;
+  var parts, a, b, list, k, spillRef = false;
+  /* SH13: A1# is the current spill of A1 (not a stored range). */
+  if (rest.charAt(rest.length - 1) === "#" && rest.indexOf(":") < 0) {
+    spillRef = true;
+    rest = rest.slice(0, -1).trim();
+  }
+  if (spillRef) {
+    a = parseAddr(rest);
+    if (!a) {
+      if (REF_LIKE.test(rest.replace(/\$/g, "").toUpperCase())) return { sheet: sheet, si: si, list: null, error: ERR_REF };
+      return null;
+    }
+    var info = typeof spillAnchorInfo === "function" ? spillAnchorInfo(si, a.r, a.c) : null;
+    if (!info) {
+      var topv = rawVal(a.r, a.c, si);
+      if (isErrorValue(topv)) return { sheet: sheet, si: si, list: null, error: topv };
+      return { sheet: sheet, si: si, list: null, error: ERR_REF };
+    }
+    list = [];
+    var rr, cc;
+    for (rr = 0; rr < info.h; rr++) {
+      for (cc = 0; cc < info.w; cc++) list.push({ r: a.r + rr, c: a.c + cc, si: si });
+    }
+    return { sheet: sheet, si: si, list: list, error: null };
+  }
   if (rest.indexOf(":") >= 0) {
     parts = rest.split(":");
     a = parseAddr(parts[0]);
@@ -200,6 +255,21 @@ function parseRefToken(token) {
  * Values from a range token like A1:A10, Sheet2!A1 or a single A1
  */
 function rangeValues(token, numericOnly) {
+  var arr = typeof arrayFromToken === "function" ? arrayFromToken(token) : null;
+  if (arr) {
+    var outA = [], ra, ca, va;
+    for (ra = 0; ra < arr.rows.length; ra++) {
+      for (ca = 0; ca < arr.rows[ra].length; ca++) {
+        va = arr.rows[ra][ca];
+        if (isErrorValue(va)) fail(va);
+        if (numericOnly) {
+          if (typeof va === "number" && !isNaN(va)) outA.push(va);
+          else if (va !== "" && va != null && !isNaN(Number(va)) && String(Number(va)) === String(va)) outA.push(Number(va));
+        } else outA.push(va);
+      }
+    }
+    return outA;
+  }
   var parsed = parseRefToken(token), i, v, out = [];
   if (!parsed) return null;
   if (parsed.error) fail(parsed.error);
@@ -280,6 +350,11 @@ function matchRefAt(s, p) {
       end = end + sp[0].length + b.len;
     }
   }
+  /* SH13: A1# keeps the spill operator on the ref so copy / fill / delete still rewrite it. */
+  if (!ref.range && s.charAt(end) === "#") {
+    ref.spill = true;
+    end++;
+  }
   return { ref: ref, end: end };
 }
 
@@ -320,6 +395,7 @@ function refsText(x) {
 function refToken(x) {
   var body = refsText(x);
   if (body === ERR_REF) return ERR_REF;
+  if (x.spill && !x.range) body += "#";
   if (x.sheet == null || x.sheet === "") return body;
   return quoteSheetName(x.sheet) + "!" + body;
 }

@@ -128,7 +128,8 @@ function fxOpenPicker() {
       (groups[it.cat] || (groups[it.cat] = [])).push(it);
     }
     html = "";
-    cats = ["Math", "Logic", "Lookup", "Text", "Date"];
+    /* (before SH13): cats = ["Math", "Logic", "Lookup", "Text", "Date"]; */
+    cats = ["Arrays", "Math", "Logic", "Lookup", "Text", "Date"];
     for (c = 0; c < cats.length; c++) {
       if (!groups[cats[c]] || !groups[cats[c]].length) continue;
       html += "<div class=\"fx-cat\">" + cats[c] + "</div>";
