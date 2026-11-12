@@ -2,7 +2,7 @@
    FILE: modules/writer-merge.js
    DF25: was modules/draftly-merge.js (global Draftly is now Writer).
    PROJECT: Writer
-   ROLE: Mail merge engine (CSV, and Excel .xlsx since MM3). No ribbon / DOM wiring here
+   ROLE: Mail merge engine (CSV, Excel .xlsx since MM3, Spreadsheet .hos since MM8). No ribbon / DOM wiring here
          (that is writer-merge-ui.js).
          - state: the table (header, rows) of the CSV or of one sheet, current row, settings
          - data sources: Hub drive (shared/fs, no picker), picked file handle, file input
@@ -10,7 +10,7 @@
          - merged HTML of a row (values are inserted as text, never as HTML)
          - file names: pattern, safe characters, de-duplication
          - settings in localStorage (namespaced key writer_merge_settings)
-   DEPENDS: Writer.csv, Writer.flow / pages / editor (for the document HTML)
+   DEPENDS: Writer.csv, Writer.xlsx, Writer.hos (MM8), Writer.flow / pages / editor (for the document HTML)
    ============================================================ */
 
 /* (before DF25) var Draftly = window.Draftly || {}; window.Draftly = Draftly; */
@@ -23,7 +23,8 @@ Writer.merge = {
   maxRowsExport: 2000,       /* hard cap for "Export all" */
   confirmRows: 200,          /* ask before exporting more rows than this */
   rowToken: '#',             /* {{#}} = 1-based row number */
-  data: null,                /* { name, kind: 'csv'|'xlsx', header, rows, delimiter, sheet, warnings, note, hash, stamp } or null */
+  /* (before MM8) data: null,                /* { name, kind: 'csv'|'xlsx', header, rows, delimiter, sheet, warnings, note, hash, stamp } or null */
+  data: null,                /* { name, kind: 'csv'|'xlsx'|'hos', header, rows, delimiter, sheet, warnings, note, hash, stamp } or null */
   sheets: [],                /* sheet names of the open workbook (empty for CSV); the picker shows when there are 2+ */
   source: null,              /* { kind: 'drive' | 'handle' | 'file', name, getFile(), ... } */
   row: 0,                    /* current row index (0-based) */
@@ -91,6 +92,19 @@ Writer.merge = {
     });
   }
 
+  /* MM8: table of a Spreadsheet .hos (sniffed JSON data) for the wanted sheet: resolves { p, sheets, sheet, note }. */
+  function readHos(data, want) {
+    return Promise.resolve().then(function () {
+      var wb = Writer.hos.open(data);
+      var idx = wb.sheets.indexOf(want), note = '';
+      if (idx < 0) {
+        if (want) note = 'Sheet "' + want + '" is not in the file: showing "' + wb.sheets[0] + '"';
+        idx = 0;
+      }
+      return { p: wb.table(idx), sheets: wb.sheets, sheet: wb.sheets[idx], note: note };
+    });
+  }
+
   /* Read the source file again. Resolves { changed, rows, error }. keepRow: keep M.row where possible. */
   M.readSource = function (opts) {
     opts = opts || {};
@@ -100,8 +114,15 @@ Writer.merge = {
       return file.arrayBuffer().then(function (buf) { return { file: file, buf: buf }; });
     }).then(function (r) {
       var isX = Writer.xlsx && Writer.xlsx.kind(r.buf) !== 'other';
+      /* MM8: a Spreadsheet .hos (or a Writer .how, refused) is JSON: found by content, not by name */
+      var hs = !isX && Writer.hos ? Writer.hos.sniff(r.buf) : null;
+      var isH = !!(hs && (hs.kind === 'hos' || hs.kind === 'how'));
+      if (!isX && !isH && Writer.hos && /\.hos$/i.test(src.name || '')) {
+        throw Object.assign(new Error('This .hos file could not be read: it is not a Spreadsheet file'), { userMessage: 'This .hos file could not be read: it is not a Spreadsheet file', code: 'hos' });
+      }
       var dec = null, h;
       if (isX) h = hashBytes(r.buf) + ':x:' + (M.settings.sheet || '');
+      else if (isH) h = hash(hs.text) + ':h:' + (M.settings.sheet || '');
       else { dec = Writer.csv.decode(r.buf); h = hash(dec.text) + ':' + M.settings.delim; }
       var same = M.data && M.data.hash === h && M.data.name === src.name;
       if (same && !opts.force) {
@@ -110,18 +131,22 @@ Writer.merge = {
       }
       var pr;
       if (isX) pr = readWorkbook(r.buf, M.settings.sheet);
+      else if (isH) pr = readHos(hs.data, M.settings.sheet);
       else pr = Promise.resolve({ p: Writer.csv.parse(dec.text, M.settings.delim), sheets: [], sheet: '', note: '' });
       return pr.then(function (w) {
         var p = w.p;
-        if (isX) M.sheets = w.sheets; else M.sheets = [];
+        /* (before MM8) if (isX) M.sheets = w.sheets; else M.sheets = []; */
+        if (isX || isH) M.sheets = w.sheets; else M.sheets = [];
         if (!p.ok) {
           if (opts.dropData) M.data = null;
           M.error = p.error; M.changed = false; M.emit(opts.dropData ? 'data' : 'error');
           return { changed: false, error: p.error };
         }
         var prev = M.data;
-        M.data = { name: src.name, kind: isX ? 'xlsx' : 'csv', header: p.header, rows: p.rows, delimiter: isX ? '' : p.delimiter,
-          sheet: w.sheet, warnings: p.warnings, note: isX ? w.note : dec.note, hash: h, stamp: stampOf(r.file) };
+        /* (before MM8) M.data = { name: src.name, kind: isX ? 'xlsx' : 'csv', header: p.header, rows: p.rows, delimiter: isX ? '' : p.delimiter,
+          sheet: w.sheet, warnings: p.warnings, note: isX ? w.note : dec.note, hash: h, stamp: stampOf(r.file) }; */
+        M.data = { name: src.name, kind: isX ? 'xlsx' : isH ? 'hos' : 'csv', header: p.header, rows: p.rows, delimiter: (isX || isH) ? '' : p.delimiter,
+          sheet: w.sheet, warnings: p.warnings, note: (isX || isH) ? w.note : dec.note, hash: h, stamp: stampOf(r.file) };
         M.error = ''; M.errorCode = '';
         M.changed = false;
         if (!opts.keepRow) M.row = Math.min(Math.max(0, M.settings.row || 0), Math.max(0, p.rows.length - 1));

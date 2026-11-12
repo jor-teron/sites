@@ -2,7 +2,7 @@
    FILE: modules/writer-merge-ui.js
    DF25: was modules/draftly-merge-ui.js (global Draftly is now Writer).
    PROJECT: Writer
-   ROLE: Mail merge, screen part (MM1, MM3): the "Merge" ribbon tab, the CSV / Excel chooser
+   ROLE: Mail merge, screen part (MM1, MM3, MM8): the "Merge" ribbon tab, the CSV / Excel / Spreadsheet .hos chooser
          (Hub drives first, no OS picker), field list, placeholder highlight and
          warnings, preview, live refresh, "Export all".
    TAB:  panelMerge (writer.html) is a normal ribbon panel: writer-ribbon.js shows it.
@@ -39,7 +39,11 @@ Writer.mergeUi = { previewOn: false };
   function docName() { return (Writer.storage && Writer.storage.currentName && Writer.storage.currentName()) || 'Document'; }
   function isCsvName(n) { return /\.(csv|tsv|txt)$/i.test(n); }
   function isXlsxName(n) { return /\.(xlsx|xlsm)$/i.test(n); }
-  function isDataName(n) { return isCsvName(n) || isXlsxName(n); }
+  function isHosName(n) { return /\.hos$/i.test(n); }   /* MM8: Spreadsheet .hos (a Writer .how is not merge data) */
+  /* (before MM8) function isDataName(n) { return isCsvName(n) || isXlsxName(n); } */
+  function isDataName(n) { return isCsvName(n) || isXlsxName(n) || isHosName(n); }
+  /* MM8: label of the loaded data for notices */
+  function kindLabel(d) { return d && d.kind === 'xlsx' ? 'Excel file' : d && d.kind === 'hos' ? 'Spreadsheet file' : 'CSV'; }
 
   /* ---------------------------------------------------------- modal (same look as OfficeDialog) */
   function modal(title, wide) {
@@ -92,7 +96,8 @@ Writer.mergeUi = { previewOn: false };
     var st = $('mmStatus'), d = M.data, s = M.settings.src;
     var txt, err = false;
     if (M.error) { txt = M.error; err = true; }
-    else if (d && d.kind === 'xlsx') txt = d.name + ' \u00b7 ' + (M.sheets.length > 1 ? '' : 'sheet ' + d.sheet + ' \u00b7 ') + plural(d.rows.length, 'row');
+    /* (before MM8) else if (d && d.kind === 'xlsx') txt = d.name + ' \u00b7 ' + (M.sheets.length > 1 ? '' : 'sheet ' + d.sheet + ' \u00b7 ') + plural(d.rows.length, 'row'); */
+    else if (d && (d.kind === 'xlsx' || d.kind === 'hos')) txt = d.name + ' \u00b7 ' + (M.sheets.length > 1 ? '' : 'sheet ' + d.sheet + ' \u00b7 ') + plural(d.rows.length, 'row');
     else if (d) txt = d.name + ' \u00b7 ' + plural(d.rows.length, 'row') + ' \u00b7 ' + (DELIMS[d.delimiter] || 'delimiter');
     else if (s) txt = 'Last file: ' + s.name + ' \u2014 press Refresh' + (s.kind === 'drive' ? '' : ' or choose it again');
     else txt = 'No file chosen';
@@ -109,7 +114,8 @@ Writer.mergeUi = { previewOn: false };
     $('mmPrevBtn').disabled = !has || !U.previewOn || M.row <= 0;
     $('mmNextBtn').disabled = !has || !U.previewOn || M.row >= n - 1;
     $('mmCounter').textContent = has ? 'Row ' + (M.row + 1) + ' of ' + n : 'Row \u2013';
-    var dl = $('mmDelim'), xl = !!(d && d.kind === 'xlsx') || (!d && M.sheets.length > 0);
+    /* (before MM8) var dl = $('mmDelim'), xl = !!(d && d.kind === 'xlsx') || (!d && M.sheets.length > 0); */
+    var dl = $('mmDelim'), xl = !!(d && (d.kind === 'xlsx' || d.kind === 'hos')) || (!d && M.sheets.length > 0);
     if (dl.value !== M.settings.delim) dl.value = M.settings.delim;
     dl.hidden = xl;   /* the delimiter only means something for CSV */
     renderSheetPick();
@@ -132,7 +138,8 @@ Writer.mergeUi = { previewOn: false };
   function renderFields() {
     var menu = $('mmFieldsMenu');
     menu.textContent = '';
-    if (!M.data) { menu.appendChild(h('div', 'mm-empty', 'Choose a CSV or Excel file first.')); return; }
+    /* (before MM8) if (!M.data) { menu.appendChild(h('div', 'mm-empty', 'Choose a CSV or Excel file first.')); return; } */
+    if (!M.data) { menu.appendChild(h('div', 'mm-empty', 'Choose a CSV, Excel or Spreadsheet .hos file first.')); return; }
     M.fieldNames().forEach(function (name) {
       var b = h('button', 'recent-item mm-field', name);
       b.type = 'button'; b.setAttribute('role', 'menuitem');
@@ -237,7 +244,8 @@ Writer.mergeUi = { previewOn: false };
   function pickFromComputer() {
     if (typeof window.showOpenFilePicker === 'function') {
       return window.showOpenFilePicker({ multiple: false,
-        types: [{ description: 'CSV or Excel', accept: { 'text/csv': ['.csv', '.tsv', '.txt'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'] } }] })
+        /* (before MM8) types: [{ description: 'CSV or Excel', accept: { 'text/csv': ['.csv', '.tsv', '.txt'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'] } }] }) */
+        types: [{ description: 'CSV, Excel or Spreadsheet .hos', accept: { 'text/csv': ['.csv', '.tsv', '.txt'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx', '.xlsm'], 'application/json': ['.hos'] } }] })
         .then(function (hs) { return hs[0] ? useSource(M.sourceFromHandle(hs[0])) : null; })
         .catch(function (e) {
           if (e && e.name === 'AbortError') return null;
@@ -254,7 +262,8 @@ Writer.mergeUi = { previewOn: false };
   }
 
   function openChooser() {
-    var m = modal('Choose a CSV or Excel file', true);
+    /* (before MM8) var m = modal('Choose a CSV or Excel file', true); */
+    var m = modal('Choose a CSV, Excel or Spreadsheet .hos file', true);
     var crumb = h('div', 'mm-crumb');
     var list = h('div', 'mm-files');
     var msg = h('div', 'dlg-message mm-pick-msg');
@@ -292,7 +301,8 @@ Writer.mergeUi = { previewOn: false };
       if (!window.FsDrives) { note('Hub drives are not available in this window. Use \u201cBrowse this computer\u201d.'); return; }
       FsDrives.list().then(function (drives) {
         if (!drives.length) note('No drives yet. Mount a folder in the Hub drive (Files app), or use \u201cBrowse this computer\u201d.');
-        else note('Pick a drive, then the CSV or Excel file. A folder you mounted in the Hub appears here.');
+        /* (before MM8) else note('Pick a drive, then the CSV or Excel file. A folder you mounted in the Hub appears here.'); */
+        else note('Pick a drive, then the CSV, Excel or Spreadsheet .hos file. A folder you mounted in the Hub appears here.');
         drives.forEach(function (d) {
           row(d.name, 'drive', function () { enterDrive(d); }, d.kind === 'folder' ? 'folder' : d.kind === 'local' ? 'browser storage' : '');
         });
@@ -337,7 +347,8 @@ Writer.mergeUi = { previewOn: false };
             }, it.size ? Math.max(1, Math.round(it.size / 1024)) + ' KB' : '');
           }
         });
-        note(shown ? 'Pick a .csv or .xlsx file.' : 'No folders, CSV or Excel files here.');
+        /* (before MM8) note(shown ? 'Pick a .csv or .xlsx file.' : 'No folders, CSV or Excel files here.'); */
+        note(shown ? 'Pick a .csv, .xlsx or .hos file.' : 'No folders, CSV, Excel or Spreadsheet .hos files here.');
       }).catch(function (e) { note('Could not open this folder: ' + ((e && e.message) || e)); });
     }
 
@@ -345,7 +356,8 @@ Writer.mergeUi = { previewOn: false };
       { label: 'Browse this computer\u2026', key: 'browse', fn: function () { m.close(); pickFromComputer(); } },
       { label: 'Cancel', key: 'cancel', fn: function () { m.close(); } }
     ]);
-    btns.browse.title = 'Fallback: pick a CSV or Excel file with the system file dialog';
+    /* (before MM8) btns.browse.title = 'Fallback: pick a CSV or Excel file with the system file dialog'; */
+    btns.browse.title = 'Fallback: pick a CSV, Excel or Spreadsheet .hos file with the system file dialog';
     showDrives();
     return m;
   }
@@ -356,11 +368,14 @@ Writer.mergeUi = { previewOn: false };
     if (!M.source && M.settings.src && M.settings.src.kind === 'drive') {
       M.source = M.sourceFromDrive(M.settings.src);
     }
-    if (!M.source) { if (!auto) toast('Choose a CSV or Excel file first'); return Promise.resolve(); }
+    /* (before MM8) if (!M.source) { if (!auto) toast('Choose a CSV or Excel file first'); return Promise.resolve(); } */
+    if (!M.source) { if (!auto) toast('Choose a CSV, Excel or Spreadsheet .hos file first'); return Promise.resolve(); }
     var go = function () {
       return M.readSource({ keepRow: true }).then(function (r) {
-        if (r && r.changed && !r.first && M.data) setNotice((M.data.kind === 'xlsx' ? 'Excel file' : 'CSV') + ' updated: ' + plural(M.data.rows.length, 'row') + ', ' + plural(M.data.header.length, 'field'));
-        else if (!auto && r && !r.error && !r.changed) toast((M.data && M.data.kind === 'xlsx' ? 'Excel file' : 'CSV') + ' is up to date');
+        /* (before MM8) if (r && r.changed && !r.first && M.data) setNotice((M.data.kind === 'xlsx' ? 'Excel file' : 'CSV') + ' updated: ' + plural(M.data.rows.length, 'row') + ', ' + plural(M.data.header.length, 'field'));
+        else if (!auto && r && !r.error && !r.changed) toast((M.data && M.data.kind === 'xlsx' ? 'Excel file' : 'CSV') + ' is up to date'); */
+        if (r && r.changed && !r.first && M.data) setNotice(kindLabel(M.data) + ' updated: ' + plural(M.data.rows.length, 'row') + ', ' + plural(M.data.header.length, 'field'));
+        else if (!auto && r && !r.error && !r.changed) toast(kindLabel(M.data) + ' is up to date');
         renderStatus();
         return r;
       });
