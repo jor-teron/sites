@@ -1,6 +1,6 @@
 /* DF25: full Writer rename (folder, files, global, Hub id, settings keys) and the
    compatibility pieces: draftly alias, one-time settings copy, old-path redirect.
-   Run: node apps/office/writer/test-df25-rename.js
+   Run: node apps/office/writer/test/test-df25-rename.js
    No DOM, no browser, no network. */
 'use strict';
 
@@ -8,7 +8,8 @@ var fs = require('fs');
 var path = require('path');
 var vm = require('vm');
 
-var ROOT = path.resolve(__dirname, '../../..');
+/* (before DW5) var ROOT = path.resolve(__dirname, '../../..'); */
+var ROOT = path.resolve(__dirname, '../../../..');
 var fails = [];
 var passed = 0;
 function ok(name, cond, detail) {

@@ -1,7 +1,7 @@
 /* DF21: Writer writing helpers. Text rules (writer-writetext.js) and, with a
    tiny fake DOM, the screen side (writer-write.js): spell check default and
    apply, focus mode on / off / Esc, and the Read Aloud hand-off.
-   Run: node apps/office/writer/test-df21-helpers.js
+   Run: node apps/office/writer/test/test-df21-helpers.js
    No browser, no network. */
 'use strict';
 
@@ -10,9 +10,11 @@ var path = require('path');
 var vm = require('vm');
 var assert = require('assert');
 
-var ROOT = path.resolve(__dirname, '../../..');
+/* (before DW5) var ROOT = path.resolve(__dirname, '../../..'); */
+var ROOT = path.resolve(__dirname, '../../../..');
 /* (before DF25) var T = require('./modules/draftly-writetext.js'); */
-var T = require('./modules/writer-writetext.js');
+/* (before DW5) var T = require('./modules/writer-writetext.js'); */
+var T = require('../modules/writer-writetext.js');
 var passed = 0, failed = 0;
 
 function test(name, fn) {
@@ -108,7 +110,8 @@ test('Read Aloud hand-off keys match ra_store.js', function () {
   assert.ok(ui.indexOf("RAStore.get('text')") !== -1 && ui.indexOf("RAStore.get('source')") !== -1, 'Read Aloud reads source and text at start');
   assert.ok(fs.existsSync(path.join(ROOT, 'apps/tools/read-aloud/read-aloud.html')));
   /* (before DF25) assert.ok(fs.existsSync(path.resolve(__dirname, T.RA_PAGE)), 'RA_PAGE resolves from draftly.html'); */
-  assert.ok(fs.existsSync(path.resolve(__dirname, T.RA_PAGE)), 'RA_PAGE resolves from writer.html');
+  /* (before DW5) assert.ok(fs.existsSync(path.resolve(__dirname, T.RA_PAGE)), 'RA_PAGE resolves from writer.html'); */
+  assert.ok(fs.existsSync(path.resolve(__dirname, '..', T.RA_PAGE)), 'RA_PAGE resolves from writer.html');
   assert.ok(fs.existsSync(path.join(ROOT, T.RA_ENTRY, 'index.html')), 'RA_ENTRY');
 });
 

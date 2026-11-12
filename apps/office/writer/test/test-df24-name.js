@@ -1,7 +1,7 @@
 /* DF24: the visible name is Writer. (before DF25) Storage keys, the Hub id and the folder stay draftly.
    DF25: the folder, files, Hub id and storage keys are writer now; this test checks the DF24 names
    on the DF25 paths (the rename itself: test-df25-rename.js).
-   Run: node apps/office/writer/test-df24-name.js
+   Run: node apps/office/writer/test/test-df24-name.js
    No DOM, no browser, no network. */
 'use strict';
 
@@ -9,7 +9,8 @@ var fs = require('fs');
 var path = require('path');
 var vm = require('vm');
 
-var ROOT = path.resolve(__dirname, '../../..');
+/* (before DW5) var ROOT = path.resolve(__dirname, '../../..'); */
+var ROOT = path.resolve(__dirname, '../../../..');
 var fails = [];
 
 function ok(name, cond, detail) {

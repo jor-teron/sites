@@ -2472,7 +2472,6 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   or browser runner.
 - 1.114 is DF25, so this note is numbered 1.115.
 
-
 ### 1.116 SH18 Spreadsheet row height (auto-expand and drag resize)
 
 - Spreadsheet (`apps/office/spreadsheet/`) never grew a row for wrapped or
@@ -2542,6 +2541,47 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   assets. No Puppeteer, Playwright or browser runner.
 - 1.115 is SL10, so this note is numbered 1.116.
 
+### 1.117 DW5 Writer tests moved into writer/test/
+
+- The four Node tests that sat in the root of Writer
+  (`apps/office/writer/`) were moved with `git mv` into a new folder
+  `apps/office/writer/test/`: `test-df21-helpers.js`,
+  `test-df24-name.js`, `test-df25-rename.js` and
+  `test-how1-format.js`. No leftover `test-*.js` remains in the app
+  folder root. This is a folder clean-up only; Writer behaviour, the
+  on-screen title and the release id are unchanged (`Writer DF25` /
+  `DF25`). No `?v=` was added.
+- Path fixes, because the files now live one directory deeper.
+  Replaced lines are commented `(before DW5)` and left in place.
+  `ROOT` in test-df21, test-df24 and test-df25 is now
+  `path.resolve(__dirname, '../../../..')` (four levels up to the repo
+  root). test-df21 requires `../modules/writer-writetext.js`, and
+  `T.RA_PAGE` is resolved from the parent folder (writer.html's
+  directory), not from `test/`. test-how1-format.js sets
+  `dir = path.resolve(__dirname, '..')` so reads of `writer.html` and
+  `modules/` still start at the app folder, and requires
+  `../modules/writer-how.js`. The `../../../shared/fs/filetypes.js`
+  path is unchanged because it is joined to `dir`. Run-command
+  comments now say `node apps/office/writer/test/test-….js`. Current
+  run commands in `writer_readme.md` were updated the same way; a
+  brief DW5 note was added next to the historical DF21 / DF25 test
+  path. Historical test paths in already-merged team-doc sections
+  (1.112 DF21, 1.114 DF25, and earlier) were left as they were.
+- Not changed: Writer app files, `apps/office/shared`, Hub shell,
+  catalog, Games, Learn, other Office apps. No Hub build bump, no
+  new library, no CDN.
+- Release id: still `<title>Writer DF25</title>` and
+  `Writer.config.release` = `DF25`. Title was not bumped to DW5.
+- Limits: this does not change how Writer runs. A device that had
+  bookmarked or scripted the old `node apps/office/writer/test-….js`
+  paths needs the new `test/` path.
+- Checked with `node --check` on the four moved files, then
+  `node apps/office/writer/test/test-df21-helpers.js`,
+  `node apps/office/writer/test/test-df24-name.js`,
+  `node apps/office/writer/test/test-df25-rename.js` and
+  `node apps/office/writer/test/test-how1-format.js` (all passed).
+  No Puppeteer, Playwright or browser runner.
+- 1.115 is SL10 and 1.116 is SH18, so this note is numbered 1.117.
 
 ## 2. Releases (PR → what)
 
