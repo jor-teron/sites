@@ -1,4 +1,4 @@
-/* NP-1a: food icons drawn on canvas. No network images. */
+/* NP-1a: food icons drawn on canvas. No network images. NP2/NP3 add a few vegetable, condiment, pork and dry-fish icons. */
 (function (root) {
   'use strict';
   function disk(ctx, x, y, r, fill, stroke) {
@@ -102,7 +102,42 @@
     beetroot(ctx, s) { disk(ctx, s * 0.5, s * 0.55, s * 0.22, '#ad1457'); ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(s * 0.5, s * 0.35); ctx.lineTo(s * 0.42, s * 0.2); ctx.moveTo(s * 0.5, s * 0.35); ctx.lineTo(s * 0.58, s * 0.18); ctx.stroke(); },
     avial(ctx, s) { bowl(ctx, s, '#d7ccc8'); oval(ctx, s * 0.5, s * 0.4, s * 0.28, s * 0.1, '#f5f0e0');
-      disk(ctx, s * 0.4, s * 0.38, 3, '#ef6c00'); disk(ctx, s * 0.52, s * 0.4, 3, '#8d6e63'); disk(ctx, s * 0.62, s * 0.38, 3, '#9ccc65'); }
+      disk(ctx, s * 0.4, s * 0.38, 3, '#ef6c00'); disk(ctx, s * 0.52, s * 0.4, 3, '#8d6e63'); disk(ctx, s * 0.62, s * 0.38, 3, '#9ccc65'); },
+    /* (before NP2) the object closed after avial. NP2 vegetables: */
+    tomato(ctx, s) { disk(ctx, s * 0.5, s * 0.55, s * 0.25, '#e53935'); ctx.fillStyle = '#3d7a2a';
+      ctx.beginPath(); ctx.moveTo(s * 0.38, s * 0.32); ctx.lineTo(s * 0.5, s * 0.38); ctx.lineTo(s * 0.62, s * 0.32); ctx.lineTo(s * 0.5, s * 0.28); ctx.closePath(); ctx.fill(); },
+    onion(ctx, s) { oval(ctx, s * 0.5, s * 0.56, s * 0.24, s * 0.22, '#b05a7a'); oval(ctx, s * 0.5, s * 0.56, s * 0.14, s * 0.14, '#d98aa6');
+      ctx.fillStyle = '#b05a7a'; ctx.beginPath(); ctx.moveTo(s * 0.44, s * 0.38); ctx.lineTo(s * 0.5, s * 0.2); ctx.lineTo(s * 0.56, s * 0.38); ctx.closePath(); ctx.fill(); },
+    garlic(ctx, s) { oval(ctx, s * 0.5, s * 0.58, s * 0.24, s * 0.2, '#f5f1e6'); oval(ctx, s * 0.42, s * 0.58, s * 0.08, s * 0.16, '#ebe6d3'); oval(ctx, s * 0.58, s * 0.58, s * 0.08, s * 0.16, '#ebe6d3');
+      ctx.fillStyle = '#e0d8c0'; ctx.beginPath(); ctx.moveTo(s * 0.45, s * 0.4); ctx.lineTo(s * 0.5, s * 0.22); ctx.lineTo(s * 0.55, s * 0.4); ctx.closePath(); ctx.fill(); },
+    carrot(ctx, s) { ctx.fillStyle = '#ef7d1a'; ctx.beginPath(); ctx.moveTo(s * 0.36, s * 0.32); ctx.lineTo(s * 0.64, s * 0.32); ctx.lineTo(s * 0.5, s * 0.84); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#43a047'; ctx.fillRect(s * 0.44, s * 0.16, s * 0.04, s * 0.16); ctx.fillRect(s * 0.52, s * 0.16, s * 0.04, s * 0.16); },
+    radish(ctx, s) { ctx.fillStyle = '#f5f1e6'; ctx.beginPath(); ctx.moveTo(s * 0.38, s * 0.36); ctx.lineTo(s * 0.62, s * 0.36); ctx.lineTo(s * 0.5, s * 0.86); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#d7ccc8'; ctx.lineWidth = 1; ctx.stroke(); oval(ctx, s * 0.5, s * 0.26, s * 0.14, s * 0.1, '#5da13c'); },
+    peas(ctx, s) { oval(ctx, s * 0.5, s * 0.52, s * 0.34, s * 0.14, '#7cb342');
+      for (let i = 0; i < 4; i++) disk(ctx, s * (0.32 + i * 0.12), s * 0.52, s * 0.05, '#c5e1a5'); },
+    capsicum(ctx, s) { oval(ctx, s * 0.42, s * 0.56, s * 0.13, s * 0.22, '#43a047'); oval(ctx, s * 0.58, s * 0.56, s * 0.13, s * 0.22, '#388e3c');
+      ctx.fillStyle = '#2e5d1f'; ctx.fillRect(s * 0.47, s * 0.24, s * 0.06, s * 0.12); },
+    gourd(ctx, s) { ctx.save(); ctx.translate(s * 0.5, s * 0.52); ctx.rotate(-0.6);
+      oval(ctx, 0, 0, s * 0.36, s * 0.11, '#6a9a3a'); ctx.strokeStyle = '#3d6b1f'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-s * 0.3, 0); ctx.lineTo(s * 0.3, 0); ctx.moveTo(-s * 0.26, -s * 0.05); ctx.lineTo(s * 0.26, -s * 0.05); ctx.moveTo(-s * 0.26, s * 0.05); ctx.lineTo(s * 0.26, s * 0.05); ctx.stroke();
+      ctx.restore(); },
+    /* NP3 condiments, pork and dry fish: */
+    chilli(ctx, s) { ctx.strokeStyle = '#c62828'; ctx.lineWidth = s * 0.1; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s * 0.32, s * 0.34); ctx.quadraticCurveTo(s * 0.4, s * 0.72, s * 0.74, s * 0.7); ctx.stroke();
+      ctx.strokeStyle = '#3d7a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s * 0.32, s * 0.34); ctx.lineTo(s * 0.28, s * 0.22); ctx.stroke(); },
+    greenchilli(ctx, s) { ctx.strokeStyle = '#43a047'; ctx.lineWidth = s * 0.08; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s * 0.28, s * 0.3); ctx.quadraticCurveTo(s * 0.36, s * 0.7, s * 0.76, s * 0.72); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s * 0.4, s * 0.26); ctx.quadraticCurveTo(s * 0.5, s * 0.6, s * 0.8, s * 0.56); ctx.stroke(); },
+    spice(ctx, s) { ctx.fillStyle = '#e6a817'; ctx.beginPath(); ctx.moveTo(s * 0.22, s * 0.7); ctx.quadraticCurveTo(s * 0.5, s * 0.2, s * 0.78, s * 0.7); ctx.closePath(); ctx.fill();
+      disk(ctx, s * 0.42, s * 0.58, 2, '#8d4b1a'); disk(ctx, s * 0.56, s * 0.52, 2, '#8d4b1a'); disk(ctx, s * 0.5, s * 0.64, 2, '#8d4b1a'); },
+    root(ctx, s) { oval(ctx, s * 0.44, s * 0.56, s * 0.2, s * 0.12, '#d8b06a'); oval(ctx, s * 0.62, s * 0.46, s * 0.12, s * 0.08, '#d8b06a'); oval(ctx, s * 0.34, s * 0.44, s * 0.08, s * 0.06, '#c9a05a'); },
+    jar(ctx, s) { ctx.fillStyle = '#c75b3a'; ctx.fillRect(s * 0.32, s * 0.34, s * 0.36, s * 0.44); ctx.fillStyle = '#8d6e63'; ctx.fillRect(s * 0.3, s * 0.24, s * 0.4, s * 0.1);
+      disk(ctx, s * 0.44, s * 0.52, 3, '#f4d35e'); disk(ctx, s * 0.56, s * 0.62, 3, '#7cb342'); },
+    pork(ctx, s) { oval(ctx, s * 0.5, s * 0.54, s * 0.3, s * 0.18, '#f7e3d8'); oval(ctx, s * 0.5, s * 0.58, s * 0.26, s * 0.12, '#d98a7a'); oval(ctx, s * 0.5, s * 0.6, s * 0.14, s * 0.06, '#c46a5a'); },
+    dryfish(ctx, s) { ctx.fillStyle = '#b08a5a'; ctx.beginPath(); ctx.ellipse(s * 0.46, s * 0.52, s * 0.26, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(s * 0.7, s * 0.52); ctx.lineTo(s * 0.84, s * 0.42); ctx.lineTo(s * 0.84, s * 0.62); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 1; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(s * (0.32 + i * 0.09), s * 0.46); ctx.lineTo(s * (0.32 + i * 0.09), s * 0.58); ctx.stroke(); } }
   };
   function paint(canvas, type) {
     const s = canvas.width, ctx = canvas.getContext('2d');

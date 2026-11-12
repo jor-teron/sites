@@ -3,10 +3,14 @@ const assert = require('node:assert/strict');
 const F = require('../core/foods.js');
 const NP = require('../core/plate.js');
 
-test('150 unique valid foods covering every group and diet', () => {
-  assert.equal(F.foods.length, 150);
-  assert.equal(new Set(F.foods.map(f => f.id)).size, 150);
-  assert.equal(new Set(F.foods.map(f => f.name)).size, 150);
+// (before NP2) test('150 unique valid foods covering every group and diet', () => {
+test('217 unique valid foods covering every group and diet (150 + NP2 43 + NP3 24)', () => {
+  // (before NP2) assert.equal(F.foods.length, 150);
+  assert.equal(F.foods.length, 217);
+  // (before NP2) assert.equal(new Set(F.foods.map(f => f.id)).size, 150);
+  assert.equal(new Set(F.foods.map(f => f.id)).size, 217);
+  // (before NP2) assert.equal(new Set(F.foods.map(f => f.name)).size, 150);
+  assert.equal(new Set(F.foods.map(f => f.name)).size, 217);
   F.foods.forEach(f => assert.equal(NP.validateFood(f), f));
   const groups = new Set(F.foods.map(f => f.group));
   assert.equal(groups.size, F.groups.length);
@@ -31,7 +35,8 @@ test('filter by search, group and diet', () => {
   assert(NP.filterFoods('', 'fruits', 'all').every(f => f.group === 'fruits'));
   assert(NP.filterFoods('', 'all', 'veg').every(f => f.diet === 'v'));
   assert(NP.filterFoods('', 'all', 'egg').every(f => f.diet === 'v' || f.diet === 'e'));
-  assert.equal(NP.filterFoods('', 'all', 'nonveg').length, 150);
+  // (before NP2) assert.equal(NP.filterFoods('', 'all', 'nonveg').length, 150);
+  assert.equal(NP.filterFoods('', 'all', 'nonveg').length, 217);
   assert(!NP.filterFoods('', 'all', 'veg').some(f => f.id === 'chicken_curry'));
   assert(NP.filterFoods('', 'all', 'egg').some(f => f.id === 'boiled_egg'));
   assert(!NP.filterFoods('', 'all', 'egg').some(f => f.id === 'fish_curry'));
@@ -55,7 +60,8 @@ test('quantity limits and unknown foods are rejected', () => {
   assert.equal(plate[0].qty, 20);
   assert.throws(() => NP.setQty(plate, 'roti', 21));
   assert.deepEqual(NP.setQty(plate, 'roti', 0), []);
-  assert.deepEqual(NP.normalize([{ id: 'roti', qty: 0 }, { id: 'roti', qty: 2 }]), [{ id: 'roti', qty: 2 }]);
+  // (before NP4) assert.deepEqual(NP.normalize([{ id: 'roti', qty: 0 }, { id: 'roti', qty: 2 }]), [{ id: 'roti', qty: 2 }]);
+  assert.deepEqual(NP.normalize([{ id: 'roti', qty: 0 }, { id: 'roti', qty: 2 }]), [{ id: 'roti', qty: 2, g: F.byId.roti.g * 2 }]);
 });
 
 test('balanced-plate shares use food weight and sum to one', () => {

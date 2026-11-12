@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#3d6b3a">
-<title>Nutrition Plate NP-1c</title>
+<!-- (before NP3) <title>Nutrition Plate NP-1c</title> -->
+<!-- (before NP4) <title>Nutrition Plate NP3</title> -->
+<!-- (before NP5) <title>Nutrition Plate NP4</title> -->
+<title>Nutrition Plate NP5</title>
 <link rel="icon" href="nutrition-plate_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.nutrition-plate.theme"></script>
 <link rel="stylesheet" href="ui/nutrition.css">
@@ -15,6 +18,7 @@
   <h1><img src="nutrition-plate_icon.png" width="32" height="32" alt="">Nutrition Plate</h1>
   <div class="modes lrn-mode" role="tablist" aria-label="App sections">
     <button type="button" id="mode-plate" data-m="plate" aria-pressed="true">Plate</button>
+    <button type="button" id="mode-portions" data-m="portions" aria-pressed="false">Portions</button>
     <button type="button" id="mode-games" data-m="games" aria-pressed="false">Games</button>
     <button type="button" id="mode-help" data-m="help" aria-pressed="false">How to use</button>
   </div>
@@ -31,12 +35,14 @@
   <div class="intro">
     <div>
       <p class="eyebrow">LEARN / HEALTH</p>
-      <h2>Build a plate. See what is in it.</h2>
-      <p>Everyday Indian foods, with approximate nutrients and a balanced-plate guide.</p>
+      <h2>Build a plate. Plan a week.</h2>
+      <p>Everyday Indian foods, with approximate nutrients, a balanced-plate guide, and a week planner.</p>
     </div>
   </div>
-  <section class="person" aria-label="Who this day is for">
-    <h2>Who this day is for</h2>
+  <!-- (before NP5) <section class="person" aria-label="Who this day is for">
+    <h2>Who this day is for</h2> -->
+  <section class="person" aria-label="Who this week is for">
+    <h2>Who this week is for</h2>
     <div class="filters person-fields">
       <label>Age group<select id="age"></select></label>
       <label>Sex<select id="sex"></select></label>
@@ -45,13 +51,28 @@
     </div>
     <p id="target-note" class="muted"></p>
   </section>
+  <section class="week panel" aria-label="Week planner">
+    <div class="week-head">
+      <h2>This week</h2>
+      <label class="week-start">Week starts on<select id="week-start"></select></label>
+    </div>
+    <div id="week-days" class="meals week-days" role="tablist" aria-label="Days of the week"></div>
+    <div class="toolbar week-copy">
+      <label>Copy this day to<select id="copy-day-to"></select></label>
+      <button type="button" id="copy-day">Copy day</button>
+      <button type="button" id="copy-weekdays">Copy to Mon–Fri</button>
+    </div>
+    <p class="muted" id="week-copy-hint">Copy replaces the meals on the days you choose. You will be asked to confirm first. Saturday and Sunday are not changed by Copy to Mon–Fri.</p>
+    <section id="week-progress" aria-label="Week progress"></section>
+  </section>
   <div id="meals" class="meals" role="tablist" aria-label="Meals of the day"></div>
   <section id="progress" aria-label="Day progress"></section>
   <p id="tips" class="tips" aria-live="polite"></p>
   <section class="workspace">
     <div class="plate-col">
       <h2 id="plate-title">Breakfast</h2>
-      <p class="hint" id="plate-hint">Drag a food here, or tap it in the list to add one portion.</p>
+      <!-- (before NP4) <p class="hint" id="plate-hint">Drag a food here, or tap it in the list to add one portion.</p> -->
+      <p class="hint" id="plate-hint">Drag a food here, or tap it in the list to add one of your portions. Type grams on an item for this serving only.</p>
       <div id="plate" class="plate-drop" tabindex="0" role="region" aria-label="Plate"></div>
       <section id="totals" aria-live="polite"></section>
       <section id="balance" aria-label="Balanced plate guide"></section>
@@ -80,6 +101,20 @@
   </section>
   </section>
 
+  <section id="view-portions" hidden>
+    <h2>Portions</h2>
+    <p class="hint">Set your usual serving size for each food, in grams. Leave the box blank to use the default household portion. These sizes stay on this device. Changing them does not rewrite meals you have already saved. On the plate, + and − add one of your portions; you can type grams for that serving only without changing the size stored here.</p>
+    <div class="toolbar">
+      <button type="button" id="reset-all-portions">Reset all</button>
+    </div>
+    <div class="filters" aria-label="Search portions">
+      <label>Search<input id="portion-search" type="search" placeholder="roti, dal, mango…" autocomplete="off"></label>
+    </div>
+    <div id="portion-chips" class="chips" role="toolbar" aria-label="Food groups"></div>
+    <p id="portion-count" class="muted"></p>
+    <div id="portions-list"></div>
+  </section>
+
   <section id="view-games" hidden>
     <h2>Games</h2>
     <p class="hint">Practise reading a plate. Figures are still approximate guides, not medical advice.</p>
@@ -90,20 +125,30 @@
   <section id="view-help" hidden>
     <h2>How to use</h2>
     <ol class="how-to">
-      <li><strong>Add foods.</strong> Search or pick a food group, then tap a food to add one portion, or drag it onto the plate. Use + and − to change the amount.</li>
-      <li><strong>Portions</strong> are everyday measures: 1 roti, 1 katori, 1 cup or 1 piece. Nutrient figures are rounded guides from Indian food tables (IFCT 2017), not a laboratory test.</li>
+      <!-- (before NP4) <li><strong>Add foods.</strong> Search or pick a food group, then tap a food to add one portion, or drag it onto the plate. Use + and − to change the amount.</li> -->
+      <li><strong>Add foods.</strong> Search or pick a food group, then tap a food to add one of your portions, or drag it onto the plate. Use + and − to change how many portions are on the plate. Type grams on a plate item for that serving only — this does not change your usual size.</li>
+      <!-- (before NP4) <li><strong>Portions</strong> are everyday measures: 1 roti, 1 katori, 1 cup or 1 piece. Nutrient figures are rounded guides from Indian food tables (IFCT 2017), not a laboratory test.</li> -->
+      <li><strong>Portions (NP4).</strong> Defaults are everyday measures: 1 roti, 1 katori, 1 cup or 1 piece. Open the Portions tab to set your usual size in grams; leave a box blank to keep the default. Reset one food or Reset all to go back to the defaults. Nutrient figures scale from per-gram values in Indian food tables (IFCT 2017) and stay rounded guides, not a laboratory test.</li>
       <li><strong>The balanced-plate guide</strong> uses food weight, so vegetables stay visible: about half vegetables and fruit, one quarter grains, and one quarter protein (dal, sprouts, eggs, fish or meat), with milk or curd on the side. Oils, snacks and sweets should stay small.</li>
-      <li><strong>Plan a day.</strong> Switch between breakfast, lunch, snacks and dinner. Set age, sex, activity and diet for a rough daily target. Bars and short tips compare the whole day with that target.</li>
+      <!-- (before NP5) <li><strong>Plan a day.</strong> Switch between breakfast, lunch, snacks and dinner. Set age, sex, activity and diet for a rough daily target. Bars and short tips compare the whole day with that target.</li> -->
+      <li><strong>Plan a week (NP5).</strong> The plate editor is one day in a week of breakfast, lunch, snacks and dinner. Pick a day to edit it. Week totals are compared with seven times the daily target. Copy this day onto another day, or onto Monday–Friday; you will be asked to confirm before those days are replaced. The week starts on Monday unless you change the start day; that choice stays on this device. A month planner is not in this release.</li>
       <li><strong>Sex and targets.</strong> Targets follow ICMR-NIN style figures and stay approximate. Iron is higher for most females from the pre-teen years to adulthood. Prefer not to say uses the mid-point of the female and male figures. Older adults use the same iron figure for both.</li>
-      <li><strong>Games.</strong> Guess the calories of a food, fix an unbalanced plate by adding and removing foods, or pick a healthier swap. Best scores stay on this device.</li>
-      <li><strong>Save.</strong> Named plates and days are stored in this browser only.</li>
+      <!-- (before NP4) <li><strong>Games.</strong> Guess the calories of a food, fix an unbalanced plate by adding and removing foods, or pick a healthier swap. Best scores stay on this device.</li> -->
+      <li><strong>Games.</strong> Guess the calories of a food, fix an unbalanced plate by adding and removing foods, or pick a healthier swap. Best scores stay on this device. Games always use the default household portions, not the sizes you set on the Portions tab.</li>
+      <!-- (before NP4) <li><strong>Save.</strong> Named plates and days are stored in this browser only.</li> -->
+      <!-- (before NP5) <li><strong>Save.</strong> Named plates and days are stored in this browser only. Each save stores the grams actually used, so changing a portion later does not rewrite old days.</li> -->
+      <li><strong>Save.</strong> The current week, named plates and named days are stored in this browser only. Each save stores the grams actually used, so changing a portion later does not rewrite old days or other days in the week.</li>
+      <li><strong>More foods (NP2 and NP3).</strong> A <strong>Leafy greens</strong> group (lai xaak, khutora, sojina paat, kolmou, morapat, kochu xaak, dhekia and more) and a <strong>Condiments</strong> group (ginger, garlic, chillies, spices, nemu, tamarind, outenga, pickle, kharisa and mustard oil). Vegetables now include tomato, onion, carrot, gourds such as potol and komora, tubers such as kochu and ol, and garden foods such as koldil, posola and sojina. Grains add Basmati, Joha, bora saul and red rice. Meat and fish add pork, dry fish (hukoti, namsing / sidol), plain broiler and masor tenga. Search works with local names. Assam foods with no exact table row use the closest IFCT 2017 food, so they stay approximate. Leafy greens count as vegetables on the plate; condiments sit on the side.</li>
     </ol>
     <p class="notice">This is an educational guide, not medical advice. Needs vary by sex, body size, health and life stage — including pregnancy and illness. Speak to a qualified professional for personal advice.</p>
   </section>
 
   <p id="status" role="status"></p>
 </main>
-<footer>NP-1c · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer>
+<!-- (before NP3) <footer>NP-1c · Educational guide, not medical advice · <span>Preparing offline copy…</span></footer> -->
+<!-- (before NP4) <footer>NP3 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer> -->
+<!-- (before NP5) <footer>NP4 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer> -->
+<footer>NP5 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer>
 </div>
 <dialog id="settings-dialog">
 <h2>Settings</h2>
@@ -112,9 +157,19 @@
   <option value="light">Light</option>
   <option value="dark">Dark</option>
 </select></label>
-<p>Auto follows your Hub theme. Saved plates and days stay on this device. No account is needed.</p>
+<p>Auto follows your Hub theme. The current week, saved plates and days, and portion sizes stay on this device. No account is needed.</p>
 <p class="muted">Educational guide, not medical advice.</p>
 <button data-close>Done</button>
+</dialog>
+<dialog id="notice-dialog">
+<h2 id="notice-title">Check the amount</h2>
+<p id="notice-text"></p>
+<div class="actions"><button type="button" class="primary" data-close>OK</button></div>
+</dialog>
+<dialog id="confirm-dialog">
+<h2 id="confirm-title">Reset all portions?</h2>
+<p id="confirm-text">Every food will go back to its default household size. Meals you have already saved are not changed.</p>
+<div class="actions"><button type="button" data-close>Cancel</button><button type="button" id="confirm-ok" class="primary">Reset all</button></div>
 </dialog>
 <dialog id="name-dialog">
 <form id="name-form">

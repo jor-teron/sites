@@ -1,5 +1,8 @@
 /* App-scoped offline shell. Does not change or unregister the Hub service worker. */
-const CACHE = 'nutrition-plate-1c';
+/* (before NP3) const CACHE = 'nutrition-plate-1c'; */
+/* (before NP4) const CACHE = 'nutrition-plate-np3'; */
+/* (before NP5) const CACHE = 'nutrition-plate-np4'; */
+const CACHE = 'nutrition-plate-np5';
 const FILES = ['./', 'index.html', 'nutrition-plate.html', 'nutrition-plate_icon.png',
   'ui/nutrition.css', 'ui/app.js', 'ui/icons.js', 'core/foods.js', 'core/plate.js',
   'core/targets.js', 'core/day.js', 'core/games.js', '../shared/learn-hubbar.js', '../../../shared/theme/hub_theme.js'];

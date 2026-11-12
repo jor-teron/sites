@@ -1,4 +1,6 @@
-/* NP-1b: a day's meals, tips, and localStorage save/load. */
+/* NP-1b: a day's meals, tips, and localStorage save/load.
+   NP4: personal portions on this device; saved meals store actual grams.
+   NP5: a week of days, week totals, copy, and a Monday start the user can change. */
 (function (root, factory) {
   const NP = typeof module === 'object' && module.exports ? require('./plate.js') : root.NP;
   const T = typeof module === 'object' && module.exports ? require('./targets.js') : root.NPTargets;
@@ -10,12 +12,55 @@
   const KEY = 'learn.nutrition-plate.v1', MAX_SAVED = 20;
   const MEALS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['snack', 'Snacks'], ['dinner', 'Dinner']];
   const mealIds = MEALS.map(m => m[0]);
+  const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const WORKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  const WEEKDAY_LABELS = {
+    mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+    fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
+  };
+  const WEEKDAY_SHORT = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+  const JS_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   const uid = () => 'np-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   const copy = v => JSON.parse(JSON.stringify(v));
   function emptyMeals() { return { breakfast: [], lunch: [], snack: [], dinner: [] }; }
-  function fresh() {
+  function emptyWeek() {
+    const week = {};
+    WEEKDAYS.forEach(id => { week[id] = emptyMeals(); });
+    return week;
+  }
+  function weekdayFromDate(now) {
+    const d = now instanceof Date ? now : (now != null && now !== '' ? new Date(now) : new Date());
+    if (Number.isNaN(d.getTime())) return JS_DAYS[new Date().getDay()];
+    return JS_DAYS[d.getDay()];
+  }
+  function cleanWeekStart(id) { return WEEKDAYS.includes(id) ? id : 'mon'; }
+  function weekOrder(start) {
+    const id = cleanWeekStart(start);
+    const i = WEEKDAYS.indexOf(id);
+    return WEEKDAYS.slice(i).concat(WEEKDAYS.slice(0, i));
+  }
+  function weekdayLabel(id, short) {
+    return (short ? WEEKDAY_SHORT[id] : WEEKDAY_LABELS[id]) || id;
+  }
+  function cleanMeals(meals) {
+    const out = emptyMeals();
+    mealIds.forEach(id => { out[id] = NP.normalize(meals && meals[id]); });
+    return out;
+  }
+  function cleanWeek(raw) {
+    const week = emptyWeek();
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return week;
+    WEEKDAYS.forEach(id => { week[id] = cleanMeals(raw[id]); });
+    return week;
+  }
+  function fresh(now) {
+    const week = emptyWeek();
+    const weekDay = weekdayFromDate(now);
     return { version: 1, person: { age: 'adult', activity: 'moderate', diet: 'all', sex: 'unspecified' },
-      meals: emptyMeals(), meal: 'breakfast', plates: [], days: [], scores: { guess: 0, plate: 0, swaps: 0 } };
+      /* meals is the plate editor: one day of the week (same object as week[weekDay]). */
+      meals: week[weekDay], meal: 'breakfast', week, weekDay, weekStart: 'mon',
+      plates: [], days: [], scores: { guess: 0, plate: 0, swaps: 0 },
+      portions: {} };
   }
   function cleanMeal(list) { return NP.normalize(list); }
   function cleanPerson(p) {
@@ -33,17 +78,31 @@
   function cleanSavedDay(row) {
     if (!row || typeof row.id !== 'string' || typeof row.name !== 'string') return null;
     const name = row.name.trim().slice(0, 80); if (!name) return null;
-    const meals = emptyMeals();
-    mealIds.forEach(id => { meals[id] = cleanMeal(row.meals && row.meals[id]); });
-    return { id: row.id.slice(0, 80), name, person: cleanPerson(row.person), meals };
+    return { id: row.id.slice(0, 80), name, person: cleanPerson(row.person), meals: cleanMeals(row.meals) };
   }
-  function restore(text) {
+  function hasWeek(raw) {
+    return !!(raw && raw.week && typeof raw.week === 'object' && !Array.isArray(raw.week));
+  }
+  function restore(text, now) {
     let raw; try { raw = JSON.parse(text); } catch (e) { throw new Error('Saved data could not be read.'); }
     if (!raw || typeof raw !== 'object') throw new Error('Saved data could not be read.');
-    const state = fresh();
+    const state = fresh(now);
     state.person = cleanPerson(raw.person);
     state.meal = mealIds.includes(raw.meal) ? raw.meal : 'breakfast';
-    mealIds.forEach(id => { state.meals[id] = cleanMeal(raw.meals && raw.meals[id]); });
+    state.weekStart = cleanWeekStart(raw.weekStart);
+    const todayId = weekdayFromDate(now);
+    /* Today's unsaved day (pre-NP5 `meals`) migrates into this week on today's weekday.
+       If a week is already stored, it is the source of truth and is not wiped. */
+    if (hasWeek(raw)) {
+      state.week = cleanWeek(raw.week);
+      state.weekDay = WEEKDAYS.includes(raw.weekDay) ? raw.weekDay : todayId;
+    } else {
+      state.week = emptyWeek();
+      /* (before NP5) mealIds.forEach(id => { state.meals[id] = cleanMeal(raw.meals && raw.meals[id]); }); */
+      state.week[todayId] = cleanMeals(raw.meals);
+      state.weekDay = todayId;
+    }
+    state.meals = state.week[state.weekDay];
     state.plates = Array.isArray(raw.plates) ? raw.plates.map(cleanSavedPlate).filter(Boolean).slice(0, MAX_SAVED) : [];
     state.days = Array.isArray(raw.days) ? raw.days.map(cleanSavedDay).filter(Boolean).slice(0, MAX_SAVED) : [];
     const sc = raw.scores && typeof raw.scores === 'object' ? raw.scores : {};
@@ -52,15 +111,61 @@
       plate: Number.isInteger(sc.plate) && sc.plate >= 0 ? Math.min(20, sc.plate) : 0,
       swaps: Number.isInteger(sc.swaps) && sc.swaps >= 0 ? Math.min(8, sc.swaps) : 0
     };
+    /* Personal portion sizes stay on this device. Blank or missing = the food's default grams.
+       Saved meals already went through cleanMeal / NP.normalize, which stores actual grams
+       (old qty-only rows become qty × the default household portion). */
+    state.portions = NP.cleanPortions(raw.portions);
     return state;
   }
   function dayTotals(meals) {
     return NP.sumTotals(mealIds.map(id => NP.totals(meals[id] || [])));
   }
+  function weekTotals(week) {
+    const w = cleanWeek(week);
+    return NP.sumTotals(WEEKDAYS.map(id => dayTotals(w[id])));
+  }
+  function weekTargets(person) {
+    const p = cleanPerson(person);
+    const g = T.targets(p.age, p.activity, p.sex);
+    const out = { age: g.age, activity: g.activity, sex: g.sex };
+    ['kcal', 'prot', 'fat', 'carb', 'fibre', 'sugar', 'fe', 'ca', 'vc'].forEach(k => { out[k] = g[k] * 7; });
+    return out;
+  }
+  function commitCurrent(state) {
+    const week = cleanWeek(state && state.week);
+    const day = WEEKDAYS.includes(state && state.weekDay) ? state.weekDay : weekdayFromDate();
+    week[day] = cleanMeals(state && state.meals);
+    return { week, weekDay: day };
+  }
+  function selectWeekDay(state, id) {
+    if (!WEEKDAYS.includes(id)) throw new Error('Pick a day of the week.');
+    const committed = commitCurrent(state);
+    return Object.assign({}, state, { week: committed.week, weekDay: id, meals: committed.week[id] });
+  }
+  function setWeekStart(state, start) {
+    return Object.assign({}, state, { weekStart: cleanWeekStart(start) });
+  }
+  function copyDay(state, fromId, toIds) {
+    const from = WEEKDAYS.includes(fromId) ? fromId : null;
+    if (!from) throw new Error('Pick a day to copy from.');
+    const dest = (Array.isArray(toIds) ? toIds : [toIds]).filter(id => WEEKDAYS.includes(id));
+    if (!dest.length) throw new Error('Pick a day to copy to.');
+    const committed = commitCurrent(state);
+    const week = committed.week;
+    const source = copy(cleanMeals(week[from]));
+    dest.forEach(id => { week[id] = copy(source); });
+    return Object.assign({}, state, { week, weekDay: committed.weekDay, meals: week[committed.weekDay] });
+  }
   function mergedRows(meals) {
     const map = {};
-    mealIds.forEach(id => { (meals[id] || []).forEach(row => { map[row.id] = (map[row.id] || 0) + row.qty; }); });
-    return Object.keys(map).map(id => ({ id, qty: map[id] }));
+    mealIds.forEach(id => {
+      (meals[id] || []).forEach(row => {
+        if (!map[row.id]) map[row.id] = { id: row.id, qty: 0, g: 0 };
+        map[row.id].qty += row.qty;
+        map[row.id].g += row.g || 0;
+      });
+    });
+    return Object.keys(map).map(id => map[id]);
   }
   function mealTotals(meals) {
     const out = {};
@@ -73,7 +178,8 @@
     if (!t.portions) out.push('Start a meal — add foods from the library to breakfast, lunch, snacks or dinner.');
     else {
       if (t.prot < g.prot * 0.7) out.push('Add a protein — dal, curd, paneer, eggs, fish or meat.');
-      if ((t.groups.vegetables.portions || 0) < 2) out.push('Add vegetables — try to fill about half of each plate.');
+      /* (before NP2) if ((t.groups.vegetables.portions || 0) < 2) out.push('Add vegetables — try to fill about half of each plate.'); */
+      if (((t.groups.vegetables.portions || 0) + (t.groups.leafy?.portions || 0)) < 2) out.push('Add vegetables — try to fill about half of each plate.');
       if (t.sugar > g.sugar) out.push('Too much sugar — sweet drinks, juice and desserts add up quickly.');
       if (t.fibre < g.fibre * 0.6 && t.portions) out.push('Add fibre — vegetables, fruit, whole grains and dals help.');
       if (t.kcal > g.kcal * 1.15) out.push('Energy is above the rough daily target — check portions and fried snacks.');
@@ -87,25 +193,33 @@
     if (state.plates.length >= MAX_SAVED) throw new Error('Maximum 20 saved plates. Delete one first.');
     const text = (name || '').trim().slice(0, 80); if (!text) throw new Error('Give this plate a name.');
     const row = { id: uid(), name: text, items: copy(cleanMeal(state.meals[state.meal])) };
-    return { ...state, plates: state.plates.concat(row) };
+    return Object.assign({}, state, { plates: state.plates.concat(row) });
   }
   function loadPlate(state, id) {
     const row = state.plates.find(p => p.id === id); if (!row) throw new Error('That plate was not found.');
-    const meals = copy(state.meals); meals[state.meal] = copy(row.items);
-    return { ...state, meals };
+    const committed = commitCurrent(state);
+    const meals = copy(committed.week[committed.weekDay]);
+    meals[state.meal] = copy(row.items);
+    committed.week[committed.weekDay] = meals;
+    return Object.assign({}, state, { week: committed.week, weekDay: committed.weekDay, meals });
   }
-  function deletePlate(state, id) { return { ...state, plates: state.plates.filter(p => p.id !== id) }; }
+  function deletePlate(state, id) { return Object.assign({}, state, { plates: state.plates.filter(p => p.id !== id) }); }
   function saveDay(state, name) {
     if (state.days.length >= MAX_SAVED) throw new Error('Maximum 20 saved days. Delete one first.');
     const text = (name || '').trim().slice(0, 80); if (!text) throw new Error('Give this day a name.');
-    const row = { id: uid(), name: text, person: copy(state.person), meals: copy(state.meals) };
-    return { ...state, days: state.days.concat(row) };
+    const row = { id: uid(), name: text, person: copy(state.person), meals: copy(cleanMeals(state.meals)) };
+    return Object.assign({}, state, { days: state.days.concat(row) });
   }
   function loadDay(state, id) {
     const row = state.days.find(d => d.id === id); if (!row) throw new Error('That day was not found.');
-    return { ...state, person: copy(row.person), meals: copy(row.meals) };
+    const committed = commitCurrent(state);
+    committed.week[committed.weekDay] = copy(cleanMeals(row.meals));
+    return Object.assign({}, state, { person: copy(row.person), week: committed.week, weekDay: committed.weekDay,
+      meals: committed.week[committed.weekDay] });
   }
-  function deleteDay(state, id) { return { ...state, days: state.days.filter(d => d.id !== id) }; }
-  return { KEY, MEALS, MAX_SAVED, uid, fresh, restore, cleanPerson, dayTotals, mealTotals, mergedRows, tips,
-    savePlate, loadPlate, deletePlate, saveDay, loadDay, deleteDay, targets: T };
+  function deleteDay(state, id) { return Object.assign({}, state, { days: state.days.filter(d => d.id !== id) }); }
+  return { KEY, MEALS, MAX_SAVED, WEEKDAYS, WORKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, uid, fresh, restore,
+    cleanPerson, cleanMeals, cleanWeek, cleanWeekStart, emptyMeals, emptyWeek, weekdayFromDate, weekOrder,
+    weekdayLabel, dayTotals, weekTotals, weekTargets, mealTotals, mergedRows, tips, selectWeekDay, setWeekStart,
+    copyDay, savePlate, loadPlate, deletePlate, saveDay, loadDay, deleteDay, targets: T };
 });

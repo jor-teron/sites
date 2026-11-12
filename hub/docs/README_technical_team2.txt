@@ -2723,6 +2723,198 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   DF24, DF25 64 checks, HOW1), plus a static-serve curl smoke.
 - 1.118 is HO3, so this note is numbered 1.119.
 
+### 1.120 NP2+NP3 Nutrition Plate food library (kitchen garden, leafy greens, condiments, pork, dry fish)
+
+- Goal: Jor asked for NP2 and NP3 together (one local commit). Nutrition
+  Plate (`apps/learn/nutrition-plate/`, Learn -> Health, NP-1a..1c from
+  PR #522) was missing everyday basics, Assam home-garden foods, leafy
+  greens, condiments, pork and dry fish. Team 2 id NP1 stays unused.
+- Food library 150 -> 217 (+67). Groups 11 -> 13. Every NP-1 food is
+  kept with the same id, name, group and values.
+- NP2 (+43): new group `leafy` "Leafy greens", listed after Vegetables.
+  Grains +4: basmati_rice, joha_rice, bora_saul, red_rice (1 katori,
+  140 g). Vegetables +26: tomato, onion, cucumber, cauliflower,
+  green_peas, capsicum, radish, carrot; gourds ridge_gourd (turai /
+  jika), sponge_gourd (nenua), snake_gourd, potol (parwal), komora (ash
+  gourd), kundru (ivy gourd / kunduli); tubers sweet_potato, kochu
+  (arbi), ol (elephant foot yam), yam (kath alu); garden knol_khol (ol
+  kopi), raw_papaya, green_jackfruit (kothal), raw_banana, koldil
+  (banana flower), posola (banana stem), spring_onion, drumstick
+  (sojina). Leafy greens 13: lai_xaak, khutora (amaranth), sojina_paat,
+  kolmou, morapat, kochu_xaak, pumpkin_leaves, bathua, dhekia,
+  radish_leaves, lettuce, coriander (bunch), mint (bunch). Palak,
+  methi, sarson da saag, cabbage, lauki, kaddu, karela stay in
+  Vegetables.
+- NP3 (+24): new group `condiments` "Condiments", after Fats, nuts and
+  seeds, 13 foods: ginger, garlic, green_chilli, dry_red_chilli,
+  turmeric, cumin, mustard_seed, lemon (nemu), tamarind, outenga,
+  pickle (vegetarian achar), kharisa (bamboo shoot with chilli,
+  vegetarian), mustard_oil (generic `oil` stays in Fats). Meat and fish
+  +11, all diet `n`: pork_curry, smoked_pork, fried_pork; dry fish
+  hukoti, namsing (sidol), dried_small_fish, dried_prawn; broiler
+  (plain cooked, 1 piece 100 g), broiler_fry; masor_tenga,
+  small_fish_fry. Group counts now: grains 35, vegetables 48, leafy 13,
+  meat 22, condiments 13 (others unchanged).
+- Nutrients: same method as NP-1a, IFCT 2017 per 100 g scaled to the
+  household portion and rounded like the existing rows; cooked sabzis
+  and saags carry a typical ~1 tsp of oil. Spices are 1.5-3 g portions
+  (<= 15 kcal); dry fish 15-25 g. Closest-table items (no direct IFCT
+  row, kept "approximate"): joha (milled aromatic rice), bora saul
+  (glutinous rice), red rice, potol (parwal), komora (ash gourd),
+  kochu / ol / kath alu, koldil (banana flower), posola (plantain
+  stem), lai xaak (mustard leaves), khutora (amaranth), dhekia
+  (leafy-green average), kolmou (ipomoea), morapat (jute leaves),
+  outenga (sour fruit / elephant apple), kharisa (bamboo shoot +
+  chilli), hukoti / namsing / sidol (dried fish; hukoti with arum
+  stem), smoked pork (cooked pork), masor tenga (fish curry, less
+  fat). Values were set from the tables and existing rows, not a
+  fresh lab analysis.
+- Model: `core/plate.js` `plateWeight` adds `leafy` to the vegfruit
+  quarter and returns a separate `condiments` weight (on the side, not
+  in the core quarters and not in "oils, snacks or sweets").
+  `core/day.js` "Add vegetables" tip counts vegetables + leafy portions.
+  Diet filters unchanged (`allowed`): veg / egg hide all new `n` foods.
+- Icons (`ui/icons.js`, canvas only): new tomato, onion, garlic, carrot,
+  radish, peas, capsicum, gourd, chilli, greenchilli, spice, root, jar,
+  pork, dryfish; other new foods reuse leafy, rice, brownrice, potato,
+  gobi, lauki, cabbage, sabzi, banana, beans, citrus, nut, fruit, oil,
+  chicken, fish, prawn.
+- UI: title and footer NP3 (`nutrition-plate.html`, `index.html`); one
+  new How to use item for the new groups and foods. `offline.js` cache
+  name `nutrition-plate-1c` -> `nutrition-plate-np3` so the cache-first
+  shell picks up the new foods (not a `?v=`). `learn-apps.csv`
+  description now says "Indian and Assam" (hub_catalog.js not
+  regenerated). README has NP2 and NP3 sections. Replaced lines are
+  commented `(before NP2)` / `(before NP3)`.
+- Tests: `node --check` on all app JS; `node --test
+  tests/model.test.cjs tests/np23.test.cjs` 25 passed, 0 failed (new
+  file: 67 foods valid and unique, group placement and order, kept
+  foods, veg / egg filters hide pork / dry fish / broiler / local fish,
+  search by local names incl. joha, hukoti, sidol, lai xaak, sojina,
+  potol, kochu, koldil, nemu, kharisa, leafy counts as vegetables,
+  condiments on the side, old saves load). Static-serve curl smoke
+  200 for nutrition-plate.html, index.html, foods.js, icons.js,
+  plate.js, offline.js. `tests/browser.cjs` (Puppeteer) not run and
+  not changed.
+- Limits: figures are rounded guides, not a lab test or medical
+  advice. No Portions page, no typed grams, no week or month planner
+  (NP4-NP6). Games keep their NP-1 food lists. No change to Nutrition
+  Calculator, Hub files, root `shared/`, catalog, or build numbers.
+- 1.119 is MM8, so this note is numbered 1.120.
+
+### 1.121 NP4 Nutrition Plate Portions page and typed grams
+
+- Goal: Jor asked for NP4 (local commit) on top of NP2+NP3 (`apps/np2-np3-foods`
+  a129967a). Nutrition Plate (`apps/learn/nutrition-plate/`, Learn -> Health)
+  gained a Portions tab and typed grams. Title is Nutrition Plate NP4.
+  Branch `apps/np4-portions`, based on the NP3 commit (not rebased onto a
+  later origin/main). Team 2 id NP1 stays unused.
+- Portions tab (next to Plate, Games and How to use; not a new Hub app):
+  every food shows its default household size (for example 1 roti at 40 g,
+  or 1 katori at 100 g) and a grams field the user can set. Blank means the
+  default. Reset for one food, or Reset all (in-app confirm). Personal sizes
+  stay on this device under the existing key `learn.nutrition-plate.v1`
+  (`state.portions`). Invalid grams (0, negative, NaN, empty when a number
+  is required, or above 2000 g for a personal portion / 40000 g for a plate
+  item) are rejected with an in-app dialog, not window.alert / confirm /
+  prompt.
+- On the plate, +/− uses the user's portion (or the default if the box is
+  blank). A grams field on the plate item sets a one-off amount for that
+  serving only and does not change the saved personal portion. After +/−,
+  grams go back to qty × the current personal (or default) portion.
+- Nutrients scale from the food's per-gram values (the existing per-portion
+  IFCT figure × grams / default grams). The 217-food library is unchanged
+  (ids, names, groups, nutrient and default-portion values). Leafy greens
+  still count with vegetables; condiments still sit on the side.
+- Saved plates and days store the grams actually used, so changing a
+  portion later does not rewrite old meals. Existing qty-only saves migrate
+  on load to grams = qty × the default household portion from foods.js
+  (not the later personal size). Current and saved meals are not wiped.
+- Games keep using built-in default portions and their original NP-1 food
+  lists; they ignore user Portions settings.
+- UI: title and footer NP4 (`nutrition-plate.html`, `index.html`); How to
+  use covers personal portions, one-off grams, saved grams, and that games
+  use defaults. `offline.js` cache name `nutrition-plate-np3` ->
+  `nutrition-plate-np4` so the cache-first shell picks up the new JS (not
+  a `?v=`). `learn-apps.csv` description mentions personal portions (no
+  extra commas; hub_catalog.js not regenerated). README has an NP4 section.
+  Replaced lines are commented `(before NP4)`.
+- Tests: `node --check` on all touched app JS and test files; `node --test
+  tests/model.test.cjs tests/np23.test.cjs tests/np4.test.cjs` (existing
+  files still pass; new file covers blank = default, personal portion and
+  +/− scaling, Reset one / Reset all, one-off grams not changing the
+  personal size, saved grams not rewritten when a portion changes later,
+  old qty-only saves migrating, games ignoring user Portions, invalid
+  grams rejected, and the 217-food NP2/NP3 behaviour). Static-serve curl
+  smoke on a unique port for nutrition-plate.html, index.html, and the JS
+  that changed. `tests/browser.cjs` (Puppeteer) not run and not changed.
+- Limits: figures are rounded guides, not a lab test or medical advice.
+  No shopping list, no change to Nutrition Calculator, no week or month
+  planner (NP5-NP6). No change to Hub files, root `shared/`, catalog, or
+  build numbers. No new libraries or CDN.
+- 1.120 is NP2+NP3, so this note is numbered 1.121.
+
+### 1.122 NP5 Nutrition Plate week planner
+
+- Goal: Jor asked for NP5 (local commit) on top of NP4 (`apps/np4-portions`
+  526e6b16). Nutrition Plate (`apps/learn/nutrition-plate/`, Learn -> Health)
+  gained a week planner. Title is Nutrition Plate NP5. Branch
+  `apps/np5-week-planner`, based on the NP4 commit (not rebased onto a later
+  origin/main). Team 2 id NP1 stays unused. Date 12 Nov 2026.
+- Week planner (on the Plate view; not a new Hub app): seven days × four
+  meals (breakfast, lunch, snacks, dinner). The existing plate editor is
+  how you edit one day of that week (pick a day, then use the plate as now,
+  including NP4 personal portions and one-off grams). Week totals are
+  compared with seven times the daily ICMR-NIN style target (same age, sex,
+  activity and diet already in the app). Day bars and tips for the selected
+  day stay.
+- Copy this day onto another chosen day, or copy it across weekdays
+  (Monday–Friday). Saturday and Sunday are not changed by the weekday copy.
+  An in-app confirm dialog runs before those destination days are
+  overwritten (no window.alert / confirm / prompt).
+- Week starts on Monday by default. The user can change the start day; the
+  seven day buttons follow that start. Meals stay attached to their weekday
+  (changing the start only reorders the row). The preference is stored on
+  this device as `state.weekStart` under the existing key
+  `learn.nutrition-plate.v1`.
+- Migration: a pre-NP5 unsaved current day (`state.meals`) becomes today's
+  weekday in the new week and is not lost. If a week is already stored, it
+  is kept. Named plate and day snapshots (20 each), personal portions, and
+  game scores are not wiped. Old qty-only meals still migrate to qty × the
+  default household grams as in NP4. Saved week days store the grams
+  actually used, so changing a personal portion later does not rewrite
+  them.
+- Games keep using built-in default portions and their original NP-1 food
+  lists; they ignore user Portions settings. Auto / Light / Dark, veg /
+  egg filters, search, and the Portions tab stay. The 217-food library is
+  unchanged.
+- UI: title and footer NP5 (`nutrition-plate.html`, `index.html`); How to
+  use covers the week, copy, week start, and that a month planner is not
+  in this release. `offline.js` cache name `nutrition-plate-np4` ->
+  `nutrition-plate-np5` so the cache-first shell picks up the new JS (not
+  a `?v=`). `learn-apps.csv` description mentions planning a week (no
+  extra commas; hub_catalog.js not regenerated). README has an NP5 section.
+  Replaced lines are commented `(before NP5)`.
+- Tests: `node --check` on all touched app JS and test files; `node --test
+  tests/model.test.cjs tests/np23.test.cjs tests/np4.test.cjs
+  tests/np5.test.cjs` (existing files still pass; new file covers 7 days ×
+  4 meals, week totals = sum of days and 7× the daily target, copy one day
+  and copy to Mon–Fri with destinations unchanged until the action, Monday
+  default start and a changeable start that reorders the seven days, the
+  plate editor reading and writing one week day including NP4 grams, the
+  unsaved day migrating into the week, named snapshots / portions /
+  qty-only saves still loading, later portion changes not rewriting saved
+  week-day grams, and games still on defaults). Static-serve curl smoke on
+  a unique port for nutrition-plate.html, index.html, and the JS that
+  changed. `tests/browser.cjs` (Puppeteer) not run and not changed.
+- Limits: figures are rounded guides, not a lab test or medical advice.
+  Still on this device only. No shopping list, no change to Nutrition
+  Calculator, no month calendar or NP6 features (NP6 is parked as of
+  12 Nov 2026 and is not in this release). No change to Hub files, root
+  `shared/`, catalog, or build numbers. No new libraries or CDN. No heavy
+  month-wide charts.
+- 1.121 is NP4, so this note is numbered 1.122.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
