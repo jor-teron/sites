@@ -52,6 +52,10 @@ function buildTable() {
     td.textContent = String(r + 1);
     td.dataset.r = String(r);
     td.addEventListener("click", onRowHeadClick);
+    grip = document.createElement("span");
+    grip.className = CLS.rowGrip;
+    grip.dataset.r = String(r);
+    td.appendChild(grip);
     tr.appendChild(td);
     for (c = 0; c < COLS; c++) {
       td = document.createElement("td");
@@ -98,6 +102,7 @@ function onColHeadClick(ev) {
  * Click row number: select the whole row (Shift = extend)
  */
 function onRowHeadClick(ev) {
+  if (CLS.rowGrip && ev.target.classList.contains(CLS.rowGrip)) return;
   var r = parseInt(ev.currentTarget.dataset.r, 10);
   blurEditing();
   if (!ev.shiftKey) selR = r;

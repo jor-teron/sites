@@ -173,11 +173,11 @@ test("borders button, hidden #bd-sel, and no version bump", function () {
   });
   if (html.indexOf("(before SH17)") < 0) throw new Error("old select was not kept as a comment");
   if (live.indexOf("unpkg") >= 0 || live.indexOf("jsdelivr") >= 0 || live.indexOf("cdn.") >= 0) throw new Error("CDN reference");
-  if (html.indexOf("<title>Spreadsheet SH14</title>") < 0) throw new Error("title changed");
-  if (html.indexOf("?v=SH17") >= 0) throw new Error("cache token bumped");
-  if (html.indexOf("?v=SH14") < 0) throw new Error("SH14 cache token missing");
+  /* (before SH18) this test required title / ?v= / SHEET_VERSION SH14 and forbade ?v=SH17 */
+  if (html.indexOf("<title>Spreadsheet SH18</title>") < 0) throw new Error("title is not SH18");
+  if (html.indexOf("?v=SH18") < 0) throw new Error("SH18 cache token missing");
   var settings = fs.readFileSync(path.join(dir, "spreadsheet_settings.js"), "utf8");
-  if (settings.indexOf('SHEET_VERSION = "SH14"') < 0) throw new Error("SHEET_VERSION changed");
+  if (settings.indexOf('SHEET_VERSION = "SH18"') < 0) throw new Error("SHEET_VERSION is not SH18");
   eq(ctx.CFG.storage.key, "sheet-v4");
   eq(ctx.COLS, 26);
   eq(ctx.ROWS, 100);

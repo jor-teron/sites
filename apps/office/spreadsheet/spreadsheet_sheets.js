@@ -326,11 +326,23 @@ function applyHiddenAndFreeze() {
     }
     if (c < (freeze.cols || 0)) { acc += w; lefts.push(acc); }
   }
+  /* (before SH18)
   var tops = [cellH], tacc = cellH;
   for (r = 0; r < (freeze.rows || 0); r++) {
     if (!rowHidden(r)) tacc += cellH;
     tops.push(tacc);
   }
+  */
+  var tops = typeof freezeTopOffsets === "function"
+    ? freezeTopOffsets(cellH, freeze.rows || 0, typeof usedRowHeight === "function" ? usedRowHeight : function () { return cellH; }, rowHidden)
+    : (function () {
+        var t = [cellH], acc = cellH, i;
+        for (i = 0; i < (freeze.rows || 0); i++) {
+          if (!rowHidden(i)) acc += cellH;
+          t.push(acc);
+        }
+        return t;
+      })();
 
   function setSticky(el, topVal, leftVal, zi) {
     if (!el) return;

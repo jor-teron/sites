@@ -135,10 +135,26 @@ table.sheet {
 
 table.sheet col.row-head { width: var(--row-head); }
 
+/* (before SH18)
 th, td {
   border: 1px solid var(--border);
   height: var(--cell-h);
   padding: 0;
+}
+*/
+th, td {
+  border: 1px solid var(--border);
+  height: var(--cell-h);
+  min-height: var(--cell-h);
+  padding: 0;
+}
+table.sheet tr {
+  height: var(--cell-h);
+}
+/* When JS sets an explicit row height, cells fill the row instead of staying 30px. */
+table.sheet tr[style*="height"] > th,
+table.sheet tr[style*="height"] > td {
+  height: inherit;
 }
 
 th {
@@ -187,6 +203,19 @@ td.cell {
 }
 .col-grip:hover, body.col-resizing .col-grip:hover { background: var(--sel); opacity: 0.6; }
 body.col-resizing, body.col-resizing * { cursor: col-resize !important; user-select: none; }
+
+/* SH18: drag the bottom edge of a row number to resize the row. */
+.row-grip {
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 7px;
+  cursor: row-resize;
+  z-index: 5;
+}
+.row-grip:hover, body.row-resizing .row-grip:hover { background: var(--sel); opacity: 0.6; }
+body.row-resizing, body.row-resizing * { cursor: row-resize !important; user-select: none; }
 
 .toolbar button:disabled { opacity: 0.4; cursor: default; }
 .tool-sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
@@ -247,7 +276,8 @@ td.cell.selected .fill-handle { display: block; }
   table.sheet {
     font-size: 10px;
   }
-  .col-grip { display: none; }
+  /* (before SH18) .col-grip { display: none; } */
+  .col-grip, .row-grip { display: none; }
   th, td.row-num { background: #eee !important; color: #000; }
   td.cell { background: #fff !important; }
   td.cell input { color: #000; }
@@ -513,7 +543,15 @@ th.filter-active .filter-btn { color: var(--sel); font-weight: 700; }
 
 
 /* SH11: wrap, merge, painter */
-td.cell.wrap { vertical-align: top; min-height: 36px; }
+/* (before SH18) td.cell.wrap { vertical-align: top; min-height: 36px; } */
+td.cell.wrap { vertical-align: top; }
+td.cell.has-break { vertical-align: top; }
+td.cell.has-break .cell-face { white-space: pre; }
+td.cell.has-break input {
+  color: transparent;
+  caret-color: var(--text);
+}
+td.cell.has-break input.wrap-edit { color: var(--text); position: relative; z-index: 1; }
 td.cell .cell-face {
   position: absolute;
   inset: 1px 2px;
@@ -566,7 +604,8 @@ td.cell.bd-t, td.cell.bd-r, td.cell.bd-b, td.cell.bd-l {
 }
 @media print {
   td.cell .cell-face { color: #000; }
-  td.cell.wrap input { color: transparent !important; }
+  /* (before SH18) td.cell.wrap input { color: transparent !important; } */
+  td.cell.wrap input, td.cell.has-break input { color: transparent !important; }
 }
 
 

@@ -2473,6 +2473,76 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.114 is DF25, so this note is numbered 1.115.
 
 
+### 1.116 SH18 Spreadsheet row height (auto-expand and drag resize)
+
+- Spreadsheet (`apps/office/spreadsheet/`) never grew a row for wrapped or
+  multi-line text, and a row could not be resized by dragging. CSS locked
+  every `th, td` at `--cell-h: 30px`. SH11 wrap painted a `.cell-face`
+  overlay (`white-space: pre-wrap`) that could not grow the row, so
+  wrapped text and line breaks from paste, import or `CHAR(10)` were
+  clipped. There was no grip on `td.row-num` (columns already had
+  `.col-grip` in `spreadsheet_resize.js`). Alt+Enter did nothing:
+  `onCellKey` returned early on `altKey`, and Enter always committed and
+  moved down. This was a never-built feature, not a regression.
+- HOS1 already saved `sheet.heights[]` (px, `null` = automatic, clamp
+  8–400). No `.hos` format bump (stays `hos` version `1`). Nothing in
+  the app assigned a height except load / copy / clear. `changeLines` in
+  `spreadsheet_rows.js` already shifted `colWidths` on column
+  insert/delete, but did not shift `heights` on row insert/delete; SH18
+  fixes that.
+- Automatic rows (`heights[r] = null`) now grow and shrink back to 30px
+  for wrapped text and explicit line breaks (floor 30, clamp 8–400).
+  Height is the max content need of visible cells in that row (font size,
+  line-height 1.25, padding, wrap width, merged width for a merge's
+  top-left). `estimateRowHeight` in `spreadsheet_resize.js` is a pure
+  helper (no 26×100 layout reads). Recomputed after edit, wrap /
+  font-size change, paste, fill, column resize and open (`applyRowHeights`
+  from `afterChange` and `applyWidths`).
+- Drag the bottom edge of a row-number header to set a manual height
+  (`cursor: row-resize`, `.row-grip`, clamp 8–400). Double-click resets
+  to automatic (content-fit, not column-style "share free width").
+  `undoRecord` is called at drag start (and on double-click reset);
+  heights were already in the undo snapshot. Column-width undo is
+  unchanged (still not on the stack).
+- Alt+Enter in `spreadsheet_edit.js` (`insertCellLineBreak`) inserts a
+  newline, turns Wrap on, and stays in the cell. Plain Enter still
+  commits and moves down. The in-cell editor and formula bar stay
+  single-line `<input>`s; `.cell-face` shows the break after commit. A
+  cell that already has a line break also shows a face when Wrap is off
+  (`.has-break`).
+- Freeze offsets in `applyHiddenAndFreeze` (`spreadsheet_sheets.js`) now
+  use `freezeTopOffsets` to sum real (manual or automatic) row heights
+  and still skip hidden / filtered rows. CSS: `td` height no longer
+  fights a taller `tr`; `.row-grip` is hidden in print like `.col-grip`.
+  Replaced lines are commented `(before SH18)` and left in place.
+- Not changed: `apps/office/shared`, Hub shell, catalog, Games, Learn,
+  other Office apps. No Hub build bump. No new library, no CDN. Grid
+  stays 26×100. No XLSX / CSV row-height or wrap-style import (export
+  already writes `wrapText` only). No multiline formula bar or in-cell
+  textarea. Column auto-width behaviour is unchanged. Charts stay
+  free-positioned and will not stick to a row if it grows.
+- Release id: `<title>Spreadsheet SH18</title>` (legacy SH14 comment),
+  `SHEET_VERSION = "SH18"`, About SH18, this app's own `?v=SH18`. Page
+  title `Spreadsheet SH18`.
+- Limits: formula bar and in-cell editor stay single-line; a break shows
+  in the cell face after commit. No XLSX / CSV height import or export.
+  Merged-cell auto-fit measures the top-left cell at the merged width.
+  Charts do not move with a taller row.
+- Checked with `node --check` on the edited JS files,
+  `node apps/office/spreadsheet/test-sh18-row-height.js` (auto-fit math
+  for wrap, `\n`, font size, clamp 8–400, default 30, manual vs
+  automatic; insert/delete shifts heights; `.hos` round-trip of a manual
+  height, format still version 1; freeze offset helper sums mixed
+  heights and skips hidden rows), the existing
+  `node apps/office/spreadsheet/test-sh*.js` and `test-hos1-format.js`
+  (SH14 title / `?v=` / `SHEET_VERSION` pins in `test-hos1-format.js`,
+  `test-sh17-borders.js` and `test-sh15-textsplit.js` updated to SH18),
+  and a static `python -m http.server` (port 18826) + curl 200 on spreadsheet.html
+  (title SH18, `row-grip` / resize script present) and the linked
+  assets. No Puppeteer, Playwright or browser runner.
+- 1.115 is SL10, so this note is numbered 1.116.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
