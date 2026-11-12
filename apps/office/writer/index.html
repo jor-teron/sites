@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- Redirect entry point to writer.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Open draftly" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<!-- DF25: this folder was apps/office/draftly/ (that path now only redirects here); (before DF25) every draftly.html below was the target. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- (before DF24) <title>Draftly</title> -->
+  <title>Writer</title>
+  <!-- (before DF25) <link rel="canonical" href="draftly.html"> -->
+  <link rel="canonical" href="writer.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      /* (before DF25) location.replace('draftly.html' + location.search + location.hash); */
+      location.replace('writer.html' + location.search + location.hash);
+    })();
+  </script>
+  <!-- (before DF25) <noscript><meta http-equiv="refresh" content="0; url=draftly.html"></noscript> -->
+  <noscript><meta http-equiv="refresh" content="0; url=writer.html"></noscript>
+</head>
+<!-- (before DF25) <body><noscript><p><a href="draftly.html">Open Writer</a></p></noscript></body> -->
+<body><noscript><p><!-- (before DF24) <a href="draftly.html">Open Draftly</a> --><a href="writer.html">Open Writer</a></p></noscript></body>
+</html>

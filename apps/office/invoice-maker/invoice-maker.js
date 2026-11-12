@@ -4,7 +4,8 @@
 
 var RELEASE = 'INV1';
 var STORE_KEY = 'invoice-maker-v1';
-var JSPDF_SRC = '../draftly/vendor/jspdf.umd.min.js';
+/* (before DF25) var JSPDF_SRC = '../draftly/vendor/jspdf.umd.min.js'; */
+var JSPDF_SRC = '../writer/vendor/jspdf.umd.min.js';   /* DF25: Writer's folder is now writer/ */
 var QR_SRC = '../../../shared/vendor/qrcode.js';
 var DEFAULT_TERMS = 'Goods once sold will not be taken back. Interest may be charged on overdue payments. Subject to the jurisdiction of the place of supply.';
 var DEFAULT_ACCENT = '#0f5c4c';

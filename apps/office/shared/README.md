@@ -11,7 +11,7 @@ Plain scripts, no build, work from `file://`. Each app keeps its own storage key
   `pageRule` (@page text), `inject` (style tag), `customMarginsDialog`.
 - `office-native.js` (HOS1): Hub Local drive Documents save, open-from-hash, and the
   standalone save picker or download. Same path as Writer's HOW1 `.how` files
-  (`apps/office/draftly/modules/draftly-how.js`, which keeps its own copy).
+  (`apps/office/writer/modules/writer-how.js`, which keeps its own copy; before DF25 `apps/office/draftly/modules/draftly-how.js`).
   Spreadsheet's `.hos` files and Tables' `.hot` files use `OfficeNative.create(...)`.
 
 SH1 (moved from Draftly, used by Draftly and Spreadsheet). Colours come from the app's `--of-*`
@@ -29,8 +29,8 @@ set them on `body` so dark/light overrides flow through.
   Theme colours stay in each app's CSS. HO2: Auto inside the Hub follows `sites-hub.theme`; standalone Auto follows the device.
 - `office-settings.css` / `office-settings.js`: `OfficeSettings.create({key, defaults, sections, migrate,
   validate, gearBtn, onChange, onReset, confirm, toast})` (`toast` = optional message fn; default OfficeNotify). Builds the slide-in panel (switch / select /
-  external / about rows), one JSON localStorage key per app. Draftly: `draftly_settings`
-  (sections + migration in draftly-settings.js); Spreadsheet: `spreadsheet_settings`.
+  external / about rows), one JSON localStorage key per app. Writer: `writer_settings`
+  (sections + migration in writer-settings.js; before DF25 `draftly_settings` in draftly-settings.js); Spreadsheet: `spreadsheet_settings`.
 - `office-colour.css` / `office-colour.js`: `OfficeColour.create({btn, arrow, menu, bar, palette, key,
   fallback, autoBar, onPick, onOpen, onClose, autoRemember})`. Split button + swatch grid, one open at a time.
 - `office-hover.js` (DF13): `OfficeHover.attach({tabsEl, tabSelector, selectTab, fileBtn, fileMenu,
@@ -64,7 +64,7 @@ Follow-up: these vendor files are byte-for-byte copies. A later release can poin
 | --- | --- |
 | 1133660 | `apps/office/ocr/vendor/pdf.worker.min.js`, `shared/vendor/pdfjs/pdf.worker.min.js` |
 | 377116 | `apps/office/ocr/vendor/pdf.min.js`, `shared/vendor/pdfjs/pdf.min.js` |
-| 364463 | `apps/office/draftly/vendor/jspdf.umd.min.js`, `apps/lab/sketchbook/vendor/jspdf.umd.min.js` |
+| 364463 | `apps/office/writer/vendor/jspdf.umd.min.js` (DF25; was `apps/office/draftly/vendor/`), `apps/lab/sketchbook/vendor/jspdf.umd.min.js` |
 | 257127 | `apps/office/paper-scan/vendor/jsQR.js`, `apps/office/print/vendor/jsQR.js`, `apps/connectivity/filedrop/vendor/jsQR.js`, `apps/connectivity/pooh-chat/vendor/jsQR.js`, `apps/media/photo-editor-v2/vendor/jsQR.js`, `hub/controller/vendor/jsQR.js`, `phone/vendor/jsQR.js` |
 | 97630 | `apps/office/ocr/vendor/jszip.min.js`, `apps/connectivity/filedrop/vendor/jszip.min.js`, `shared/vendor/jszip.min.js` |
 | 92865 | `apps/office/print/vendor/peerjs.min.js`, `shared/vendor/peerjs.min.js` |
