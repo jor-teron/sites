@@ -2723,6 +2723,85 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   DF24, DF25 64 checks, HOW1), plus a static-serve curl smoke.
 - 1.118 is HO3, so this note is numbered 1.119.
 
+### 1.120 NP2+NP3 Nutrition Plate food library (kitchen garden, leafy greens, condiments, pork, dry fish)
+
+- Goal: Jor asked for NP2 and NP3 together (one local commit). Nutrition
+  Plate (`apps/learn/nutrition-plate/`, Learn -> Health, NP-1a..1c from
+  PR #522) was missing everyday basics, Assam home-garden foods, leafy
+  greens, condiments, pork and dry fish. Team 2 id NP1 stays unused.
+- Food library 150 -> 217 (+67). Groups 11 -> 13. Every NP-1 food is
+  kept with the same id, name, group and values.
+- NP2 (+43): new group `leafy` "Leafy greens", listed after Vegetables.
+  Grains +4: basmati_rice, joha_rice, bora_saul, red_rice (1 katori,
+  140 g). Vegetables +26: tomato, onion, cucumber, cauliflower,
+  green_peas, capsicum, radish, carrot; gourds ridge_gourd (turai /
+  jika), sponge_gourd (nenua), snake_gourd, potol (parwal), komora (ash
+  gourd), kundru (ivy gourd / kunduli); tubers sweet_potato, kochu
+  (arbi), ol (elephant foot yam), yam (kath alu); garden knol_khol (ol
+  kopi), raw_papaya, green_jackfruit (kothal), raw_banana, koldil
+  (banana flower), posola (banana stem), spring_onion, drumstick
+  (sojina). Leafy greens 13: lai_xaak, khutora (amaranth), sojina_paat,
+  kolmou, morapat, kochu_xaak, pumpkin_leaves, bathua, dhekia,
+  radish_leaves, lettuce, coriander (bunch), mint (bunch). Palak,
+  methi, sarson da saag, cabbage, lauki, kaddu, karela stay in
+  Vegetables.
+- NP3 (+24): new group `condiments` "Condiments", after Fats, nuts and
+  seeds, 13 foods: ginger, garlic, green_chilli, dry_red_chilli,
+  turmeric, cumin, mustard_seed, lemon (nemu), tamarind, outenga,
+  pickle (vegetarian achar), kharisa (bamboo shoot with chilli,
+  vegetarian), mustard_oil (generic `oil` stays in Fats). Meat and fish
+  +11, all diet `n`: pork_curry, smoked_pork, fried_pork; dry fish
+  hukoti, namsing (sidol), dried_small_fish, dried_prawn; broiler
+  (plain cooked, 1 piece 100 g), broiler_fry; masor_tenga,
+  small_fish_fry. Group counts now: grains 35, vegetables 48, leafy 13,
+  meat 22, condiments 13 (others unchanged).
+- Nutrients: same method as NP-1a, IFCT 2017 per 100 g scaled to the
+  household portion and rounded like the existing rows; cooked sabzis
+  and saags carry a typical ~1 tsp of oil. Spices are 1.5-3 g portions
+  (<= 15 kcal); dry fish 15-25 g. Closest-table items (no direct IFCT
+  row, kept "approximate"): joha (milled aromatic rice), bora saul
+  (glutinous rice), red rice, potol (parwal), komora (ash gourd),
+  kochu / ol / kath alu, koldil (banana flower), posola (plantain
+  stem), lai xaak (mustard leaves), khutora (amaranth), dhekia
+  (leafy-green average), kolmou (ipomoea), morapat (jute leaves),
+  outenga (sour fruit / elephant apple), kharisa (bamboo shoot +
+  chilli), hukoti / namsing / sidol (dried fish; hukoti with arum
+  stem), smoked pork (cooked pork), masor tenga (fish curry, less
+  fat). Values were set from the tables and existing rows, not a
+  fresh lab analysis.
+- Model: `core/plate.js` `plateWeight` adds `leafy` to the vegfruit
+  quarter and returns a separate `condiments` weight (on the side, not
+  in the core quarters and not in "oils, snacks or sweets").
+  `core/day.js` "Add vegetables" tip counts vegetables + leafy portions.
+  Diet filters unchanged (`allowed`): veg / egg hide all new `n` foods.
+- Icons (`ui/icons.js`, canvas only): new tomato, onion, garlic, carrot,
+  radish, peas, capsicum, gourd, chilli, greenchilli, spice, root, jar,
+  pork, dryfish; other new foods reuse leafy, rice, brownrice, potato,
+  gobi, lauki, cabbage, sabzi, banana, beans, citrus, nut, fruit, oil,
+  chicken, fish, prawn.
+- UI: title and footer NP3 (`nutrition-plate.html`, `index.html`); one
+  new How to use item for the new groups and foods. `offline.js` cache
+  name `nutrition-plate-1c` -> `nutrition-plate-np3` so the cache-first
+  shell picks up the new foods (not a `?v=`). `learn-apps.csv`
+  description now says "Indian and Assam" (hub_catalog.js not
+  regenerated). README has NP2 and NP3 sections. Replaced lines are
+  commented `(before NP2)` / `(before NP3)`.
+- Tests: `node --check` on all app JS; `node --test
+  tests/model.test.cjs tests/np23.test.cjs` 25 passed, 0 failed (new
+  file: 67 foods valid and unique, group placement and order, kept
+  foods, veg / egg filters hide pork / dry fish / broiler / local fish,
+  search by local names incl. joha, hukoti, sidol, lai xaak, sojina,
+  potol, kochu, koldil, nemu, kharisa, leafy counts as vegetables,
+  condiments on the side, old saves load). Static-serve curl smoke
+  200 for nutrition-plate.html, index.html, foods.js, icons.js,
+  plate.js, offline.js. `tests/browser.cjs` (Puppeteer) not run and
+  not changed.
+- Limits: figures are rounded guides, not a lab test or medical
+  advice. No Portions page, no typed grams, no week or month planner
+  (NP4-NP6). Games keep their NP-1 food lists. No change to Nutrition
+  Calculator, Hub files, root `shared/`, catalog, or build numbers.
+- 1.119 is MM8, so this note is numbered 1.120.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

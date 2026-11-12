@@ -1,4 +1,5 @@
-/* NP-1a: plate totals, filters and a balanced-plate guide. Pure logic for UI and tests. */
+/* NP-1a: plate totals, filters and a balanced-plate guide. Pure logic for UI and tests.
+   NP2: Leafy greens count with vegetables. NP3: Condiments sit on the side. */
 (function (root, factory) {
   const foods = typeof module === 'object' && module.exports ? require('./foods.js') : root.NPFoods;
   const model = factory(foods);
@@ -113,10 +114,14 @@
     return {
       grains: groups.grains?.g || 0,
       protein: (groups.pulses?.g || 0) + (groups.eggs?.g || 0) + (groups.meat?.g || 0),
-      vegfruit: (groups.vegetables?.g || 0) + (groups.fruits?.g || 0),
+      /* (before NP2) vegfruit: (groups.vegetables?.g || 0) + (groups.fruits?.g || 0), */
+      vegfruit: (groups.vegetables?.g || 0) + (groups.leafy?.g || 0) + (groups.fruits?.g || 0),
       dairy: groups.dairy?.g || 0,
       extras: (groups.fats?.g || 0) + (groups.snacks?.g || 0) + (groups.sweets?.g || 0),
-      drinks: groups.drinks?.g || 0
+      /* (before NP3) drinks: groups.drinks?.g || 0 */
+      drinks: groups.drinks?.g || 0,
+      /* NP3: condiments (spices, pickle, mustard oil) sit on the side, outside the four quarters. */
+      condiments: groups.condiments?.g || 0
     };
   }
   const IDEAL = { grains: 0.25, protein: 0.25, vegfruit: 0.50 };

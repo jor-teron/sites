@@ -73,7 +73,8 @@
     if (!t.portions) out.push('Start a meal — add foods from the library to breakfast, lunch, snacks or dinner.');
     else {
       if (t.prot < g.prot * 0.7) out.push('Add a protein — dal, curd, paneer, eggs, fish or meat.');
-      if ((t.groups.vegetables.portions || 0) < 2) out.push('Add vegetables — try to fill about half of each plate.');
+      /* (before NP2) if ((t.groups.vegetables.portions || 0) < 2) out.push('Add vegetables — try to fill about half of each plate.'); */
+      if (((t.groups.vegetables.portions || 0) + (t.groups.leafy?.portions || 0)) < 2) out.push('Add vegetables — try to fill about half of each plate.');
       if (t.sugar > g.sugar) out.push('Too much sugar — sweet drinks, juice and desserts add up quickly.');
       if (t.fibre < g.fibre * 0.6 && t.portions) out.push('Add fibre — vegetables, fruit, whole grains and dals help.');
       if (t.kcal > g.kcal * 1.15) out.push('Energy is above the rough daily target — check portions and fried snacks.');

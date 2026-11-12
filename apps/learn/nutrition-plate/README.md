@@ -1,4 +1,5 @@
-# Nutrition Plate — NP-1a / NP-1b / NP-1c
+<!-- (before NP3) # Nutrition Plate — NP-1a / NP-1b / NP-1c -->
+# Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3
 
 Learn app for building Indian meal plates and planning a day.
 Entry: `index.html` → `nutrition-plate.html`; standalone or Hub window.
@@ -6,7 +7,9 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
 
 ## Food data
 
-- 150 foods, mostly everyday Indian items, each with a code-drawn icon.
+<!-- (before NP2) - 150 foods, mostly everyday Indian items, each with a code-drawn icon. -->
+- 217 foods (150 from NP-1a, 43 added in NP2, 24 in NP3), mostly everyday Indian
+  and Assam home foods, each with a code-drawn icon, in 13 groups.
 - Per-portion energy and nutrients are rounded guides scaled from IFCT 2017
   (per 100 g edible portion) and common measures: 1 roti, 1 katori, 1 cup or 1 piece.
 - Shown: kcal, protein, carbohydrate, fat, fibre, sugar, iron, calcium and vitamin C.
@@ -45,6 +48,46 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
   collapsible groups so it is not one long scroll.
 - Bowl icons for dals and sabzis are drawn distinctly (colour, garnish or shape).
 
+## Kitchen garden, leafy greens and named rice (NP2)
+
+- New group **Leafy greens** (`leafy`), after Vegetables: lai xaak, amaranth
+  (khutora), drumstick leaves (sojina paat), water spinach (kolmou), jute leaves
+  (morapat), colocasia leaves (kochu xaak), pumpkin leaves, bathua, dhekia, radish
+  leaves, lettuce, and a bunch of coriander or mint. Leafy greens count with
+  vegetables in the plate guide and the "add vegetables" tip.
+- Grains: Basmati, Joha, bora saul and red rice (1 katori, 140 g), separate from
+  the generic steamed, brown and jeera rice.
+- Vegetables: tomato, onion, cucumber, cauliflower, green peas, capsicum, radish
+  and carrot as their own items; ridge, sponge, snake, pointed (potol), ash (komora)
+  and ivy (kundru / kunduli) gourds; sweet potato, kochu, ol and yam; knol khol,
+  raw papaya, green jackfruit (kothal), raw banana, banana flower (koldil), banana
+  stem (posola), spring onion and drumstick (sojina).
+- Palak, methi, sarson da saag, cabbage, lauki, kaddu and karela stay in Vegetables
+  unchanged.
+
+## Condiments, pork, dry fish and broiler (NP3)
+
+- New group **Condiments** (`condiments`), after Fats, nuts and seeds: ginger,
+  garlic, green chilli, dry red chilli, turmeric, cumin, mustard seed, lemon / nemu,
+  tamarind, outenga, vegetarian pickle, kharisa and mustard oil. Small household
+  portions (1 tsp, a few cloves, 1 wedge). Condiments sit on the side of the plate
+  guide, outside the four quarters and outside "oils, snacks or sweets". The generic
+  cooking oil stays in Fats.
+- Meat and fish (non-veg, hidden by the vegetarian and egg filters): pork curry,
+  smoked pork, fried pork; dry fish — hukoti, namsing / sidol, dried small fish,
+  dried prawn; plain cooked broiler and broiler fry; masor tenga and small-fish fry.
+- Nutrient method is the same as NP-1a. Foods with no exact IFCT 2017 row use the
+  closest one and stay approximate: Joha (milled aromatic rice), bora saul
+  (glutinous rice), red rice (red / parboiled rice), potol (parwal), komora (ash
+  gourd), kochu / ol / kath alu (colocasia, elephant foot yam, yam), koldil (banana
+  flower), posola (plantain stem), lai xaak (mustard leaves), khutora (amaranth),
+  dhekia (fern; leafy-green average), kolmou (ipomoea leaves), morapat (jute leaves),
+  outenga (elephant apple; sour-fruit values), kharisa (bamboo shoot + chilli),
+  hukoti / namsing / sidol (dried fish; hukoti with arum stem), smoked pork (cooked
+  pork), masor tenga (fish curry with less fat). Cooked sabzis and saags include a
+  typical teaspoon or so of oil, as the NP-1a sabzis do.
+- Not in NP2 / NP3: a Portions page, typing grams, and week or month plans (NP4–NP6).
+
 `learn.nutrition-plate.theme`: absent = Auto (System), following the Hub
 through the existing read-only HubTheme helper. The app opens Windowed with
 the Hub default.
@@ -57,7 +100,7 @@ dependencies. Offline use needs a successful first visit over HTTPS or localhost
 Run:
 
 ```
-node --test apps/learn/nutrition-plate/tests/model.test.cjs
+node --test apps/learn/nutrition-plate/tests/model.test.cjs apps/learn/nutrition-plate/tests/np23.test.cjs
 python3 -m http.server 8826 --bind 127.0.0.1
 NODE_PATH=/workspace/arw-test-deps/node_modules node apps/learn/nutrition-plate/tests/browser.cjs
 ```

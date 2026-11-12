@@ -1,4 +1,6 @@
 /* NP-1a: everyday Indian foods, approximate per-portion values.
+   NP2 adds named rice, kitchen-garden vegetables and a Leafy greens group;
+   NP3 adds a Condiments group, pork, dry fish, broiler and local cooked fish.
    Energy and nutrients are rounded guides scaled from IFCT 2017 (per 100 g)
    and common household measures (roti, katori, cup, piece). They are not a
    laboratory analysis or medical advice. Mixed dishes include a typical
@@ -16,11 +18,13 @@
     ['grains', 'Grains and millets'],
     ['pulses', 'Pulses and legumes'],
     ['vegetables', 'Vegetables'],
+    ['leafy', 'Leafy greens'], /* NP2 */
     ['fruits', 'Fruits'],
     ['dairy', 'Milk and milk products'],
     ['eggs', 'Eggs'],
     ['meat', 'Meat and fish'],
     ['fats', 'Fats, nuts and seeds'],
+    ['condiments', 'Condiments'], /* NP3 */
     ['snacks', 'Snacks'],
     ['sweets', 'Sweets'],
     ['drinks', 'Drinks']
@@ -178,6 +182,81 @@
     ['coconut_water', 'Coconut water', 'drinks', 'v', '1 glass (200 ml)', 200, 40, 0.6, 9, 0.2, 2.2, 7, 0.4, 40, 5, 'drink'],
     ['water', 'Water', 'drinks', 'v', '1 glass (200 ml)', 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'water'],
     ['badam_milk', 'Badam milk', 'drinks', 'v', '1 glass (200 ml)', 200, 200, 7, 22, 9, 1, 16, 0.6, 260, 1, 'milk'],
+    /* NP2: named rice, kitchen-garden vegetables and leafy greens. Same method as above
+       (IFCT 2017 per 100 g scaled to the portion). Assam items with no IFCT row use the
+       closest table: joha / bora saul -> milled / glutinous rice, potol -> parwal,
+       komora -> ash gourd, kochu / ol -> colocasia / yam, koldil -> banana flower,
+       posola -> plantain stem, dhekia -> leafy-green average, lai xaak -> mustard leaves. */
+    ['basmati_rice', 'Basmati rice (steamed)', 'grains', 'v', '1 katori (140 g)', 140, 180, 3.5, 39, 0.4, 0.6, 0.1, 0.3, 6, 0, 'rice'],
+    ['joha_rice', 'Joha rice (steamed)', 'grains', 'v', '1 katori (140 g)', 140, 178, 3.4, 39, 0.4, 0.5, 0.1, 0.4, 8, 0, 'rice'],
+    ['bora_saul', 'Bora saul (sticky rice, steamed)', 'grains', 'v', '1 katori (140 g)', 140, 160, 3, 35, 0.3, 0.8, 0.1, 0.3, 4, 0, 'rice'],
+    ['red_rice', 'Red rice (steamed)', 'grains', 'v', '1 katori (140 g)', 140, 160, 3.6, 34, 1.1, 1.8, 0.2, 0.8, 10, 0, 'brownrice'],
+    ['tomato', 'Tomato', 'vegetables', 'v', '1 medium (80 g)', 80, 16, 0.7, 2.9, 0.2, 1.2, 2.1, 0.3, 8, 16, 'tomato'],
+    ['onion', 'Onion', 'vegetables', 'v', '1 medium (70 g)', 70, 35, 0.8, 7.7, 0.1, 1.3, 3.5, 0.4, 14, 5, 'onion'],
+    ['cucumber', 'Cucumber', 'vegetables', 'v', '1 katori sliced (100 g)', 100, 15, 0.6, 3, 0.1, 0.7, 1.7, 0.3, 15, 6, 'lauki'],
+    ['cauliflower', 'Cauliflower (gobi) sabzi', 'vegetables', 'v', '1 katori (100 g)', 100, 70, 2.5, 6, 4, 2.5, 2, 0.8, 30, 40, 'gobi'],
+    ['green_peas', 'Green peas (matar), boiled', 'vegetables', 'v', '1 katori (80 g)', 80, 68, 4.6, 11.5, 0.3, 4.2, 4, 1.1, 20, 8, 'peas'],
+    ['capsicum', 'Capsicum (shimla mirch)', 'vegetables', 'v', '1 medium (80 g)', 80, 19, 0.9, 3.6, 0.2, 1.4, 1.9, 0.4, 8, 75, 'capsicum'],
+    ['radish', 'Radish (mooli / mula)', 'vegetables', 'v', '1 katori sliced (80 g)', 80, 14, 0.6, 2.7, 0.1, 1.3, 1.5, 0.3, 28, 14, 'radish'],
+    ['carrot', 'Carrot', 'vegetables', 'v', '1 medium (70 g)', 70, 29, 0.6, 6.7, 0.1, 2.9, 3.3, 0.4, 25, 4, 'carrot'],
+    ['ridge_gourd', 'Ridge gourd sabzi (turai / jika)', 'vegetables', 'v', '1 katori (100 g)', 100, 50, 1, 5, 2.6, 1.8, 2, 0.4, 20, 5, 'gourd'],
+    ['sponge_gourd', 'Sponge gourd sabzi (nenua)', 'vegetables', 'v', '1 katori (100 g)', 100, 50, 1.2, 5, 2.6, 1.5, 2, 0.6, 20, 4, 'gourd'],
+    ['snake_gourd', 'Snake gourd sabzi', 'vegetables', 'v', '1 katori (100 g)', 100, 45, 0.8, 4.5, 2.6, 1.2, 2, 0.4, 25, 2, 'gourd'],
+    ['potol', 'Pointed gourd sabzi (parwal / potol)', 'vegetables', 'v', '1 katori (100 g)', 100, 60, 2, 5, 3, 3, 1.5, 0.8, 30, 20, 'gourd'],
+    ['komora', 'Ash gourd sabzi (komora)', 'vegetables', 'v', '1 katori (100 g)', 100, 45, 0.5, 4, 2.6, 1, 2, 0.6, 30, 1, 'lauki'],
+    ['kundru', 'Ivy gourd sabzi (kundru / kunduli)', 'vegetables', 'v', '1 katori (100 g)', 100, 55, 1.3, 4, 3, 2.5, 1.5, 0.6, 40, 15, 'gourd'],
+    ['sweet_potato', 'Sweet potato (boiled)', 'vegetables', 'v', '1 medium (100 g)', 100, 90, 1.4, 21, 0.2, 3, 6, 0.6, 30, 12, 'potato'],
+    ['kochu', 'Colocasia sabzi (arbi / kochu)', 'vegetables', 'v', '1 katori (100 g)', 100, 115, 2.4, 19, 3.6, 3.5, 1, 0.8, 40, 4, 'potato'],
+    ['ol', 'Elephant foot yam sabzi (ol)', 'vegetables', 'v', '1 katori (100 g)', 100, 110, 1.5, 17, 3.6, 3.5, 1, 0.6, 30, 4, 'potato'],
+    ['yam', 'Yam (kath alu), boiled', 'vegetables', 'v', '1 katori (100 g)', 100, 110, 1.5, 26, 0.1, 3.5, 0.5, 0.5, 15, 12, 'potato'],
+    ['knol_khol', 'Knol khol sabzi (ol kopi)', 'vegetables', 'v', '1 katori (100 g)', 100, 60, 1.8, 6, 3, 3, 2.5, 0.5, 30, 50, 'cabbage'],
+    ['raw_papaya', 'Raw papaya sabzi', 'vegetables', 'v', '1 katori (100 g)', 100, 55, 0.7, 7, 2.6, 2, 3, 0.5, 30, 35, 'lauki'],
+    ['green_jackfruit', 'Green jackfruit sabzi (kothal)', 'vegetables', 'v', '1 katori (100 g)', 100, 95, 2.2, 12, 4, 3.5, 2, 0.6, 30, 10, 'sabzi'],
+    ['raw_banana', 'Raw banana sabzi', 'vegetables', 'v', '1 katori (100 g)', 100, 120, 1.2, 22, 3.6, 2.4, 2, 0.6, 10, 10, 'banana'],
+    ['koldil', 'Banana flower sabzi (koldil)', 'vegetables', 'v', '1 katori (100 g)', 100, 70, 1.6, 7, 3.6, 4, 1, 1.4, 30, 4, 'sabzi'],
+    ['posola', 'Banana stem sabzi (posola)', 'vegetables', 'v', '1 katori (100 g)', 100, 65, 0.5, 9, 2.8, 1.5, 1.5, 1.1, 10, 7, 'sabzi'],
+    ['spring_onion', 'Spring onion', 'vegetables', 'v', '2 stalks (30 g)', 30, 10, 0.5, 2.1, 0.1, 0.8, 0.7, 0.5, 21, 6, 'leafy'],
+    ['drumstick', 'Drumstick pods (sojina)', 'vegetables', 'v', '1 katori (100 g)', 100, 60, 2.5, 5, 3, 4.5, 1.5, 0.5, 30, 100, 'beans'],
+    ['lai_xaak', 'Lai xaak (mustard greens)', 'leafy', 'v', '1 katori (100 g)', 100, 60, 2.6, 4, 3.3, 3, 1, 1.6, 150, 25, 'leafy'],
+    ['khutora', 'Amaranth saag (khutora / chaulai)', 'leafy', 'v', '1 katori (100 g)', 100, 70, 3.5, 6, 3.3, 3.5, 0.5, 2.5, 300, 35, 'leafy'],
+    ['sojina_paat', 'Drumstick leaves (sojina paat)', 'leafy', 'v', '1 katori (60 g)', 60, 70, 3.8, 5, 3.4, 4.5, 0.5, 2.6, 190, 50, 'leafy'],
+    ['kolmou', 'Water spinach (kolmou) saag', 'leafy', 'v', '1 katori (100 g)', 100, 50, 2.6, 3.5, 3, 2.2, 0.5, 2.2, 75, 20, 'leafy'],
+    ['morapat', 'Jute leaves (morapat) saag', 'leafy', 'v', '1 katori (100 g)', 100, 80, 4.5, 7, 3.3, 3.5, 0.5, 3, 200, 30, 'leafy'],
+    ['kochu_xaak', 'Colocasia leaves (kochu xaak)', 'leafy', 'v', '1 katori (100 g)', 100, 85, 3.9, 7, 3.6, 4, 1, 1.5, 220, 10, 'leafy'],
+    ['pumpkin_leaves', 'Pumpkin leaves saag', 'leafy', 'v', '1 katori (100 g)', 100, 55, 3, 3.5, 3, 2.2, 0.5, 2, 100, 10, 'leafy'],
+    ['bathua', 'Bathua saag', 'leafy', 'v', '1 katori (100 g)', 100, 65, 3.6, 4, 3.3, 3, 0.5, 3, 150, 25, 'leafy'],
+    ['dhekia', 'Dhekia (fiddlehead fern) bhaji', 'leafy', 'v', '1 katori (100 g)', 100, 65, 3.5, 5, 3.3, 3.5, 0.5, 1.5, 40, 20, 'leafy'],
+    ['radish_leaves', 'Radish leaves (mooli saag)', 'leafy', 'v', '1 katori (100 g)', 100, 60, 3.5, 4, 3.3, 2.5, 0.5, 2, 250, 45, 'leafy'],
+    ['lettuce', 'Lettuce', 'leafy', 'v', '1 katori shredded (40 g)', 40, 6, 0.5, 1, 0.1, 0.5, 0.3, 0.4, 14, 4, 'leafy'],
+    ['coriander', 'Coriander leaves (dhania), a bunch', 'leafy', 'v', '1 small bunch (20 g)', 20, 9, 0.7, 1.3, 0.1, 0.9, 0.2, 1, 30, 14, 'leafy'],
+    ['mint', 'Mint leaves (pudina), a bunch', 'leafy', 'v', '1 small bunch (20 g)', 20, 10, 1, 1.2, 0.1, 0.8, 0.1, 1.5, 40, 5, 'leafy'],
+    /* NP3: condiments, pork, dry fish, broiler and local cooked fish. Spices are tiny
+       portions. Closest tables: outenga -> sour fruit (elephant apple), kharisa -> bamboo
+       shoot + chilli, hukoti / namsing / sidol -> dried fish, smoked pork -> cooked pork. */
+    ['ginger', 'Ginger (adrak / ada)', 'condiments', 'v', '1 tsp grated (5 g)', 5, 4, 0.1, 0.6, 0, 0.1, 0.1, 0, 1, 0, 'root'],
+    ['garlic', 'Garlic (lehsun / naharu)', 'condiments', 'v', '3 cloves (9 g)', 9, 13, 0.6, 2.7, 0, 0.2, 0.1, 0.1, 3, 1, 'garlic'],
+    ['green_chilli', 'Green chilli', 'condiments', 'v', '2 chillies (10 g)', 10, 3, 0.3, 0.3, 0.1, 0.7, 0.1, 0.1, 3, 11, 'greenchilli'],
+    ['dry_red_chilli', 'Dry red chilli', 'condiments', 'v', '1 chilli (2 g)', 2, 6, 0.3, 0.6, 0.1, 0.6, 0.1, 0.2, 3, 1, 'chilli'],
+    ['turmeric', 'Turmeric (haldi / halodhi)', 'condiments', 'v', '1/2 tsp (1.5 g)', 1.5, 5, 0.1, 1, 0.1, 0.3, 0, 0.6, 2, 0, 'spice'],
+    ['cumin', 'Cumin (jeera)', 'condiments', 'v', '1 tsp (2 g)', 2, 8, 0.4, 0.9, 0.4, 0.2, 0, 0.3, 18, 0, 'spice'],
+    ['mustard_seed', 'Mustard seed (rai / sorioh)', 'condiments', 'v', '1 tsp (3 g)', 3, 15, 0.6, 0.7, 1.2, 0.4, 0.1, 0.2, 15, 0, 'spice'],
+    ['lemon', 'Lemon / nemu', 'condiments', 'v', '1 wedge (15 g)', 15, 4, 0.1, 1.2, 0, 0.1, 0.4, 0, 2, 6, 'citrus'],
+    ['tamarind', 'Tamarind (imli / tetuli)', 'condiments', 'v', '1 tsp pulp (10 g)', 10, 26, 0.3, 6, 0.1, 0.5, 4, 0.1, 17, 0, 'nut'],
+    ['outenga', 'Outenga (elephant apple)', 'condiments', 'v', '2 pieces (30 g)', 30, 15, 0.2, 3.5, 0.1, 1.5, 1.5, 0.2, 5, 3, 'fruit'],
+    ['pickle', 'Pickle (achar, vegetarian)', 'condiments', 'v', '1 tsp (10 g)', 10, 20, 0.1, 0.6, 2, 0.3, 0.2, 0.2, 4, 0, 'jar'],
+    ['kharisa', 'Kharisa (fermented bamboo shoot with chilli)', 'condiments', 'v', '1 tbsp (15 g)', 15, 5, 0.4, 0.8, 0.1, 0.5, 0.2, 0.1, 3, 1, 'jar'],
+    ['mustard_oil', 'Mustard oil', 'condiments', 'v', '1 tsp (5 g)', 5, 45, 0, 0, 5, 0, 0, 0, 0, 0, 'oil'],
+    ['pork_curry', 'Pork curry', 'meat', 'n', '1 katori (150 g)', 150, 300, 18, 5, 23, 0.6, 1.5, 1.4, 18, 2, 'pork'],
+    ['smoked_pork', 'Smoked pork', 'meat', 'n', '3 pieces (50 g)', 50, 175, 9, 0.5, 15, 0, 0, 0.6, 5, 0, 'pork'],
+    ['fried_pork', 'Fried pork', 'meat', 'n', '1 katori (100 g)', 100, 330, 18, 3, 28, 0.3, 0.5, 1.2, 12, 1, 'pork'],
+    ['hukoti', 'Hukoti (dry fish with arum stem)', 'meat', 'n', '1 tbsp (20 g)', 20, 45, 6, 1.5, 1.6, 0.3, 0, 0.8, 80, 0, 'dryfish'],
+    ['namsing', 'Namsing / sidol (fermented dry fish)', 'meat', 'n', '1 tbsp (15 g)', 15, 40, 6, 0.5, 1.5, 0, 0, 0.6, 60, 0, 'dryfish'],
+    ['dried_small_fish', 'Dried small fish (fry)', 'meat', 'n', '1 handful (25 g)', 25, 100, 14, 0.5, 4.5, 0, 0, 1.5, 250, 0, 'dryfish'],
+    ['dried_prawn', 'Dried prawn (chutney / fry)', 'meat', 'n', '1 tbsp (15 g)', 15, 55, 9, 0.5, 2, 0, 0, 1.2, 80, 0, 'prawn'],
+    ['broiler', 'Broiler chicken (plain cooked)', 'meat', 'n', '1 piece (100 g)', 100, 160, 24, 0.5, 6.5, 0, 0, 1, 15, 0, 'chicken'],
+    ['broiler_fry', 'Broiler fry', 'meat', 'n', '1 katori (100 g)', 100, 240, 20, 4, 16, 0.5, 0.5, 1.2, 18, 2, 'chicken'],
+    ['masor_tenga', 'Masor tenga (sour fish curry)', 'meat', 'n', '1 katori (150 g)', 150, 140, 15, 5, 6.5, 0.8, 2, 1, 40, 12, 'fish'],
+    ['small_fish_fry', 'Small-fish fry (puthi / moa)', 'meat', 'n', '1 katori (60 g)', 60, 160, 12, 3, 11, 0.2, 0, 1.5, 300, 0, 'fish'],
   ];
   const foods = rows.map(row => {
     const food = {};
