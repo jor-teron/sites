@@ -2319,6 +2319,112 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/tables/tables_readme.md` (section 11, TB5).
 - 1.112 is DF21, so this note is numbered 1.113.
 
+### 1.114 DF25 Writer full rename (folder, files, Hub id, settings)
+
+- Writer moved from `apps/office/draftly/` to `apps/office/writer/` with
+  `git mv` (history kept): `draftly.html` -> `writer.html`, `draftly_icon.png`
+  -> `writer_icon.png`, `draftly_readme.md` -> `writer_readme.md`, all 49
+  `modules/draftly-*.js` -> `modules/writer-*.js`. `ui/`, `vendor/`, `assets/`,
+  `samples/` and the release tests moved with it (test names kept,
+  paths updated). `index.html` in the new folder opens `writer.html` (IX1
+  style). Page title `Writer DF25`; `Writer.config.release` = `DF25`.
+- Code: the global `Draftly` is now `Writer` in every module, CSS comment and
+  test (`ctx.Writer`). `window.Draftly` stays as an alias of the same object
+  (one line in `writer-config.js`) for anything outside that still says
+  Draftly. Each module header names its old `draftly-*.js`; the global
+  declaration, storage key lines, title, icon and script list carry
+  `(before DF25)` comments. Old `(before ...)` comments were left as they were.
+- Hub id: `writer` (from the folder name, as hub.js gives ids). Alias:
+  `hub/core/hub_apps.js` has one new HIDDEN row `Office, Writer,
+  apps/office/draftly/, apps/office/writer/writer_icon.png, 0, 1, 2101`.
+  hub.js registers it first and names it `draftly`, so an old `#draftly`
+  link, the last-app value and saved Desktop windows (entry
+  `apps/office/draftly/`) open that path, which redirects to Writer; the Hub
+  then records `#writer`. The row is not in the menu, Search or App Hub
+  (they read only the `<Category> Page` rows) and not in `hub_appindex.js`
+  (a `draftly` key there would list Writer twice on Phone).
+- Files / .how: `shared/fs/filetypes.js` has app `writer`
+  (`apps/office/writer/`) for `.how`, plus `ALIAS = { draftly: 'writer' }`
+  so `FileTypes.app('draftly')` still returns Writer (id `writer`). `apps()`
+  never lists it twice. The `.how` format is unchanged (`format: "how"`,
+  version 1, no app id inside), so old files open as before.
+- Old address: `apps/office/draftly/` now holds only `index.html` and
+  `draftly.html`, both thin redirects to `../writer/writer.html` keeping
+  `?query` and `#hash` (FsRef hash from Files, bookmarks), with a noscript
+  refresh. No app code or vendor copy is left there. Works standalone and as
+  a Hub path.
+- Settings: Writer now writes `writer_*` keys (`writer_settings`,
+  `writer_theme`, `writer_nonprinting`, `writer_orientation`,
+  `writer_paper_size`, `writer_margin_preset`, `writer_margin_custom`,
+  `writer_page_numbers`, `writer_page_number_pos`, `writer_ruler`,
+  `writer_status_bar`, `writer_zoom`, `writer-ribbon-tab`,
+  `writer.lastTextColour`, `writer.lastHiliteColour`, `writer_last_name`,
+  `writer-backup`, `writer_merge_settings`). `Writer.config.migrateKeys()`
+  runs when `writer-config.js` loads (before storage / settings read
+  anything): once per device it copies every `draftly_*`, `draftly-*` and
+  `draftly.*` key to the `writer` name, only where the new key is empty, then
+  sets `writer_df25_migrated` = `1`. Old keys are not deleted, so a rollback
+  still finds them. `draftly_margins` (old key removed at start-up) is not
+  copied and stays the cleanup key. Blocked storage = no copy, defaults.
+- Hub profile (`hub_profile.js`): new app `office/writer` with the
+  `writer_*` keys (file `hub-profile/office/writer.json`). `office/draftly`
+  is kept so an older profile's `office/draftly.json` still restores; on a
+  device that has not run DF25 those keys are then copied by the migration.
+- Other apps: Invoice Maker loads jsPDF from `../writer/vendor/` (old line
+  commented). `office-apps.csv` Writer row path `writer/` (old row as a `#
+  (before DF25)` comment); `hub_catalog.js` Office text edited to stay the
+  exact CSV text (checked against the generator's rule, no regen run);
+  `hub_appindex.js` key `draftly` -> `writer` (old entry commented).
+  `apps/office/shared/tests/ho2.test.cjs`, `spreadsheet/test-hos1-format.js`
+  and `tables/test-hot1-format.js` expect `writer` (hos1 / hot1 also check
+  the `draftly` alias). Small doc path fixes in `apps/office/shared/README.md`
+  and `invoice-maker_readme.md`.
+- Unusual files, approved by Jor for this plan ("Go DF25"):
+  `shared/fs/filetypes.js`, `apps/office/office-apps.csv`,
+  `apps/office/shared/tests/ho2.test.cjs`, `hub/core/hub_appindex.js`,
+  `hub/core/hub_catalog.js`, `hub/core/hub_apps.js`, `hub/core/hub_profile.js`.
+  No other hub/ file, no `apps/system`, no root `index.html`, no
+  `apps/office/shared` implementation file, no `apps/games/`. No Hub build or
+  hub-shell bump, no `?v=`, no new library.
+- Left as draftly on purpose: IndexedDB name `draftly` (`dbName`; Writer has
+  not stored documents there since HOW1); the DOCX relationship ids
+  `draftlyHdr1` / `draftlyFtr1` and "Draftly patch" notes in
+  `vendor/html-docx.js`; `vendor/README.txt` and `samples/make_merge_sample.py`
+  wording; history comments and the readme change log; comment-only mentions
+  in `desktop/gamebar/hub-gamebar.js`, `desktop/wm/wm.css`,
+  `apps/office/shared/*` (incl. `office-native.js`), `spreadsheet_hub.js`,
+  `slides_hub.js`, `base_hub.js`, `pdf-tools_zip.js`, other readmes; the
+  archive rows in `hub_apps.js`; `tree.txt`; the `OfficeNotify` test keys in
+  ho2. Historical sections of this file were not rewritten.
+- Limits: the Phone launcher saves home / dock / recent by index id, so a
+  `draftly` tile pinned on a phone is dropped (phone/ is not in this plan;
+  re-pin Writer). Until the next Hub shell bump, a device with an old cached
+  `hub_appindex.js` still points at `apps/office/draftly/` (works through the
+  redirect) and its old icon path 404s (letter tile). The old
+  `hub-profile/office/draftly.json` keeps being written next to
+  `writer.json` while `office/draftly` stays in the profile list.
+  `hub/tests/hub_lock_core.test.cjs` fails one check on main already
+  (expects hub-shell-v163, main has v166); not touched here.
+- Checked with `node --check` on every changed script,
+  `node apps/office/writer/test-df25-rename.js` (new: files and modules,
+  redirect pages, every file linked from writer.html exists, no live
+  `Draftly` / `draftly_*` in modules, migration with a fake Storage: copy,
+  no overwrite, flag, second run, blocked storage; filetypes alias; hub
+  index / catalog / hidden alias row id; profile; Invoice Maker jsPDF path),
+  `test-df24-name.js` (DF24 checks on the DF25 paths, stays-draftly checks
+  moved to writer with the old ones commented), `test-df21-helpers.js`,
+  `test-how1-format.js`, `spreadsheet/test-hos1-format.js`,
+  `tables/test-hot1-format.js`, `apps/office/shared/tests/ho2.test.cjs`,
+  `invoice-maker/test_inv_calc.js`, `hub/tests/h146_catalog.test.cjs`,
+  `apps/lab/agent/tests/hubapi.test.cjs`. Static serve (port 18785) + curl:
+  `writer.html`, its 93 linked scripts / stylesheets / icon, fonts, the lazy
+  vendor files, both redirect pages, Invoice Maker's jsPDF URL and Read
+  Aloud all 200. No browser runner.
+- DW1-DW4 (the leftover Writer features remapped from DF19, DF20, DF22) are
+  not part of this release.
+- Details: `apps/office/writer/writer_readme.md` (DF25 section).
+- 1.113 is TB5, so this note is numbered 1.114.
+
 
 ## 2. Releases (PR → what)
 

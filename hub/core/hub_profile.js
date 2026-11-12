@@ -142,11 +142,18 @@
     ['tools', 'vDesktop', ['webdesk_theme', 'webdesk_wall']],
     // Office. Not saved: documents (sheet-v2(-page), sheet-v1, spreadsheet-name, draftly-backup, draftly_last_name,
     // notely-text, notepad-text), draftly_merge_settings (data file + row), notely-imported, ocr_vision_api_key,
+    // (DF25: also writer-backup, writer_last_name, writer_merge_settings, writer_df25_migrated)
     // jtocr-* / jtprint-* codes and links, jtprint-history / jtprint-sent, paper-scan-order, basic-mail-token
     ['office', 'base', ['base_settings', 'base_theme', 'base-ribbon-tab', 'base_totals']],
+    // DF25: kept so an older profile's office/draftly.json still restores; Writer copies these keys to writer_* once
+    // (writer-config.js migrateKeys) on a device that has not run DF25 yet.
     ['office', 'draftly', ['draftly_settings', 'draftly_theme', 'draftly_nonprinting', 'draftly_orientation',
       'draftly_paper_size', 'draftly_margin_preset', 'draftly_margin_custom', 'draftly_page_numbers', 'draftly_page_number_pos',
       'draftly_ruler', 'draftly_status_bar', 'draftly_zoom', 'draftly-ribbon-tab', 'draftly.lastTextColour', 'draftly.lastHiliteColour']],
+    // DF25: Writer's own keys since the rename (apps/office/writer/) → hub-profile/office/writer.json
+    ['office', 'writer', ['writer_settings', 'writer_theme', 'writer_nonprinting', 'writer_orientation',
+      'writer_paper_size', 'writer_margin_preset', 'writer_margin_custom', 'writer_page_numbers', 'writer_page_number_pos',
+      'writer_ruler', 'writer_status_bar', 'writer_zoom', 'writer-ribbon-tab', 'writer.lastTextColour', 'writer.lastHiliteColour']],
     ['office', 'mail', ['basic-mail-theme']],
     ['office', 'notely', ['notely-theme', 'notely-font']],
     ['office', 'ocr', ['ocr_engine']],

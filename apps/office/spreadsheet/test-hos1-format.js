@@ -249,7 +249,9 @@ assert.strictEqual(opened[0].name, 'Spreadsheet');
 assert.strictEqual(opened[0].file, true);
 assert.strictEqual(opened[0].url, 'apps/office/spreadsheet/');
 var howApps = typesCtx.window.FileTypes.apps('Letter.how');
-assert.strictEqual(howApps[0].id, 'draftly');
+/* (before DF25) assert.strictEqual(howApps[0].id, 'draftly'); */
+assert.strictEqual(howApps[0].id, 'writer');   /* DF25: Writer's Hub id */
+assert.strictEqual(typesCtx.window.FileTypes.app('draftly').id, 'writer');   /* DF25: old id is an alias */
 var jsonApps = typesCtx.window.FileTypes.apps('notes.json');
 assert.strictEqual(jsonApps[0].id, 'notely', '.json stays with Notely');
 var pngApps = typesCtx.window.FileTypes.apps('cat.png');

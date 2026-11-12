@@ -222,14 +222,22 @@ var CHANGED = [
   'apps/office/shared/office-notify.js',
   'apps/office/shared/office-dialog.js',
   'apps/office/shared/office-settings.js',
-  'apps/office/draftly/modules/draftly-storage.js',
-  'apps/office/draftly/modules/draftly-docs.js',
-  'apps/office/draftly/modules/draftly-settings.js',
-  'apps/office/draftly/modules/draftly-vendor.js',
-  'apps/office/draftly/modules/draftly-pdf.js',
-  'apps/office/draftly/modules/draftly-pdfgen.js',
-  'apps/office/draftly/modules/draftly-export.js',
-  'apps/office/draftly/modules/draftly-merge-ui.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-storage.js', */
+  'apps/office/writer/modules/writer-storage.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-docs.js', */
+  'apps/office/writer/modules/writer-docs.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-settings.js', */
+  'apps/office/writer/modules/writer-settings.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-vendor.js', */
+  'apps/office/writer/modules/writer-vendor.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-pdf.js', */
+  'apps/office/writer/modules/writer-pdf.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-pdfgen.js', */
+  'apps/office/writer/modules/writer-pdfgen.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-export.js', */
+  'apps/office/writer/modules/writer-export.js',
+  /* (before DF25) 'apps/office/draftly/modules/draftly-merge-ui.js', */
+  'apps/office/writer/modules/writer-merge-ui.js',
   'apps/office/base/modules/base-ui.js',
   'apps/office/spreadsheet/spreadsheet_settings.js',
   'apps/office/notely/nl_store.js',
@@ -386,9 +394,11 @@ test('Notely save failure calls the notice and pagehide flushes', function () {
   assert.strictEqual(ta.value, 'kept', 'empty storage does not wipe restored text');
 });
 
-test('Draftly autosave failure calls the notice and can retry', function () {
+/* (before DF25) test('Draftly autosave failure calls the notice and can retry', function () { */
+test('Writer autosave failure calls the notice and can retry', function () {
   var opens = 0;
-  var ctx = boot(['apps/office/shared/office-notify.js', 'apps/office/draftly/modules/draftly-storage.js'], {
+  /* (before DF25) var ctx = boot(['apps/office/shared/office-notify.js', 'apps/office/draftly/modules/draftly-storage.js'], { */
+  var ctx = boot(['apps/office/shared/office-notify.js', 'apps/office/writer/modules/writer-storage.js'], {
     indexedDB: {
       open: function () {
         opens++;
@@ -398,20 +408,25 @@ test('Draftly autosave failure calls the notice and can retry', function () {
       }
     }
   });
-  ctx.Draftly.config = {
+  /* (before DF25) ctx.Draftly.config = { */
+  ctx.Writer.config = {
     dbName: 'draftly', dbVersion: 1, storeName: 'documents', namePrefix: 'Doc_',
-    storageKeyNonPrint: 'draftly_nonprinting', nonPrintOnValue: '1', nonPrintOffValue: '0'
+    /* (before DF25) storageKeyNonPrint: 'draftly_nonprinting', nonPrintOnValue: '1', nonPrintOffValue: '0' */
+    storageKeyNonPrint: 'writer_nonprinting', nonPrintOnValue: '1', nonPrintOffValue: '0'
   };
-  ctx.Draftly.pages = { combinedHtml: function () { return '<p>Hello</p>'; } };
+  /* (before DF25) ctx.Draftly.pages = { combinedHtml: function () { return '<p>Hello</p>'; } }; */
+  ctx.Writer.pages = { combinedHtml: function () { return '<p>Hello</p>'; } };
   var input = { value: 'Doc_test' };
   ctx.__doc.getElementById = function (id) { return id === 'fileNameInput' ? input : null; };
   ctx.document = ctx.__doc;
-  return ctx.Draftly.storage.save().then(function () {
+  /* (before DF25) return ctx.Draftly.storage.save().then(function () { */
+  return ctx.Writer.storage.save().then(function () {
     throw new Error('save should reject');
   }, function () {
     assert.strictEqual(cards(ctx).length, 1);
     assert.ok(cardText(cards(ctx)[0]).indexOf("Couldn't save — storage blocked") !== -1);
-    return ctx.Draftly.storage.save();
+    /* (before DF25) return ctx.Draftly.storage.save(); */
+    return ctx.Writer.storage.save();
   }).then(function () { throw new Error('second save should reject'); }, function () {
     assert.ok(opens >= 2, 'failed open is not cached');
     assert.strictEqual(cards(ctx).length, 1);
@@ -503,12 +518,18 @@ test('heavy libraries are not script tags on page open', function () {
   function liveScripts(rel) {
     return read(rel).replace(/<!--[\s\S]*?-->/g, '');
   }
-  var draftly = liveScripts('apps/office/draftly/draftly.html');
-  assert.ok(!/src="vendor\/jspdf\.umd\.min\.js"/.test(draftly));
-  assert.ok(!/src="vendor\/html2canvas\.min\.js"/.test(draftly));
-  assert.ok(!/src="vendor\/html-docx\.js"/.test(draftly));
-  assert.ok(draftly.indexOf('modules/draftly-vendor.js') !== -1);
-  var vendor = read('apps/office/draftly/modules/draftly-vendor.js');
+  /* (before DF25) var draftly = liveScripts('apps/office/draftly/draftly.html'); */
+  var writer = liveScripts('apps/office/writer/writer.html');
+  /* (before DF25) assert.ok(!/src="vendor\/jspdf\.umd\.min\.js"/.test(draftly)); */
+  assert.ok(!/src="vendor\/jspdf\.umd\.min\.js"/.test(writer));
+  /* (before DF25) assert.ok(!/src="vendor\/html2canvas\.min\.js"/.test(draftly)); */
+  assert.ok(!/src="vendor\/html2canvas\.min\.js"/.test(writer));
+  /* (before DF25) assert.ok(!/src="vendor\/html-docx\.js"/.test(draftly)); */
+  assert.ok(!/src="vendor\/html-docx\.js"/.test(writer));
+  /* (before DF25) assert.ok(draftly.indexOf('modules/draftly-vendor.js') !== -1); */
+  assert.ok(writer.indexOf('modules/writer-vendor.js') !== -1);
+  /* (before DF25) var vendor = read('apps/office/draftly/modules/draftly-vendor.js'); */
+  var vendor = read('apps/office/writer/modules/writer-vendor.js');
   assert.ok(vendor.indexOf('vendor/jspdf.umd.min.js') !== -1);
   assert.ok(vendor.indexOf('vendor/html2canvas.min.js') !== -1);
   assert.ok(vendor.indexOf('vendor/html-docx.js') !== -1);

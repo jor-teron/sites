@@ -7,7 +7,9 @@
  * Apps (id → { name, icon, url, file }):
  *   viewer   apps/system/viewer/   images + videos; gets the file (FsRef hash, shared/fs/fs_ref.js)
  *   notely   apps/office/notely/  text; gets the file (sessionStorage 'notely-handoff', Files)
- *   draftly  apps/office/draftly/ .how (Hub Office Writer); gets the file (FsRef hash)
+ *   (before DF25) draftly  apps/office/draftly/ .how (Hub Office Writer); gets the file (FsRef hash)
+ *   writer   apps/office/writer/ .how (Hub Office Writer); gets the file (FsRef hash). DF25: old id draftly
+ *            is an alias (app('draftly') = Writer, id 'writer'); never listed twice by apps()
  *   spreadsheet apps/office/spreadsheet/ .hos (Hub Office Spreadsheet); gets the file (FsRef hash)
  *   tables   apps/office/tables/ .hot (Hub Office Tables); gets the file (FsRef hash)
  *   textview Files' own text view (no url)
@@ -20,7 +22,7 @@
  *   kind(name, mime?)      → 'image' | 'video' | 'text' | ''
  *   mime(name)             → best-guess MIME for image / video names ('' else)
  *   apps(name, mime?)      → [{ id, name, icon, url, file }] default first ([] = no app)
- *   app(id)                → that app or null
+ *   app(id)                → that app or null (an old id in ALIAS gives the new app, e.g. draftly → writer)
  */
 (function () {
   'use strict';
@@ -33,7 +35,9 @@
     viewer: { name: 'Viewer', icon: '\uD83D\uDDBC\uFE0F', url: 'apps/system/viewer/', file: true },
     notely: { name: 'Notely', icon: '\uD83D\uDCDD', url: 'apps/office/notely/', file: true },
     /* HOW1: double-click a .how file opens Writer. Hub id stays draftly. */
-    draftly: { name: 'Writer', icon: '\u270D\uFE0F', url: 'apps/office/draftly/', file: true },
+    /* (before DF25) draftly: { name: 'Writer', icon: '\u270D\uFE0F', url: 'apps/office/draftly/', file: true }, */
+    /* DF25: Writer moved to apps/office/writer/, Hub id writer (old id draftly: see ALIAS). */
+    writer: { name: 'Writer', icon: '\u270D\uFE0F', url: 'apps/office/writer/', file: true },
     /* HOS1: double-click a .hos file opens Spreadsheet. Hub id stays spreadsheet. */
     spreadsheet: { name: 'Spreadsheet', icon: '\uD83D\uDCCA', url: 'apps/office/spreadsheet/', file: true },
     /* HOT1: double-click a .hot file opens Tables. Hub id stays tables. */
@@ -51,7 +55,10 @@
   /* (before HOW1) extension had no app of its own; .how was "other" and downloaded. */
   /* (before HOS1) const BY_EXT = { how: ['draftly'] }; */
   /* (before HOT1) const BY_EXT = { how: ['draftly'], hos: ['spreadsheet'] }; */
-  const BY_EXT = { how: ['draftly'], hos: ['spreadsheet'], hot: ['tables'] };
+  /* (before DF25) const BY_EXT = { how: ['draftly'], hos: ['spreadsheet'], hot: ['tables'] }; */
+  const BY_EXT = { how: ['writer'], hos: ['spreadsheet'], hot: ['tables'] };
+  /* DF25: old app ids → their new id, so a saved or passed-in old id still finds the app. */
+  const ALIAS = { draftly: 'writer' };
   const ext = (name) => { const m = /\.([^./\\]+)$/.exec(String(name || '')); return m ? m[1].toLowerCase() : ''; };
   function kind(name, mime) {
     const e = ext(name);
@@ -65,7 +72,11 @@
     return '';
   }
   const mime = (name) => IMG[ext(name)] || VID[ext(name)] || '';
-  const app = (id) => (APPS[id] ? Object.assign({ id }, APPS[id]) : null);
+  /* (before DF25) const app = (id) => (APPS[id] ? Object.assign({ id }, APPS[id]) : null); */
+  const app = (id) => {
+    const k = Object.prototype.hasOwnProperty.call(ALIAS, id) ? ALIAS[id] : id;
+    return Object.prototype.hasOwnProperty.call(APPS, k) ? Object.assign({ id: k }, APPS[k]) : null;
+  };
   /* (before HOW1) const apps = (name, type) => (BY_KIND[kind(name, type)] || []).map(app); */
   const apps = (name, type) => (BY_EXT[ext(name)] || BY_KIND[kind(name, type)] || []).map(app);
   window.FileTypes = { ext, kind, mime, apps, app };

@@ -79,7 +79,8 @@ window.HUB_APP_INDEX = {
   "news": ["Media", "apps/media/news/", "News", "apps/media/news/news_icon.png", 0, "Latest headlines from Google News India in story cards"],
   /* (before DF24) "draftly": ["Office", "apps/office/draftly/", "Draftly", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
   /* (before HOW1) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
-  "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"],
+  /* (before DF25) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"], */
+  "writer": ["Office", "apps/office/writer/", "Writer", "apps/office/writer/writer_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"],
   /* (before HOS1) "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Offline spreadsheet with formulas and styles - CSV import/export and print"], */
   "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Spreadsheet with formulas and styles: native .hos files - CSV or XLSX"],
   "invoice-maker": ["Office", "apps/office/invoice-maker/", "Invoice Maker", "apps/office/invoice-maker/invoice-maker_icon.png", 0, "GST invoices quotes and receipts - saved on this device and printed as PDF"],

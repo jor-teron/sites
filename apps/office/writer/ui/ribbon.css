@@ -1,0 +1,104 @@
+/* ============================================================
+   FILE: ui/ribbon.css
+   PROJECT: Writer
+   ROLE: Ribbon top bar, tabs and panels; responsive rules.
+   ORDER: linked from writer.html; cascade order matters.
+   ============================================================ */
+
+/* ============================================================
+   RIBBON — top bar (File, name, tabs) + one row of controls
+   ============================================================ */
+.topbar { z-index: 11; height: var(--topbar-h); --ctl-h: var(--topbar-ctl-h); gap: 6px; }
+.topbar .brand { gap: 6px; }
+.topbar .brand-mark { width: 22px; height: 22px; border-radius: 7px; box-shadow: 0 2px 8px rgba(110, 80, 240, 0.3); }
+.topbar .brand-mark svg { width: 14px; height: 14px; }
+.topbar .brand-name { font-size: 13px; }
+.topbar .ribbon-tabs { padding: 2px; }
+.topbar .tool-btn svg { width: 16px; height: 16px; }
+.topbar .file-name { font-size: 12.5px; }
+/* Inside the sites hub the hub's title bar shows the tabs and name (writer-hub.js). */
+body.in-hub .topbar { display: none; }
+.ribbon { z-index: 10; box-shadow: none; }
+/* Left-aligned bar: logo, File + tabs (equal widths), centred name, theme right */
+.topbar > :first-child, .ribbon > :first-child { margin-left: 0; }
+.topbar > :last-child, .ribbon > :last-child { margin-right: 0; }
+.ribbon { justify-content: flex-start; }
+.ribbon > .ribbon-panel { margin: 0; justify-content: flex-start; }
+.topbar #themeToggleBtn { margin-left: 0; }
+.topbar .file-btn, .ribbon-tab {
+  width: var(--tab-w, 68px); height: var(--ctl-h); padding: 0;
+  justify-content: center; text-align: center; flex-shrink: 0;
+}
+.topbar .file-btn { margin-right: -6px; }
+.topbar .file-name { flex: 0 1 auto; min-width: 60px; margin-left: auto; text-align: right; text-overflow: ellipsis; }
+.ribbon-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ribbon-panel[hidden] { display: none; }
+.ribbon-tabs {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 3px;
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--bg-group);
+  border: 1px solid var(--border-light);
+}
+.ribbon-tab {
+  height: var(--ctl-h);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font: 600 12.5px var(--ui-font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ribbon-tab:hover { background: var(--btn-hover); color: var(--text-primary); }
+.ribbon-tab[aria-selected="true"] {
+  background: var(--select-bg);
+  color: var(--btn-active-text);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.ribbon-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.file-btn { background: var(--accent-grad); color: #fff; }
+.tool-btn.file-btn, .tool-btn.file-btn.active { color: #fff; }
+.file-btn:hover, .file-btn.active { background: var(--accent-grad); filter: brightness(1.08); }
+.ribbon-note { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+/* Page tab: the old popup segments laid out inline, compact */
+.page-row .seg { display: flex; gap: 2px; padding: 3px; flex-shrink: 0; border-radius: calc(var(--radius) + 2px); }
+.page-row .seg-btn { flex-direction: row; padding: 0 10px; height: var(--ctl-h); white-space: nowrap; }
+.page-row .seg-btn svg { width: 16px; height: 16px; }
+.page-row .panel-info { display: flex; text-align: left; justify-content: flex-start; gap: 4px 8px; margin: 0; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+.page-row .panel-info dt { color: var(--text-secondary); }
+/* File menu items now live in ../shared/office-tools.css (SH4) */
+.file-recent-head { color: var(--text-secondary); }
+.recent-inline { position: static !important; padding: 0 0 2px 14px; }
+.recent-inline[hidden] { display: none; }
+
+@media (max-width: 820px) {
+  :root { --toolbar-h: 48px; --ctl-h: 32px; }
+  .toolbar { gap: 6px; padding: 0 8px; }
+  .workspace { padding: 12px 10px 40px; }
+  .brand-name { display: none; }
+  .font-select { width: 118px; }
+  .file-name { width: 130px; }
+  :root { --tab-w: 56px; }
+  .ribbon > .ribbon-panel { margin: 0; }
+}
+@media (max-width: 480px) {
+  .topbar .brand { display: none; }
+  .file-name { width: 110px; }
+  :root { --tab-w: 48px; }
+  .topbar .file-name { width: auto; flex: 1 1 60px; min-width: 60px; }
+  :root { --page-gap: 16px; }
+}
+/* File > Dark mode / Light mode: show the icon of the theme it switches to */
+.file-item > .icon-moon, .file-item > .icon-sun { flex: 0 0 auto; }
+.file-item .icon-sun { display: none; }
+body.dark .file-item .icon-sun { display: inline-flex; }
+body.dark .file-item .icon-moon { display: none; }
