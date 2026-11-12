@@ -49,6 +49,11 @@
  * redirects to apps/system/settings/#about (R53: both moved under apps/system/; the old
  * apps/settings/ and apps/about/ folders are now only redirect pages to them). Settings itself is opened by the "⚙ Settings" row
  * at the bottom of the menu (hub_settings.js), so its row is HIDDEN here.
+ * DF25: Writer moved to apps/office/writer/ (Hub id writer, from office-apps.csv). The HIDDEN Writer row
+ * keeps the old id draftly: hub.js names it from its folder (apps/office/draftly/ → draftly), so an old
+ * #draftly link, last-app value or saved Desktop window opens that path, a thin redirect to
+ * ../writer/writer.html, and the Hub then shows #writer. Not in the menu, Search or the App Hub (they
+ * read only the "<Category> Page" rows). Remove it only when old draftly links no longer matter.
  */
 // R33a: categories ("<Category> Page" rows) + hidden system rows only. Apps: apps/<category>/<category>-apps.csv.
 window.HUB_APPS_CSV = `
@@ -63,6 +68,7 @@ Lab,          Lab Page,              apps/lab/lab.html,                         
 Learn,        Learn Page,            apps/learn/learn.html,                      ,         0,       0,      500
 System,       System Page,           apps/system/system.html,                    ,         0,       0,      1100
 Settings,     Settings,              apps/system/settings/,                      ,         0,       1,      2100
+Office,       Writer,                apps/office/draftly/,                       apps/office/writer/writer_icon.png, 0, 1, 2101
 `;
 
 /* ===== R33a ARCHIVE (not parsed): the app rows that lived here until R33a =====

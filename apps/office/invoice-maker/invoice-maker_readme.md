@@ -10,7 +10,7 @@ Office app at `apps/office/invoice-maker/`. Make GST tax invoices, quotes, recei
 - Tax is CGST+SGST when the place of supply is the same state as the business, otherwise IGST. The total is rounded to the nearest rupee (optional) and written in Indian words (lakh / crore).
 - Notes, terms and a due date.
 - Live A4 preview with Classic, Modern and Minimal templates and an accent colour.
-- Print, and Save as PDF (lazy-loads the jsPDF already vendored in Draftly; if that fails, use Print and choose Save as PDF).
+- Print, and Save as PDF (lazy-loads the jsPDF already vendored in Writer, `../writer/vendor/jspdf.umd.min.js` since DF25; if that fails, use Print and choose Save as PDF).
 - Optional UPI QR when a UPI ID is saved (lazy-loads `shared/vendor/qrcode.js`).
 - History with search, Paid/Unpaid, duplicate, edit and delete (in-app confirm).
 - JSON backup export/import, and CSV of the history.
