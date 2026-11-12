@@ -60,7 +60,8 @@ test('quantity limits and unknown foods are rejected', () => {
   assert.equal(plate[0].qty, 20);
   assert.throws(() => NP.setQty(plate, 'roti', 21));
   assert.deepEqual(NP.setQty(plate, 'roti', 0), []);
-  assert.deepEqual(NP.normalize([{ id: 'roti', qty: 0 }, { id: 'roti', qty: 2 }]), [{ id: 'roti', qty: 2 }]);
+  // (before NP4) assert.deepEqual(NP.normalize([{ id: 'roti', qty: 0 }, { id: 'roti', qty: 2 }]), [{ id: 'roti', qty: 2 }]);
+  assert.deepEqual(NP.normalize([{ id: 'roti', qty: 0 }, { id: 'roti', qty: 2 }]), [{ id: 'roti', qty: 2, g: F.byId.roti.g * 2 }]);
 });
 
 test('balanced-plate shares use food weight and sum to one', () => {

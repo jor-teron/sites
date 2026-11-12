@@ -2802,6 +2802,58 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   Calculator, Hub files, root `shared/`, catalog, or build numbers.
 - 1.119 is MM8, so this note is numbered 1.120.
 
+### 1.121 NP4 Nutrition Plate Portions page and typed grams
+
+- Goal: Jor asked for NP4 (local commit) on top of NP2+NP3 (`apps/np2-np3-foods`
+  a129967a). Nutrition Plate (`apps/learn/nutrition-plate/`, Learn -> Health)
+  gained a Portions tab and typed grams. Title is Nutrition Plate NP4.
+  Branch `apps/np4-portions`, based on the NP3 commit (not rebased onto a
+  later origin/main). Team 2 id NP1 stays unused.
+- Portions tab (next to Plate, Games and How to use; not a new Hub app):
+  every food shows its default household size (for example 1 roti at 40 g,
+  or 1 katori at 100 g) and a grams field the user can set. Blank means the
+  default. Reset for one food, or Reset all (in-app confirm). Personal sizes
+  stay on this device under the existing key `learn.nutrition-plate.v1`
+  (`state.portions`). Invalid grams (0, negative, NaN, empty when a number
+  is required, or above 2000 g for a personal portion / 40000 g for a plate
+  item) are rejected with an in-app dialog, not window.alert / confirm /
+  prompt.
+- On the plate, +/− uses the user's portion (or the default if the box is
+  blank). A grams field on the plate item sets a one-off amount for that
+  serving only and does not change the saved personal portion. After +/−,
+  grams go back to qty × the current personal (or default) portion.
+- Nutrients scale from the food's per-gram values (the existing per-portion
+  IFCT figure × grams / default grams). The 217-food library is unchanged
+  (ids, names, groups, nutrient and default-portion values). Leafy greens
+  still count with vegetables; condiments still sit on the side.
+- Saved plates and days store the grams actually used, so changing a
+  portion later does not rewrite old meals. Existing qty-only saves migrate
+  on load to grams = qty × the default household portion from foods.js
+  (not the later personal size). Current and saved meals are not wiped.
+- Games keep using built-in default portions and their original NP-1 food
+  lists; they ignore user Portions settings.
+- UI: title and footer NP4 (`nutrition-plate.html`, `index.html`); How to
+  use covers personal portions, one-off grams, saved grams, and that games
+  use defaults. `offline.js` cache name `nutrition-plate-np3` ->
+  `nutrition-plate-np4` so the cache-first shell picks up the new JS (not
+  a `?v=`). `learn-apps.csv` description mentions personal portions (no
+  extra commas; hub_catalog.js not regenerated). README has an NP4 section.
+  Replaced lines are commented `(before NP4)`.
+- Tests: `node --check` on all touched app JS and test files; `node --test
+  tests/model.test.cjs tests/np23.test.cjs tests/np4.test.cjs` (existing
+  files still pass; new file covers blank = default, personal portion and
+  +/− scaling, Reset one / Reset all, one-off grams not changing the
+  personal size, saved grams not rewritten when a portion changes later,
+  old qty-only saves migrating, games ignoring user Portions, invalid
+  grams rejected, and the 217-food NP2/NP3 behaviour). Static-serve curl
+  smoke on a unique port for nutrition-plate.html, index.html, and the JS
+  that changed. `tests/browser.cjs` (Puppeteer) not run and not changed.
+- Limits: figures are rounded guides, not a lab test or medical advice.
+  No shopping list, no change to Nutrition Calculator, no week or month
+  planner (NP5-NP6). No change to Hub files, root `shared/`, catalog, or
+  build numbers. No new libraries or CDN.
+- 1.120 is NP2+NP3, so this note is numbered 1.121.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

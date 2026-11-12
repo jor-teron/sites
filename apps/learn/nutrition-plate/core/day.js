@@ -1,4 +1,5 @@
-/* NP-1b: a day's meals, tips, and localStorage save/load. */
+/* NP-1b: a day's meals, tips, and localStorage save/load.
+   NP4: personal portions on this device; saved meals store actual grams. */
 (function (root, factory) {
   const NP = typeof module === 'object' && module.exports ? require('./plate.js') : root.NP;
   const T = typeof module === 'object' && module.exports ? require('./targets.js') : root.NPTargets;
@@ -15,7 +16,8 @@
   function emptyMeals() { return { breakfast: [], lunch: [], snack: [], dinner: [] }; }
   function fresh() {
     return { version: 1, person: { age: 'adult', activity: 'moderate', diet: 'all', sex: 'unspecified' },
-      meals: emptyMeals(), meal: 'breakfast', plates: [], days: [], scores: { guess: 0, plate: 0, swaps: 0 } };
+      meals: emptyMeals(), meal: 'breakfast', plates: [], days: [], scores: { guess: 0, plate: 0, swaps: 0 },
+      portions: {} };
   }
   function cleanMeal(list) { return NP.normalize(list); }
   function cleanPerson(p) {
@@ -52,6 +54,10 @@
       plate: Number.isInteger(sc.plate) && sc.plate >= 0 ? Math.min(20, sc.plate) : 0,
       swaps: Number.isInteger(sc.swaps) && sc.swaps >= 0 ? Math.min(8, sc.swaps) : 0
     };
+    /* Personal portion sizes stay on this device. Blank or missing = the food's default grams.
+       Saved meals already went through cleanMeal / NP.normalize, which stores actual grams
+       (old qty-only rows become qty × the default household portion). */
+    state.portions = NP.cleanPortions(raw.portions);
     return state;
   }
   function dayTotals(meals) {
@@ -59,8 +65,14 @@
   }
   function mergedRows(meals) {
     const map = {};
-    mealIds.forEach(id => { (meals[id] || []).forEach(row => { map[row.id] = (map[row.id] || 0) + row.qty; }); });
-    return Object.keys(map).map(id => ({ id, qty: map[id] }));
+    mealIds.forEach(id => {
+      (meals[id] || []).forEach(row => {
+        if (!map[row.id]) map[row.id] = { id: row.id, qty: 0, g: 0 };
+        map[row.id].qty += row.qty;
+        map[row.id].g += row.g || 0;
+      });
+    });
+    return Object.keys(map).map(id => map[id]);
   }
   function mealTotals(meals) {
     const out = {};

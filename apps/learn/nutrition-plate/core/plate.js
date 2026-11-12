@@ -1,5 +1,6 @@
 /* NP-1a: plate totals, filters and a balanced-plate guide. Pure logic for UI and tests.
-   NP2: Leafy greens count with vegetables. NP3: Condiments sit on the side. */
+   NP2: Leafy greens count with vegetables. NP3: Condiments sit on the side.
+   NP4: personal portion sizes, typed grams, and nutrients scaled from per-gram values. */
 (function (root, factory) {
   const foods = typeof module === 'object' && module.exports ? require('./foods.js') : root.NPFoods;
   const model = factory(foods);
@@ -9,6 +10,9 @@
   'use strict';
   const NUTRIENTS = ['kcal', 'prot', 'carb', 'fat', 'fibre', 'sugar', 'fe', 'ca', 'vc'];
   const MAX_QTY = 20, MAX_ITEMS = 40;
+  /* Personal / one-off grams: at least 1 g, at most 2000 g for a usual portion.
+     A plate item may hold up to 20 of those portions. */
+  const MIN_G = 1, MAX_PORTION_G = 2000, MAX_ITEM_G = MAX_QTY * MAX_PORTION_G;
   const DIETS = { all: 'all', veg: 'v', egg: 'e', nonveg: 'n' };
   const LABELS = {
     kcal: 'Calories (kcal)', prot: 'Protein (g)', carb: 'Carbohydrate (g)', fat: 'Fat (g)',
@@ -45,6 +49,72 @@
       (!q || f.name.toLowerCase().includes(q) || f.portion.toLowerCase().includes(q) || f.group.includes(q)));
   }
   function food(id) { return D.byId[id] || null; }
+  function defaultGrams(id) {
+    const item = food(id);
+    return item ? item.g : 0;
+  }
+  function parseGrams(value, opts) {
+    const allowBlank = !!(opts && opts.allowBlank);
+    const max = opts && opts.max != null ? opts.max : MAX_PORTION_G;
+    if (value == null) {
+      if (allowBlank) return null;
+      throw new Error('Enter an amount in grams.');
+    }
+    const text = String(value).trim();
+    if (text === '') {
+      if (allowBlank) return null;
+      throw new Error('Enter an amount in grams.');
+    }
+    const n = Number(text);
+    if (Number.isNaN(n) || !Number.isFinite(n) || n <= 0) throw new Error('Grams must be a positive number.');
+    if (n < MIN_G) throw new Error('Grams must be at least ' + MIN_G + '.');
+    if (n > max) throw new Error('Grams must be ' + max + ' or less.');
+    return Math.round(n * 10) / 10;
+  }
+  function portionGrams(id, portions) {
+    const item = food(id);
+    if (!item) return 0;
+    if (!portions || portions[id] == null || portions[id] === '') return item.g;
+    try { return parseGrams(portions[id], { max: MAX_PORTION_G }); }
+    catch (_) { return item.g; }
+  }
+  function cleanPortions(map) {
+    if (!map || typeof map !== 'object' || Array.isArray(map)) return {};
+    const out = {};
+    Object.keys(map).forEach(id => {
+      if (!food(id)) return;
+      try { out[id] = parseGrams(map[id], { max: MAX_PORTION_G }); }
+      catch (_) { /* drop invalid or blank entries */ }
+    });
+    return out;
+  }
+  function setPortion(portions, id, value) {
+    if (!food(id)) throw new Error('Unknown food');
+    const next = Object.assign({}, cleanPortions(portions));
+    const g = parseGrams(value, { allowBlank: true, max: MAX_PORTION_G });
+    if (g == null) delete next[id];
+    else next[id] = g;
+    return next;
+  }
+  function resetPortion(portions, id) {
+    const next = Object.assign({}, cleanPortions(portions));
+    delete next[id];
+    return next;
+  }
+  function resetAllPortions() { return {}; }
+  function scaleNutrient(item, key, grams) {
+    if (!item || !item.g) return 0;
+    return item[key] * (grams / item.g);
+  }
+  function itemGrams(row, item) {
+    if (!item) return 0;
+    const qty = row && Number(row.qty);
+    const fallback = item.g * (Number.isInteger(qty) && qty > 0 ? qty : 0);
+    if (row == null || row.g == null || row.g === '') return fallback;
+    const g = Number(row.g);
+    if (!Number.isFinite(g) || g <= 0 || g > MAX_ITEM_G) return fallback;
+    return Math.round(g * 10) / 10;
+  }
   function normalize(plate) {
     if (!Array.isArray(plate)) return [];
     const seen = new Set(), out = [];
@@ -52,36 +122,57 @@
       const id = row && row.id, item = food(id);
       const qty = row && Number(row.qty);
       if (!item || seen.has(id) || !Number.isInteger(qty) || qty < 1 || qty > MAX_QTY) return;
-      seen.add(id); out.push({ id, qty });
+      /* Missing grams (old qty-only saves) migrate to qty × the default household portion. */
+      seen.add(id); out.push({ id, qty, g: itemGrams(row, item) });
     });
     return out.slice(0, MAX_ITEMS);
   }
-  function add(plate, id, qty) {
+  function add(plate, id, qty, portions) {
     const item = food(id); if (!item) throw new Error('Unknown food');
     const n = Number.isInteger(qty) && qty > 0 ? qty : 1;
     const next = normalize(plate), row = next.find(r => r.id === id);
-    if (row) row.qty = Math.min(MAX_QTY, row.qty + n);
-    else {
+    const unit = portionGrams(id, portions);
+    if (row) {
+      row.qty = Math.min(MAX_QTY, row.qty + n);
+      row.g = Math.round(row.qty * unit * 10) / 10;
+    } else {
       if (next.length >= MAX_ITEMS) throw new Error('The plate is full (40 foods).');
-      next.push({ id, qty: Math.min(MAX_QTY, n) });
+      const q = Math.min(MAX_QTY, n);
+      next.push({ id, qty: q, g: Math.round(q * unit * 10) / 10 });
     }
     return next;
   }
-  function setQty(plate, id, qty) {
+  function setQty(plate, id, qty, portions) {
     if (!Number.isInteger(qty) || qty < 0 || qty > MAX_QTY) throw new Error('Quantity must be 0–20.');
     const next = normalize(plate);
     if (qty === 0) return next.filter(r => r.id !== id);
+    const unit = portionGrams(id, portions);
     const row = next.find(r => r.id === id);
-    if (row) row.qty = qty; else return add(next, id, qty);
+    if (row) {
+      row.qty = qty;
+      row.g = Math.round(qty * unit * 10) / 10;
+    } else return add(next, id, qty, portions);
+    return next;
+  }
+  function setItemGrams(plate, id, grams) {
+    const g = parseGrams(grams, { max: MAX_ITEM_G });
+    const next = normalize(plate);
+    const row = next.find(r => r.id === id);
+    if (!row) throw new Error('That food is not on the plate.');
+    row.g = g;
     return next;
   }
   function addUp(rows) {
     const t = emptyTotals();
     rows.forEach(row => {
       const f = food(row.id); if (!f || !row.qty) return;
-      t.items += 1; t.portions += row.qty; t.g += f.g * row.qty;
-      NUTRIENTS.forEach(k => { t[k] += f[k] * row.qty; });
-      const g = t.groups[f.group]; g.g += f.g * row.qty; g.kcal += f.kcal * row.qty; g.portions += row.qty;
+      /* (before NP4) t.items += 1; t.portions += row.qty; t.g += f.g * row.qty;
+         NUTRIENTS.forEach(k => { t[k] += f[k] * row.qty; });
+         const g = t.groups[f.group]; g.g += f.g * row.qty; g.kcal += f.kcal * row.qty; g.portions += row.qty; */
+      const grams = itemGrams(row, f);
+      t.items += 1; t.portions += row.qty; t.g += grams;
+      NUTRIENTS.forEach(k => { t[k] += scaleNutrient(f, k, grams); });
+      const g = t.groups[f.group]; g.g += grams; g.kcal += scaleNutrient(f, 'kcal', grams); g.portions += row.qty;
     });
     NUTRIENTS.forEach(k => { t[k] = Math.round(t[k] * 10) / 10; });
     t.g = Math.round(t.g);
@@ -140,6 +231,9 @@
     const row = D.groups.find(g => g[0] === id);
     return row ? row[1] : id;
   }
-  return { NUTRIENTS, LABELS, MAX_QTY, MAX_ITEMS, DIETS, validateFood, allowed, filterFoods,
-    food, normalize, add, setQty, addUp, totals, sumTotals, balance, plateWeight, IDEAL, groupLabel, foods: D };
+  return { NUTRIENTS, LABELS, MAX_QTY, MAX_ITEMS, MIN_G, MAX_PORTION_G, MAX_ITEM_G, DIETS,
+    validateFood, allowed, filterFoods, food, defaultGrams, parseGrams, portionGrams,
+    cleanPortions, setPortion, resetPortion, resetAllPortions, scaleNutrient, itemGrams,
+    normalize, add, setQty, setItemGrams, addUp, totals, sumTotals, balance, plateWeight,
+    IDEAL, groupLabel, foods: D };
 });

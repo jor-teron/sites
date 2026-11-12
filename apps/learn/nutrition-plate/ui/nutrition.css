@@ -97,3 +97,17 @@ dialog::backdrop{background:#0009}dialog label{margin:12px 0}
 @media(max-width:540px){.modes{width:100%}.choices{grid-template-columns:1fr}}
 
 @media(max-width:700px){.lrn-head h1{flex:1 1 calc(100% - 220px);min-width:0}.lrn-head .lrn-qc{flex:none;order:2}.modes{flex:1 1 100%;order:3}}
+
+/* NP4: Portions tab and typed grams on a plate item. */
+.portion-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding:8px 0;min-height:44px}
+.portion-row .np-icon{width:36px;height:36px;border-radius:8px;flex:none}
+.portion-row .meta{flex:1 1 12rem;min-width:0}
+.portion-row .meta strong{display:block;font-size:.95rem}
+.portion-row .meta small{color:var(--muted);font-size:.8rem}
+.portion-row .grams{display:flex;align-items:center;gap:6px;flex:none}
+.portion-row .grams input{width:6.5rem}
+.served{flex-wrap:wrap}
+.served .item-grams{display:flex;align-items:center;gap:4px;margin:0;font-size:.8rem;color:#243226}
+.served .item-grams input{width:5.5rem;background:#fff;color:#243226;border-color:#d7cbb8}
+#portions-list{max-width:52rem}
+@media(min-width:801px){#portions-list{max-height:calc(100dvh - 280px);overflow:auto}}

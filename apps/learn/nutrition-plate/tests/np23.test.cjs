@@ -127,5 +127,9 @@ test('leafy greens count as vegetables; condiments sit on the side', () => {
 
 test('old saves with NP-1 foods still load next to new foods', () => {
   const state = Day.restore(JSON.stringify({ meals: { breakfast: [{ id: 'roti', qty: 2 }, { id: 'hukoti', qty: 1 }], lunch: [], snack: [], dinner: [] } }));
-  assert.deepEqual(state.meals.breakfast, [{ id: 'roti', qty: 2 }, { id: 'hukoti', qty: 1 }]);
+  // (before NP4) assert.deepEqual(state.meals.breakfast, [{ id: 'roti', qty: 2 }, { id: 'hukoti', qty: 1 }]);
+  assert.deepEqual(state.meals.breakfast, [
+    { id: 'roti', qty: 2, g: F.byId.roti.g * 2 },
+    { id: 'hukoti', qty: 1, g: F.byId.hukoti.g }
+  ]);
 });
