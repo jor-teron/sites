@@ -54,6 +54,17 @@ window.FX = (function () {
     if (TEXT.test(name) || /^text\/|json|xml/.test(type || '')) return 'text';
     return '';
   }
+  // H148: Writer / Spreadsheet / Tables native files use the app icon (<img>), not the package emoji.
+  // Paths are site-root relative, resolved from Files (apps/system/files/, no <base href>).
+  const OFFICE_ICON = {
+    how: 'apps/office/draftly/draftly_icon.png',
+    hos: 'apps/office/spreadsheet/spreadsheet_icon.png',
+    hot: 'apps/office/tables/tables_icon.svg'
+  };
+  function officeIconUrl(rel) {
+    try { return new URL('../../../' + rel, (typeof document !== 'undefined' && document.baseURI) || location.href).href; }
+    catch (_) { return '../../../' + rel; }
+  }
   function icon(e) {
     if (e.kind === 'directory') return '\uD83D\uDCC1';
     const k = kind(e.name, e.type);
@@ -63,7 +74,30 @@ window.FX = (function () {
     if (/\.(mp4|webm|mkv|mov)$/i.test(e.name)) return '\uD83C\uDFAC';
     if (/\.(zip|7z|rar|gz|tar)$/i.test(e.name)) return '\uD83D\uDDDC\uFE0F';
     if (/\.pdf$/i.test(e.name)) return '\uD83D\uDCD5';
+    // (before H148) return '\uD83D\uDCE6';
+    const m = /\.(how|hos|hot)$/i.exec(e.name || '');
+    if (m) {
+      const ext = m[1].toLowerCase();
+      return { src: officeIconUrl(OFFICE_ICON[ext]), alt: ext.toUpperCase(), rel: OFFICE_ICON[ext] };
+    }
     return '\uD83D\uDCE6';
+  }
+  /** H148: <span class="item-ico"> with either the emoji or an Office app <img>. */
+  function iconEl(e) {
+    const v = icon(e);
+    const ico = el('span', 'item-ico');
+    if (v && typeof v === 'object' && v.src) {
+      const img = el('img', 'fmt-ico');
+      img.src = v.src;
+      img.alt = v.alt || '';
+      img.draggable = false;
+      img.onerror = () => { ico.classList.remove('has-fmt'); ico.textContent = '\uD83D\uDCE6'; };
+      ico.classList.add('has-fmt');
+      ico.appendChild(img);
+    } else {
+      ico.textContent = v;
+    }
+    return ico;
   }
   const cur = () => (st.stack.length ? st.stack[st.stack.length - 1].handle : null);
   const pathText = () => st.stack.map((s) => s.name).join(' / ');
@@ -95,5 +129,5 @@ window.FX = (function () {
   function singleClick() { try { return localStorage.getItem(CLICK_KEY) === 'single'; } catch (_) { return false; } }
   function setSingleClick(on) { try { if (on) localStorage.setItem(CLICK_KEY, 'single'); else localStorage.removeItem(CLICK_KEY); } catch (_) { /* blocked */ } }
 
-  return { $, el, btn, say, fail, size, kind, icon, st, cur, pathText, selected, setPref, progress, hubSave, singleClick, setSingleClick };
+  return { $, el, btn, say, fail, size, kind, icon, iconEl, st, cur, pathText, selected, setPref, progress, hubSave, singleClick, setSingleClick };
 })();

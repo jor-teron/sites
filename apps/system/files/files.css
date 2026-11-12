@@ -175,8 +175,17 @@ html.hub-xp .marquee { --marq: #316ac5; border-radius: 0; }   /* XP selection bl
 .b-pdf { background: #dc2626 !important; } .b-img { background: #9333ea !important; } .b-audio { background: #db2777 !important; }
 .b-video { background: #ea580c !important; } .b-zip { background: #a16207 !important; } .b-code { background: #ca8a04 !important; color: #1a1400 !important; }
 .b-web { background: #e2541f !important; } .b-data { background: #0891b2 !important; } .b-office { background: #2563eb !important; }
+/* H148: Writer / Spreadsheet / Tables type badges (white label text) */
+.b-how { background: #2563eb !important; } .b-hos { background: #16a34a !important; } .b-hot { background: #0d9488 !important; }
 .list.v-list .item { min-height: 48px; padding: 4px 10px 4px 12px; }   /* H123: was 40px left (room for the tick) */
 .list.v-list .item-ico { font-size: 1.4rem; width: 30px; }
+/* H148: Office format icons (.how / .hos / .hot) sized to the 48 px grid / 30 px list slot */
+.item-ico.has-fmt { display: flex; align-items: center; justify-content: center; }
+.item-ico .fmt-ico { display: block; object-fit: contain; pointer-events: none; border-radius: 6px; }
+.list.v-grid .item-ico.has-fmt { height: 48px; }
+.list.v-grid .item-ico .fmt-ico { width: 48px; height: 48px; }
+.list.v-list .item-ico.has-fmt { width: 30px; height: 30px; }
+.list.v-list .item-ico .fmt-ico { width: 30px; height: 30px; border-radius: 4px; }
 .list.v-list .item-name { flex: 1; white-space: nowrap; }
 .list.v-list .item-date { width: 150px; text-align: right; }
 .list.v-list .item-size { width: 76px; text-align: right; }

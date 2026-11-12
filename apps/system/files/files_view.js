@@ -15,7 +15,7 @@
  */
 (function () {
   'use strict';
-  const { $, el, st, size, icon, cur, fail } = FX;
+  const { $, el, st, size, iconEl, cur, fail } = FX;
   const list = $('list');
   const coll = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   let lastPointer = 'mouse';
@@ -63,8 +63,17 @@
     row.append(mk, up); box.append(row); return box;
   }
 
-  /* H109: a small coloured type label (TXT, PDF, PNG ...) on the file icon in grid view. */
+  /* H109: a small coloured type label (TXT, PDF, PNG ...) on the file icon in grid view.
+     H148: .how / .hos / .hot get their own Writer / Spreadsheet / Tables colours (Base and Slides are not in this release). */
+  /* (before H148) const BADGE = [
+    [/^(txt|log|rtf)$/, 'doc'], [/^(md|markdown)$/, 'md'], [/^(csv|tsv|xlsx?|ods)$/, 'sheet'], [/^pdf$/, 'pdf'],
+    [/^(png|jpe?g|gif|webp|bmp|ico|avif|svg|heic)$/, 'img'], [/^(mp3|wav|ogg|m4a|flac|aac|opus)$/, 'audio'],
+    [/^(mp4|webm|mkv|mov|avi|m4v)$/, 'video'], [/^(zip|7z|rar|gz|tgz|tar|bz2|xz)$/, 'zip'],
+    [/^(js|mjs|cjs|ts|py|sh|c|h|cpp|java|rs|go|sql|css)$/, 'code'], [/^(html?|xml)$/, 'web'], [/^(json|ya?ml|toml|ini|cfg|conf)$/, 'data'],
+    [/^(docx?|odt|pptx?|odp)$/, 'office']
+  ]; */
   const BADGE = [
+    [/^how$/, 'how'], [/^hos$/, 'hos'], [/^hot$/, 'hot'],   // H148
     [/^(txt|log|rtf)$/, 'doc'], [/^(md|markdown)$/, 'md'], [/^(csv|tsv|xlsx?|ods)$/, 'sheet'], [/^pdf$/, 'pdf'],
     [/^(png|jpe?g|gif|webp|bmp|ico|avif|svg|heic)$/, 'img'], [/^(mp3|wav|ogg|m4a|flac|aac|opus)$/, 'audio'],
     [/^(mp4|webm|mkv|mov|avi|m4v)$/, 'video'], [/^(zip|7z|rar|gz|tgz|tar|bz2|xz)$/, 'zip'],
@@ -89,7 +98,8 @@
     it.setAttribute('aria-selected', st.sel.has(e.name) ? 'true' : 'false');
     it.draggable = true;
     // H123: no select tick — was: const chk = el('span', 'chk'); chk.setAttribute('aria-hidden', 'true'); it.append(chk, ...)
-    const ico = el('span', 'item-ico', icon(e));
+    // (before H148) const ico = el('span', 'item-ico', icon(e));
+    const ico = iconEl(e);
     it.append(ico, el('span', 'item-name', e.name));
     if (FX.thumbs) FX.thumbs.attach(ico, e);   // R12b: preview instead of the icon (lazy)
     const bd = e.kind === 'file' ? badge(e.name) : null;   // H109: file-type label (sibling: thumbs replace ico's children)
