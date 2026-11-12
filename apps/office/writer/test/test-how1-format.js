@@ -1,5 +1,5 @@
 /* HOW1: .how round-trip. No DOM, no browser, no network.
-   Run: node apps/office/writer/test-how1-format.js */
+   Run: node apps/office/writer/test/test-how1-format.js */
 'use strict';
 
 var assert = require('assert');
@@ -7,9 +7,11 @@ var fs = require('fs');
 var path = require('path');
 var vm = require('vm');
 
-var dir = __dirname;
+/* (before DW5) var dir = __dirname; */
+var dir = path.resolve(__dirname, '..');
 /* (before DF25) var How = require('./modules/draftly-how.js'); */
-var How = require('./modules/writer-how.js');
+/* (before DW5) var How = require('./modules/writer-how.js'); */
+var How = require('../modules/writer-how.js');
 
 var img = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 var doc = {
