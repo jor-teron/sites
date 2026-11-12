@@ -307,3 +307,13 @@ The grid is still 26 × 100. The `.hos` format stays version 1 (`heights[]` was 
 - **Insert / delete:** `heights[]` now shifts with the rows, the same way `colWidths` already shifted with columns (this was a latent gap).
 - **Freeze:** sticky offsets sum the real (manual or automatic) row heights and still skip hidden / filtered rows, so variable heights stay aligned.
 - **Limits:** no XLSX / CSV row-height or wrap-style import (export already writes `wrapText` only). No multiline formula bar or in-cell textarea. Column auto-width behaviour is unchanged. Merged-cell auto-fit measures the top-left cell at the merged width; Excel's merge quirks are not copied. Charts stay free-positioned and will not stick to a row if it grows. Print uses the same table (`tr.style.height`); `.row-grip` is hidden in print like `.col-grip`.
+
+## HO3 — 12pt default font
+The default cell text is now **12pt** (16px at 96 dpi), the same as Writer. Before HO3 it was 13px (about 10pt). The `.hos` format stays version 1. `?v=` on `spreadsheet.html` is bumped to `HO3` so a cached 13px stylesheet does not stick; the title and `SHEET_VERSION` stay SH18.
+
+- **Settings → Default size** is in **pt** (9, 10, 11, 12, 14, 16, 18; 12 selected). `spreadsheet_settings` stores it as a CSS length string (`"12pt"`) and applies it to `--sheet-font-size`. The CSS fallback in `spreadsheet.css` is `12pt` too.
+- **One-time move** (`ho3` flag): a saved number 13 — the old factory default — becomes `"12pt"`. Any other saved number was chosen in the old px menu, so it stays px (`16` → `"16px"`) and is listed as “16 px (earlier setting)” until a pt size is picked. Limit: someone who picked 13 px on purpose also moves to 12pt.
+- **Empty cells** (`fontSize: ""`) inherit the Settings default, so they are 12pt. **Explicit cell sizes** (Home tab menu, saved in `.hos`) are still **px** and are not changed or rescaled. The Home tab menu stays in px (8–24); for a cell with no size it shows the default in px (16) without storing it.
+- **Auto-fit** (SH18) uses the default in px (16 for 12pt). One line is 6 + 16 × 1.25 = 26px, under the 30px automatic floor, which is unchanged. `defaultSheetFontSize()` now reads `SHEET_SETTINGS.s` (before HO3 it read a property that was never set and always used 13).
+- **Limits:** text that inherits the body size (column letters, row numbers, the function list) grows with it, as it already did when the Settings size was changed. XLSX export still writes the px cell size as `sz`. Changing Settings → Default size does not re-run auto-fit until the next repaint.
+- Tests: `node apps/office/spreadsheet/test-ho3-font-default.js`.

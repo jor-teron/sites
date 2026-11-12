@@ -3,6 +3,9 @@
  * TB4 copies the Spreadsheet grid variables and classes (spreadsheet.css):
  * cell borders, header background, row-number gutter, selection outline,
  * 13px Segoe UI, 30px rows, and sheet tabs. Colours still feed the Office dialogs.
+ * HO3: sheet text (grid cells, cards, record fields) is 12pt (16px), the same as Writer and
+ * Spreadsheet. --sheet-font-size is the sheet text size; the toolbar, ribbon, tabs and
+ * pop-ups keep 13px through --ui-font-size.
  */
 
 html {
@@ -30,7 +33,9 @@ html {
   --danger: #ff8d86;
   --shadow: rgba(0, 0, 0, 0.5);
   --sheet-font: "Segoe UI", system-ui, sans-serif;
-  --sheet-font-size: 13px;
+  /* (before HO3) --sheet-font-size: 13px; */
+  --sheet-font-size: 12pt;
+  --ui-font-size: 13px;                  /* HO3: app chrome stays at the old 13px */
   --text-primary: var(--text);
   --text-secondary: var(--muted);
   --select-bg: var(--panel);
@@ -84,7 +89,8 @@ body {
   background: var(--bg);
   color: var(--text);
   /* (before TB4) font: 14px/1.4 var(--ui-font); */
-  font: var(--sheet-font-size, 13px)/1.35 var(--sheet-font, "Segoe UI", system-ui, sans-serif);
+  /* (before HO3) font: var(--sheet-font-size, 13px)/1.35 var(--sheet-font, "Segoe UI", system-ui, sans-serif); */
+  font: var(--ui-font-size, 13px)/1.35 var(--sheet-font, "Segoe UI", system-ui, sans-serif);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -291,6 +297,15 @@ h1 {
   font-weight: 600;
   height: var(--cell-h);
 }
+
+/* HO3: sheet text is 12pt (Writer and Spreadsheet match). Cell values, card values and
+   record fields use --sheet-font-size; headers and chrome stay at --ui-font-size. */
+.grid td.cell,
+.record-card .fld span,
+.record-field input,
+.record-field select,
+.record-field textarea,
+.link-pick { font-size: var(--sheet-font-size, 12pt); }
 
 /* (before TB4)
 .grid th.rowh,

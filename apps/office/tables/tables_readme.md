@@ -134,3 +134,9 @@ Tables now has the same chrome as Writer and Spreadsheet, built from the shared 
 - **In the Hub.** After the Hub's hello, File, Home and the Quick Access buttons move to the window title bar (HO1 / H49), with the file name (same `hub-app` bridge as Spreadsheet). In Desktop mode the window's Settings gear opens Tables' Settings; File → Settings works everywhere. The search box stays in the app's top row. Standalone, with no hello, the in-app row stays as it is.
 - **Unchanged.** Sheet tabs at the bottom (TB4), the record panel, cards, column menus, filters, search, `.hot` load / save / autosave, CSV import / export and the `.hot` format. The old header (with the Auto / Light / Dark buttons) and the flat toolbar are commented `(before TB5)` in `tables.html`, not deleted.
 - **Limits.** Ctrl/Cmd+P no longer opens the browser's print dialog: the shared Quick Access bar always takes that key, and Print is disabled. Cancelling the Save As name or the save picker after Ctrl/Cmd+S still shows the “✓ Saved” tick, the same as Spreadsheet. Open tabs on hover is always on; there is no switch for it in Tables' Settings.
+
+## 12. HO3 — 12pt sheet text
+
+- **Sheet text is 12pt** (16px at 96 dpi), the same as Writer and Spreadsheet. Before HO3 it was 13px. `--sheet-font-size` in `tables.css` is `12pt` and applies to grid cells, card values and record-panel fields.
+- **Chrome is unchanged.** The ribbon, toolbar, column headers, sheet tabs, pop-ups and labels keep 13px through a new `--ui-font-size` (the body font used to read `--sheet-font-size`). Rows stay 30px.
+- Tables has no font Settings, so there is nothing to move. No `?v=` was added (NV2), the title stays Tables TB5 and the `.hot` format is unchanged.
