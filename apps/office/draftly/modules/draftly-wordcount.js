@@ -58,6 +58,8 @@ Draftly.find.updateCount = function updateCount() {
   btn.textContent = sw >= 0 ? (sw + ' of ' + w(s.words)) : w(s.words);
   var pg = document.getElementById('statusPages');
   if (pg) pg.textContent = 'Page ' + F.currentPage() + ' of ' + s.pages;
+  /* DF21: characters and reading time next to the word count (draftly-write.js). */
+  if (Draftly.write && Draftly.write.status) Draftly.write.status(s);
   if (!document.getElementById('wordCountPop').hidden) F.fillPop(s);
 };
 
@@ -78,6 +80,8 @@ Draftly.find.fillPop = function fillPop(s) {
   var pop = document.getElementById('wordCountPop');
   var rows = [['Pages', s.pages], ['Words', s.words], ['Characters (no spaces)', s.charsNoSpace],
     ['Characters (with spaces)', s.chars], ['Paragraphs', s.paras]];
+  /* DF21 */
+  if (Draftly.writeText) rows.push(['Reading time (' + Draftly.writeText.WPM + ' words/min)', Draftly.writeText.readMinutes(s.words) + ' min']);
   var sw = Draftly.find.selWords();
   if (sw >= 0) rows.splice(1, 0, ['Selected words', sw]);
   pop.innerHTML = '<div class="wc-title">Word count</div>' + rows.map(function (r) {

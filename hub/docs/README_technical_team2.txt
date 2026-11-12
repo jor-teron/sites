@@ -2203,6 +2203,62 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/tables/tables_readme.md` (HOT1 section, legacy notes).
 - 1.110 is HOS1, so this note is numbered 1.111.
 
+### 1.112 DF21 Writer writing helpers
+
+- Writer (`apps/office/draftly/`, Hub id `draftly`) has a new Review ribbon
+  tab, also sent to the Hub title bar (`Draftly.hub.tabs`). It holds Spelling,
+  UPPER / lower / Title Case, Focus and Read aloud. Plain code in
+  `modules/draftly-writetext.js` (text rules, no DOM) and
+  `modules/draftly-write.js` (screen side), styles in `ui/write.css`. No new
+  library, no CDN, no dictionary download.
+- Spelling uses the browser's own checker on every page editor, including
+  pages added by the flow (`draftly-pages.js` reads the setting). It is the
+  `spellcheck` key in `draftly_settings` (Settings, Editing, Spell check, and
+  the ribbon button), default off as before. Header and footer slots stay off.
+- Change case edits the text nodes inside the selection in place, so the
+  formatting stays. One undo step (history commits on the input event it
+  sends), autosave and reflow as for typing. Nothing selected: an in-app
+  message, no change. Title Case: every word starts with a capital, the rest
+  is lower case, small words too; an apostrophe inside a word does not start
+  a new word, a hyphen does.
+- Status bar: character count (with spaces) and reading time next to the
+  word count, updated with it. Reading time is 200 words a minute rounded up
+  to whole minutes (0 words = 0 min). The word count popup lists it too.
+- Focus mode (`body.df-focus`) hides the top row, ribbon, ruler and status
+  bar. A small bar keeps Undo, Redo, Save (through `OfficeQuick.run`) and
+  Exit focus. Esc ends it unless Find, a menu, a dialog, header/footer
+  editing or a selected image needs that Esc first. Any tab switch (ribbon,
+  Hub title bar, `hub-action`) ends it. Session only, not saved. Print, PDF,
+  DOCX and the Hub Quick Access are unchanged.
+- Read aloud sends the selection, or the whole document as plain text, to
+  Read Aloud (`apps/tools/read-aloud/`). Writer writes Read Aloud's own
+  localStorage keys (`readaloud.source` "text", `readaloud.text`, removes
+  `readaloud.pos.text`), then opens it with `window.top.__hubOpenApp` in the
+  Hub (after a `.how` autosave, because in Phone mode Read Aloud replaces the
+  frame), else a `hub-open-app` message from a frame, else a new tab. Read
+  Aloud is not edited. Limit: a Read Aloud window that is already open in
+  Desktop mode is only brought forward and keeps its old text until it is
+  reloaded.
+- Not changed: no other `hub/` file, no root `shared/`, no `apps/office/shared`,
+  no `apps/system`, no `index.html`, `hub_appindex.js` or `hub_catalog.js`.
+  `.how` format unchanged (the spell setting is local, not in the file). No
+  IndexedDB migration. No `?v=` (Writer has none since NV2) and no build bump.
+  The page title is `Writer DF21`; `test-df24-name.js` now accepts
+  `Writer` plus a release id for the page title (old check kept as a comment).
+  Replaced lines are commented with `(before DF21)` and were not deleted.
+  DF22 (templates, snapshots, export as text) is parked and not built.
+- Checked with `node --check` on the edited scripts,
+  `node apps/office/draftly/test-df21-helpers.js` (case rules, reading time,
+  character label, plain text and Read Aloud keys, spell default, and with a
+  tiny fake DOM: spell apply, focus on/off/Esc/tab switch, Read Aloud open in
+  the Hub and standalone), `node apps/office/draftly/test-how1-format.js`,
+  `node apps/office/draftly/test-df24-name.js`,
+  `node apps/office/shared/tests/ho2.test.cjs`, and a static serve with curl
+  (draftly.html 200 and every linked script and stylesheet 200, Read Aloud
+  page 200). No browser runner.
+- Details: `apps/office/draftly/draftly_readme.md` (DF21 section).
+- 1.111 is HOT1, so this note is numbered 1.112.
+
 
 ## 2. Releases (PR → what)
 
