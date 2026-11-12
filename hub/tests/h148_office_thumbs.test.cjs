@@ -9,7 +9,7 @@ const vm = require('node:vm');
 const ROOT = path.join(__dirname, '..', '..');
 
 const ICONS = {
-  how: 'apps/office/draftly/draftly_icon.png',
+  how: 'apps/office/writer/writer_icon.png',
   hos: 'apps/office/spreadsheet/spreadsheet_icon.png',
   hot: 'apps/office/tables/tables_icon.svg'
 };
@@ -85,7 +85,7 @@ test('H148: icon() maps .how / .hos / .hot to the app icon, not the package emoj
   assert.equal(typeof how, 'object');
   assert.equal(how.rel, ICONS.how);
   assert.equal(how.alt, 'HOW');
-  assert.match(how.src, /\/apps\/office\/draftly\/draftly_icon\.png$/);
+  assert.match(how.src, /\/apps\/office\/writer\/writer_icon\.png$/);
   assert.equal(hos.rel, ICONS.hos);
   assert.equal(hos.alt, 'HOS');
   assert.match(hos.src, /\/apps\/office\/spreadsheet\/spreadsheet_icon\.png$/);
@@ -112,7 +112,7 @@ test('H148: iconEl() paints an <img class="fmt-ico"> for Office formats and an e
   assert.equal(how.childNodes.length, 1);
   assert.equal(how.childNodes[0].tagName, 'IMG');
   assert.equal(how.childNodes[0].className, 'fmt-ico');
-  assert.match(how.childNodes[0].src, /draftly_icon\.png$/);
+  assert.match(how.childNodes[0].src, /writer_icon\.png$/);
   assert.equal(how.childNodes[0].alt, 'HOW');
   assert.equal(how.childNodes[0].draggable, false);
 
@@ -153,7 +153,7 @@ test('H148: CSS has coloured badges and format-icon sizes; SHELL lists the three
   assert.match(css, /\.list\.v-list\s+\.item-ico\s+\.fmt-ico\s*\{[^}]*width:\s*30px/);
 
   const sw = fs.readFileSync(path.join(ROOT, 'hub/update/hub_sw.js'), 'utf8');
-  assert.match(sw, /'apps\/office\/draftly\/draftly_icon\.png'/);
+  assert.match(sw, /'apps\/office\/writer\/writer_icon\.png'/);
   assert.match(sw, /'apps\/office\/spreadsheet\/spreadsheet_icon\.png'/);
   assert.match(sw, /'apps\/office\/tables\/tables_icon\.svg'/);
   assert.doesNotMatch(sw, /'apps\/office\/base\//);
@@ -165,7 +165,7 @@ test('H148: view uses iconEl and does not change open-with filetypes', () => {
   assert.match(view, /const ico = iconEl\(e\);/);
   assert.match(view, /\/\/ \(before H148\) const ico = el\('span', 'item-ico', icon\(e\)\);/);
   const types = fs.readFileSync(path.join(ROOT, 'shared/fs/filetypes.js'), 'utf8');
-  assert.match(types, /how:\s*\['draftly'\]/);
+  assert.match(types, /how:\s*\['writer'\]/);
   assert.match(types, /hos:\s*\['spreadsheet'\]/);
   assert.match(types, /hot:\s*\['tables'\]/);
 });

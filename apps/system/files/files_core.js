@@ -57,7 +57,8 @@ window.FX = (function () {
   // H148: Writer / Spreadsheet / Tables native files use the app icon (<img>), not the package emoji.
   // Paths are site-root relative, resolved from Files (apps/system/files/, no <base href>).
   const OFFICE_ICON = {
-    how: 'apps/office/draftly/draftly_icon.png',
+    /* (before DF25) how: 'apps/office/draftly/draftly_icon.png', */
+    how: 'apps/office/writer/writer_icon.png',
     hos: 'apps/office/spreadsheet/spreadsheet_icon.png',
     hot: 'apps/office/tables/tables_icon.svg'
   };
