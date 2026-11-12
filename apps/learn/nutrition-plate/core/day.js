@@ -1,6 +1,10 @@
 /* NP-1b: a day's meals, tips, and localStorage save/load.
    NP4: personal portions on this device; saved meals store actual grams.
-   NP5: a week of days, week totals, copy, and a Monday start the user can change. */
+   NP5: a week of days, week totals, copy, and a Monday start the user can change.
+   NP7: "Every day" template. Each weekday meal slot that has no food shows Every day's
+   meal for that slot (live, slot by slot). A slot with food is custom and is never
+   overwritten. Editing an inherited slot makes a custom copy (copy-on-write).
+   Copy this day / Copy to Mon–Fri are gone. */
 (function (root, factory) {
   const NP = typeof module === 'object' && module.exports ? require('./plate.js') : root.NP;
   const T = typeof module === 'object' && module.exports ? require('./targets.js') : root.NPTargets;
@@ -13,7 +17,9 @@
   const MEALS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['snack', 'Snacks'], ['dinner', 'Dinner']];
   const mealIds = MEALS.map(m => m[0]);
   const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-  const WORKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  /* (before NP7) const WORKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri']; */
+  /* NP7: the Every day template is selected with this id; it is not a calendar day. */
+  const EVERY = 'every';
   const WEEKDAY_LABELS = {
     mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
     fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
@@ -40,6 +46,7 @@
     return WEEKDAYS.slice(i).concat(WEEKDAYS.slice(0, i));
   }
   function weekdayLabel(id, short) {
+    if (id === EVERY) return 'Every day';
     return (short ? WEEKDAY_SHORT[id] : WEEKDAY_LABELS[id]) || id;
   }
   function cleanMeals(meals) {
@@ -58,7 +65,7 @@
     const weekDay = weekdayFromDate(now);
     return { version: 1, person: { age: 'adult', activity: 'moderate', diet: 'all', sex: 'unspecified' },
       /* meals is the plate editor: one day of the week (same object as week[weekDay]). */
-      meals: week[weekDay], meal: 'breakfast', week, weekDay, weekStart: 'mon',
+      meals: week[weekDay], meal: 'breakfast', week, weekDay, weekStart: 'mon', everyDay: emptyMeals(),
       plates: [], days: [], scores: { guess: 0, plate: 0, swaps: 0 },
       portions: {} };
   }
@@ -93,16 +100,20 @@
     const todayId = weekdayFromDate(now);
     /* Today's unsaved day (pre-NP5 `meals`) migrates into this week on today's weekday.
        If a week is already stored, it is the source of truth and is not wiped. */
+    /* NP7: old saves have no Every day — it starts empty; weekday meals stay custom. */
+    state.everyDay = cleanMeals(raw.everyDay);
     if (hasWeek(raw)) {
       state.week = cleanWeek(raw.week);
-      state.weekDay = WEEKDAYS.includes(raw.weekDay) ? raw.weekDay : todayId;
+      /* (before NP7) state.weekDay = WEEKDAYS.includes(raw.weekDay) ? raw.weekDay : todayId; */
+      state.weekDay = WEEKDAYS.includes(raw.weekDay) || raw.weekDay === EVERY ? raw.weekDay : todayId;
     } else {
       state.week = emptyWeek();
       /* (before NP5) mealIds.forEach(id => { state.meals[id] = cleanMeal(raw.meals && raw.meals[id]); }); */
       state.week[todayId] = cleanMeals(raw.meals);
       state.weekDay = todayId;
     }
-    state.meals = state.week[state.weekDay];
+    /* (before NP7) state.meals = state.week[state.weekDay]; */
+    state.meals = state.weekDay === EVERY ? state.everyDay : state.week[state.weekDay];
     state.plates = Array.isArray(raw.plates) ? raw.plates.map(cleanSavedPlate).filter(Boolean).slice(0, MAX_SAVED) : [];
     state.days = Array.isArray(raw.days) ? raw.days.map(cleanSavedDay).filter(Boolean).slice(0, MAX_SAVED) : [];
     const sc = raw.scores && typeof raw.scores === 'object' ? raw.scores : {};
@@ -120,8 +131,34 @@
   function dayTotals(meals) {
     return NP.sumTotals(mealIds.map(id => NP.totals(meals[id] || [])));
   }
-  function weekTotals(week) {
+  /* (before NP7) function weekTotals(week) {
     const w = cleanWeek(week);
+    return NP.sumTotals(WEEKDAYS.map(id => dayTotals(w[id])));
+  } */
+  /* NP7: a slot inherits Every day's meal when it has no food of its own. */
+  function resolveMeals(dayMeals, everyDay) {
+    const day = cleanMeals(dayMeals), every = cleanMeals(everyDay), out = emptyMeals();
+    mealIds.forEach(id => { out[id] = day[id].length ? day[id] : every[id]; });
+    return out;
+  }
+  function inherits(dayMeals, everyDay, slot) {
+    const day = dayMeals && Array.isArray(dayMeals[slot]) ? dayMeals[slot] : [];
+    const every = everyDay && Array.isArray(everyDay[slot]) ? everyDay[slot] : [];
+    return !day.length && every.length > 0;
+  }
+  /* The meals the plate editor shows for the selected day (Every day shows the template itself). */
+  function shownMeals(state) {
+    if (state.weekDay === EVERY) return cleanMeals(state.meals);
+    return resolveMeals(state.meals, state.everyDay);
+  }
+  function resolvedWeek(week, everyDay) {
+    const w = cleanWeek(week), out = {};
+    WEEKDAYS.forEach(id => { out[id] = resolveMeals(w[id], everyDay); });
+    return out;
+  }
+  /* Seven calendar days only; Every day counts on the days that inherit it, never as an 8th day. */
+  function weekTotals(week, everyDay) {
+    const w = resolvedWeek(week, everyDay);
     return NP.sumTotals(WEEKDAYS.map(id => dayTotals(w[id])));
   }
   function weekTargets(person) {
@@ -131,7 +168,7 @@
     ['kcal', 'prot', 'fat', 'carb', 'fibre', 'sugar', 'fe', 'ca', 'vc'].forEach(k => { out[k] = g[k] * 7; });
     return out;
   }
-  function commitCurrent(state) {
+  /* (before NP7) function commitCurrent(state) {
     const week = cleanWeek(state && state.week);
     const day = WEEKDAYS.includes(state && state.weekDay) ? state.weekDay : weekdayFromDate();
     week[day] = cleanMeals(state && state.meals);
@@ -141,10 +178,35 @@
     if (!WEEKDAYS.includes(id)) throw new Error('Pick a day of the week.');
     const committed = commitCurrent(state);
     return Object.assign({}, state, { week: committed.week, weekDay: id, meals: committed.week[id] });
+  } */
+  function commitCurrent(state) {
+    const week = cleanWeek(state && state.week);
+    let everyDay = cleanMeals(state && state.everyDay);
+    const sel = state && state.weekDay;
+    const day = WEEKDAYS.includes(sel) || sel === EVERY ? sel : weekdayFromDate();
+    if (day === EVERY) everyDay = cleanMeals(state && state.meals);
+    else week[day] = cleanMeals(state && state.meals);
+    return { week, everyDay, weekDay: day, meals: day === EVERY ? everyDay : week[day] };
+  }
+  function selectWeekDay(state, id) {
+    if (!WEEKDAYS.includes(id) && id !== EVERY) throw new Error('Pick a day of the week.');
+    const c = commitCurrent(state);
+    return Object.assign({}, state, { week: c.week, everyDay: c.everyDay, weekDay: id,
+      meals: id === EVERY ? c.everyDay : c.week[id] });
+  }
+  /* Write one meal slot of the selected day. On a weekday showing Every day's meal, the
+     caller passes the edited copy of what was showing, so only this slot becomes custom.
+     An empty list clears the slot, and it inherits Every day again. */
+  function setSlot(state, slot, items) {
+    if (!mealIds.includes(slot)) throw new Error('Pick a meal.');
+    const c = commitCurrent(state);
+    c.meals[slot] = NP.normalize(items);
+    return Object.assign({}, state, { week: c.week, everyDay: c.everyDay, weekDay: c.weekDay, meals: c.meals });
   }
   function setWeekStart(state, start) {
     return Object.assign({}, state, { weekStart: cleanWeekStart(start) });
   }
+  /* (before NP7) Copy this day / Copy to Mon–Fri were replaced by Every day.
   function copyDay(state, fromId, toIds) {
     const from = WEEKDAYS.includes(fromId) ? fromId : null;
     if (!from) throw new Error('Pick a day to copy from.');
@@ -155,7 +217,7 @@
     const source = copy(cleanMeals(week[from]));
     dest.forEach(id => { week[id] = copy(source); });
     return Object.assign({}, state, { week, weekDay: committed.weekDay, meals: week[committed.weekDay] });
-  }
+  } */
   function mergedRows(meals) {
     const map = {};
     mealIds.forEach(id => {
@@ -195,31 +257,47 @@
     const row = { id: uid(), name: text, items: copy(cleanMeal(state.meals[state.meal])) };
     return Object.assign({}, state, { plates: state.plates.concat(row) });
   }
-  function loadPlate(state, id) {
+  /* (before NP7) function loadPlate(state, id) {
     const row = state.plates.find(p => p.id === id); if (!row) throw new Error('That plate was not found.');
     const committed = commitCurrent(state);
     const meals = copy(committed.week[committed.weekDay]);
     meals[state.meal] = copy(row.items);
     committed.week[committed.weekDay] = meals;
     return Object.assign({}, state, { week: committed.week, weekDay: committed.weekDay, meals });
+  } */
+  function loadPlate(state, id) {
+    const row = state.plates.find(p => p.id === id); if (!row) throw new Error('That plate was not found.');
+    return setSlot(state, state.meal, copy(row.items));
   }
   function deletePlate(state, id) { return Object.assign({}, state, { plates: state.plates.filter(p => p.id !== id) }); }
   function saveDay(state, name) {
     if (state.days.length >= MAX_SAVED) throw new Error('Maximum 20 saved days. Delete one first.');
     const text = (name || '').trim().slice(0, 80); if (!text) throw new Error('Give this day a name.');
-    const row = { id: uid(), name: text, person: copy(state.person), meals: copy(cleanMeals(state.meals)) };
+    /* (before NP7) const row = { id: uid(), name: text, person: copy(state.person), meals: copy(cleanMeals(state.meals)) }; */
+    /* NP7: a saved day keeps what the day shows, including meals it takes from Every day. */
+    const row = { id: uid(), name: text, person: copy(state.person), meals: copy(shownMeals(state)) };
     return Object.assign({}, state, { days: state.days.concat(row) });
   }
   function loadDay(state, id) {
     const row = state.days.find(d => d.id === id); if (!row) throw new Error('That day was not found.');
-    const committed = commitCurrent(state);
+    /* (before NP7) const committed = commitCurrent(state);
     committed.week[committed.weekDay] = copy(cleanMeals(row.meals));
     return Object.assign({}, state, { person: copy(row.person), week: committed.week, weekDay: committed.weekDay,
-      meals: committed.week[committed.weekDay] });
+      meals: committed.week[committed.weekDay] }); */
+    const c = commitCurrent(state);
+    const meals = copy(cleanMeals(row.meals));
+    if (c.weekDay === EVERY) c.everyDay = meals; else c.week[c.weekDay] = meals;
+    return Object.assign({}, state, { person: copy(row.person), week: c.week, everyDay: c.everyDay, weekDay: c.weekDay,
+      meals });
   }
   function deleteDay(state, id) { return Object.assign({}, state, { days: state.days.filter(d => d.id !== id) }); }
-  return { KEY, MEALS, MAX_SAVED, WEEKDAYS, WORKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, uid, fresh, restore,
+  /* (before NP7) return { KEY, MEALS, MAX_SAVED, WEEKDAYS, WORKDAYS, WEEKDAY_LABELS, WEEKDAY_SHORT, uid, fresh, restore,
     cleanPerson, cleanMeals, cleanWeek, cleanWeekStart, emptyMeals, emptyWeek, weekdayFromDate, weekOrder,
     weekdayLabel, dayTotals, weekTotals, weekTargets, mealTotals, mergedRows, tips, selectWeekDay, setWeekStart,
-    copyDay, savePlate, loadPlate, deletePlate, saveDay, loadDay, deleteDay, targets: T };
+    copyDay, savePlate, loadPlate, deletePlate, saveDay, loadDay, deleteDay, targets: T }; */
+  return { KEY, MEALS, MAX_SAVED, WEEKDAYS, EVERY, WEEKDAY_LABELS, WEEKDAY_SHORT, uid, fresh, restore,
+    cleanPerson, cleanMeals, cleanWeek, cleanWeekStart, emptyMeals, emptyWeek, weekdayFromDate, weekOrder,
+    weekdayLabel, dayTotals, weekTotals, weekTargets, mealTotals, mergedRows, tips, selectWeekDay, setWeekStart,
+    resolveMeals, resolvedWeek, inherits, shownMeals, setSlot,
+    savePlate, loadPlate, deletePlate, saveDay, loadDay, deleteDay, targets: T };
 });

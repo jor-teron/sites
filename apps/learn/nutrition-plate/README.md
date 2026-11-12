@@ -1,7 +1,8 @@
 <!-- (before NP3) # Nutrition Plate — NP-1a / NP-1b / NP-1c -->
 <!-- (before NP4) # Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 -->
 <!-- (before NP5) # Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4 -->
-# Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4 / NP5
+<!-- (before NP7) # Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4 / NP5 -->
+# Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4 / NP5 / NP7
 
 Learn app for building Indian meal plates and planning a day.
 Entry: `index.html` → `nutrition-plate.html`; standalone or Hub window.
@@ -118,9 +119,10 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
   and one-off grams as in NP4.
 - Week totals are compared with seven times the daily ICMR-NIN style target
   (same age, sex, activity and diet). The selected day's bars and tips stay.
-- Copy this day onto another day, or onto Monday–Friday (Saturday and Sunday
+<!-- (before NP7) - Copy this day onto another day, or onto Monday–Friday (Saturday and Sunday
   are not changed). An in-app dialog asks for confirmation before those days
-  are overwritten.
+  are overwritten. -->
+- NP7: the Copy controls are gone; Every day replaces them (see below).
 - The week starts on Monday by default. The user can change the start day;
   meals stay on their weekday, and the preference is stored on this device.
 - Today's unsaved pre-NP5 day migrates into this week on today's weekday and
@@ -128,6 +130,31 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
   Saved week days store the grams actually used, so changing a portion later
   does not rewrite them.
 - A month planner (NP6) is parked and is not included.
+
+## Every day (NP7)
+
+- The week row is **Every day**, then the seven days in week-start order.
+  Every day always stays first; changing the start day does not move meals.
+- Every day is a live template stored as `everyDay` (breakfast, lunch, snacks,
+  dinner, actual grams like any day). It is not a calendar day.
+- Inheritance is per meal slot: a weekday slot with no food shows Every day's
+  meal for that slot (marked “From Every day”). A slot with food is the day's
+  own and is never overwritten when Every day changes.
+- Copy-on-write: + / −, typed grams, adding a food or loading a plate on an
+  inherited slot saves a copy of what was showing plus the edit as that day's
+  own meal. Every day and the other days are unchanged.
+- Emptying a day's slot makes it follow Every day again. There is no separate
+  "keep this meal empty" choice in this release.
+- Week totals add the seven resolved days (own meal or Every day). Every day is
+  never counted as an eighth day. The selected day's bars and tips use what the
+  day shows; with Every day selected they show the template itself.
+- Saved days store what the day shows, including meals taken from Every day.
+- Old NP5 saves load with Every day empty; existing day meals stay as they are
+  and nothing is moved from Monday into Every day.
+- Copy this day and Copy to Mon–Fri were removed.
+- In Desktop the in-page top row now hides when the Hub title bar takes the
+  tabs (`[hidden]` rule in `ui/nutrition.css`); standalone pages and Phone keep
+  it. The “‹ Learn” back-to-category button was removed.
 
 `learn.nutrition-plate.theme`: absent = Auto (System), following the Hub
 through the existing read-only HubTheme helper. The app opens Windowed with
@@ -141,7 +168,7 @@ dependencies. Offline use needs a successful first visit over HTTPS or localhost
 Run:
 
 ```
-node --test apps/learn/nutrition-plate/tests/model.test.cjs apps/learn/nutrition-plate/tests/np23.test.cjs apps/learn/nutrition-plate/tests/np4.test.cjs apps/learn/nutrition-plate/tests/np5.test.cjs
+node --test apps/learn/nutrition-plate/tests/model.test.cjs apps/learn/nutrition-plate/tests/np23.test.cjs apps/learn/nutrition-plate/tests/np4.test.cjs apps/learn/nutrition-plate/tests/np5.test.cjs apps/learn/nutrition-plate/tests/np7.test.cjs
 python3 -m http.server 8826 --bind 127.0.0.1
 NODE_PATH=/workspace/arw-test-deps/node_modules node apps/learn/nutrition-plate/tests/browser.cjs
 ```

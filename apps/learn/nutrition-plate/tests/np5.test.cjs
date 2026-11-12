@@ -1,4 +1,5 @@
 /* NP5: week planner — seven days, week totals, copy, week start, migration.
+   NP7: the copy test is commented out (before NP7); Every day tests live in np7.test.cjs.
    Pure model tests (no browser). */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -55,40 +56,41 @@ test('week totals equal the sum of the days and are compared to 7× the daily ta
   assert.ok(week.kcal < target.kcal);
 });
 
-test('copy a day onto another day; optional copy across weekdays; destination changes only after the action', () => {
-  let state = Day.fresh(THU);
-  state = Day.selectWeekDay(state, 'mon');
-  const portions = NP.setPortion({}, 'roti', 50);
-  state.meals.breakfast = NP.add([], 'roti', 2, portions);
-  state.meals.lunch = NP.add([], 'rice', 1);
-  const monG = state.meals.breakfast[0].g;
-  assert.equal(monG, 100);
-  /* Before the action, Tuesday is still empty. */
-  assert.deepEqual(state.week.tue.breakfast, []);
-  assert.deepEqual(state.week.fri.breakfast, []);
-  state = Day.copyDay(state, 'mon', 'tue');
-  assert.equal(state.week.tue.breakfast[0].id, 'roti');
-  assert.equal(state.week.tue.breakfast[0].g, 100);
-  assert.equal(state.week.tue.lunch[0].id, 'rice');
-  assert.deepEqual(state.week.wed.breakfast, []);
-  assert.deepEqual(state.week.fri.breakfast, []);
-  /* Separate copy: later edits to Monday do not change the already-copied Tuesday grams. */
-  state = Day.selectWeekDay(state, 'mon');
-  state.meals.breakfast = NP.setItemGrams(state.meals.breakfast, 'roti', 75);
-  assert.equal(state.week.mon.breakfast[0].g, 75);
-  assert.equal(state.week.tue.breakfast[0].g, 100);
-  const beforeFri = JSON.stringify(state.week.sat);
-  state = Day.copyDay(state, 'tue', Day.WORKDAYS);
-  Day.WORKDAYS.forEach(id => {
-    assert.equal(state.week[id].breakfast[0].g, 100, id);
-    assert.equal(state.week[id].lunch[0].id, 'rice', id);
-  });
-  /* Saturday and Sunday are not weekdays, so they stay as they were. */
-  assert.equal(JSON.stringify(state.week.sat), beforeFri);
-  assert.deepEqual(state.week.sun.breakfast, []);
-  assert.throws(() => Day.copyDay(state, 'mon', 'nope'), /copy to/i);
-  assert.throws(() => Day.copyDay(state, 'nope', 'tue'), /copy from/i);
-});
+// (before NP7) Copy this day / Copy to Mon–Fri were replaced by Every day — see tests/np7.test.cjs.
+// test('copy a day onto another day; optional copy across weekdays; destination changes only after the action', () => {
+//   let state = Day.fresh(THU);
+//   state = Day.selectWeekDay(state, 'mon');
+//   const portions = NP.setPortion({}, 'roti', 50);
+//   state.meals.breakfast = NP.add([], 'roti', 2, portions);
+//   state.meals.lunch = NP.add([], 'rice', 1);
+//   const monG = state.meals.breakfast[0].g;
+//   assert.equal(monG, 100);
+//   /* Before the action, Tuesday is still empty. */
+//   assert.deepEqual(state.week.tue.breakfast, []);
+//   assert.deepEqual(state.week.fri.breakfast, []);
+//   state = Day.copyDay(state, 'mon', 'tue');
+//   assert.equal(state.week.tue.breakfast[0].id, 'roti');
+//   assert.equal(state.week.tue.breakfast[0].g, 100);
+//   assert.equal(state.week.tue.lunch[0].id, 'rice');
+//   assert.deepEqual(state.week.wed.breakfast, []);
+//   assert.deepEqual(state.week.fri.breakfast, []);
+//   /* Separate copy: later edits to Monday do not change the already-copied Tuesday grams. */
+//   state = Day.selectWeekDay(state, 'mon');
+//   state.meals.breakfast = NP.setItemGrams(state.meals.breakfast, 'roti', 75);
+//   assert.equal(state.week.mon.breakfast[0].g, 75);
+//   assert.equal(state.week.tue.breakfast[0].g, 100);
+//   const beforeFri = JSON.stringify(state.week.sat);
+//   state = Day.copyDay(state, 'tue', Day.WORKDAYS);
+//   Day.WORKDAYS.forEach(id => {
+//     assert.equal(state.week[id].breakfast[0].g, 100, id);
+//     assert.equal(state.week[id].lunch[0].id, 'rice', id);
+//   });
+//   /* Saturday and Sunday are not weekdays, so they stay as they were. */
+//   assert.equal(JSON.stringify(state.week.sat), beforeFri);
+//   assert.deepEqual(state.week.sun.breakfast, []);
+//   assert.throws(() => Day.copyDay(state, 'mon', 'nope'), /copy to/i);
+//   assert.throws(() => Day.copyDay(state, 'nope', 'tue'), /copy from/i);
+// });
 
 test('week start defaults to Monday and can be changed; the seven days follow that start', () => {
   const state = Day.fresh(THU);
