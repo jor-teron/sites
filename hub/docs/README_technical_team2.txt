@@ -2915,6 +2915,76 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   month-wide charts.
 - 1.121 is NP4, so this note is numbered 1.122.
 
+### 1.123 NP7 Nutrition Plate Every day, drop Copy, hide header and Learn back
+
+- Goal: Jor asked for NP7 on 12 Nov 2026 ("Go" at 6:04 PM IST, then "push
+  it after finishing"). Nutrition Plate (`apps/learn/nutrition-plate/`,
+  Learn -> Health). Title is Nutrition Plate NP7. Branch
+  `apps/np7-every-day` from origin/main cc258cd9 (NP2-NP5 already merged).
+  NP6 (month planner) is still parked and is not in this release.
+- Every day: the week row is now [Every day] then the seven days in the
+  week-start order (Monday by default; Every day always stays first; meals
+  stay on their weekday when the start changes). Every day is a live
+  template stored as `state.everyDay` (same meals shape as a weekday,
+  actual grams) under the existing key `learn.nutrition-plate.v1`. It is
+  selected as `weekDay: 'every'` and is not a calendar day.
+- Inheritance is per meal slot (breakfast, lunch, snacks, dinner). A
+  weekday slot with no food shows Every day's meal for that slot, marked
+  "From Every day". A slot with food is that day's own and is never
+  overwritten when Every day changes. Empty means no food items; emptying
+  a custom slot makes it follow Every day again (no separate "keep empty"
+  override in this release).
+- Copy-on-write: +, -, typed grams, adding a food, or loading a saved plate
+  on an inherited slot stores a copy of what was showing plus the edit as
+  that day's own meal (`NPDay.setSlot`). Every day and the other days are
+  not changed. With Every day selected, the plate editor edits the
+  template with the same NP4 portions and one-off grams.
+- Week totals add the seven resolved days (own slot or Every day). Every
+  day is never counted as an eighth day. Selected day bars, meal tabs, and
+  tips use what that day shows; with Every day selected they show the
+  template itself. Saved days store what the day shows (including meals
+  taken from Every day); loading a day writes the current day (or Every day
+  when it is selected) and does not touch the template otherwise.
+- Copy removed: "Copy this day to" + Copy day and "Copy to Mon-Fri" are gone
+  from the Plate view, How to use, README, and tests. `copyDay` and
+  `WORKDAYS` in `core/day.js` are commented `(before NP7)` and no longer
+  exported. The NP5 copy test is commented `(before NP7)`.
+- Migration: NP5 saves have no `everyDay`; it starts empty. Existing
+  weekday meals stay as custom; nothing is moved from Monday into Every day.
+  Pre-NP5 single-day saves still migrate to today's weekday. Named plates
+  and days (20 each), personal portions, week start, and game scores are
+  kept.
+- Duplicate top row fixed: the app does not load Learn kit
+  `common/ui/learn.css`, so `.lrn-head{display:flex}` beat the `hidden`
+  attribute set by `LearnHubBar` after the Hub title-bar hello. Added
+  `[hidden]{display:none!important}` to `ui/nutrition.css` (same idea as
+  Camping Checklist). Desktop now shows the tabs only in the Hub title bar;
+  standalone pages and Phone never get the hello and keep the in-page row.
+- "‹ Learn" back-to-category (`#back`, `../learn.html`) removed from the
+  header, so it is no longer sent to the title bar either. Settings stays.
+  Other Learn and Games apps that still have a category Back (Camping
+  Checklist, Hindi Letters, History Timeline, games) were not changed.
+- UI: title and footer NP7 (`nutrition-plate.html`, `index.html`);
+  `offline.js` cache `nutrition-plate-np5` -> `nutrition-plate-np7` (not a
+  `?v=`). Eight week buttons wrap: Every day takes a full row on narrow
+  screens and the seven days sit four to a row on phones. How to use and
+  README describe Every day and that Copy is gone. Replaced lines are
+  commented `(before NP7)`. `learn-apps.csv` and hub_catalog.js unchanged.
+- Tests: `node --check` on edited JS; `node --test tests/model.test.cjs
+  tests/np23.test.cjs tests/np4.test.cjs tests/np5.test.cjs
+  tests/np7.test.cjs`. New np7 file covers Every day filling empty days and
+  slots, custom slots kept when Every day changes, slot independence (Sat
+  dinner custom, Sat breakfast inherits), copy-on-write, clearing a custom
+  slot inheriting again, week totals over 7 resolved days (not 8),
+  migration from NP5 and pre-NP5 saves, everyDay surviving save/restore
+  and a week-start change, saved days and plates. Static-serve curl smoke
+  on a unique port. `tests/browser.cjs` (Puppeteer) not run and not
+  changed.
+- Limits: figures stay rounded guides, not medical advice. Device only. No
+  change to Hub files, root `shared/`, catalog, or build numbers. No new
+  libraries or CDN. Games keep default portions and the NP-1 food lists.
+- 1.122 is NP5, so this note is numbered 1.123.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
