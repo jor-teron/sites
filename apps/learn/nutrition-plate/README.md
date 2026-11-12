@@ -1,6 +1,7 @@
 <!-- (before NP3) # Nutrition Plate — NP-1a / NP-1b / NP-1c -->
 <!-- (before NP4) # Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 -->
-# Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4
+<!-- (before NP5) # Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4 -->
+# Nutrition Plate — NP-1a / NP-1b / NP-1c / NP2 / NP3 / NP4 / NP5
 
 Learn app for building Indian meal plates and planning a day.
 Entry: `index.html` → `nutrition-plate.html`; standalone or Hub window.
@@ -33,9 +34,10 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
   iron). Sugar is a keep-below amount (~10% of energy).
 - Progress bars compare the whole day with that target. Short tips include
   “add a protein”, “too much sugar” and “add vegetables”.
-- `learn.nutrition-plate.v1` stores the current day, person settings, personal
-  portion sizes, and up to 20 named plates and 20 named days on this device.
-  Saved meals store the grams actually used.
+- `learn.nutrition-plate.v1` stores the current week, the selected day, person
+  settings, personal portion sizes, the week-start preference, and up to 20
+  named plates and 20 named days on this device. Saved meals store the grams
+  actually used.
 - This is an educational guide, not medical advice. Needs vary by sex, body size,
   health and life stage.
 
@@ -89,7 +91,8 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
   pork), masor tenga (fish curry with less fat). Cooked sabzis and saags include a
   typical teaspoon or so of oil, as the NP-1a sabzis do.
 <!-- (before NP4) - Not in NP2 / NP3: a Portions page, typing grams, and week or month plans (NP4–NP6). -->
-- Week and month plans are still later work (NP5–NP6).
+<!-- (before NP5) - Week and month plans are still later work (NP5–NP6). -->
+- A month planner (NP6) is parked and is not in this release.
 
 ## Portions and typed grams (NP4)
 
@@ -108,6 +111,24 @@ No network content, accounts, analytics, external fonts or runtime dependencies.
 - Games keep using the built-in default portions and their original food lists.
   Figures stay approximate guides, not medical advice.
 
+## Week planner (NP5)
+
+- Seven days, each with breakfast, lunch, snacks and dinner. The plate editor
+  is the view for one day of that week: pick a day, then add foods, portions
+  and one-off grams as in NP4.
+- Week totals are compared with seven times the daily ICMR-NIN style target
+  (same age, sex, activity and diet). The selected day's bars and tips stay.
+- Copy this day onto another day, or onto Monday–Friday (Saturday and Sunday
+  are not changed). An in-app dialog asks for confirmation before those days
+  are overwritten.
+- The week starts on Monday by default. The user can change the start day;
+  meals stay on their weekday, and the preference is stored on this device.
+- Today's unsaved pre-NP5 day migrates into this week on today's weekday and
+  is not lost. Named plate and day snapshots and personal portions are kept.
+  Saved week days store the grams actually used, so changing a portion later
+  does not rewrite them.
+- A month planner (NP6) is parked and is not included.
+
 `learn.nutrition-plate.theme`: absent = Auto (System), following the Hub
 through the existing read-only HubTheme helper. The app opens Windowed with
 the Hub default.
@@ -120,7 +141,7 @@ dependencies. Offline use needs a successful first visit over HTTPS or localhost
 Run:
 
 ```
-node --test apps/learn/nutrition-plate/tests/model.test.cjs apps/learn/nutrition-plate/tests/np23.test.cjs apps/learn/nutrition-plate/tests/np4.test.cjs
+node --test apps/learn/nutrition-plate/tests/model.test.cjs apps/learn/nutrition-plate/tests/np23.test.cjs apps/learn/nutrition-plate/tests/np4.test.cjs apps/learn/nutrition-plate/tests/np5.test.cjs
 python3 -m http.server 8826 --bind 127.0.0.1
 NODE_PATH=/workspace/arw-test-deps/node_modules node apps/learn/nutrition-plate/tests/browser.cjs
 ```

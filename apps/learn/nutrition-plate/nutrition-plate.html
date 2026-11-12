@@ -6,7 +6,8 @@
 <meta name="theme-color" content="#3d6b3a">
 <!-- (before NP3) <title>Nutrition Plate NP-1c</title> -->
 <!-- (before NP4) <title>Nutrition Plate NP3</title> -->
-<title>Nutrition Plate NP4</title>
+<!-- (before NP5) <title>Nutrition Plate NP4</title> -->
+<title>Nutrition Plate NP5</title>
 <link rel="icon" href="nutrition-plate_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.nutrition-plate.theme"></script>
 <link rel="stylesheet" href="ui/nutrition.css">
@@ -34,12 +35,14 @@
   <div class="intro">
     <div>
       <p class="eyebrow">LEARN / HEALTH</p>
-      <h2>Build a plate. See what is in it.</h2>
-      <p>Everyday Indian foods, with approximate nutrients and a balanced-plate guide.</p>
+      <h2>Build a plate. Plan a week.</h2>
+      <p>Everyday Indian foods, with approximate nutrients, a balanced-plate guide, and a week planner.</p>
     </div>
   </div>
-  <section class="person" aria-label="Who this day is for">
-    <h2>Who this day is for</h2>
+  <!-- (before NP5) <section class="person" aria-label="Who this day is for">
+    <h2>Who this day is for</h2> -->
+  <section class="person" aria-label="Who this week is for">
+    <h2>Who this week is for</h2>
     <div class="filters person-fields">
       <label>Age group<select id="age"></select></label>
       <label>Sex<select id="sex"></select></label>
@@ -47,6 +50,20 @@
       <label>Diet<select id="diet"></select></label>
     </div>
     <p id="target-note" class="muted"></p>
+  </section>
+  <section class="week panel" aria-label="Week planner">
+    <div class="week-head">
+      <h2>This week</h2>
+      <label class="week-start">Week starts on<select id="week-start"></select></label>
+    </div>
+    <div id="week-days" class="meals week-days" role="tablist" aria-label="Days of the week"></div>
+    <div class="toolbar week-copy">
+      <label>Copy this day to<select id="copy-day-to"></select></label>
+      <button type="button" id="copy-day">Copy day</button>
+      <button type="button" id="copy-weekdays">Copy to Mon–Fri</button>
+    </div>
+    <p class="muted" id="week-copy-hint">Copy replaces the meals on the days you choose. You will be asked to confirm first. Saturday and Sunday are not changed by Copy to Mon–Fri.</p>
+    <section id="week-progress" aria-label="Week progress"></section>
   </section>
   <div id="meals" class="meals" role="tablist" aria-label="Meals of the day"></div>
   <section id="progress" aria-label="Day progress"></section>
@@ -113,12 +130,14 @@
       <!-- (before NP4) <li><strong>Portions</strong> are everyday measures: 1 roti, 1 katori, 1 cup or 1 piece. Nutrient figures are rounded guides from Indian food tables (IFCT 2017), not a laboratory test.</li> -->
       <li><strong>Portions (NP4).</strong> Defaults are everyday measures: 1 roti, 1 katori, 1 cup or 1 piece. Open the Portions tab to set your usual size in grams; leave a box blank to keep the default. Reset one food or Reset all to go back to the defaults. Nutrient figures scale from per-gram values in Indian food tables (IFCT 2017) and stay rounded guides, not a laboratory test.</li>
       <li><strong>The balanced-plate guide</strong> uses food weight, so vegetables stay visible: about half vegetables and fruit, one quarter grains, and one quarter protein (dal, sprouts, eggs, fish or meat), with milk or curd on the side. Oils, snacks and sweets should stay small.</li>
-      <li><strong>Plan a day.</strong> Switch between breakfast, lunch, snacks and dinner. Set age, sex, activity and diet for a rough daily target. Bars and short tips compare the whole day with that target.</li>
+      <!-- (before NP5) <li><strong>Plan a day.</strong> Switch between breakfast, lunch, snacks and dinner. Set age, sex, activity and diet for a rough daily target. Bars and short tips compare the whole day with that target.</li> -->
+      <li><strong>Plan a week (NP5).</strong> The plate editor is one day in a week of breakfast, lunch, snacks and dinner. Pick a day to edit it. Week totals are compared with seven times the daily target. Copy this day onto another day, or onto Monday–Friday; you will be asked to confirm before those days are replaced. The week starts on Monday unless you change the start day; that choice stays on this device. A month planner is not in this release.</li>
       <li><strong>Sex and targets.</strong> Targets follow ICMR-NIN style figures and stay approximate. Iron is higher for most females from the pre-teen years to adulthood. Prefer not to say uses the mid-point of the female and male figures. Older adults use the same iron figure for both.</li>
       <!-- (before NP4) <li><strong>Games.</strong> Guess the calories of a food, fix an unbalanced plate by adding and removing foods, or pick a healthier swap. Best scores stay on this device.</li> -->
       <li><strong>Games.</strong> Guess the calories of a food, fix an unbalanced plate by adding and removing foods, or pick a healthier swap. Best scores stay on this device. Games always use the default household portions, not the sizes you set on the Portions tab.</li>
       <!-- (before NP4) <li><strong>Save.</strong> Named plates and days are stored in this browser only.</li> -->
-      <li><strong>Save.</strong> Named plates and days are stored in this browser only. Each save stores the grams actually used, so changing a portion later does not rewrite old days.</li>
+      <!-- (before NP5) <li><strong>Save.</strong> Named plates and days are stored in this browser only. Each save stores the grams actually used, so changing a portion later does not rewrite old days.</li> -->
+      <li><strong>Save.</strong> The current week, named plates and named days are stored in this browser only. Each save stores the grams actually used, so changing a portion later does not rewrite old days or other days in the week.</li>
       <li><strong>More foods (NP2 and NP3).</strong> A <strong>Leafy greens</strong> group (lai xaak, khutora, sojina paat, kolmou, morapat, kochu xaak, dhekia and more) and a <strong>Condiments</strong> group (ginger, garlic, chillies, spices, nemu, tamarind, outenga, pickle, kharisa and mustard oil). Vegetables now include tomato, onion, carrot, gourds such as potol and komora, tubers such as kochu and ol, and garden foods such as koldil, posola and sojina. Grains add Basmati, Joha, bora saul and red rice. Meat and fish add pork, dry fish (hukoti, namsing / sidol), plain broiler and masor tenga. Search works with local names. Assam foods with no exact table row use the closest IFCT 2017 food, so they stay approximate. Leafy greens count as vegetables on the plate; condiments sit on the side.</li>
     </ol>
     <p class="notice">This is an educational guide, not medical advice. Needs vary by sex, body size, health and life stage — including pregnancy and illness. Speak to a qualified professional for personal advice.</p>
@@ -128,7 +147,8 @@
 </main>
 <!-- (before NP3) <footer>NP-1c · Educational guide, not medical advice · <span>Preparing offline copy…</span></footer> -->
 <!-- (before NP4) <footer>NP3 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer> -->
-<footer>NP4 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer>
+<!-- (before NP5) <footer>NP4 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer> -->
+<footer>NP5 · Educational guide, not medical advice · <span id="offline">Preparing offline copy…</span></footer>
 </div>
 <dialog id="settings-dialog">
 <h2>Settings</h2>
@@ -137,7 +157,7 @@
   <option value="light">Light</option>
   <option value="dark">Dark</option>
 </select></label>
-<p>Auto follows your Hub theme. Saved plates and days stay on this device. No account is needed.</p>
+<p>Auto follows your Hub theme. The current week, saved plates and days, and portion sizes stay on this device. No account is needed.</p>
 <p class="muted">Educational guide, not medical advice.</p>
 <button data-close>Done</button>
 </dialog>

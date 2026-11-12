@@ -111,3 +111,13 @@ dialog::backdrop{background:#0009}dialog label{margin:12px 0}
 .served .item-grams input{width:5.5rem;background:#fff;color:#243226;border-color:#d7cbb8}
 #portions-list{max-width:52rem}
 @media(min-width:801px){#portions-list{max-height:calc(100dvh - 280px);overflow:auto}}
+
+/* NP5: week planner on the plate view. */
+.week-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.week-head h2{margin:0}
+.week-start{flex:0 1 16rem}
+.week-copy{align-items:end}
+.week-copy label{min-width:12rem}
+.week .bars{margin-top:8px}
+.week-days button{flex:1 1 6.5rem}
+#week-progress h2{margin-top:8px}

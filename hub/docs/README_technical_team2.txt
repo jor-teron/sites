@@ -2854,6 +2854,67 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   build numbers. No new libraries or CDN.
 - 1.120 is NP2+NP3, so this note is numbered 1.121.
 
+### 1.122 NP5 Nutrition Plate week planner
+
+- Goal: Jor asked for NP5 (local commit) on top of NP4 (`apps/np4-portions`
+  526e6b16). Nutrition Plate (`apps/learn/nutrition-plate/`, Learn -> Health)
+  gained a week planner. Title is Nutrition Plate NP5. Branch
+  `apps/np5-week-planner`, based on the NP4 commit (not rebased onto a later
+  origin/main). Team 2 id NP1 stays unused. Date 12 Nov 2026.
+- Week planner (on the Plate view; not a new Hub app): seven days × four
+  meals (breakfast, lunch, snacks, dinner). The existing plate editor is
+  how you edit one day of that week (pick a day, then use the plate as now,
+  including NP4 personal portions and one-off grams). Week totals are
+  compared with seven times the daily ICMR-NIN style target (same age, sex,
+  activity and diet already in the app). Day bars and tips for the selected
+  day stay.
+- Copy this day onto another chosen day, or copy it across weekdays
+  (Monday–Friday). Saturday and Sunday are not changed by the weekday copy.
+  An in-app confirm dialog runs before those destination days are
+  overwritten (no window.alert / confirm / prompt).
+- Week starts on Monday by default. The user can change the start day; the
+  seven day buttons follow that start. Meals stay attached to their weekday
+  (changing the start only reorders the row). The preference is stored on
+  this device as `state.weekStart` under the existing key
+  `learn.nutrition-plate.v1`.
+- Migration: a pre-NP5 unsaved current day (`state.meals`) becomes today's
+  weekday in the new week and is not lost. If a week is already stored, it
+  is kept. Named plate and day snapshots (20 each), personal portions, and
+  game scores are not wiped. Old qty-only meals still migrate to qty × the
+  default household grams as in NP4. Saved week days store the grams
+  actually used, so changing a personal portion later does not rewrite
+  them.
+- Games keep using built-in default portions and their original NP-1 food
+  lists; they ignore user Portions settings. Auto / Light / Dark, veg /
+  egg filters, search, and the Portions tab stay. The 217-food library is
+  unchanged.
+- UI: title and footer NP5 (`nutrition-plate.html`, `index.html`); How to
+  use covers the week, copy, week start, and that a month planner is not
+  in this release. `offline.js` cache name `nutrition-plate-np4` ->
+  `nutrition-plate-np5` so the cache-first shell picks up the new JS (not
+  a `?v=`). `learn-apps.csv` description mentions planning a week (no
+  extra commas; hub_catalog.js not regenerated). README has an NP5 section.
+  Replaced lines are commented `(before NP5)`.
+- Tests: `node --check` on all touched app JS and test files; `node --test
+  tests/model.test.cjs tests/np23.test.cjs tests/np4.test.cjs
+  tests/np5.test.cjs` (existing files still pass; new file covers 7 days ×
+  4 meals, week totals = sum of days and 7× the daily target, copy one day
+  and copy to Mon–Fri with destinations unchanged until the action, Monday
+  default start and a changeable start that reorders the seven days, the
+  plate editor reading and writing one week day including NP4 grams, the
+  unsaved day migrating into the week, named snapshots / portions /
+  qty-only saves still loading, later portion changes not rewriting saved
+  week-day grams, and games still on defaults). Static-serve curl smoke on
+  a unique port for nutrition-plate.html, index.html, and the JS that
+  changed. `tests/browser.cjs` (Puppeteer) not run and not changed.
+- Limits: figures are rounded guides, not a lab test or medical advice.
+  Still on this device only. No shopping list, no change to Nutrition
+  Calculator, no month calendar or NP6 features (NP6 is parked as of
+  12 Nov 2026 and is not in this release). No change to Hub files, root
+  `shared/`, catalog, or build numbers. No new libraries or CDN. No heavy
+  month-wide charts.
+- 1.121 is NP4, so this note is numbered 1.122.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

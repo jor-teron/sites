@@ -1,5 +1,6 @@
 /* NP-1c: plate builder, day planner, games, How to use. User text uses textContent.
-   NP4: Portions tab, personal serving sizes, and typed grams on a plate item. */
+   NP4: Portions tab, personal serving sizes, and typed grams on a plate item.
+   NP5: week planner — seven days, week totals, copy, and a Monday start the user can change. */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
@@ -12,6 +13,11 @@
   catch (_) { message = 'Saved data could not be read. A new day was started.'; }
   if (!state.scores) state.scores = { guess: 0, plate: 0, swaps: 0 };
   if (!state.portions) state.portions = {};
+  if (!state.week || !state.weekDay) {
+    const recovered = NPDay.restore(JSON.stringify(state));
+    state.week = recovered.week; state.weekDay = recovered.weekDay; state.meals = recovered.meals;
+    state.weekStart = recovered.weekStart;
+  }
   const plate = () => state.meals[state.meal];
   function status(text) { message = text || message; $('status').textContent = message; }
   function save() {
@@ -27,6 +33,13 @@
   fillSelect('sex', NPTargets.sexes, state.person.sex);
   fillSelect('activity', NPTargets.activities, state.person.activity);
   fillSelect('diet', NPTargets.diets, state.person.diet);
+  fillSelect('week-start', NPDay.WEEKDAYS.map(id => ({ id, label: NPDay.weekdayLabel(id) })), state.weekStart || 'mon');
+  const fillCopyTo = () => {
+    const rows = NPDay.weekOrder(state.weekStart).filter(id => id !== state.weekDay)
+      .map(id => ({ id, label: NPDay.weekdayLabel(id) }));
+    fillSelect('copy-day-to', rows, rows[0] && rows[0].id);
+  };
+  fillCopyTo();
 
   function foodBtn(food, compact) {
     const btn = el('button', null, 'food'); btn.type = 'button'; btn.draggable = true; btn.dataset.id = food.id;
@@ -92,7 +105,8 @@
   }
   function renderPlate() {
     const box = $('plate'); box.replaceChildren();
-    $('plate-title').textContent = NPDay.MEALS.find(m => m[0] === state.meal)[1];
+    /* (before NP5) $('plate-title').textContent = NPDay.MEALS.find(m => m[0] === state.meal)[1]; */
+    $('plate-title').textContent = NPDay.weekdayLabel(state.weekDay) + ' · ' + NPDay.MEALS.find(m => m[0] === state.meal)[1];
     if (!plate().length) box.append(el('p', 'This meal is empty. Tap a food to add it.', 'empty'));
     plate().forEach(row => {
       const food = NP.food(row.id), card = el('div', null, 'served');
@@ -161,7 +175,8 @@
   function progress() {
     const t = NPDay.dayTotals(state.meals), g = NPTargets.targets(state.person.age, state.person.activity, state.person.sex);
     const box = $('progress'); box.replaceChildren();
-    box.append(el('h2', 'Today against a rough daily target'));
+    /* (before NP5) box.append(el('h2', 'Today against a rough daily target')); */
+    box.append(el('h2', 'This day against a rough daily target'));
     const mid = state.person.sex === 'unspecified' ? ' Mid-point used when sex is not given.' : '';
     $('target-note').textContent = 'Rough target: about ' + g.kcal + ' kcal, ' + g.prot + ' g protein, ' + g.fe + ' mg iron, under ' + g.sugar + ' g sugar. Approximate ICMR-NIN style figures.' + mid + ' Needs vary by body size, health and life stage.';
     const grid = el('div', null, 'bars');
@@ -451,7 +466,51 @@
     else renderFix(play);
   }
 
-  function render() { meals(); renderPlate(); mealTotals(); balance(); progress(); saved(); library(); if (view === 'portions') renderPortions(); }
+  function nutrientRows(t, g) {
+    return [
+      ['kcal', 'Energy (kcal)', t.kcal, g.kcal, false],
+      ['prot', 'Protein (g)', t.prot, g.prot, false],
+      ['carb', 'Carbohydrate (g)', t.carb, g.carb, false],
+      ['fat', 'Fat (g)', t.fat, g.fat, false],
+      ['fibre', 'Fibre (g)', t.fibre, g.fibre, false],
+      ['sugar', 'Sugar (g, keep below)', t.sugar, g.sugar, true],
+      ['fe', 'Iron (mg)', t.fe, g.fe, false],
+      ['ca', 'Calcium (mg)', t.ca, g.ca, false],
+      ['vc', 'Vitamin C (mg)', t.vc, g.vc, false]
+    ];
+  }
+  function fillBars(grid, t, g) {
+    nutrientRows(t, g).forEach(([, label, value, target, cap]) => {
+      const ratio = target ? value / target : 0, over = cap ? value > target : ratio > 1.05;
+      const row = el('div', null, 'prog' + (over ? ' over' : ''));
+      row.append(el('span', label), el('strong', fmt(value) + ' / ' + target));
+      const bar = el('div', null, 'bar'), fill = el('i');
+      fill.style.width = Math.min(100, Math.max(0, ratio * 100)) + '%';
+      bar.append(fill); row.append(bar); grid.append(row);
+    });
+  }
+  function renderWeek() {
+    const box = $('week-days'); box.replaceChildren();
+    NPDay.weekOrder(state.weekStart).forEach(id => {
+      const t = NPDay.dayTotals(state.week[id]);
+      const btn = el('button', NPDay.weekdayLabel(id, true) + (t.portions ? ' · ' + t.kcal + ' kcal' : ''));
+      btn.type = 'button'; btn.dataset.day = id; btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-label', NPDay.weekdayLabel(id) + (t.portions ? ', ' + t.kcal + ' kcal' : ''));
+      btn.setAttribute('aria-selected', state.weekDay === id ? 'true' : 'false');
+      if (state.weekDay === id) btn.setAttribute('aria-pressed', 'true');
+      btn.onclick = () => { state = NPDay.selectWeekDay(state, id); save(); render(); };
+      box.append(btn);
+    });
+    $('week-start').value = state.weekStart || 'mon';
+    fillCopyTo();
+    const t = NPDay.weekTotals(state.week), g = NPDay.weekTargets(state.person);
+    const prog = $('week-progress'); prog.replaceChildren();
+    prog.append(el('h2', 'This week against seven times the daily target'));
+    const grid = el('div', null, 'bars');
+    fillBars(grid, t, g);
+    prog.append(grid);
+  }
+  function render() { renderWeek(); meals(); renderPlate(); mealTotals(); balance(); progress(); saved(); library(); if (view === 'portions') renderPortions(); }
   const drop = $('plate');
   drop.addEventListener('dragover', ev => { ev.preventDefault(); drop.classList.add('over'); ev.dataTransfer.dropEffect = 'copy'; });
   drop.addEventListener('dragleave', () => drop.classList.remove('over'));
@@ -461,6 +520,26 @@
     state.person = NPDay.cleanPerson({ age: $('age').value, sex: $('sex').value, activity: $('activity').value, diet: $('diet').value });
     save(); render();
   }));
+  $('week-start').addEventListener('change', () => {
+    state = NPDay.setWeekStart(state, $('week-start').value);
+    save(); render();
+  });
+  $('copy-day').onclick = () => {
+    const to = $('copy-day-to').value;
+    if (!to || to === state.weekDay) { showNotice('Copy this day', 'Pick a different day to copy to.'); return; }
+    const fromName = NPDay.weekdayLabel(state.weekDay), toName = NPDay.weekdayLabel(to);
+    askConfirm('Copy this day?',
+      'This replaces ' + toName + ' with ' + fromName + "'s meals, including the grams actually used. You can still edit either day afterwards.",
+      'Copy day',
+      () => { state = NPDay.copyDay(state, state.weekDay, to); save(); render(); status('Copied ' + fromName + ' to ' + toName + '.'); });
+  };
+  $('copy-weekdays').onclick = () => {
+    const fromName = NPDay.weekdayLabel(state.weekDay);
+    askConfirm('Copy to Monday–Friday?',
+      'This replaces Monday, Tuesday, Wednesday, Thursday and Friday with ' + fromName + "'s meals, including the grams actually used. Saturday and Sunday are not changed.",
+      'Copy to Mon–Fri',
+      () => { state = NPDay.copyDay(state, state.weekDay, NPDay.WORKDAYS); save(); render(); status('Copied ' + fromName + ' to Monday–Friday.'); });
+  };
   compactMql.addEventListener('change', library);
   ['plate', 'portions', 'games', 'help'].forEach(name => { $('mode-' + name).onclick = () => showView(name); });
   $('portion-search').addEventListener('input', renderPortions);
