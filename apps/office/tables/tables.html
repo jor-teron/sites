@@ -2,15 +2,23 @@
 <!-- TB1 Tables: a simple database that works like a spreadsheet. Logic: tables_model.js, tables.js.
      TB2 adds a card view, a record panel, and Link columns. Same files, no cache buster.
      TB4: grid look matches Spreadsheet. Sheet tabs sit in the footer. No cache buster.
-     HOT1: native .hot files. No cache buster. -->
+     HOT1: native .hot files. No cache buster.
+     TB5: Office ribbon (File, Home, Settings gear), Quick Access bar and Hub title bar,
+     all from ../shared (not edited). Wiring: tables_ribbon.js. No cache buster. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Tables</title>
+  <!-- (before TB5) <title>Tables</title> -->
+  <title>Tables TB5</title>
   <link rel="icon" href="tables_icon.svg">
+  <link rel="stylesheet" href="../shared/office-ribbon.css">
+  <link rel="stylesheet" href="../shared/office-tools.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
+  <link rel="stylesheet" href="../shared/office-settings.css">
+  <link rel="stylesheet" href="../shared/office-collapse.css">
+  <link rel="stylesheet" href="../shared/office-quick.css">
   <link rel="stylesheet" href="tables.css">
   <script>
     (function () {
@@ -29,6 +37,8 @@
   </script>
 </head>
 <body>
+  <!-- (before TB5) header with the app name, search and Auto / Light / Dark buttons, then a flat toolbar.
+       TB5 moved search into the top row, the theme into Settings, and every command into File or Home.
   <header class="top">
     <h1>Tables</h1>
     <label class="search-lab">
@@ -62,6 +72,54 @@
     <button type="button" id="btn-export">Export CSV</button>
     <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
   </div>
+  -->
+
+  <!-- TB5 TOP ROW: Quick Access (office-quick.js) + File + ribbon tabs (office-ribbon.js), search, Settings gear -->
+  <header class="of-topbar tb-topbar" id="of-topbar">
+    <button type="button" class="of-file-btn" id="of-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="of-file-menu">File</button>
+    <div class="of-tabs" id="of-tabs" role="tablist" aria-label="Ribbon"></div>
+    <label class="search-lab">
+      <span class="sr">Search this table</span>
+      <input id="search" type="search" placeholder="Search this table" autocomplete="off" enterkeyhint="search" aria-label="Search this table">
+    </label>
+    <button type="button" class="tb-gear" id="settingsBtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </header>
+
+  <!-- TB5 File menu: shared look (office-tools.css .file-item, icons from office-icons.js). Ids kept from the old toolbar. -->
+  <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
+    <button type="button" class="file-item" role="menuitem" id="btn-new" data-icon="fileNew"><span>New</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-open-hot" data-icon="fileOpen"><span>Open .hot</span></button>
+    <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-save-as" data-icon="fileSave"><span>Save As</span></button>
+    <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="btn-import" data-icon="fileOpen"><span>Import CSV</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
+    <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
+  </div>
+  <input id="hot-file" type="file" accept=".hot,application/json" hidden>
+  <input id="file-import" type="file" accept=".csv,text/csv,text/plain" hidden>
+
+  <!-- TB5 RIBBON: Home only (the old toolbar commands). Scrolls sideways when narrow. -->
+  <nav class="of-ribbon tb-ribbon" id="of-ribbon" aria-label="Ribbon commands">
+    <div class="of-panel" role="tabpanel" id="of-panel-home" data-tab="home" aria-labelledby="of-tab-home">
+      <div class="of-group tool-group view-toggle" role="group" aria-label="Layout">
+        <button type="button" class="tool-btn" id="btn-view-grid" aria-pressed="true">Grid</button>
+        <button type="button" class="tool-btn" id="btn-view-cards" aria-pressed="false">Cards</button>
+      </div>
+      <div class="of-group tool-group" role="group" aria-label="Records">
+        <button type="button" class="tool-btn" id="btn-new-record">New record</button>
+        <button type="button" class="tool-btn" id="btn-add-row">+ Row</button>
+        <button type="button" class="tool-btn" id="btn-del-row">− Row</button>
+      </div>
+      <div class="of-group tool-group" role="group" aria-label="Table">
+        <button type="button" class="tool-btn" id="btn-add-col">+ Column</button>
+        <button type="button" class="tool-btn" id="btn-rename">Rename</button>
+        <button type="button" class="tool-btn danger" id="btn-del-table">Delete table</button>
+      </div>
+    </div>
+  </nav>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -112,13 +170,21 @@
     <span id="status" class="status" aria-live="polite"></span>
   </footer>
 
+  <script src="../shared/office-icons.js"></script>
   <script src="../shared/office-dialog.js"></script>
+  <script src="../shared/office-ribbon.js"></script>
+  <script src="../shared/office-settings.js"></script>
+  <script src="../shared/office-hover.js"></script>
+  <script src="../shared/office-collapse.js"></script>
+  <script src="../shared/office-hubbar.js"></script>
+  <script src="../shared/office-quick.js"></script>
   <script src="../../../shared/fs/fs_drives.js"></script>
   <script src="../../../shared/fs/fs_ops.js"></script>
   <script src="../../../shared/fs/fs_ref.js"></script>
   <script src="../shared/office-native.js"></script>
   <script src="tables_model.js"></script>
   <script src="tables_hot.js"></script>
+  <script src="tables_ribbon.js"></script>
   <script src="tables.js"></script>
 </body>
 </html>

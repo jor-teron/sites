@@ -1050,3 +1050,63 @@ dialog.dlg-modal.tb-wide { width: min(720px, calc(100vw - 16px)); }
   body { height: auto; background: #fff; color: #000; }
   .grid th, .grid td { background: #fff; color: #000; }
 }
+
+/* ============================================================
+   TB5: Office ribbon, File menu, Settings, Quick Access.
+   Shared look from ../shared/office-ribbon.css, office-tools.css,
+   office-settings.css, office-collapse.css and office-quick.css
+   (not edited). Tables maps its colours onto their variables here,
+   on body so html.tb-light flows through (same as Spreadsheet).
+   The old .top / .theme / .toolbar rules above are no longer used
+   by the markup (it is commented "(before TB5)" in tables.html).
+   ============================================================ */
+body {
+  --of-bg: var(--panel); --of-group: var(--btn); --of-border: var(--border); --of-text: var(--text);
+  --of-muted: var(--muted); --of-focus: var(--sel); --of-hover: var(--hover); --of-active: var(--on);
+  --of-ui-font: var(--sheet-font);
+  --ctl-h: 28px; --btn-active: var(--on); --btn-active-text: var(--on-text);
+}
+html.tb-light body .of-tab[aria-selected="true"] { color: var(--on-text); box-shadow: 0 1px 3px var(--shadow); }
+
+.tb-topbar { min-width: 0; padding-top: env(safe-area-inset-top); box-sizing: content-box; }
+.tb-topbar .search-lab { flex: 1 1 140px; min-width: 0; max-width: 420px; margin-left: auto; }
+.tb-topbar #search { min-height: 26px; padding: 3px 10px; }
+
+.tb-gear {
+  flex: 0 0 auto; width: 40px; height: 32px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text); cursor: pointer; transition: transform .15s, background .15s;
+}
+.tb-gear svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tb-gear:hover { background: var(--hover); }
+.tb-gear:active { transform: scale(0.9); }
+.tb-gear:focus-visible { outline: 2px solid var(--sel); outline-offset: 1px; }
+
+.of-file-menu.file-menu { width: 230px; }
+.of-file-menu .file-item:disabled { opacity: 0.45; cursor: default; background: transparent; }
+
+.tb-ribbon .of-group { flex: 0 0 auto; }
+.tb-ribbon .tool-btn { flex: 0 0 auto; }
+.tb-ribbon .tool-btn.danger { color: var(--danger); }
+.tb-ribbon .view-toggle button[aria-pressed="true"] { background: var(--on); color: var(--on-text); border: 0; }
+
+/* Inside the Hub (hub-hello) the window title bar carries File, Home and the gear; search stays. */
+body.in-hub .tb-topbar .of-file-btn,
+body.in-hub .tb-topbar .of-tabs,
+body.in-hub .tb-topbar .tb-gear { display: none; }
+body.in-hub .tb-topbar .search-lab { max-width: none; margin-left: 0; }
+
+@media (max-width: 720px) {
+  /* the old TB1 rule gave .search-lab a full row (order 3); in the top row it stays inline */
+  .tb-topbar .search-lab { flex: 1 1 120px; order: 0; }
+  .tb-ribbon .view-toggle { flex: 0 0 auto; }
+  .tb-ribbon .view-toggle button,
+  .tb-ribbon #btn-new-record { flex: 0 0 auto; }
+  .tb-topbar #search { font-size: 16px; }
+}
+@media (max-width: 480px) {
+  .tb-topbar { gap: 4px; padding-left: 6px; padding-right: 4px; }
+  .tb-topbar .search-lab { flex-basis: 80px; }
+  .tb-gear { width: 34px; }
+}
+@media (prefers-reduced-motion: reduce) { .tb-gear { transition: none; } .tb-gear:active { transform: none; } }
+@media print { .tb-topbar, .tb-ribbon, .of-file-menu, .tb-gear { display: none !important; } }
