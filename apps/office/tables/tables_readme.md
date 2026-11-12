@@ -1,4 +1,5 @@
-# Tables (TB1, TB2, TB4, HOT1)
+<!-- (before TB5) # Tables (TB1, TB2, TB4, HOT1) -->
+# Tables (TB1, TB2, TB4, HOT1, TB5)
 
 A simple database that looks and works like a spreadsheet. It is an easier alternative to Base. Base is a separate app and was not changed.
 
@@ -41,7 +42,9 @@ You keep several tables on this device. Each table is a tab. A table is a grid: 
 
 - `tables.html` — the app. `index.html` only redirects here (query and hash are kept).
 - `tables.css` — layout. Dark by default; Light and Auto sit on the same variables the Office dialogs use. TB4 copies the Spreadsheet grid variables into this file (cell size, header, selection, sheet tabs). Spreadsheet’s own CSS is not edited.
-- `tables.js` — the grid, tabs, filters and file buttons.
+- `tables.js` — the grid, tabs, filters and file buttons. TB5 adds New and the small API `tables_ribbon.js` calls.
+- `tables_ribbon.js` (TB5) — File menu, Home tab, Settings, Quick Access and the Hub bars, all built on the shared Office modules. Pure helpers are exported for Node.
+- `test-tb5-ribbon.js` — `node test-tb5-ribbon.js`. File menu and Home tab lists, New confirm rule, theme still in `.hot` `settings.theme`, Undo / Redo / Print disabled on the real `office-quick.js`, title, no `alert` / `confirm` / `prompt`. Tiny fake DOM, no browser.
 - `tables_model.js` — types, sort, filter, search, CSV and the old `tables-v1` shape. No DOM, so Node can test it. (before HOT1) the app wrote that key from here.
 - `tables_hot.js` (HOT1): `.hot` read/write, Hub Documents autosave, standalone picker or download.
 - `../shared/office-native.js` (HOS1, reused): Hub Documents folder and the save picker, the same approach as HOW1 and HOS1.
@@ -83,7 +86,8 @@ You keep several tables on this device. Each table is a tab. A table is a grid: 
 
 - Arrows, Enter, Tab, Shift+Tab, Esc, F2, Delete, Backspace, Space (toggles Yes/No).
 - Ctrl/Cmd+F focuses search.
-- Buttons are at least 36px, and 44px in the grid. On a phone the toolbar wraps, the search takes a full row, and filter / column menus open as a sheet at the bottom. Inputs use a 16px font so the page does not zoom on focus.
+<!-- (before TB5) - Buttons are at least 36px, and 44px in the grid. On a phone the toolbar wraps, the search takes a full row, and filter / column menus open as a sheet at the bottom. Inputs use a 16px font so the page does not zoom on focus. -->
+- Grid buttons are 44px. On a phone the Home ribbon scrolls sideways (TB5), the search stays in the top row and gets narrower, and filter / column menus open as a sheet at the bottom. Inputs use a 16px font so the page does not zoom on focus.
 
 ## 7. Legacy notes
 
@@ -91,10 +95,12 @@ You keep several tables on this device. Each table is a tab. A table is a grid: 
 - **TB2 did not add a new storage key.** TB1 rows already had stable ids. On load, any row that is missing an id is given one, and that id is kept on the next save. Link columns are extra fields on the same object. Opening a TB1 save does not delete it: the next edit writes the migrated rows back to `tables-v1`. There is no `tables-v2` key.
 - **TB4 did not add a new storage key.** Dates were already `YYYY-MM-DD` inside `tables-v1`. An old save loads as before. A date that was stored as text in a date column (`11/11/2026`, `11 Nov 2026`) is read as ISO on load; the next edit writes that ISO back to `tables-v1`. Year `0001` was never stored (the native picker rejected it). There is no `tables-v2` key. Replaced code is commented with `(before TB4)` and was not deleted. Spreadsheet, Base, and `apps/office/shared/` were not edited.
 - **HOT1 does not load `tables-v1`.** That was the owner’s decision: there is no migration and the old key is not opened. The load and save that used it are commented with `(before HOT1)` and were not deleted. `saveTo` / `loadFrom` stay for the TB1, TB2 and TB4 tests. The native file is `.hot` (see the HOT1 section). Replaced catalog lines are commented with `(before HOT1)` as well. No `?v=` was added. The Hub id stays `tables`.
-- **No `?v=` cache buster** on the stylesheet or scripts, and no app build number in the title. Some older Office apps still use `?v=` (Spreadsheet `?v=SH13`, Base `?v=BS9`). Tables does not.
+<!-- (before TB5) - **No `?v=` cache buster** on the stylesheet or scripts, and no app build number in the title. Some older Office apps still use `?v=` (Spreadsheet `?v=SH13`, Base `?v=BS9`). Tables does not. -->
+- **No `?v=` cache buster** on the stylesheet or scripts. Some older Office apps still use `?v=` (Spreadsheet `?v=SH14`, Base `?v=BS9`). Tables does not. Since TB5 the page title is `Tables TB5`, the same style as `Writer DF21` and `Slides SL9`.
 - **Base was not edited.** Tables does not read or write Base’s IndexedDB (`office-base`). Moving data between them is a CSV export from one and import into the other.
 <!-- (before HOT1): - **Shared Office files were not edited.** Tables only uses the existing dialog helper. It does not use the ribbon, Quick Access bar or Hub title-bar bridge. -->
-- **Shared Office files.** Tables uses the existing dialog helper and, since HOT1, `office-native.js` for the Documents folder and the save picker (a comment there names Tables; the helper’s behaviour is unchanged). It does not use the ribbon, Quick Access bar or Hub title-bar bridge. No new library was added.
+<!-- (before TB5) - **Shared Office files.** Tables uses the existing dialog helper and, since HOT1, `office-native.js` for the Documents folder and the save picker (a comment there names Tables; the helper’s behaviour is unchanged). It does not use the ribbon, Quick Access bar or Hub title-bar bridge. No new library was added. -->
+- **Shared Office files.** Tables uses the existing dialog helper and, since HOT1, `office-native.js` for the Documents folder and the save picker (a comment there names Tables; the helper’s behaviour is unchanged). Since TB5 it also uses the shared ribbon, File menu look, icons, hover, collapse, Settings pop-up, Quick Access bar and Hub title-bar helper (see section 11). None of the shared files were edited. No new library was added.
 - **Hub catalog.** The Office tiles page reads `apps/office/office-apps.csv`. HOT1 updates the Tables description there and in `hub/core/hub_catalog.js` and `hub/core/hub_appindex.js` (display only: the id, path and icon stay). A `.hot` double-click is registered in `shared/fs/filetypes.js`. Files already opens a `file: true` app with `FsRef.openIn`.
 
 ## 8. Limits
@@ -114,3 +120,17 @@ No formulas, no undo, and no cloud sync. Filters, sort and the search text are f
 - **Grid.** The sheet uses the same measurements as Spreadsheet: 13px Segoe UI, 30px rows, 1px cell borders, header background, a row-number gutter on the left (with the row tick box), and a 2px selection outline. The toolbar buttons and the sheet tabs along the bottom follow that app. Light and dark use the same colours. Cards are unchanged: Grid / Cards still switches the current table, and a card still opens the record panel.
 - **Header.** One line, `Name (Type)`. Click sorts. ⋯, right-click, or a long press opens filter, rename, type and delete.
 - **Dates.** Plain text in the grid and in the record panel. See the Dates bullet in section 3 for every accepted form. Display and storage are `YYYY-MM-DD`. `07/05/0001` is the old picker bug and is not saved.
+
+## 11. TB5 — Office ribbon
+
+Tables now has the same chrome as Writer and Spreadsheet, built from the shared files in `apps/office/shared` (used, not edited).
+
+- **Top row.** The usual 36px Office row: Quick Access (Undo, Redo, Save, Print), File, the Home tab, the search box (“Search this table”), and a Settings gear on the right. Hovering File or a tab with a mouse opens it, the same as the other Office apps. On a phone the Quick Access labels hide and the search gets narrower.
+- **File menu.** New, Open .hot, Save, Save As, Import CSV, Export CSV and Settings, with the shared icons. Every item except New was a toolbar button before, and keeps its id and behaviour.
+- **New** starts the HOT1 blank file (Table 1, the four starter columns, no rows, Grid, Auto theme). If the open file has changes that were not written yet, an in-app dialog asks first (“Start a new file?”). A file that is still blank, or fully saved, does not ask. In the Hub, autosave usually keeps the file saved, so New rarely asks there. The new file is not written until it has something in it, or you choose Save As (HOT1 rule). In the Hub it is named `Tables`, or `Tables (2)` and so on when that name is taken in Documents.
+- **Home tab.** Grid / Cards, New record, + Row, − Row, + Column, Rename and Delete table, in shared tool buttons. They are enabled and disabled exactly as before. Clicking the active Home tab collapses the ribbon; clicking it again peeks, and a double-click pins it open again.
+- **Settings** (gear or File → Settings). Theme (Auto / Light / Dark), Collapse ribbon, and About (“Tables TB5”) with Reset settings, which asks in an in-app dialog. The theme still belongs to the `.hot` file (`settings.theme`): changing it here writes the open file's theme, applies it at once and saves like any edit. Opening another file shows that file's theme. Auto still follows the Hub theme (`sites-hub.theme`), otherwise the device. Collapse ribbon is a device setting in `localStorage` `tables_settings`; it is not in the `.hot` file, and the theme is not stored in that key. Reset does not change the file's theme.
+- **Quick Access.** Save works, with the shared “✓ Saved” tick. Ctrl/Cmd+S goes through Quick Access. Ctrl/Cmd+Shift+S is still Save As. Undo, Redo and Print stay greyed out: Tables has no undo and no print.
+- **In the Hub.** After the Hub's hello, File, Home and the Quick Access buttons move to the window title bar (HO1 / H49), with the file name (same `hub-app` bridge as Spreadsheet). In Desktop mode the window's Settings gear opens Tables' Settings; File → Settings works everywhere. The search box stays in the app's top row. Standalone, with no hello, the in-app row stays as it is.
+- **Unchanged.** Sheet tabs at the bottom (TB4), the record panel, cards, column menus, filters, search, `.hot` load / save / autosave, CSV import / export and the `.hot` format. The old header (with the Auto / Light / Dark buttons) and the flat toolbar are commented `(before TB5)` in `tables.html`, not deleted.
+- **Limits.** Ctrl/Cmd+P no longer opens the browser's print dialog: the shared Quick Access bar always takes that key, and Print is disabled. Cancelling the Save As name or the save picker after Ctrl/Cmd+S still shows the “✓ Saved” tick, the same as Spreadsheet. Open tabs on hover is always on; there is no switch for it in Tables' Settings.

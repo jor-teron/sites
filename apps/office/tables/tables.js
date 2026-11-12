@@ -9,6 +9,10 @@
  * link setup). No alert/confirm/prompt.
  * HOT1: Save / Save As / autosave write one .hot file (tables_hot.js).
  * (before HOT1) the copy was localStorage tables-v1. That key is not loaded.
+ * TB5: File / Home ribbon, Settings, Quick Access and the Hub title bar come
+ * from tables_ribbon.js (shared Office modules). This file adds New, the
+ * unsaved-changes count New asks about, and the API that file calls.
+ * The theme is still db.theme, saved as the .hot file's settings.theme.
  */
 (function () {
   'use strict';
@@ -18,6 +22,10 @@
   var db = null;
   var dirty = false;
   var saveTimer = 0;
+  /* TB5: rev counts edits; savedRev is the rev the last written save captured. */
+  var rev = 0;
+  var savedRev = 0;
+  var capturedRev = 0;
   var pop = null;
   var st = {
     search: '',
@@ -87,6 +95,7 @@
 
   function scheduleSave() {
     dirty = true;
+    rev++;
     clearTimeout(saveTimer);
     /* (before HOT1) saveTimer = setTimeout(persist, 180); */
     saveTimer = setTimeout(persist, 800);
@@ -119,10 +128,21 @@
     var prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
     var dark = mode === 'dark' || (mode !== 'light' && (hub === 'dark' || (hub !== 'light' && prefersDark)));
     document.documentElement.classList.toggle('tb-light', !dark);
+    /* (before TB5) the header Auto / Light / Dark buttons showed the mode:
     var buttons = document.querySelectorAll('.theme button');
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-theme') === mode ? 'true' : 'false');
     }
+    */
+    if (window.TablesRibbon && TablesRibbon.syncTheme) TablesRibbon.syncTheme(mode);
+  }
+
+  /* TB5: Settings -> Theme. Writes the open file's theme, applies it now, saves like any edit. */
+  function setTheme(mode) {
+    if (window.TablesRibbon && TablesRibbon.applyThemeChoice) TablesRibbon.applyThemeChoice(db, mode);
+    else db.theme = mode === 'light' || mode === 'dark' ? mode : 'auto';
+    applyTheme();
+    scheduleSave();
   }
 
   function closePop() {
@@ -2185,6 +2205,7 @@
       st.viewStart = 0;
       render();
     });
+    /* (before TB5) header theme buttons; TB5 sets the theme from Settings (setTheme).
     var themes = document.querySelectorAll('.theme button');
     for (var i = 0; i < themes.length; i++) {
       themes[i].addEventListener('click', function (e) {
@@ -2193,6 +2214,7 @@
         scheduleSave();
       });
     }
+    */
     document.addEventListener('mousedown', function (e) {
       if (pop && !pop.contains(e.target)) closePop();
     });
@@ -2225,6 +2247,9 @@
         return;
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && !e.altKey) {
+        /* TB5: plain Ctrl/Cmd+S goes through OfficeQuick (quickSave, ✓ Saved tick).
+           Ctrl/Cmd+Shift+S (Save As) stays here. Without OfficeQuick both stay here. */
+        if (window.OfficeQuick && OfficeQuick.register && !e.shiftKey) return;
         if (document.querySelector('dialog[open]')) return;
         e.preventDefault();
         if (st.edit && !commitEdit()) return;
@@ -2275,6 +2300,98 @@
     };
   }
 
+  /* ---------- TB5: New, Quick Access save, API for tables_ribbon.js ---------- */
+  function fileName() {
+    return window.TABLES_HOT && TABLES_HOT.stemName ? TABLES_HOT.stemName() : 'Tables';
+  }
+  function noteName() {
+    if (window.TablesRibbon && TablesRibbon.noteName) TablesRibbon.noteName();
+  }
+  function isBlankNow() {
+    try { return !!(window.TablesHot && TablesHot.isBlank && TablesHot.isBlank(captureHot(null))); }
+    catch (e) { return false; }
+  }
+  function isUnsaved() { return rev !== savedRev; }
+
+  /* A free name for the new file in Hub Documents: Tables, Tables (2), ... */
+  function freeName() {
+    var hot = window.TABLES_HOT;
+    if (!hot || !hot.list) return Promise.resolve('Tables');
+    return hot.list().then(function (rows) {
+      var taken = {};
+      (rows || []).forEach(function (r) { taken[hot.stem(r.name).toLowerCase()] = true; });
+      var name = 'Tables';
+      var n = 2;
+      while (taken[name.toLowerCase()]) name = 'Tables (' + (n++) + ')';
+      return name;
+    }, function () { return 'Tables'; });
+  }
+
+  function newFile() {
+    if (st.edit && !commitEdit()) return Promise.resolve(false);
+    var ask = Promise.resolve(true);
+    var need = window.TablesRibbon && TablesRibbon.needsNewConfirm
+      ? TablesRibbon.needsNewConfirm({ unsaved: isUnsaved(), blank: isBlankNow() })
+      : (isUnsaved() && !isBlankNow());
+    if (need) {
+      ask = window.OfficeDialog && OfficeDialog.confirm
+        ? OfficeDialog.confirm({
+          title: 'Start a new file?',
+          message: '"' + fileName() + '" has changes that are not saved yet. They will be lost.',
+          okLabel: 'Start new',
+          danger: true
+        })
+        : Promise.resolve(false);
+    }
+    return ask.then(function (yes) {
+      if (!yes) return false;
+      clearTimeout(saveTimer);
+      dirty = false;
+      var hot = window.TABLES_HOT;
+      if (hot && hot.detach) hot.detach();
+      if (hot && hot.noteStem) hot.noteStem('Tables');
+      db = M.blankDb();
+      st.viewMode = {};
+      st.search = '';
+      st.filters = {};
+      st.sort = {};
+      st.selected = {};
+      st.anchor = null;
+      st.active = null;
+      st.edit = null;
+      st.viewStart = 0;
+      st.banner = '';
+      closePanel();
+      closePop();
+      var search = $('search');
+      if (search) search.value = '';
+      render();
+      savedRev = rev;
+      noteName();
+      setStatus('New file');
+      if (hot && hot.inHub && hot.inHub() && hot.canLocal && hot.canLocal()) {
+        freeName().then(function (name) {
+          if (hot.noteStem) hot.noteStem(name);
+          noteName();
+        });
+      }
+      return true;
+    });
+  }
+
+  function canSave() {
+    return !!db && !document.querySelector('dialog[open]');
+  }
+  /* Quick Access Save and Ctrl/Cmd+S: same path as File > Save. */
+  function quickSave() {
+    if (st.edit && !commitEdit()) return false;
+    clearTimeout(saveTimer);
+    if (!window.TABLES_HOT) return false;
+    return TABLES_HOT.save({ explicit: true }).then(function (res) {
+      return !(res && res.ok === false);
+    }, function () { return false; });
+  }
+
   function applyHot(doc) {
     var built = window.TablesHot && TablesHot.toDb ? TablesHot.toDb(doc) : null;
     if (!built || !built.db) return;
@@ -2294,6 +2411,7 @@
     var search = $('search');
     if (search) search.value = '';
     render();
+    savedRev = rev;   // TB5: a file just opened has no unsaved changes
   }
 
   function boot() {
@@ -2314,12 +2432,31 @@
     db = M.blankDb();
     bind();
     render();
+    /* TB5: ribbon, Settings, Quick Access and Hub bars (tables_ribbon.js). */
+    if (window.TablesRibbon && TablesRibbon.init) {
+      TablesRibbon.init({
+        save: quickSave,
+        canSave: canSave,
+        newFile: newFile,
+        setTheme: setTheme,
+        getTheme: function () { return db.theme || 'auto'; },
+        fileName: fileName,
+        isUnsaved: isUnsaved,
+        status: setStatus
+      });
+    }
     if (window.TablesHot && TablesHot.install) {
       TablesHot.install({
-        capture: captureHot,
+        /* (before TB5) capture: captureHot, */
+        capture: function (session) { capturedRev = rev; return captureHot(session); },
+        setName: function () { noteName(); },
         apply: applyHot,
         toast: setStatus,
-        noteSaved: function (res) { setStatus(res && res.verb ? res.verb : 'Saved'); },
+        /* (before TB5) noteSaved: function (res) { setStatus(res && res.verb ? res.verb : 'Saved'); }, */
+        noteSaved: function (res) {
+          savedRev = capturedRev;
+          setStatus(res && res.verb ? res.verb : 'Saved');
+        },
         noteFailed: function () { setStatus('Could not save.'); },
         beforeSave: function () { clearTimeout(saveTimer); }
       });

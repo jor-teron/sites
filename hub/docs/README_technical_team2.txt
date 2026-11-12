@@ -2203,6 +2203,66 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - Details: `apps/office/tables/tables_readme.md` (HOT1 section, legacy notes).
 - 1.110 is HOS1, so this note is numbered 1.111.
 
+### 1.112 TB5 Tables Office ribbon
+
+- Tables (`apps/office/tables/`, Hub id `tables`) now uses the same Office
+  chrome as Writer and Spreadsheet, through the shared modules only:
+  `office-ribbon.*`, `office-tools.css`, `office-icons.js`, `office-hover.js`,
+  `office-collapse.*`, `office-settings.*`, `office-quick.*` and
+  `office-hubbar.js` (HO1 / H49). New file `tables_ribbon.js` does the wiring.
+- Top row: Quick Access, File, the Home tab, the search box ("Search this
+  table") and a Settings gear. File menu: New, Open .hot, Save, Save As,
+  Import CSV, Export CSV, Settings (shared icons, hover to open). Only New is
+  new; the others keep their old ids and handlers.
+- New starts the HOT1 blank file (Table 1, four starter columns, no rows,
+  Grid, Auto). It asks first with `OfficeDialog.confirm` only when the file
+  has edits that no save has written yet (tables.js counts edits; a written
+  save, autosave included, clears the count; a blank file never asks). The
+  session is detached, so the blank file is not written until it has content
+  or Save As (HOT1 rule). In the Hub the new name is `Tables`, or
+  `Tables (2)` and so on when Documents already has that name.
+- Home tab: Grid / Cards, New record, + Row, − Row, + Column, Rename, Delete
+  table. Same enabled / disabled rules as the old toolbar.
+- Settings (gear or File > Settings): Theme Auto / Light / Dark, Collapse
+  ribbon, About "Tables TB5" with Reset settings (in-app confirm). Theme still
+  lives in the `.hot` file (`settings.theme`): a change writes `db.theme`,
+  applies at once and saves like any edit; opening a file shows its theme.
+  Auto still follows `sites-hub.theme`, otherwise the device. Collapse ribbon
+  is in `localStorage` `tables_settings` (theme is kept out of that key).
+  The header Auto / Light / Dark buttons are gone.
+- Quick Access: Save works (Ctrl/Cmd+S through OfficeQuick, "✓ Saved" tick).
+  Ctrl/Cmd+Shift+S is still Save As in tables.js. Undo, Redo and Print are not
+  passed to OfficeQuick, so they stay greyed out. No undo and no print added.
+- Hub: after `hubTitleBarHello` the Quick Access buttons and File / Home go to
+  the window title bar. The `hub-hello` / `hub-app` bridge (same as
+  `spreadsheet_hub.js`) sends the app name, file title and
+  `hub-app-caps {settings:true}` (Desktop window gear opens Settings), and
+  hides File, tabs and gear in the app's top row. Search stays in that row.
+  Standalone keeps the in-app chrome.
+- Not changed: `apps/office/shared` (not edited), the `.hot` format, sheet
+  tabs at the bottom, record panel, cards, column menus, filters, search,
+  autosave, CSV, catalog, `hub_appindex.js`, `hub_catalog.js`,
+  `shared/fs/filetypes.js`, `apps/system`, `index.html`, root `shared/`, other
+  hub/ files. No new library, no CDN, no `?v=`, no Hub build bump. Page title
+  `Tables TB5`. Old header and flat toolbar are commented `(before TB5)` in
+  `tables.html`; replaced JS is commented `(before TB5)` too.
+- Limits: the shared Quick Access always takes Ctrl/Cmd+P, so the browser
+  print dialog no longer opens from that key (Print is disabled). Cancelling a
+  Save As name or the picker after Ctrl/Cmd+S still shows the tick, as in
+  Spreadsheet. Open tabs on hover is always on (no switch in Settings).
+- Checked with `node --check` on `tables.js`, `tables_ribbon.js`,
+  `tables_hot.js` and the new test, `node apps/office/tables/test-tb5-ribbon.js`
+  (File menu and Home lists against the markup, New confirm rule, theme
+  round-trip through `.hot` `settings.theme`, theme kept out of
+  `tables_settings`, Undo / Redo / Print disabled on the real
+  `office-quick.js` with a tiny fake DOM, Ctrl+S through OfficeQuick, title,
+  no `alert` / `confirm` / `prompt`), the existing `test-tb1.js`,
+  `test-tb2.js`, `test-tb4.js`, `test-hot1-format.js`, and
+  `apps/office/shared/tests/ho2.test.cjs`. Static serve + curl: `tables.html`
+  and every linked CSS / JS returned 200. No browser runner.
+- Details: `apps/office/tables/tables_readme.md` (section 11, TB5).
+- 1.111 is HOT1, so this note is numbered 1.112.
+
 
 ## 2. Releases (PR → what)
 
