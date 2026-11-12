@@ -13,6 +13,11 @@
 function afterChange() {
   recalcAll();
   if (typeof applyFilters === "function") applyFilters();
+  /* (before SH18)
+  if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
+  paintAll();
+  */
+  if (typeof applyRowHeights === "function") applyRowHeights();
   if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
   paintAll();
   if (typeof dataRenderFilterButtons === "function") dataRenderFilterButtons();

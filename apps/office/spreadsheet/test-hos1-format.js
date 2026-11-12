@@ -232,12 +232,11 @@ assert.ok(html.indexOf('office-native.js') !== -1);
 assert.ok(html.indexOf('id="file-import"') !== -1);
 assert.ok(html.indexOf('id="btn-export"') !== -1);
 assert.ok(html.indexOf('id="btn-export-xlsx"') !== -1);
-assert.ok(html.indexOf('<title>Spreadsheet SH14</title>') !== -1);
-assert.ok(html.indexOf('?v=SH14') !== -1);
+assert.ok(html.indexOf('<title>Spreadsheet SH18</title>') !== -1);
+assert.ok(html.indexOf('?v=SH18') !== -1);
 assert.strictEqual(html.indexOf('?v=HOS'), -1);
-assert.strictEqual(html.indexOf('?v=SH18'), -1);
 var settingsJs = read('spreadsheet_settings.js');
-assert.ok(settingsJs.indexOf('SHEET_VERSION = "SH14"') !== -1);
+assert.ok(settingsJs.indexOf('SHEET_VERSION = "SH18"') !== -1);
 
 var typesSrc = fs.readFileSync(path.join(dir, '../../../shared/fs/filetypes.js'), 'utf8');
 var typesCtx = { window: {} };

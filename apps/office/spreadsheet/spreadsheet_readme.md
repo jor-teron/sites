@@ -46,7 +46,8 @@ The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page
 - `../shared/office-native.js` (HOS1): Hub Documents folder and the save picker, shared with the HOW1 approach
 - `spreadsheet_files.js`: CSV import / export, print
 - `spreadsheet_grid.js`: builds the grid, header clicks, selection highlight, painting cells
-- `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear
+<!-- (before SH18): - `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear -->
+- `spreadsheet_edit.js`: cell editing, cell and arrow keys, commit, clear. SH18 Alt+Enter inserts a newline and turns Wrap on
 - `spreadsheet_fill.js`: autofill handle
 - `spreadsheet_toolbar.js`: toolbar wiring and style buttons
 - `spreadsheet_ribbon.js`: ribbon tabs (Home / Insert / Page / Data / View, defined as data) and the File menu, via `../shared/office-ribbon.js`
@@ -62,10 +63,12 @@ The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page
 - `spreadsheet_undo.js`: undo / redo
 - `spreadsheet_select.js`: block selection (drag, Shift+click, Shift+arrows, select all)
 - `spreadsheet_clipboard.js`: copy / cut / paste, fill down / right
-- `spreadsheet_rows.js`: insert / delete rows and columns
+<!-- (before SH18): - `spreadsheet_rows.js`: insert / delete rows and columns -->
+- `spreadsheet_rows.js`: insert / delete rows and columns. SH18 also shifts saved row heights
 - `spreadsheet_sort.js`: one-column sort (A→Z / Z→A)
 - `spreadsheet_data.js`: SH10 find and replace, header-row filters, multi-column sort, list validation, remove duplicates
-- `spreadsheet_resize.js`: column widths
+<!-- (before SH18): - `spreadsheet_resize.js`: column widths -->
+- `spreadsheet_resize.js`: column widths and SH18 row heights (auto-fit and drag)
 - `spreadsheet_keys.js`: Ctrl/Cmd shortcuts
 - `FUNCTIONS.txt`: list of formulas and shortcuts (opened by the Functions button)
 - `spreadsheet_icon.png`: hub icon
@@ -78,7 +81,8 @@ The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page
 - **Formulas:** start with `=`. Only cells that depend on a change are recalculated. Numeric results are rounded to 15 significant digits (`0.1+0.2` → 0.3). While typing, a hint shows the current function and argument. The fx button (left of the formula bar) opens a searchable function list. `SORT`, `SORTBY`, `FILTER` and `UNIQUE` spill. A range or array can be compared or added element by element (`B2:B50>100`, `SEQUENCE(3)+1`). `ROW` and `COLUMN` give the row or column of this cell, or of a reference. `INDIRECT` turns text into a reference and recalculates whenever any cell changes. `TEXTSPLIT` splits text across columns and down rows and spills. `CHAR` returns the character for a code; `CHAR(10)` is a line break.
 - **`$` refs:** `$A$1`, `A$1`, `$A1` stay fixed when copied or filled; other parts shift.
 - **Selection:** drag, Shift+click or Shift+arrows select a block. Clicking a column letter or row number selects it; the corner selects all. Delete / Backspace clears the block (styles stay).
-- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, merge, conditional formatting, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step.
+<!-- (before SH18): - **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, merge, conditional formatting, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze and hide. Last 100 steps; colour-picker drags within 0.8 s count as one step. -->
+- **Undo / redo:** ↶ ↷ buttons or keys. Covers edits, paste, cut, fill, clear, styles, formats, merge, conditional formatting, insert/delete, sort, find/replace, filter, validation, remove duplicates, CSV/XLSX import, sheet add/rename/delete/reorder, freeze, hide, and SH18 row-height drags. Last 100 steps; colour-picker drags within 0.8 s count as one step.
 - **Copy / paste:**
   - Copy puts tab-separated values on the system clipboard, so it pastes into Excel or Google Sheets.
   - Pasting the app's own copy brings formulas and styles and shifts relative refs.
@@ -90,6 +94,8 @@ The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page
 - **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. **Sort…** (SH10) sorts by up to three columns and can keep a header row.
 - **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency, Date (YYYY-MM-DD or DD/MM/YYYY), Time, Date and time. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
 - **Column widths:** drag the right edge of a column letter; double-click it to reset. Widths are saved.
+<!-- (before SH18): no row-height bullet -->
+- **Row heights (SH18):** automatic rows grow and shrink for wrapped text and explicit line breaks (floor 30px, clamp 8–400). Drag the bottom edge of a row number to set a manual height; double-click the edge to return to automatic (content-fit). Heights are already in the `.hos` file (`heights[]`, `null` = automatic). A row-height drag is on the undo stack; column-width drags are still not.
 <!-- (before SH17): - **Styles:** align, bold, italic, underline, fill colour, text colour, font size, wrap, borders, merge, format painter, and conditional highlighting for the selection. -->
 - **Styles:** align, bold, italic, underline, fill colour, text colour, font size, wrap, borders, merge, format painter, and conditional highlighting for the selection. Borders is a button on the Home tab (All, Outside, Inside, Top, Bottom, Left, Right, No border).
 - **CSV:** Export CSV downloads the active sheet (formulas, trailing empty rows/columns trimmed; hidden rows/columns are included). Import CSV loads a file onto the active sheet, starting at A1. Other sheets are left alone.
@@ -101,6 +107,7 @@ The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page
 ## 4. Keyboard
 - Arrows move; Shift+arrows extend the block
 - Enter / Tab / Shift+Tab commit and move
+- Alt+Enter (SH18) inserts a newline and turns Wrap on; the in-cell editor and formula bar stay single-line, and the break shows in the cell after commit
 - F2 edits; Esc cancels
 - Delete / Backspace clears the selection
 - Ctrl/Cmd+Z undo; Ctrl/Cmd+Y or Ctrl/Cmd+Shift+Z redo
@@ -122,13 +129,15 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
 
 ## 7. Screen sizes
 - One layout for all sizes: the toolbar wraps onto more lines on narrow screens and the grid scrolls with sticky headers. No phone-specific layout.
-- Drag selection and column resizing are mouse-based; on touch, tap to select and use the toolbar.
+<!-- (before SH18): - Drag selection and column resizing are mouse-based; on touch, tap to select and use the toolbar. -->
+- Drag selection and column / row resizing are mouse-based; on touch, tap to select and use the toolbar.
 - Print: toolbar, status line, selection and resize grips are hidden; cells print on white.
 
 ## 8. Safe settings (`spreadsheet_config.js`)
 - `undo.limit` / `undo.mergeMs`: undo steps kept; colour-drag merge time
 - `numberFormat.currency` / `numberFormat.locale`: currency symbol; grouping (`"en-US"` gives 1,234,567)
 - `colWidth.auto` / `colWidth.min` / `colWidth.rowHead`: column widths in px
+- `rowHeight.auto` / `rowHeight.min` / `rowHeight.max`: automatic floor (30) and drag clamp (8–400)
 - `precision`: significant digits for results
 - `defaultStyle`, `colors`, `boldWeight`: look
 - `csv.exportName`: download name
@@ -146,12 +155,13 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
 
 ## 10. Known limits
 - Fixed 26 × 100 grid; insert is refused when the last row/column has data.
-- Column widths aren't part of undo.
+- Column widths aren't part of undo. Row-height drags are.
 - Copy puts raw values on the system clipboard, not formatted text.
 - Cut + paste doesn't update other formulas that pointed at the moved cells.
 - The one-click A→Z / Z→A buttons still have no header-row detection (use Sort… for a header).
 - In the hub, paste uses only the internal copy.
 - Old version after an update: hard-refresh.
+- SH18: the formula bar and in-cell editor stay single-line; a line break is visible in the cell face after commit. XLSX / CSV do not import or export row heights (XLSX export already writes wrapText only). Charts stay free-positioned and do not move when a row grows. Merged-cell auto-fit measures the top-left cell at the merged width.
 
 ## 11. Change log
 - 2026-10-04 (IST): undo/redo, block select, clipboard, fill, `$` refs, insert/delete, column resize, sort, number formats, this readme (this commit).
@@ -287,3 +297,13 @@ The grid is still 26 × 100. Storage is still `sheet-v4`. No new saved fields. T
 - **XLSX:** auto and the old default black are written as thin black (`000000`) on `cell.s`. Other colours are written as their hex. SheetJS Community Edition still does not read or write those styles; they stay in `sheet-v4`. Merged cells are still `!merges`.
 - **Legacy:** title, `SHEET_VERSION` and `?v=` stay SH14. This release does not bump the cache token. Storage stays `sheet-v4`.
 - **Limits:** borders are 1px solid. There is no colour or thickness picker. A merged cell shows the outer borders, not lines between the cells inside the merge. Conditional formatting is unchanged.
+
+## SH18 — row height (auto-expand and drag resize)
+The grid is still 26 × 100. The `.hos` format stays version 1 (`heights[]` was already defined in HOS1: px, `null` = automatic, clamp 8–400). Title, `SHEET_VERSION` and `?v=` are SH18 (a visible grid / CSS change, so the cache token is bumped).
+
+- **Automatic rows** (`heights[r] = null`): grow and shrink back to 30px for wrapped text and for explicit `\n` (2+ lines). Height is the max content need of the visible cells in that row (font size, line-height 1.25, padding, wrap width from that column, merged width for a merge's top-left). A pure helper (`estimateRowHeight`) does the math; there is no 26 × 100 layout read. Recomputed after edit, wrap / font-size change, paste, fill, column resize, and open.
+- **Manual resize:** drag the bottom edge of a row-number header (`cursor: row-resize`). The grip is only on the header, not between data cells. Clamp 8–400px. Double-click the grip to reset to automatic (content-fit — not the same as column automatic, which shares free width). Manual heights stay until the user double-clicks or drags again. A drag (and a double-click reset) is recorded on the undo stack. Column-width undo is unchanged (still not on the stack).
+- **Alt+Enter:** inserts a newline, turns Wrap on, and stays in the cell. Plain Enter still commits and moves down. The in-cell editor and formula bar stay single-line `<input>`s; the `.cell-face` shows the break after commit. A cell that already has a line break (paste, import, `CHAR(10)`) also shows a face, even if Wrap was off.
+- **Insert / delete:** `heights[]` now shifts with the rows, the same way `colWidths` already shifted with columns (this was a latent gap).
+- **Freeze:** sticky offsets sum the real (manual or automatic) row heights and still skip hidden / filtered rows, so variable heights stay aligned.
+- **Limits:** no XLSX / CSV row-height or wrap-style import (export already writes `wrapText` only). No multiline formula bar or in-cell textarea. Column auto-width behaviour is unchanged. Merged-cell auto-fit measures the top-left cell at the merged width; Excel's merge quirks are not copied. Charts stay free-positioned and will not stick to a row if it grows. Print uses the same table (`tr.style.height`); `.row-grip` is hidden in print like `.col-grip`.

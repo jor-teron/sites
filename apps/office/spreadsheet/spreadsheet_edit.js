@@ -53,10 +53,46 @@ function bindCell(inp, r, c) {
 /**
  * Keys inside a cell: selected mode (navigate, type to start editing) or editing mode
  */
+/* SH18: Alt+Enter inserts a newline and turns Wrap on. Plain Enter still commits and moves down.
+ * The in-cell editor stays a single-line <input>, so a break already in the formula is appended
+ * when the input cannot keep it. The cell-face shows the break after commit. */
+function insertCellLineBreak(inp, r, c) {
+  var formula = String(cells[r][c].formula == null ? "" : cells[r][c].formula);
+  var text, start, end, st, needWrap;
+  if (isEditing(inp) && inp.value.indexOf("\n") === -1 && formula.indexOf("\n") === -1 && formula.indexOf("\r") === -1) {
+    start = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
+    end = inp.selectionEnd != null ? inp.selectionEnd : start;
+    text = inp.value.slice(0, start) + "\n" + inp.value.slice(end);
+  } else if (isEditing(inp) && inp.value.indexOf("\n") !== -1) {
+    start = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
+    end = inp.selectionEnd != null ? inp.selectionEnd : start;
+    text = inp.value.slice(0, start) + "\n" + inp.value.slice(end);
+  } else {
+    text = formula + "\n";
+  }
+  st = cellStyle(r, c);
+  needWrap = !st.wrap;
+  if (text === formula && !needWrap) return;
+  undoRecord("line-break");
+  cells[r][c].formula = text;
+  if (needWrap) st.wrap = true;
+  /* Leave the cell committed. An <input type="text"> cannot keep the break, so
+     staying in edit would overwrite the formula with a single line on blur.
+     The cell-face shows the break after paint. */
+  if (inp) inp.readOnly = true;
+  afterChange();
+}
+
 function onCellKey(ev) {
   var inp = ev.target;
   var r = selR;
   var c = selC;
+  if (ev.altKey && ev.key === KEYS.commit) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    insertCellLineBreak(inp, r, c);
+    return;
+  }
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return;      // shortcuts: spreadsheet_keys.js
   if (inp.readOnly) {
     if (ev.key === "F2") { ev.preventDefault(); startEdit(inp, true); return; }
