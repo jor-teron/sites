@@ -353,10 +353,21 @@ function styleApplyLook(td, inp, st, r, c) {
   styleApplyBorderSide(td, "border-right", "bd-r", edges.br);
   styleApplyBorderSide(td, "border-bottom", "bd-b", edges.bb);
   styleApplyBorderSide(td, "border-left", "bd-l", edges.bl);
-  td.classList.toggle("wrap", !!st.wrap);
+  /* (before SH18) td.classList.toggle("wrap", !!st.wrap); */
   editing = document.activeElement === inp && !inp.readOnly;
+  var faceText = inp.value;
+  if (!editing) {
+    if (typeof displayedVal === "function" && typeof formatCellValue === "function" && typeof workbook !== "undefined" && workbook) {
+      faceText = formatCellValue(displayedVal(r, c, workbook.active), st.fmt);
+    } else if (typeof cells !== "undefined" && cells && cells[r] && cells[r][c]) {
+      faceText = String(cells[r][c].value == null ? "" : cells[r][c].value);
+    }
+  }
+  var hasBreak = faceText.indexOf("\n") !== -1 || faceText.indexOf("\r") !== -1;
+  td.classList.toggle("wrap", !!st.wrap);
+  td.classList.toggle("has-break", !st.wrap && hasBreak);
   face = td.querySelector(".cell-face");
-  if (st.wrap) {
+  if (st.wrap || hasBreak) {
     if (!face) {
       face = document.createElement("div");
       face.className = "cell-face";
@@ -364,7 +375,7 @@ function styleApplyLook(td, inp, st, r, c) {
     }
     face.hidden = !!editing;
     inp.classList.toggle("wrap-edit", !!editing);
-    if (!editing) face.textContent = inp.value;
+    if (!editing) face.textContent = faceText;
   } else if (face) {
     face.remove();
     inp.classList.remove("wrap-edit");

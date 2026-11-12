@@ -53,6 +53,14 @@ function changeLines(axis, delta) {
       if (delta > 0) { cells.splice(at, 0, cells.pop()); cells[at] = cells[at].map(blankCell); }
       else { cells.splice(at, 1); cells.push(cells[0].map(blankCell)); }
       shiftFlags(hiddenRows, at, delta, false);
+      /* SH18: heights[] was not shifted on row insert/delete (colWidths already was). */
+      var sh = workbook && workbook.sheets[workbook.active];
+      if (sh) {
+        if (!sh.heights) { sh.heights = []; var hi; for (hi = 0; hi < ROWS; hi++) sh.heights[hi] = null; }
+        if (typeof shiftSizeList === "function") shiftSizeList(sh.heights, at, delta, null, ROWS);
+        else if (delta > 0) { sh.heights.splice(at, 0, null); sh.heights.length = ROWS; }
+        else { sh.heights.splice(at, 1); sh.heights.push(null); }
+      }
     } else {
       for (r = 0; r < ROWS; r++) {
         if (delta > 0) { cells[r].pop(); cells[r].splice(at, 0, blankCell()); }

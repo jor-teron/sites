@@ -79,6 +79,7 @@ const SPREADSHEET_CONFIG = {
     cell: "cell",
     fillHandle: "fill-handle",
     colGrip: "col-grip",
+    rowGrip: "row-grip",
     selected: "selected",
     band: "sel-band",
     error: "error",
@@ -102,6 +103,13 @@ const SPREADSHEET_CONFIG = {
     auto: 100,                           // narrowest automatic column
     min: 30,                             // narrowest a dragged column can get
     rowHead: 40,                         // row-number column
+  },
+
+  // Row heights (px). HOS1 already stores heights[] with this clamp. SH18 uses it for auto-fit and drag.
+  rowHeight: {
+    auto: 30,                            // automatic / empty floor (matches --cell-h)
+    min: 8,                              // narrowest a dragged row can get
+    max: 400,                            // tallest automatic or dragged row
   },
 
   // Numeric formula results are rounded to this many significant digits (0.1+0.2 → 0.3)
