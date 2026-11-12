@@ -243,7 +243,8 @@ body.wm-desktop #wm-taskbar {
 }
 .wm-task.min { opacity: 0.6; }
 #wm-start:focus-visible, .wm-task:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
+/* .wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; } */  /* (before H147) */
+.wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-weight: 900; font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
 
 /* Show Desktop (right after Start): minimise all ↔ restore; .on while the desktop is shown */
 /* H144: #wm-fs (fullscreen, right of the tray, before the clock) shares this look; .on while full screen */
