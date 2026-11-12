@@ -21,7 +21,9 @@ Draftly.settings = {
     statusBar: true, ruler: false, marks: false, theme: 'light',
     font: 'Times New Roman', fontSize: 12, lineHeight: 1.6,
     paper: 'A4', orientation: 'portrait', margins: 'normal',
-    autosave: true, backupSec: 0, hoverTabs: true, ribbonCollapsed: false
+    /* (before DF21) autosave: true, backupSec: 0, hoverTabs: true, ribbonCollapsed: false */
+    autosave: true, backupSec: 0, hoverTabs: true, ribbonCollapsed: false,
+    spellcheck: false   /* DF21: browser spell check on the page, off by default */
   },
   fonts: ['Times New Roman', 'Tinos'],
   sizes: [8, 10, 11, 12, 14, 16, 18],
@@ -64,7 +66,8 @@ Draftly.settings.sections = function sections(s) {
     { title: 'Editing', rows: [
       { key: 'font', type: 'select', id: 'setFont', label: 'Default font', options: S.fonts.map(function (f) { return [f, f]; }) },
       { key: 'fontSize', type: 'select', id: 'setFontSize', label: 'Default size', cast: Number, options: S.sizes.map(function (n) { return [n, n + ' pt']; }) },
-      { key: 'lineHeight', type: 'select', id: 'setLine', label: 'Line spacing', cast: Number, options: S.spacings.map(function (n) { return [n, n.toFixed(n === 1.15 ? 2 : 1)]; }) }
+      { key: 'lineHeight', type: 'select', id: 'setLine', label: 'Line spacing', cast: Number, options: S.spacings.map(function (n) { return [n, n.toFixed(n === 1.15 ? 2 : 1)]; }) },
+      { key: 'spellcheck', type: 'switch', id: 'setSpell', label: 'Spell check' }   /* DF21 */
     ] },
     { title: 'New document', rows: [
       { key: 'paper', type: 'select', id: 'setPaper', label: 'Paper size', options: Object.keys(cfg.paperSizes).map(function (k) { return [k, cfg.paperSizes[k].label]; }) },
@@ -148,6 +151,7 @@ Draftly.settings.apply = function apply(k) {
   }
   if (!k || k === 'backupSec') S.startBackup();
   if (!k || k === 'ribbonCollapsed') { if (Draftly.ribbon && Draftly.ribbon.collapse) Draftly.ribbon.collapse.apply(s.ribbonCollapsed); }  /* DF13c */
+  if (!k || k === 'spellcheck') { if (Draftly.write && Draftly.write.applySpell) Draftly.write.applySpell(); }  /* DF21 */
 };
 
 Draftly.settings.applyTheme = function applyTheme() {

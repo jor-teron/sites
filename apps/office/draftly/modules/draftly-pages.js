@@ -74,7 +74,9 @@ Draftly.pages.createNewPage = function createNewPage(index) {
   var ed = document.createElement('div');
   ed.className = cfg.editorClass;
   ed.contentEditable = 'true';
-  ed.spellcheck = false;
+  /* (before DF21) ed.spellcheck = false; */
+  /* DF21: new pages follow the Spelling setting (draftly-write.js). */
+  ed.spellcheck = !!(Draftly.write && Draftly.write.spellOn && Draftly.write.spellOn());
   ed.setAttribute('data-placeholder', cfg.placeholder);
 
   var pn = document.createElement('div');

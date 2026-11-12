@@ -30,6 +30,20 @@ File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropp
 
 The old native copy was IndexedDB database `draftly`, store `documents` (`name`, `html`, `hf`, `updated`), plus the localStorage crash copy `draftly-backup`. Writer does not migrate those records and does not open them. The old load, Recent, backup and IndexedDB save calls are still in the source, commented with `(before HOW1)`. `Draftly.storage.save` is still the IndexedDB function so the shared save-failure check can run it; while Writer is open, `draftly-how.js` replaces it and keeps the original on `Draftly.storage.saveLegacy`. Theme, margins and the other localStorage prefs are unchanged. Open .docx still uses the Word reader.
 
+## DF21 — writing helpers (Review tab)
+
+A new **Review** ribbon tab (also in the Hub title bar) holds four helpers. Plain code, no new library, no dictionary download.
+
+- **Spelling** turns the browser's own spell checker on or off for the page text (every page, including pages added as you type). The same switch is in Settings → Editing → Spell check. It is stored in `draftly_settings` as `spellcheck` and is **off by default**, as before DF21. Header and footer slots stay off (they hold `{page}` / `{date}` fields). Squiggles are never printed or exported.
+- **UPPER / lower / Title Case** change the selected text. Bold, italic, colour and links stay, because only the letters inside the text are changed. It is one undo step and autosaves like typing. With nothing selected a short message says "Select some text first" and nothing changes. **Title Case rule:** every word starts with a capital and the rest of the word is lower case. Small words (a, of, the) are capitalised too, so the result is predictable. An apostrophe inside a word does not start a new word (don't → Don't); a hyphen does (well-known → Well-Known). A selection that starts in the middle of a word keeps that word's first part as it was.
+- **Status bar** now shows the character count (with spaces) and a reading time next to the word count, updated with it. **Reading time rule:** about 200 words a minute, rounded up to whole minutes (1–200 words = 1 min, 201–400 = 2 min, an empty page = 0 min). The word count popup lists it too. Read Aloud's own estimate is a listening time (about 160 words a minute, scaled by speed), so the two numbers differ on purpose. The character count hides on screens under 560 px.
+- **Focus** hides the top row, ribbon, ruler and status bar and shows just the page. A small bar at the top right keeps Undo, Redo, Save and **Exit focus**; Ctrl/⌘+Z, Ctrl+Y, Ctrl/⌘+S and Ctrl/⌘+P still work. **Esc** ends focus mode (unless Esc is first needed to close Find, a menu, a dialog, header/footer editing or a selected image). Clicking any tab in the Hub title bar also ends it. The File menu still opens from the Hub title bar. Focus mode is for this session only and is not saved. Print, PDF and DOCX are not affected.
+- **Read aloud** sends the selected text, or the whole document as plain text when nothing is selected, to the Read Aloud app (`apps/tools/read-aloud/`). Writer writes Read Aloud's own keys (`readaloud.source` = `text`, `readaloud.text`, and clears `readaloud.pos.text` so it starts at the top), then opens it the way other apps open apps: in the Hub with `__hubOpenApp('apps/tools/read-aloud/')` (after saving the `.how`, because in Phone mode Read Aloud replaces Writer in the frame), otherwise in a frame with a `hub-open-app` message, and standalone in a new tab (`../../tools/read-aloud/read-aloud.html`). Read Aloud itself was not changed. Text is capped at Read Aloud's 200,000 characters. Header, footer and page numbers are not read.
+
+Limits: if Read Aloud is **already open** in a Desktop-mode window, the Hub brings that window forward and it still shows the text it loaded when it opened; close it and press Read aloud again (or reload it). Sending text replaces what was in Read Aloud's Text tab. Spell check languages and suggestions are the browser's. Change case works on letters only (Hindi and other scripts without capitals are unchanged).
+
+Files: `modules/draftly-writetext.js` (text rules, no DOM; used by the Node test), `modules/draftly-write.js` (Review tab, spelling, case, focus, read aloud), `ui/write.css`. Small hooks: `draftly-settings.js` (default and switch), `draftly-pages.js` (new pages follow the setting), `draftly-wordcount.js` (status bar and popup), `draftly-hub.js` (Review tab for the Hub). The page title is `Writer DF21`. Replaced lines are commented with `(before DF21)`. Test: `node apps/office/draftly/test-df21-helpers.js`.
+
 ## 1. What it is
 An offline document editor laid out as fixed A4 pages, like a word processor. Text flows from page to page line by line. Documents autosave in the browser and download as PDF or DOCX. Plain JavaScript, no internet needed, works from `file://`.
 
@@ -60,6 +74,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/draftly-breaks.js`: page breaks and page numbers
 - `modules/draftly-colour.js`: font colour and highlight
 - `modules/draftly-wordcount.js`: word count, status bar on / off
+- `modules/draftly-writetext.js` (DF21): change case, reading time, character label, plain text and keys for Read Aloud (no DOM)
+- `modules/draftly-write.js` (DF21): Review tab — Spelling, UPPER / lower / Title Case, Focus mode, Read aloud; `ui/write.css`
 - `modules/draftly-find.js`: text model, Find & Replace, wiring for find and word count
 - `modules/draftly-table.js`: tables
 - `modules/draftly-spacing.js`: line spacing and indents
@@ -134,6 +150,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - Ctrl/Cmd+B / I / U: bold, italic, underline (in the text)
 - Enter: new paragraph; Shift+Enter: line break
 - Esc closes the Recent or Page popup
+- Esc ends Focus mode (DF21) when no menu, dialog, Find bar or header/footer is open
 - Ctrl/Cmd+Z undo, Ctrl+Y or Ctrl/Cmd+Shift+Z redo (also the Undo / Redo toolbar buttons). Draftly keeps its own history of up to 100 steps (a typed word, a format change, a line break), so undo works across page breaks. Opening, New or Delete clears it.
 - Other editing keys (copy, paste, arrows) are the browser's own.
 
@@ -201,6 +218,7 @@ Messages show briefly at the bottom (2.2 s):
 - Old version after an update: hard-refresh.
 
 ## 11. Change log
+- 2026-11-12 IST: DF21 writing helpers: Review tab (Spelling on/off, UPPER / lower / Title Case, Focus mode, Read aloud), character count and reading time in the status bar.
 - 2026-10-30 IST: MM4 Merge to PDF + DF14 real-text PDF (`draftly-pdfgen.js`); old image PDF kept as fallback.
 - 2026-10-23 IST: MM6 real DOCX export: new `draftly-docxgen.js` writes WordprocessingML (all DOCX paths, incl. Merge zip / combined, were blank outside Word before); html-docx kept only as a fallback.
 - 2026-10-23 IST: MM3 Excel (.xlsx) import for Merge: own reader (no library), sheet dropdown (remembered), number and date formats as shown in Excel, live refresh like CSV; `samples/merge_sample.xlsx`.
