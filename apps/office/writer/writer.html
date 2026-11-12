@@ -256,10 +256,12 @@
       </dl>
     </div>
     <!-- MM1 / MM3 Merge tab: mail merge from a CSV or an Excel .xlsx file (writer-merge-ui.js). Placeholders are written {{Column Name}}. -->
+    <!-- MM8: a Spreadsheet .hos file (version 1) can be the data too (modules/writer-hos.js). -->
     <div class="ribbon-panel mm-row" role="tabpanel" id="panelMerge" aria-labelledby="tabMerge" hidden>
       <div class="tool-group mm-group" role="group" aria-label="Data">
         <span class="mm-cap">Data</span>
-        <button class="tool-btn labeled" id="mmChooseBtn" title="Choose a CSV or Excel (.xlsx) file from a Hub drive" aria-label="Choose file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5H10l2 2.5h6.5A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></svg><span>Choose file</span></button>
+        <!-- (before MM8) title="Choose a CSV or Excel (.xlsx) file from a Hub drive" -->
+        <button class="tool-btn labeled" id="mmChooseBtn" title="Choose a CSV, Excel (.xlsx) or Spreadsheet (.hos) file from a Hub drive" aria-label="Choose file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5H10l2 2.5h6.5A1.5 1.5 0 0 1 20 10v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/></svg><span>Choose file</span></button>
         <button class="tool-btn labeled" id="mmRefreshBtn" title="Read the data file again" aria-label="Refresh data file" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg><span>Refresh</span></button>
         <select id="mmDelim" class="size-select mm-delim" title="Delimiter" aria-label="Delimiter">
           <option value="auto" selected>Auto</option>
@@ -267,7 +269,8 @@
           <option value=";">Semicolon ;</option>
           <option value="&#9;">Tab</option>
         </select>
-        <select id="mmSheetPick" class="size-select mm-sheetpick" title="Sheet of the Excel workbook" aria-label="Sheet" hidden></select>
+        <!-- (before MM8) title="Sheet of the Excel workbook" -->
+        <select id="mmSheetPick" class="size-select mm-sheetpick" title="Sheet of the Excel or Spreadsheet workbook" aria-label="Sheet" hidden></select>
         <span class="mm-status" id="mmStatus" aria-live="polite">No file chosen</span>
         <span class="mm-changed" id="mmChanged" hidden title="The file on disk is different from what is loaded">&#9679; File changed</span>
       </div>
@@ -288,7 +291,8 @@
         <button class="tool-btn labeled accent" id="mmExportBtn" title="One DOCX per row (.zip) or one combined file" aria-label="Export all" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19.5h14"/></svg><span>Export all</span></button>
         <button class="tool-btn labeled" id="mmExportPdfBtn" title="One PDF with every row (each row on a new page), or the current row" aria-label="Export PDF" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4"/><path d="M9.5 14h5M9.5 17h5"/></svg><span>Export PDF</span></button>
       </div>
-      <input type="file" id="mmFile" accept=".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+      <!-- (before MM8) <input type="file" id="mmFile" accept=".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden> -->
+      <input type="file" id="mmFile" accept=".csv,.tsv,.txt,.xlsx,.xlsm,.hos,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     </div>
     <!-- DF21 Review tab: spell check, change case, focus mode, read aloud (modules/writer-write.js) -->
     <div class="ribbon-panel" role="tabpanel" id="panelReview" aria-labelledby="tabReview" hidden>
@@ -442,6 +446,7 @@
   <script src="modules/writer-csv.js"></script>
   <script src="modules/writer-numfmt.js"></script>
   <script src="modules/writer-xlsx.js"></script>
+  <script src="modules/writer-hos.js"></script><!-- MM8: Spreadsheet .hos reader for Merge -->
   <script src="modules/writer-zip.js"></script>
   <!-- MM6 real DOCX writer (WordprocessingML); uses writer-zip.js -->
   <script src="modules/writer-docxgen.js"></script>

@@ -2646,6 +2646,83 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   Puppeteer, Playwright or browser runner.
 - 1.117 is DW5, so this note is numbered 1.118.
 
+### 1.119 MM8 Writer Mail Merge opens Spreadsheet .hos files
+
+- Goal: Writer Mail Merge can use a Hub Office Spreadsheet `.hos`
+  (HOS1, version 1) as its data, with the same UX as Excel `.xlsx`
+  (MM3). Before MM8 only CSV (MM1) and `.xlsx`/`.xlsm` (MM3) were
+  read: the Hub drive chooser (`isDataName`), Browse
+  (`showOpenFilePicker`) and `#mmFile` did not list `.hos`, and a
+  forced `.hos` was read as CSV and failed. `.hos` arrived after MM3.
+- New `apps/office/writer/modules/writer-hos.js` (`Writer.hos`), pure,
+  no DOM. `sniff(buf)` looks at the content, not the name: UTF-8
+  JSON (BOM allowed) with `format: "hos"` -> `hos`, `format: "how"`
+  -> `how`, anything else (including a CSV that starts with `{`) ->
+  `other`. `open()` accepts version 1 only. Messages:
+  version 2 -> "This .hos file is version 2. Writer Mail Merge reads
+  version 1"; a Writer file -> "This is a Writer document (.how), not
+  merge data: choose a CSV, Excel or Spreadsheet .hos file"; a file
+  named `.hos` that is not Spreadsheet JSON -> "This .hos file could
+  not be read: it is not a Spreadsheet file".
+- Values: the saved `cell.value`; a plain cell with no value uses
+  its typed `formula` text. Spreadsheet's formula engine is not
+  loaded: a formula (`=`) with no saved value is blank and the
+  warning "N formula cell(s) have no saved result and show as blank:
+  open the file in Spreadsheet and save it" is shown (same idea as
+  MM3 for script-written xlsx).
+- Formats: `style.fmt` names (general, int, dec2, thousands,
+  percent, currency, date, datedmy, time, datetime) through
+  `Writer.hos.format`, a small port of `formatCellValue`
+  (`spreadsheet_format.js`) and `fxParseDate`, with Spreadsheet's
+  default `CFG.numberFormat` (currency `₹`, locale `en-IN`). The
+  Spreadsheet files are read for the port only, not edited and not
+  script-tagged. `writer-numfmt.js` (Excel codes) is not used.
+- Table: same shape as CSV/xlsx (`{ ok, error, header, rows,
+  warnings }` via `Writer.csv.table`). First non-empty row is the
+  header, leading empty rows and columns empty in every row are
+  dropped, merged cells keep the top-left value. Grid 26 x 100 (cells
+  outside are skipped with a warning), at most 20 sheets. An empty
+  sheet -> `The sheet "Name" is empty`.
+- `writer-merge.js` `readSource`: xlsx (zip) first, then `.hos`/`.how`
+  JSON by content, else CSV. `M.data.kind` is `'hos'`; `M.sheets`
+  fills the existing sheet dropdown (2+ sheets), first sheet by
+  default, the remembered `sheet` setting, and a missing remembered
+  sheet falls back to the first with the MM3 note. The hash is the
+  text hash + `:h:` + sheet, so a file change or a sheet switch
+  re-reads; the 3s live poll is unchanged.
+- UI: `isDataName` adds `.hos` (not `.how`); Browse accepts `.hos`
+  (`application/json`); `#mmFile` accept adds `.hos`; chooser title,
+  drive notes, Browse tooltip, empty field list and "Choose ... first"
+  toast say "CSV, Excel or Spreadsheet .hos"; refresh notices say
+  "Spreadsheet file updated" / "is up to date". The delimiter select
+  is hidden for `.hos` as for xlsx. `writer.html` loads
+  `modules/writer-hos.js` after `writer-xlsx.js`, before
+  `writer-merge.js`. Replaced lines are commented `(before MM8)`.
+- Sample: `apps/office/writer/samples/merge_sample.hos` (Customers:
+  currency, date dd/mm/yyyy, percent, a formula with its saved
+  result, a two-line note; Orders sheet for the dropdown). No Python
+  needed. `writer_readme.md` Mail merge section documents `.hos`.
+- Limits (not fixed here): version 1 only; 26 x 100 grid; no formula
+  recalculation; filters and hidden rows are not applied (the full
+  sheet is read); charts ignored; spill (dynamic array) results other
+  than the top-left cell are not saved in the file, so they are blank;
+  a formula whose result is an empty string also counts as
+  "no saved result". Files association unchanged: double-click on a
+  `.hos` still opens Spreadsheet.
+- Not changed: `apps/office/shared`, `apps/office/spreadsheet`,
+  Hub files, root `shared/`. Title stays Writer DF25, no `?v=` on
+  Writer, no Hub build bump, no new library, no CDN. MM7 (header /
+  footer fields in the combined merge DOCX) is not part of this
+  release and is still open.
+- Checked with `node --check` on the edited JS, the new
+  `node apps/office/writer/test/test-mm8-hos.js` (13 passed: sniffing,
+  values, formats against the real `formatCellValue`, cached and
+  uncached formulas, two sheets and sheet pick, remembered sheet
+  fallback, version 2, `.how`, empty sheet, grid limit, sample file,
+  static UI wiring) and the existing Writer tests (DF21 19 passed,
+  DF24, DF25 64 checks, HOW1), plus a static-serve curl smoke.
+- 1.118 is HO3, so this note is numbered 1.119.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

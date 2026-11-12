@@ -1,0 +1,710 @@
+{
+  "format": "hos",
+  "version": 1,
+  "name": "merge_sample",
+  "created": 1762905600000,
+  "updated": 1762905600000,
+  "active": 0,
+  "cols": 26,
+  "rows": 100,
+  "page": {
+    "orientation": "portrait",
+    "paper": "A4",
+    "margins": "normal",
+    "custom": {
+      "top": 2.5,
+      "bottom": 2.5,
+      "left": 2.5,
+      "right": 2.5
+    },
+    "gridlines": true,
+    "headings": false,
+    "fit": false
+  },
+  "settings": {},
+  "sheets": [
+    {
+      "name": "Customers",
+      "cells": [
+        {
+          "r": 0,
+          "c": 0,
+          "formula": "Name",
+          "value": "Name",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 1,
+          "formula": "No",
+          "value": "No",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 2,
+          "formula": "Company",
+          "value": "Company",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 3,
+          "formula": "City",
+          "value": "City",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 4,
+          "formula": "Amount",
+          "value": "Amount",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 5,
+          "formula": "Due",
+          "value": "Due",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 6,
+          "formula": "Discount",
+          "value": "Discount",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 7,
+          "formula": "Total",
+          "value": "Total",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 8,
+          "formula": "Note",
+          "value": "Note",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 1,
+          "c": 0,
+          "formula": "Anna Smith",
+          "value": "Anna Smith"
+        },
+        {
+          "r": 1,
+          "c": 1,
+          "formula": "1001",
+          "value": 1001
+        },
+        {
+          "r": 1,
+          "c": 2,
+          "formula": "Smith & Sons, Ltd.",
+          "value": "Smith & Sons, Ltd."
+        },
+        {
+          "r": 1,
+          "c": 3,
+          "formula": "Paris",
+          "value": "Paris"
+        },
+        {
+          "r": 1,
+          "c": 4,
+          "formula": "1250",
+          "value": 1250,
+          "style": {
+            "fmt": "currency"
+          }
+        },
+        {
+          "r": 1,
+          "c": 5,
+          "formula": "2026-12-01",
+          "value": "2026-12-01",
+          "style": {
+            "fmt": "datedmy"
+          }
+        },
+        {
+          "r": 1,
+          "c": 6,
+          "formula": "0.1",
+          "value": 0.1,
+          "style": {
+            "fmt": "percent"
+          }
+        },
+        {
+          "r": 1,
+          "c": 7,
+          "formula": "=E2*(1-G2)",
+          "value": 1125,
+          "style": {
+            "fmt": "currency"
+          }
+        },
+        {
+          "r": 1,
+          "c": 8,
+          "formula": "Prefers email.\nCall after 5 pm.",
+          "value": "Prefers email.\nCall after 5 pm.",
+          "style": {
+            "wrap": true
+          }
+        },
+        {
+          "r": 2,
+          "c": 0,
+          "formula": "Rahul Mehta",
+          "value": "Rahul Mehta"
+        },
+        {
+          "r": 2,
+          "c": 1,
+          "formula": "1002",
+          "value": 1002
+        },
+        {
+          "r": 2,
+          "c": 2,
+          "formula": "Mehta Traders",
+          "value": "Mehta Traders"
+        },
+        {
+          "r": 2,
+          "c": 3,
+          "formula": "Mumbai",
+          "value": "Mumbai"
+        },
+        {
+          "r": 2,
+          "c": 4,
+          "formula": "980.5",
+          "value": 980.5,
+          "style": {
+            "fmt": "currency"
+          }
+        },
+        {
+          "r": 2,
+          "c": 5,
+          "formula": "2026-12-15",
+          "value": "2026-12-15",
+          "style": {
+            "fmt": "datedmy"
+          }
+        },
+        {
+          "r": 2,
+          "c": 6,
+          "formula": "0",
+          "value": 0,
+          "style": {
+            "fmt": "percent"
+          }
+        },
+        {
+          "r": 2,
+          "c": 7,
+          "formula": "=E3*(1-G3)",
+          "value": 980.5,
+          "style": {
+            "fmt": "currency"
+          }
+        },
+        {
+          "r": 3,
+          "c": 0,
+          "formula": "Zoë Müller",
+          "value": "Zoë Müller"
+        },
+        {
+          "r": 3,
+          "c": 1,
+          "formula": "1003",
+          "value": 1003
+        },
+        {
+          "r": 3,
+          "c": 2,
+          "formula": "Müller \"Werkzeug\" GmbH",
+          "value": "Müller \"Werkzeug\" GmbH"
+        },
+        {
+          "r": 3,
+          "c": 3,
+          "formula": "Köln",
+          "value": "Köln"
+        },
+        {
+          "r": 3,
+          "c": 4,
+          "formula": "240000",
+          "value": 240000,
+          "style": {
+            "fmt": "currency"
+          }
+        },
+        {
+          "r": 3,
+          "c": 5,
+          "formula": "2027-01-10",
+          "value": "2027-01-10",
+          "style": {
+            "fmt": "datedmy"
+          }
+        },
+        {
+          "r": 3,
+          "c": 6,
+          "formula": "0.05",
+          "value": 0.05,
+          "style": {
+            "fmt": "percent"
+          }
+        },
+        {
+          "r": 3,
+          "c": 7,
+          "formula": "=E4*(1-G4)",
+          "value": 228000,
+          "style": {
+            "fmt": "currency"
+          }
+        },
+        {
+          "r": 3,
+          "c": 8,
+          "formula": "New customer",
+          "value": "New customer",
+          "style": {
+            "wrap": true
+          }
+        }
+      ],
+      "widths": [
+        140,
+        60,
+        200,
+        90,
+        110,
+        100,
+        80,
+        110,
+        200,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "heights": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "hiddenRows": [],
+      "hiddenCols": [],
+      "freeze": {
+        "rows": 0,
+        "cols": 0
+      },
+      "sel": [
+        0,
+        0,
+        0,
+        0,
+        "cell"
+      ],
+      "filters": {
+        "on": false,
+        "r1": 0,
+        "r2": 0,
+        "c1": 0,
+        "c2": 0,
+        "cols": {}
+      },
+      "validations": [],
+      "merges": [],
+      "condFormats": [],
+      "charts": []
+    },
+    {
+      "name": "Orders",
+      "cells": [
+        {
+          "r": 0,
+          "c": 0,
+          "formula": "Order",
+          "value": "Order",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 1,
+          "formula": "Customer",
+          "value": "Customer",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 2,
+          "formula": "Item",
+          "value": "Item",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 0,
+          "c": 3,
+          "formula": "Qty",
+          "value": "Qty",
+          "style": {
+            "bold": true
+          }
+        },
+        {
+          "r": 1,
+          "c": 0,
+          "formula": "A-501",
+          "value": "A-501"
+        },
+        {
+          "r": 1,
+          "c": 1,
+          "formula": "Anna Smith",
+          "value": "Anna Smith"
+        },
+        {
+          "r": 1,
+          "c": 2,
+          "formula": "Desk lamp",
+          "value": "Desk lamp"
+        },
+        {
+          "r": 1,
+          "c": 3,
+          "formula": "2",
+          "value": 2
+        },
+        {
+          "r": 2,
+          "c": 0,
+          "formula": "A-502",
+          "value": "A-502"
+        },
+        {
+          "r": 2,
+          "c": 1,
+          "formula": "Rahul Mehta",
+          "value": "Rahul Mehta"
+        },
+        {
+          "r": 2,
+          "c": 2,
+          "formula": "Notebook",
+          "value": "Notebook"
+        },
+        {
+          "r": 2,
+          "c": 3,
+          "formula": "12",
+          "value": 12
+        }
+      ],
+      "widths": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "heights": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "hiddenRows": [],
+      "hiddenCols": [],
+      "freeze": {
+        "rows": 0,
+        "cols": 0
+      },
+      "sel": [
+        0,
+        0,
+        0,
+        0,
+        "cell"
+      ],
+      "filters": {
+        "on": false,
+        "r1": 0,
+        "r2": 0,
+        "c1": 0,
+        "c2": 0,
+        "cols": {}
+      },
+      "validations": [],
+      "merges": [],
+      "condFormats": [],
+      "charts": []
+    }
+  ]
+}
