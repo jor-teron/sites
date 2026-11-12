@@ -36,7 +36,9 @@ Draftly.hub = {
     { id: 'home', label: 'Home' },
     { id: 'insert', label: 'Insert' },
     { id: 'page', label: 'Page' },
-    { id: 'merge', label: 'Merge' }
+    /* (before DF21) { id: 'merge', label: 'Merge' } */
+    { id: 'merge', label: 'Merge' },
+    { id: 'review', label: 'Review' }   /* DF21 */
   ],
   menuInset: 8          /* px from the frame's top-left for the File menu */
 };

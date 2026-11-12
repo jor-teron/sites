@@ -16,7 +16,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- (before DF24) <title>Draftly</title> -->
-  <title>Writer</title>
+  <!-- (before DF21) <title>Writer</title> -->
+  <title>Writer DF21</title>
   <meta name="theme-color" content="#5b5bf0">
   <link rel="icon" href="draftly_icon.png">
   <link rel="stylesheet" href="ui/fonts.css">
@@ -47,6 +48,7 @@
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
+  <link rel="stylesheet" href="ui/write.css">
 </head>
 <body>
 
@@ -67,6 +69,7 @@
       <button type="button" class="ribbon-tab" role="tab" id="tabInsert" aria-controls="panelInsert" aria-selected="false" tabindex="-1" data-tab="insert">Insert</button>
       <button type="button" class="ribbon-tab" role="tab" id="tabPage" aria-controls="pagePanel" aria-selected="false" tabindex="-1" data-tab="page">Page</button>
       <button type="button" class="ribbon-tab" role="tab" id="tabMerge" aria-controls="panelMerge" aria-selected="false" tabindex="-1" data-tab="merge">Merge</button>
+      <button type="button" class="ribbon-tab" role="tab" id="tabReview" aria-controls="panelReview" aria-selected="false" tabindex="-1" data-tab="review">Review</button>
     </div>
     <input id="fileNameInput" class="file-name" type="text" spellcheck="false" title="Document name" aria-label="Document name">
     <button type="button" class="tool-btn" id="settingsBtn" title="Settings" aria-label="Settings" aria-haspopup="dialog" aria-expanded="false" aria-controls="settingsPanel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -283,6 +286,21 @@
       </div>
       <input type="file" id="mmFile" accept=".csv,.tsv,.txt,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     </div>
+    <!-- DF21 Review tab: spell check, change case, focus mode, read aloud (modules/draftly-write.js) -->
+    <div class="ribbon-panel" role="tabpanel" id="panelReview" aria-labelledby="tabReview" hidden>
+      <div class="tool-group" role="group" aria-label="Proofing">
+        <button class="tool-btn labeled" id="spellBtn" title="Spell check: underline misspelt words with your browser&#39;s own checker" aria-label="Spell check" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15 7.5 5 11 15M5.3 11.5h4.4"/><path d="m13 12 2.5 2.5L20 9"/><path d="M4 19c1.5-1 3-1 4.5 0s3 1 4.5 0 3-1 4.5 0"/></svg><span>Spelling</span></button>
+      </div>
+      <div class="tool-group" role="group" aria-label="Change case">
+        <button class="tool-btn labeled" data-case="upper" title="Selected text to UPPER CASE" aria-label="Upper case"><span>UPPER</span></button>
+        <button class="tool-btn labeled" data-case="lower" title="Selected text to lower case" aria-label="Lower case"><span>lower</span></button>
+        <button class="tool-btn labeled" data-case="title" title="Selected text to Title Case (every word starts with a capital)" aria-label="Title case"><span>Title Case</span></button>
+      </div>
+      <div class="tool-group" role="group" aria-label="Focus and listen">
+        <button class="tool-btn labeled" id="focusBtn" title="Focus mode: only the page (Esc to exit)" aria-label="Focus mode" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><rect x="8.5" y="8.5" width="7" height="7" rx="1"/></svg><span>Focus</span></button>
+        <button class="tool-btn labeled" id="readAloudBtn" title="Read the selection, or the whole document, in the Read Aloud app" aria-label="Read aloud"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Read aloud</span></button>
+      </div>
+    </div>
 
   </nav>
 
@@ -336,6 +354,9 @@
   <footer class="status-bar" id="statusBar">
     <span class="status-item" id="statusPages">Page 1 of 1</span>
     <button type="button" class="status-item status-btn" id="wordCountBtn" title="Word count" aria-haspopup="dialog" aria-expanded="false" aria-controls="wordCountPop">0 words</button>
+    <!-- DF21: characters (with spaces) and reading time (about 200 words a minute, rounded up) -->
+    <span class="status-item status-chars" id="statusChars">0 characters</span>
+    <span class="status-item status-read" id="statusRead" title="Reading time at about 200 words a minute, rounded up">0 min read</span>
     <div class="zoom-ctl" role="group" aria-label="Zoom">
       <button type="button" class="status-btn zoom-btn" id="zoomOutBtn" title="Zoom out (Ctrl+−)" aria-label="Zoom out">−</button>
       <button type="button" class="status-btn zoom-pct" id="zoomPctBtn" title="Reset zoom to 100% (Ctrl+0)" aria-label="Reset zoom">100%</button>
@@ -343,6 +364,14 @@
     </div>
   </footer>
   <div class="pop-menu wc-pop" id="wordCountPop" role="dialog" aria-label="Word count" hidden></div>
+
+  <!-- DF21 focus mode bar: shown only while the top row and ribbon are hidden -->
+  <div class="focus-bar" id="focusBar" role="toolbar" aria-label="Focus mode" hidden>
+    <button type="button" class="focus-btn" id="focusUndoBtn" title="Undo (Ctrl/⌘+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11"/></svg></button>
+    <button type="button" class="focus-btn" id="focusRedoBtn" title="Redo (Ctrl+Y / ⌘+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7l4.5 4.5L15 16"/><path d="M19 11.5H9.5a5 5 0 0 0 0 10H13"/></svg></button>
+    <button type="button" class="focus-btn" id="focusSaveBtn" title="Save (Ctrl/⌘+S)" aria-label="Save"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg></button>
+    <button type="button" class="focus-btn focus-exit" id="focusExitBtn" title="Exit focus mode (Esc)"><span>Exit focus</span></button>
+  </div>
 
 
   <!-- Vendored libraries (vendor/, offline): DOCX export, PDF download.
@@ -418,6 +447,9 @@
   <script src="modules/draftly-how.js"></script>
   <script src="modules/draftly-hub.js"></script>
   <script src="modules/draftly-quick.js"></script>
+  <!-- DF21 writing helpers: text rules (no DOM), then the Review tab wiring -->
+  <script src="modules/draftly-writetext.js"></script>
+  <script src="modules/draftly-write.js"></script>
   <script src="modules/draftly-app.js"></script>
 </body>
 </html>

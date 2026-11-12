@@ -28,7 +28,9 @@ function live(src) {
 var html = read('apps/office/draftly/draftly.html');
 var htmlLive = live(html);
 var title = htmlLive.match(/<title>([^<]*)<\/title>/);
-ok('page title is Writer', title && title[1] === 'Writer', title && title[1]);
+/* (before DF21) ok('page title is Writer', title && title[1] === 'Writer', title && title[1]); */
+/* DF21: the page title carries the release id (Writer DF21); the name part is still Writer. */
+ok('page title is Writer', title && /^Writer( [A-Z]+[0-9]+)?$/.test(title[1]), title && title[1]);
 ok('old title kept', html.indexOf('<!-- (before DF24) <title>Draftly</title> -->') !== -1);
 ok('header label is Writer', /<span class="brand-name">Writer<\/span>/.test(htmlLive));
 ok('header title is Writer', /<div class="brand" title="Writer">/.test(htmlLive));
