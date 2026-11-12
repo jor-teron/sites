@@ -21,10 +21,15 @@
    SL8: more deck themes (colour + font; app chrome stays System / Light / Dark), master footer, hide slide, sections;
      undo covers master, hide and section structure.
    SL9: File export / import .pptx (SLPptx + SLZip; deflated imports lazy-load vendored JSZip) and Export PNG
-     (this slide, or all slides in a zip). In-app summary dialogs. No .hslides format bump. */
+     (this slide, or all slides in a zip). In-app summary dialogs. No .hslides format bump.
+   SL10: do not size the canvas until SLEdit.init has assigned the stage; setNotesOpen(notesWanted()) runs after
+     that init so the notes pane is restored and the slide is fitted once the canvas is ready. A guard in doFit
+     also returns early if the stage is missing, so a similar call cannot abort the ribbon, File menu, slide list
+     or deck boot. */
 (function () {
   'use strict';
-  var VERSION = 'SL9';   /* legacy: 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  /* (before SL10) var VERSION = 'SL9'; */
+  var VERSION = 'SL10';   /* legacy: 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -906,7 +911,7 @@
         dirty(); toast('Transition applied to all slides');
       });
   };
-  setNotesOpen(notesWanted());
+  /* (before SL10) setNotesOpen(notesWanted()); */
 
   /* ---------- SL8 themes, master, hide, sections ---------- */
   var TH_SW = { light: '#ffffff', dark: '#16181d', ocean: '#0369a1', forest: '#3f6b3a', sunset: '#c2410c', slate: '#334155', paper: '#faf6ee', midnight: '#0b1220' };
@@ -1166,6 +1171,7 @@
     /* SL3 / SL5: a picture or text box was added / moved / resized / cropped / deleted, or text was formatted */
     onObj: function (s, before, label) { var i = deck.slides.indexOf(s); if (i < 0) return; recordSlide(s, before, label); SLList.update(i); dirty(); },
     onPickPic: pickPicture, onFmt: syncFmt });
+  setNotesOpen(notesWanted());
   SLShow.init({ onExit: function (last) {
     if (SLPresent.isPresenterSearch(location.search)) {
       try { window.close(); } catch (_) { /* */ }

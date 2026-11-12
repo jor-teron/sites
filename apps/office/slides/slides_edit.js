@@ -14,7 +14,9 @@
      or Enter edits. Thumbnails, Present and Print use the same renderer, so styling matches the editor.
    SL6: shapes and tables live with pictures and text boxes in #objs (shared z-order). Shapes have fill / outline and
      SL5 text inside (except line / arrow). Tables have equal cells, a header row, and SL5 cell text. Shift-click
-     multi-selects; arrange aligns, distributes and changes z-order; drag snaps to the slide centre and edges. */
+     multi-selects; arrange aligns, distributes and changes z-order; drag snaps to the slide centre and edges.
+   SL10: doFit() returns at once if the stage, fit box or slide element is not ready yet, so an early fit() (for
+     example from the notes pane, before init) cannot throw and abort the rest of start-up. */
 (function () {
   'use strict';
   var W = 960, H = 540;
@@ -85,6 +87,8 @@
   function elSlot(el) { return el && el.dataset ? el.dataset.slot : ''; }
 
   function doFit() {
+    /* (before SL10) var r = stage.getBoundingClientRect(), pos = $('pos'); */
+    if (!stage || !fit || !slideEl) return;
     var r = stage.getBoundingClientRect(), pos = $('pos');
     var bar = 0;
     [picbar, tbbar, shpbar, tblbar, arrbar].forEach(function (el) {

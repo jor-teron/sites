@@ -2426,6 +2426,53 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
 - 1.113 is TB5, so this note is numbered 1.114.
 
 
+### 1.115 SL10 Slides start-up crash (ribbon and deck)
+
+- Slides (`apps/office/slides/`) crashed as soon as the page opened: a
+  top-level `setNotesOpen(notesWanted())` in `slides_app.js` ran before
+  `SLEdit.init` and always called `SLEdit.fit()` → `doFit()` in
+  `slides_edit.js`. `doFit()` read `stage.getBoundingClientRect()` while
+  the module-level `stage` was still undefined (it is assigned in `init`).
+  That threw `Cannot read properties of undefined (reading
+  'getBoundingClientRect')` and aborted the rest of start-up, so
+  `OfficeRibbon.create`, `SLList.init` and `boot()` never ran. The Home /
+  Insert / Design / Slide Show tabs never appeared, the File menu did
+  nothing, the slide list stayed empty, Settings showed "0 decks", and the
+  960 × 540 canvas stayed unscaled and clipped off the right. Settings
+  still worked (wired earlier). The notes pane could already be visible
+  because `setNotesOpen(true)` ran just before the throw
+  (`notesWanted()` is true unless localStorage `slides-notes` is `'0'`).
+  CSS was fine; this is not a missing stylesheet. Likely present since SL7.
+- Fix, both parts: `doFit()` now returns at once if `!stage || !fit ||
+  !slideEl` (also covers similar later calls). The top-level
+  `setNotesOpen(notesWanted())` was moved to just after `SLEdit.init`, so
+  the notes pane is restored and the canvas is actually fitted once the
+  stage exists. Replaced lines are commented `(before SL10)` and left in
+  place.
+- Not changed: `apps/office/shared`, Hub shell, catalog, Games, Learn,
+  other Office apps. No Hub build bump, no new `?v=` cache-bust (existing
+  `?v=SL9` on this app's own css / js was left as it was; not bumped to
+  SL10). No new library, no CDN. The crowded Home-row icons are a
+  separate issue and were not polished here.
+- Release id: `<title>Slides SL10</title>` (legacy SL9 · … comment),
+  `VERSION = 'SL10'`, About SL10 (legacy comments). Page title `Slides
+  SL10`.
+- Limits: the Home / Insert / Design / Slide Show ribbon still uses the
+  same crowded icon row as SL9; this release only lets start-up finish.
+  A hard refresh may be needed on a device that cached the SL9 scripts
+  (`?v=SL9` was not changed).
+- Checked with `node --check` on `slides_app.js` and `slides_edit.js`,
+  `node apps/office/slides/test-sl10-startup.js` (title / VERSION / About,
+  `setNotesOpen(notesWanted())` now after `SLEdit.init` in source order,
+  the old early call kept as a `(before SL10)` comment, and the real
+  `doFit` run in a tiny vm: early return when stage / fit / slideEl is
+  missing and no throw; when ready, it reads the stage and sets the
+  scale), and a static `python -m http.server` (port 18810) + curl 200
+  on slides.html and the linked css / js / icon. No Puppeteer, Playwright
+  or browser runner.
+- 1.114 is DF25, so this note is numbered 1.115.
+
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
