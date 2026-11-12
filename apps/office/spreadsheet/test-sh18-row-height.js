@@ -50,8 +50,9 @@ test("explicit line breaks grow an automatic row", function () {
   var two = ctx.estimateRowHeight("line one\nline two", { automatic: true });
   var three = ctx.estimateRowHeight("a\nb\nc", { automatic: true });
   eq(one, 30);
-  eq(two, 39);
-  eq(three, 55);
+  /* (before HO3) default font 13px: eq(two, 39); eq(three, 55); */
+  eq(two, 46);   // HO3: default 12pt = 16px, 6 + 2 * 16 * 1.25
+  eq(three, 66);
   if (!(three > two && two > one)) throw new Error("line breaks should stack");
 });
 
@@ -60,7 +61,8 @@ test("wrap estimate grows for long text; no wrap stays at the floor", function (
   var wrapped = ctx.estimateRowHeight(long, { wrap: true, widthPx: 100, automatic: true });
   var clipped = ctx.estimateRowHeight(long, { wrap: false, widthPx: 100, automatic: true });
   eq(clipped, 30);
-  eq(wrapped, 55); // 3 visual lines at default font
+  /* (before HO3) eq(wrapped, 55); // 3 visual lines at default 13px font */
+  eq(wrapped, 86); // HO3: 4 visual lines at default 16px (12pt) font
   if (!(wrapped > clipped)) throw new Error("wrap should be taller than clipped");
 });
 
@@ -162,7 +164,8 @@ test("title, SHEET_VERSION and ?v= are SH18; no format bump", function () {
   var resize = fs.readFileSync(path.join(dir, "spreadsheet_resize.js"), "utf8");
   var grid = fs.readFileSync(path.join(dir, "spreadsheet_grid.js"), "utf8");
   if (html.indexOf("<title>Spreadsheet SH18</title>") < 0) throw new Error("title is not SH18");
-  if (html.indexOf("?v=SH18") < 0) throw new Error("?v=SH18 missing");
+  /* (before HO3) if (html.indexOf("?v=SH18") < 0) throw new Error("?v=SH18 missing"); */
+  if (html.indexOf("?v=HO3") < 0) throw new Error("?v=HO3 missing");
   if (html.indexOf("(before SH18)") < 0) throw new Error("old title was not kept as a comment");
   if (settings.indexOf('SHEET_VERSION = "SH18"') < 0) throw new Error("SHEET_VERSION is not SH18");
   if (css.indexOf(".row-grip") < 0) throw new Error("row-grip CSS missing");

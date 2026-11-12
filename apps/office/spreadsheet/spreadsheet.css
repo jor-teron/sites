@@ -4,6 +4,8 @@
  * SS1: theme default is Auto (spreadsheet_settings.js); the dark values below are unchanged.
  * Cells min 150px, grow on wide screens.
  * Print stylesheet for browser Print / Save as PDF.
+ * HO3: default cell text is 12pt (16px), the same as Writer. Settings sets --sheet-font-size
+ * (spreadsheet_settings.js); this is only the fallback before Settings runs.
  */
 
 :root {
@@ -54,7 +56,8 @@ html, body {
   margin: 0;
   height: 100%;
   font-family: var(--sheet-font, Segoe UI, system-ui, sans-serif);
-  font-size: var(--sheet-font-size, 13px);
+  /* (before HO3) font-size: var(--sheet-font-size, 13px); */
+  font-size: var(--sheet-font-size, 12pt);
   background: var(--bg);
   color: var(--text);
 }

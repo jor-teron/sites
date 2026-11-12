@@ -9,14 +9,53 @@
  * follows localStorage 'sites-hub.theme' ('dark' = Dark, anything else = Light), standalone it follows
  * prefers-color-scheme. Live: storage event, same-origin {type:'hub-prefs'} message, focus, system change.
  * Settings saved before SS1 (no ss1 flag) with the old default 'dark' move to 'auto' once.
+ * HO3: the default cell size is 12 pt (16px at 96 dpi), the same as Writer. Settings fontSize is now a
+ * CSS length string ("12pt"; older saves may keep "16px"). Before HO3 it was a bare number in px.
+ * One-time move (ho3 flag): a saved 13 (the old factory default) becomes "12pt"; any other saved number
+ * stays in px ("16" -> "16px") so nobody's chosen size changes. Explicit cell sizes (Home tab, .hos)
+ * are still px and are not touched.
  */
 var SHEET_SETTINGS_KEY = "spreadsheet_settings";
 var SHEET_THEME_KEY = "spreadsheet_theme";      // resolved 'dark' | 'light' for other readers
 /* (before SH18) var SHEET_VERSION = "SH14";                     // legacy: "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 var SHEET_VERSION = "SH18";                     // legacy: "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
 var SHEET_FONTS = ["Segoe UI", "Arial", "Calibri", "Times New Roman", "Consolas"];
-var SHEET_SIZES = [11, 12, 13, 14, 16, 18];
+/* (before HO3) var SHEET_SIZES = [11, 12, 13, 14, 16, 18];   // px */
+var SHEET_SIZES = [9, 10, 11, 12, 14, 16, 18];   // HO3: Settings default size, in pt
+var SHEET_DEFAULT_FONT_SIZE = "12pt";            // HO3: matches Writer (fontSizePt 12)
+var SHEET_OLD_FACTORY_PX = 13;                   // HO3: factory default before HO3 (px)
 var SHEET_SETTINGS = null;
+
+/* ---------- HO3 pure helpers (no DOM; test-ho3-font-default.js) ---------- */
+/* Settings fontSize -> CSS length. "12pt" / "16px" pass through; a bare number is old px. */
+function sheetFontSizeCss(v) {
+  if (typeof v === "number" && isFinite(v) && v > 0) return v + "px";
+  if (typeof v === "string" && /^\d+(\.\d+)?(pt|px)$/.test(v)) return v;
+  return SHEET_DEFAULT_FONT_SIZE;
+}
+/* Settings fontSize -> px number for layout math (pt * 96 / 72). */
+function sheetFontSizePx(v) {
+  var css = sheetFontSizeCss(v), n = parseFloat(css);
+  return /pt$/.test(css) ? Math.round(n * 96 / 72 * 100) / 100 : n;
+}
+/* One-time HO3 move from the raw saved object. Returns the fontSize to use.
+ * Already moved (ho3) or a valid string -> keep. Old factory 13 -> "12pt". Other old numbers -> "Npx". */
+function sheetMigrateFontSize(raw) {
+  var v = raw && typeof raw === "object" ? raw.fontSize : undefined;
+  if (typeof v === "string") return sheetFontSizeCss(v);
+  if (typeof v === "number" && isFinite(v) && v > 0) {
+    if (raw.ho3 !== true && v === SHEET_OLD_FACTORY_PX) return SHEET_DEFAULT_FONT_SIZE;
+    return v + "px";
+  }
+  return SHEET_DEFAULT_FONT_SIZE;
+}
+/* Settings "Default size" list: pt sizes, plus the saved px size (if any) so it still shows. */
+function sheetFontSizeOptions(current) {
+  var out = SHEET_SIZES.map(function (n) { return [n + "pt", n + " pt"]; });
+  var css = sheetFontSizeCss(current);
+  if (/px$/.test(css)) out.push([css, parseFloat(css) + " px (earlier setting)"]);
+  return out;
+}
 
 /* SS1: Auto follows the Hub when framed by a same-origin Hub page (same rule as My Day MD3) */
 var SHEET_HUB_THEME_KEY = "sites-hub.theme";
@@ -46,7 +85,8 @@ function sheetApplySetting(k) {
   }
   if (!k || k === "font" || k === "fontSize") {
     b.style.setProperty("--sheet-font", "'" + s.font + "', system-ui, sans-serif");
-    b.style.setProperty("--sheet-font-size", s.fontSize + "px");
+    /* (before HO3) b.style.setProperty("--sheet-font-size", s.fontSize + "px"); */
+    b.style.setProperty("--sheet-font-size", sheetFontSizeCss(s.fontSize));
   }
   if ((!k || k === "ribbonCollapsed") && typeof SHEET_COLLAPSE !== "undefined" && SHEET_COLLAPSE) SHEET_COLLAPSE.apply(s.ribbonCollapsed);
 }
@@ -64,10 +104,14 @@ function wireSettingsMenuItem() {
 function initSheetSettings() {
   wireSettingsMenuItem();
   if (typeof OfficeSettings === "undefined") return;
+  /* HO3: the panel is built inside create(), before SHEET_SETTINGS is set, so read the saved size here */
+  var savedSize = SHEET_DEFAULT_FONT_SIZE;
+  try { var raw0 = JSON.parse(localStorage.getItem(SHEET_SETTINGS_KEY) || "null"); if (raw0 && typeof raw0 === "object") savedSize = sheetMigrateFontSize(raw0); } catch (e) {}
   SHEET_SETTINGS = OfficeSettings.create({
     key: SHEET_SETTINGS_KEY,
     /* legacy (SH1): theme default "dark" */
-    defaults: { theme: "auto", ss1: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13, hoverTabs: true, ribbonCollapsed: false },
+    /* (before HO3) defaults: { theme: "auto", ss1: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13, hoverTabs: true, ribbonCollapsed: false }, */
+    defaults: { theme: "auto", ss1: true, ho3: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: SHEET_DEFAULT_FONT_SIZE, hoverTabs: true, ribbonCollapsed: false },
     gearBtn: document.getElementById("settingsBtn"),
     validate: function (s) {
       /* SS1 one-time move: SH1 saved the old default 'dark' for everyone, so pre-SS1 settings start on Auto */
@@ -75,6 +119,10 @@ function initSheetSettings() {
       if (raw && typeof raw === "object" && raw.ss1 === undefined && s.theme === "dark") s.theme = "auto";
       s.ss1 = true;
       if (["light", "dark", "auto"].indexOf(s.theme) === -1) s.theme = "auto";   // legacy (SH1): = "dark"
+      /* HO3: OfficeSettings drops a saved number now that the default is a string, so read the raw save */
+      if (raw && typeof raw === "object" && raw.fontSize !== undefined) s.fontSize = sheetMigrateFontSize(raw);
+      else s.fontSize = sheetFontSizeCss(s.fontSize);
+      s.ho3 = true;
     },
     sections: [
       { title: "View", rows: [
@@ -86,7 +134,8 @@ function initSheetSettings() {
       ] },
       { title: "Editing", rows: [
         { key: "font", type: "select", id: "set-font", label: "Default font", options: SHEET_FONTS.map(function (f) { return [f, f]; }) },
-        { key: "fontSize", type: "select", id: "set-font-size", label: "Default size", cast: Number, options: SHEET_SIZES.map(function (n) { return [n, n + " px"]; }) }
+        /* (before HO3) { key: "fontSize", type: "select", id: "set-font-size", label: "Default size", cast: Number, options: SHEET_SIZES.map(function (n) { return [n, n + " px"]; }) } */
+        { key: "fontSize", type: "select", id: "set-font-size", label: "Default size", options: function () { return sheetFontSizeOptions(SHEET_SETTINGS && SHEET_SETTINGS.s ? SHEET_SETTINGS.s.fontSize : savedSize); } }
       ] },
       { title: "About", rows: [{ type: "about", id: "set-version", text: "Spreadsheet " + SHEET_VERSION }] }
     ],

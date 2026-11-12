@@ -7,18 +7,21 @@
  * to automatic). Automatic rows (heights[r] = null) grow and shrink to fit wrapped text and
  * explicit line breaks, never shorter than CFG.rowHeight.auto (30px), clamped 8–400.
  * Auto-fit uses estimateRowHeight (pure math, no 26×100 layout reads).
+ * HO3: the default cell size is 12pt = 16px, so the math default is 16 (was 13). One line is
+ * 6 + 16 * 1.25 = 26px, still under the 30px automatic floor. Explicit cell sizes stay px.
  */
 
 /* Pure helper: estimated pixel height of one cell's text. Used by auto-fit and by tests.
  * counts explicit lines (\n) and, when wrap is on, a simple character-wrap estimate.
- * defaults: font 13px, line-height 1.25, vertical padding 6, horizontal padding 12,
+ * defaults: font 16px (HO3, 12pt; before HO3 13px), line-height 1.25, vertical padding 6, horizontal padding 12,
  * char width 0.6em, automatic floor 30, clamp 8–400. */
 function estimateRowHeight(text, opts) {
   opts = opts || {};
   var min = opts.min != null ? opts.min : 8;
   var max = opts.max != null ? opts.max : 400;
   var floor = opts.automatic ? (opts.floor != null ? opts.floor : 30) : 0;
-  var fontSize = opts.fontSize || 13;
+  /* (before HO3) var fontSize = opts.fontSize || 13; */
+  var fontSize = opts.fontSize || SHEET_DEFAULT_FONT_PX;
   var lineHeight = opts.lineHeight || 1.25;
   var padY = opts.padding != null ? opts.padding : 6;
   var padX = opts.padX != null ? opts.padX : 12;
@@ -85,11 +88,23 @@ function rowHeightCfg() {
   return (typeof CFG !== "undefined" && CFG.rowHeight) ? CFG.rowHeight : { auto: 30, min: 8, max: 400 };
 }
 
+/* HO3: 12pt at 96 dpi. var (not const) so it is a plain global in tests. */
+var SHEET_DEFAULT_FONT_PX = 16;
+
+/* (before HO3)
 function defaultSheetFontSize() {
   if (typeof SHEET_SETTINGS !== "undefined" && SHEET_SETTINGS && SHEET_SETTINGS.fontSize) {
     return SHEET_SETTINGS.fontSize;
   }
   return 13;
+}
+*/
+/* HO3: Settings default size in px for the auto-fit math. Values live on SHEET_SETTINGS.s
+ * (the old code read SHEET_SETTINGS.fontSize, which was never set, so it always used 13). */
+function defaultSheetFontSize() {
+  var s = typeof SHEET_SETTINGS !== "undefined" && SHEET_SETTINGS ? SHEET_SETTINGS.s : null;
+  if (s && s.fontSize && typeof sheetFontSizePx === "function") return sheetFontSizePx(s.fontSize) || SHEET_DEFAULT_FONT_PX;
+  return SHEET_DEFAULT_FONT_PX;
 }
 
 function colWidthPx(c) {

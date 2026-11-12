@@ -2583,6 +2583,69 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   No Puppeteer, Playwright or browser runner.
 - 1.115 is SL10 and 1.116 is SH18, so this note is numbered 1.117.
 
+### 1.118 HO3 Office 12pt default font (Spreadsheet and Tables)
+
+- Goal: 12pt is the default document font across the Office suite.
+  Writer was already 12pt end to end (`fontSizePt: 12`, Settings,
+  size menu, `--font-size-pt`, export) and is not changed. Spreadsheet
+  and Tables used 13px (about 10pt); they now use 12pt (16px at
+  96 dpi), a little larger than before.
+- Spreadsheet Settings: Default size is now in pt (9, 10, 11, 12, 14,
+  16, 18; default 12). `spreadsheet_settings` stores `fontSize` as a
+  CSS length string (`"12pt"`) and applies it to `--sheet-font-size`
+  as is. Before HO3 it was a bare number applied as px. The CSS
+  fallback in `spreadsheet.css` (html/body) is `12pt`. Empty cells
+  (`fontSize: ""`) inherit it.
+- One-time move (`ho3: true` flag, same idea as `ss1`): a saved
+  number 13, the old factory default, becomes `"12pt"`. Any other
+  saved number came from the old px menu, so it stays px (`16` ->
+  `"16px"`, not 16pt) and shows as "16 px (earlier setting)" in the
+  list. The validate step reads the raw save because the shared
+  OfficeSettings loader drops a value whose type no longer matches
+  the default. Limit: someone who picked 13 px on purpose also moves
+  to 12pt.
+- Auto-fit (SH18): `estimateRowHeight` defaults to 16px and
+  `defaultSheetFontSize()` converts the Settings value to px (12pt ->
+  16). The old helper read `SHEET_SETTINGS.fontSize`, which was never
+  set, so auto-fit always used 13; it now reads `SHEET_SETTINGS.s`.
+  One line is 6 + 16 x 1.25 = 26px, so the 30px automatic floor is
+  unchanged.
+- Explicit cell sizes are unchanged: the Home-tab size menu is still
+  px (8-24), cell `fontSize` in `.hos` is still px, nothing is
+  migrated or rescaled, and the `.hos` format stays version 1. For a
+  cell with no size the menu shows the default in px (16) without
+  storing it.
+- Cache: every local `?v=` in `spreadsheet.html` is now `?v=HO3`
+  (was SH18). The title and `SHEET_VERSION` stay `Spreadsheet SH18`.
+  test-hos1, test-sh17 and test-sh18 now pin `?v=HO3`; test-sh18's
+  default-font line-break and wrap numbers moved from 13px to 16px
+  (old asserts kept as `(before HO3)` comments).
+- Tables: `--sheet-font-size` is `12pt` and applies to grid cells,
+  card values and record-panel fields. The body font used to read
+  `--sheet-font-size`, so all chrome would have grown; it now reads a
+  new `--ui-font-size: 13px`, so the ribbon, headers, tabs and pop-ups
+  keep 13px. Tables has no font Settings. No `?v=` was added (NV2);
+  title stays Tables TB5; the `.hot` format is unchanged.
+- Replaced lines are commented `(before HO3)` and left in place.
+- Not changed: Writer, Slides presentation sizes, Mail, Notely,
+  Invoice, Base, Notepad and other Office apps, `apps/office/shared`
+  (HO2's area), Hub shell, catalog, root `shared/`. No Hub build
+  bump, no new library, no CDN.
+- Limits: in Spreadsheet the body size also drives text that inherits
+  it (column letters, row numbers, the function list), so that text is
+  16px too, as it already was whenever Settings was set to 16. XLSX
+  export still writes the px cell size as `sz`. Changing Settings ->
+  Default size does not re-run auto-fit until the next repaint.
+- Checked with `node --check` on the edited JS, the new
+  `node apps/office/spreadsheet/test-ho3-font-default.js` (11 passed;
+  runs the real shared OfficeSettings and spreadsheet_settings.js
+  against a small fake DOM), the existing Spreadsheet tests (HOS1,
+  SH9-SH18), the Tables tests (HOT1, TB1, TB2, TB4, TB5) and the
+  shared HO2 test, all passing, plus a static-serve curl smoke of
+  spreadsheet.html (every `?v=HO3` asset 200) and tables.html. No
+  Puppeteer, Playwright or browser runner.
+- 1.117 is DW5, so this note is numbered 1.118.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

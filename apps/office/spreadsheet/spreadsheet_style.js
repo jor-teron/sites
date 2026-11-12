@@ -333,6 +333,13 @@ function applyBorders(mode, color) {
   saveStore();
 }
 
+/* HO3: the Home-tab size menu is px (as saved in .hos). An empty cell shows the Settings default
+ * in px (12pt = 16). If that px is not in the menu the select shows blank. */
+function styleDefaultSizePx() {
+  var px = typeof defaultSheetFontSize === "function" ? defaultSheetFontSize() : 16;
+  return Math.round(px);
+}
+
 function styleApplyLook(td, inp, st, r, c) {
   var face, editing, cf, get;
   var edges, merges;
@@ -588,7 +595,8 @@ function initStyleTools() {
         var o = document.createElement("option");
         o.value = String(sizes[i]);
         o.textContent = String(sizes[i]);
-        if (sizes[i] === 13) o.selected = true;
+        /* (before HO3) if (sizes[i] === 13) o.selected = true; */
+        if (sizes[i] === styleDefaultSizePx()) o.selected = true;
         fs.appendChild(o);
       }
     }
@@ -608,7 +616,8 @@ function initStyleTools() {
       var fsEl = document.getElementById("font-size-sel");
       var st = cellStyle(selR, selC);
       if (fsEl && st.fontSize) fsEl.value = String(st.fontSize);
-      else if (fsEl) fsEl.value = "13";
+      /* (before HO3) else if (fsEl) fsEl.value = "13"; */
+      else if (fsEl) fsEl.value = String(styleDefaultSizePx());   // shows the default only; nothing is stored
       var w = document.getElementById("btn-wrap");
       if (w) w.classList.toggle(CLS.toggleOn, !!st.wrap);
     };
