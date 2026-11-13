@@ -5,6 +5,8 @@ test.txt
 # local playwright harness
 _test/
 raw/
+ai-exp/
+ai-exp/ai-exp/
 
 # Bot README left by Monorepo++ (kept on disk, never committed)
 README_Monorepo++.md

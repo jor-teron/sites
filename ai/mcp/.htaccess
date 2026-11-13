@@ -1,0 +1,15 @@
+# =============================================================================
+# ai-mcp — MCP server for a sandboxed workspace
+#
+# File:         mcp/.htaccess
+# Purpose:      Stop Apache from serving the MCP server source and tests.
+# Place:        mcp/.htaccess — Apache 2.4, applies only to the mcp/ folder.
+# Version:      2.5.0
+# Project:      ai-mcp
+# Author:       Jor Teron
+# Licence:      All rights reserved.
+# Dependencies: Apache 2.4. The MCP process itself does not use Apache; it
+#               listens on 127.0.0.1:10001. Other files under /home/www/ai
+#               remain visible to Apache as usual.
+# =============================================================================
+Require all denied

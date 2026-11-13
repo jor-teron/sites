@@ -1,0 +1,1996 @@
+"""
+ai-mcp — MCP server for a sandboxed workspace
+
+File:         mcp/config.py
+Purpose:      Single source of every constant, default, limit and magic
+              value, and the only place mcp.conf / MCP_* overrides are
+              resolved. Other modules import names from here; they must
+              not define their own UPPER_CASE module-level constants.
+Place:        mcp/config.py — imported by every other mcp/ module.
+Version:      2.5.0
+Project:      ai-mcp
+Author:       Jor Teron
+Licence:      All rights reserved.
+Dependencies: Python 3.8+ standard library only.
+"""
+from __future__ import annotations
+
+import os
+
+
+# =============================================================================
+# Identity
+# =============================================================================
+
+# Public MCP serverInfo.name sent to clients and used in the HTTP Server header.
+SERVER_NAME = "ai-mcp"
+
+# Semantic version of this server release (serverInfo.version, banners, headers).
+VERSION = "2.5.0"
+
+
+# =============================================================================
+# Network and public URL
+# =============================================================================
+
+# Default bind address. Loopback only so the process is not exposed on LAN;
+# Tailscale Funnel (or another proxy) reaches it on this address.
+DEFAULT_HOST = "127.0.0.1"
+
+# Default TCP port. Funnel is pointed at this port by mcp.sh --funnel.
+# Changed from 8787 in v2.2; mcp.conf and MCP_PORT still override it.
+DEFAULT_PORT = 10001
+
+# Default public base URL (no trailing slash). Used in the startup banner
+# and documentation; it is not a security boundary.
+DEFAULT_PUBLIC_URL = "https://debian.tail94ffdb.ts.net/ai/mcp"
+
+# Path Funnel publishes on the public URL. mcp.sh uses the same value.
+FUNNEL_PATH = "/ai/mcp"
+
+# Local HTTP path Funnel should forward to (the server accepts any path).
+FUNNEL_TARGET_PATH = "/mcp"
+
+
+# =============================================================================
+# Paths
+# =============================================================================
+
+# Folder name of the chroot / file-tool root, next to mcp.sh and mcp.conf.
+# Renamed from workspace/ in v2.1. Overridable via MCP_ROOT / ROOT / WORKSPACE.
+# This host folder is the AI's "/" inside the jail (v2.2).
+SANDBOX_DIR_NAME = "sandbox"
+
+# Folder name of the default working directory, created under the sandbox root.
+# On the host this is <sandbox>/workspace; the AI sees it as /workspace.
+WORKSPACE_DIR_NAME = "workspace"
+
+# Filename of the optional key=value config file next to mcp.sh.
+CONF_FILENAME = "mcp.conf"
+
+# Default JSON-lines event log path (tool calls and auth failures).
+# Keep this outside the sandbox folder. Distinct from the human-readable
+# command audit log (DEFAULT_AUDIT_LOG).
+DEFAULT_LOG = "/home/ai/mcp.log"
+
+# Filename of the human-readable command audit log, created next to
+# the JSON log (same directory as MCP_LOG / DEFAULT_LOG).
+AUDIT_LOG_FILENAME = "mcp-audit.log"
+
+# Default path of that audit log when MCP_AUDIT_LOG is unset and no
+# JSON log path is available to derive it from.
+DEFAULT_AUDIT_LOG = "/home/ai/mcp-audit.log"
+
+# Default directory where mcp.sh writes mcp.pid and mcp.out (not used by
+# the Python server itself; listed here so the value lives in one place).
+DEFAULT_STATE_DIR = "/home/ai"
+
+# Filename of the /workspace disk image, kept next to mcp.sh (not inside
+# the sandbox, so the AI cannot see or delete it).
+WORKSPACE_IMAGE_NAME = "workspace.img"
+
+# Filesystem type used when formatting the workspace image.
+WORKSPACE_IMAGE_FS = "ext4"
+
+# fstab mount options for the loop image. nofail so a missing image does
+# not block boot; loop attaches the file as a block device.
+WORKSPACE_FSTAB_OPTIONS = "loop,nofail"
+
+
+# =============================================================================
+# PIN and lockout
+# =============================================================================
+
+# Demo PIN used when neither PIN / MCP_PIN nor a PIN file is set.
+# Must be changed before the server is reachable on a public address.
+DEFAULT_PIN = "password"
+
+# Failed-PIN count at which the client IP is first locked out (the 5th failure).
+# The first (threshold - 1) failures are recorded but not delayed.
+AUTH_FAIL_THRESHOLD = 5
+
+# Ceiling, in seconds, of the lockout delay. Delay is
+# min(AUTH_MAX_DELAY, AUTH_LOCKOUT_BASE ** (count - AUTH_FAIL_THRESHOLD)).
+AUTH_MAX_DELAY = 60
+
+# Base of the exponential lockout delay. 2 gives 1s, 2s, 4s, ... up to the max.
+AUTH_LOCKOUT_BASE = 2
+
+# Extra seconds added when building the HTTP Retry-After header:
+# max(AUTH_RETRY_AFTER_MIN, int(wait) + AUTH_RETRY_AFTER_PAD).
+AUTH_RETRY_AFTER_PAD = 1
+
+# Floor, in seconds, for the Retry-After value sent with HTTP 429.
+AUTH_RETRY_AFTER_MIN = 1
+
+# Max characters of the User-Agent copied into an auth-failure audit record.
+AUTH_USER_AGENT_LOG_LEN = 120
+
+# Path segment that replaces a PIN found in a request path in logs.
+PIN_REDACT_MARK = "***"
+
+# WWW-Authenticate value on HTTP 401. Bearer only (no OAuth metadata).
+WWW_AUTHENTICATE = 'Bearer realm="ai-mcp"'
+
+# Authorization scheme prefix for a Bearer PIN (matched case-insensitively).
+AUTH_BEARER_PREFIX = "bearer "
+
+# Authorization scheme prefix for Basic (password field is the PIN).
+AUTH_BASIC_PREFIX = "basic "
+
+# Extra header names, in lookup order, that may carry the PIN.
+AUTH_PIN_HEADERS = ("X-MCP-PIN", "X-MCP-Pin", "X-MCP-Password")
+
+
+# =============================================================================
+# HTTP transport and CORS
+# =============================================================================
+
+# Maximum JSON-RPC request body, in bytes (10 MiB). Larger bodies get HTTP 413.
+MAX_BODY = 10 * 1024 * 1024
+
+# listen() backlog for the threaded HTTP server. 32 is enough for a few
+# concurrent tool calls without a large queue of pending handshakes.
+HTTP_REQUEST_QUEUE_SIZE = 32
+
+# HTTP protocol version advertised by the request handler. 1.1 so Content-Length
+# and Connection: close work as Funnel's connection reuse expects.
+HTTP_PROTOCOL_VERSION = "HTTP/1.1"
+
+# Body returned by GET /health (and any path ending in /health).
+HEALTH_BODY = "ok\n"
+
+# Content type for the health response (plain text, not JSON).
+HEALTH_CONTENT_TYPE = "text/plain; charset=utf-8"
+
+# Default Content-Type for JSON responses.
+JSON_CONTENT_TYPE = "application/json"
+
+# CORS preflight cache lifetime, in seconds (24 hours). Browsers will not
+# re-issue OPTIONS on every request during that window.
+CORS_MAX_AGE = "86400"
+
+# Headers a browser MCP client is allowed to send. Includes both v2 PIN
+# headers and the v1 X-MCP-Password alias.
+CORS_ALLOW_HEADERS = (
+    "Authorization, Content-Type, Mcp-Session-Id, MCP-Protocol-Version, "
+    "X-MCP-PIN, X-MCP-Password"
+)
+
+# Methods a browser client may use. GET is for /health, POST for JSON-RPC,
+# OPTIONS for CORS preflight.
+CORS_ALLOW_METHODS = "GET, POST, OPTIONS"
+
+# Response headers a browser client is allowed to read.
+CORS_EXPOSE_HEADERS = "Mcp-Session-Id, MCP-Protocol-Version"
+
+# Default CORS origin list when MCP_CORS_ORIGINS is unset. Empty means
+# browser requests with an Origin header are rejected (non-browser clients
+# send no Origin and are unaffected).
+DEFAULT_CORS_ORIGINS = ""
+
+# Default for MCP_TRUST_PROXY. "0" means ignore X-Forwarded-For. Only enable
+# when a trusted reverse proxy is the sole way in; Funnel can set that header.
+DEFAULT_TRUST_PROXY = "0"
+
+
+# =============================================================================
+# JSON-RPC and MCP protocol
+# =============================================================================
+
+# JSON-RPC version string required on every request and copied onto replies.
+JSONRPC_VERSION = "2.0"
+
+# MCP protocol versions this server understands, newest first.
+SUPPORTED_PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
+
+# Version offered when the client omits one or sends an unknown value.
+LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]
+
+# JSON-RPC error codes (JSON-RPC 2.0 specification).
+RPC_PARSE_ERROR = -32700
+RPC_INVALID_REQUEST = -32600
+RPC_METHOD_NOT_FOUND = -32601
+RPC_INVALID_PARAMS = -32602
+RPC_INTERNAL_ERROR = -32603
+
+# Indent, in spaces, when a tool result is pretty-printed as JSON text.
+JSON_INDENT = 2
+
+# Max characters of an exception message stored in an audit record or RPC error.
+ERROR_SNIPPET_LEN = 300
+
+# -----------------------------------------------------------------------------
+# Client-facing text (initialize instructions and tools/list descriptions)
+# -----------------------------------------------------------------------------
+# These templates are filled at startup by client_instructions() and
+# client_tool_defs() from the live Config, so a connecting AI sees the
+# actual isolation mode, network setting and numeric limits. The wording
+# is from the AI's point of view: no host environment-variable names,
+# no implementation names such as bwrap, and no claims that do not match
+# the running server.
+
+# Shared layout facts that do not depend on isolation mode. "{reserved}"
+# is replaced with the persistent jail mount-point names.
+CLIENT_LAYOUT = (
+    "'/' is the sandbox. Work and projects go in /workspace, which is a "
+    "git repository (initialised on first start). There is no automatic "
+    "commit; commit yourself when you want a snapshot. Relative paths "
+    "resolve against /workspace; absolute paths are sandbox paths "
+    "starting at '/'. Nothing outside the sandbox is reachable. "
+    "/usr, /bin, /lib, /lib64 and /sbin are read-only system files. "
+    "/etc, /tmp, /run and /dev are temporary and reset each command; "
+    "do not store files there. Do not store files at the sandbox root "
+    "under reserved names ({reserved}); use /workspace instead."
+)
+
+# initialize() instructions body. "{layout}", "{command_mode}" and
+# "{limits}" are filled from the other templates below.
+CLIENT_INSTRUCTIONS_TEMPLATE = (
+    "This server gives you a shell and file tools inside a sandbox. "
+    "{layout} {command_mode} {limits}"
+)
+
+# Isolation / network sentences. Only one command-mode template is used.
+CLIENT_PHRASE_NO_NETWORK = "There is no network."
+CLIENT_PHRASE_NETWORK_ON = "Commands have network access."
+CLIENT_COMMAND_MODE_NS_NO_NET = (
+    "run_command runs bash -lc as a non-root user, starting in "
+    "/workspace, in an isolated jail. " + CLIENT_PHRASE_NO_NETWORK
+)
+CLIENT_COMMAND_MODE_NS_NET = (
+    "run_command runs bash -lc as a non-root user, starting in "
+    "/workspace, in an isolated jail. " + CLIENT_PHRASE_NETWORK_ON
+)
+CLIENT_PHRASE_NOT_ISOLATED = (
+    "Commands are NOT isolated: they run as the server user on the host, "
+    "in the sandbox folder, and a shell command can leave that folder."
+)
+CLIENT_COMMAND_MODE_NONE = (
+    CLIENT_PHRASE_NOT_ISOLATED + " File tools still cannot leave the "
+    "sandbox. Commands use the host network."
+)
+
+# Limit sentences. The jail template is used when isolation is on; the
+# "none" template is used when commands run unsandboxed on the host
+# (timeout and output cap still apply; memory, process and file-size
+# rlimits do not).
+CLIENT_LIMITS_JAIL_TEMPLATE = (
+    "Each command is limited to {timeout} seconds by default "
+    "(maximum {max_timeout} seconds), {memory_mb} MiB of memory, "
+    "{max_procs} processes, a {fsize} file-size cap, and {output} of "
+    "captured output."
+)
+CLIENT_LIMITS_NONE_TEMPLATE = (
+    "Each command is limited to {timeout} seconds by default "
+    "(maximum {max_timeout} seconds) and {output} of captured output. "
+    "Host memory, process and file-size limits are not applied."
+)
+
+# run_command tool description templates (one per isolation/network mode).
+CLIENT_RUN_COMMAND_NS_NO_NET = (
+    "Run a bash command (bash -lc) as a non-root user, starting in "
+    "/workspace, in an isolated jail where '/' is the sandbox. "
+    + CLIENT_PHRASE_NO_NETWORK +
+    " Nothing outside the sandbox is reachable. Default timeout is "
+    "{timeout} seconds (maximum {max_timeout}). Limits: {memory_mb} MiB "
+    "memory, {max_procs} processes, {fsize} file size, {output} captured "
+    "output."
+)
+CLIENT_RUN_COMMAND_NS_NET = (
+    "Run a bash command (bash -lc) as a non-root user, starting in "
+    "/workspace, in an isolated jail where '/' is the sandbox. "
+    + CLIENT_PHRASE_NETWORK_ON +
+    " Nothing outside the sandbox is reachable. Default timeout is "
+    "{timeout} seconds (maximum {max_timeout}). Limits: {memory_mb} MiB "
+    "memory, {max_procs} processes, {fsize} file size, {output} captured "
+    "output."
+)
+CLIENT_RUN_COMMAND_NONE = (
+    "Run a bash command (bash -lc) starting in /workspace. "
+    + CLIENT_PHRASE_NOT_ISOLATED +
+    " File tools still cannot leave the sandbox. Commands use the host "
+    "network. Default timeout is {timeout} seconds (maximum "
+    "{max_timeout}). Captured output is capped at {output}."
+)
+
+# Property and other-tool description templates. Path wording is shared.
+CLIENT_PATH_RESOLVE = (
+    "Relative paths resolve against /workspace; absolute paths are "
+    "sandbox paths starting at '/'."
+)
+CLIENT_PATH_STAY = (
+    CLIENT_PATH_RESOLVE + " Nothing outside the sandbox is reachable."
+)
+CLIENT_PROP_COMMAND = "The bash command to run (passed to bash -lc)."
+CLIENT_PROP_CWD = (
+    "Working directory. " + CLIENT_PATH_RESOLVE +
+    " Defaults to /workspace."
+)
+CLIENT_PROP_TIMEOUT = (
+    "Timeout in seconds (default {timeout}, maximum {max_timeout})."
+)
+CLIENT_READ_FILE = (
+    "Read a UTF-8 text file (invalid bytes are replaced). "
+    + CLIENT_PATH_STAY +
+    " Capped at {max_read} (default and maximum)."
+)
+CLIENT_PROP_READ_PATH = "File to read. " + CLIENT_PATH_STAY
+CLIENT_PROP_OFFSET = "0-based start line. When set, the read is line-based."
+CLIENT_PROP_LIMIT = "Maximum number of lines to return, used with offset."
+CLIENT_PROP_MAX_BYTES = (
+    "Byte cap when not using line offsets (default and maximum {max_read})."
+)
+CLIENT_WRITE_FILE = (
+    "Write a UTF-8 text file atomically (temporary file + rename). "
+    + CLIENT_PATH_STAY +
+    " Prefer /workspace for projects; do not store files at the sandbox "
+    "root under reserved names ({reserved}), or in /etc, /tmp, /run or "
+    "/dev (those are temporary and reset each command)."
+)
+CLIENT_PROP_WRITE_PATH = "File to write. " + CLIENT_PATH_STAY
+CLIENT_PROP_CONTENT = "UTF-8 text to write."
+CLIENT_PROP_CREATE_PARENTS = "If true, create missing parent directories."
+CLIENT_EDIT_FILE = (
+    "Replace old_string with new_string in a UTF-8 text file. Errors if "
+    "the string is not found or is ambiguous (more than one match and "
+    "replace_all is false). " + CLIENT_PATH_STAY
+)
+CLIENT_PROP_EDIT_PATH = "File to edit. " + CLIENT_PATH_STAY
+CLIENT_PROP_OLD_STRING = "Exact text to find in the file."
+CLIENT_PROP_NEW_STRING = "Replacement text."
+CLIENT_PROP_REPLACE_ALL = (
+    "If true, replace every occurrence. If false (the default), exactly "
+    "one match is required."
+)
+CLIENT_LIST_DIR = (
+    "List a directory. Does not follow directory symlinks when recursing. "
+    + CLIENT_PATH_STAY +
+    " Recursion is capped at {max_walk_depth} levels and "
+    "{max_list_entries} entries."
+)
+CLIENT_PROP_LIST_PATH = "Directory to list. " + CLIENT_PATH_STAY
+CLIENT_PROP_RECURSIVE = "If true, list subdirectories up to max_depth."
+CLIENT_PROP_MAX_DEPTH = "Directory depth cap (maximum {max_walk_depth})."
+CLIENT_DELETE_PATH = (
+    "Delete a file, symlink, or directory inside the sandbox "
+    "(directories need recursive=true). " + CLIENT_PATH_STAY +
+    " Refuses to delete the sandbox root itself."
+)
+CLIENT_PROP_DELETE_PATH = "Path to delete. " + CLIENT_PATH_STAY
+CLIENT_PROP_DELETE_RECURSIVE = (
+    "Required to be true when deleting a directory."
+)
+CLIENT_MOVE_PATH = (
+    "Rename or move a path inside the sandbox. " + CLIENT_PATH_STAY +
+    " Both source and destination must stay inside the sandbox."
+)
+CLIENT_PROP_SRC = "Path to rename or move. " + CLIENT_PATH_STAY
+CLIENT_PROP_DEST = "Destination path. " + CLIENT_PATH_STAY
+
+
+# =============================================================================
+# File tools
+# =============================================================================
+
+# Default and maximum bytes returned by read_file when not using line offsets
+# (1 MiB). Keeps a single read from filling the HTTP response.
+MAX_READ = 1 * 1024 * 1024
+
+# Maximum entries list_dir will return before setting truncated=True.
+MAX_LIST_ENTRIES = 2000
+
+# Hard cap on list_dir recursion depth, regardless of the caller's max_depth.
+MAX_WALK_DEPTH = 8
+
+# Default list_dir max_depth when recursive is true (start dir + one level).
+DEFAULT_LIST_DEPTH_RECURSIVE = 2
+
+# Default list_dir max_depth when recursive is false (the start directory only).
+DEFAULT_LIST_DEPTH = 1
+
+# Characters of content / old_string / new_string kept in an audit summary.
+SUMMARIZE_TEXT_LEN = 80
+
+# Characters of a run_command command string kept in an audit summary.
+SUMMARIZE_COMMAND_LEN = 200
+
+# Prefix of the temporary file used by atomic writes (temp file + rename).
+WRITE_TMP_PREFIX = ".mcp-"
+
+# Suffix of the temporary file used by atomic writes.
+WRITE_TMP_SUFFIX = ".tmp"
+
+
+# =============================================================================
+# Command timeouts and output caps
+# =============================================================================
+
+# Default run_command timeout, in seconds, when the caller omits timeout.
+DEFAULT_TIMEOUT = 60
+
+# Hard cap, in seconds, on a run_command timeout. Stops a caller asking for
+# an hour-long sleep from holding a worker that long.
+MAX_TIMEOUT = 600
+
+# Combined stdout+stderr cap, in bytes, for one command (200 KiB). Extra
+# output is discarded and truncated is set.
+MAX_OUTPUT = 200 * 1024
+
+# Marker appended to stdout when the combined output cap is hit.
+TRUNC_MARK = "\n[truncated]\n"
+
+# Bytes read per os.read / pipe.read in the output cap reader loops.
+PIPE_READ_SIZE = 4096
+
+# Shortest poll interval, in seconds, while waiting for a sandboxed child.
+PIPE_POLL_MIN = 0.01
+
+# Longest poll interval, in seconds, while waiting for a sandboxed child.
+PIPE_POLL_MAX = 0.05
+
+# Seconds to wait for a SIGKILL'd process group to be reaped, and for
+# reader threads to finish after the child has exited.
+REAP_GRACE_SEC = 5
+
+# Decimal places used when reporting duration_sec in a command result.
+DURATION_DECIMALS = 3
+
+
+# =============================================================================
+# Resource limits (applied inside the jail, per command)
+# =============================================================================
+
+# Default address-space rlimit for each command, in MiB (RLIMIT_AS).
+DEFAULT_MEMORY_MB = 512
+
+# Floor, in MiB, applied when setting RLIMIT_AS so a tiny MCP_MEMORY_MB
+# cannot make the interpreter unable to start.
+MIN_MEMORY_MB = 64
+
+# Default process-count rlimit (RLIMIT_NPROC) for each command.
+DEFAULT_MAX_PROCS = 64
+
+# Floor on RLIMIT_NPROC so bash plus a short pipeline can still fork.
+MIN_MAX_PROCS = 8
+
+# Default file-size rlimit, in bytes (64 MiB). Stops a command filling the
+# sandbox tmpfs or the host disk.
+DEFAULT_FSIZE = 64 * 1024 * 1024
+
+# Default open-file rlimit (RLIMIT_NOFILE) for each command.
+DEFAULT_NOFILE = 256
+
+# Seconds added to the command timeout when setting RLIMIT_CPU, so the
+# wall-clock timeout (which sends SIGKILL) usually fires first.
+CPU_TIMEOUT_PAD = 1
+
+# Floor, in seconds, for RLIMIT_CPU.
+MIN_CPU_SECONDS = 1
+
+# Core dumps are disabled (RLIMIT_CORE = 0) so a crash cannot write a core
+# file into the sandbox.
+RLIMIT_CORE_VALUE = 0
+
+# Bytes in one kibibyte, used when formatting sizes for client descriptions.
+BYTES_PER_KIB = 1024
+
+# Bytes in one mebibyte, used to convert MEMORY_MB into RLIMIT_AS.
+BYTES_PER_MIB = 1024 * 1024
+
+# Bytes in one gibibyte, used for the default 2 GiB workspace image.
+BYTES_PER_GIB = 1024 * 1024 * 1024
+
+# Bytes in one tebibyte, accepted by parse_size() for completeness.
+BYTES_PER_TIB = 1024 * 1024 * 1024 * 1024
+
+
+# =============================================================================
+# Jail layout (layer 1)
+# =============================================================================
+
+# Namespaced uid commands see after the inner user namespace is applied.
+# 1000 is a regular unprivileged user, never 0, so setuid helpers cannot
+# usefully target "root inside the jail".
+JAIL_UID = 1000
+
+# Namespaced gid that pairs with JAIL_UID.
+JAIL_GID = 1000
+
+# Hostname set inside the UTS namespace after pivot_root.
+JAIL_HOSTNAME = "mcp"
+
+# The sandbox folder is mounted as the jail's root, so the AI's "/" is
+# the host sandbox/ directory. Kept as a named constant so path joins stay
+# explicit in jail.py rather than using a bare "/".
+JAIL_ROOT_PATH = "/"
+
+# Default working directory, HOME and PWD inside the jail. On the host this
+# is <sandbox>/workspace (WORKSPACE_DIR_NAME).
+JAIL_WORKSPACE_PATH = "/" + WORKSPACE_DIR_NAME
+
+# Private temporary directory inside the jail (a tmpfs, not the host /tmp).
+JAIL_TMP_PATH = "/tmp"
+
+# Shell used to run commands (bash -lc). The jail binds host /usr read-only,
+# which must provide this binary.
+JAIL_SHELL = "/bin/bash"
+
+# Account name written to the jail's /etc/passwd and used in the jail env.
+JAIL_USER_NAME = "user"
+
+# Login shell recorded for the jail root account (not used to run commands).
+JAIL_NOLOGIN = "/sbin/nologin"
+
+# Traditional nobody uid/gid, and the overflow id Linux uses in an unmapped
+# user namespace. Used in the jail passwd/group files.
+NOBODY_UID = 65534
+
+# Traditional nobody account name in the jail passwd/group files.
+NOBODY_NAME = "nobody"
+
+# Template for the ephemeral new-root directory (filled with the helper pid).
+# Lives under /tmp and exists only in the command's mount namespace.
+JAIL_NEWROOT_TEMPLATE = "/tmp/mcp-jail-%d"
+
+# Directories that must exist at the sandbox root as mount points for
+# system filesystems. They are created empty on the host if missing
+# (unavoidable, because the sandbox itself is bound at /). Inside the
+# jail they are covered by read-only or private mounts, so their on-host
+# contents are hidden from commands. Do not store project files under
+# these names at the sandbox root; use /workspace instead.
+# "old" is only created for pivot_root and is removed afterwards, so it
+# is listed here for documentation but is not pre-created at server start.
+JAIL_PERSISTENT_MOUNTPOINTS = (
+    "usr", "bin", "lib", "lib64", "sbin", "etc", "dev", "tmp", "proc", "run",
+)
+
+# pivot_root put_old directory name, created under the new root just before
+# the pivot and rmdir'd after the old root is detached.
+JAIL_PIVOT_OLD_NAME = "old"
+
+# Union of persistent mount points plus the temporary pivot_root directory,
+# used when the jail is built.
+JAIL_MOUNTPOINT_NAMES = JAIL_PERSISTENT_MOUNTPOINTS + (JAIL_PIVOT_OLD_NAME,)
+
+# Host paths that, if present as directories or usrmerge symlinks, are
+# reproduced read-only inside the jail so /bin/bash and friends resolve.
+RO_LINKS = ("/bin", "/lib", "/lib64", "/sbin")
+
+# Device node names bind-mounted from the host /dev. mknod is not allowed
+# in an unprivileged user namespace, so we reuse the host nodes.
+DEV_NODES = ("null", "zero", "full", "random", "urandom", "tty")
+
+# Symlinks created under the jail /dev, as (name, target) pairs.
+DEV_SYMLINKS = (
+    ("fd", "/proc/self/fd"),
+    ("stdin", "/proc/self/fd/0"),
+    ("stdout", "/proc/self/fd/1"),
+    ("stderr", "/proc/self/fd/2"),
+    ("ptmx", "pts/ptmx"),
+)
+
+# Host /etc entries bind-mounted read-only into the jail (never the whole
+# of /etc, which would leak host users, shadow, and ssh keys).
+ETC_BIND_FILES = (
+    "ld.so.cache",
+    "ld.so.conf",
+    "localtime",
+    "hosts",
+    "nsswitch.conf",
+    "resolv.conf",
+    "ssl",
+    "ca-certificates",
+    "ssl/certs",
+    "pki",
+)
+
+# Host directory of Debian update-alternatives symlinks (awk, vi, editor,
+# pager, and so on). The jail's private /etc does not include this, so
+# /usr/bin/awk -> /etc/alternatives/awk would otherwise be a dangling
+# link. Bound read-only into the jail /etc when present and enabled.
+HOST_ALTERNATIVES_PATH = "/etc/alternatives"
+
+# Directory name of that bind, under the jail's /etc.
+JAIL_ALTERNATIVES_NAME = "alternatives"
+
+# Default for MCP_ALTERNATIVES. "1" binds host /etc/alternatives read-only
+# into the jail when the host directory exists.
+DEFAULT_BIND_ALTERNATIVES = "1"
+
+# Fallback nsswitch.conf written when the host file is not bind-mounted.
+JAIL_NSSWITCH = "passwd: files\ngroup: files\nshadow: files\nhosts: files dns\n"
+
+# Mode of placeholder files created as bind-mount targets, and of files
+# written into the jail /etc.
+PLACEHOLDER_FILE_MODE = 0o644
+
+# mount(2) data for the jail /dev tmpfs. 64 KiB is enough for a handful of
+# bind-mounted device nodes and the pts mount point.
+DEV_TMPFS_DATA = "mode=755,size=65536"
+
+# mount(2) data for a private devpts instance (optional; ignored if it fails).
+DEVPTS_DATA = "newinstance,ptmxmode=0666,mode=0620"
+
+# mount(2) data for /dev/shm. 64 MiB is a typical shm size for short commands.
+SHM_TMPFS_DATA = "mode=1777,size=67108864"
+
+# mount(2) data for the jail /tmp. 128 MiB caps scratch files per command.
+TMP_TMPFS_DATA = "mode=1777,size=134217728"
+
+# mount(2) data for the new-root tmpfs itself (0755, size left to default).
+# The sandbox is then bound over this tmpfs; the tmpfs is only a scaffold.
+NEWROOT_TMPFS_DATA = "mode=755"
+
+# mount(2) data for a private /etc tmpfs. 1 MiB holds passwd, group, hostname
+# and a gitconfig without writing those files into the host sandbox/etc.
+ETC_TMPFS_DATA = "mode=755,size=1048576"
+
+# mount(2) data for a private /run tmpfs (small; nothing should persist there).
+RUN_TMPFS_DATA = "mode=755,size=1048576"
+
+# Prefix of the worker job JSON file passed to `python3 -m mcp.sandbox --worker`.
+JOB_FILE_PREFIX = "mcp-job-"
+
+# Suffix of the worker job JSON file.
+JOB_FILE_SUFFIX = ".json"
+
+# Mode of the worker job file (owner read/write only). The file holds the
+# command string and paths, and must stay outside the sandbox folder.
+JOB_FILE_MODE = 0o600
+
+# Exit status when jail setup or exec fails in the sandbox child.
+SANDBOX_FAIL_EXIT = 127
+
+# Exit status of `python3 -m mcp.sandbox` when it is invoked without --worker.
+SANDBOX_USAGE_EXIT = 2
+
+# Exit status used when the sandbox child sees its parent already gone
+# (PPID == 1) before PR_SET_PDEATHSIG can take effect.
+SANDBOX_ORPHAN_EXIT = 1
+
+# Signal-exit offset: 128 + signal number, matching POSIX shell convention.
+SIGNAL_EXIT_OFFSET = 128
+
+# Exit status stored in a command result when the process timed out or no
+# wait status was collected.
+TIMEOUT_EXIT_CODE = -1
+
+
+# =============================================================================
+# Git (workspace repo)
+# =============================================================================
+
+# Basename of the git metadata directory used to detect an existing repo.
+GIT_DIR_NAME = ".git"
+
+# git argv used to initialise a new repo in sandbox/workspace (no extra flags).
+GIT_INIT_ARGV = ("git", "init")
+
+# Seconds to wait for `git init` on the host at server start.
+GIT_INIT_TIMEOUT = 15
+
+# Default author/committer name used inside the jail so `git commit` works
+# without a user-provided identity. No auto-commit is performed.
+GIT_DEFAULT_NAME = "mcp"
+
+# Default author/committer email paired with GIT_DEFAULT_NAME.
+GIT_DEFAULT_EMAIL = "mcp@mcp"
+
+# safe.directory value written to the jail's /etc/gitconfig. "*" covers
+# /workspace even if git still reports dubious ownership after the uid map.
+GIT_SAFE_DIRECTORY = "*"
+
+# Filename of the system gitconfig written onto the jail's private /etc tmpfs.
+GIT_CONFIG_BASENAME = "gitconfig"
+
+# Log line when git is not installed (written to stderr; %s is the workspace).
+GIT_INIT_SKIP_LOG = "ai-mcp: git not installed; skipped git init in %s\n"
+
+# Log line when git init successfully creates a new repo (%s is the workspace).
+GIT_INIT_DONE_LOG = "ai-mcp: git init in %s\n"
+
+# Log line when git init runs but fails (%s is the workspace, %s is the error).
+GIT_INIT_FAIL_LOG = "ai-mcp: git init failed in %s: %s\n"
+
+# =============================================================================
+# Workspace disk limit (v2.4)
+# =============================================================================
+# /workspace can live on a fixed-size loop image (workspace.img) so the AI
+# cannot fill the host disk. install.sh creates and mounts the image.
+# The Python server only detects whether the mount is active, warns if it
+# is not, and refuses write_file/edit_file that would go below a reserve.
+
+# Default size of the /workspace disk image, as a human string (1024-based).
+# install.sh and mcp.conf use the same value. Parsed by parse_size().
+DEFAULT_WORKSPACE_SIZE = "2G"
+
+# Default free-space reserve, in bytes (16 MiB). write_file and edit_file
+# refuse a write that would leave less than this free on the workspace
+# filesystem (including space needed for the temporary file).
+DEFAULT_WORKSPACE_RESERVE = 16 * 1024 * 1024
+
+# Suffix letters accepted by parse_size(), mapped to a byte multiplier.
+# K/M/G/T are 1024-based; a trailing i or iB/B is ignored ("2GiB" == "2G").
+SIZE_SUFFIX_BYTES = {
+    "": 1,
+    "K": BYTES_PER_KIB,
+    "M": BYTES_PER_MIB,
+    "G": BYTES_PER_GIB,
+    "T": BYTES_PER_TIB,
+}
+
+# Log / banner phrase when sandbox/workspace is not a separate mount.
+WORKSPACE_LIMIT_OFF_LABEL = "off"
+
+# Prefix of the "limit is on" status label, before the used/total figures.
+WORKSPACE_LIMIT_ON_PREFIX = "on, "
+
+# Status template when the limit is on. {used} and {total} are short sizes.
+WORKSPACE_LIMIT_ON_TEMPLATE = "on, {used} used of {total}"
+
+# Startup log line when the workspace is not a separate mount (%s is the path).
+WORKSPACE_LIMIT_OFF_LOG = (
+    "ai-mcp: workspace size limit is off (%s is not a separate mount). "
+    "Run install.sh to create and mount the 2G workspace image, or the "
+    "server will keep running without a disk cap.\n"
+)
+
+# write_file/edit_file error when a write would leave too little free space.
+# {need} is bytes required (new content + reserve), {free} is available,
+# {reserve} is the configured reserve; all are already formatted sizes.
+WORKSPACE_SPACE_ERROR = (
+    "not enough free space in /workspace (need %s, have %s, reserve %s)"
+)
+
+# Client-facing sentence, appended only when the workspace size limit is
+# actually active (the folder is a separate mount).
+CLIENT_WORKSPACE_LIMIT = (
+    "/workspace is limited to {workspace_size}; write_file and edit_file "
+    "refuse a write that would leave less than {workspace_reserve} free."
+)
+
+
+# =============================================================================
+# Jail process environment
+# =============================================================================
+
+# PATH seen by sandboxed commands. Only the read-only /usr and usrmerge links.
+JAIL_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
+
+# Fallback locale when the server process has no LANG set.
+DEFAULT_LANG = "C.UTF-8"
+
+# TERM set inside the jail so tools that inspect it do not complain.
+JAIL_TERM = "xterm"
+
+
+# =============================================================================
+# Sandbox mode
+# =============================================================================
+
+# Default isolation mode: "ns" (namespaces + pivot_root) or "none".
+DEFAULT_SANDBOX_MODE = "ns"
+
+# Default for MCP_SANDBOX_NET. "0" means the command gets a fresh, empty
+# network namespace (no connectivity).
+DEFAULT_SANDBOX_NET = "0"
+
+# Accepted values of MCP_SANDBOX after lowercasing and stripping.
+SANDBOX_MODES = ("ns", "none")
+
+# Values of cfg.sandbox that disable the namespace jail (file tools still
+# stay inside MCP_ROOT). "off" and "0" are informal aliases of "none".
+SANDBOX_DISABLED_VALUES = ("none", "off", "0")
+
+
+# =============================================================================
+# Command audit log (v2.5)
+# =============================================================================
+# A human-readable, one-line-per-call log written next to the JSON event
+# log. It records run_command (and, optionally, file-tool) calls with
+# timestamp, client IP, tool name, cwd, duration, exit code, timed_out
+# and a truncated command or path. It never records the PIN, auth headers
+# or file contents. mcp.sh --logs audit (or --audit) shows this file.
+
+# Default for MCP_AUDIT. "1" appends lines to the audit log.
+DEFAULT_AUDIT_ENABLED = "1"
+
+# Default for MCP_AUDIT_FILES. "1" also logs file-tool calls (paths only,
+# never file contents). "0" logs run_command only.
+DEFAULT_AUDIT_FILES = "1"
+
+# Default maximum size of the audit log, in bytes (5 MiB), before rotation.
+DEFAULT_AUDIT_MAX = 5 * 1024 * 1024
+
+# Number of rotated backups to keep (mcp-audit.log.1 .. .N).
+DEFAULT_AUDIT_KEEP = 3
+
+# Maximum characters of a command (or path summary) stored on one audit line.
+DEFAULT_AUDIT_COMMAND_LEN = 500
+
+# Mode of the audit log file (owner read/write only).
+AUDIT_FILE_MODE = 0o600
+
+# Template of one audit line. Fields are already escaped / formatted.
+AUDIT_LINE_TEMPLATE = (
+    "{ts} ip={ip} tool={tool} cwd={cwd} duration={duration} "
+    "exit={exit_code} timed_out={timed_out} command={command}"
+)
+
+# Ellipsis appended when a command string is truncated to the max length.
+AUDIT_TRUNC_MARK = "..."
+
+
+# =============================================================================
+# PIN strength (self-test and install.sh only)
+# =============================================================================
+# The running server still accepts any non-empty PIN; these rules are
+# used by mcp.sh --selftest and by install.sh when writing a new mcp.conf.
+# Stronger start-up refusal of weak PINs is parked (not in this release).
+
+# Shortest PIN that is not reported as weak (characters, not bytes).
+MIN_PIN_LEN = 12
+
+# Shortest all-digit PIN that is not reported as weak. Shorter numeric
+# PINs are easy to guess.
+MIN_DIGIT_PIN_LEN = 16
+
+# Demo / obviously weak PIN (compared case-insensitively). Same value as
+# DEFAULT_PIN, named separately so a later default change stays explicit.
+WEAK_PIN = DEFAULT_PIN
+
+
+# =============================================================================
+# Self-test (mcp.sh --selftest)
+# =============================================================================
+
+# Status labels printed at the start of each self-test result line.
+SELFTEST_PASS = "PASS"
+SELFTEST_FAIL = "FAIL"
+SELFTEST_SKIP = "SKIP"
+
+# Minimum Python version the server and the self-test require.
+PYTHON_MIN_MAJOR = 3
+PYTHON_MIN_MINOR = 8
+
+# HTTP timeout, in seconds, for the local initialize and tools/call probes.
+SELFTEST_HTTP_TIMEOUT = 8
+
+# Timeout, in seconds, for self-test run_command probes inside the jail.
+SELFTEST_COMMAND_TIMEOUT = 20
+
+# Timeout, in seconds, of the network-connectivity probe (a TCP connect).
+SELFTEST_NET_TIMEOUT = 2
+
+# Address used to test whether the jail has network access. A raw IP is
+# used so a blocked network is not confused with a DNS failure.
+SELFTEST_NET_HOST = "1.1.1.1"
+SELFTEST_NET_PORT = 443
+
+# clientInfo.name sent by the self-test initialize request.
+SELFTEST_CLIENT_NAME = "mcp-selftest"
+
+# Marker printed by the jail probe when the working directory is /workspace.
+SELFTEST_MARK_CWD = "CWD_OK"
+
+# Marker printed by the jail probe when the process uid is not 0.
+SELFTEST_MARK_UID = "UID_OK"
+
+# Marker printed by the jail probe when /workspace/selftest.marker is readable
+# (proves '/' is the sandbox, because that file was written on the host
+# under sandbox/workspace).
+SELFTEST_MARK_ROOT = "ROOT_OK"
+
+# Marker printed by the jail probe when a host-only path is not reachable.
+SELFTEST_MARK_ISOLATED = "ISOLATED_OK"
+
+# Basename of the temporary marker file written into /workspace for the
+# jail probe (created and removed by the self-test, not left behind).
+SELFTEST_MARKER_NAME = "selftest.marker"
+
+# Basename of a temporary file written *outside* the sandbox to confirm
+# host paths are unreachable; never created inside MCP_ROOT.
+SELFTEST_OUTSIDE_NAME = "selftest-outside.marker"
+
+
+# =============================================================================
+# Logging and miscellaneous
+# =============================================================================
+
+# strftime format for audit-log timestamps (local time with numeric offset).
+AUDIT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
+
+# Values treated as true when parsing MCP_TRUST_PROXY / MCP_SANDBOX_NET and
+# similar flags (compared case-insensitively after stripping).
+TRUTHY_VALUES = ("1", "true", "yes", "on")
+
+# Bind-mount mode names accepted in BIND / MCP_BIND entries.
+BIND_MODE_RO = "ro"
+BIND_MODE_RW = "rw"
+
+# Sysctl-style files checked before the live user-namespace probe, as
+# (path, expect_nonzero). A "0" on a path that should be non-zero is a
+# hard failure; AppArmor's restrict knob is recorded only as a hint.
+USERNS_SYSCTL_HINTS = (
+    ("/proc/sys/kernel/unprivileged_userns_clone", True),
+    ("/proc/sys/user/max_user_namespaces", True),
+    ("/proc/sys/kernel/apparmor_restrict_unprivileged_userns", False),
+)
+
+# Message appended when the unprivileged user-namespace probe fails. Tells
+# the operator how to enable the feature or fall back to MCP_SANDBOX=none.
+USERNS_HELP = (
+    "Unprivileged user namespaces are disabled or blocked on this kernel, "
+    "so the v2 jail cannot start without root.\n"
+    "Check:\n"
+    "  sysctl kernel.unprivileged_userns_clone    # should be 1 (Debian/Ubuntu)\n"
+    "  sysctl kernel.apparmor_restrict_unprivileged_userns  # Ubuntu 24 may set this to 1\n"
+    "  sysctl user.max_user_namespaces            # should be > 0\n"
+    "On Debian you can enable them with:\n"
+    "  sudo sysctl -w kernel.unprivileged_userns_clone=1\n"
+    "Or start without a jail (weaker): MCP_SANDBOX=none\n"
+)
+
+
+# =============================================================================
+# Path helpers (install layout)
+# =============================================================================
+
+def install_dir():
+    """Return the directory that holds mcp.sh, mcp.conf and sandbox/.
+
+    That directory is the parent of this package (mcp/). The value is
+    resolved to a real path so later comparisons are symlink-safe.
+
+    Returns:
+        str: Absolute real path of the install directory.
+    """
+    return os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+
+def default_sandbox():
+    """Return the default chroot / file-tool root: <install_dir>/sandbox.
+
+    Returns:
+        str: Absolute path (not required to exist until Config.validate).
+    """
+    return os.path.join(install_dir(), SANDBOX_DIR_NAME)
+
+
+def workspace_path(root):
+    """Return the host path of the default working directory under a sandbox.
+
+    Args:
+        root (str): Host path of the sandbox folder (MCP_ROOT).
+
+    Returns:
+        str: <root>/<WORKSPACE_DIR_NAME>, or empty string if root is empty.
+    """
+    if not root:
+        return ""
+    return os.path.join(root, WORKSPACE_DIR_NAME)
+
+
+def default_conf_path():
+    """Return the default mcp.conf path: <install_dir>/mcp.conf.
+
+    Returns:
+        str: Absolute path, which may not exist.
+    """
+    return os.path.join(install_dir(), CONF_FILENAME)
+
+
+# =============================================================================
+# Config file and environment resolution
+# =============================================================================
+# Every override of a default is resolved in this section. Other modules
+# must read the resulting Config object (or the defaults above), never
+# parse mcp.conf or MCP_* environment variables themselves.
+
+
+class ConfigError(Exception):
+    """Raised when a configuration value is missing, empty, or inconsistent.
+
+    Caught by the server entry point and printed as a one-line error.
+    """
+
+
+def _truthy(val):
+    """Return True if val is a recognised true flag string.
+
+    Args:
+        val: Any value; it is converted to a stripped, lower-cased string.
+
+    Returns:
+        bool: True if the value is one of TRUTHY_VALUES, else False.
+    """
+    return str(val or "").strip().lower() in TRUTHY_VALUES
+
+
+
+
+def format_size(n):
+    """Format a byte count for client-facing descriptions.
+
+    Uses KiB or MiB only when the value is an exact multiple of that unit,
+    so the number in the text matches the config constant.
+
+    Args:
+        n (int): Size in bytes.
+
+    Returns:
+        str: For example '200 KiB', '64 MiB', or '500 bytes'.
+    """
+    n = int(n)
+    if n >= BYTES_PER_TIB and n % BYTES_PER_TIB == 0:
+        return "%d TiB" % (n // BYTES_PER_TIB)
+    if n >= BYTES_PER_GIB and n % BYTES_PER_GIB == 0:
+        return "%d GiB" % (n // BYTES_PER_GIB)
+    if n >= BYTES_PER_MIB and n % BYTES_PER_MIB == 0:
+        return "%d MiB" % (n // BYTES_PER_MIB)
+    if n >= BYTES_PER_KIB and n % BYTES_PER_KIB == 0:
+        return "%d KiB" % (n // BYTES_PER_KIB)
+    return "%d bytes" % n
+
+
+def format_size_short(n):
+    """Format a byte count as a compact size, for status lines.
+
+    Uses 1024-based units with one decimal place for values that are
+    not a whole number of the chosen unit (for example 2.0G, 12M).
+
+    Args:
+        n (int): Size in bytes.
+
+    Returns:
+        str: A short size such as '2.0G', '16M', '512K', or '100B'.
+    """
+    n = int(n)
+    # units is a list of (suffix, byte count) from large to small.
+    units = (
+        ("T", BYTES_PER_TIB),
+        ("G", BYTES_PER_GIB),
+        ("M", BYTES_PER_MIB),
+        ("K", BYTES_PER_KIB),
+    )
+    for suffix, unit in units:
+        if n >= unit:
+            whole = n // unit
+            # remainder used only to decide whether to print a decimal.
+            rest = n % unit
+            if rest == 0:
+                if unit >= BYTES_PER_GIB:
+                    return "%d.0%s" % (whole, suffix)
+                return "%d%s" % (whole, suffix)
+            # One decimal of the chosen unit, rounded to nearest tenth.
+            tenths = int(round((n * 10.0) / unit))
+            return "%d.%d%s" % (tenths // 10, tenths % 10, suffix)
+    return "%dB" % n
+
+
+def parse_size(value):
+    """Parse a human size string or integer into a byte count.
+
+    Accepts a bare integer (bytes) or an integer followed by K, M, G or T.
+    A trailing i, B or iB is ignored, so '2G', '2g', '2GB' and '2GiB' are
+    the same 1024-based size. Spaces inside the value are ignored.
+
+    Args:
+        value: A string such as '2G' or an int already in bytes.
+
+    Returns:
+        int: Size in bytes (may be 0).
+
+    Raises:
+        ValueError: If the value is empty or the suffix is not recognised.
+    """
+    if isinstance(value, bool):
+        # bool is a subclass of int; reject it so True is not "1 byte".
+        raise ValueError("size must be a number or a string such as '2G'")
+    if isinstance(value, int):
+        if value < 0:
+            raise ValueError("size must not be negative")
+        return value
+    text = str(value).strip().replace(" ", "")
+    if not text:
+        raise ValueError("size is empty")
+    # Split leading digits from the optional suffix.
+    index = 0
+    length = len(text)
+    while index < length and text[index].isdigit():
+        index += 1
+    if index == 0:
+        raise ValueError("unrecognised size %r" % (value,))
+    number = int(text[:index])
+    suffix = text[index:].upper()
+    # Allow "MiB", "MB", "M", "Mi".
+    if suffix.endswith("B"):
+        suffix = suffix[:-1]
+    if suffix.endswith("I"):
+        suffix = suffix[:-1]
+    if suffix not in SIZE_SUFFIX_BYTES:
+        raise ValueError("unrecognised size %r" % (value,))
+    return number * SIZE_SUFFIX_BYTES[suffix]
+
+
+def pin_is_weak(pin):
+    """Return True if pin is the default, too short, or a short numeric PIN.
+
+    Used by the self-test (and documented for install.sh). The running
+    server does not refuse these values.
+
+    Args:
+        pin: Candidate PIN (any type; it is converted to a string).
+
+    Returns:
+        bool: True if the PIN is DEFAULT_PIN / WEAK_PIN (compared case-
+        insensitively), shorter than MIN_PIN_LEN, or all digits and
+        shorter than MIN_DIGIT_PIN_LEN. An empty PIN is weak.
+    """
+    text = "" if pin is None else str(pin)
+    if not text:
+        return True
+    if text.lower() == str(WEAK_PIN).lower():
+        return True
+    if len(text) < MIN_PIN_LEN:
+        return True
+    if text.isdigit() and len(text) < MIN_DIGIT_PIN_LEN:
+        return True
+    return False
+
+
+def default_audit_log(log_file=None):
+    """Return the default human-readable audit log path.
+
+    The file sits next to the JSON event log: same directory as log_file,
+    filename AUDIT_LOG_FILENAME. When log_file is empty, DEFAULT_AUDIT_LOG
+    is used.
+
+    Args:
+        log_file (str | None): The JSON log path (cfg.log_file).
+
+    Returns:
+        str: Path of the audit log file.
+    """
+    if log_file:
+        parent = os.path.dirname(log_file)
+        if parent:
+            return os.path.join(parent, AUDIT_LOG_FILENAME)
+        return AUDIT_LOG_FILENAME
+    return DEFAULT_AUDIT_LOG
+
+
+def client_settings(cfg=None):
+    """Resolve isolation, network and numeric limits for client text.
+
+    Values come from the runtime Config when one is given, otherwise from
+    the defaults in this file. Memory and process counts are floored the
+    same way the jail applies them. The advertised default timeout is
+    capped at MAX_TIMEOUT. Network is reported as on when isolation is
+    off, because unsandboxed commands use the host network.
+
+    Args:
+        cfg: A Config (or a simple object with the same attributes), or
+            None to use defaults.
+
+    Returns:
+        dict: Keys used to fill the description templates, including
+        isolated (bool), network_on (bool), timeout, max_timeout,
+        memory_mb, max_procs, fsize, output, max_read, max_walk_depth,
+        max_list_entries and reserved.
+    """
+    if cfg is None:
+        sandbox = DEFAULT_SANDBOX_MODE
+        sandbox_net = _truthy(DEFAULT_SANDBOX_NET)
+        memory_mb = DEFAULT_MEMORY_MB
+        max_procs = DEFAULT_MAX_PROCS
+        timeout = DEFAULT_TIMEOUT
+    else:
+        sandbox = str(getattr(cfg, "sandbox", DEFAULT_SANDBOX_MODE) or DEFAULT_SANDBOX_MODE)
+        sandbox = sandbox.strip().lower() or DEFAULT_SANDBOX_MODE
+        if hasattr(cfg, "sandbox_net"):
+            sandbox_net = bool(getattr(cfg, "sandbox_net"))
+        else:
+            sandbox_net = _truthy(DEFAULT_SANDBOX_NET)
+        memory_mb = int(getattr(cfg, "memory_mb", DEFAULT_MEMORY_MB) or DEFAULT_MEMORY_MB)
+        max_procs = int(getattr(cfg, "max_procs", DEFAULT_MAX_PROCS) or DEFAULT_MAX_PROCS)
+        timeout = int(getattr(cfg, "default_timeout", DEFAULT_TIMEOUT) or DEFAULT_TIMEOUT)
+    isolated = sandbox not in SANDBOX_DISABLED_VALUES
+    network_on = True if not isolated else bool(sandbox_net)
+    memory_mb = max(MIN_MEMORY_MB, memory_mb)
+    max_procs = max(MIN_MAX_PROCS, max_procs)
+    timeout = min(max(1, timeout), MAX_TIMEOUT)
+    # Workspace cap text is honest: only shown when the live mount is on.
+    workspace_limit_on = False
+    workspace_size = parse_size(DEFAULT_WORKSPACE_SIZE)
+    workspace_reserve = DEFAULT_WORKSPACE_RESERVE
+    if cfg is not None:
+        workspace_limit_on = bool(getattr(cfg, "workspace_limit_on", False))
+        raw_size = getattr(cfg, "workspace_size", None)
+        if raw_size is not None:
+            try:
+                workspace_size = parse_size(raw_size)
+            except ValueError:
+                workspace_size = parse_size(DEFAULT_WORKSPACE_SIZE)
+        raw_reserve = getattr(cfg, "workspace_reserve", None)
+        if raw_reserve is not None:
+            try:
+                workspace_reserve = parse_size(raw_reserve)
+            except ValueError:
+                workspace_reserve = DEFAULT_WORKSPACE_RESERVE
+    return {
+        "isolated": isolated,
+        "network_on": network_on,
+        "timeout": timeout,
+        "max_timeout": MAX_TIMEOUT,
+        "memory_mb": memory_mb,
+        "max_procs": max_procs,
+        "fsize": format_size(DEFAULT_FSIZE),
+        "output": format_size(MAX_OUTPUT),
+        "max_read": format_size(MAX_READ),
+        "max_walk_depth": MAX_WALK_DEPTH,
+        "max_list_entries": MAX_LIST_ENTRIES,
+        "reserved": ", ".join(JAIL_PERSISTENT_MOUNTPOINTS),
+        # workspace_limit_on is True only when the live workspace is a
+        # separate mount. Defaults (cfg is None) stay off, so default
+        # client text does not advertise a cap that is not active.
+        "workspace_limit_on": workspace_limit_on,
+        "workspace_size": format_size(workspace_size),
+        "workspace_reserve": format_size(workspace_reserve),
+    }
+
+
+def _command_mode_text(settings):
+    """Return the isolation/network sentence for the given settings.
+
+    Args:
+        settings (dict): Output of client_settings().
+
+    Returns:
+        str: One of the CLIENT_COMMAND_MODE_* templates, already complete.
+    """
+    if not settings["isolated"]:
+        return CLIENT_COMMAND_MODE_NONE
+    if settings["network_on"]:
+        return CLIENT_COMMAND_MODE_NS_NET
+    return CLIENT_COMMAND_MODE_NS_NO_NET
+
+
+def _limits_text(settings):
+    """Return the limit sentence for the given settings.
+
+    Args:
+        settings (dict): Output of client_settings().
+
+    Returns:
+        str: A filled CLIENT_LIMITS_* template.
+    """
+    template = (
+        CLIENT_LIMITS_JAIL_TEMPLATE if settings["isolated"]
+        else CLIENT_LIMITS_NONE_TEMPLATE
+    )
+    return template.format(**settings)
+
+
+def _run_command_description(settings):
+    """Return the run_command tool description for the given settings.
+
+    Args:
+        settings (dict): Output of client_settings().
+
+    Returns:
+        str: A filled CLIENT_RUN_COMMAND_* template.
+    """
+    if not settings["isolated"]:
+        template = CLIENT_RUN_COMMAND_NONE
+    elif settings["network_on"]:
+        template = CLIENT_RUN_COMMAND_NS_NET
+    else:
+        template = CLIENT_RUN_COMMAND_NS_NO_NET
+    return template.format(**settings)
+
+
+def client_instructions(cfg=None):
+    """Build the initialize() instructions from a runtime Config.
+
+    Args:
+        cfg: A Config (or a simple object with the same attributes), or
+            None to describe the default settings (isolated jail, no
+            network, default limits).
+
+    Returns:
+        str: The instructions text a connecting AI will see.
+    """
+    settings = client_settings(cfg)
+    layout = CLIENT_LAYOUT.format(**settings)
+    # Mention the disk cap only when the workspace is actually a mount.
+    if settings["workspace_limit_on"]:
+        layout = layout + " " + CLIENT_WORKSPACE_LIMIT.format(**settings)
+    return CLIENT_INSTRUCTIONS_TEMPLATE.format(
+        layout=layout,
+        command_mode=_command_mode_text(settings),
+        limits=_limits_text(settings),
+    )
+
+
+def _with_workspace_limit(text, settings):
+    """Append the workspace size-limit sentence when the mount is active.
+
+    Args:
+        text (str): A tool description already filled from a template.
+        settings (dict): Output of client_settings().
+
+    Returns:
+        str: text, plus CLIENT_WORKSPACE_LIMIT when workspace_limit_on.
+    """
+    if not settings.get("workspace_limit_on"):
+        return text
+    return text + " " + CLIENT_WORKSPACE_LIMIT.format(**settings)
+
+
+def client_tool_defs(cfg=None):
+    """Build the tools/list payload from a runtime Config.
+
+    Args:
+        cfg: A Config (or a simple object with the same attributes), or
+            None to describe the default settings.
+
+    Returns:
+        list[dict]: MCP tool definitions with descriptions and
+        inputSchema property descriptions filled from templates.
+    """
+    settings = client_settings(cfg)
+    return [
+        {
+            "name": "run_command",
+            "description": _run_command_description(settings),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": CLIENT_PROP_COMMAND,
+                    },
+                    "cwd": {
+                        "type": "string",
+                        "description": CLIENT_PROP_CWD,
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": CLIENT_PROP_TIMEOUT.format(**settings),
+                    },
+                },
+                "required": ["command"],
+            },
+        },
+        {
+            "name": "read_file",
+            "description": CLIENT_READ_FILE.format(**settings),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": CLIENT_PROP_READ_PATH,
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": CLIENT_PROP_OFFSET,
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": CLIENT_PROP_LIMIT,
+                    },
+                    "max_bytes": {
+                        "type": "integer",
+                        "description": CLIENT_PROP_MAX_BYTES.format(**settings),
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+        {
+            "name": "write_file",
+            "description": _with_workspace_limit(
+                CLIENT_WRITE_FILE.format(**settings), settings
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": CLIENT_PROP_WRITE_PATH,
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": CLIENT_PROP_CONTENT,
+                    },
+                    "create_parents": {
+                        "type": "boolean",
+                        "description": CLIENT_PROP_CREATE_PARENTS,
+                    },
+                },
+                "required": ["path", "content"],
+            },
+        },
+        {
+            "name": "edit_file",
+            "description": _with_workspace_limit(
+                CLIENT_EDIT_FILE.format(**settings), settings
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": CLIENT_PROP_EDIT_PATH,
+                    },
+                    "old_string": {
+                        "type": "string",
+                        "description": CLIENT_PROP_OLD_STRING,
+                    },
+                    "new_string": {
+                        "type": "string",
+                        "description": CLIENT_PROP_NEW_STRING,
+                    },
+                    "replace_all": {
+                        "type": "boolean",
+                        "description": CLIENT_PROP_REPLACE_ALL,
+                    },
+                },
+                "required": ["path", "old_string", "new_string"],
+            },
+        },
+        {
+            "name": "list_dir",
+            "description": CLIENT_LIST_DIR.format(**settings),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": CLIENT_PROP_LIST_PATH,
+                    },
+                    "recursive": {
+                        "type": "boolean",
+                        "description": CLIENT_PROP_RECURSIVE,
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": CLIENT_PROP_MAX_DEPTH.format(**settings),
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+        {
+            "name": "delete_path",
+            "description": CLIENT_DELETE_PATH.format(**settings),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": CLIENT_PROP_DELETE_PATH,
+                    },
+                    "recursive": {
+                        "type": "boolean",
+                        "description": CLIENT_PROP_DELETE_RECURSIVE,
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+        {
+            "name": "move_path",
+            "description": CLIENT_MOVE_PATH.format(**settings),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "src": {
+                        "type": "string",
+                        "description": CLIENT_PROP_SRC,
+                    },
+                    "dest": {
+                        "type": "string",
+                        "description": CLIENT_PROP_DEST,
+                    },
+                },
+                "required": ["src", "dest"],
+            },
+        },
+    ]
+
+def _strip_quotes(value):
+    """Remove a matching pair of surrounding single or double quotes.
+
+    Args:
+        value (str): A raw config-file value.
+
+    Returns:
+        str: The unquoted value, or the original string if it is not quoted.
+    """
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value
+
+
+def parse_binds(values):
+    """Parse BIND / MCP_BIND entries of the form src:dest[:ro|rw].
+
+    Several entries may be passed, and a single entry may be a comma-
+    separated list (as used by the MCP_BIND environment variable).
+
+    Args:
+        values: Iterable of raw strings, or None.
+
+    Returns:
+        list[tuple[str, str, bool]]: (realpath(src), dest, writable) triples.
+        dest always starts with '/'. writable is True only for ':rw'.
+
+    Raises:
+        ConfigError: If an entry is malformed or the source is not a directory.
+    """
+    out = []
+    items = []
+    for value in values or []:
+        if not value:
+            continue
+        # Comma-separated lists are allowed in a single env var.
+        for part in value.split(","):
+            part = part.strip()
+            if part:
+                items.append(part)
+    for item in items:
+        bits = item.split(":")
+        # Paths may contain colons on unusual systems; require at least src:dest.
+        if len(bits) < 2:
+            raise ConfigError("BIND must be src:dest or src:dest:ro|rw (got %r)" % item)
+        mode = BIND_MODE_RO
+        if bits[-1].lower() in (BIND_MODE_RO, BIND_MODE_RW):
+            mode = bits[-1].lower()
+            dest = bits[-2]
+            src = ":".join(bits[:-2])
+        else:
+            dest = bits[-1]
+            src = ":".join(bits[:-1])
+        if not src or not dest:
+            raise ConfigError("BIND must be src:dest or src:dest:ro|rw (got %r)" % item)
+        if not os.path.isdir(src):
+            raise ConfigError("BIND source is not a directory: %s" % src)
+        if not dest.startswith("/"):
+            dest = "/" + dest
+        out.append((os.path.realpath(src), dest, mode == BIND_MODE_RW))
+    return out
+
+
+def load_conf_file(path):
+    """Read a KEY=value mcp.conf file.
+
+    Blank lines and lines starting with # are ignored. BIND / MCP_BIND
+    keys are collected separately so they can be repeated.
+
+    Args:
+        path (str | None): Path to the file. Missing or empty paths yield
+            an empty result rather than an error.
+
+    Returns:
+        tuple[dict, list]: (data, binds) where data maps upper-case keys
+        to unquoted string values, and binds is a list of raw BIND values.
+
+    Raises:
+        OSError: If the file exists but cannot be read.
+    """
+    data = {}
+    binds = []
+    if not path or not os.path.isfile(path):
+        return data, binds
+    with open(path, "r", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip().upper()
+            value = _strip_quotes(value.strip())
+            if key in ("BIND", "MCP_BIND"):
+                binds.append(value)
+            else:
+                data[key] = value
+    return data, binds
+
+
+def _conf_get(conf, *names, default=""):
+    """Return the first non-empty value from the conf dict or the environment.
+
+    Each name is tried first as a conf key, then as an environment variable.
+    Environment values win only when the conf key is missing or empty; for
+    the "environment always wins" rule used at startup, see _env_or_conf.
+
+    Args:
+        conf (dict): Parsed mcp.conf values (upper-case keys).
+        *names: Candidate key names, tried in order.
+        default: Returned when every name is missing or empty.
+
+    Returns:
+        The first matching string, or default.
+    """
+    for name in names:
+        if name in conf and conf[name] != "":
+            return conf[name]
+        env = os.environ.get(name)
+        if env is not None and env != "":
+            return env
+    return default
+
+
+def _env_or_conf(conf, env_name, *conf_names, default=""):
+    """Return an environment value if set, otherwise a conf value, else default.
+
+    A variable that is present in the environment (even if empty) wins.
+    This is the rule mcp.sh documents: a shell export overrides mcp.conf.
+
+    Args:
+        conf (dict): Parsed mcp.conf values (upper-case keys).
+        env_name (str): Environment variable to look up first (for example
+            MCP_PIN).
+        *conf_names: mcp.conf keys to try, in order, if the env var is unset.
+        default: Returned when neither the environment nor the file has a
+            value.
+
+    Returns:
+        The resolved string (or default).
+    """
+    if env_name in os.environ:
+        return os.environ.get(env_name, default)
+    for name in conf_names:
+        if name in conf and conf[name] != "":
+            return conf[name]
+    return default
+
+
+def _load_pin(pin, pin_file):
+    """Resolve the PIN from a file, an explicit value, or the default.
+
+    Args:
+        pin (str | None): PIN already taken from the environment or mcp.conf.
+            None means "use DEFAULT_PIN" when no file is set.
+        pin_file (str | None): If set, the PIN is read from this file
+            (first line, stripped) and `pin` is ignored.
+
+    Returns:
+        str: The resolved, non-empty PIN (emptiness is checked by validate).
+
+    Raises:
+        ConfigError: If pin_file is set but missing or empty.
+    """
+    if pin_file:
+        if not os.path.isfile(pin_file):
+            raise ConfigError("MCP_PIN_FILE / MCP_PASSWORD_FILE missing: %s" % pin_file)
+        with open(pin_file, "r", encoding="utf-8") as fh:
+            pin = fh.read().strip()
+        if not pin:
+            raise ConfigError("MCP_PIN_FILE is empty: %s" % pin_file)
+        return pin
+    if pin is None:
+        return DEFAULT_PIN
+    return pin
+
+
+class Config(object):
+    """Runtime configuration assembled from defaults, mcp.conf, and the env.
+
+    Construct with Config() (optionally passing conf_path), then call
+    validate() before starting the HTTP server. Tests may build an
+    instance with Config.__new__ and set attributes by hand before
+    validate().
+
+    Attributes after validate() include host, port, pin, password (v1
+    alias of pin), log_file, root, sandbox, sandbox_net, binds, cors_origins,
+    trust_proxy, public_url, memory_mb, max_procs, default_timeout,
+    server_dir, default_cwd, workspace, workspace_size, workspace_reserve,
+    workspace_limit_on, using_default_pin, bind_alternatives, audit_enabled,
+    audit_files, audit_log, audit_max, audit_keep, and audit_command_len.
+    """
+
+    def __init__(self, conf_path=None):
+        """Load defaults, then mcp.conf, then MCP_* environment overrides.
+
+        Args:
+            conf_path (str | None): Path to mcp.conf. If omitted, MCP_CONF
+                is used when set, otherwise <install_dir>/mcp.conf. A
+                missing file is not an error.
+
+        Raises:
+            ValueError: If a numeric field such as PORT is not an integer.
+            ConfigError: If a BIND entry is malformed.
+        """
+        if conf_path is None:
+            conf_path = os.environ.get("MCP_CONF", "").strip() or default_conf_path()
+        conf, conf_binds = load_conf_file(conf_path if os.path.isfile(conf_path) else None)
+        # Remember the path only when the file actually exists, so tests
+        # and banners can tell a missing file from a loaded one.
+        self.conf_path = conf_path if os.path.isfile(conf_path) else None
+
+        self.host = _env_or_conf(conf, "MCP_HOST", "HOST", "MCP_HOST", default=DEFAULT_HOST)
+        port_raw = _env_or_conf(conf, "MCP_PORT", "PORT", "MCP_PORT", default=str(DEFAULT_PORT))
+        self.port = int(port_raw)
+        self.pin = _env_or_conf(
+            conf, "MCP_PIN", "PIN", "MCP_PIN", "PASSWORD", default=""
+        )
+        if not self.pin:
+            # MCP_PASSWORD is the v1 alias; checked after MCP_PIN so PIN wins.
+            self.pin = _env_or_conf(
+                conf, "MCP_PASSWORD", "PASSWORD", "MCP_PASSWORD", default=DEFAULT_PIN
+            )
+        self.pin_file = (
+            _env_or_conf(conf, "MCP_PIN_FILE", "PIN_FILE", "MCP_PIN_FILE", default="").strip()
+            or _env_or_conf(
+                conf, "MCP_PASSWORD_FILE", "PASSWORD_FILE", "MCP_PASSWORD_FILE", default=""
+            ).strip()
+            or None
+        )
+        # Keep the v1 attribute name so reused tests and call sites still work.
+        self.password = self.pin
+        self.password_file = self.pin_file
+        self.log_file = _env_or_conf(conf, "MCP_LOG", "LOG", "MCP_LOG", default=DEFAULT_LOG)
+        self.using_default_password = False
+        self.using_default_pin = False
+        cors_raw = _env_or_conf(
+            conf, "MCP_CORS_ORIGINS", "CORS_ORIGINS", "MCP_CORS_ORIGINS",
+            default=DEFAULT_CORS_ORIGINS,
+        )
+        self.cors_origins = tuple(x.strip() for x in cors_raw.split(",") if x.strip())
+        root = _env_or_conf(
+            conf, "MCP_ROOT", "ROOT", "WORKSPACE", "MCP_ROOT", default=default_sandbox()
+        ).strip()
+        self.root = root or None
+        self.trust_proxy = _truthy(
+            _env_or_conf(
+                conf, "MCP_TRUST_PROXY", "TRUST_PROXY", "MCP_TRUST_PROXY",
+                default=DEFAULT_TRUST_PROXY,
+            )
+        )
+        sandbox = _env_or_conf(
+            conf, "MCP_SANDBOX", "SANDBOX", "MCP_SANDBOX", default=DEFAULT_SANDBOX_MODE
+        ).strip().lower() or DEFAULT_SANDBOX_MODE
+        self.sandbox = sandbox
+        self.sandbox_net = _truthy(
+            _env_or_conf(
+                conf, "MCP_SANDBOX_NET", "SANDBOX_NET", "MCP_SANDBOX_NET",
+                default=DEFAULT_SANDBOX_NET,
+            )
+        )
+        self.server_dir = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
+        # default_cwd is the working directory for relative file-tool paths
+        # and run_command; validate() points it at <root>/workspace when a
+        # sandbox root is set.
+        self.workspace = workspace_path(self.root) if self.root else None
+        self.default_cwd = self.workspace or (os.path.expanduser("~") or os.getcwd())
+        self.public_url = _env_or_conf(
+            conf, "MCP_PUBLIC_URL", "PUBLIC_URL", "MCP_PUBLIC_URL", default=DEFAULT_PUBLIC_URL
+        ).strip().rstrip("/")
+        self.memory_mb = int(
+            _env_or_conf(
+                conf, "MCP_MEMORY_MB", "MEMORY_MB", "MCP_MEMORY_MB",
+                default=str(DEFAULT_MEMORY_MB),
+            )
+        )
+        self.max_procs = int(
+            _env_or_conf(
+                conf, "MCP_MAX_PROCS", "MAX_PROCS", "MCP_MAX_PROCS",
+                default=str(DEFAULT_MAX_PROCS),
+            )
+        )
+        self.default_timeout = int(
+            _env_or_conf(
+                conf, "MCP_TIMEOUT", "TIMEOUT", "MCP_TIMEOUT",
+                default=str(DEFAULT_TIMEOUT),
+            )
+        )
+        env_bind = os.environ.get("MCP_BIND", "").strip()
+        bind_values = list(conf_binds)
+        if env_bind:
+            bind_values.append(env_bind)
+        self.binds = parse_binds(bind_values)
+        # Workspace image size and write reserve. Parsed to bytes here;
+        # validate() then checks whether the mount is actually active.
+        size_raw = _env_or_conf(
+            conf, "MCP_WORKSPACE_SIZE", "WORKSPACE_SIZE", "MCP_WORKSPACE_SIZE",
+            default=DEFAULT_WORKSPACE_SIZE,
+        )
+        reserve_raw = _env_or_conf(
+            conf, "MCP_WORKSPACE_RESERVE", "WORKSPACE_RESERVE",
+            "MCP_WORKSPACE_RESERVE", default=str(DEFAULT_WORKSPACE_RESERVE),
+        )
+        self.workspace_size = parse_size(size_raw)
+        self.workspace_reserve = parse_size(reserve_raw)
+        # Filled by validate() once the workspace path is known.
+        self.workspace_limit_on = False
+        # /etc/alternatives bind (v2.5). Default on; validate() keeps this
+        # if the attribute was already set (Config.__new__ in tests).
+        self.bind_alternatives = _truthy(
+            _env_or_conf(
+                conf, "MCP_ALTERNATIVES", "ALTERNATIVES", "MCP_ALTERNATIVES",
+                "BIND_ALTERNATIVES", "MCP_BIND_ALTERNATIVES",
+                default=DEFAULT_BIND_ALTERNATIVES,
+            )
+        )
+        # Human-readable command audit log (v2.5).
+        self.audit_enabled = _truthy(
+            _env_or_conf(
+                conf, "MCP_AUDIT", "AUDIT", "MCP_AUDIT",
+                default=DEFAULT_AUDIT_ENABLED,
+            )
+        )
+        self.audit_files = _truthy(
+            _env_or_conf(
+                conf, "MCP_AUDIT_FILES", "AUDIT_FILES", "MCP_AUDIT_FILES",
+                default=DEFAULT_AUDIT_FILES,
+            )
+        )
+        audit_log_raw = _env_or_conf(
+            conf, "MCP_AUDIT_LOG", "AUDIT_LOG", "MCP_AUDIT_LOG", default=""
+        ).strip()
+        self.audit_log = audit_log_raw or default_audit_log(self.log_file)
+        audit_max_raw = _env_or_conf(
+            conf, "MCP_AUDIT_MAX", "AUDIT_MAX", "MCP_AUDIT_MAX",
+            default=str(DEFAULT_AUDIT_MAX),
+        )
+        self.audit_max = parse_size(audit_max_raw)
+        audit_keep_raw = _env_or_conf(
+            conf, "MCP_AUDIT_KEEP", "AUDIT_KEEP", "MCP_AUDIT_KEEP",
+            default=str(DEFAULT_AUDIT_KEEP),
+        )
+        self.audit_keep = int(audit_keep_raw)
+        audit_cmd_raw = _env_or_conf(
+            conf, "MCP_AUDIT_COMMAND_LEN", "AUDIT_COMMAND_LEN",
+            "MCP_AUDIT_COMMAND_LEN", default=str(DEFAULT_AUDIT_COMMAND_LEN),
+        )
+        self.audit_command_len = int(audit_cmd_raw)
+
+    def validate(self):
+        """Check and normalise a loaded Config in place.
+
+        Resolves the PIN (including PIN files), rejects an empty PIN or an
+        unknown sandbox mode, requires MCP_ROOT and working user namespaces
+        when sandbox=ns, and refuses to start if the audit log or PIN file
+        would be visible inside the sandbox folder.
+
+        Returns:
+            Config: self, for call chaining (Config().validate()).
+
+        Raises:
+            ConfigError: On any of the conditions above.
+        """
+        if self.sandbox not in SANDBOX_MODES:
+            raise ConfigError("MCP_SANDBOX must be 'ns' or 'none' (got %r)" % (self.sandbox,))
+        self.server_dir = os.path.realpath(
+            self.server_dir or os.path.dirname(os.path.abspath(__file__))
+        )
+        self.pin = _load_pin(self.pin, self.pin_file)
+        self.password = self.pin
+        if not self.pin:
+            raise ConfigError("PIN is empty")
+        self.using_default_pin = self.pin == DEFAULT_PIN
+        self.using_default_password = self.using_default_pin
+        if self.root:
+            if not os.path.isdir(self.root):
+                raise ConfigError("MCP_ROOT is not a directory: %s" % self.root)
+            self.root = os.path.realpath(self.root)
+            # Create <root>/workspace and reserved mount-point dirs, and
+            # git init the workspace if needed. Imported lazily to keep
+            # config.py importable without pulling in subprocess helpers.
+            from .workspace import ensure_layout
+
+            self.workspace = ensure_layout(self.root)
+            self.default_cwd = self.workspace
+        else:
+            self.workspace = None
+            self.default_cwd = os.path.expanduser("~") or os.getcwd()
+        # Normalise size/reserve for Config objects built with __new__
+        # (tests) that never ran __init__.
+        if getattr(self, "workspace_size", None) is None:
+            self.workspace_size = parse_size(DEFAULT_WORKSPACE_SIZE)
+        else:
+            self.workspace_size = parse_size(self.workspace_size)
+        if getattr(self, "workspace_reserve", None) is None:
+            self.workspace_reserve = DEFAULT_WORKSPACE_RESERVE
+        else:
+            self.workspace_reserve = parse_size(self.workspace_reserve)
+        if self.workspace_reserve < 0:
+            raise ConfigError("MCP_WORKSPACE_RESERVE must not be negative")
+        if self.workspace_size < 0:
+            raise ConfigError("MCP_WORKSPACE_SIZE must not be negative")
+        # Detect the loop mount without creating it. A missing mount is
+        # a warning, not a startup failure: the server still runs.
+        if self.workspace and os.path.isdir(self.workspace):
+            from .workspace import is_workspace_mount
+
+            self.workspace_limit_on = is_workspace_mount(self.workspace)
+        else:
+            self.workspace_limit_on = False
+        # Fill v2.5 attributes for Config objects built with __new__
+        # (tests) that never ran __init__.
+        if getattr(self, "bind_alternatives", None) is None:
+            self.bind_alternatives = True
+        else:
+            self.bind_alternatives = bool(self.bind_alternatives)
+        if getattr(self, "audit_enabled", None) is None:
+            self.audit_enabled = True
+        else:
+            self.audit_enabled = bool(self.audit_enabled)
+        if getattr(self, "audit_files", None) is None:
+            self.audit_files = True
+        else:
+            self.audit_files = bool(self.audit_files)
+        if not getattr(self, "audit_log", None):
+            self.audit_log = default_audit_log(getattr(self, "log_file", None))
+        if getattr(self, "audit_max", None) is None:
+            self.audit_max = DEFAULT_AUDIT_MAX
+        else:
+            self.audit_max = parse_size(self.audit_max)
+        if getattr(self, "audit_keep", None) is None:
+            self.audit_keep = DEFAULT_AUDIT_KEEP
+        else:
+            self.audit_keep = int(self.audit_keep)
+        if self.audit_keep < 0:
+            raise ConfigError("MCP_AUDIT_KEEP must not be negative")
+        if getattr(self, "audit_command_len", None) is None:
+            self.audit_command_len = DEFAULT_AUDIT_COMMAND_LEN
+        else:
+            self.audit_command_len = int(self.audit_command_len)
+        if self.audit_command_len < 1:
+            raise ConfigError("MCP_AUDIT_COMMAND_LEN must be at least 1")
+        if self.audit_max < 0:
+            raise ConfigError("MCP_AUDIT_MAX must not be negative")
+        if self.sandbox == "ns":
+            if not self.root:
+                raise ConfigError(
+                    "MCP_SANDBOX=ns requires MCP_ROOT (default %s)" % default_sandbox()
+                )
+            # Imported lazily so config.py can be imported by nscompat
+            # (which defines USERNS helpers that we call here).
+            from .nscompat import userns_available
+
+            ok, detail = userns_available()
+            if not ok:
+                raise ConfigError(detail)
+        from .tools import is_within
+
+        secret_paths = [("log file", self.log_file)]
+        if getattr(self, "audit_log", None):
+            secret_paths.append(("audit log", self.audit_log))
+        if self.pin_file:
+            secret_paths.append(("PIN file", self.pin_file))
+        for label, path in secret_paths:
+            if self.root and is_within(path, self.root) and not is_within(path, self.server_dir):
+                raise ConfigError(
+                    "%s (%s) is inside MCP_ROOT (%s) and would be visible to the AI. "
+                    "Keep it outside the sandbox or inside the hidden server directory (%s)"
+                    % (label, path, self.root, self.server_dir)
+                )
+        return self

@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>RAG Dashboard · AI</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#e8edf5;background:#101722;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#1b3044 0,transparent 42%),#101722}
+main{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:30px 0 56px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+h1{font-size:clamp(25px,5vw,36px);margin:0;letter-spacing:-.04em}h2{font-size:17px;margin:0 0 14px}
+.sub{color:#9eacbd;margin:7px 0 0;font-size:14px}
+.panel{background:#182331;border:1px solid #2a394b;border-radius:15px;padding:20px;margin:14px 0;box-shadow:0 10px 30px #0002}
+.auth,.actions,.upload{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.auth input{flex:1;min-width:190px}
+input,button{font:inherit;border-radius:9px;padding:10px 12px;border:1px solid #40536a;background:#101a27;color:#e8edf5}
+input[type=file]{max-width:100%;flex:1}
+button{background:#b9d8f5;color:#102033;border:0;font-weight:650;cursor:pointer}button.secondary{background:#2a3b4f;color:#e8edf5}button.danger{background:#793b42;color:#fff}
+button:disabled{opacity:.5;cursor:not-allowed}
+.search-controls{display:grid;grid-template-columns:minmax(180px,2fr) minmax(130px,1fr) minmax(130px,1fr);gap:10px;align-items:end}
+.search-controls label{display:grid;gap:6px;color:#9eacbd;font-size:12px}
+.search-results{display:grid;gap:12px;margin-top:14px}
+.result{background:#111c29;border:1px solid #2b3a4d;border-radius:11px;padding:14px}
+.result h3{font-size:15px;margin:0 0 6px}.result p{font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;color:#d5deea}
+.result-meta{font-size:12px;color:#9eacbd;display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:650px){.search-controls{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.metric{background:#111c29;border:1px solid #2b3a4d;border-radius:12px;padding:16px}
+.metric strong{display:block;font-size:25px;margin-top:8px}.muted{color:#9eacbd;font-size:13px}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#b8c8d9}.dot{width:8px;height:8px;border-radius:50%;background:#8795a6}.dot.good{background:#57ce91}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid #2b3a4d;vertical-align:middle}th{color:#9eacbd;font-weight:550}
+td button{padding:7px 10px;font-size:12px}
+#message,#upload-message{min-height:20px;color:#e6b65d;font-size:13px;margin-top:10px}.empty{color:#9eacbd;padding:18px 4px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+#detail pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#101a27;border-radius:10px;padding:14px;max-height:360px;overflow:auto;font:13px/1.5 ui-monospace,monospace}
+#detail .meta{color:#9eacbd;font-size:13px;line-height:1.7}
+footer{color:#78899d;font-size:12px;margin-top:22px}
+@media(max-width:650px){main{padding-top:22px}.grid{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}.panel{padding:16px}table{font-size:12px}th,td{padding:8px 4px}td button{padding:6px}.hide-mobile{display:none}}
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>RAG Dashboard</h1><p class="sub">Document knowledge store · API-backed management</p></div><span class="status"><span class="dot" id="connection-dot"></span><span id="connection-label">Not connected</span></span></header>
+<section class="panel">
+<h2>Connect to your API</h2>
+<div class="auth"><input id="pin" type="password" autocomplete="current-password" placeholder="API PIN" aria-label="API PIN"><button id="connect">Connect</button><button id="refresh" class="secondary" disabled>Refresh</button></div>
+<div id="message" role="status" aria-live="polite">Enter your API PIN to manage RAG documents. The PIN stays in this page's memory and is not saved.</div>
+</section>
+<section class="grid" aria-label="RAG status">
+<div class="metric"><span class="muted">RAG</span><strong id="rag-state">—</strong><span class="muted" id="rag-detail">Feature state</span></div>
+<div class="metric"><span class="muted">Documents</span><strong id="doc-count">—</strong><span class="muted">Indexed sources</span></div>
+<div class="metric"><span class="muted">Embeddings</span><strong id="embedding-state">—</strong><span class="muted" id="embedding-detail">Semantic retrieval</span></div>
+</section>
+<section class="panel" id="settings-panel">
+<h2>RAG configuration</h2>
+<p class="muted">These settings are saved on the server. Apply them to the API, then restart MCP separately. Enabling RAG also requires AI_STORAGE_PATH to be configured for both services.</p>
+<div class="search-controls">
+<label>RAG module<select id="setting-rag"><option value="false">Disabled</option><option value="true">Enabled</option></select></label>
+<label>Embedding module<select id="setting-embeddings"><option value="false">Disabled</option><option value="true">Enabled</option></select></label>
+<label>Embedding provider<select id="setting-provider"><option value="">Not selected</option><option value="local">Local</option></select></label>
+<label>Embedding model<select id="setting-model"><option value="">Not selected</option><option value="sentence-transformers/all-MiniLM-L6-v2">sentence-transformers/all-MiniLM-L6-v2</option></select></label>
+</div>
+<div class="actions" style="margin-top:12px"><button id="save-settings" disabled>Save settings</button><button id="apply-settings" class="secondary" disabled>Apply to API</button><span id="settings-message" class="muted" role="status" aria-live="polite">Connect to configure RAG.</span></div>
+</section>
+<section class="panel">
+<h2>Ingest a document</h2>
+<div class="upload"><input id="file" type="file" accept=".txt,.md,.markdown,.html,.htm,text/plain,text/markdown,text/html"><button id="upload-button" disabled>Upload document</button></div>
+<p class="muted">Supported: TXT, Markdown and HTML · Maximum file size: 5 MB · Ingestion creates searchable chunks; semantic embeddings are managed separately.</p>
+<div id="upload-message" role="status" aria-live="polite"></div>
+</section>
+<section class="panel" id="search-panel">
+<h2>Search knowledge base</h2>
+<form id="search-form">
+<div class="search-controls">
+<label>Search query<input id="search-query" type="search" placeholder="e.g. network routing" required maxlength="500"></label>
+<label>Search mode<select id="search-mode"><option value="keyword">Keyword</option><option value="hybrid">Hybrid (keyword + semantic)</option></select></label>
+<label>Exact source filter<input id="search-source" type="text" placeholder="Optional filename/source"></label>
+</div>
+<div class="actions" style="margin-top:12px;align-items:center">
+<label class="muted"><input id="search-deduplicate" type="checkbox"> One result per document</label>
+<button id="search-button" type="submit" disabled>Search</button>
+<button id="clear-search" type="button" class="secondary" disabled>Clear</button>
+</div>
+<p class="muted">Hybrid search uses the existing API. If semantic embeddings are unavailable, the backend reports a keyword-only fallback.</p>
+</form>
+<div id="search-message" class="muted" role="status" aria-live="polite">Connect to search indexed documents.</div>
+<div id="search-results" class="search-results"></div>
+<div class="pager"><span id="search-page-label" class="muted"></span><div class="actions"><button id="search-previous" class="secondary" disabled>Previous</button><button id="search-next" class="secondary" disabled>Next</button></div></div>
+</section>
+<section class="panel">
+<h2>Indexed documents</h2>
+<div id="documents" class="empty">Connect to view indexed documents.</div>
+<div class="pager"><span id="page-label" class="muted"></span><div class="actions"><button id="previous" class="secondary" disabled>Previous</button><button id="next" class="secondary" disabled>Next</button></div></div>
+</section>
+<section class="panel" id="detail-panel" hidden>
+<div class="actions" style="justify-content:space-between"><h2>Document details</h2><button id="close-detail" class="secondary">Close</button></div>
+<div id="detail"></div>
+</section>
+<footer>Phase 8.2 · Persistent settings, API apply and MCP restart guidance.</footer>
+</main>
+<script>
+(() => {
+  let pin = "", offset = 0, total = 0, pageSize = 20, connected = false, ragEnabled = false;
+  let searchOffset = 0, searchHasMore = false, searchActive = false, searchPageSize = 10;
+  let settingsLoaded = false;
+  const byId = id => document.getElementById(id);
+  const setMessage = value => { byId("message").textContent = value; };
+  const setUploadMessage = value => { byId("upload-message").textContent = value; };
+  const setConnected = value => {
+    connected = value;
+    byId("connection-dot").className = value ? "dot good" : "dot";
+    byId("connection-label").textContent = value ? "Connected" : "Not connected";
+    byId("refresh").disabled = !value;
+    byId("upload-button").disabled = !value || !ragEnabled;
+    byId("search-button").disabled = !value || !ragEnabled;
+    byId("clear-search").disabled = !searchActive;
+    byId("save-settings").disabled = !value;
+    if (!value) byId("apply-settings").disabled = true;
+  };
+  async function api(path, options = {}) {
+    const headers = Object.assign({"X-MCP-PIN": pin}, options.headers || {});
+    const response = await fetch(path, Object.assign({}, options, {headers, cache: "no-store"}));
+    let data;
+    try { data = await response.json(); } catch (_) { throw new Error("The API returned an invalid response."); }
+    if (!response.ok) throw new Error(data.error || ("HTTP " + response.status));
+    return data;
+  }
+  function textCell(row, value) {
+    const td = document.createElement("td");
+    td.textContent = value == null ? "—" : String(value);
+    row.appendChild(td);
+    return td;
+  }
+  function renderDocuments(items) {
+    const host = byId("documents");
+    host.replaceChildren();
+    if (!items.length) {
+      host.className = "empty";
+      host.textContent = total ? "No documents on this page." : "No documents indexed yet. Upload a TXT, Markdown or HTML file above.";
+      return;
+    }
+    host.className = "";
+    const table = document.createElement("table");
+    const head = document.createElement("tr");
+    ["Title / source", "Chunks", "Type", "Actions"].forEach(value => {
+      const th = document.createElement("th"); th.textContent = value; head.appendChild(th);
+    });
+    const thead = document.createElement("thead"); thead.appendChild(head); table.appendChild(thead);
+    const body = document.createElement("tbody");
+    items.forEach(item => {
+      const row = document.createElement("tr");
+      textCell(row, item.title || item.source || item.document_id);
+      textCell(row, item.chunk_count);
+      textCell(row, item.content_type);
+      const actions = textCell(row, "");
+      const view = document.createElement("button");
+      view.textContent = "View"; view.className = "secondary";
+      view.addEventListener("click", () => viewDocument(item.document_id));
+      const remove = document.createElement("button");
+      remove.textContent = "Delete"; remove.className = "danger";
+      remove.addEventListener("click", () => deleteDocument(item));
+      const group = document.createElement("div"); group.className = "actions";
+      group.append(view, remove); actions.appendChild(group);
+      body.appendChild(row);
+    });
+    table.appendChild(body); host.appendChild(table);
+  }
+  async function loadDocuments() {
+    const page = await api("/api/rag/documents?limit=" + pageSize + "&offset=" + offset);
+    total = page.pagination ? page.pagination.total : (page.documents || []).length;
+    byId("doc-count").textContent = total;
+    renderDocuments(page.documents || []);
+    const first = total ? offset + 1 : 0;
+    const last = offset + (page.documents || []).length;
+    byId("page-label").textContent = total ? first + "–" + last + " of " + total : "0 documents";
+    byId("previous").disabled = offset === 0;
+    byId("next").disabled = !page.pagination || !page.pagination.has_more;
+  }
+  function renderSearchResults(items) {
+    const host = byId("search-results");
+    host.replaceChildren();
+    if (!items.length) {
+      const empty = document.createElement("div"); empty.className = "empty";
+      empty.textContent = "No matching chunks found."; host.appendChild(empty); return;
+    }
+    items.forEach(item => {
+      const card = document.createElement("article"); card.className = "result";
+      const heading = document.createElement("h3");
+      heading.textContent = item.title || item.source || "Untitled document";
+      const meta = document.createElement("div"); meta.className = "result-meta";
+      const source = document.createElement("span"); source.textContent = "Source: " + (item.source || "—");
+      const chunk = document.createElement("span"); chunk.textContent = "Chunk: " + (item.chunk_index == null ? "—" : item.chunk_index);
+      meta.append(source, chunk);
+      const scoreValue = item.hybrid_score != null ? item.hybrid_score : item.score;
+      if (typeof scoreValue === "number" && Number.isFinite(scoreValue)) {
+        const score = document.createElement("span");
+        score.textContent = (item.hybrid_score != null ? "Hybrid score: " : "Score: ") + scoreValue.toPrecision(4);
+        meta.appendChild(score);
+      }
+      if (item.search_type === "keyword_fallback") {
+        const fallback = document.createElement("span"); fallback.textContent = "Keyword fallback (semantic unavailable)"; meta.appendChild(fallback);
+      }
+      const snippet = document.createElement("p");
+      snippet.textContent = item.snippet || item.text || "";
+      const actions = document.createElement("div"); actions.className = "actions";
+      const view = document.createElement("button"); view.type = "button"; view.className = "secondary";
+      view.textContent = "Open document";
+      view.addEventListener("click", () => viewDocument(item.document_id));
+      actions.appendChild(view);
+      card.append(heading, meta, snippet, actions); host.appendChild(card);
+    });
+  }
+  async function runSearch(reset) {
+    const query = byId("search-query").value.trim();
+    if (!query) { byId("search-message").textContent = "Enter a search query."; return; }
+    if (reset) searchOffset = 0;
+    const mode = byId("search-mode").value;
+    const params = new URLSearchParams({
+      q: query, mode, limit: String(searchPageSize), offset: String(searchOffset),
+      snippet_chars: "320", deduplicate: String(byId("search-deduplicate").checked)
+    });
+    const source = byId("search-source").value.trim();
+    if (source) params.set("source", source);
+    if (mode === "hybrid") { params.set("keyword_weight", "0.5"); params.set("semantic_weight", "0.5"); }
+    byId("search-button").disabled = true;
+    byId("search-message").textContent = "Searching…";
+    byId("search-results").replaceChildren();
+    try {
+      const result = await api("/api/rag/search?" + params.toString());
+      const items = result.results || [];
+      renderSearchResults(items);
+      searchActive = true;
+      searchHasMore = Boolean(result.pagination && result.pagination.has_more);
+      byId("search-message").textContent = items.some(item => item.search_type === "keyword_fallback")
+        ? "Search completed using keyword fallback. Semantic embeddings are not currently available."
+        : "Search completed · " + items.length + " result(s).";
+      const first = items.length ? searchOffset + 1 : 0;
+      const last = searchOffset + items.length;
+      byId("search-page-label").textContent = items.length ? first + "–" + last : "0 results";
+      byId("search-previous").disabled = searchOffset === 0;
+      // Hybrid retrieval is deliberately bounded to 50 candidates; keep its final page within that window.
+      byId("search-next").disabled = !searchHasMore || (mode === "hybrid" && searchOffset >= 39);
+      byId("clear-search").disabled = false;
+    } catch (error) {
+      byId("search-message").textContent = error.message;
+      byId("search-page-label").textContent = "";
+      byId("search-previous").disabled = true; byId("search-next").disabled = true;
+    } finally {
+      byId("search-button").disabled = !connected || !ragEnabled;
+    }
+  }
+  function clearSearch() {
+    byId("search-query").value = ""; byId("search-source").value = "";
+    byId("search-results").replaceChildren(); byId("search-message").textContent = "Enter a query to search indexed documents.";
+    byId("search-page-label").textContent = ""; searchOffset = 0; searchHasMore = false; searchActive = false;
+    byId("search-previous").disabled = true; byId("search-next").disabled = true; byId("clear-search").disabled = true;
+  }
+  function syncSettingControls() {
+    const rag = byId("setting-rag").value === "true";
+    const embeddings = byId("setting-embeddings").value === "true";
+    byId("setting-embeddings").disabled = !rag;
+    byId("setting-provider").disabled = !rag || !embeddings;
+    byId("setting-model").disabled = !rag || !embeddings || !byId("setting-provider").value;
+  }
+  async function loadSettings() {
+    const result = await api("/api/rag/settings");
+    const settings = result.settings || {};
+    byId("setting-rag").value = String(Boolean(settings.enabled));
+    byId("setting-embeddings").value = String(Boolean(settings.embeddings_enabled));
+    byId("setting-provider").value = settings.embedding_provider || "";
+    byId("setting-model").value = settings.embedding_model || "";
+    settingsLoaded = true;
+    syncSettingControls();
+    byId("apply-settings").disabled = !result.api_restart_required;
+    byId("settings-message").textContent = result.api_restart_required
+      ? "Saved settings differ from the active API runtime. Apply to API, then restart MCP separately."
+      : (result.persisted ? "Saved settings are active in the API." : "Using environment defaults; saving creates a persistent settings file.");
+  }
+  async function saveSettings() {
+    if (!settingsLoaded) return;
+    const settings = {
+      enabled: byId("setting-rag").value === "true",
+      embeddings_enabled: byId("setting-embeddings").value === "true",
+      embedding_provider: byId("setting-provider").value || null,
+      embedding_model: byId("setting-model").value || null
+    };
+    byId("save-settings").disabled = true;
+    byId("settings-message").textContent = "Validating and saving settings…";
+    try {
+      const result = await api("/api/rag/settings", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(settings)
+      });
+      byId("settings-message").textContent = result.restart_required
+        ? "Settings saved. Apply them to the API, then restart MCP separately."
+        : "Settings saved.";
+      byId("apply-settings").disabled = false;
+    } catch (error) {
+      byId("settings-message").textContent = error.message;
+    } finally {
+      byId("save-settings").disabled = !connected;
+    }
+  }
+  async function applySettings() {
+    byId("apply-settings").disabled = true;
+    byId("settings-message").textContent = "Validating and applying settings to the API runtime…";
+    try {
+      const result = await api("/api/rag/apply", {
+        method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"
+      });
+      byId("settings-message").textContent = result.message ||
+        "API runtime applied. Restart MCP separately to apply its settings.";
+      await loadSettings();
+      if (result.mcp_restart_required) {
+        byId("settings-message").textContent += " MCP restart is still required.";
+      }
+    } catch (error) {
+      byId("settings-message").textContent = error.message + " The previous API runtime remains active.";
+      byId("apply-settings").disabled = false;
+    }
+  }
+  async function load() {
+    setMessage("Loading RAG status and documents…");
+    try {
+      const status = await api("/api/rag/status");
+      await loadSettings();
+      const rag = status.rag || {};
+      ragEnabled = Boolean(rag.enabled);
+      byId("rag-state").textContent = rag.enabled ? "Enabled" : "Disabled";
+      byId("rag-detail").textContent = rag.keyword_search ? "Keyword search available" : "Enable RAG in server configuration";
+      byId("embedding-state").textContent = rag.embeddings_enabled ? "Enabled" : "Off";
+      byId("embedding-detail").textContent = rag.semantic_search ? "Semantic search available" : "Keyword-only mode";
+      setConnected(true);
+      if (!rag.enabled) {
+        total = 0; byId("doc-count").textContent = "—";
+        byId("documents").textContent = "RAG is disabled. Enable it in the server environment and restart the API.";
+        byId("page-label").textContent = ""; byId("previous").disabled = true; byId("next").disabled = true;
+        setUploadMessage("Enable RAG in the server environment and restart the API before uploading.");
+        byId("search-message").textContent = "RAG is disabled.";
+        byId("search-results").replaceChildren();
+        setMessage("Connected. RAG is currently disabled.");
+        return;
+      }
+      await loadDocuments();
+      setMessage("Dashboard updated.");
+    } catch (error) {
+      setConnected(false);
+      ragEnabled = false;
+      setMessage(error.message + (error.message === "unauthorized" ? " Check the PIN and try again." : ""));
+    }
+  }
+  async function viewDocument(id) {
+    try {
+      setMessage("Loading document…");
+      const result = await api("/api/rag/documents/" + encodeURIComponent(id));
+      const doc = result.document || {};
+      const host = byId("detail"); host.replaceChildren();
+      const meta = document.createElement("div"); meta.className = "meta";
+      meta.textContent = "Source: " + (doc.source || "—") + " · Type: " + (doc.content_type || "—") +
+        " · Chunks: " + (doc.chunk_count == null ? "—" : doc.chunk_count) +
+        " · Ingested: " + (doc.ingested_at || "—");
+      const contentTitle = document.createElement("h3"); contentTitle.textContent = "Extracted text";
+      const content = document.createElement("pre"); content.textContent = doc.text || "";
+      host.append(meta, contentTitle, content);
+      if (Array.isArray(doc.chunks) && doc.chunks.length) {
+        const chunkTitle = document.createElement("h3"); chunkTitle.textContent = "Chunks (" + doc.chunks.length + ")";
+        host.appendChild(chunkTitle);
+        doc.chunks.forEach(chunk => {
+          const block = document.createElement("pre");
+          block.textContent = "Chunk " + chunk.index + "\n" + (chunk.text || "");
+          host.appendChild(block);
+        });
+      }
+      byId("detail-panel").hidden = false;
+      setMessage("Document loaded.");
+    } catch (error) { setMessage(error.message); }
+  }
+  async function deleteDocument(item) {
+    const label = item.title || item.source || item.document_id;
+    if (!window.confirm("Delete '" + label + "' and all its chunks and embeddings? This cannot be undone.")) return;
+    try {
+      await api("/api/rag/documents/" + encodeURIComponent(item.document_id), {method: "DELETE"});
+      if (offset >= total - 1 && offset > 0) offset = Math.max(0, offset - pageSize);
+      await loadDocuments();
+      byId("detail-panel").hidden = true;
+      setMessage("Document deleted.");
+    } catch (error) { setMessage(error.message); }
+  }
+  async function uploadFile() {
+    const file = byId("file").files[0];
+    if (!file) { setUploadMessage("Choose a file first."); return; }
+    const name = file.name || "";
+    const ext = name.toLowerCase().split(".").pop();
+    const types = {txt: "text/plain", md: "text/markdown", markdown: "text/markdown", html: "text/html", htm: "text/html"};
+    if (!types[ext]) { setUploadMessage("Unsupported file type. Choose TXT, Markdown or HTML."); return; }
+    if (file.size === 0) { setUploadMessage("The selected file is empty."); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadMessage("File exceeds the 5 MB ingestion limit."); return; }
+    byId("upload-button").disabled = true;
+    setUploadMessage("Reading and ingesting " + name + "…");
+    try {
+      const bytes = await file.arrayBuffer();
+      let content;
+      try { content = new TextDecoder("utf-8", {fatal: true}).decode(bytes); }
+      catch (_) { throw new Error("File must contain valid UTF-8 text."); }
+      const result = await api("/api/rag/ingest", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({source: name, content, content_type: types[ext], title: name})
+      });
+      offset = 0;
+      await loadDocuments();
+      byId("file").value = "";
+      setUploadMessage("Ingested " + name + " (" + (result.document.chunk_count || 0) + " chunks). Keyword search is ready; semantic embeddings are separate.");
+      setMessage("Document ingestion completed.");
+    } catch (error) { setUploadMessage(error.message); }
+    finally { byId("upload-button").disabled = !connected; }
+  }
+  byId("connect").addEventListener("click", () => {
+    pin = byId("pin").value.trim();
+    if (!pin) { setMessage("Enter your API PIN first."); return; }
+    offset = 0; load();
+  });
+  byId("refresh").addEventListener("click", load);
+  byId("save-settings").addEventListener("click", saveSettings);
+  byId("apply-settings").addEventListener("click", applySettings);
+  ["setting-rag", "setting-embeddings", "setting-provider"].forEach(id => {
+    byId(id).addEventListener("change", syncSettingControls);
+  });
+  byId("upload-button").addEventListener("click", uploadFile);
+  byId("search-form").addEventListener("submit", event => { event.preventDefault(); runSearch(true); });
+  byId("clear-search").addEventListener("click", clearSearch);
+  byId("search-previous").addEventListener("click", () => { searchOffset = Math.max(0, searchOffset - searchPageSize); runSearch(false); });
+  byId("search-next").addEventListener("click", () => { searchOffset = byId("search-mode").value === "hybrid" ? Math.min(searchOffset + searchPageSize, 39) : searchOffset + searchPageSize; runSearch(false); });
+  byId("previous").addEventListener("click", async () => { offset = Math.max(0, offset - pageSize); try { await loadDocuments(); } catch (e) { setMessage(e.message); } });
+  byId("next").addEventListener("click", async () => { offset += pageSize; try { await loadDocuments(); } catch (e) { offset = Math.max(0, offset - pageSize); setMessage(e.message); } });
+  byId("close-detail").addEventListener("click", () => { byId("detail-panel").hidden = true; });
+  byId("pin").addEventListener("keydown", event => { if (event.key === "Enter") byId("connect").click(); });
+})();
+</script>
+</body>
+</html>
