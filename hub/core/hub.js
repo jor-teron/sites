@@ -26,7 +26,7 @@
  * App links + last-app memory: an app opened in the hub frame puts a short id in the hash
  *   (hub.html#snake, #tv, #webcam, #caption-for-nei; id = folder name or file name without
  *   extension, see appIdFor) and in localStorage ('sites-hub.lastApp'). On load the hash wins,
- *   else the saved app opens; an unknown hash shows home. Back / Forward switch apps (Back to
+ *   else the saved app opens; an unknown hash shows an in-Hub App not found card (H149). Back / Forward switch apps (Back to
  *   an empty hash = home, clears both). NEW_TAB apps are never remembered.
  *   The frame is navigated with location.replace so only the hub adds history entries.
  * Focus: the app iframe gets keyboard focus after it loads, after an app is picked and when the
@@ -354,7 +354,10 @@
     const id = appIdFor(app.entryUrl);
     // opts.hash: open the app on that #hash (e.g. Settings #about; hub_ctx_menus.js); an app that
     // is already open just moves to it
+    // (before H149) const hash = opts.hash ? '#' + String(opts.hash).replace(/^#/, '') : '';
+    const q = (opts.query != null && String(opts.query) !== '') ? '?q=' + encodeURIComponent(String(opts.query)) : '';   // H149: Search prefill
     const hash = opts.hash ? '#' + String(opts.hash).replace(/^#/, '') : '';
+    const appUrl = () => frameUrlFor(app.entryUrl) + q + hash;
     const toHash = (f) => {
       try { if (hash && f.contentWindow.location.hash !== hash) f.contentWindow.location.hash = hash; }
       catch (_) {   // file:// (opaque origins): the hash cannot be read, but the frame can still be pointed at the same page + hash (hashchange only, no reload)
@@ -365,16 +368,24 @@
     if (wmOn()) {   // Desktop mode: own window (focuses the existing one; opts.newInstance = another); hash via HubWM.onActive
       setOpen(false);
       const had = !opts.newInstance && window.HubWM.list().some((x) => x.key === app.entryUrl);
-      const w = window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl) + hash, app, newInstance: !!opts.newInstance });
-      if (had && w) toHash(w.frame);
+      // (before H149) const w = window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: frameUrlFor(app.entryUrl) + hash, app, newInstance: !!opts.newInstance });
+      // (before H149) if (had && w) toHash(w.frame);
+      const w = window.HubWM.open({ key: app.entryUrl, name: app.name, icon: iconFor(app), url: appUrl(), app, newInstance: !!opts.newInstance });
+      if (had && w) {
+        if (q) {
+          try { w.frame.contentWindow.location.replace(new URL(appUrl(), document.baseURI).href); }
+          catch (_) { w.frame.src = appUrl(); }
+        } else toHash(w.frame);
+      }
       return;
     }
     if (!opts.forceFrame) setFromCat('');
     if (!opts.fromHistory) setHash(id, !opts.replaceHash);
     storageSet(id);
-    if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(frameUrlFor(app.entryUrl) + hash);
+    if (currentEntry !== app.entryUrl || opts.reload) navigateFrame(appUrl());   // (before H149) navigateFrame(frameUrlFor(app.entryUrl) + hash);
     else toHash(frame);
     currentEntry = app.entryUrl;
+    hideAppMissing(false);   // H149
     empty.classList.add('hidden');
     setOpen(false);
     focusFrame();
@@ -489,6 +500,7 @@
   /** Back to the home screen: clears the hash, the saved app and the frame. */
   function goHome(opts) {
     opts = opts || {};
+    hideAppMissing(false);   // H149
     if (wmOn()) {   // Desktop mode: show the home screen = minimise every window
       setOpen(false);
       window.HubWM.minimiseAll();
@@ -507,7 +519,107 @@
     updateLabBtn();
   }
 
-  /** Hash (or, at start-up only, the saved app) → open it; unknown / empty → home. */
+  /** Label for the App not found card: truncate long ids; the caller sets textContent only. */
+  function missingIdLabel(id) {
+    const s = String(id || '');
+    return s.length > 60 ? s.slice(0, 57) + '…' : s;
+  }
+
+  /** H149: in-Hub App not found card for an unknown hash id. Built once. */
+  function appMissingEl() {
+    let el = document.getElementById('hub-app-missing');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'hub-app-missing';
+    el.hidden = true;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'hub-missing-title');
+    const card = document.createElement('div');
+    card.className = 'hub-missing-card';
+    const title = document.createElement('h2');
+    title.id = 'hub-missing-title';
+    title.className = 'hub-missing-title';
+    title.textContent = 'App not found';
+    const text = document.createElement('p');
+    text.className = 'hub-missing-text';
+    text.appendChild(document.createTextNode('We couldn\'t find \u201C'));
+    const idEl = document.createElement('span');
+    idEl.id = 'hub-missing-id';
+    text.appendChild(idEl);
+    text.appendChild(document.createTextNode('\u201D. It may have moved or been removed.'));
+    const btns = document.createElement('div');
+    btns.className = 'hub-missing-btns';
+    const homeBtn = document.createElement('button');
+    homeBtn.type = 'button';
+    homeBtn.className = 'hub-missing-btn primary';
+    homeBtn.dataset.act = 'home';
+    homeBtn.textContent = 'Go home';
+    const searchBtn = document.createElement('button');
+    searchBtn.type = 'button';
+    searchBtn.className = 'hub-missing-btn';
+    searchBtn.dataset.act = 'search';
+    searchBtn.textContent = 'Search apps';
+    btns.appendChild(homeBtn);
+    btns.appendChild(searchBtn);
+    card.appendChild(title);
+    card.appendChild(text);
+    card.appendChild(btns);
+    el.appendChild(card);
+    const host = document.getElementById('frame-wrap') || document.body;
+    host.appendChild(el);
+    homeBtn.addEventListener('click', () => hideAppMissing(true));
+    searchBtn.addEventListener('click', () => searchAppMissing());
+    return el;
+  }
+
+  function onAppMissingEsc(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      hideAppMissing(true);
+    }
+  }
+
+  function hideAppMissing(go) {
+    const el = document.getElementById('hub-app-missing');
+    if (el && !el.hidden) {
+      el.hidden = true;
+      el.classList.remove('open');
+      document.removeEventListener('keydown', onAppMissingEsc, true);
+    }
+    if (go) goHome();
+  }
+
+  /** Phone / frame: full-screen card in #frame-wrap. Desktop: the same centered card over the wallpaper. */
+  function showAppMissing(id) {
+    const el = appMissingEl();
+    el.dataset.id = String(id || '');
+    const idEl = el.querySelector('#hub-missing-id');
+    if (idEl) idEl.textContent = missingIdLabel(id);
+    el.hidden = false;
+    el.classList.add('open');
+    document.addEventListener('keydown', onAppMissingEsc, true);
+    document.title = 'Hub - App not found';
+    const homeBtn = el.querySelector('[data-act="home"]');
+    if (homeBtn && homeBtn.focus) homeBtn.focus();
+  }
+
+  /** Search apps: System Search already accepts ?q= (search.js). Prefill with the unknown id. */
+  function searchAppMissing() {
+    const el = document.getElementById('hub-app-missing');
+    const q = el && el.dataset.id ? el.dataset.id : '';
+    hideAppMissing(false);
+    const entry = 'apps/system/search/';
+    let app = findApp(entry);
+    if (!app) {
+      app = { category: 'System', name: 'Search', entryUrl: entry, newTab: false, hidden: true };
+      apps.push(app);
+      registerApp(app);
+    }
+    loadApp(app, { query: q, reload: true });
+  }
+
+  /** Hash (or, at start-up only, the saved app) → open it; unknown non-empty id → App not found; empty → home. */
   function applyHash(fromStart) {
     const id = hashId();
     const restored = fromStart && wmOn() && restoreWm();   // Desktop mode: saved windows first
@@ -517,11 +629,18 @@
       const saved = storageGet();
       app = saved ? appForId(saved) : null;
       if (app) { loadApp(app, { forceFrame: true, replaceHash: true }); return; }
-      if (saved) storageSet('');
+      if (saved) storageSet('');   // saved last-opened id is gone: clear silently, no card (H149)
     }
     if (app) loadApp(app, { forceFrame: true, fromHistory: true });
-    else if (fromStart) { if (id) setHash('', false); }
-    else { goHome({ fromHistory: true }); if (id) setHash('', false); }   // R58: an unknown / gone id leaves no stale hash
+    else if (id) {
+      // (before H149) else if (fromStart) { if (id) setHash('', false); }
+      // (before H149) else { goHome({ fromHistory: true }); if (id) setHash('', false); }   // R58: an unknown / gone id leaves no stale hash
+      if (!fromStart) goHome({ fromHistory: true });
+      setHash('', false);   // reload must not re-show the card
+      showAppMissing(id);
+    } else if (!fromStart) {
+      goHome({ fromHistory: true });
+    }
   }
 
   /* ---------- menu: collapsible categories (accordion, one open) ---------- */
