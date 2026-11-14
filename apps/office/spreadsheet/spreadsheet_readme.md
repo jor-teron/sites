@@ -336,3 +336,16 @@ The formula engine already supported 70 functions, including `AVERAGEIFS`. The f
 - **Syntax and hints** now match the engine: `LEFT` and `RIGHT` take an optional `[n]` (default 1); `IF`'s else is optional and returns `""` when omitted; `MID`'s `num_chars` is optional (leave it out to take the rest of the string); `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA` and `MEDIAN` take `(value1, …)`; `XLOOKUP` modes are documented (`match_mode`: 0 exact (default), 2 wildcard, −1/1 approximate; `search_mode`: 1 forward (default), −1 reverse); `NOW()` is date and hours:minutes, with no seconds; `TRIM` only trims leading and trailing spaces.
 - **Release id:** title and `SHEET_VERSION` are SH19. `?v=` stays `HO3` (no cache bump). Storage stays `sheet-v4`. The grid is still 26 × 100.
 - **Not changed:** File → Functions still opens `FUNCTIONS.txt` in a new tab. The in-app Functions dialog stays parked as SH20.
+
+## SH22 — click another sheet's cell to put Sheet2!A1 in a formula
+While you write a formula (text that starts with `=`, in a cell or the formula bar), you can now point at a cell on another sheet with the mouse.
+
+- **Tab click:** clicking another sheet tab only switches the view. The formula is not saved or lost. The draft moves to the formula bar and keeps its caret there.
+- **Cell click:** on that sheet, clicking a cell inserts `Sheet2!A1` at the caret, or `'My Sheet'!A1` when the name needs quotes (the same rule as typed refs). Clicking another cell straight after replaces that ref. The selection and the rest of the formula do not change.
+- **Enter** saves the formula to the cell you started in, goes back to that sheet and selects the cell. **Esc** throws the draft away and goes back.
+- Clicking the starting sheet's tab goes back to it and keeps editing. Plain text (not a formula) still saves when you click a tab, as before.
+- The formula hint (SH21) stays on the formula bar while pointing.
+- **Code:** `spreadsheet_point.js` (new, loaded after `spreadsheet_fx.js`). `switchSheet` asks `pointOnTab` first; formula-bar Enter calls `pointFinish` while pointing (old handler kept as a `(before SH22)` comment).
+- **Limits:** same-sheet pointing and drag ranges are SH23. Clicking a cell back on the starting sheet while pointing saves the formula and selects that cell (like a normal cell edit). Clicking somewhere else (ribbon, column header) also saves the formula and goes back.
+- **Release id:** title and `SHEET_VERSION` are SH22. `?v=` stays `HO3`. Storage stays `sheet-v4`. The grid is still 26 × 100.
+- **Tests:** `node apps/office/spreadsheet/test-sh22-sheet-pointing.js` (ref text and quoting, replacing the last inserted ref, the tab-click decision).

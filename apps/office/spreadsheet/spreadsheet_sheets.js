@@ -21,6 +21,8 @@ function afterSheetOp() {
 
 function switchSheet(i) {
   if (i < 0 || i >= workbook.sheets.length) return;
+  /* SH22: a formula draft is open (or already pointing): only switch the view, keep editing */
+  if (typeof pointOnTab === "function" && pointOnTab(i)) return;
   if (i === workbook.active) { renderSheetTabs(); return; }
   blurEditing();
   stashSheetView();

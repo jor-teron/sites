@@ -3137,6 +3137,40 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   or browser runner.
 - 1.126 is NL5, so this note is numbered 1.127.
 
+### 1.128 SH22 Spreadsheet click another sheet's cell to insert Sheet2!A1
+
+- While a formula draft is open (text starts with `=`, in a cell input or the
+  formula bar), a sheet-tab click only switches the view. `switchSheet`
+  (`spreadsheet_sheets.js`) calls `pointOnTab` before `blurEditing`. A
+  capture-phase mousedown on `#sheet-tabs` keeps focus in the draft, so the
+  cell input's blur no longer commits half a formula. The draft is carried in
+  the formula bar with its caret; the cell input is set read-only first, so
+  its blur only repaints.
+- New `apps/office/spreadsheet/spreadsheet_point.js` (loaded after
+  `spreadsheet_fx.js`, `?v=HO3`). State `SHEET_POINT = { sheet, r, c, last }`.
+  On a sheet other than the origin, a capture-phase cell mousedown inserts
+  `quoteSheetName(name) + "!" + A1` at the caret (`'My Sheet'!A1` when
+  quoting is needed) and stops the selection code, so the selection does not
+  change. A second click right after replaces the last inserted ref.
+- Formula-bar Enter calls `pointFinish(true)` (commit to the origin cell,
+  back to the origin sheet, select it); the old Enter body is kept as a
+  `(before SH22)` comment in `spreadsheet_toolbar.js`. Esc calls
+  `pointFinish(false)`. The origin tab returns there, still editing. A
+  stray blur (ribbon, header) or a cell click on the origin sheet commits
+  and returns. Plain-text edits still commit on a tab click as before. The
+  SH21 fx hint is re-shown on the formula bar while pointing.
+- Not in SH22: same-sheet pointing and drag ranges (SH23).
+- Title and `SHEET_VERSION` are SH22 (old lines kept as `(before SH22)`
+  comments); tests that pinned SH19 were updated. `?v=` stays HO3. Storage
+  stays `sheet-v4`. No new library, no CDN. Only apps/office/spreadsheet and
+  this note were edited.
+- Checked with `node --check` on the edited JS and all spreadsheet
+  `test-*.js`, all spreadsheet node tests (new
+  `test-sh22-sheet-pointing.js`: ref text and quoting, replace-last-ref,
+  tab-click decision), and a static `python -m http.server` + curl smoke
+  test. No Puppeteer, Playwright or browser runner.
+- 1.127 is AG45, so this note is numbered 1.128.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
