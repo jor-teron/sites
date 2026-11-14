@@ -5,7 +5,7 @@
    else to close. Under the clock a row of 7 clock styles, all drawn in code; tap one to switch the big clock to it.
    Saves in localStorage: learn.clock-reading.style, .fmt ('12' / '24') and .sec (second hand, on unless turned off).
    In a Hub desktop window the header moves to the Hub title bar (LearnHubBar); CR3 sends no tabs and no buttons.
-   CR5: drag the hour or minute hand (the shadow on the Sundial) to set any time. The clock stops and shows 'Your time'
+   CR5: drag the hour or minute hand to set any time (not on the Sundial, its shadow stays put). The clock stops and shows 'Your time'
    (no second hand); the digital time and words follow. The minute hand rolls the hour, the hour hand rolls AM / PM.
    'Back to now' returns to the live GMT clock. A tap without dragging still shows the part's name. */
 (() => {
@@ -85,7 +85,7 @@
   const partAt = e => e.target.closest && e.target.closest('[data-part]');
   // ---------- CR5: drag a hand. A press near a hand arms it; moving 6 px starts the drag (so a plain tap still shows the label) ----------
   let grab = null, tapDone = false;   // grab = { id, hand, x, y, on }
-  const handAt = e => { const f = clock.toFace(e), L = clock.hands; return f && C.pickHand(clock.t, f.angle, f.r, L.hour, L.minute, L.minute > 0); };
+  const handAt = e => { const L = clock.hands; if (!L) return null; const f = clock.toFace(e); return f && C.pickHand(clock.t, f.angle, f.r, L.hour, L.minute, true); };   // the Sundial has no hands to drag
   clock.el.addEventListener('touchstart', e => { if (e.touches.length === 1 && handAt(e.touches[0])) e.preventDefault(); }, { passive: false });   // no page scroll when a finger lands on a hand
   clock.el.addEventListener('pointerdown', e => {
     if (grab || (e.pointerType === 'mouse' && e.button !== 0)) return;
@@ -100,7 +100,7 @@
     const was = grab; grab = null; clock.dragging(false);
     try { clock.el.releasePointerCapture(e.pointerId); } catch (_) {}
     if (cancel) return;
-    if (!was.on && e.pointerType !== 'mouse') { const p = partAt(e) || clock.el.querySelector('[data-part=' + (clock.hands.minute ? was.hand : 'shadow') + ']'); if (p) showTip(p, e); tapDone = true; setTimeout(() => { tapDone = false; }, 400); }
+    if (!was.on && e.pointerType !== 'mouse') { const p = partAt(e) || clock.el.querySelector('[data-part=' + was.hand + ']'); if (p) showTip(p, e); tapDone = true; setTimeout(() => { tapDone = false; }, 400); }
     else if (was.on) { tapDone = true; setTimeout(() => { tapDone = false; }, 400); }
   };
   clock.el.addEventListener('pointermove', e => {

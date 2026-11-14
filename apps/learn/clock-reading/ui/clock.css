@@ -80,9 +80,9 @@
 @media (max-height: 520px) { .lrn-head { padding: 4px 10px; } .lrn-main.cr-main { padding: 6px 10px; } .cr-dig { font-size: 1.5rem; } .cr-st svg { height: 40px; } .cr-hint { display: none; } }
 @media (prefers-reduced-motion: reduce) { .cr-strow { scroll-behavior: auto; } }
 /* CR5: dragging the hands */
-.cr-clock .cr-hand [data-part], .cr-clock .cr-hand, .cr-clock .cr-shadow { cursor: grab; }
+.cr-clock .cr-hand [data-part], .cr-clock .cr-hand { cursor: grab; }
 .cr-clock.cr-drag, .cr-clock.cr-drag * { cursor: grabbing; }
-.cr-clock.cr-drag .cr-hand .cr-hit, .cr-clock.cr-drag .cr-shadow .cr-hit { stroke: rgba(255, 179, 71, 0.35); }
+.cr-clock.cr-drag .cr-hand .cr-hit { stroke: rgba(255, 179, 71, 0.35); }
 .cr-badge { align-items: center; gap: 8px; flex-wrap: wrap; }
 .cr-gmt.cr-own { background: var(--mh); color: #fff; }
 .cr-back { font-weight: 700; }
