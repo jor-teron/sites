@@ -40,3 +40,9 @@ Final validation: **14 Node tests + 72 Chrome checks passed**, zero console erro
 ## HL-1e
 
 - Alphabet tiles: the Hindi letter (84px) and the roman label under it (30px) grow together to fill about 90% of the 140px tile, same size on desktop and phone.
+
+## HL-2
+
+- Settings button and dialog removed. Theme always follows System / Hub (an old Light/Dark pick is reset to Auto).
+- The title bar Sound button is the only audio control (on by default; covers spoken Hindi and effects).
+- Title bar buttons get a grey alpha background (in-page row; the Hub window title bar is drawn by the Hub).

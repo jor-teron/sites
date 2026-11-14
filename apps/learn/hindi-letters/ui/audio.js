@@ -2,7 +2,7 @@
   'use strict';
   const H = window.Hindi;
   let voice;
-  H.prefs = Object.assign({ audio: true, muted: false }, H.read('prefs', {}));
+  H.prefs = Object.assign({ audio: true, muted: false }, H.read('prefs', {})); H.prefs.audio = true; // HL-2: Sound button is the only audio control
   H.stopSpeech = () => { if ('speechSynthesis' in window) speechSynthesis.cancel(); };
   function voices() {
     voice = 'speechSynthesis' in window ? speechSynthesis.getVoices().find(v => /^hi(?:-|_|$)/i.test(v.lang)) : null;
