@@ -124,6 +124,22 @@ html, body {
   font-size: 12px;
 }
 
+/* SH24: name box and the virtual-sheet spacers. The same rules are also injected
+   at runtime so a cached spreadsheet.css?v=HO3 still shows them. */
+#name-box {
+  width: 7.5em;
+  flex: 0 0 auto;
+  margin-right: 6px;
+  text-align: center;
+  padding: 4px 6px;
+}
+#sheet-sizer { position: relative; }
+th.sheet-spacer, td.sheet-spacer, tr.sheet-spacer td {
+  border-color: transparent;
+  background: transparent;
+  padding: 0;
+}
+
 .sheet-wrap {
   overflow: auto;
   height: calc(100% - 78px);

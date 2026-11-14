@@ -51,6 +51,7 @@ function duplicateSheet(idx) {
   undoRecord("sheet-dup");
   stashSheetView();
   copy = makeSheet(nextSheetName(src.name));
+  /* (before SH24) the copy loop wrote a cell object into every slot.
   for (r = 0; r < ROWS; r++) {
     for (c = 0; c < COLS; c++) {
       copy.cells[r][c] = {
@@ -61,6 +62,15 @@ function duplicateSheet(idx) {
     }
     copy.hiddenRows[r] = !!src.hiddenRows[r];
   }
+  */
+  forEachReal(src.cells, function (rr, cc, cell) {
+    copy.cells[rr][cc] = {
+      formula: cell.formula,
+      value: cell.value,
+      style: Object.assign(defaultStyle(), cell.style || {})
+    };
+  });
+  for (r = 0; r < ROWS; r++) copy.hiddenRows[r] = !!src.hiddenRows[r];
   for (c = 0; c < COLS; c++) {
     copy.widths[c] = src.widths[c];
     copy.hiddenCols[c] = !!src.hiddenCols[c];
@@ -86,9 +96,13 @@ function rewriteAllFormulas(oldName, newName) {
   var si, r, c, sh;
   for (si = 0; si < workbook.sheets.length; si++) {
     sh = workbook.sheets[si];
-    for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
+    /* (before SH24) for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
       sh.cells[r][c].formula = rewriteSheetRefs(sh.cells[r][c].formula, oldName, newName);
-    }
+    } */
+    forEachReal(sh.cells, function (rr, cc, cell) {
+      if (!isFormula(cell.formula)) return;
+      cell.formula = rewriteSheetRefs(cell.formula, oldName, newName);
+    });
   }
 }
 
@@ -258,6 +272,11 @@ function bumpSelOutOfHidden() {
 /* ---------- Hidden + freeze painting ---------- */
 
 function applyHiddenAndFreeze() {
+  /* SH24: sticky offsets apply to the visible window, not every row. */
+  if (typeof layoutFrozenVirtual === "function" && document.getElementById("sheet-sizer")) {
+    layoutFrozenVirtual();
+    return;
+  }
   var table = document.querySelector("table." + CLS.table);
   if (!table) return;
   var head = table.rows[0], r, c, tr, td, th, col, mark, top, left, z;
@@ -395,11 +414,26 @@ function updateStats() {
   var el = document.getElementById("sheet-stats");
   if (!el) return;
   var g = selRange(), r, c, n = 0, sum = 0, v;
+  /* (before SH24) the loop below walked every cell of the selection, including empties.
   for (r = g.r1; r <= g.r2; r++) {
     for (c = g.c1; c <= g.c2; c++) {
       v = numVal(r, c, workbook.active);
       if (!isNaN(v)) { sum += v; n++; }
     }
+  }
+  */
+  var span = (g.r2 - g.r1 + 1) * (g.c2 - g.c1 + 1);
+  function take(r, c) {
+    v = numVal(r, c, workbook.active);
+    if (!isNaN(v)) { sum += v; n++; }
+  }
+  if (span > 4000 && typeof forEachReal === "function") {
+    forEachReal(cells, function (r, c) {
+      if (r < g.r1 || r > g.r2 || c < g.c1 || c > g.c2) return;
+      take(r, c);
+    });
+  } else {
+    for (r = g.r1; r <= g.r2; r++) for (c = g.c1; c <= g.c2; c++) take(r, c);
   }
   if (n === 0) { el.textContent = ""; el.hidden = true; return; }
   el.hidden = false;

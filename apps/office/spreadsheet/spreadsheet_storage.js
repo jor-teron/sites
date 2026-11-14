@@ -42,11 +42,11 @@ function fillSheetCells(dst, srcCells) {
   for (r = 0; r < ROWS; r++) {
     for (c = 0; c < COLS; c++) {
       src = srcCells[r] && srcCells[r][c];
-      if (src) {
-        dst.cells[r][c].formula = src.formula || "";
-        dst.cells[r][c].value = src.value;
-        dst.cells[r][c].style = Object.assign(defaultStyle(), src.style || {});
-      }
+      if (!src) continue;
+      if ((src.formula == null || src.formula === "") && (src.value == null || src.value === "") && !styleDirty(src.style)) continue;
+      dst.cells[r][c].formula = src.formula || "";
+      dst.cells[r][c].value = src.value;
+      dst.cells[r][c].style = Object.assign(defaultStyle(), src.style || {});
     }
   }
 }

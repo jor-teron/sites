@@ -25,7 +25,7 @@ var ctx = {
   String: String,
   Boolean: Boolean,
   Array: Array,
-  Object: Object,
+  Object: Object, Proxy: Proxy,
   JSON: JSON,
   parseInt: parseInt,
   isNaN: isNaN,
@@ -175,9 +175,10 @@ test("sheet-v4 save keeps filters and validations (old files still load)", funct
   eq(legacy.validations.length, 0);
 });
 
-test("grid is still 26 x 100", function () {
-  eq(ctx.COLS, 26);
-  eq(ctx.ROWS, 100);
+/* (before SH24) test("grid is still 26 x 100", function () { eq(ctx.COLS, 26); eq(ctx.ROWS, 100); }); */
+test("grid is 182 x 1000", function () {
+  eq(ctx.COLS, 182);
+  eq(ctx.ROWS, 1000);
 });
 
 console.log("passed", passed, "failed", failed);

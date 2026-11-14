@@ -188,9 +188,11 @@
     for (r = 0; r < lim.rows; r++) {
       row = cells[r];
       if (!row) continue;
+      var store = (typeof rowStore === "function") ? rowStore(row) : row;
+      if (store && store._n === 0) continue;
       for (c = 0; c < lim.cols; c++) {
-        cell = row[c];
-        if (!cellKept(cell)) continue;
+        cell = store ? store[c] : row[c];
+        if (!cell || cell._empty || !cellKept(cell)) continue;
         out.push(packCell(cell, r, c));
       }
     }

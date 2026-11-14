@@ -14,8 +14,11 @@ function moveExtent(key) {
   extR = nv.r; extC = nv.c;
   selMode = "cell";
   highlightSel();
-  var td = inpGrid[extR][extC].parentNode;
-  if (td.scrollIntoView) td.scrollIntoView({ block: "nearest", inline: "nearest" });
+  /* (before SH24) var td = inpGrid[extR][extC].parentNode; td.scrollIntoView(...) */
+  if (typeof ensureCellVisible === "function") ensureCellVisible(extR, extC);
+  else if (inpGrid[extR] && inpGrid[extR][extC] && inpGrid[extR][extC].parentNode.scrollIntoView) {
+    inpGrid[extR][extC].parentNode.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
   return true;
 }
 

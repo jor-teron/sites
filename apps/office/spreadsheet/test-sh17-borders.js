@@ -21,7 +21,7 @@ var files = [
 ];
 var ctx = {
   console: console, Date: Date, Math: Math, Number: Number, String: String,
-  Boolean: Boolean, Array: Array, Object: Object, JSON: JSON, parseInt: parseInt,
+  Boolean: Boolean, Array: Array, Object: Object, Proxy: Proxy, JSON: JSON, parseInt: parseInt,
   isNaN: isNaN, isFinite: isFinite, RegExp: RegExp, Error: Error, TypeError: TypeError,
   NaN: NaN, Infinity: Infinity, undefined: undefined,
   setTimeout: setTimeout, clearTimeout: clearTimeout,
@@ -184,8 +184,9 @@ test("borders button, hidden #bd-sel, and no version bump", function () {
   /* (before SH19) if (settings.indexOf('SHEET_VERSION = "SH21"') < 0) throw new Error("SHEET_VERSION is not SH21"); */
   if (settings.indexOf('SHEET_VERSION = "SH19"') < 0) throw new Error("SHEET_VERSION is not SH19");
   eq(ctx.CFG.storage.key, "sheet-v4");
-  eq(ctx.COLS, 26);
-  eq(ctx.ROWS, 100);
+  /* (before SH24) eq(ctx.COLS, 26); eq(ctx.ROWS, 100); */
+  eq(ctx.COLS, 182);
+  eq(ctx.ROWS, 1000);
 });
 
 test("xlsx merges are still written", function () {

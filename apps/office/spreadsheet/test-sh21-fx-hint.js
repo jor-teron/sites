@@ -40,17 +40,20 @@ test("title is SH23, SHEET_VERSION is SH23, ?v= stays HO3", function () {
   /* (before SH19) if (html.indexOf("<title>Spreadsheet SH21</title>") < 0) throw new Error("title is not SH21"); */
   /* (before SH22) if (html.indexOf("<title>Spreadsheet SH19</title>") < 0) throw new Error("title is not SH19"); */
   /* (before SH23) if (html.indexOf("<title>Spreadsheet SH22</title>") < 0) throw new Error("title is not SH22"); */
-  if (html.indexOf("<title>Spreadsheet SH23</title>") < 0) throw new Error("title is not SH23");
+  /* (before SH24) if (html.indexOf("<title>Spreadsheet SH23</title>") < 0) throw new Error("title is not SH23"); */
+  if (html.indexOf("<title>Spreadsheet SH24</title>") < 0) throw new Error("title is not SH24");
   if (html.indexOf("(before SH21)") < 0) throw new Error("old title or script tag was not kept as a comment");
   if (html.indexOf("?v=HO3") < 0) throw new Error("?v=HO3 missing");
   /* (before SH19) if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH21/.test(html)) throw new Error("unexpected ?v=SH21 cache token"); */
   /* (before SH22) if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH19/.test(html)) throw new Error("unexpected ?v=SH19 cache token"); */
   /* (before SH23) if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH22/.test(html)) throw new Error("unexpected ?v=SH22 cache token"); */
   if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH23/.test(html)) throw new Error("unexpected ?v=SH23 cache token");
+  if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH24/.test(html)) throw new Error("unexpected ?v=SH24 cache token");
   /* (before SH19) if (settings.indexOf('var SHEET_VERSION = "SH21";') < 0) throw new Error("SHEET_VERSION is not SH21"); */
   /* (before SH22) if (settings.indexOf('var SHEET_VERSION = "SH19";') < 0) throw new Error("SHEET_VERSION is not SH19"); */
   /* (before SH23) if (settings.indexOf('var SHEET_VERSION = "SH22";') < 0) throw new Error("SHEET_VERSION is not SH22"); */
-  if (settings.indexOf('var SHEET_VERSION = "SH23";') < 0) throw new Error("SHEET_VERSION is not SH23");
+  /* (before SH24) if (settings.indexOf('var SHEET_VERSION = "SH23";') < 0) throw new Error("SHEET_VERSION is not SH23"); */
+  if (settings.indexOf('var SHEET_VERSION = "SH24";') < 0) throw new Error("SHEET_VERSION is not SH24");
 });
 
 test("live script order: spreadsheet_fx.js comes after spreadsheet_state.js", function () {

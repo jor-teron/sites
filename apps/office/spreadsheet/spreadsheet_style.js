@@ -235,6 +235,11 @@ function styleSheetMerges() {
 }
 
 function applyMerges() {
+  /* SH24: the on-screen table is only the visible window. */
+  if (typeof applyMergesVirtual === "function" && document.getElementById("sheet-sizer")) {
+    applyMergesVirtual();
+    return;
+  }
   var table = document.querySelector("table." + CLS.table), r, c, td, m, rs, cs, i;
   if (!table) return;
   for (r = 0; r < ROWS; r++) {
@@ -313,7 +318,7 @@ function applyBorders(mode, color) {
   var col = color || "auto";
   undoRecord("border");
   forSelection(function (r, c) {
-    var st = cellStyle(r, c);
+    var st = ensureStyle(r, c);
     function set(side, on) { st[side] = on ? col : ""; }
     if (mode === "none") { set("bt", 0); set("br", 0); set("bb", 0); set("bl", 0); }
     else if (mode === "all") { set("bt", 1); set("br", 1); set("bb", 1); set("bl", 1); }
@@ -422,7 +427,7 @@ function stylePainterApply() {
   sticky = STYLE_PAINTER.sticky;
   undoRecord("painter");
   forSelection(function (r, c) {
-    var st = cellStyle(r, c), k;
+    var st = ensureStyle(r, c), k;
     for (k in src) if (Object.prototype.hasOwnProperty.call(src, k) && k !== "merge") st[k] = src[k];
   });
   paintAll();

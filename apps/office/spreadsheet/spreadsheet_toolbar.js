@@ -25,7 +25,7 @@ function syncStyleUi() {
 /* Change the style of the block (undoable; colour pickers merge while dragging) */
 function styleSelection(tag, fn) {
   undoRecord(tag);
-  forSelection(function (r, c) { fn(cellStyle(r, c)); });
+  forSelection(function (r, c) { fn(ensureStyle(r, c)); });
   paintAll();
   syncStyleUi();
   saveStore();

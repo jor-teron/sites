@@ -7,10 +7,28 @@
  * Hidden flags and freeze panes on this sheet shift with the rows / columns.
  */
 function lineHasData(axis, k) {
+  /* (before SH24) walked every cell and read .formula, which required a real object.
   var i, n = axis === "r" ? COLS : ROWS;
   for (i = 0; i < n; i++) {
     var x = axis === "r" ? cells[k][i] : cells[i][k];
     if (x.formula !== "" && x.formula != null) return true;
+  }
+  return false;
+  */
+  var i, store, cell;
+  if (axis === "r") {
+    store = rowStore(cells[k]);
+    if (!store || !store._n) return false;
+    for (i = 0; i < COLS; i++) {
+      cell = store[i];
+      if (cell && cell.formula != null && cell.formula !== "") return true;
+    }
+    return false;
+  }
+  for (i = 0; i < ROWS; i++) {
+    store = rowStore(cells[i]);
+    cell = store && store[k];
+    if (cell && cell.formula != null && cell.formula !== "") return true;
   }
   return false;
 }
@@ -20,9 +38,13 @@ function adjustAll(axis, at, delta) {
   var si, r, c, sh, target = workbook.active;
   for (si = 0; si < workbook.sheets.length; si++) {
     sh = workbook.sheets[si];
-    for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
+    /* (before SH24) for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
       sh.cells[r][c].formula = adjustRefs(sh.cells[r][c].formula, axis, at, delta, target, si);
-    }
+    } */
+    forEachReal(sh.cells, function (rr, cc, cell) {
+      if (!isFormula(cell.formula)) return;
+      cell.formula = adjustRefs(cell.formula, axis, at, delta, target, si);
+    });
   }
 }
 
@@ -50,8 +72,16 @@ function changeLines(axis, delta) {
   undoRecord(axis + delta);
   for (k = 0; k < n; k++) {
     if (axis === "r") {
-      if (delta > 0) { cells.splice(at, 0, cells.pop()); cells[at] = cells[at].map(blankCell); }
-      else { cells.splice(at, 1); cells.push(cells[0].map(blankCell)); }
+      /* (before SH24) if (delta > 0) { cells.splice(at, 0, cells.pop()); cells[at] = cells[at].map(blankCell); }
+      else { cells.splice(at, 1); cells.push(cells[0].map(blankCell)); } */
+      if (delta > 0) {
+        var moved = cells.pop();
+        clearSparseRow(moved);
+        cells.splice(at, 0, moved);
+      } else {
+        cells.splice(at, 1);
+        cells.push(makeSparseRow());
+      }
       shiftFlags(hiddenRows, at, delta, false);
       /* SH18: heights[] was not shifted on row insert/delete (colWidths already was). */
       var sh = workbook && workbook.sheets[workbook.active];
@@ -62,10 +92,11 @@ function changeLines(axis, delta) {
         else { sh.heights.splice(at, 1); sh.heights.push(null); }
       }
     } else {
-      for (r = 0; r < ROWS; r++) {
+      /* (before SH24) for (r = 0; r < ROWS; r++) {
         if (delta > 0) { cells[r].pop(); cells[r].splice(at, 0, blankCell()); }
         else { cells[r].splice(at, 1); cells[r].push(blankCell()); }
-      }
+      } */
+      for (r = 0; r < ROWS; r++) shiftSparseCols(cells[r], at, delta);
       if (delta > 0) { colWidths.splice(at, 0, null); colWidths.length = COLS; }
       else { colWidths.splice(at, 1); colWidths.push(null); }
       shiftFlags(hiddenCols, at, delta, false);

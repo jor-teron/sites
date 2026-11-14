@@ -133,9 +133,12 @@ function autoFitRowHeight(r) {
   var maxH = cfg.auto, c, text, st, w, m, mW, i, fontSize, v, need, merges, s;
   s = typeof workbook !== "undefined" && workbook && workbook.sheets && workbook.sheets[workbook.active];
   merges = s && s.merges;
+  var store = (typeof rowStore === "function" && typeof cells !== "undefined" && cells) ? rowStore(cells[r]) : null;
+  if (store && store._n === 0) return maxH;
   for (c = 0; c < COLS; c++) {
     if (typeof hiddenCols !== "undefined" && hiddenCols && hiddenCols[c]) continue;
-    if (!cells || !cells[r] || !cells[r][c]) continue;
+    if (store && !store[c]) continue;
+    if (!cells || !cells[r] || !realCellAt(cells, r, c)) continue;
     m = typeof styleMergeAt === "function" ? styleMergeAt(merges, r, c) : null;
     if (m && (m.r1 !== r || m.c1 !== c)) continue;
     st = typeof cellStyle === "function" ? cellStyle(r, c) : (cells[r][c].style || {});
@@ -179,7 +182,18 @@ function autoColWidth() {
   return nAuto ? Math.max(CFG.colWidth.auto, Math.floor((free - fixed) / nAuto)) : CFG.colWidth.auto;
 }
 
+var sheetResizeDrag = false;
+
 function applyWidths() {
+  if (typeof sheetResizeDrag !== "undefined" && sheetResizeDrag && typeof syncVirtualWidths === "function") {
+    syncVirtualWidths();
+    return;
+  }
+  if (typeof renderViewport === "function" && document.getElementById("sheet-wrap")) {
+    renderViewport(true);
+    return;
+  }
+  /* (before SH24) set a width on every column of the full table. */
   var table = document.querySelector("table." + CLS.table);
   if (!table) return;
   var cols = table.querySelectorAll("col." + CLS.dataCol), auto = autoColWidth(), total = CFG.colWidth.rowHead, c, w;
@@ -196,6 +210,16 @@ function applyWidths() {
 
 /* HOS1: a row height from the .hos file. null keeps the automatic row. */
 function applyRowHeights() {
+  if (typeof sheetResizeDrag !== "undefined" && sheetResizeDrag && typeof syncVirtualHeights === "function") {
+    syncVirtualHeights();
+    if (typeof layoutFrozenVirtual === "function") layoutFrozenVirtual();
+    return;
+  }
+  if (typeof renderViewport === "function" && document.getElementById("sheet-sizer")) {
+    renderViewport(true);
+    return;
+  }
+  /* (before SH24) wrote a height onto every data row of the full table. */
   var table = document.querySelector("table." + CLS.table);
   var s = workbook && workbook.sheets[workbook.active];
   if (!table || !s) return;
@@ -229,6 +253,7 @@ SHEET_INIT.push(function () {
       var r = parseInt(ev.target.dataset.r, 10);
       if (typeof undoRecord === "function") undoRecord("row-height");
       drag = { type: "row", r: r, y: ev.clientY, h: usedRowHeight(r) };
+      sheetResizeDrag = true;
       document.body.classList.add("row-resizing");
       return;
     }
@@ -236,8 +261,11 @@ SHEET_INIT.push(function () {
     ev.preventDefault();
     ev.stopPropagation();
     var c = parseInt(ev.target.dataset.c, 10);
-    var col = document.querySelectorAll("table." + CLS.table + " col." + CLS.dataCol)[c];
+    /* (before SH24) var col = document.querySelectorAll("table." + CLS.table + " col." + CLS.dataCol)[c]; */
+    var col = document.querySelector("table." + CLS.table + " col." + CLS.dataCol + '[data-c="' + c + '"]');
+    if (!col) return;
     drag = { type: "col", c: c, x: ev.clientX, w: col.getBoundingClientRect().width || parseFloat(col.style.width) };
+    sheetResizeDrag = true;
     document.body.classList.add("col-resizing");
   });
   document.addEventListener("mousemove", function (ev) {
@@ -258,8 +286,10 @@ SHEET_INIT.push(function () {
   document.addEventListener("mouseup", function () {
     if (!drag) return;
     drag = null;
+    sheetResizeDrag = false;
     document.body.classList.remove("col-resizing");
     document.body.classList.remove("row-resizing");
+    if (typeof renderViewport === "function") renderViewport(true);
     saveStore();
   });
   document.getElementById("sheet-wrap").addEventListener("dblclick", function (ev) {

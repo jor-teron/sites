@@ -48,8 +48,11 @@ function dataFindMatches(sheets, opts) {
   for (si = start; si < end; si++) {
     if (!sheets[si] || !sheets[si].cells) continue;
     for (r = 0; r < sheets[si].cells.length; r++) {
-      for (c = 0; c < sheets[si].cells[r].length; c++) {
-        cell = sheets[si].cells[r][c];
+      var store = typeof rowStore === "function" ? rowStore(sheets[si].cells[r]) : sheets[si].cells[r];
+      if (!store || store._n === 0) continue;
+      for (c = 0; c < store.length; c++) {
+        cell = store[c];
+        if (!cell || cell._empty) continue;
         inF = dataContains(dataCellSearchText(cell, "formula"), q, matchCase);
         inV = dataContains(dataCellSearchText(cell, "value"), q, matchCase);
         if (inF || inV) out.push({ si: si, r: r, c: c, inFormula: inF, inValue: inV });
@@ -428,7 +431,9 @@ function dataRenderFilterButtons() {
   if (!table || !table.rows[0]) return;
   head = table.rows[0];
   for (c = 0; c < COLS; c++) {
-    th = head.cells[c + 1];
+    /* (before SH24) th = head.cells[c + 1]; the virtual header is not column c+1. */
+    th = head.querySelector("th." + CLS.colHead + '[data-c="' + c + '"]');
+    if (!th) th = head.cells[c + 1];
     if (!th) continue;
     btn = th.querySelector(".filter-btn");
     on = f && f.on && c >= f.c1 && c <= f.c2;
