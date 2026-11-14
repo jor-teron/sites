@@ -32,3 +32,6 @@ the app keeps working when it is off.
 
 Files: `index.html`, `nc.js`, `nc.css`, `notifications_icon.png`, this README.
 Tests: `/workspace/h66test/t66.py`.
+
+## Legacy
+IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png

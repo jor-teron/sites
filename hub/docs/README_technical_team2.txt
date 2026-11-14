@@ -3595,6 +3595,71 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node --test hub/tests/h146_catalog.test.cjs`.
 - 1.138 is IC8. This note is 1.139.
 
+### 1.140 IC7b System section plain icons
+
+- System section icons redrawn without the coloured rounded tile,
+  symbol only, matching the IC1 to IC8 and IC7a plain icons (same
+  128×128 size, padding, `#1c1f24` outline and soft shadow). Settings,
+  System Monitor, Mesh Viewer, Notification Centre, Terminal and App
+  Hub have an empty CSV icon column, so the System page and the Hub
+  load `<folder>/<folder>_icon.png`. API Keys' CSV icon is
+  `api-keys/api-keys_icon.png`. Search's CSV icon is
+  `search/search_icon.png`. None of the eight was already plain (each
+  still had a coloured rounded tile, and the outer 8px was not
+  clear). Settings, Terminal, App Hub and Search were 128×128. API
+  Keys, System Monitor and Mesh Viewer were 192×192. Notification
+  Centre was 256×256. `system_icon.png` (the category icon) is
+  unchanged.
+- Files the apps and the System page use:
+  - Settings: `settings_icon.png` (no favicon link; the page header
+    and About show it). White gear, rainbow ring and white hub
+    sampled from the old wheel, three white sparkles. The old tile
+    was the purple-to-blue gradient.
+  - API Keys: `api-keys_icon.png` (favicon in `index.html`, the same
+    file name, so that link is unchanged). Blue key `#6ea8fe`, ring
+    bow with a hole, two teeth. The old tile was the dark card. The
+    hole was that tile, so it is not filled.
+  - System Monitor: `sysmon_icon.png` (no favicon link; the page
+    header shows it). Monitor outline `#5d72b0`, three rules, green
+    graph `#50e6aa`, white dot. The old tile was the dark gradient.
+    The screen was that tile, so it is not filled.
+  - Mesh Viewer: `mesh-viewer_icon.png` (no favicon link; the page
+    header shows it). Five blue nodes `#6ea8fe` on a pentagon, green
+    hub `#50e6aa`, blue edges and green spokes, white rings. The old
+    tile was the dark gradient.
+  - Notification Centre: `notifications_icon.png` (no favicon link;
+    the page header shows it). White bell and clapper, red badge
+    `#dc2626`. The old tile was the orange gradient.
+  - Terminal: `terminal_icon.png` (favicon in `index.html`, the same
+    file name, so that link is unchanged). Green window frame and
+    prompt `#33ff66`. The old tile was the dark card. The frame was
+    a translucent green stroke on that tile, so it is drawn in the
+    prompt green.
+  - App Hub: `apphub_icon.png` (favicon in `index.html`, the same
+    file name, so that link is unchanged). Four rounded squares,
+    three white, top-right gold `#f3d064`. The old tile was the
+    blue-purple gradient.
+  - Search: `search_icon.png` (favicon in `index.html`, the same
+    file name, so that link is unchanged). White magnifier, gold
+    inner ring `#ffc83c`. The old tile was the blue gradient. The
+    lens hole was that tile, so it is not filled.
+- Drawn at 4× in `apps/system/ic7b_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency.
+- Previous icons copied to `settings_icon_before_IC7b.png`,
+  `api-keys_icon_before_IC7b.png`, `sysmon_icon_before_IC7b.png`,
+  `mesh-viewer_icon_before_IC7b.png`,
+  `notifications_icon_before_IC7b.png`,
+  `terminal_icon_before_IC7b.png`, `apphub_icon_before_IC7b.png` and
+  `search_icon_before_IC7b.png` (not deleted). Live file names are
+  unchanged, so no CSV or catalog edit. No hub/core or shared/ edit.
+  Favicon lines are unchanged. Each app has the legacy line (API
+  Keys and System Monitor had no readme, so it is in `NOTES.md`).
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all eight icons.
+  `node --test hub/tests/h146_catalog.test.cjs`.
+- 1.139 is IC7a. This note is 1.140.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
