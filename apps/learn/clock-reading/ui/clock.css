@@ -1,5 +1,6 @@
-/* Clock Reading CR4 — app look on top of the Learn kit (../common/ui/learn.css): the live clock fills the left (full width
-   on top in portrait, height auto), the time panel on the right with the clock style tiles under it. The 7 clock styles are coloured here
+/* Clock Reading CR5 — app look on top of the Learn kit (../common/ui/learn.css): the live clock fills the left (full width
+   on top in portrait, height auto), the time panel on the right with the clock style tiles under it. CR5: grab cursor on the hands,
+   'Your time' badge and the Back to now button. The 7 clock styles are coloured here
    (.st-*). Light mode follows the Hub theme (html.light). Plain CSS, no blur or heavy filters (weak phones). */
 .cr { --accent: #ffb347; --hh: #111; --mh: #1f6feb; --sh: #e5221b; --wood: #8a5a2b; --wood2: #5e3a19; --gold: #d4a63a; }
 .cr-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
@@ -78,3 +79,10 @@
 @media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; } .cr-strow { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); } .cr-st svg { height: 54px; } .cr-note { font-size: 0.8rem; } }
 @media (max-height: 520px) { .lrn-head { padding: 4px 10px; } .lrn-main.cr-main { padding: 6px 10px; } .cr-dig { font-size: 1.5rem; } .cr-st svg { height: 40px; } .cr-hint { display: none; } }
 @media (prefers-reduced-motion: reduce) { .cr-strow { scroll-behavior: auto; } }
+/* CR5: dragging the hands */
+.cr-clock .cr-hand [data-part], .cr-clock .cr-hand { cursor: grab; }
+.cr-clock.cr-drag, .cr-clock.cr-drag * { cursor: grabbing; }
+.cr-clock.cr-drag .cr-hand .cr-hit { stroke: rgba(255, 179, 71, 0.35); }
+.cr-badge { align-items: center; gap: 8px; flex-wrap: wrap; }
+.cr-gmt.cr-own { background: var(--mh); color: #fff; }
+.cr-back { font-weight: 700; }

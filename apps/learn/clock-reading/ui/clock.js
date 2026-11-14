@@ -1,10 +1,11 @@
-/* Clock Reading CR3 — the clock, drawn in code as one SVG in 7 styles (CR.styles in core/styles.js): Simple, Railway station,
+/* Clock Reading CR5 — the clock, drawn in code as one SVG in 7 styles (CR.styles in core/styles.js): Simple, Railway station,
    Roman wall clock, Pocket watch, Grandfather clock (swinging pendulum), Cuckoo clock (carved house, the bird pops out on the
    hour) and Sundial (a shadow instead of hands). Hour hand black, minute hand blue, second hand red on a light face.
    Every part a child can ask about carries data-part (face, rim, hour, minute, second, pin, h1..h12, m1..m59 between the hours,
    and the style's own extras); hour and minute marks have invisible tap areas (.cr-hit, above the hands) so they are easy to hit on a phone.
    Only the hand transforms change on each tick (1 a second); the pendulum swings with one SMIL animation (none with reduced motion).
-   CR.makeClock() -> { el, style(id), set(t, sec), seconds(on), styleId }.  CR.miniClock(id) -> a small static svg (10:10). */
+   CR.makeClock() -> { el, style(id), set(t, sec), seconds(on), styleId, t, hands, toFace(e) }.
+   CR5: hands = { hour, minute } lengths (null on the Sundial: nothing to drag); toFace(e) -> { angle, r } of a pointer on the dial.  CR.miniClock(id) -> a small static svg (10:10). */
 window.CR = window.CR || {};
 (() => {
   const C = window.CR, NS = 'http://www.w3.org/2000/svg';
@@ -109,7 +110,15 @@ window.CR = window.CR || {};
       el: svg, get styleId() { return styleId; },
       style(id) { styleId = C.styleById(id).id; R = draw(svg, styleId, false); paint(R, t, showSec ? sec : null); },
       set(v, s) { t = C.norm(v); sec = s; paint(R, t, showSec ? sec : null); svg.setAttribute('aria-label', C.styleById(styleId).name + ' showing ' + C.words(t)); },
-      seconds(on) { showSec = !!on; paint(R, t, showSec ? sec : null); }
+      seconds(on) { showSec = !!on; paint(R, t, showSec ? sec : null); },
+      get t() { return t; },
+      get hands() { return C.styleById(styleId).hands ? { hour: 50, minute: 80 } : null; },
+      toFace(e) {   // pointer -> dial coordinates (centre 0,0; face radius 98)
+        const m = svg.getScreenCTM && svg.getScreenCTM(); if (!m) return null;
+        const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+        return { angle: C.normDeg(Math.atan2(p.x, -p.y) * 180 / Math.PI), r: Math.hypot(p.x, p.y) };
+      },
+      dragging(on) { svg.classList.toggle('cr-drag', !!on); }
     };
     return api;
   };
