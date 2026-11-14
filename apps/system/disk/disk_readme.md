@@ -12,3 +12,6 @@ System app (R54) that manages the Hub's storage. Browsing files stays in Files (
 - **Sync:** drive changes go through `FsDrives` (BroadcastChannel `sites-fs`), so Files and the Hub drives pane redraw.
 
 Files: `index.html`, `disk.js`, `disk.css`, `disk_icon.png`. Uses `shared/fs/webdav_fs.js` + `webdav_accounts.js` (H133) besides `fs_drives.js`.
+
+## Legacy
+IC7a: icon redrawn plain without tile; old icon kept as *_icon_before_IC7a.png
