@@ -83,12 +83,12 @@ window.HUB_APP_INDEX = {
   "writer": ["Office", "apps/office/writer/", "Writer", "apps/office/writer/writer_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"],
   /* (before HOS1) "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Offline spreadsheet with formulas and styles - CSV import/export and print"], */
   "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Spreadsheet with formulas and styles: native .hos files - CSV or XLSX"],
-  "invoice-maker": ["Office", "apps/office/invoice-maker/", "Invoice Maker", "apps/office/invoice-maker/invoice-maker_icon.png", 0, "GST invoices quotes and receipts - saved on this device and printed as PDF"],
+  /* (before MV1) "invoice-maker": ["Office", "apps/office/invoice-maker/", "Invoice Maker", "apps/office/invoice-maker/invoice-maker_icon.png", 0, "GST invoices quotes and receipts - saved on this device and printed as PDF"], */
   "base": ["Office", "apps/office/base/", "Base", "apps/office/base/base_icon.png", 0, "Small database app: tables - forms and queries like Access"],
   /* (before HOT1) "tables": ["Office", "apps/office/tables/", "Tables", "apps/office/tables/tables_icon.svg", 0, "Simple spreadsheet-style database with typed columns - saved on this device"], */
   "tables": ["Office", "apps/office/tables/", "Tables", "apps/office/tables/tables_icon.svg", 0, "Simple spreadsheet-style database: native .hot files - CSV import or export"],
   "slides": ["Office", "apps/office/slides/", "Slides", "apps/office/slides/slides_icon.png", 0, "Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export"],
-  "expense-tracker": ["Office", "apps/office/expense-tracker/", "Expense Tracker", "apps/office/expense-tracker/expense-tracker_icon.svg", 0, "Track daily spending and income with budgets and charts - all offline"],
+  /* (before MV1) "expense-tracker": ["Office", "apps/office/expense-tracker/", "Expense Tracker", "apps/office/expense-tracker/expense-tracker_icon.svg", 0, "Track daily spending and income with budgets and charts - all offline"], */
   "notely": ["Office", "apps/office/notely/", "Notely", "apps/office/notely/notely_icon.png", 0, "Plain-text notes that save as you type - open and download .txt"],
   "msword-diff": ["Office", "apps/tools/msword_diff/", "MS Word Diff", "apps/tools/msword_diff/msword_diff_icon.png", 0, "Compare two Word .docx files and see what text changed"],
   "ocr": ["Office", "apps/office/ocr/", "OCR", "apps/office/ocr/ocr_icon.png", 0, "Turn text in photos scans and PDFs into editable text - works offline"],
@@ -139,6 +139,8 @@ window.HUB_APP_INDEX = {
   "astrology": ["Tools", "apps/tools/astrology/", "Astrology", "apps/tools/astrology/astrology_icon.svg", 0, "Sun sign and daily lucky card and sign match - traditional readings for fun"],
   "numerology": ["Tools", "apps/tools/numerology/", "Numerology", "apps/tools/numerology/numerology_icon.svg", 0, "Life Path and name numbers from your birth date - traditional readings for fun"],
   "read-aloud": ["Tools", "apps/tools/read-aloud/", "Read Aloud", "apps/tools/read-aloud/read-aloud_icon.svg", 0, "Read News headlines or pasted text aloud with play pause and voice settings"],
+  "invoice-maker": ["Tools", "apps/tools/invoice-maker/", "Invoice Maker", "apps/tools/invoice-maker/invoice-maker_icon.png", 0, "GST invoices quotes and receipts - saved on this device and printed as PDF"],
+  "expense-tracker": ["Tools", "apps/tools/expense-tracker/", "Expense Tracker", "apps/tools/expense-tracker/expense-tracker_icon.svg", 0, "Track daily spending and income with budgets and charts - all offline"],
   "myllm": ["Lab", "apps/lab/myllm/", "MyLLM", "apps/lab/myllm/myllm_icon.png", 0, "Plan and train a tiny character-level language model in your browser"],
   "story": ["Lab", "apps/lab/story/", "Story", "apps/lab/story/story_icon.png", 0, "Type a beginning and get a short story from a tiny on-device AI model"],
   "onnx-runner": ["Lab", "apps/lab/onnx-runner/", "ONNX Runner", "apps/lab/onnx-runner/onnx-runner_icon.png", 0, "Run any .onnx machine learning model in the browser - nothing uploaded"],
