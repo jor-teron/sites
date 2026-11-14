@@ -213,13 +213,13 @@ P2P Chat,           ../connectivity/p2pchat.html, , , Connect, Simple peer-to-pe
 Phone,              ../media/phone/,              , , Connect, Android-style shortcut page that opens phone apps and settings
 
 Cooking Timer,      cooking-timer/,               , , New, Kitchen timers for cooking: set - start and get an alarm
-Ingredient Swaps,   ingredient-substitutions/,    , , New, Find substitutes for common cooking ingredients
-Knife Skills,       knife-skills/,                , , New, Kitchen knife skills 101: basic cuts and safety tips
-Nutrition Calculator, nutrition-calculator/,      , , New, Work out calories and nutrients for your meals
+# (before MV3) Ingredient Swaps,   ingredient-substitutions/,    , , New, Find substitutes for common cooking ingredients
+# (before MV3) Knife Skills,       knife-skills/,                , , New, Kitchen knife skills 101: basic cuts and safety tips
+# (before MV3) Nutrition Calculator, nutrition-calculator/,      , , New, Work out calories and nutrients for your meals
 # (before MV2) PDF Viewer,         pdf-viewer/,                  , , New, Open and read PDF files in the browser
 # (before MV2) Radio,              radio-app/,                   , , New, Simple internet radio player
 # (before MV2) Video Trimmer,      video-trimmer/,               , , New, Basic video trimmer: cut a clip from a video
-Weather Simulator,  weather-sim/,                 , , New, Animated weather scene: sky - clouds - rain - snow and fog
+# (before MV3) Weather Simulator,  weather-sim/,                 , , New, Animated weather scene: sky - clouds - rain - snow and fog
 
 Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes
 Photo Editor,       ../media/photo-editor/,       , , Legacy, Old photo editor: brightness - contrast - rotate - crop and print
@@ -240,6 +240,10 @@ name, path, icon, newtab, section, description
 First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
 Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
 Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian meal plates and see live nutrients with a balanced-plate guide
+Nutrition Calculator,    nutrition-calculator/,      nutrition-calculator/nutrition-calculator_icon.png, , Health, Work out calories and nutrients for your meals
+
+Knife Skills,            knife-skills/,              knife-skills/knife-skills_icon.png, , Cooking, Kitchen knife skills 101: basic cuts and safety tips
+Ingredient Swaps,        ingredient-substitutions/,  ingredient-substitutions/ingredient-substitutions_icon.png, , Cooking, Find substitutes for common cooking ingredients
 Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
@@ -260,6 +264,7 @@ Piano Basics,            piano-basics/,              , , Music, Learn piano: pla
 Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
+Weather Simulator,       weather-sim/,               weather-sim/weather-sim_icon.png, , Science, Animated weather scene: sky - clouds - rain - snow and fog
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 History Timeline,       history-timeline/,          , , History, Explore world and Indian history: zoomable timeline - facts - tours and quizzes
 

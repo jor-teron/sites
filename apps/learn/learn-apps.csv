@@ -6,6 +6,10 @@ name, path, icon, newtab, section, description
 First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
 Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
 Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian and Assam meal plates and plan a week with personal portions and live nutrients with a balanced-plate guide
+Nutrition Calculator,    nutrition-calculator/,      nutrition-calculator/nutrition-calculator_icon.png, , Health, Work out calories and nutrients for your meals
+
+Knife Skills,            knife-skills/,              knife-skills/knife-skills_icon.png, , Cooking, Kitchen knife skills 101: basic cuts and safety tips
+Ingredient Swaps,        ingredient-substitutions/,  ingredient-substitutions/ingredient-substitutions_icon.png, , Cooking, Find substitutes for common cooking ingredients
 Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Droppy - the water cycle and how to save water
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
@@ -26,6 +30,7 @@ Piano Basics,            piano-basics/,              , , Music, Learn piano: pla
 Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
+Weather Simulator,       weather-sim/,               weather-sim/weather-sim_icon.png, , Science, Animated weather scene: sky - clouds - rain - snow and fog
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 History Timeline,       history-timeline/,          , , History, Explore world and Indian history: zoomable timeline - facts - tours and quizzes
 

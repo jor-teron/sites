@@ -3930,6 +3930,62 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node apps/office/spreadsheet/test-hos1-format.js`, and
   `node apps/office/tables/test-hot1-format.js`.
 
+### 1.145 MV3 Lab apps move to Learn
+
+- 1.144 is MV2. This note is 1.145.
+- Four Lab apps left Lab. Folders moved with `git mv` so history stays:
+  - Knife Skills: `apps/lab/knife-skills/` → `apps/learn/knife-skills/`
+    (Learn → Cooking, a new section after Health).
+  - Ingredient Swaps: `apps/lab/ingredient-substitutions/` →
+    `apps/learn/ingredient-substitutions/` (Learn → Cooking, after Knife Skills).
+  - Nutrition Calculator: `apps/lab/nutrition-calculator/` →
+    `apps/learn/nutrition-calculator/` (Learn → Health, after Nutrition Plate).
+  - Weather Simulator: `apps/lab/weather-sim/` → `apps/learn/weather-sim/`
+    (Learn → Science, after Periodic Table).
+- Cooking Timer stays in Lab.
+- Each old path keeps a tiny redirect stub only. All four use `index.html`
+  as the app page, so that file is the stub. There is no second main page
+  name. The script sends the browser to the new app page and keeps the
+  query string and hash, so old bookmarks, pinned apps and desktop
+  shortcuts still open. The noscript refresh and link point at the same
+  new page. No `?v=` on the stubs.
+- Paths inside the apps: `apps/learn/<app>/` is the same depth as
+  `apps/lab/<app>/`. None of the four loads `shared/`, `vendor/` or a
+  `common/` file, and none has a service worker or a web app manifest.
+  Styles and scripts stay inside the app folder (Weather Simulator uses
+  its own `css/` and `js/`). No relative path was rewritten.
+- Data is not keyed by the folder path, so nothing was remapped. The
+  origin is unchanged, so the keys still resolve.
+  - Knife Skills saves nothing. No localStorage key and no IndexedDB.
+  - Ingredient Swaps saves nothing. No localStorage key and no IndexedDB.
+  - Nutrition Calculator saves nothing. No localStorage key and no IndexedDB.
+  - Weather Simulator uses localStorage `weather-sim:v2` (and still reads
+    then removes `weather-sim:v1`) and `weather-sim:custom-place`.
+    No IndexedDB.
+  Hub ids stay `knife-skills`, `ingredient-substitutions`,
+  `nutrition-calculator` and `weather-sim`.
+- Lists: the four rows in `apps/lab/lab-apps.csv` are commented with
+  `# (before MV3)` (the CSV already treats `#` as a comment). They are
+  added to `apps/learn/learn-apps.csv` with the icon path
+  (`knife-skills/knife-skills_icon.png`,
+  `ingredient-substitutions/ingredient-substitutions_icon.png`,
+  `nutrition-calculator/nutrition-calculator_icon.png`,
+  `weather-sim/weather-sim_icon.png`). `hub/core/hub_catalog.js` Lab text
+  is the exact CSV text. The Learn text gained the same four rows; other
+  Learn rows were left as they were. `hub/core/hub_appindex.js` category
+  is Learn and the entry paths are the new folders (old Lab entries
+  commented). No other hub/core file. No test listed the old paths.
+- Each app readme or NOTES carries the legacy line: MV3: moved from
+  apps/lab to apps/learn; old path redirects. Knife Skills, Ingredient
+  Swaps and Nutrition Calculator had no readme, so the line is in
+  `NOTES.md`. Weather Simulator already had `NOTES.md`.
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked with `node --check` on the touched JS, `node --test` on
+  `apps/learn/weather-sim/tests/ws2.test.cjs`, `ws3.test.cjs`,
+  `ws4.test.cjs` and `ws6.test.cjs`, and
+  `node --test hub/tests/h146_catalog.test.cjs`. There is no separate
+  Learn catalog test.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

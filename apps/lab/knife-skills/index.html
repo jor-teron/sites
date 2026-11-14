@@ -1,106 +1,21 @@
 <!DOCTYPE html>
+<!-- MV3: Knife Skills moved to apps/learn/knife-skills/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. No ?v=. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kitchen Knife Skills 101</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Knife Skills</title>
+  <link rel="canonical" href="../../learn/knife-skills/index.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../learn/knife-skills/index.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../learn/knife-skills/index.html"></noscript>
 </head>
-<body>
-  <div class="app-container">
-    <header>
-      <h1>🔪 Kitchen Knife Skills</h1>
-      <p class="subtitle">Basic techniques, grips, and cuts for beginners</p>
-    </header>
-
-    <nav class="tabs">
-      <button class="tab-btn active" data-target="techniques">Techniques & Grips</button>
-      <button class="tab-btn" data-target="cuts">Basic Cuts</button>
-      <button class="tab-btn" data-target="quiz">Practice Quiz</button>
-    </nav>
-
-    <main>
-      <!-- TECHNIQUES TAB -->
-      <section id="techniques" class="tab-content active">
-        <h2>Essential Knife Handling</h2>
-        <div class="card-grid">
-          <div class="card" onclick="openModal('grip')">
-            <h3>1. The Pinch Grip</h3>
-            <p>The safest and most stable way to hold a chef's knife.</p>
-            <span class="tag">Foundation</span>
-          </div>
-          <div class="card" onclick="openModal('claw')">
-            <h3>2. The Claw Hand</h3>
-            <p>Curling your non-knife fingers to protect your fingertips.</p>
-            <span class="tag">Safety</span>
-          </div>
-          <div class="card" onclick="openModal('rock')">
-            <h3>3. Rocking Motion</h3>
-            <p>Keeping the tip on the board and rocking the blade up and down.</p>
-            <span class="tag">Cutting</span>
-          </div>
-          <div class="card" onclick="openModal('sharpen')">
-            <h3>4. Board & Maintenance</h3>
-            <p>Choosing wood/plastic boards and keeping blades honed.</p>
-            <span class="tag">Care</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- CUTS TAB -->
-      <section id="cuts" class="tab-content">
-        <h2>Basic Vegetable Cuts</h2>
-        <div class="card-grid">
-          <div class="card" onclick="openModal('dice')">
-            <h3>Dice (Cube)</h3>
-            <p>Uniform cubes (Small 1/4", Medium 1/3", Large 1/2"). Great for soups & stews.</p>
-            <span class="tag">Classic</span>
-          </div>
-          <div class="card" onclick="openModal('julienne')">
-            <h3>Julienne (Matchstick)</h3>
-            <p>Thin matchstick strips (approx. 1/8" x 1/8" x 2"). Used in salads and stir-fries.</p>
-            <span class="tag">Precision</span>
-          </div>
-          <div class="card" onclick="openModal('brunoise')">
-            <h3>Brunoise</h3>
-            <p>Tiny, precise cubes (1/8") made by cross-cutting julienne sticks.</p>
-            <span class="tag">Advanced</span>
-          </div>
-          <div class="card" onclick="openModal('chiffonade')">
-            <h3>Chiffonade</h3>
-            <p>Fine ribbons of leafy greens or herbs (basil, spinach) by rolling and slicing.</p>
-            <span class="tag">Herbs / Greens</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- QUIZ TAB -->
-      <section id="quiz" class="tab-content">
-        <h2>Knife Skills Quiz</h2>
-        <div id="quiz-container">
-          <div id="question-box">
-            <h3 id="question-text">Loading question...</h3>
-            <div id="options-list" class="options-grid"></div>
-          </div>
-          <div id="quiz-result" class="hidden">
-            <h3 id="result-title">Quiz Complete!</h3>
-            <p id="result-score"></p>
-            <button class="btn" onclick="restartQuiz()">Try Again</button>
-          </div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- MODAL -->
-  <div id="info-modal" class="modal hidden">
-    <div class="modal-content">
-      <button class="close-btn" onclick="closeModal()">&times;</button>
-      <h2 id="modal-title">Title</h2>
-      <div id="modal-body">Content goes here...</div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+<body><noscript><p><a href="../../learn/knife-skills/index.html">Open Knife Skills</a></p></noscript></body>
 </html>

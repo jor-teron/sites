@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingredient Substitutions</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🔄 Ingredient Substitutions</h1>
+            <p>Out of stock at the local market? Find quick, smart kitchen swaps instantly.</p>
+        </header>
+
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search missing ingredient (e.g. ginger, tomato, jeera)...">
+            </div>
+            <div class="filter-chips">
+                <button class="chip active" data-category="all">All</button>
+                <button class="chip" data-category="Aromatics">Aromatics</button>
+                <button class="chip" data-category="Spices">Spices</button>
+                <button class="chip" data-category="Vegetables">Vegetables</button>
+                <button class="chip" data-category="Wet/Dairy">Wet / Dairy</button>
+            </div>
+        </section>
+
+        <main id="substitutionGrid" class="substitution-grid">
+            <!-- Dynamically populated via JS -->
+        </main>
+
+        <div id="noResults" class="no-results hidden">
+            <p>No matching ingredients found. Try searching for ginger, onion, garlic, tomato, potato, or jeera!</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

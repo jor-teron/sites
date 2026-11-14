@@ -1,40 +1,21 @@
 <!DOCTYPE html>
+<!-- MV3: Ingredient Swaps moved to apps/learn/ingredient-substitutions/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. No ?v=. -->
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingredient Substitutions</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingredient Swaps</title>
+  <link rel="canonical" href="../../learn/ingredient-substitutions/index.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../learn/ingredient-substitutions/index.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../learn/ingredient-substitutions/index.html"></noscript>
 </head>
-<body>
-    <div class="app-container">
-        <header>
-            <h1>🔄 Ingredient Substitutions</h1>
-            <p>Out of stock at the local market? Find quick, smart kitchen swaps instantly.</p>
-        </header>
-
-        <section class="search-section">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search missing ingredient (e.g. ginger, tomato, jeera)...">
-            </div>
-            <div class="filter-chips">
-                <button class="chip active" data-category="all">All</button>
-                <button class="chip" data-category="Aromatics">Aromatics</button>
-                <button class="chip" data-category="Spices">Spices</button>
-                <button class="chip" data-category="Vegetables">Vegetables</button>
-                <button class="chip" data-category="Wet/Dairy">Wet / Dairy</button>
-            </div>
-        </section>
-
-        <main id="substitutionGrid" class="substitution-grid">
-            <!-- Dynamically populated via JS -->
-        </main>
-
-        <div id="noResults" class="no-results hidden">
-            <p>No matching ingredients found. Try searching for ginger, onion, garlic, tomato, potato, or jeera!</p>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
+<body><noscript><p><a href="../../learn/ingredient-substitutions/index.html">Open Ingredient Swaps</a></p></noscript></body>
 </html>
