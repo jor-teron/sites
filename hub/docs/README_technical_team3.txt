@@ -12,6 +12,63 @@
  Links:     PR N = https://github.com/jor-teron/sites/pull/N
  Release:   This file was written as release D2 (docs only, no build bump).
 
+==============================================================================
+== How we work fast (top priority)
+==============================================================================
+Added 14 Nov 2026. This is the way of working for every area. Follow it
+before the older notes below.
+
+1. ONE BUILDER PER CATEGORY. Each builder owns one folder and its CSV
+   rows, so there are no cross-team conflicts and it knows its code by
+   heart. Shared engine and catalog files keep ONE clear owner (Hub wins
+   conflicts).
+
+2. SMALL NAMED RELEASES. Every change gets an id (CR4, CR5a...). One
+   release is one small, scoped change, one commit and one PR.
+   Follow-ups get a letter (CR5a) instead of piling onto the release.
+
+3. DISCUSS FIRST, THEN BUILD. Jor's words: a plain id or 'plan' means
+   give the plan and a time estimate, then wait. 'Code' means build and
+   commit locally. 'Push' means push and merge. 'Code n push' means do
+   both. Settle the design before Code so coding is pure execution. No
+   coding without Jor's word.
+
+4. FRESH WORKTREE PER RELEASE: `git worktree add /workspace/wt_<id>
+   origin/main`. Never reuse or reset a shared checkout. Stage files by
+   name, never `git add -A`.
+
+5. READ ONLY WHAT YOU TOUCH. Open the one or two files involved, make a
+   targeted edit (a scripted replace with asserts), and don't rewrite
+   whole files.
+
+6. PURE LOGIC PLUS TINY TESTS. Put maths and logic in pure functions
+   (no DOM) and test them with `node --test` .cjs files that load the
+   classic script via vm. Bugs show up in seconds, without a browser.
+   Reuse proven logic across apps; CR5 hand dragging reused the WS7
+   clock maths.
+
+7. FIXED PUSH PIPELINE. The box has no push credentials, so: commit as
+   J T, run `git format-patch -1`, then launch a push step with the
+   patch attached. It branches from latest main, runs `git am`, merges
+   main if it moved (no rebase or force push), re-runs node --check,
+   the tests and an http smoke test (never port 8811), opens a PR and
+   merges with a merge commit. Then report the PR link and merge SHA.
+   Same recipe every time, no thinking needed.
+   Note: some areas can push directly from the box (Hub does); either
+   way, merge origin/main in (no rebase or force push) and use a merge
+   commit.
+
+8. LATE CHANGES RIDE ALONG. If Jor tweaks something mid-push, steer the
+   running push step with an extra patch instead of starting over.
+
+9. SHORT REPORTS. Say what changed, what's committed or merged, and
+   what's waiting for Push. Always remind Jor of a pending push.
+
+10. STATIC, PHONE-FIRST APPS. No build step, no CDNs, classic scripts
+    that work from file://. This keeps every change simple and fast to
+    verify.
+
+
  HANDOVER RULE (all teams)
    1. Read this file before touching anything.
    2. Pull main first (git fetch, branch off a fresh origin/main).
@@ -21,6 +78,7 @@
 
  CONTENTS
    0. Header (this part)
+   How we work fast (top priority, added 14 Nov 2026)
    1. Start here: who looks after what, workflow, release ids, build number
    2. How the Hub works now
    3. Releases 21-24 Oct, by area
@@ -2249,3 +2307,169 @@ Go; it has not started.
   runtime dependencies. ARQ1f fog must stay fair to the AI.
 
 -- End of Team 3 week close --
+
+==============================================================================
+== TEAM 3, 14 Nov 2026 (IST)
+==============================================================================
+Today's work, all merged to main. Times are IST. Nothing is waiting on
+a push. How we work fast is at the top of this file (added 14 Nov).
+
+PRs #556-#561 (SH19, SH21, SH22, SH23, NL5, AG45) also merged this
+morning, before the Team 3 day started. They are listed here for the
+record; detail stays with those releases.
+
+At the end of the Apps day, main was fb24347f. Learn releases #580-#591
+merged after that.
+
+-- Apps, merged --
+SH24  PR #564  Spreadsheet grid grows to A-FZ x 1000 rows, with virtual
+      rendering, sparse .hos files and a name box.
+IC1   PR #565  Plain icons for the Media audio apps.
+IC2   PR #566  Plain icons for the Media video apps.
+IC3   PR #567  Plain icons for the Media photo apps.
+IC5   PR #568  Plain icons for Office PDF Tools and Mail.
+MV1   PR #569  Invoice Maker and Expense Tracker moved to Tools under
+      Money.
+IC4   PR #570  Plain icons for 3D Viewer, 3D Builder and News.
+IC6   PR #571  Plain icons for Writer, Spreadsheet, Base, Tables and
+      Slides.
+IC8   PR #572  Plain icons for Notely, MS Word Diff, OCR, Paper Scan
+      and Print.
+IC7a  PR #573  Plain icons for System Files, Disk, Viewer and the Hub
+      controller icon (hub/controller/controller_icon.png). Old icons
+      kept as *_icon_before_IC7a.png.
+IC7b  PR #574  Plain icons for the 8 System section apps: settings,
+      api-keys, sysmon, mesh-viewer, notifications, terminal, apphub
+      and search. Old icons kept as *_icon_before_IC7b.png.
+IC9a  PR #575
+IC9b  PR #576
+IC9c  PR #577  Colourful, tile-free icons for all 19 Connectivity apps
+      (Share, Chat and Remote).
+MV2   PR #578  Video Trimmer, PDF Viewer and Radio moved from Lab to
+      Media; Compass to Tools; Sketchbook to Office.
+MV3   PR #579  Knife Skills and Ingredient Swaps moved from Lab to
+      Learn under a new Cooking section; Nutrition Calculator under
+      Health; Weather Simulator under Science.
+
+-- Apps, parked (not approved) --
+- LB1: move Transcribe, PhoneKey and vDesktop from Tools to Lab.
+- Jor still has to decide on pdf-viewer-old.
+- Leftover tiled icons are in Media (Draw, Paint and Phone) and other
+  categories.
+- The Office icons came out plain, not colourful; Jor said that's OK.
+
+-- Apps, care --
+- Releases now go one at a time to avoid merge conflicts (Jor's rule).
+- Old icons are kept as *_icon_before_ICn files, and old CSV rows are
+  commented, not deleted.
+- Every moved app has redirects at its old path, and saved-data keys
+  are unchanged.
+- The next Apps docs section is 1.146.
+
+-- Games --
+No Games releases today. Nothing merged under apps/games or
+games-apps.csv, with no open PRs and nothing unpushed.
+
+Games was handed to a new Games owner today. At 2:46 PM IST, Learn
+(apps/learn/**, learn-apps.csv) moved to a separate Learn owner.
+Today's Learn releases are listed in the Learn part below.
+
+Waiting on Jor's Code:
+- SWAP-1b Sweet Swap animations (about 2 hours).
+- AoE Ages (discussion only).
+
+Ideas for later: an Aeroplane review (plus the leftover
+apps/lab/aeroplane) and more Browser FPS maps.
+
+Next ids: SHIP-3, AF-5, SNK-T2, SI-T2, SNL-3, SUDO-P2, SC-2a, Garden
+Guard 1b, Jigsaw 1b.
+
+Parked: SB1b Sling Birds, NTR1a Neon Trails, ARQ1f AoE fog, HEX 2D,
+FM-1a, NIX-G4 Island Alpha, Hero Builder, Osmos AI, DMQ1c, and game
+sounds.
+
+Care:
+- Undecided: apps/games/hero-builder (199 committed node_modules files,
+  not in the CSV), leftover contra-alpha, and a blank line in
+  games-apps.csv. Cleaning up merged branches needs Jor's OK.
+- Weather Simulator stays with Apps.
+- NIX-G3 and LRN-WK1 are already on main.
+
+-- Learn, merged --
+HL-1d  PR #580  15:30  Square 140px letter tiles in Hindi Letters.
+HL-1e  PR #581  Big letter with its roman label inside each tile.
+HL-2   PR #582  Settings removed, Auto theme the default, Sound on the
+       title bar, title bar buttons grey with transparency.
+HL-2a  PR #583  Wider gap between letter tiles.
+HL-3a  PR #584  Bigger trace box and live progress bars.
+WS7    PR #585  Weather Sim: draggable 12-hour analog clock with AM/PM,
+       synced with the time slider.
+WS7a   PR #586  Clock is 1.5x bigger, with large AM/PM on the face.
+WS7b   PR #587  Dragging past 12 flips AM/PM; the minute hand rolls
+       the hour.
+       PR #590  Weather Simulator new app icon: a sun with a cloud in
+       front.
+CR4    PR #588  Clock Reading style tiles moved to the right under the
+       time panel; the clock is bigger and full width in portrait.
+CR5    PR #589  Hour and minute hands can be dragged to set any time,
+       with a "Your time" badge and a "Back to now" button. The Sundial
+       cannot be dragged.
+CR5a   PR #591  17:43  No scrollbar on Clock Reading's right panel.
+
+-- Learn, parked, waiting on Jor --
+- EL-1 English Letters and AL-1 Assamese Letters, both reusing the
+  Learn shared kit.
+- LRN4: merge apps/learn/shared into common/ and move learn-hubbar.js
+  to common/ui/ (about 21 paths).
+- Older items: LRN3a, First Aid visuals, Ocean Floor, Flags and
+  Countries, the Technology topic, FM-1a, DS-2a and NP8.
+
+-- Learn, care --
+- Leave the Sundial in Clock Reading as it is, per Jor.
+- Learn changes need no Hub build bump. After editing learn-apps.csv,
+  run `python3 hub/core/hub_appindex_gen.py --catalog-only` and commit
+  hub/core/hub_catalog.js in the same commit.
+- Catalog rows for nei-dict, caption-for-nei, code-lab and
+  learning-html belong to Apps.
+- Tests: `node --test apps/learn/weather-sim/tests/*.cjs` should give
+  24 passes and `node --test apps/learn/clock-reading/tests/*.cjs`
+  should give 8. Hindi Letters has 14 tests.
+- Keep it static and phone-first, with no Back-to-Category buttons, and
+  apps open Windowed.
+- Next free ids: CR6, WS8, HL-4, EL-1, AL-1, LRN4.
+
+-- Hub --
+No Hub releases today.
+
+An audit of 239 merges since 4 Nov found no lost or overwritten files
+or catalog entries. The catalog matches all category CSVs, and all
+appindex paths exist.
+
+Assamese Letters and a Globe app were never built or pushed; they were
+not lost in a merge.
+
+These apps were never listed in the Hub catalog, so they do not show
+in menus: apps/tools/transcribe, apps/tools/phonekey,
+apps/tools/vDesktop, apps/games/hero-builder, apps/lab/pdf-viewer-old.
+
+-- Care, Teams 1 and 2 --
+- How we work fast is at the top of this file. Follow that first.
+- One release at a time, to avoid merge conflicts (Jor's rule).
+- Merge origin/main in (no rebase, no force push) and use a merge
+  commit.
+- Stage files by name only, never git add -A.
+- Keep old code and old CSV rows; comment them with a '(before X)'
+  note, and keep old icons as *_icon_before_ICn.
+- Moved apps keep redirects at their old paths, and saved-data keys
+  stay the same.
+- Shared engine and catalog files have one owner, and Hub wins
+  conflicts. After editing a category CSV, regenerate and commit
+  hub/core/hub_catalog.js in the same commit when that area owns the
+  catalog step (Learn does this for learn-apps.csv). Catalog rows for
+  nei-dict, caption-for-nei, code-lab and learning-html belong to Apps.
+- Learn needs no Hub build bump. Weather Simulator stays with Apps.
+- Games: hero-builder (199 committed node_modules files, not in the
+  CSV), leftover contra-alpha, and a blank line in games-apps.csv are
+  undecided. Cleaning up merged branches needs Jor's OK.
+
+-- End of Team 3, 14 Nov 2026 --
