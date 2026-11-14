@@ -105,3 +105,13 @@ test('WS7 AM/PM label (sun 6:00–18:59, else moon)', () => {
   assert.equal(S.formatClockAria(12), '12:00 PM');
   assert.equal(S.formatClockAria(7 + 31 / 60), '7:31 AM');
 });
+
+test('WS7a big face letter A|M or P|M and icon', () => {
+  assert.equal(S.clockPeriodLetter(0), 'A');
+  assert.equal(S.clockPeriodLetter(11 + 59 / 60), 'A');
+  assert.equal(S.clockPeriodLetter(12), 'P');
+  assert.equal(S.clockPeriodLetter(23 + 59 / 60), 'P');
+  assert.equal(S.clockPeriodLetter(24), 'A');
+  assert.equal(S.clockPeriodIcon(6), '☀️');
+  assert.equal(S.clockPeriodIcon(19), '🌙');
+});

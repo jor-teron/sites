@@ -271,3 +271,7 @@ only redraw when the time actually changes.
 
 The Time of Day slider is still there — it is the precise control and
 works well on a weak phone.
+
+## 29. WS7a — bigger clock, big A|M or P|M
+
+The clock is 1.5× bigger (165px desktop, 114px phone). A big soft **A** or **P** sits on the left of the face and **M** on the right, drawn *before* the hands in the SVG so the hands stay on top. The small label under 12 now shows only ☀️ or 🌙.

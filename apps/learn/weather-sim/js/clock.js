@@ -105,6 +105,17 @@ function clockPeriodLabel(time) {
   return icon + " " + period;
 }
 
+/* WS7a: big face letters, "A" or "P" on the left (M sits on the right). */
+function clockPeriodLetter(time) {
+  return timeToParts(wrapTime(time)).hours >= 12 ? "P" : "A";
+}
+
+/* WS7a: just the sun/moon icon (the big A|M or P|M is on the face). */
+function clockPeriodIcon(time) {
+  const t = wrapTime(time);
+  return (t >= 6 && t < 19) ? "☀️" : "🌙";
+}
+
 /* aria-valuetext, e.g. "7:30 PM". */
 function formatClockAria(time) {
   const p = timeToParts(time);
@@ -169,6 +180,19 @@ function buildClockSvg() {
     svg.appendChild(tick);
   }
 
+  /* WS7a: big A|M or P|M across the face, drawn under the hands. */
+  [["sim-clock-ap", 27], ["sim-clock-m", 73]].forEach(([id, x]) => {
+    const txt = document.createElementNS(NS, "text");
+    txt.setAttribute("class", "period-letter");
+    txt.setAttribute("id", id);
+    txt.setAttribute("x", String(x));
+    txt.setAttribute("y", "50");
+    txt.setAttribute("text-anchor", "middle");
+    txt.setAttribute("dominant-baseline", "central");
+    txt.textContent = id === "sim-clock-m" ? "M" : "A";
+    svg.appendChild(txt);
+  });
+
   const hour = document.createElementNS(NS, "line");
   hour.setAttribute("class", "hand hour");
   hour.setAttribute("x1", "50");
@@ -216,7 +240,9 @@ function updateClock() {
   if (minEl) minEl.setAttribute("transform", "rotate(" + minAng + " 50 50)");
 
   const label = el.querySelector(".sim-clock-period");
-  if (label) label.textContent = clockPeriodLabel(t);
+  if (label) label.textContent = clockPeriodIcon(t);
+  const ap = $("sim-clock-ap");
+  if (ap) ap.textContent = clockPeriodLetter(t);
 
   const aria = formatClockAria(t);
   el.setAttribute("aria-valuetext", aria);
