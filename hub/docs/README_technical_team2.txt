@@ -3240,6 +3240,29 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   runner.
 - 1.129 is SH23, so this note is numbered 1.130.
 
+### 1.131 IC1 Sound Recorder and Music Player plain icons
+
+- Media Audio icons redrawn without the dark rounded tile, symbol
+  only, in the style of `tv/tv_icon.png`.
+  `apps/media/sound-recorder/sound-recorder_icon.png` and
+  `apps/media/music-player/music-player_icon.png` are now 128×128
+  RGBA on a transparent background. Sound Recorder is a waveform
+  with the old orange playhead (`#ff983d`) and red record dot
+  (`#ef4444`). Music Player is an eighth note in the old
+  orange-to-pink gradient (`#f97316` to `#ec4899`). Both old tiles
+  were the dark card `#1c1f24`; that colour is now a thin outline
+  and a soft shadow, so the mark reads on light and dark. Drawn at
+  4× in `apps/media/ic1_plain_icons.py` and downscaled. Pillow draws
+  them and is not a repo dependency.
+- Previous icons copied to `sound-recorder_icon_before_IC1.png` and
+  `music-player_icon_before_IC1.png` in the same folders (not
+  deleted). Live file names are unchanged, so no CSV or catalog
+  edit. No hub/core, shared/ or apps/system edits. Each app readme
+  has the legacy line.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on both icons.
+- 1.130 is left for SH24 (running in parallel). This note is 1.131.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
