@@ -63,3 +63,6 @@ A page organiser for PDF files that runs entirely in the browser: open one or mo
 - Image export draws the page (paper + margins), not the original file at full resolution.
 - Stamps use Helvetica (WinAnsi). There is no password option (pdf-lib cannot encrypt without a heavy extra library). Shrink is a rasterisation, not a smart compressor. Crop is not previewed on the thumbnail. Stamps are not applied to Extract or Split.
 - Form fill uses pdf-lib's AcroForm API; some complex or broken forms may skip a field. Flatten can fail on odd widgets. Duplicated pages from the same source share the same field values. Annotations sit under stamps and may be hidden by a crop. The editor maps marks through page rotation; a very unusual built-in crop on the original file may not match the overlay perfectly. Typed signatures use a system serif font, not a handwriting font. There is no ink/pen tool beyond the signature pad, and no comment threads.
+
+## Legacy
+IC5: icon redrawn plain without tile; old icon kept as *_icon_before_IC5.png

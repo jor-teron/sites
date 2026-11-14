@@ -3335,6 +3335,34 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   the outer 8px margin is alpha 0 on all six icons.
 - 1.132 is IC2. This note is 1.133.
 
+### 1.135 IC5 PDF Tools and Mail plain icons
+
+- Office PDF and Mail icons redrawn without the coloured rounded tile,
+  symbol only, matching the IC1 to IC3 plain icons (same 128×128 size,
+  padding, `#1c1f24` outline and soft shadow). The CSV icon column is
+  blank, so the Office page (`shared/tiles/tiles.js`) and the Hub
+  (`iconPathFor`) both load `<folder>/<folder>_icon.png`.
+  Neither was already plain (each still had a coloured rounded tile,
+  and the outer 8px was not clear). PDF Tools was 192×192.
+- Files the apps and the Office page use:
+  - PDF Tools: `pdf-tools_icon.png` (favicon in `pdf-tools.html`, and
+    the page path for an empty CSV icon). Two document pages, the back
+    one `#ffcdcd`, the front white, rules `#e69797`, letters `#d63031`.
+  - Mail: `mail_icon.png` (the page path for an empty CSV icon;
+    `mail.html` has no favicon link). White envelope, flap `#1f8f86`.
+- Both `<folder>/<folder>_icon.png` files were already present, so
+  none was added.
+- Drawn at 4× in `apps/office/ic5_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency. The PDF letters are
+  DejaVu Sans Bold, a system font, not a repo file.
+- Previous icons copied to `pdf-tools_icon_before_IC5.png` and
+  `mail_icon_before_IC5.png` in the same folders (not deleted). Live
+  file names are unchanged, so no CSV or catalog edit. No hub/core,
+  shared/ or apps/system edits. Each app readme has the legacy line.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on both icons.
+- 1.134 is left for IC4 (running in parallel). This note is 1.135.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
