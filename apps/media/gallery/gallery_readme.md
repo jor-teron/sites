@@ -38,3 +38,6 @@ Browse photos and videos from a folder or files on this device. Static, no build
 ## Notes
 - "Date" = file lastModified, not EXIF capture date. HEIC shows only where the browser decodes it (Safari).
 - Thumbnails are decoded once per session; very large folders (thousands) are fine to browse but initial listing reads every file entry.
+
+## Legacy
+IC3: icon redrawn plain without tile; old icon kept as *_icon_before_IC3.png

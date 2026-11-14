@@ -36,3 +36,6 @@ A simple camera for photos and videos from the device camera. Files download str
 - Pausing is not supported by every browser's recorder; Safari records MP4.
 - Slow motion needs a camera that really gives 60+ fps (many phone back cameras in Chrome on Android; most laptop webcams do not, so the switch stays hidden). Processing takes about factor × clip length.
 - Camera access needs https (or localhost).
+
+## Legacy
+IC3: icon redrawn plain without tile; old icon kept as *_icon_before_IC3.png

@@ -300,3 +300,6 @@ Ctrl+S saves the project (.hps), Ctrl+Shift+S exports PNG, Ctrl+P prints (ps_key
 HPS5.3: title bar / floating row order Save, Export, Print with icon + label (row at top left, icons only on <=480px). Ctrl+E exports PNG (Ctrl+Shift+S still works).
 
 HPS6.1: Eraser (E) toolbar button: erases to transparent (checkerboard, see-through PNG) by painting the layer / Background mask; Restore paints it back; Size, Hardness, Strength, [ ] resize; respects a selection; one stroke = one undo. Plain E was Resize (Resize stays on its button). Mask brush also gained the selection clip.
+
+## Legacy
+IC3: icon redrawn plain without tile; old icon kept as *_icon_before_IC3.png
