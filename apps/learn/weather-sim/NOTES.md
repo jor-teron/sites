@@ -53,8 +53,12 @@ The slider label even says so: `sea level 24 °C`, and the output shows the loca
 air plus how far it moved (`12 °C (−12 local)`).
 
 ## 8. Why the scene shrinks on a phone
-`.app:focus-within .scene { flex-basis: 24dvh; }` shrinks the scene while you drag
-a slider. Pure CSS, no JS listener.
+`.app:has(.controls:focus-within) .scene { flex-basis: 24dvh; }` shrinks the
+scene while you drag a slider in the controls. Pure CSS, no JS listener.
+WS7: the old `.app:focus-within` rule also fired when the analog clock
+(inside `.scene`) was focused or dragged, which made the clock jump under
+the finger. The selector now only matches focus inside `.controls`, so
+slider behaviour is unchanged.
 
 ## 9. Reset should clear *history*, not just sliders
 Reset puts sliders back, `resetSnow()`, `clearSave()`, re-render. Without resetting
@@ -245,3 +249,25 @@ interval (typically 15 minutes). We approximate mm/h as `mm × 4`, clamp to
 `rain + snowfall_cm/7` if needed. ↻ Live resets rain with the other sliders.
 Old saves without `rain` load as 0. Reset clears rain to 0.
 
+
+## 28. WS7 — draggable analog clock
+A 12-hour clock sits in the top-right of the scene (about 110px on
+desktop, 76px on phones). It is drawn as SVG in `js/clock.js`, idle at
+55% opacity, nearly solid while you hover or drag it.
+
+Both hands write the same `state.time` the Time of Day slider uses, so
+moving one moves the other, and Live / Reset / a saved session update
+the hands through `renderAll()` → `updateClock()`. No timer: the hands
+only redraw when the time actually changes.
+
+- **Minute hand:** one turn is one hour. Crossing 12 forward or back
+  steps the hour, so you can spin it through sunrise and sunset. Time
+  snaps to 1 minute. 24 wraps to 0.
+- **Hour hand:** sets the time inside the current AM/PM half. Crossing
+  12 flips AM ↔ PM (11 PM to 12 AM wraps to 0).
+- Under the 12: a tiny ☀️ (6:00–18:59) or 🌙, plus AM or PM.
+- Keyboard: the clock is a `role=slider`. Left / right arrows move
+  5 minutes, up / down move 1 hour.
+
+The Time of Day slider is still there — it is the precise control and
+works well on a weak phone.

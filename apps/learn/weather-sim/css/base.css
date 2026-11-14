@@ -72,7 +72,10 @@ h1 {
     transition: flex-basis 0.25s ease;
   }
 
-  .app:focus-within .scene {
+  /* WS7: only shrink when a control (slider, etc.) is focused.
+     The analog clock lives in .scene; focusing / dragging it must
+     not collapse the scene under the finger. */
+  .app:has(.controls:focus-within) .scene {
     flex-basis: 24dvh;
   }
 
