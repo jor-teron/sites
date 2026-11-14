@@ -46,3 +46,7 @@ Final validation: **14 Node tests + 72 Chrome checks passed**, zero console erro
 - Settings button and dialog removed. Theme always follows System / Hub (an old Light/Dark pick is reset to Auto).
 - The title bar Sound button is the only audio control (on by default; covers spoken Hindi and effects).
 - Title bar buttons get a grey alpha background (in-page row; the Hub window title bar is drawn by the Hub).
+
+## HL-2a
+
+- Alphabet letter tile gap doubled from 10px to 20px (desktop and phone).
