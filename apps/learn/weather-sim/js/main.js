@@ -3,7 +3,8 @@
    WS2: custom place registration before load; live pull on pick; Reset keeps the place
    WS3: no preset select — one place button; Temperature 0…50; unknown saved keys fall back
    WS5: syncCloudShadowLook on every redraw (patchy shadows + overcast dim)
-   WS6: Rain slider (mm/h) after Cloud Cover; Reset clears rain to 0 */
+   WS6: Rain slider (mm/h) after Cloud Cover; Reset clears rain to 0
+   WS7: updateClock() keeps the analog clock in sync with state.time */
 
 const sceneEl = $("scene");
 
@@ -82,6 +83,7 @@ function renderAll() {
   layoutTrees();       // wind moves trees, the place hides the ones in the sea
   renderReport();
   if (typeof refreshPlaceButton === "function") refreshPlaceButton();
+  if (typeof updateClock === "function") updateClock();
 }
 
 /* slider input → state → redraw → remember */

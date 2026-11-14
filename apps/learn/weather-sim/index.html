@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="css/fog.css">
   <link rel="stylesheet" href="css/trees.css">
   <link rel="stylesheet" href="css/controls.css">
+  <link rel="stylesheet" href="css/clock.css">
 </head>
 <body>
   <main class="app">
@@ -44,6 +45,7 @@
       <div class="trees-layer" id="trees"></div>
 
       <div class="scene-label" id="scene-label">Daytime</div>
+      <div class="sim-clock" id="sim-clock" role="slider" tabindex="0" aria-label="Time of day clock" aria-valuemin="0" aria-valuemax="24" aria-valuenow="12" aria-valuetext="12:00 PM"></div>
       <div class="altitude-tag" id="altitude-tag"><span class="arrow">▲</span><b id="altitude-tag-value">+10 m</b> <span id="altitude-tag-water">at sea level</span></div>
     </section>
 
@@ -145,6 +147,7 @@
   <script src="js/save.js"></script>
   <script src="js/report.js"></script>
   <script src="js/live.js"></script>
+  <script src="js/clock.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
