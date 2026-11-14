@@ -346,6 +346,22 @@ While you write a formula (text that starts with `=`, in a cell or the formula b
 - Clicking the starting sheet's tab goes back to it and keeps editing. Plain text (not a formula) still saves when you click a tab, as before.
 - The formula hint (SH21) stays on the formula bar while pointing.
 - **Code:** `spreadsheet_point.js` (new, loaded after `spreadsheet_fx.js`). `switchSheet` asks `pointOnTab` first; formula-bar Enter calls `pointFinish` while pointing (old handler kept as a `(before SH22)` comment).
-- **Limits:** same-sheet pointing and drag ranges are SH23. Clicking a cell back on the starting sheet while pointing saves the formula and selects that cell (like a normal cell edit). Clicking somewhere else (ribbon, column header) also saves the formula and goes back.
+<!-- (before SH23): - **Limits:** same-sheet pointing and drag ranges are SH23. Clicking a cell back on the starting sheet while pointing saves the formula and selects that cell (like a normal cell edit). Clicking somewhere else (ribbon, column header) also saves the formula and goes back. -->
+- **Limits:** clicking somewhere else (ribbon, column header) saves the formula and goes back. Same-sheet pointing and drag ranges arrived in SH23 (below).
 - **Release id:** title and `SHEET_VERSION` are SH22. `?v=` stays `HO3`. Storage stays `sheet-v4`. The grid is still 26 × 100.
 - **Tests:** `node apps/office/spreadsheet/test-sh22-sheet-pointing.js` (ref text and quoting, replacing the last inserted ref, the tab-click decision).
+
+## SH23 — click or drag cells on the same sheet to put refs and ranges in a formula
+While you write a formula (in a cell or the formula bar), clicking another cell on the same sheet now puts its ref in the formula, like Excel.
+
+- **When a click inserts:** only when the caret is at a spot where a ref makes sense: right after `=`, `(`, `,`, an operator (`+ - * / ^ & = < >`), `:`, or a ref you just inserted. Typing `=SUM(` and clicking B2 gives `=SUM(B2`. Anywhere else (for example right after `=A1`), the click saves the formula and selects that cell, as before.
+- **Click again right away** to swap the ref. Once you type something, the next click adds a new ref instead.
+- **Drag** across cells to insert a range: `A1:B3`, always top-left first, updated as you drag. On another sheet it is `Sheet2!A1:B3` or `'My Sheet'!A1:B3`. **Shift+click** grows the ref you just inserted into a range.
+- **The cell you are editing:** clicking it inserts nothing; you keep editing.
+- **Pointing across sheets (SH22):** back on the starting sheet, cell clicks now insert refs too (no sheet name), by the same rule, instead of saving.
+- The inserted cells get a dashed outline until you type, press Esc, switch sheet or finish.
+- **Enter** saves and **Esc** cancels as before. Plain text is unchanged. The formula hint (SH21) keeps working.
+- **Code:** `spreadsheet_point.js` (`pointCaretAllowsRef`, `pointRangeText`, `pointCanReplace`, drag via `mouseover`). The SH22 cell-click handler is kept as a `(before SH23)` comment.
+- **Limits:** no coloured per-ref outlines for refs already in the formula (only the one just inserted). Clicking a row or column header does not insert `A:A` / `1:1`. Arrow keys do not point (they still move or leave the cell). While pointing across sheets and back on the starting sheet, the starting cell shows its saved value; the draft is in the formula bar.
+- **Release id:** title and `SHEET_VERSION` are SH23. `?v=` stays `HO3`. Storage stays `sheet-v4`. The grid is still 26 × 100.
+- **Tests:** `node apps/office/spreadsheet/test-sh23-point-ranges.js` (caret-allows-ref decision, range text order and quoting, replacing the last ref).
