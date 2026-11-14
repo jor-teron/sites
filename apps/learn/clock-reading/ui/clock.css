@@ -1,14 +1,14 @@
-/* Clock Reading CR3 — app look on top of the Learn kit (../common/ui/learn.css): the live clock on the left (on top in
-   portrait), the time panel beside it and the row of clock styles across the bottom. The 7 clock styles are coloured here
+/* Clock Reading CR4 — app look on top of the Learn kit (../common/ui/learn.css): the live clock fills the left (full width
+   on top in portrait, height auto), the time panel on the right with the clock style tiles under it. The 7 clock styles are coloured here
    (.st-*). Light mode follows the Hub theme (html.light). Plain CSS, no blur or heavy filters (weak phones). */
 .cr { --accent: #ffb347; --hh: #111; --mh: #1f6feb; --sh: #e5221b; --wood: #8a5a2b; --wood2: #5e3a19; --gold: #d4a63a; }
 .cr-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
-.cr-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 360px); grid-template-rows: minmax(0, 1fr) auto; gap: 10px 14px; overflow: hidden; }
+.cr-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); grid-template-rows: minmax(0, 1fr); gap: 10px 14px; overflow: hidden; }
 .cr-stage { position: relative; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
-.cr-side { min-height: 0; overflow: auto; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px; }
-.cr-styles { grid-column: 1 / -1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.cr-strow { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
-.cr-st { flex: 0 0 auto; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
+.cr-side { min-height: 0; overflow: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 8px; scrollbar-width: thin; }
+.cr-styles { width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.cr-strow { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; padding: 2px 2px 4px; }
+.cr-st { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
   border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .cr-st[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
 .cr-st svg { width: 100%; height: 64px; pointer-events: none; }
@@ -16,7 +16,7 @@
 .cr-note { margin: 0; font-size: 0.86rem; color: var(--muted); line-height: 1.35; min-height: 2.7em; }
 .cr-note b { color: var(--text); }
 /* the clock */
-.cr-clock { width: 100%; height: 100%; max-height: min(64dvh, 560px); touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.cr-clock { width: 100%; height: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 .cr-clock [data-part] { cursor: help; }
 .cr-rim { fill: var(--accent); } .cr-face { fill: #fffdf6; }
 .cr-tick { stroke: #555; stroke-width: 1; } .cr-tick5 { stroke: #222; stroke-width: 3; } .cr-bar { stroke: #111; stroke-width: 7; }
@@ -67,11 +67,14 @@
 .cr-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #111; }
 .cr-hint { margin: 0; }
 @media (max-aspect-ratio: 1/1) {
-  .cr-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto auto; gap: 8px; }
-  .cr-side { align-items: center; text-align: center; gap: 6px; } .cr-side .cr-row { justify-content: center; }
-  .cr-clock { max-height: 50dvh; }
+  /* CR4 portrait: clock uses the full width, height auto (from its viewBox); the page scrolls for the panel and tiles */
+  .cr-main { grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 8px; overflow: auto; align-content: start; }
+  .cr-stage { display: block; }
+  .cr-clock { display: block; height: auto; }
+  .cr-side { overflow: visible; align-items: center; text-align: center; gap: 6px; } .cr-side .cr-row { justify-content: center; }
+  .cr-styles { text-align: left; }
 }
 @media (max-aspect-ratio: 1/1) and (max-height: 760px) { .cr-hint { display: none; } }
-@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; } .cr-st { width: 88px; } .cr-st svg { height: 54px; } .cr-note { font-size: 0.8rem; } }
+@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; } .cr-strow { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); } .cr-st svg { height: 54px; } .cr-note { font-size: 0.8rem; } }
 @media (max-height: 520px) { .lrn-head { padding: 4px 10px; } .lrn-main.cr-main { padding: 6px 10px; } .cr-dig { font-size: 1.5rem; } .cr-st svg { height: 40px; } .cr-hint { display: none; } }
 @media (prefers-reduced-motion: reduce) { .cr-strow { scroll-behavior: auto; } }
