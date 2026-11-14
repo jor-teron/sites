@@ -3171,6 +3171,45 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   test. No Puppeteer, Playwright or browser runner.
 - 1.127 is AG45, so this note is numbered 1.128.
 
+### 1.129 SH23 Spreadsheet click or drag cells on the same sheet to insert refs and ranges
+
+- Same-sheet pointing in `apps/office/spreadsheet/spreadsheet_point.js`.
+  While a formula draft is open (cell input or formula bar, or the bar while
+  pointing across sheets), the capture-phase cell mousedown now asks
+  `pointCaretAllowsRef(text, start, end, last)`: true right after `=`, `(`,
+  `,`, `+ - * / ^ & = < >`, `:` (spaces skipped), or when the caret is still
+  right after the ref inserted last. False for plain text, before the `=`, or
+  inside a `"..."` string. When true, the click inserts `A1` (no prefix) at
+  the caret and stops the selection code; when false the click commits as
+  before. A click on the cell being edited inserts nothing and keeps editing.
+- The mousedown default is prevented, so the in-cell input keeps focus and
+  caret; Enter / Esc there work as before (`onCellKey`). The SH22 formula-bar
+  hand-over is only used when switching sheets.
+- Drag ranges: `POINT_DRAG` plus a capture-phase `mouseover` on `#sheet-wrap`
+  replace the last ref live with `pointRangeText(sheet, r1, c1, r2, c2)`,
+  normalised to top-left:bottom-right (`A1:B3`, `Sheet2!A1:B3`,
+  `'My Sheet'!A1:B3`; one cell stays `A1`). Shift+click grows the
+  just-inserted ref into a range from its anchor.
+- Last-ref state moved to `POINT_LAST = { el, start, end, ref, text, anchor }`
+  (cleared when the draft loses focus). `pointInsertRef` now only replaces
+  when `last.text` still equals the draft (`pointCanReplace`), so a click
+  after typing inserts. The SH22 origin-sheet commit in `pointOnCellDown` is
+  kept as a `(before SH23)` comment; back on the origin sheet while pointing
+  across sheets, cells insert refs by the same rule.
+- Inserted refs get a dashed `td.point-ref` outline (`var(--sel)`), injected
+  as a `<style>` by point.js so `spreadsheet.css?v=HO3` needs no bump. Typing,
+  Esc, a sheet switch or leaving the draft clears it.
+- Title and `SHEET_VERSION` are SH23 (old lines kept as `(before SH23)`
+  comments); tests that pinned SH22 were updated. `?v=` stays HO3. Storage
+  stays `sheet-v4`. No new library. Only apps/office/spreadsheet and this
+  note were edited.
+- Checked with `node --check` on the edited JS and all spreadsheet
+  `test-*.js`, all spreadsheet node tests (new `test-sh23-point-ranges.js`:
+  caret-allows-ref decision, range normalisation and quoting, replace-last-
+  ref), and a static `python -m http.server` + curl smoke test. No
+  Puppeteer, Playwright or browser runner.
+- 1.128 is SH22, so this note is numbered 1.129.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
