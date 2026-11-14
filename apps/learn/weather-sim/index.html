@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Weather Simulator</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/sky.css">
+  <link rel="stylesheet" href="css/ground.css">
+  <link rel="stylesheet" href="css/fog.css">
+  <link rel="stylesheet" href="css/trees.css">
+  <link rel="stylesheet" href="css/controls.css">
+</head>
+<body>
+  <main class="app">
+
+    <!-- ===== SCENE ===== -->
+    <section class="scene" id="scene">
+      <div class="sky" id="sky">
+        <div class="sun" id="sun"></div>
+        <div class="moon" id="moon"></div>
+        <div class="stars" id="stars"></div>
+        <div class="fog" id="fog"></div>
+      </div>
+
+      <!-- land falling away below a high place (invisible at the coast) -->
+      <div class="valley" id="valley"><div class="far"></div></div>
+
+      <!-- sea / lake, only visible when the place is below sea level -->
+      <div class="water" id="water"></div>
+
+      <div class="clouds" id="clouds"></div>
+
+      <canvas id="weather-canvas"></canvas>
+
+      <div class="ground">
+        <!-- WS5: soft ellipses that track the clouds above -->
+        <div class="cloud-shadows" id="cloud-shadows"></div>
+        <div class="snow-layer" id="snow-layer"></div>
+        <div class="grass"></div>
+      </div>
+
+      <!-- WS4: sibling of .ground, pinned with the same --horizon var -->
+      <div class="trees-layer" id="trees"></div>
+
+      <div class="scene-label" id="scene-label">Daytime</div>
+      <div class="altitude-tag" id="altitude-tag"><span class="arrow">▲</span><b id="altitude-tag-value">+10 m</b> <span id="altitude-tag-water">at sea level</span></div>
+    </section>
+
+    <!-- ===== CONTROLS ===== -->
+    <section class="controls" id="controls">
+      <div class="controls-head">
+        <h1>Weather Simulator</h1>
+        <button class="reset" id="reset" type="button">Reset</button>
+      </div>
+
+      <div class="place-row">
+        <button class="place-btn" id="place-btn" type="button" title="Set or change your place">📍 Set your place</button>
+        <button class="live-btn" id="live-refresh" type="button" title="Pull live weather for your place">↻ Live</button>
+      </div>
+      <p class="live-status" id="live-status" aria-live="polite"></p>
+
+      <!-- WS2: search / GPS panel for the custom place -->
+      <div class="place-panel" id="place-panel" hidden>
+        <p class="place-panel-title">Your place</p>
+        <button class="place-gps" id="place-gps" type="button">📍 Use my location</button>
+        <div class="place-search-row">
+          <input type="search" id="place-search" placeholder="Town or city, e.g. Guwahati" aria-label="Place name" autocomplete="off">
+          <button class="place-search-btn" id="place-search-btn" type="button">Search</button>
+        </div>
+        <p class="place-panel-msg" id="place-panel-msg"></p>
+        <div class="place-results" id="place-results"></div>
+        <button class="place-cancel" id="place-cancel" type="button">Cancel</button>
+      </div>
+
+      <div class="sliders">
+        <div class="slider-row">
+          <label for="temperature">Temperature <small id="temperature-mark">sea level</small>
+            <output id="temperature-out">20 °C</output>
+          </label>
+          <input type="range" id="temperature" min="0" max="50" step="1" value="20">
+        </div>
+
+        <div class="slider-row">
+          <label for="humidity">Humidity
+            <output id="humidity-out">50 %</output>
+          </label>
+          <input type="range" id="humidity" min="0" max="100" step="1" value="50">
+        </div>
+
+        <div class="slider-row">
+          <label for="wind">Wind
+            <output id="wind-out">10 km/h</output>
+          </label>
+          <input type="range" id="wind" min="0" max="100" step="1" value="10">
+        </div>
+
+        <div class="slider-row">
+          <label for="cloud">Cloud Cover
+            <output id="cloud-out">40 %</output>
+          </label>
+          <input type="range" id="cloud" min="0" max="100" step="1" value="40">
+        </div>
+
+        <div class="slider-row">
+          <label for="rain">Rain
+            <output id="rain-out">0 mm/h · none</output>
+          </label>
+          <input type="range" id="rain" min="0" max="10" step="0.1" value="0">
+        </div>
+
+        <div class="slider-row">
+          <label for="time">Time of Day
+            <output id="time-out">12:00</output>
+          </label>
+          <input type="range" id="time" min="0" max="24" step="0.1" value="12">
+        </div>
+      </div>
+
+      <!-- ===== REPORT ===== -->
+      <div class="report" id="report">
+        <h2 id="report-title">Fair</h2>
+        <p id="report-text">Comfortable conditions.</p>
+        <ul class="report-stats">
+          <li><span>Feels</span><b id="stat-feels">20 °C</b></li>
+          <li><span>Sky</span><b id="stat-sky">Partly cloudy</b></li>
+          <li><span>Wind</span><b id="stat-wind">Light breeze</b></li>
+          <li><span>Precip</span><b id="stat-precip">None</b></li>
+          <li class="wide"><span>Here</span><b id="stat-place">Sea level</b></li>
+          <li class="wide"><span>Ground</span><b id="stat-ground">0 cm snow</b></li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/state.js"></script>
+  <script src="js/ground.js"></script>
+  <script src="js/look.js"></script>
+  <script src="js/sky.js"></script>
+  <script src="js/clouds.js"></script>
+  <script src="js/precip.js"></script>
+  <script src="js/snow.js"></script>
+  <script src="js/trees.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/live.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

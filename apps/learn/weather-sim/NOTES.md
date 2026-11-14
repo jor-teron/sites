@@ -1,5 +1,9 @@
 # Weather Simulator — learning notes
 
+MV3: moved from apps/lab to apps/learn (Science section); old path redirects.
+
+<!-- (before MV3) These notes were written for `apps/lab/weather-sim/`. Saved keys are unchanged: `weather-sim:v2`, `weather-sim:v1`, `weather-sim:custom-place`. -->
+
 Small things worth knowing, in the order the app uses them.
 
 ## 1. One source of truth

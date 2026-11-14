@@ -1,101 +1,21 @@
 <!DOCTYPE html>
+<!-- MV3: Nutrition Calculator moved to apps/learn/nutrition-calculator/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. No ?v=. -->
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nutrition Calculator - Ark UI</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nutrition Calculator</title>
+  <link rel="canonical" href="../../learn/nutrition-calculator/index.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../learn/nutrition-calculator/index.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../learn/nutrition-calculator/index.html"></noscript>
 </head>
-<body>
-    <header class="app-header">
-        <div class="header-content">
-            <h1>🥗 Nutrition Calculator</h1>
-            <p>Track calories, protein, and key vitamins from common whole foods.</p>
-        </div>
-    </header>
-
-    <main class="app-container">
-        <!-- Left Column: Food Database -->
-        <section class="card food-database-card">
-            <div class="card-header">
-                <h2>Food Database</h2>
-                <div class="search-box">
-                    <input type="text" id="foodSearch" placeholder="Search foods (e.g. chicken, spinach)...">
-                </div>
-            </div>
-            <div class="category-filters" id="categoryFilters">
-                <button class="filter-btn active" data-category="all">All</button>
-                <button class="filter-btn" data-category="protein">Protein</button>
-                <button class="filter-btn" data-category="veg">Vegetables</button>
-                <button class="filter-btn" data-category="fruit">Fruits</button>
-                <button class="filter-btn" data-category="grain">Grains & Carbs</button>
-                <button class="filter-btn" data-category="dairy">Dairy & Fats</button>
-            </div>
-            <div class="food-list" id="foodList">
-                <!-- Populated by JS -->
-            </div>
-        </section>
-
-        <!-- Right Column: Meal Log & Summary -->
-        <section class="sidebar-column">
-            <!-- Preset Meals -->
-            <div class="card presets-card">
-                <h2>Quick Presets</h2>
-                <div class="preset-buttons">
-                    <button class="btn btn-secondary" onclick="loadPreset('breakfast')">🥑 Avocado Toast & Eggs</button>
-                    <button class="btn btn-secondary" onclick="loadPreset('chicken_rice')">🍗 Chicken & Rice Bowl</button>
-                    <button class="btn btn-secondary" onclick="loadPreset('smoothie')">🍌 Green Power Smoothie</button>
-                </div>
-            </div>
-
-            <!-- Current Meal Basket -->
-            <div class="card meal-basket-card">
-                <div class="basket-header">
-                    <h2>Your Meal / Log</h2>
-                    <button class="btn btn-text text-danger" onclick="clearMeal()">Clear All</button>
-                </div>
-                <div class="basket-items" id="basketItems">
-                    <div class="empty-state">No foods added yet. Click items from the database.</div>
-                </div>
-            </div>
-
-            <!-- Nutrition Summary -->
-            <div class="card summary-card">
-                <h2>Nutritional Summary</h2>
-                
-                <div class="macro-grid">
-                    <div class="macro-box">
-                        <span class="macro-label">Calories</span>
-                        <span class="macro-val" id="totalCalories">0</span>
-                        <span class="macro-unit">kcal</span>
-                    </div>
-                    <div class="macro-box">
-                        <span class="macro-label">Protein</span>
-                        <span class="macro-val" id="totalProtein">0</span>
-                        <span class="macro-unit">g</span>
-                    </div>
-                    <div class="macro-box">
-                        <span class="macro-label">Carbs</span>
-                        <span class="macro-val" id="totalCarbs">0</span>
-                        <span class="macro-unit">g</span>
-                    </div>
-                    <div class="macro-box">
-                        <span class="macro-label">Fat</span>
-                        <span class="macro-val" id="totalFat">0</span>
-                        <span class="macro-unit">g</span>
-                    </div>
-                </div>
-
-                <div class="vitamins-section">
-                    <h3>Key Vitamins & Minerals</h3>
-                    <ul class="vitamin-list" id="vitaminList">
-                        <!-- Populated by JS -->
-                    </ul>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <script src="script.js"></script>
-</body>
+<body><noscript><p><a href="../../learn/nutrition-calculator/index.html">Open Nutrition Calculator</a></p></noscript></body>
 </html>

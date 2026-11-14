@@ -166,13 +166,13 @@ window.HUB_APP_INDEX = {
   "p2pchat": ["Lab", "apps/connectivity/p2pchat.html", "P2P Chat", "apps/connectivity/p2pchat_icon.png", 0, "Simple peer-to-peer chat: host a 4-digit code and a friend joins"],
   "phone": ["Lab", "apps/media/phone/", "Phone", "apps/media/phone/phone_icon.png", 0, "Android-style shortcut page that opens phone apps and settings"],
   "cooking-timer": ["Lab", "apps/lab/cooking-timer/", "Cooking Timer", "apps/lab/cooking-timer/cooking-timer_icon.png", 0, "Kitchen timers for cooking: set - start and get an alarm"],
-  "ingredient-substitutions": ["Lab", "apps/lab/ingredient-substitutions/", "Ingredient Swaps", "apps/lab/ingredient-substitutions/ingredient-substitutions_icon.png", 0, "Find substitutes for common cooking ingredients"],
-  "knife-skills": ["Lab", "apps/lab/knife-skills/", "Knife Skills", "apps/lab/knife-skills/knife-skills_icon.png", 0, "Kitchen knife skills 101: basic cuts and safety tips"],
-  "nutrition-calculator": ["Lab", "apps/lab/nutrition-calculator/", "Nutrition Calculator", "apps/lab/nutrition-calculator/nutrition-calculator_icon.png", 0, "Work out calories and nutrients for your meals"],
+  /* (before MV3) "ingredient-substitutions": ["Lab", "apps/lab/ingredient-substitutions/", "Ingredient Swaps", "apps/lab/ingredient-substitutions/ingredient-substitutions_icon.png", 0, "Find substitutes for common cooking ingredients"], */
+  /* (before MV3) "knife-skills": ["Lab", "apps/lab/knife-skills/", "Knife Skills", "apps/lab/knife-skills/knife-skills_icon.png", 0, "Kitchen knife skills 101: basic cuts and safety tips"], */
+  /* (before MV3) "nutrition-calculator": ["Lab", "apps/lab/nutrition-calculator/", "Nutrition Calculator", "apps/lab/nutrition-calculator/nutrition-calculator_icon.png", 0, "Work out calories and nutrients for your meals"], */
   /* (before MV2) "pdf-viewer": ["Lab", "apps/lab/pdf-viewer/", "PDF Viewer", "apps/lab/pdf-viewer/pdf-viewer_icon.png", 0, "Open and read PDF files in the browser"], */
   /* (before MV2) "radio-app": ["Lab", "apps/lab/radio-app/", "Radio", "apps/lab/radio-app/radio-app_icon.png", 0, "Simple internet radio player"], */
   /* (before MV2) "video-trimmer": ["Lab", "apps/lab/video-trimmer/", "Video Trimmer", "apps/lab/video-trimmer/video-trimmer_icon.png", 0, "Basic video trimmer: cut a clip from a video"], */
-  "weather-sim": ["Lab", "apps/lab/weather-sim/", "Weather Simulator", "apps/lab/weather-sim/weather-sim_icon.png", 0, "Animated weather scene: sky - clouds - rain - snow and fog"],
+  /* (before MV3) "weather-sim": ["Lab", "apps/lab/weather-sim/", "Weather Simulator", "apps/lab/weather-sim/weather-sim_icon.png", 0, "Animated weather scene: sky - clouds - rain - snow and fog"], */
   "paint": ["Lab", "apps/media/paint/", "Paint", "apps/media/paint/paint_icon.png", 0, "Old simple paint app: brush - eraser - fill and shapes"],
   "photo-editor": ["Lab", "apps/media/photo-editor/", "Photo Editor", "apps/media/photo-editor/photo-editor_icon.png", 0, "Old photo editor: brightness - contrast - rotate - crop and print"],
   "notepad": ["Lab", "apps/office/notepad/", "Notepad", "apps/office/notepad/notepad_icon.png", 0, "Old simple notepad: type - save and download text"],
@@ -186,6 +186,9 @@ window.HUB_APP_INDEX = {
   "first-aid": ["Learn", "apps/learn/first-aid/", "First Aid", "apps/learn/first-aid/first-aid_icon.png", 0, "First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds"],
   "human-body": ["Learn", "apps/learn/human-body/", "Human Body Explorer", "apps/learn/human-body/human-body_icon.png", 0, "Tap body parts outside and inside to learn their names and jobs - with quiz"],
   "nutrition-plate": ["Learn", "apps/learn/nutrition-plate/", "Nutrition Plate", "apps/learn/nutrition-plate/nutrition-plate_icon.png", 0, "Build Indian meal plates and see live nutrients with a balanced-plate guide"],
+  "nutrition-calculator": ["Learn", "apps/learn/nutrition-calculator/", "Nutrition Calculator", "apps/learn/nutrition-calculator/nutrition-calculator_icon.png", 0, "Work out calories and nutrients for your meals"],
+  "knife-skills": ["Learn", "apps/learn/knife-skills/", "Knife Skills", "apps/learn/knife-skills/knife-skills_icon.png", 0, "Kitchen knife skills 101: basic cuts and safety tips"],
+  "ingredient-substitutions": ["Learn", "apps/learn/ingredient-substitutions/", "Ingredient Swaps", "apps/learn/ingredient-substitutions/ingredient-substitutions_icon.png", 0, "Find substitutes for common cooking ingredients"],
   "water-kingdom": ["Learn", "apps/learn/water-kingdom/", "Water Kingdom", "apps/learn/water-kingdom/water-kingdom_icon.png", 0, "Picture book about water: meet Droppy - the water cycle and how to save water"],
   "animal-kingdom": ["Learn", "apps/learn/animal-kingdom/", "Animal Kingdom", "apps/learn/animal-kingdom/animal-kingdom_icon.png", 0, "Animal picture book: mammals - birds and reptiles with facts and search"],
   "hindi-letters": ["Learn", "apps/learn/hindi-letters/", "Hindi Letters", "apps/learn/hindi-letters/hindi-letters_icon.png", 0, "Hindi alphabet: trace letters - matras - picture words and gentle practice games"],
@@ -201,6 +204,7 @@ window.HUB_APP_INDEX = {
   "guitar-chords": ["Learn", "apps/learn/guitar-chords/", "Guitar Chords", "apps/learn/guitar-chords/guitar-chords_icon.png", 0, "Learn guitar chords: finger charts - strum sound - chord change practice and quiz"],
   "tuner-metronome": ["Learn", "apps/learn/tuner-metronome/", "Tuner & Metronome", "apps/learn/tuner-metronome/tuner-metronome_icon.png", 0, "Microphone tuner for guitar and voice plus a metronome with tap tempo"],
   "periodic-table": ["Learn", "apps/learn/periodic-table/", "Periodic Table", "apps/learn/periodic-table/periodic-table_icon.png", 0, "All 118 chemical elements: search - element facts - colour by category and quizzes"],
+  "weather-sim": ["Learn", "apps/learn/weather-sim/", "Weather Simulator", "apps/learn/weather-sim/weather-sim_icon.png", 0, "Animated weather scene: sky - clouds - rain - snow and fog"],
   "road-safety": ["Learn", "apps/learn/road-safety/", "Road Safety", "apps/learn/road-safety/road-safety_icon.png", 0, "Indian road signs - traffic lights - safe crossing game - road rules and quiz"],
   "history-timeline": ["Learn", "apps/learn/history-timeline/", "History Timeline", "apps/learn/history-timeline/history-timeline_icon.png", 0, "Explore world and Indian history: zoomable timeline - facts - tours and quizzes"],
   "driving-school": ["Learn", "apps/learn/driving-school/", "Driving School", "apps/learn/driving-school/driving-school_icon.png", 0, "Learn car controls and practise driving with guided lessons and road skills"],
