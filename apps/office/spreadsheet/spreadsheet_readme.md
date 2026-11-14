@@ -1,7 +1,9 @@
 # Spreadsheet
 
 ## 1. What it is
-A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, CSV import/export and print. Plain JavaScript, no internet needed, works from `file://`.
+A small offline spreadsheet: 182 columns (A–FZ) × 1000 rows, formulas, styles, CSV import/export and print. Plain JavaScript, no internet needed, works from `file://`. The grid is drawn as a window (only the cells on screen, plus a small buffer) and empty cells are not stored up front.
+
+**Legacy (before SH24):** the sheet was 26 columns (A–Z) × 100 rows, and every cell was a real object drawn in one full table. A `.hos` file from that grid is still version 1 and still opens; its cells land on the larger sheet. New files record `cols` 182 and `rows` 1000 and still write only the cells that have something in them.
 
 **Name note:** "Sheetly" is a possible future name, considered to match Draftly and Notely. For now the app is still called Spreadsheet and the folder and file names are unchanged.
 
@@ -14,7 +16,7 @@ A small offline spreadsheet: 26 columns (A–Z) × 100 rows, formulas, styles, C
 | `format` | `"hos"` |
 | `version` | `1`. Any other version is refused. A `sheet-v4` record is refused. |
 | `name`, `created`, `updated` | Workbook name and times |
-| `active`, `cols`, `rows` | Which sheet is open, and the grid size (26 × 100) |
+| `active`, `cols`, `rows` | Which sheet is open, and the grid size. SH24 writes 182 × 1000. A file saved before SH24 says 26 × 100 and still opens. |
 | `page` | Paper, orientation, margins, print gridlines, headings, fit-to-width |
 | `settings` | Options that belong to the file. Version 1 keeps this object empty. Theme, ribbon, hover tabs, the formula bar and the default font stay in `spreadsheet_settings` and are not written here. |
 | `sheets` | Every sheet (see below) |
@@ -90,7 +92,7 @@ The old native copy was `localStorage` key `sheet-v4` (workbook), `sheet-v4-page
   - One copied cell pasted over a block fills the whole block.
   - Text from other apps (tab-separated) goes in as typed text, starting at the active cell.
 - **Fill:** Ctrl+D copies the top row of the block down; Ctrl+R copies the left column right. The small handle on the active cell drags to autofill.
-- **Insert / delete:** + Row / − Row / + Col / − Col act on the selected rows or columns. Formula refs are adjusted on every sheet (including `Sheet2!A1` refs that point at the changed sheet), ranges grow or shrink, refs to deleted cells become `#REF!`. The grid stays 26 × 100, so insert is refused when the last row/column has data.
+- **Insert / delete:** + Row / − Row / + Col / − Col act on the selected rows or columns. Formula refs are adjusted on every sheet (including `Sheet2!A1` refs that point at the changed sheet), ranges grow or shrink, refs to deleted cells become `#REF!`. The grid stays 182 × 1000, so insert is refused when the last row/column has data.
 - **Sort:** Sort A→Z / Z→A sorts the selected block by the active cell's column; with one cell selected, the used area is sorted. Numbers come first, then text (A–Z, case ignored), blanks last. Whole rows move together. **Sort…** (SH10) sorts by up to three columns and can keep a header row.
 - **Number formats** (display only; the stored value is unchanged): General, 0, 0.00, 1,000, %, ₹ Currency, Date (YYYY-MM-DD or DD/MM/YYYY), Time, Date and time. Grouping follows `en-IN` (12,34,567). Text and errors show as they are.
 - **Column widths:** drag the right edge of a column letter; double-click it to reset. Widths are saved.
@@ -154,7 +156,7 @@ Works inside the hub and responds to its phone D-pad, but the hub's key presses 
 7. Sort a mixed column: numbers, then text, blanks last.
 
 ## 10. Known limits
-- Fixed 26 × 100 grid; insert is refused when the last row/column has data.
+- Fixed 182 × 1000 grid (A–FZ); insert is refused when the last row/column has data. A ref past that (GA1, A1001) is `#REF!`.
 - Column widths aren't part of undo. Row-height drags are.
 - Copy puts raw values on the system clipboard, not formatted text.
 - Cut + paste doesn't update other formulas that pointed at the moved cells.
@@ -365,3 +367,16 @@ While you write a formula (in a cell or the formula bar), clicking another cell 
 - **Limits:** no coloured per-ref outlines for refs already in the formula (only the one just inserted). Clicking a row or column header does not insert `A:A` / `1:1`. Arrow keys do not point (they still move or leave the cell). While pointing across sheets and back on the starting sheet, the starting cell shows its saved value; the draft is in the formula bar.
 - **Release id:** title and `SHEET_VERSION` are SH23. `?v=` stays `HO3`. Storage stays `sheet-v4`. The grid is still 26 × 100.
 - **Tests:** `node apps/office/spreadsheet/test-sh23-point-ranges.js` (caret-allows-ref decision, range text order and quoting, replacing the last ref).
+
+## SH24 — A–FZ × 1000, drawn as a window
+
+The sheet is 182 columns (A–FZ) by 1000 rows. Empty cells are not created up front, and the table draws only the rows and columns on screen (plus a few extra, and any frozen rows or columns). Scrolling and resizing move that window. The `.hos` file stays version 1.
+
+- **Columns:** A..Z, then AA..FZ. Headers, formulas (`=AA1`, `=A1:FZ10`), `#REF!` past FZ or row 1000, fill, copy, sort, filter, find, freeze, hide, widths, CSV and XLSX all use those names.
+- **Name box:** the box at the left of the formula bar shows the selection. Type a cell or a range and press Enter to go there.
+- **Memory:** a new sheet does not build 182,000 cell objects. A cell appears when something is written into it. Recalculation walks those cells, not every address on the sheet.
+- **Print:** only the used range (last cell that has text, a formula, a style or a merge). Hidden rows and columns stay out.
+- **Files:** Save writes `cols` 182 and `rows` 1000, and only cells that have a formula, a value or a style. A `.hos` saved on the old 26 × 100 grid still opens.
+- **Legacy:** the old full-table builder and the old one-letter column parser are still in the source, marked `(before SH24)`. Title and `SHEET_VERSION` are SH24. `?v=` stays `HO3`.
+- **Limits:** the grid does not grow past FZ × 1000. A merge much taller than the screen can clip until its top-left cell is in view. Selecting every cell and copying it still walks that block. Formatting a whole empty column stores a cell for each selected cell. Print of a sheet that is full to FZ1000 is heavy. `?v=` is not bumped, so the name-box rules are also injected when the page loads.
+- **Tests:** `node apps/office/spreadsheet/test-sh24-grid.js`.

@@ -18,7 +18,7 @@ var files = [
 ];
 var ctx = {
   console: console, Date: Date, Math: Math, Number: Number, String: String,
-  Boolean: Boolean, Array: Array, Object: Object, JSON: JSON, parseInt: parseInt,
+  Boolean: Boolean, Array: Array, Object: Object, Proxy: Proxy, JSON: JSON, parseInt: parseInt,
   isNaN: isNaN, isFinite: isFinite, RegExp: RegExp, Error: Error, TypeError: TypeError,
   NaN: NaN, Infinity: Infinity, undefined: undefined,
   setTimeout: setTimeout, clearTimeout: clearTimeout,
@@ -132,16 +132,20 @@ test("oversized SEQUENCE is #SPILL! and does not allocate past the grid", functi
   reset();
   var t = Date.now();
   setCell(0, "A1", "=SEQUENCE(100000)");
-  setCell(0, "B1", "=SEQUENCE(101)");
-  setCell(0, "Z1", "=SEQUENCE(1,2)");
-  setCell(0, "A100", "=SEQUENCE(2)");
+  /* (before SH24) SEQUENCE(101) at B1, SEQUENCE(1,2) at Z1 and SEQUENCE(2) at A100
+     did not fit the 26×100 sheet. On 182×1000 those three fit, so the cases that
+     are still past the edge are a 1001-row spill, two columns at FZ, and a spill
+     on the last row. */
+  setCell(0, "B1", "=SEQUENCE(1001)");
+  setCell(0, "FZ1", "=SEQUENCE(1,2)");
+  setCell(0, "A1000", "=SEQUENCE(2)");
   recalc();
   if (Date.now() - t > 2000) throw new Error("oversized SEQUENCE was too slow");
   eq(val(0, "A1"), "#SPILL!");
   eq(shown(0, "A2"), "");
   eq(val(0, "B1"), "#SPILL!");
-  eq(val(0, "Z1"), "#SPILL!");
-  eq(val(0, "A100"), "#SPILL!");
+  eq(val(0, "FZ1"), "#SPILL!");
+  eq(val(0, "A1000"), "#SPILL!");
   eq(ghost(0, "A2"), null);
 });
 
@@ -333,9 +337,10 @@ test("FX catalog lists SEQUENCE and RANDARRAY", function () {
   if (!ctxn || ctxn.name !== "SEQUENCE" || !ctxn.item) throw new Error("caret hint " + JSON.stringify(ctxn));
 });
 
-test("grid is still 26 x 100 and errors include #SPILL!", function () {
-  eq(ctx.COLS, 26);
-  eq(ctx.ROWS, 100);
+/* (before SH24) eq(ctx.COLS, 26); eq(ctx.ROWS, 100); */
+test("grid is 182 x 1000 and errors include #SPILL!", function () {
+  eq(ctx.COLS, 182);
+  eq(ctx.ROWS, 1000);
   if (ctx.ALL_ERRORS.indexOf("#SPILL!") < 0) throw new Error("missing #SPILL!");
   if (ctx.CFG.errorValues.indexOf("#SPILL!") < 0) throw new Error("config missing #SPILL!");
 });

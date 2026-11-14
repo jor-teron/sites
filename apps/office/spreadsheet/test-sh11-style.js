@@ -20,7 +20,7 @@ var files = [
 ];
 var ctx = {
   console: console, Date: Date, Math: Math, Number: Number, String: String,
-  Boolean: Boolean, Array: Array, Object: Object, JSON: JSON, parseInt: parseInt,
+  Boolean: Boolean, Array: Array, Object: Object, Proxy: Proxy, JSON: JSON, parseInt: parseInt,
   isNaN: isNaN, isFinite: isFinite, RegExp: RegExp, Error: Error, TypeError: TypeError,
   NaN: NaN, Infinity: Infinity, undefined: undefined,
   setTimeout: setTimeout, clearTimeout: clearTimeout,
@@ -113,9 +113,10 @@ test("v4 save keeps merges and rules; older files still load", function () {
   eq((legacy.condFormats || []).length, 0);
 });
 
-test("grid is still 26 x 100", function () {
-  eq(ctx.COLS, 26);
-  eq(ctx.ROWS, 100);
+/* (before SH24) test("grid is still 26 x 100", function () { eq(ctx.COLS, 26); eq(ctx.ROWS, 100); }); */
+test("grid is 182 x 1000", function () {
+  eq(ctx.COLS, 182);
+  eq(ctx.ROWS, 1000);
 });
 
 console.log("passed", passed, "failed", failed);

@@ -17,7 +17,7 @@ var files = [
 ];
 var ctx = {
   console: console, Date: Date, Math: Math, Number: Number, String: String,
-  Boolean: Boolean, Array: Array, Object: Object, JSON: JSON, parseInt: parseInt,
+  Boolean: Boolean, Array: Array, Object: Object, Proxy: Proxy, JSON: JSON, parseInt: parseInt,
   isNaN: isNaN, isFinite: isFinite, RegExp: RegExp, Error: Error, TypeError: TypeError,
   NaN: NaN, Infinity: Infinity, undefined: undefined,
   setTimeout: setTimeout, clearTimeout: clearTimeout,
@@ -169,17 +169,27 @@ test("INDIRECT range spills alone and adds up inside SUM", function () {
 
 test("INDIRECT bad or out-of-grid address is #REF!", function () {
   reset();
+  /* (before SH24) A150 and AA1 were outside the 26×100 sheet.
   setCell(0, "A1", "=INDIRECT(\"A150\")");
   setCell(0, "A2", "=INDIRECT(\"AA1\")");
+  */
+  setCell(0, "A1", "=INDIRECT(\"A1001\")");
+  setCell(0, "A2", "=INDIRECT(\"GA1\")");
   setCell(0, "A3", "=INDIRECT(\"Hello\")");
   setCell(0, "A4", "=INDIRECT(\"A0\")");
   setCell(0, "A5", "=INDIRECT(\"\")");
+  setCell(0, "B1", "=INDIRECT(\"AA1\")");
+  setCell(0, "AA1", "7");
+  setCell(0, "A150", "4");
+  setCell(0, "B2", "=INDIRECT(\"A150\")");
   recalc();
   eq(val(0, "A1"), "#REF!");
   eq(val(0, "A2"), "#REF!");
   eq(val(0, "A3"), "#REF!");
   eq(val(0, "A4"), "#REF!");
   eq(val(0, "A5"), "#REF!");
+  eq(val(0, "B1"), 7);
+  eq(val(0, "B2"), 4);
 });
 
 test("INDIRECT recalculates after the target cell changes", function () {
@@ -249,7 +259,8 @@ test("FX catalog lists ROW, COLUMN and INDIRECT", function () {
 });
 
 test("grid, storage and error list are unchanged", function () {
-  if (ctx.ROWS !== 100 || ctx.COLS !== 26) throw new Error("grid changed");
+  /* (before SH24) if (ctx.ROWS !== 100 || ctx.COLS !== 26) throw new Error("grid changed"); */
+  if (ctx.ROWS !== 1000 || ctx.COLS !== 182) throw new Error("grid changed");
   if (ctx.STORE_KEY !== "sheet-v4") throw new Error("storage key changed");
   if (ctx.ALL_ERRORS.indexOf("#LOOP!") < 0) throw new Error("missing #LOOP!");
   if (ctx.ALL_ERRORS.indexOf("#REF!") < 0) throw new Error("missing #REF!");

@@ -17,7 +17,7 @@ var files = [
 ];
 var ctx = {
   console: console, Date: Date, Math: Math, Number: Number, String: String,
-  Boolean: Boolean, Array: Array, Object: Object, JSON: JSON, parseInt: parseInt,
+  Boolean: Boolean, Array: Array, Object: Object, Proxy: Proxy, JSON: JSON, parseInt: parseInt,
   isNaN: isNaN, isFinite: isFinite, RegExp: RegExp, Error: Error, TypeError: TypeError,
   NaN: NaN, Infinity: Infinity, undefined: undefined,
   setTimeout: setTimeout, clearTimeout: clearTimeout,
@@ -292,7 +292,8 @@ test("grid, storage and cache token stay put", function () {
   /* (before SH21) if (html.indexOf("Spreadsheet SH18") < 0) throw new Error("title is not SH18"); */
   /* (before SH19) if (html.indexOf("Spreadsheet SH21") < 0) throw new Error("title is not SH21"); */
   if (html.indexOf("Spreadsheet SH19") < 0) throw new Error("title is not SH19");
-  if (ctx.ROWS !== 100 || ctx.COLS !== 26) throw new Error("grid changed");
+  /* (before SH24) if (ctx.ROWS !== 100 || ctx.COLS !== 26) throw new Error("grid changed"); */
+  if (ctx.ROWS !== 1000 || ctx.COLS !== 182) throw new Error("grid changed");
   if (ctx.STORE_KEY !== "sheet-v4") throw new Error("storage key changed");
 });
 

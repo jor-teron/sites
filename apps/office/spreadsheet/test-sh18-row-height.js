@@ -167,7 +167,8 @@ test("title and SHEET_VERSION are SH23, ?v= stays HO3; no format bump", function
   /* (before SH19) if (html.indexOf("<title>Spreadsheet SH21</title>") < 0) throw new Error("title is not SH21"); */
   /* (before SH22) if (html.indexOf("<title>Spreadsheet SH19</title>") < 0) throw new Error("title is not SH19"); */
   /* (before SH23) if (html.indexOf("<title>Spreadsheet SH22</title>") < 0) throw new Error("title is not SH22"); */
-  if (html.indexOf("<title>Spreadsheet SH23</title>") < 0) throw new Error("title is not SH23");
+  /* (before SH24) if (html.indexOf("<title>Spreadsheet SH23</title>") < 0) throw new Error("title is not SH23"); */
+  if (html.indexOf("<title>Spreadsheet SH24</title>") < 0) throw new Error("title is not SH24");
   /* (before HO3) if (html.indexOf("?v=SH18") < 0) throw new Error("?v=SH18 missing"); */
   if (html.indexOf("?v=HO3") < 0) throw new Error("?v=HO3 missing");
   if (html.indexOf("(before SH18)") < 0) throw new Error("old title was not kept as a comment");
@@ -175,7 +176,8 @@ test("title and SHEET_VERSION are SH23, ?v= stays HO3; no format bump", function
   /* (before SH19) if (settings.indexOf('SHEET_VERSION = "SH21"') < 0) throw new Error("SHEET_VERSION is not SH21"); */
   /* (before SH22) if (settings.indexOf('SHEET_VERSION = "SH19"') < 0) throw new Error("SHEET_VERSION is not SH19"); */
   /* (before SH23) if (settings.indexOf('SHEET_VERSION = "SH22"') < 0) throw new Error("SHEET_VERSION is not SH22"); */
-  if (settings.indexOf('SHEET_VERSION = "SH23"') < 0) throw new Error("SHEET_VERSION is not SH23");
+  /* (before SH24) if (settings.indexOf('SHEET_VERSION = "SH23"') < 0) throw new Error("SHEET_VERSION is not SH23"); */
+  if (settings.indexOf('SHEET_VERSION = "SH24"') < 0) throw new Error("SHEET_VERSION is not SH24");
   if (css.indexOf(".row-grip") < 0) throw new Error("row-grip CSS missing");
   if (css.indexOf("row-resizing") < 0) throw new Error("row-resizing cursor missing");
   if (resize.indexOf("function estimateRowHeight") < 0) throw new Error("estimateRowHeight missing");

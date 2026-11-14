@@ -3210,6 +3210,36 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   Puppeteer, Playwright or browser runner.
 - 1.128 is SH22, so this note is numbered 1.129.
 
+### 1.130 SH24 Spreadsheet grid grows to A–FZ × 1000, drawn as a window
+
+- `apps/office/spreadsheet/` only, plus this section. The grid in
+  `spreadsheet_config.js` is `cols: 182` (A..FZ) and `rows: 1000`.
+  Column letters are built in `colLetter` / `colIndex` (`spreadsheet_refs.js`)
+  and used for headers, formula parse and print, `#REF!` past FZ or row 1000,
+  fill and copy, sort and filter, the name box, XLSX and CSV, print, find,
+  freeze, hide, and widths. A name box sits on the formula row: type `AA10`
+  or `A1:FZ20` and press Enter.
+- Cells are sparse. `makeCells` no longer builds 182×1000 cell objects.
+  Reading an empty slot does not allocate; writing `.formula`, `.value` or
+  `.style` does. Recalc walks only stored cells and keeps the dependency
+  maps on those cells, not one array slot per cell of the sheet.
+- The table in `#sheet-wrap` draws the visible rows and columns plus a
+  buffer of 8 rows and 4 columns, and always keeps frozen rows and columns.
+  `#sheet-sizer` is the full scroll size. Scroll and resize rebuild the
+  window. Selection, editing, freeze, merges, borders, hidden rows and
+  columns, filters, row heights and column widths stay on the cells that
+  are on screen. Print (beforeprint) draws only the used range.
+- `.hos` stays format `hos` version 1. A save writes `cols` 182 and `rows`
+  1000 and only the cells that have a formula, a value or a style. A file
+  from the old 26×100 grid still parses. Title and `SHEET_VERSION` are SH24.
+  `?v=` stays HO3. No new library and no CDN.
+- Old full-grid loops are kept as `(before SH24)` comments.
+- Checked with `node --check` on the edited scripts and the spreadsheet
+  `test-*.js` files, including `test-sh24-grid.js` (letters, sparse cells,
+  AA1 / FZ1000 / `#REF!`, sparse `.hos`, the visible window). No browser
+  runner.
+- 1.129 is SH23, so this note is numbered 1.130.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -172,8 +172,9 @@ COMPARE in IF (and in criteria)
   =  <>  <  >  <=  >=
 
 GRID
-  Columns A–Z (26)
-  Rows 1–100
+  Columns A–FZ (182)
+  Rows 1–1000
+  (before SH24: columns A–Z, 26; rows 1–100)
 
 ERRORS
   #DIV/0!   division by zero

@@ -857,10 +857,21 @@ function evalFormula(f, row, col) {
  * normal edit stays one evaluation per formula.
  */
 function recalcAll() {
-  var sheets = workbook.sheets, ns = sheets.length, per = ROWS * COLS, n = ns * per;
-  var r, c, k, i, f, si, grid, d, dr, dc, dsi;
+  var sheets = workbook.sheets, ns = sheets.length;
+  var r, c, k, i, f, si, d, dr, dc, dsi, pred;
+  /* (before SH24) dense arrays of length sheets*ROWS*COLS (one slot per cell, empty or not):
+  var per = ROWS * COLS, n = ns * per;
   var deps = [], users = [], readers = [], indeg = [], queue = [], done = 0, total = 0;
   var depCells = [], writeSeq = [], evalSeq = [], evalCount = [], dead = [], live = [];
+  for (k = 0; k < n; k++) {
+    users.push(null); readers.push(null); indeg.push(0); deps.push(null); depCells.push(null);
+    writeSeq.push(0); evalSeq.push(0); evalCount.push(0); dead.push(0);
+  }
+  */
+  var deps = Object.create(null), users = Object.create(null), readers = Object.create(null);
+  var indeg = Object.create(null), depCells = Object.create(null);
+  var writeSeq = Object.create(null), evalSeq = Object.create(null), evalCount = Object.create(null), dead = Object.create(null);
+  var queue = [], done = 0, total = 0, live = [], formulaKeys = [];
   var prevEval = evalSheetIdx;
   var indirectPass = false;
   var seq = 1;
@@ -869,10 +880,7 @@ function recalcAll() {
   dynamicDepHook = null;
   evalCellKey = -1;
   spillReset(ns);
-  for (k = 0; k < n; k++) {
-    users.push(null); readers.push(null); indeg.push(0); deps.push(null); depCells.push(null);
-    writeSeq.push(0); evalSeq.push(0); evalCount.push(0); dead.push(0);
-  }
+  /* (before SH24) the passes below walked every row and column, including empty cells.
   for (si = 0; si < ns; si++) {
     grid = sheets[si].cells;
     for (r = 0; r < ROWS; r++) {
@@ -882,28 +890,39 @@ function recalcAll() {
       }
     }
   }
+  */
   for (si = 0; si < ns; si++) {
-    grid = sheets[si].cells;
-    for (r = 0; r < ROWS; r++) {
-      for (c = 0; c < COLS; c++) {
-        f = grid[r][c].formula;
-        if (!isFormula(f)) continue;
-        k = cellIndex(si, r, c);
-        total++;
-        depCells[k] = formulaDeps(f, si);
-        deps[k] = depCells[k];
-        for (i = 0; i < depCells[k].length; i++) {
-          d = depCells[k][i];
-          if (!readers[d]) readers[d] = [];
-          readers[d].push(k);
-          dsi = indexSheet(d); dr = indexRow(d); dc = indexCol(d);
-          if (!isFormula(sheets[dsi].cells[dr][dc].formula)) continue;
+    forEachReal(sheets[si].cells, function (rr, cc, cell) {
+      f = cell.formula;
+      if (!isFormula(f)) cell.value = f == null ? "" : f;
+    });
+  }
+  for (si = 0; si < ns; si++) {
+    forEachReal(sheets[si].cells, function (rr, cc, cell) {
+      f = cell.formula;
+      if (!isFormula(f)) return;
+      k = cellIndex(si, rr, cc);
+      formulaKeys.push(k);
+      total++;
+      depCells[k] = formulaDeps(f, si);
+      deps[k] = depCells[k];
+      indeg[k] = 0;
+      evalCount[k] = 0;
+      evalSeq[k] = 0;
+      for (i = 0; i < depCells[k].length; i++) {
+        d = depCells[k][i];
+        if (!readers[d]) readers[d] = [];
+        readers[d].push(k);
+        dsi = indexSheet(d); dr = indexRow(d); dc = indexCol(d);
+        pred = realCellAt(sheets[dsi].cells, dr, dc);
+        /* (before SH24) if (!isFormula(sheets[dsi].cells[dr][dc].formula)) continue; */
+        if (pred && isFormula(pred.formula)) {
           indeg[k]++;
           (users[d] || (users[d] = [])).push(k);
         }
-        if (indeg[k] === 0) queue.push(k);
       }
-    }
+      if (indeg[k] === 0) queue.push(k);
+    });
   }
   /* SH16: INDIRECT's target is not always written in the formula. Record it while
      the formula runs, then a follow-up pass reads a value that was calculated later.
@@ -972,7 +991,9 @@ function recalcAll() {
     if (users[k]) users[k].forEach(function (u) { if (--indeg[u] === 0) queue.push(u); });
   }
   if (done < total) {
-    for (k = 0; k < n; k++) {
+    /* (before SH24) for (k = 0; k < n; k++) — n was every cell on every sheet */
+    for (i = 0; i < formulaKeys.length; i++) {
+      k = formulaKeys[i];
       if (deps[k] && indeg[k] > 0) {
         si = indexSheet(k); r = indexRow(k); c = indexCol(k);
         markSpillLoop(si, r, c, writeSeq, seq);

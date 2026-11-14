@@ -83,7 +83,8 @@ test("SH23 wiring: drag listener, no same-sheet auto-commit, version SH23", func
   if (src.indexOf('addEventListener("mouseover", pointOnCellOver, true)') < 0) throw new Error("drag listener missing");
   if (src.indexOf("pointCaretAllowsRef(el.value") < 0) throw new Error("cell click does not check the caret");
   var settings = fs.readFileSync(path.join(dir, "spreadsheet_settings.js"), "utf8");
-  if (settings.indexOf('var SHEET_VERSION = "SH23";') < 0) throw new Error("SHEET_VERSION is not SH23");
+  /* (before SH24) if (settings.indexOf('var SHEET_VERSION = "SH23";') < 0) throw new Error("SHEET_VERSION is not SH23"); */
+  if (settings.indexOf('var SHEET_VERSION = "SH24";') < 0) throw new Error("SHEET_VERSION is not SH24");
 });
 
 console.log("passed", passed, "failed", failed);

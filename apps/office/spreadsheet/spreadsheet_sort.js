@@ -13,10 +13,13 @@ function sortKey(v) {
 }
 
 function usedArea() {
-  var r, c, lr = -1, lc = -1;
-  for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
+  /* (before SH24) for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
     if (cells[r][c].formula !== "" && cells[r][c].formula != null) { if (r > lr) lr = r; if (c > lc) lc = c; }
-  }
+  } */
+  var lr = -1, lc = -1;
+  forEachReal(cells, function (r, c, cell) {
+    if (cell.formula !== "" && cell.formula != null) { if (r > lr) lr = r; if (c > lc) lc = c; }
+  });
   return lr < 0 ? null : { r1: 0, r2: lr, c1: 0, c2: Math.max(lc, selC) };
 }
 
@@ -27,7 +30,11 @@ function sortSelection(desc) {
   var key = selC >= g.c1 && selC <= g.c2 ? selC : g.c1;
   var rows = [], r, c, i;
   for (r = g.r1; r <= g.r2; r++) {
-    rows.push({ src: r, k: sortKey(cells[r][key].value), cells: cells[r].slice(g.c1, g.c2 + 1) });
+    var store = rowStore(cells[r]);
+    var slice = [], cc;
+    for (cc = g.c1; cc <= g.c2; cc++) slice.push(store[cc] || null);
+    var keyCell = store[key];
+    rows.push({ src: r, k: sortKey(keyCell ? keyCell.value : ""), cells: slice });
   }
   rows.sort(function (a, b) {
     if (a.k.t !== b.k.t) return a.k.t - b.k.t;
@@ -40,7 +47,8 @@ function sortSelection(desc) {
     r = g.r1 + i;
     for (c = g.c1; c <= g.c2; c++) {
       var x = rows[i].cells[c - g.c1];
-      cells[r][c] = { formula: shiftFormula(x.formula, r - rows[i].src, 0), value: x.value, style: x.style };
+      if (!x) cells[r][c] = undefined;
+      else cells[r][c] = { formula: shiftFormula(x.formula, r - rows[i].src, 0), value: x.value, style: x.style };
     }
   }
   afterChange();

@@ -17,7 +17,7 @@ var files = [
 ];
 var ctx = {
   console: console, Date: Date, Math: Math, Number: Number, String: String,
-  Boolean: Boolean, Array: Array, Object: Object, JSON: JSON, parseInt: parseInt,
+  Boolean: Boolean, Array: Array, Object: Object, Proxy: Proxy, JSON: JSON, parseInt: parseInt,
   isNaN: isNaN, isFinite: isFinite, RegExp: RegExp, Error: Error, TypeError: TypeError,
   NaN: NaN, Infinity: Infinity, undefined: undefined,
   setTimeout: setTimeout, clearTimeout: clearTimeout,
@@ -362,9 +362,10 @@ test("FX catalog lists SORT, SORTBY, FILTER and UNIQUE", function () {
   if (!ctxn || ctxn.name !== "FILTER" || ctxn.arg !== 1) throw new Error("caret " + JSON.stringify(ctxn));
 });
 
-test("grid is still 26 x 100 and errors include #CALC!", function () {
-  eq(ctx.COLS, 26);
-  eq(ctx.ROWS, 100);
+/* (before SH24) eq(ctx.COLS, 26); eq(ctx.ROWS, 100); */
+test("grid is 182 x 1000 and errors include #CALC!", function () {
+  eq(ctx.COLS, 182);
+  eq(ctx.ROWS, 1000);
   if (ctx.ALL_ERRORS.indexOf("#CALC!") < 0) throw new Error("missing #CALC!");
   if (ctx.ALL_ERRORS.indexOf("#SPILL!") < 0) throw new Error("missing #SPILL!");
   if (ctx.CFG.errorValues.indexOf("#CALC!") < 0) throw new Error("config missing #CALC!");

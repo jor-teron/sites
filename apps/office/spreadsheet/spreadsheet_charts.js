@@ -28,13 +28,16 @@ function chartParseRange(token) {
   }
   var m = String(token || "").toUpperCase().match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
   if (!m) return null;
-  function col(s) { return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".indexOf(s); }
+  /* (before SH24) function col(s) { return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".indexOf(s); } */
+  function col(s) { return typeof colIndex === "function" ? colIndex(s) : "ABCDEFGHIJKLMNOPQRSTUVWXYZ".indexOf(s); }
   return { r1: +m[2] - 1, r2: +m[4] - 1, c1: col(m[1]), c2: col(m[3]) };
 }
 
 function chartRangeToken(g) {
-  return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(g.c1) + (g.r1 + 1) + ":" +
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(g.c2) + (g.r2 + 1);
+  /* (before SH24) return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(g.c1) + (g.r1 + 1) + ":" +
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(g.c2) + (g.r2 + 1); */
+  var letter = typeof colLetter === "function" ? colLetter : function (c) { return "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(c); };
+  return letter(g.c1) + (g.r1 + 1) + ":" + letter(g.c2) + (g.r2 + 1);
 }
 
 function chartIsNumber(v) {

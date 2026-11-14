@@ -9,6 +9,7 @@
  */
 function exportCsv() {
   var r, c, row, f, lines = [], lastR = -1, lastC = -1;
+  /* (before SH24) the scan read cells[r][c].formula for every slot.
   for (r = 0; r < ROWS; r++) {
     for (c = 0; c < COLS; c++) {
       f = cells[r][c].formula;
@@ -18,10 +19,19 @@ function exportCsv() {
       }
     }
   }
+  */
+  forEachReal(cells, function (rr, cc, cell) {
+    f = cell.formula;
+    if (f != null && String(f) !== "") {
+      if (rr > lastR) lastR = rr;
+      if (cc > lastC) lastC = cc;
+    }
+  });
   for (r = 0; r <= lastR; r++) {
     row = [];
     for (c = 0; c <= lastC; c++) {
-      f = cells[r][c].formula;
+      var real = realCellAt(cells, r, c);
+      f = real ? real.formula : "";
       if (f == null) f = "";
       f = String(f);
       if (/[",\n]/.test(f)) f = '"' + f.replace(/"/g, '""') + '"';

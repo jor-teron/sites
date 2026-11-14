@@ -150,7 +150,8 @@ function importXlsxFile(file) {
     highlightSel();
     var msg = "Loaded " + sheets.length + " sheet" + (sheets.length === 1 ? "" : "s");
     if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + cap + ")";
-    if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped";
+    /* (before SH24) if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped"; */
+    if (dropped) msg += ", " + dropped + " cells outside A–FZ × " + ROWS + " skipped";
     saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
   }).catch(function (e) { xlsxToast("Could not open file: " + e.message); });
 }
@@ -168,11 +169,12 @@ function xlsxDecorate(cell, st) {
 
 function xlsxBuildSheet(XLSX, grid, sheet) {
   var ws = {}, r, c, f, lastR = -1, lastC = -1, v, cell, st, merges, i, m;
-  for (r = 0; r < ROWS; r++) {
-    for (c = 0; c < COLS; c++) {
-      f = grid[r][c].formula;
-      st = grid[r][c].style;
-      if ((f == null || String(f) === "") && !(st && (st.bt || st.br || st.bb || st.bl || st.bg || st.bold || st.fmt))) continue;
+  /* (before SH24) for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) read every slot.
+     The loop below only visits cells that were actually stored. */
+  forEachReal(grid, function (r, c, real) {
+      f = real.formula;
+      st = real.style;
+      if ((f == null || String(f) === "") && !(st && (st.bt || st.br || st.bb || st.bl || st.bg || st.bold || st.fmt))) return;
       f = f == null ? "" : String(f);
       if (f.charAt(0) === "=") {
         v = grid[r][c].value;
@@ -189,8 +191,7 @@ function xlsxBuildSheet(XLSX, grid, sheet) {
       ws[XLSX.utils.encode_cell({ r: r, c: c })] = cell;
       if (r > lastR) lastR = r;
       if (c > lastC) lastC = c;
-    }
-  }
+  });
   if (sheet && sheet.merges && sheet.merges.length) {
     merges = [];
     for (i = 0; i < sheet.merges.length; i++) {

@@ -7,19 +7,39 @@
  */
 
 /**
- * Convert column index 0..25 to letter A..Z
+ * Convert a column index to letters. 0 → A, 25 → Z, 26 → AA, 181 → FZ.
+ * (before SH24) return COL_LETTERS.charAt(c);  // one letter, A..Z only
  */
 function colLetter(c) {
-  return COL_LETTERS.charAt(c);
+  var n = (c | 0) + 1, s = "", letters = (typeof COL_LETTERS === "string" && COL_LETTERS) ? COL_LETTERS : "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  if (n < 1) return "";
+  while (n > 0) {
+    n--;
+    s = letters.charAt(n % 26) + s;
+    n = Math.floor(n / 26);
+  }
+  return s;
+}
+
+/* Letters → 0-based index. "A" → 0, "Z" → 25, "AA" → 26, "FZ" → 181. Bad text → -1. */
+function colIndex(letters) {
+  var s = String(letters || "").toUpperCase(), n = 0, i, k;
+  if (!/^[A-Z]{1,3}$/.test(s)) return -1;
+  for (i = 0; i < s.length; i++) {
+    k = s.charCodeAt(i);
+    n = n * 26 + (k - 64);
+  }
+  return n - 1;
 }
 
 /**
- * Parse A1-style address. Returns {r,c} 0-based or null
+ * Parse A1-style address. Returns {r,c} 0-based or null.
+ * (before SH24) one letter only: /^\$?([A-Z])\$?([1-9][0-9]*)$/ and COL_LETTERS.indexOf
  */
 function parseAddr(token) {
-  var m = String(token).trim().toUpperCase().match(/^\$?([A-Z])\$?([1-9][0-9]*)$/);   // $A$1, $A1, A$1 ok
+  var m = String(token).trim().toUpperCase().match(/^\$?([A-Z]{1,3})\$?([1-9][0-9]*)$/);   // $AA$1, $A1, A$1 ok
   if (!m) return null;
-  var c = COL_LETTERS.indexOf(m[1]);
+  var c = colIndex(m[1]);
   var r = parseInt(m[2], 10) - 1;
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return null;
   return { r: r, c: c };
@@ -163,9 +183,10 @@ function validateSheetName(name, skipIdx) {
 }
 
 function parseAddrLoose(token) {
-  var m = String(token).trim().toUpperCase().match(/^(\$?)([A-Z])(\$?)([1-9][0-9]*)$/);
+  /* (before SH24) var m = String(token).trim().toUpperCase().match(/^(\$?)([A-Z])(\$?)([1-9][0-9]*)$/); */
+  var m = String(token).trim().toUpperCase().match(/^(\$?)([A-Z]{1,3})(\$?)([1-9][0-9]*)$/);
   if (!m) return null;
-  return { ac: !!m[1], c: COL_LETTERS.indexOf(m[2]), ar: !!m[3], r: parseInt(m[4], 10) - 1, raw: true };
+  return { ac: !!m[1], c: colIndex(m[2]), ar: !!m[3], r: parseInt(m[4], 10) - 1, raw: true };
 }
 
 /**
@@ -303,9 +324,10 @@ function isRefBoundary(s, p) {
 }
 
 function matchAddrAt(s, p) {
-  var m = s.slice(p).match(/^(\$?)([A-Za-z])(\$?)([0-9]+)/);
+  /* (before SH24) var m = s.slice(p).match(/^(\$?)([A-Za-z])(\$?)([0-9]+)/); */
+  var m = s.slice(p).match(/^(\$?)([A-Za-z]{1,3})(\$?)([0-9]+)/);
   if (!m) return null;
-  var c = COL_LETTERS.indexOf(m[2].toUpperCase());
+  var c = colIndex(m[2]);
   if (c < 0) return null;
   return { ac: !!m[1], c: c, ar: !!m[3], r: parseInt(m[4], 10) - 1, len: m[0].length };
 }
@@ -382,7 +404,8 @@ function mapRefs(formula, fn) {
 /* Text for one ref end; out of the sheet → #REF! */
 function refText(ac, c, ar, r) {
   if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return ERR_REF;
-  return (ac ? "$" : "") + COL_LETTERS.charAt(c) + (ar ? "$" : "") + String(r + 1);
+  /* (before SH24) return (ac ? "$" : "") + COL_LETTERS.charAt(c) + (ar ? "$" : "") + String(r + 1); */
+  return (ac ? "$" : "") + colLetter(c) + (ar ? "$" : "") + String(r + 1);
 }
 function refsText(x) {
   var a = refText(x.ac1, x.c1, x.ar1, x.r1);

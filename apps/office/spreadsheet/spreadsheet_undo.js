@@ -9,10 +9,21 @@
 var UNDO = { past: [], future: [], lastTag: "", lastTime: 0 };
 var UNDO_MERGE_TAGS = ["fill-color", "text-color", "cell-fill", "cell-text"];
 
+/* (before SH24) undoCellGrid copied every cell, empty ones included.
 function undoCellGrid(grid) {
   return grid.map(function (row) {
     return row.map(function (x) { return [x.formula, x.style]; });
   });
+}
+*/
+function undoCellGrid(grid) {
+  var list = [];
+  forEachReal(grid, function (r, c, x) {
+    if (!x) return;
+    if ((x.formula == null || x.formula === "") && (x.value == null || x.value === "") && !styleDirty(x.style)) return;
+    list.push([r, c, x.formula, x.style]);
+  });
+  return list;
 }
 
 function undoSnapshot() {
@@ -61,10 +72,29 @@ function undoRestore(snap) {
     src = d.sheets[i];
     sh = makeSheet(src.name || ("Sheet" + (i + 1)));
     sh.name = src.name || sh.name;
+    /* (before SH24) dense snapshot: src.c[r][c] = [formula, style] for every cell.
     for (r = 0; r < ROWS; r++) {
       for (c = 0; c < COLS; c++) {
         sh.cells[r][c].formula = src.c[r][c][0];
         sh.cells[r][c].style = Object.assign(defaultStyle(), src.c[r][c][1] || {});
+      }
+    }
+    */
+    if (src.c && src.c.length && src.c[0] && src.c[0].length === 4 && typeof src.c[0][0] === "number") {
+      for (r = 0; r < src.c.length; r++) {
+        sh.cells[src.c[r][0]][src.c[r][1]] = {
+          formula: src.c[r][2] || "",
+          value: "",
+          style: Object.assign(defaultStyle(), src.c[r][3] || {})
+        };
+      }
+    } else if (src.c) {
+      for (r = 0; r < ROWS && r < src.c.length; r++) {
+        for (c = 0; c < COLS && src.c[r] && c < src.c[r].length; c++) {
+          if (!src.c[r][c]) continue;
+          sh.cells[r][c].formula = src.c[r][c][0];
+          sh.cells[r][c].style = Object.assign(defaultStyle(), src.c[r][c][1] || {});
+        }
       }
     }
     for (c = 0; c < COLS; c++) sh.widths[c] = src.widths && typeof src.widths[c] === "number" ? src.widths[c] : null;

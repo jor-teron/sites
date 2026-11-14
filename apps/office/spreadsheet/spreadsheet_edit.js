@@ -70,7 +70,7 @@ function insertCellLineBreak(inp, r, c) {
   } else {
     text = formula + "\n";
   }
-  st = cellStyle(r, c);
+  st = ensureStyle(r, c);
   needWrap = !st.wrap;
   if (text === formula && !needWrap) return;
   undoRecord("line-break");
@@ -179,20 +179,28 @@ function focusCell(r, c) {
   extR = r;
   extC = c;
   selMode = "cell";
+  /* (before SH24) the cell input always existed, so this did not scroll. */
+  if (typeof ensureCellVisible === "function") ensureCellVisible(r, c);
   var inp = inpGrid[r] && inpGrid[r][c];
   if (inp) {
     if (document.activeElement === inp) highlightSel();
     else inp.focus();
-  }
+  } else if (typeof highlightSel === "function") highlightSel();
 }
 
 /* Clear formulas / values of the block (styles stay) */
 function clearSelection() {
   var any = false;
-  forSelection(function (r, c) { if (cells[r][c].formula !== "") any = true; });
+  forSelection(function (r, c) {
+    var cell = realCellAt(cells, r, c);
+    if (cell && cell.formula !== "" && cell.formula != null) any = true;
+  });
   if (!any) return;
   undoRecord("clear");
-  forSelection(function (r, c) { cells[r][c].formula = ""; });
+  forSelection(function (r, c) {
+    var cell = realCellAt(cells, r, c);
+    if (cell) cell.formula = "";
+  });
   afterChange();
   if (inpGrid[selR] && document.activeElement === inpGrid[selR][selC]) {
     inpGrid[selR][selC].value = "";

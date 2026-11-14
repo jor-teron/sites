@@ -6,9 +6,11 @@
 const SPREADSHEET_CONFIG = {
   // Grid
   grid: {
-    cols: 26,                            // number of columns (A..Z, max 26); refs beyond it → #REF!
-    rows: 100,                           // number of data rows; refs beyond it (e.g. A150) → #REF!
-    colLetters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", // column header letters
+    /* (before SH24) cols: 26,                            // number of columns (A..Z, max 26); refs beyond it → #REF! */
+    /* (before SH24) rows: 100,                           // number of data rows; refs beyond it (e.g. A150) → #REF! */
+    cols: 182,                           // A..FZ; a ref past FZ (GA1) is #REF!
+    rows: 1000,                          // data rows; a ref past row 1000 (A1001) is #REF!
+    colLetters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ", // alphabet for A..Z and AA..FZ
   },
 
   // Starting selection
@@ -127,7 +129,8 @@ const SPREADSHEET_CONFIG = {
     csvLoaded: "CSV loaded",
     columnPrefix: "Column ",             // + letter, when a column header is clicked
     rowPrefix: "Row ",                   // + number, when a row number is clicked
-    ready: "A–Z × 100",                  // status after start-up
+    /* (before SH24) ready: "A–Z × 100",                  // status after start-up */
+    ready: "A–FZ × 1000",                // status after start-up
     confirmClear: "Clear the workbook and start a new sheet?",
     selectAll: "All cells",
     undone: "Undo",

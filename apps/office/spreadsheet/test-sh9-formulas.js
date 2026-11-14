@@ -24,7 +24,7 @@ var ctx = {
   String: String,
   Boolean: Boolean,
   Array: Array,
-  Object: Object,
+  Object: Object, Proxy: Proxy,
   JSON: JSON,
   parseInt: parseInt,
   isNaN: isNaN,
@@ -386,12 +386,24 @@ test("fxCaretContext highlights the current argument and prefix", function () {
   if (c) throw new Error("non-formula should be null");
 });
 
-/* ---------- grid size unchanged ---------- */
+/* (before SH24) grid is still 26 x 100
 test("grid is still 26 x 100", function () {
   eq(ctx.COLS, 26);
   eq(ctx.ROWS, 100);
   eq(ctx.CFG.grid.cols, 26);
   eq(ctx.CFG.grid.rows, 100);
+});
+*/
+test("grid is 182 x 1000 (A..FZ)", function () {
+  eq(ctx.COLS, 182);
+  eq(ctx.ROWS, 1000);
+  eq(ctx.CFG.grid.cols, 182);
+  eq(ctx.CFG.grid.rows, 1000);
+  eq(ctx.colLetter(0), "A");
+  eq(ctx.colLetter(25), "Z");
+  eq(ctx.colLetter(26), "AA");
+  eq(ctx.colLetter(181), "FZ");
+  eq(ctx.colIndex("FZ"), 181);
 });
 
 console.log("passed", passed, "failed", failed);
