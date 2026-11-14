@@ -45,3 +45,6 @@ Ids are unique from SR-F1 on. Old commit messages keep their old ids; this list 
 - **SR8** (commit `cfc71ba`, first labelled "SR3"): System theme default, Hub card notifications.
 - **SR-F1** (30 Oct 2026): this release-id fix; text only, no behaviour change.
 - **Parked**: SR4 markers and SR5 playback speed / skip silence. The 23 Oct review plan first called "SR4–SR7" is renamed **SR9–SR12** so no id repeats; re-read that plan before starting.
+
+## 7. Legacy
+IC1: icon redrawn plain without tile; old icon kept as *_icon_before_IC1.png
