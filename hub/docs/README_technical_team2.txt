@@ -3450,6 +3450,61 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node test_ex_core.js`, `node hub/tests/h146_catalog.test.cjs`, and
   `node apps/office/writer/test/test-df25-rename.js`.
 
+### 1.137 IC6 Hub Office plain icons
+
+- Hub Office icons redrawn without the coloured rounded tile, symbol
+  only, matching the IC1 to IC5 plain icons (same 128×128 size,
+  padding, `#1c1f24` outline and soft shadow). Writer, Spreadsheet,
+  Base and Slides have an empty CSV icon column, so the Office page
+  and the Hub load `<folder>/<folder>_icon.png`. Tables names its
+  icon. None of the five was already plain (each still had a coloured
+  rounded tile, and the outer 8px was not clear). Writer, Spreadsheet
+  and Slides were 192×192. Base was 128×128. Tables was an SVG only.
+- Files the apps and the Office page use:
+  - Writer: `writer_icon.png` (favicon in `writer.html`). White page
+    with a folded corner, title bar `#5b5bf0`, lines `#c8c8e1`. The
+    old tile was the purple gradient.
+  - Spreadsheet: `spreadsheet_icon.png` (favicon in
+    `spreadsheet.html`). White sheet, header `#d2f4e4`, grid in the
+    teal that showed through the gaps (`#30a884`), selected cell
+    `#10a36c`. The old tile was the teal gradient.
+  - Base: `base_icon.png` (the page path for an empty CSV icon).
+    White database cylinder, the same stroke as `base_icon.svg`.
+    The old tile was `#7c4dff`. `base.html` still uses
+    `base_icon.svg` as the favicon (that file is not the hub icon,
+    and it is kept).
+  - Tables: `tables_icon.png` (new). White table, header `#e8f0fe`,
+    rules `#1a73e8`. The old tile was `#1a73e8`. The only previous
+    file was `tables_icon.svg`.
+  - Slides: `slides_icon.png` (favicon and the About image in
+    `slides.html`). Orange screen and stand `#f47a28`, white title
+    and lines, dots `#1c1f24`. The old tile was `#1c1c24`.
+- Drawn at 4× in `apps/office/ic6_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency.
+- Previous icons copied to `writer_icon_before_IC6.png`,
+  `spreadsheet_icon_before_IC6.png`, `base_icon_before_IC6.png`,
+  `tables_icon_before_IC6.svg` and `slides_icon_before_IC6.png`
+  (not deleted). `tables_icon.svg` is also still in the folder.
+  The live Writer, Spreadsheet, Base and Slides file names are
+  unchanged, so those CSV cells stay empty. Tables' CSV row now
+  points at `tables/tables_icon.png`; the old row is commented
+  `# (before IC6)`. `hub/core/hub_catalog.js` Office text is the
+  exact CSV text. The Tables row in `hub/core/hub_appindex.js`
+  points at the png; the old line is commented. No other hub/core
+  file, and no `shared/` or `apps/system` edit. Files still uses
+  `tables_icon.svg` for a `.hot` thumbnail (the file is kept), and
+  the service worker still lists that svg. `tables.html` favicon
+  now points at `tables_icon.png`; the old line is commented
+  `(before IC6)`. The other favicons already named the png that was
+  redrawn, so those links are unchanged. Each app readme has the
+  legacy line.
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all five icons. `node --check`
+  on the touched JS, `node --test hub/tests/h146_catalog.test.cjs`,
+  and the Office node checks that read the CSV and the index.
+- 1.136 is MV1. This note is 1.137.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

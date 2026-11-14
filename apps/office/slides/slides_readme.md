@@ -261,7 +261,8 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   setting the variables `--s-bg --s-tc --s-fg --s-acc --s-mut --s-ph --s-em --s-ft --s-fb --s-tw --s-line`.
 
 ## Files
-- `slides.html`, `slides.css`, `index.html` (redirect), `slides_icon.png` (192 px), `slides_readme.md`
+<!-- (before IC6) slides_icon.png was 192 px, on a coloured tile -->
+- `slides.html`, `slides.css`, `index.html` (redirect), `slides_icon.png` (128 px, plain), `slides_readme.md`
 - `slides_text.js` (`SLText`, SL5): the rich-text model (runs + paragraphs, not raw HTML), paste sanitising, `.hslides` v3 helpers. No DOM (safe to test in Node).
 - `slides_draw.js` (`SLDraw`, SL6): shape and table records, SVG paths, table row/column helpers, align / distribute / z-order / snap. No DOM (safe to test in Node).
 - `slides_present.js` (`SLPresent`, SL7): notes / transition / ink cleaning, timer format, BroadcastChannel envelope, presenter URL helpers. No DOM (safe to test in Node).
@@ -322,3 +323,6 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   restart after a non-numbered paragraph. A scanned look (text as a picture) is not OCR'd.
 - Decks live in this browser's localStorage (about 5 MB for everything); use Export for backups or to move a deck.
 - Touch drag was tested with emulated touch only, not yet on a real phone.
+
+## Legacy
+IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

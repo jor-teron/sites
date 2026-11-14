@@ -52,7 +52,8 @@ You keep several tables on this device. Each table is a tab. A table is a grid: 
 - `test-tb2.js` — `node test-tb2.js`. Cards, links and the TB1 migration. No browser.
 - `test-tb4.js` — `node test-tb4.js`. Date parsing and display, the year-0001 case, old saves, date sort and filter, header labels. No browser.
 - `test-hot1-format.js` — `node test-hot1-format.js`. Round-trip of a `.hot` file: several tables, column types, links and backlinks, views, widths. No browser.
-- `tables_icon.svg` — icon for the Office tiles page.
+<!-- (before IC6) - `tables_icon.svg` — icon for the Office tiles page. -->
+- `tables_icon.png` — plain icon for the Office tiles page. `tables_icon.svg` is kept.
 - `../shared/office-dialog.js` and `office-dialog.css` — in-app dialogs. Those shared files are not modified.
 
 ## 3. Behaviour
@@ -140,3 +141,6 @@ Tables now has the same chrome as Writer and Spreadsheet, built from the shared 
 - **Sheet text is 12pt** (16px at 96 dpi), the same as Writer and Spreadsheet. Before HO3 it was 13px. `--sheet-font-size` in `tables.css` is `12pt` and applies to grid cells, card values and record-panel fields.
 - **Chrome is unchanged.** The ribbon, toolbar, column headers, sheet tabs, pop-ups and labels keep 13px through a new `--ui-font-size` (the body font used to read `--sheet-font-size`). Rows stay 30px.
 - Tables has no font Settings, so there is nothing to move. No `?v=` was added (NV2), the title stays Tables TB5 and the `.hot` format is unchanged.
+
+## Legacy
+IC6: icon redrawn plain without tile; old icon kept as tables_icon_before_IC6.svg

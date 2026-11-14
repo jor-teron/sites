@@ -380,3 +380,6 @@ The sheet is 182 columns (A–FZ) by 1000 rows. Empty cells are not created up f
 - **Legacy:** the old full-table builder and the old one-letter column parser are still in the source, marked `(before SH24)`. Title and `SHEET_VERSION` are SH24. `?v=` stays `HO3`.
 - **Limits:** the grid does not grow past FZ × 1000. A merge much taller than the screen can clip until its top-left cell is in view. Selecting every cell and copying it still walks that block. Formatting a whole empty column stores a cell for each selected cell. Print of a sheet that is full to FZ1000 is heavy. `?v=` is not bumped, so the name-box rules are also injected when the page loads.
 - **Tests:** `node apps/office/spreadsheet/test-sh24-grid.js`.
+
+## Legacy
+IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

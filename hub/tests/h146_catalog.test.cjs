@@ -23,17 +23,19 @@ test('H146: catalog includes Tables with the Office CSV path and icon', () => {
   assert.ok(line, 'Office catalog must have a Tables row');
   const cells = line.split(',').map((c) => c.trim());
   assert.equal(cells[1], 'tables/');
-  assert.equal(cells[2], 'tables/tables_icon.svg');
+  /* (before IC6) assert.equal(cells[2], 'tables/tables_icon.svg'); */
+  assert.equal(cells[2], 'tables/tables_icon.png');
 });
 
-test('H146: appindex Tables row has Office path and svg icon', () => {
+test('H146: appindex Tables row has Office path and png icon', () => {
   const w = load('hub/core/hub_appindex.js');
   const row = w.HUB_APP_INDEX && w.HUB_APP_INDEX.tables;
   assert.ok(Array.isArray(row), 'HUB_APP_INDEX.tables must exist');
   assert.equal(row[0], 'Office');
   assert.equal(row[1], 'apps/office/tables/');
   assert.equal(row[2], 'Tables');
-  assert.equal(row[3], 'apps/office/tables/tables_icon.svg');
+  /* (before IC6) assert.equal(row[3], 'apps/office/tables/tables_icon.svg'); */
+  assert.equal(row[3], 'apps/office/tables/tables_icon.png');
   assert.equal(row[4], 0);
 });
 

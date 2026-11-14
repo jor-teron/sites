@@ -111,7 +111,8 @@ Spreadsheet,  spreadsheet/,         , , Hub Office, Spreadsheet with formulas an
 # (before MV1) Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
 # (before HOT1) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database with typed columns - saved on this device
-Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
+# (before IC6) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
+Tables,       tables/,              tables/tables_icon.png, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
 # (before MV1) Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
