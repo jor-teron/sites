@@ -39,3 +39,6 @@ swipes never start on sliders, inputs, buttons or the video. ←/→ keys also s
 
 ## Planned
 GM3 caption, crop, reverse/boomerang.
+
+## Legacy
+IC3: icon redrawn plain without tile; old icon kept as *_icon_before_IC3.png

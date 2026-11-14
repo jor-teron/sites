@@ -3292,6 +3292,49 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   three was already plain.
 - 1.131 is IC1. This note is 1.132.
 
+### 1.133 IC3 Photo section plain icons
+
+- Media Photo icons redrawn without the coloured rounded tile, symbol
+  only, matching the IC1 and IC2 plain icons (same 128×128 size,
+  padding, `#1c1f24` outline and soft shadow). The CSV icon column is
+  blank, so the Media page (`shared/tiles/tiles.js`) and the Hub
+  (`iconPathFor`) both load `<folder>/<folder>_icon.png`.
+  None of the six was already plain (each still had a coloured
+  rounded tile, and the outer 8px was not clear).
+- Files the apps and the Media page use:
+  - Photo Editor v2: `photo-editor-v2_icon.png` (no favicon link; the
+    readme names it as the hub icon). Landscape `#548ce6` / `#2eaa6e`
+    / sun `#ffce54`, plus the two white crop corners.
+  - Photo Studio: `photo-studio_icon.png` (favicon and the in-page
+    logo). Three stacked white cards, front landscape `#6eaaff` /
+    `#34a853` / sun `#ffcd46`, sparkle `#ffd65a`. Crop corners are
+    not used, so it stays distinct from Photo Editor v2.
+  - Camera: `camera_icon.png` (favicon). Body `#f0f2f8`, lens
+    `#4a8cf7` in a `#1c1f24` ring, red dot `#e53935`.
+  - Gallery: `gallery_icon.png` (no favicon link). Four white
+    thumbnails, mountains `#0ea5e9`, suns `#facc15`.
+  - GIF Maker: the page path `gif-maker_icon.png` was missing, so
+    the tile was a letter. The artwork file is `gifmaker_icon.png`
+    (the HTML has no favicon). White film, sprockets and GIF letters
+    in `#7c3aed`.
+  - Image Converter: `image-converter_icon.png` (favicon). Framed
+    landscape (`#bae6fd`, mountains `#0ea5e9` and `#0284c7`, sun
+    `#fde047`) and a `#fbbf24` badge with `#2563eb` convert arrows.
+- Drawn at 4× in `apps/media/ic3_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency.
+- Previous icons copied to `photo-editor-v2_icon_before_IC3.png`,
+  `photo-studio_icon_before_IC3.png`, `camera_icon_before_IC3.png`,
+  `gallery_icon_before_IC3.png`, `gifmaker_icon_before_IC3.png` and
+  `image-converter_icon_before_IC3.png` (not deleted). Live file
+  names are unchanged, so no CSV or catalog edit. The same plain GIF
+  PNG is also saved as `gif-maker_icon.png`, the path an empty CSV
+  icon already resolves to. No hub/core, shared/ or apps/system
+  edits. Each app readme has the legacy line (Image Converter's is
+  in NOTES.md).
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all six icons.
+- 1.132 is IC2. This note is 1.133.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

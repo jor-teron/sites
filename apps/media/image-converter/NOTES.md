@@ -75,3 +75,6 @@
 - Icon ICO files use PNG entries (Windows Vista and later).
 - Clipboard write needs a secure context; otherwise the data URL is
   shown in a dialog to copy by hand.
+
+## Legacy
+IC3: icon redrawn plain without tile; old icon kept as *_icon_before_IC3.png
