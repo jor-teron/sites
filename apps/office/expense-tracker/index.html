@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<!-- Redirect entry point to expense-tracker.html (keeps ?query and #hash). EXT1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). -->
+<!-- MV1: Expense Tracker moved to apps/tools/expense-tracker/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. No ?v=. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Expense Tracker</title>
-  <link rel="canonical" href="expense-tracker.html">
+  <link rel="canonical" href="../../tools/expense-tracker/expense-tracker.html">
   <style>html,body{margin:0;background:#f4f6f3;color:#1c241e}html.dark,html.dark body{background:#141a16;color:#9aab9f}html.dark a{color:#5dcaa0}</style>
   <script>
     (function () {
       var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
       var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
       if (dark) document.documentElement.className = 'dark';
-      location.replace('expense-tracker.html' + location.search + location.hash);
+      location.replace('../../tools/expense-tracker/expense-tracker.html' + location.search + location.hash);
     })();
   </script>
-  <noscript><meta http-equiv="refresh" content="0; url=expense-tracker.html"></noscript>
+  <noscript><meta http-equiv="refresh" content="0; url=../../tools/expense-tracker/expense-tracker.html"></noscript>
 </head>
-<body><noscript><p><a href="expense-tracker.html">Open Expense Tracker</a></p></noscript></body>
+<body><noscript><p><a href="../../tools/expense-tracker/expense-tracker.html">Open Expense Tracker</a></p></noscript></body>
 </html>

@@ -49,8 +49,10 @@ test('H146: the 10 Team 2 apps plus PDF Tools are in catalog and appindex', () =
     ['sun-position', 'Sun Position', 'Tools'],
     ['video-player', 'Video Player', 'Media'],
     ['image-converter', 'Image Converter', 'Media'],
-    ['invoice-maker', 'Invoice Maker', 'Office'],
-    ['expense-tracker', 'Expense Tracker', 'Office'],
+    /* (before MV1) ['invoice-maker', 'Invoice Maker', 'Office'], */
+    ['invoice-maker', 'Invoice Maker', 'Tools'],
+    /* (before MV1) ['expense-tracker', 'Expense Tracker', 'Office'], */
+    ['expense-tracker', 'Expense Tracker', 'Tools'],
     ['pdf-tools', 'PDF Tools', 'Office']
   ];
   const allCsv = Object.values(cat).join('\n');
