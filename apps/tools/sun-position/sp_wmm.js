@@ -1,5 +1,7 @@
-/* SP3 Sun Position — copy of the Compass WMM2025 model (apps/lab/compass/compass_wmm.js),
+/* (before MV2) SP3 Sun Position — copy of the Compass WMM2025 model (apps/lab/compass/compass_wmm.js),
    used only for true-north heading when pointing at the sun. Do not edit the Lab compass files.
+   SP3 Sun Position — copy of the Compass WMM2025 model (apps/tools/compass/compass_wmm.js),
+   used only for true-north heading when pointing at the sun. Do not edit the Compass app files.
    SpWmm.declination(latDeg, lonDeg, heightKm, decimalYear) -> degrees (east positive). */
 (function () {
   'use strict';

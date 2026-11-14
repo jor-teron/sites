@@ -3856,6 +3856,80 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node --test hub/tests/h146_catalog.test.cjs`.
 - 1.142 is IC9b. This note is 1.143.
 
+### 1.144 MV2 Lab apps move to Media, Tools and Office
+
+- 1.143 is IC9c. This note is 1.144.
+- Five Lab apps left Lab. Folders moved with `git mv` so history stays:
+  - Video Trimmer: `apps/lab/video-trimmer/` → `apps/media/video-trimmer/`
+    (Media → Video, after Video Editor).
+  - PDF Viewer: `apps/lab/pdf-viewer/` → `apps/media/pdf-viewer/`
+    (Media → Read, after News).
+  - Radio: `apps/lab/radio-app/` → `apps/media/radio-app/`
+    (Media → Audio, after Music Player).
+  - Compass: `apps/lab/compass/` → `apps/tools/compass/`
+    (Tools → Navigation, after Map).
+  - Sketchbook: `apps/lab/sketchbook/` → `apps/office/sketchbook/`
+    (Office → Write, after Notely).
+- `apps/lab/pdf-viewer-old/` was not moved.
+- Each old path keeps a tiny redirect stub only. Video Trimmer, PDF Viewer
+  and Radio use `index.html` as the app page, so that file is the stub.
+  Compass also keeps `compass.html`, and Sketchbook also keeps
+  `sketchbook.html`. The script sends the browser to the new app page and
+  keeps the query string and hash, so old bookmarks, pinned apps and
+  desktop shortcuts still open. The noscript refresh and link point at the
+  same new page. No `?v=` on the stubs. The older Notebook stub
+  `apps/lab/notebook/index.html` now redirects to
+  `apps/office/sketchbook/sketchbook.html` (old `../sketchbook/` lines
+  commented `(before MV2)`).
+- Paths inside the apps: `apps/<category>/<app>/` is the same depth as
+  `apps/lab/<app>/`. PDF Viewer's OCR script still loads
+  `../../office/ocr/vendor/` (the old line is kept as a `(before MV2)`
+  comment; the string is unchanged). The readme link to the single-page
+  viewer is now `../../lab/pdf-viewer-old/` (the old `../pdf-viewer-old/`
+  line is commented). Sketchbook's jsPDF stays in its own
+  `vendor/jspdf.umd.min.js`. The copy note in
+  `apps/office/shared/README.md` names the new path; the old path is
+  commented. Sun Position's header names
+  `apps/tools/compass/compass_wmm.js`; the old Lab path is commented.
+  None of the five apps has a service worker or a web app manifest, and
+  none loads `shared/vendor` or a `common/` file.
+- Data is not keyed by the folder path, so nothing was remapped. The
+  origin is unchanged, so the keys still resolve.
+  - Video Trimmer reads localStorage `sites-hub.theme` and
+    `sites-hub.themeAuto` only. No app key and no IndexedDB.
+  - PDF Viewer uses IndexedDB `pdfviewer-ocr` and localStorage
+    `pv2-ocr-lang`.
+  - Radio saves nothing.
+  - Compass uses localStorage `compass-settings-v1`, `compass-speed-v1`
+    and `compass-trip-v1`, and reads `sites-hub.theme`.
+  - Sketchbook uses localStorage `sketchbook_v2`, `sketchbook_pen`,
+    `sketchbook_btnPos`, `sketchbook_swap` and `sketchbook_crumple`.
+  Hub ids stay `video-trimmer`, `pdf-viewer`, `radio-app`, `compass` and
+  `sketchbook`.
+- Lists: the five rows in `apps/lab/lab-apps.csv` are commented with
+  `# (before MV2)` (the CSV already treats `#` as a comment). They are
+  added to the target CSVs in an existing section, with the icon path
+  (`radio-app/radio-app_icon.png`, `video-trimmer/video-trimmer_icon.png`,
+  `pdf-viewer/pdf-viewer_icon.png`, `sketchbook/sketchbook_icon.png`, and
+  Compass's existing `compass/compass_icon.png`). `hub/core/hub_catalog.js`
+  Media, Office, Tools and Lab text is the exact CSV text for those four
+  categories (other categories were left as they were).
+  `hub/core/hub_appindex.js` category is Media, Tools or Office and the
+  entry paths are the new folders (old Lab entries commented). No other
+  hub/core file.
+- Other references: `hub/tests/h146_catalog.test.cjs` now expects the new
+  categories (old Lab lines commented). Each app readme or NOTES carries
+  the legacy line: MV2: moved from apps/lab to the new category; old path
+  redirects. Radio had no readme, so the line is in `NOTES.md`.
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked with `node --check` on the touched JS, `node tests/vt1.test.cjs`,
+  `node tests/vt2.test.cjs`, `node --test tests/pv1.test.cjs`,
+  `node --test tests/pv2.test.cjs`, `node --test hub/tests/h146_catalog.test.cjs`,
+  `node apps/office/writer/test/test-df25-rename.js`,
+  `node apps/office/writer/test/test-df24-name.js`,
+  `node apps/office/spreadsheet/test-hos1-format.js`, and
+  `node apps/office/tables/test-hot1-format.js`.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Radio App</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>📻 Radio Player</h1>
+
+    <!-- Station List -->
+    <div id="stations"></div>
+
+    <!-- Audio Element -->
+    <audio id="audio-player"></audio>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button id="play-pause">▶️ Play</button>
+      <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7"/>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

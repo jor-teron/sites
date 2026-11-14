@@ -12,9 +12,12 @@ GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animate
 Image Converter, image-converter/, , , Photo, Convert resize and compress photos: JPG PNG WebP - strip location - download a zip
 Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
 Music Player,    music-player/,    , , Audio, Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls
+Radio,           radio-app/,       radio-app/radio-app_icon.png, , Audio, Simple internet radio player
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
 Video Player,    video-player/,    , , Video, Play your own videos: subtitles - speed - resume - picture-in-picture
 Video Editor,   video-editor/,    , , Video, Cut and export a video: in and out marks - cut or keep a selection - undo and redo
+Video Trimmer,  video-trimmer/,   video-trimmer/video-trimmer_icon.png, , Video, Basic video trimmer: cut a clip from a video
 3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
 3D Builder,      3d-builder/,      , , 3D, Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d
 News,            news/,            , , Read, Latest headlines from Google News India in story cards
+PDF Viewer,      pdf-viewer/,      pdf-viewer/pdf-viewer_icon.png, , Read, Open and read PDF files in the browser

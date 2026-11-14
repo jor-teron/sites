@@ -55,7 +55,17 @@ test('H146: the 10 Team 2 apps plus PDF Tools are in catalog and appindex', () =
     ['invoice-maker', 'Invoice Maker', 'Tools'],
     /* (before MV1) ['expense-tracker', 'Expense Tracker', 'Office'], */
     ['expense-tracker', 'Expense Tracker', 'Tools'],
-    ['pdf-tools', 'PDF Tools', 'Office']
+    ['pdf-tools', 'PDF Tools', 'Office'],
+    /* (before MV2) ['video-trimmer', 'Video Trimmer', 'Lab'], */
+    ['video-trimmer', 'Video Trimmer', 'Media'],
+    /* (before MV2) ['pdf-viewer', 'PDF Viewer', 'Lab'], */
+    ['pdf-viewer', 'PDF Viewer', 'Media'],
+    /* (before MV2) ['radio-app', 'Radio', 'Lab'], */
+    ['radio-app', 'Radio', 'Media'],
+    /* (before MV2) ['compass', 'Compass', 'Lab'], */
+    ['compass', 'Compass', 'Tools'],
+    /* (before MV2) ['sketchbook', 'Sketchbook', 'Lab'], */
+    ['sketchbook', 'Sketchbook', 'Office']
   ];
   const allCsv = Object.values(cat).join('\n');
   apps.forEach(([id, name, category]) => {

@@ -64,7 +64,8 @@ Follow-up: these vendor files are byte-for-byte copies. A later release can poin
 | --- | --- |
 | 1133660 | `apps/office/ocr/vendor/pdf.worker.min.js`, `shared/vendor/pdfjs/pdf.worker.min.js` |
 | 377116 | `apps/office/ocr/vendor/pdf.min.js`, `shared/vendor/pdfjs/pdf.min.js` |
-| 364463 | `apps/office/writer/vendor/jspdf.umd.min.js` (DF25; was `apps/office/draftly/vendor/`), `apps/lab/sketchbook/vendor/jspdf.umd.min.js` |
+| 364463 | `apps/office/writer/vendor/jspdf.umd.min.js` (DF25; was `apps/office/draftly/vendor/`), `apps/office/sketchbook/vendor/jspdf.umd.min.js` |
+<!-- (before MV2) sketchbook copy was `apps/lab/sketchbook/vendor/jspdf.umd.min.js` -->
 | 257127 | `apps/office/paper-scan/vendor/jsQR.js`, `apps/office/print/vendor/jsQR.js`, `apps/connectivity/filedrop/vendor/jsQR.js`, `apps/connectivity/pooh-chat/vendor/jsQR.js`, `apps/media/photo-editor-v2/vendor/jsQR.js`, `hub/controller/vendor/jsQR.js`, `phone/vendor/jsQR.js` |
 | 97630 | `apps/office/ocr/vendor/jszip.min.js`, `apps/connectivity/filedrop/vendor/jszip.min.js`, `shared/vendor/jszip.min.js` |
 | 92865 | `apps/office/print/vendor/peerjs.min.js`, `shared/vendor/peerjs.min.js` |

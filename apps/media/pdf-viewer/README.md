@@ -1,6 +1,9 @@
 # PDF Viewer (PV2)
 
-Fresh Lab PDF viewer. Opens a PDF from **Open** or drag-and-drop, scrolls all
+MV2: moved from apps/lab to apps/media (Read section); old path redirects. `pdf-viewer-old` stays in Lab.
+
+<!-- (before MV2) Fresh Lab PDF viewer. -->
+Opens a PDF from **Open** or drag-and-drop, scrolls all
 pages continuously, and renders only the pages near the viewport (sharp on
 phones via `devicePixelRatio`, capped at 2). pdf.js lives in `vendor/pdfjs/`
 so the app works offline with no CDN.
@@ -25,7 +28,8 @@ Scanned or image-only pages become searchable and copyable.
   OCR never starts on its own
 - Uses the existing Tools OCR engine (tesseract.js + `eng.traineddata`) from
   `../../office/ocr/vendor/` — lazy-loaded on first use, no CDN, no second
-  copy of the large files
+  copy of the large files. MV2 kept this path: `apps/media/pdf-viewer/` is
+  the same depth as `apps/lab/pdf-viewer/`, so it still reaches Office OCR.
 - Recognised words sit in an invisible selectable text layer, placed from the
   OCR word boxes, so Find and selection work the same way as on a digital PDF
 - Language list is only what is already in the repo (English). Results are
@@ -49,5 +53,6 @@ Scanned or image-only pages become searchable and copyable.
 
 ## Old app
 
-The previous single-page viewer is at `../pdf-viewer-old/` (kept for reference,
-not listed separately in Lab).
+<!-- (before MV2) The previous single-page viewer is at `../pdf-viewer-old/` (kept for reference, not listed separately in Lab). -->
+The previous single-page viewer is at `../../lab/pdf-viewer-old/` (kept for reference,
+not listed separately). It was not moved.

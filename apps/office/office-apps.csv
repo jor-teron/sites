@@ -17,6 +17,7 @@ Tables,       tables/,              tables/tables_icon.png, , Hub Office, Simple
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
 # (before MV1) Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
+Sketchbook,   sketchbook/,          sketchbook/sketchbook_icon.png, , Write, Paper sketchbook with 50 pages: draw with finger mouse or pen
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
 Paper Scan,   paper-scan/,          , , Scan & Print, Scan paper pages with the camera into one PDF

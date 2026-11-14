@@ -1,21 +1,25 @@
 <!DOCTYPE html>
-<!-- Redirect entry point to ../sketchbook/index.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Sketchbook" link were always visible in <head>/<body>; both now live in <noscript>. -->
+<!-- MV2: Sketchbook moved to apps/office/sketchbook/. This stub now redirects there, keeping ?query and #hash. -->
+<!-- (before MV2) Redirect entry point to ../sketchbook/index.html (keeps ?query and #hash). IX1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh and the "Sketchbook" link were always visible in <head>/<body>; both now live in <noscript>. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sketchbook</title>
-  <link rel="canonical" href="../sketchbook/index.html">
+  <!-- (before MV2) <link rel="canonical" href="../sketchbook/index.html"> -->
+  <link rel="canonical" href="../../office/sketchbook/sketchbook.html">
   <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
   <script>
     (function () {
       var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
       var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
       if (dark) document.documentElement.className = 'dark';
-      location.replace('../sketchbook/index.html' + location.search + location.hash);
+      /* (before MV2) location.replace('../sketchbook/index.html' + location.search + location.hash); */
+      location.replace('../../office/sketchbook/sketchbook.html' + location.search + location.hash);
     })();
   </script>
-  <noscript><meta http-equiv="refresh" content="0; url=../sketchbook/index.html"></noscript>
+  <!-- (before MV2) <noscript><meta http-equiv="refresh" content="0; url=../sketchbook/index.html"></noscript> -->
+  <noscript><meta http-equiv="refresh" content="0; url=../../office/sketchbook/sketchbook.html"></noscript>
 </head>
-<body><noscript><p><a href="../sketchbook/index.html">Sketchbook</a></p></noscript></body>
+<body><noscript><p><!-- (before MV2) <a href="../sketchbook/index.html">Sketchbook</a> --><a href="../../office/sketchbook/sketchbook.html">Sketchbook</a></p></noscript></body>
 </html>
