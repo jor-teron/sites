@@ -13,3 +13,6 @@ VPL3 adds (also in ⋯): save the current frame as PNG, bookmarks with notes, br
 Plays whatever this browser supports (usually MP4 H.264, WebM, and some MKV). Other types show a plain message. Offline, no libraries. Auto / Light / Dark theme.
 
 Release id: **VPL3**. Files: `video-player.html`, `video-player.css`, `video-player.js`, `video-player_helpers.js`.
+
+## Legacy
+IC2: icon redrawn plain without tile; old icon kept as *_icon_before_IC2.png

@@ -10,3 +10,6 @@ Media app. Records the screen, a window or a tab with `getDisplayMedia` + `Media
 - Saved notice via `window.top.HubNotify.notice` if present, else a toast.
 - Phones: no `getDisplayMedia` → friendly "computers only" message.
 - Release: SC1.
+
+## Legacy
+IC2: icon redrawn plain without tile; old icon kept as *_icon_before_IC2.png

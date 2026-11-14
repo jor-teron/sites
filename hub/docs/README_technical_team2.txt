@@ -3263,6 +3263,32 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   the outer 8px margin is alpha 0 on both icons.
 - 1.130 is left for SH24 (running in parallel). This note is 1.131.
 
+### 1.132 IC2 Screen Recorder, Video Player and Video Editor plain icons
+
+- Media Video icons redrawn without the coloured rounded tile, symbol
+  only, matching the IC1 plain icons (same 128×128 size, padding,
+  `#1c1f24` outline and soft shadow).
+  `apps/media/screen-recorder/screenrec_icon.png`,
+  `apps/media/video-player/video-player_icon.png` and
+  `apps/media/video-editor/video-editor_icon.png` are now RGBA on a
+  transparent background. Screen Recorder keeps the screen and stand
+  (`#eef0f3`) with the red record dot (`#f87171`). Video Player keeps
+  the play button (`#f5f7fa`) and the blue scrubber (`#60a5fa` on
+  `#3a3e46`). Video Editor keeps the play mark and the two film-clip
+  bars (white and `#bfdbfe`). Drawn at 4× in
+  `apps/media/ic2_plain_icons.py` and downscaled. Pillow draws them
+  and is not a repo dependency.
+- Previous icons copied to `screenrec_icon_before_IC2.png`,
+  `video-player_icon_before_IC2.png` and
+  `video-editor_icon_before_IC2.png` in the same folders (not
+  deleted). Live file names are unchanged, so no CSV or catalog
+  edit. No hub/core, shared/ or apps/system edits. Each app readme
+  has the legacy line (Video Editor's is in NOTES.md).
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all three icons. None of the
+  three was already plain.
+- 1.131 is IC1. This note is 1.132.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
