@@ -49,3 +49,5 @@ Why: Jor asked to "fix the intercom like you did on telephone" (Telephone TP5–
 - IC2/IC3 `localCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as comments in `intercom_app.js` above the IC4 code choice.
 - IC5: removed markup is kept as HTML comments in `intercom.html` (`#status`, `#btn-code`, `#b-dnd`, `#chk-dnd`, old empty text). The IC4 `setStatus`, `btn-code` hook, own-DND `paintDnd` / `setDnd` / button hooks and the IC3 ask handler are comments in `intercom_app.js`; `T.setDnd` and the `ICSave.get('dnd')` checks are comments in `intercom_talk.js` / `intercom_peer.js`.
 - FC5: earlier `\d{4}` / `'0000'` lines stay in the IC2–IC4 `//` legacy blocks.
+
+IC9b: icon redrawn colourful, no tile; old icon kept as intercom_icon_before_IC9b.png

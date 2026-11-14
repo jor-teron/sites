@@ -29,3 +29,5 @@ Share a computer's screen, window or tab with other devices on the same Hub Conn
 
 - SS1 `localCode()` + `go()` + `askCode()` + `boot()` (Hub's own Connect Code first, code dialog when none) are kept as `//` comments in `screenshare_app.js` above the SS2 code choice. SS1 `onWatch(from, name)` (sends the screen to anyone who asks) is now `admit()`, reached directly only on private codes or for allowed / proven viewers.
 - FC5: earlier `\d{4}` / `'0000'` lines stay in the SS1 `//` legacy block.
+
+IC9b: icon redrawn colourful, no tile; old icon kept as screenshare_icon_before_IC9b.png

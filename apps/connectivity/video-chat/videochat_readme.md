@@ -42,3 +42,5 @@ Video + audio calls between devices on the same Hub Connect Code (Connectivity â
 - VC2 code choice (Hub's own Connect Code, then last code, else the Code dialog) is kept as comments in `videochat_app.js`; the VC2 "answer any join for my room" line is kept as a comment in `videochat_call.js`.
 - FC5: earlier `\d{4}` / `'0000'` lines stay in the VC1â€“VC2 `//` legacy blocks.
 - VC5: removed `#status` / `#btn-code` bar and old empty/hint/About texts are kept as HTML comments in `videochat.html`; the old `$('status')` / `btn-code` lines are `// VC4:` comments in `videochat_app.js` (the `btn-code` hook stays guarded).
+
+IC9b: colourful hub icon added at video-chat_icon.png; old icon kept as videochat_icon_before_IC9b.png

@@ -7,3 +7,5 @@ Tap a contact → 📞 Call (`telephone.html#dial=<num>`), 💬 Message (`messag
 
 Files: contacts.html, contacts.css, ct_theme.js, ct_open.js, ct_app.js, index.html (redirect only).
 Not yet: photos, vCard import, several numbers per person, backup.
+
+IC9b: icon redrawn colourful, no tile; old icon kept as contacts_icon_before_IC9b.svg

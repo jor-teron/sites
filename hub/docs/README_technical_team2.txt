@@ -3735,6 +3735,79 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node --test hub/tests/h146_catalog.test.cjs`.
 - 1.140 is IC7b. This note is 1.141.
 
+### 1.142 IC9b Connectivity Chat colourful icons
+
+- Connectivity Chat icons redrawn as colourful symbols, with no rounded
+  tile and no coloured background. Same 128×128 size, padding, `#1c1f24`
+  outline and soft shadow as the IC1 to IC8 plain icons and the IC9a
+  Share icons. Each symbol uses several clear, friendly colours, and
+  each app has its own palette. The recognisable mark is kept.
+  `connectivity_icon.png` (the category icon) is unchanged. None of the
+  seven was already a plain colourful symbol (each PNG still had a
+  coloured tile, and the outer 8px was not clear). Pooh Chat was
+  128×128. Video Chat had no `video-chat/video-chat_icon.png` (the hub
+  path for an empty icon cell); the app icon `videochat_icon.png` was
+  192×192. Screen Share, Intercom, Telephone and Messages were 192×192.
+  Contacts was SVG only.
+- Files the apps and the Connectivity page use:
+  - Pooh Chat: `pooh-chat_icon.png` (no favicon link). Two quotation
+    marks, the same backslash-on-a-bar pair as the old mark. Left mark
+    cream `#fef3c7` with a gold bar `#f59e0b`, right mark orange
+    `#f97316` with a rose bar `#fb7185`. The old tile was `#e46018`.
+    The CSV icon column stays empty, so the page still loads this file.
+  - Video Chat: `video-chat_icon.png` (new). Sky body `#38bdf8`, gold
+    lens ring `#facc15`, rose triangle `#f43f5e`. The lens hole was the
+    dark tile, so it is not filled. The old tile was `#0c0c0c` and the
+    old symbol was `#60a5fa`, in `videochat_icon.png`.
+    `videochat.html` still uses `videochat_icon.png` as the favicon
+    (that file is kept, and it was not renamed).
+  - Screen Share: `screenshare_icon.png` (favicon in `screenshare.html`,
+    the same file name, so that link is unchanged). Blue bezel
+    `#2563eb`, amber arrow `#f59e0b` with a gold head `#facc15`, teal
+    stand `#0d9488`. The screen was the dark tile, so it is not filled.
+    The old symbol was `#60a5fa`. The CSV already names this png.
+  - Intercom: `intercom_icon.png` (favicon in `intercom.html`, the same
+    file name, so that link is unchanged). Rose capsule `#fb7185` with
+    a cream band `#fff7ed`, gold cradle and stand `#f59e0b`, cyan wave
+    `#22d3ee` and mint wave `#34d399`. The old symbol was white on a
+    teal-to-blue tile. The CSV already names this png.
+  - Telephone: `telephone_icon.png` (favicon in `telephone.html`, the
+    same file name, so that link is unchanged). Emerald handset
+    `#059669`, aqua base `#2dd4bf`, cream dial `#fff7ed`, gold centre
+    `#facc15`, rose finger stop `#f43f5e`. The finger holes were the
+    tile, so they are not filled. The old symbol was white on a
+    green-to-blue tile. The CSV already names this png.
+  - Messages: `messages_icon.png` (favicon in `messages.html`, the same
+    file name, so that link is unchanged). Cream bubble `#fffbeb`, sky
+    tail `#38bdf8`, violet `#7c3aed`, emerald `#10b981` and amber
+    `#f59e0b` dots. The dots were the blue tile showing through, so
+    they are drawn as dots. The old tile was `#2460e4`. The CSV already
+    names this png.
+  - Contacts: `contacts_icon.png` (new). Violet hair `#7c3aed`, peach
+    face `#fdba74`, blue shoulders `#2563eb`. The same head and
+    shoulders as `contacts_icon.svg`. The old tile was `#2563eb`.
+    `contacts.html` still uses `contacts_icon.svg` as the favicon
+    (that file is kept, and it was not renamed).
+- Drawn at 4× in `apps/connectivity/ic9b_colour_icons.py` and
+  downscaled. Pillow draws them and is not a repo dependency.
+- Previous icons copied to `pooh-chat_icon_before_IC9b.png`,
+  `videochat_icon_before_IC9b.png`, `screenshare_icon_before_IC9b.png`,
+  `intercom_icon_before_IC9b.png`, `telephone_icon_before_IC9b.png`,
+  `messages_icon_before_IC9b.png` and `contacts_icon_before_IC9b.svg`
+  (not deleted). `videochat_icon.png` and `contacts_icon.svg` are also
+  still in their folders. Live Pooh Chat, Screen Share, Intercom,
+  Telephone and Messages file names are unchanged, so those CSV cells
+  stay as they were. Video Chat and Contacts CSV rows now point at the
+  png; the old rows are commented `# (before IC9b)`. No hub/core or
+  shared/ edit. Favicon lines are unchanged. Each app readme has the
+  legacy line.
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all seven icons.
+  `python3 -m py_compile apps/connectivity/ic9b_colour_icons.py` and
+  `node --test hub/tests/h146_catalog.test.cjs`.
+- 1.141 is IC9a. This note is 1.142.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
