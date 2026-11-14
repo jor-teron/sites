@@ -76,8 +76,16 @@ function wireUi() {
     ev.target.value = "";
   });
   document.getElementById("formula-bar").addEventListener("keydown", function (ev) {
+    /* (before SH22) Enter always committed to selR / selC, which is the wrong cell while pointing at another sheet:
     if (ev.key === KEYS.commit) {
       ev.preventDefault();
+      commitCell(selR, selC, ev.target.value);
+      focusCell(selR, selC);
+    }
+    */
+    if (ev.key === KEYS.commit) {
+      ev.preventDefault();
+      if (typeof SHEET_POINT !== "undefined" && SHEET_POINT) { pointFinish(true); return; }   // SH22: origin cell
       commitCell(selR, selC, ev.target.value);
       focusCell(selR, selC);
     }
