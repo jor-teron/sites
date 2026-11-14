@@ -48,3 +48,6 @@ IndexedDB `paper-scan` / `pages` (original photo + processed JPEG + corners, rot
 ## HO2
 
 Delete page and New scan ask with an in-app dialog (Enter confirms, Esc cancels, the OK button is red). Send shows the same kind of dialog when the link code is missing or no phone is connected. The QR reader (`vendor/jsQR.js`) loads the first time you scan a code, not when the page opens. The PDF writer was already Paper Scan's own small script, so it stays as it is.
+
+## Legacy
+IC8: icon redrawn plain without tile; old icon kept as *_icon_before_IC8.png
