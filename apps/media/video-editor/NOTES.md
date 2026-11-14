@@ -121,3 +121,6 @@
   Project files still live only in this browser's IndexedDB.
 - Hover tips are mouse-only. Delete still cuts the In–Out selection;
   removing a clip from the track is the Delete clip button.
+
+## Legacy
+IC2: icon redrawn plain without tile; old icon kept as *_icon_before_IC2.png
