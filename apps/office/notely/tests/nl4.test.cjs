@@ -41,7 +41,20 @@ function boot(inFrame) {
   var buttons = {
     'btn-open': { id: 'btn-open', hidden: false, disabled: false },
     'btn-download': { id: 'btn-download', hidden: false, disabled: false },
-    status: { id: 'status', hidden: false, disabled: false }
+    bar: { id: 'bar', hidden: false },
+    status: {
+      id: 'status',
+      hidden: false,
+      disabled: false,
+      textContent: '0 words · 0 characters',
+      dataset: {},
+      classList: {
+        list: [],
+        add: function (c) { if (this.list.indexOf(c) < 0) this.list.push(c); },
+        remove: function (c) { this.list = this.list.filter(function (x) { return x !== c; }); },
+        contains: function (c) { return this.list.indexOf(c) !== -1; }
+      }
+    }
   };
   var calls = [];
   var parent = {
@@ -51,7 +64,8 @@ function boot(inFrame) {
     console: console,
     document: {
       body: { classList: classList },
-      getElementById: function (id) { return buttons[id] || null; }
+      getElementById: function (id) { return buttons[id] || null; },
+      querySelector: function (sel) { return sel === '.bar' ? buttons.bar : null; }
     },
     location: { origin: 'https://hub.test' },
     addEventListener: function (type, fn) { listeners.push({ type: type, fn: fn }); },
@@ -97,7 +111,7 @@ test('node --check on NL4 JavaScript', function () {
   });
 });
 
-test('inside a frame, hello sends Open and Download via set()', function () {
+test('inside a frame, hello sends the count, Open and Download via set()', function () {
   var ctx = boot(true);
   assert.strictEqual(ctx.messages.length, 0, 'nothing before hello');
   assert.strictEqual(ctx.buttons['btn-open'].hidden, false);
@@ -108,22 +122,23 @@ test('inside a frame, hello sends Open and Download via set()', function () {
   assert.strictEqual(m.v, 1);
   assert.ok(Array.isArray(m.buttons));
   assert.ok(m.buttons.length >= 1 && m.buttons.length <= 8);
-  assert.deepStrictEqual(m.buttons.map(function (b) { return b.id; }), ['open', 'download']);
-  assert.deepStrictEqual(m.buttons.map(function (b) { return b.label; }), ['Open', 'Download']);
-  assert.deepStrictEqual(m.buttons.map(function (b) { return b.enabled; }), [true, true]);
+  assert.deepStrictEqual(m.buttons.map(function (b) { return b.id; }), ['count', 'open', 'download']);
+  assert.deepStrictEqual(m.buttons.map(function (b) { return b.label; }), ['0 words · 0 characters', 'Open', 'Download']);
+  assert.deepStrictEqual(m.buttons.map(function (b) { return b.enabled; }), [false, true, true]);
   m.buttons.forEach(function (b) {
-    assert.ok(b.icon && b.icon.length <= 4, 'text glyph');
     assert.ok(b.label.length <= 24);
     assert.ok(b.title && b.title.length <= 60);
+    assert.ok(b.icon.length <= 4);
   });
-  assert.strictEqual(m.buttons[0].icon, '📂');
-  assert.strictEqual(m.buttons[1].icon, '⤓');
+  assert.strictEqual(m.buttons[0].icon, '', 'count has no icon so the Hub draws the label');
+  assert.strictEqual(m.buttons[1].icon, '📂');
+  assert.strictEqual(m.buttons[2].icon, '⤓');
   assert.deepStrictEqual(m.tabs, []);
   assert.ok(ctx.HubTitleBar.linked);
   assert.ok(ctx.classList.contains('hub-titlebar'));
   assert.strictEqual(ctx.buttons['btn-open'].hidden, true, 'in-page Open hides');
   assert.strictEqual(ctx.buttons['btn-download'].hidden, true, 'in-page Download hides');
-  assert.strictEqual(ctx.buttons.status.hidden, false, 'word count stays');
+  assert.strictEqual(ctx.buttons.bar.hidden, true, 'in-page toolbar hides');
 });
 
 test('hub clicks route to Notely open and download', function () {
@@ -173,6 +188,7 @@ test('frame with no hello sends nothing and keeps the toolbar buttons', function
   assert.strictEqual(ctx.classList.contains('hub-titlebar'), false);
   assert.strictEqual(ctx.buttons['btn-open'].hidden, false);
   assert.strictEqual(ctx.buttons['btn-download'].hidden, false);
+  assert.strictEqual(ctx.buttons.bar.hidden, false);
   ctx.NL.hubbar.sync();
   assert.strictEqual(ctx.messages.length, 0);
 });
@@ -189,6 +205,7 @@ test('standalone sends nothing and keeps the toolbar buttons', function () {
   assert.strictEqual(ctx.classList.contains('hub-titlebar'), false);
   assert.strictEqual(ctx.buttons['btn-open'].hidden, false);
   assert.strictEqual(ctx.buttons['btn-download'].hidden, false);
+  assert.strictEqual(ctx.buttons.bar.hidden, false);
   assert.strictEqual(ctx.buttons.status.hidden, false);
 });
 
@@ -199,10 +216,14 @@ test('page still has the buttons, shortcuts, and hub-only hide rule', function (
   var main = read('apps/office/notely/nl_main.js');
   assert.ok(html.indexOf('id="btn-open"') !== -1);
   assert.ok(html.indexOf('id="btn-download"') !== -1);
+  assert.ok(html.indexOf('id="bar"') !== -1);
+  assert.ok(html.indexOf('Notely NL5') !== -1);
+  assert.ok(html.indexOf('content="NL5"') !== -1);
   assert.ok(html.indexOf('../shared/office-hubbar.js') !== -1);
   assert.ok(html.indexOf('nl_hubbar.js') !== -1);
-  assert.ok(css.indexOf('body.hub-titlebar #btn-open') !== -1);
-  assert.ok(css.indexOf('body.hub-titlebar #btn-download') !== -1);
+  /* (before NL5) hid only #btn-open and #btn-download. The whole .bar is hidden now. */
+  assert.ok(css.indexOf('body.hub-titlebar .bar') !== -1);
+  assert.ok(/body\.hub-titlebar \.bar\s*\{\s*display:\s*none/.test(css));
   assert.ok(keys.indexOf('NL.files.download()') !== -1);
   assert.ok(keys.indexOf('NL.files.open()') !== -1);
   assert.ok(main.indexOf('NL.hubbar') !== -1);

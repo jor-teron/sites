@@ -24,6 +24,8 @@ NL.editor = (function () {
     const words = (v.match(/\S+/g) || []).length;
     const chars = Array.from(v).length;
     status.textContent = words + (words === 1 ? ' word' : ' words') + ' · ' + chars + (chars === 1 ? ' character' : ' characters');
+    /* NL5: keep the Hub title-bar count in step (throttled). Standalone is a no-op. */
+    if (NL.hubbar && NL.hubbar.scheduleSync) NL.hubbar.scheduleSync();
   }
   function changed() { dirty = true; count(); clearTimeout(timer); timer = setTimeout(save, C.autosaveMs); }
 

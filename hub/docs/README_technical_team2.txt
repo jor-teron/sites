@@ -3076,6 +3076,42 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   runner.
 - 1.124 is SH21, so this note is numbered 1.125.
 
+### 1.126 Notely word count in the Hub title bar, release NL5
+
+- Notely's word and character count now sits in the Hub window title bar
+  after `hubTitleBarHello`, in front of Open and Download (order: count,
+  Open, Download). The H49 / office-hubbar.js contract has buttons and
+  tabs only, no text item, and `apps/office/shared/` was not edited, so
+  the count is a disabled button with an empty icon. Hub then draws the
+  label (enabled:false is also greyed at opacity 0.35 on the Hub side).
+  Labels stay within the 24-character limit: the full "N words · M
+  characters" text is kept when it fits, then "chars", then "N w · M ch",
+  then a cut. The full text (or a flash message) goes in the 60-character
+  tooltip. `HubTitleBar.update` patches the count as the user types
+  (coalesced with `requestAnimationFrame`, or 80 ms where rAF is missing)
+  and when a toolbar flash starts or ends, so Open / file errors still
+  show after the in-page bar is hidden. A click on the count does nothing.
+- The whole in-page `.bar` hides (`hidden`, and
+  `body.hub-titlebar .bar { display: none }` in notely.css), so the notes
+  get that row back. There is no bottom status bar. Open and Download
+  behaviour, keyboard shortcuts, and autosave are unchanged.
+- Standalone, and a frame that never says hello, send nothing and keep
+  the page toolbar with the count on the right, as before.
+- Release id: `<title>Notely NL5</title>`, `<meta name="version"
+  content="NL5">`. Replaced lines are commented `(before NL5)` and left
+  in place. `notely_readme.md` now says the count lives in the window bar
+  inside the Hub. Notely has no service-worker cache version. Hub build
+  and `hub-shell` CACHE were not bumped. `apps/office/shared`, Hub shell,
+  catalog, Games, Learn, and other Office apps were not touched. No new
+  library, no CDN.
+- Checked with `node --check` on the edited JS,
+  `node apps/office/notely/tests/nl4.test.cjs` and
+  `node apps/office/notely/tests/nl5.test.cjs` (order, hide rule,
+  fitLabel, live update, flash, count click ignored), and a static
+  `python -m http.server` + curl 200 on notely.html (title NL5) and the
+  linked css / js / icon. No Puppeteer, Playwright or browser runner.
+- 1.125 is SH19, so this note is numbered 1.126.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -62,9 +62,11 @@ body.dragging textarea { outline: 3px dashed var(--accent); outline-offset: -8px
   button { min-height: 36px; }
   textarea { padding: 8px 12px; }
 }
-/* NL4: once the Hub window bar has Open and Download, hide the in-page copies
-   so the notes gain that row. The word count stays. Standalone never has
+/* (before NL5) NL4 hid only Open and Download and left a slim word-count strip:
+   body.hub-titlebar #btn-open,
+   body.hub-titlebar #btn-download { display: none; }
+   body.hub-titlebar .bar { padding-top: 3px; padding-bottom: 3px; } */
+/* NL5: once the Hub window bar has the count, Open and Download, hide the
+   whole in-page toolbar so the notes gain that row. Standalone never has
    body.hub-titlebar (HubTitleBar adds it only after hello, and only in a frame). */
-body.hub-titlebar #btn-open,
-body.hub-titlebar #btn-download { display: none; }
-body.hub-titlebar .bar { padding-top: 3px; padding-bottom: 3px; }
+body.hub-titlebar .bar { display: none; }
