@@ -3033,6 +3033,49 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   browser runner.
 - 1.123 is NP7, so this note is numbered 1.124.
 
+### 1.125 SH19 Spreadsheet function list matches the engine (AVERAGEIFS, syntax fixes)
+
+- Spreadsheet (`apps/office/spreadsheet/`) already implemented 70
+  functions, including `AVERAGEIFS` (`fxIfsAgg("AVERAGE", args)`), but
+  the fx catalog (`FX_CATALOG` in `spreadsheet_functions.js`) and
+  File -> Functions (`FUNCTIONS.txt`) listed 69. Some signatures and
+  hints were also stale against the engine: `LEFT` / `RIGHT` / `MID`
+  and `IF`'s else were shown as required; `SUM`, `AVERAGE`, `MIN`,
+  `MAX`, `COUNT`, `COUNTA` and `MEDIAN` were shown taking a single
+  range; `XLOOKUP` modes were unexplained; `NOW()` was described as
+  date and time (it returns date and hours:minutes, no seconds);
+  `TRIM` was described as removing extra spaces, but it only trims
+  leading and trailing spaces.
+- Fix: `AVERAGEIFS` is in the Lookup group of `FX_CATALOG`, next to
+  `SUMIFS`, with signature `AVERAGEIFS(average_range, criteria_range1,
+  criteria1, …)`, and in `FUNCTIONS.txt`. Catalog and `FUNCTIONS.txt`
+  signatures and hints now match the engine, as listed above.
+  Argument names in `FUNCTIONS.txt` were aligned with the catalog
+  where it was cheap (for example `SUMIFS` / `COUNTIFS` /
+  `AVERAGEIF`). The engine itself is unchanged.
+- Release id: `<title>Spreadsheet SH19</title>` (legacy SH21 comment),
+  `SHEET_VERSION = "SH19"`, About SH19. Page title `Spreadsheet SH19`.
+  Local `?v=` tokens stay `HO3` (no cache bump). Storage stays
+  `sheet-v4`. The grid stays 26x100. Replaced lines are commented
+  `(before SH19)` and left in place.
+- Not changed: File -> Functions still opens `FUNCTIONS.txt` in a new
+  tab. The in-app Functions dialog stays parked as SH20. The formula
+  engine, hint UI, and script order from SH21 are unchanged.
+  `apps/office/shared`, Hub shell, catalog, Games, Learn, other
+  Office apps were not touched. No Hub build bump. No new library,
+  no CDN.
+- Limits: a hard refresh may be needed on a device that cached the
+  old `FUNCTIONS.txt` (`?v=HO3` was not changed).
+- Checked with `node --check` on the edited JS and the existing
+  spreadsheet `test-*.js` files, and a static
+  `python -m http.server` + curl 200 on spreadsheet.html (title
+  SH19) and the linked css / js / icon / FUNCTIONS.txt. Existing
+  tests that pinned title / `SHEET_VERSION` SH21 were updated to
+  SH19 (`?v=HO3` pins left as they were). No new catalog or
+  FUNCTIONS.txt coverage test. No Puppeteer, Playwright or browser
+  runner.
+- 1.124 is SH21, so this note is numbered 1.125.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

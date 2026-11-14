@@ -34,14 +34,17 @@ function baseName(src) {
   return src.replace(/[?#].*$/, "").replace(/^.*\//, "");
 }
 
-test("title is SH21, SHEET_VERSION is SH21, ?v= stays HO3", function () {
+test("title is SH19, SHEET_VERSION is SH19, ?v= stays HO3", function () {
   var html = readHtml();
   var settings = fs.readFileSync(path.join(dir, "spreadsheet_settings.js"), "utf8");
-  if (html.indexOf("<title>Spreadsheet SH21</title>") < 0) throw new Error("title is not SH21");
+  /* (before SH19) if (html.indexOf("<title>Spreadsheet SH21</title>") < 0) throw new Error("title is not SH21"); */
+  if (html.indexOf("<title>Spreadsheet SH19</title>") < 0) throw new Error("title is not SH19");
   if (html.indexOf("(before SH21)") < 0) throw new Error("old title or script tag was not kept as a comment");
   if (html.indexOf("?v=HO3") < 0) throw new Error("?v=HO3 missing");
-  if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH21/.test(html)) throw new Error("unexpected ?v=SH21 cache token");
-  if (settings.indexOf('var SHEET_VERSION = "SH21";') < 0) throw new Error("SHEET_VERSION is not SH21");
+  /* (before SH19) if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH21/.test(html)) throw new Error("unexpected ?v=SH21 cache token"); */
+  if (/spreadsheet_[^"'?]+\.(js|css)\?v=SH19/.test(html)) throw new Error("unexpected ?v=SH19 cache token");
+  /* (before SH19) if (settings.indexOf('var SHEET_VERSION = "SH21";') < 0) throw new Error("SHEET_VERSION is not SH21"); */
+  if (settings.indexOf('var SHEET_VERSION = "SH19";') < 0) throw new Error("SHEET_VERSION is not SH19");
 });
 
 test("live script order: spreadsheet_fx.js comes after spreadsheet_state.js", function () {

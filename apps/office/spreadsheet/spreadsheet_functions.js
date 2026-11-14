@@ -1646,12 +1646,18 @@ function fxTextSplit(args) {
 
 /* Catalog used by the formula hint and the function picker (SH9). */
 var FX_CATALOG = [
-  { name: "SUM", cat: "Math", sig: "SUM(range, ...)", hint: "Add numbers." },
-  { name: "AVERAGE", cat: "Math", sig: "AVERAGE(range, ...)", hint: "Average of numbers." },
-  { name: "MIN", cat: "Math", sig: "MIN(range, ...)", hint: "Smallest number." },
-  { name: "MAX", cat: "Math", sig: "MAX(range, ...)", hint: "Largest number." },
-  { name: "COUNT", cat: "Math", sig: "COUNT(range, ...)", hint: "Count of numbers." },
-  { name: "COUNTA", cat: "Math", sig: "COUNTA(range, ...)", hint: "Count of non-empty cells." },
+  /* (before SH19) { name: "SUM", cat: "Math", sig: "SUM(range, ...)", hint: "Add numbers." }, */
+  { name: "SUM", cat: "Math", sig: "SUM(value1, ...)", hint: "Add numbers." },
+  /* (before SH19) { name: "AVERAGE", cat: "Math", sig: "AVERAGE(range, ...)", hint: "Average of numbers." }, */
+  { name: "AVERAGE", cat: "Math", sig: "AVERAGE(value1, ...)", hint: "Average of numbers." },
+  /* (before SH19) { name: "MIN", cat: "Math", sig: "MIN(range, ...)", hint: "Smallest number." }, */
+  { name: "MIN", cat: "Math", sig: "MIN(value1, ...)", hint: "Smallest number." },
+  /* (before SH19) { name: "MAX", cat: "Math", sig: "MAX(range, ...)", hint: "Largest number." }, */
+  { name: "MAX", cat: "Math", sig: "MAX(value1, ...)", hint: "Largest number." },
+  /* (before SH19) { name: "COUNT", cat: "Math", sig: "COUNT(range, ...)", hint: "Count of numbers." }, */
+  { name: "COUNT", cat: "Math", sig: "COUNT(value1, ...)", hint: "Count of numbers." },
+  /* (before SH19) { name: "COUNTA", cat: "Math", sig: "COUNTA(range, ...)", hint: "Count of non-empty cells." }, */
+  { name: "COUNTA", cat: "Math", sig: "COUNTA(value1, ...)", hint: "Count of non-empty cells." },
   { name: "ROUND", cat: "Math", sig: "ROUND(number, digits)", hint: "Round to a number of digits." },
   { name: "ROUNDUP", cat: "Math", sig: "ROUNDUP(number, digits)", hint: "Round away from zero." },
   { name: "ROUNDDOWN", cat: "Math", sig: "ROUNDDOWN(number, digits)", hint: "Round toward zero." },
@@ -1660,7 +1666,8 @@ var FX_CATALOG = [
   { name: "SQRT", cat: "Math", sig: "SQRT(number)", hint: "Square root." },
   { name: "MOD", cat: "Math", sig: "MOD(number, divisor)", hint: "Remainder after division." },
   { name: "POWER", cat: "Math", sig: "POWER(number, power)", hint: "Raise to a power." },
-  { name: "MEDIAN", cat: "Math", sig: "MEDIAN(range, ...)", hint: "Middle value." },
+  /* (before SH19) { name: "MEDIAN", cat: "Math", sig: "MEDIAN(range, ...)", hint: "Middle value." }, */
+  { name: "MEDIAN", cat: "Math", sig: "MEDIAN(value1, ...)", hint: "Middle value." },
   { name: "RANK", cat: "Math", sig: "RANK(number, range, [order])", hint: "Rank of a number in a list. Order 0 (default) is descending." },
   { name: "RAND", cat: "Math", sig: "RAND()", hint: "Random number greater than or equal to 0 and less than 1." },
   { name: "RANDBETWEEN", cat: "Math", sig: "RANDBETWEEN(bottom, top)", hint: "Random integer between bottom and top, inclusive." },
@@ -1674,7 +1681,8 @@ var FX_CATALOG = [
   { name: "SWITCH", cat: "Logic", sig: "SWITCH(expr, val1, result1, ..., [default])", hint: "Pick a result that matches expr." },
   { name: "VLOOKUP", cat: "Lookup", sig: "VLOOKUP(lookup_value, table, col_index, [range_lookup])", hint: "Look down the first column and return a value from the same row. range_lookup TRUE (default) is approximate." },
   { name: "HLOOKUP", cat: "Lookup", sig: "HLOOKUP(lookup_value, table, row_index, [range_lookup])", hint: "Look across the first row and return a value from the same column." },
-  { name: "XLOOKUP", cat: "Lookup", sig: "XLOOKUP(lookup_value, lookup_range, return_range, [if_not_found], [match_mode], [search_mode])", hint: "Look up a value and return the matching item. match_mode 0 is exact (default)." },
+  /* (before SH19) { name: "XLOOKUP", cat: "Lookup", sig: "XLOOKUP(lookup_value, lookup_range, return_range, [if_not_found], [match_mode], [search_mode])", hint: "Look up a value and return the matching item. match_mode 0 is exact (default)." }, */
+  { name: "XLOOKUP", cat: "Lookup", sig: "XLOOKUP(lookup_value, lookup_range, return_range, [if_not_found], [match_mode], [search_mode])", hint: "Look up a value and return the matching item. match_mode: 0 exact (default), 2 wildcard, -1/1 approximate. search_mode: 1 forward (default), -1 reverse." },
   { name: "INDEX", cat: "Lookup", sig: "INDEX(range, row, [column])", hint: "Value at a row (and column) in a range. 1-based." },
   { name: "ROW", cat: "Lookup", sig: "ROW([reference])", hint: "Row number of this cell, or of a reference. A range spills one number per row. A1# uses that spill." },
   { name: "COLUMN", cat: "Lookup", sig: "COLUMN([reference])", hint: "Column number of this cell (A is 1), or of a reference. A range spills one number per column." },
@@ -1682,6 +1690,7 @@ var FX_CATALOG = [
   { name: "MATCH", cat: "Lookup", sig: "MATCH(lookup_value, range, [match_type])", hint: "Relative position of a value. Type 0 is exact, 1 (default) is the largest less than or equal." },
   { name: "SUMIF", cat: "Lookup", sig: "SUMIF(range, criteria, [sum_range])", hint: "Sum cells that meet a condition." },
   { name: "SUMIFS", cat: "Lookup", sig: "SUMIFS(sum_range, criteria_range1, criteria1, ...)", hint: "Sum cells that meet every condition." },
+  { name: "AVERAGEIFS", cat: "Lookup", sig: "AVERAGEIFS(average_range, criteria_range1, criteria1, ...)", hint: "Average of cells that meet every condition." },
   { name: "COUNTIF", cat: "Lookup", sig: "COUNTIF(range, criteria)", hint: "Count cells that meet a condition." },
   { name: "COUNTIFS", cat: "Lookup", sig: "COUNTIFS(criteria_range1, criteria1, ...)", hint: "Count cells that meet every condition." },
   { name: "AVERAGEIF", cat: "Lookup", sig: "AVERAGEIF(range, criteria, [average_range])", hint: "Average of cells that meet a condition." },
@@ -1689,10 +1698,12 @@ var FX_CATALOG = [
   { name: "UPPER", cat: "Text", sig: "UPPER(text)", hint: "Convert to upper case." },
   { name: "LOWER", cat: "Text", sig: "LOWER(text)", hint: "Convert to lower case." },
   { name: "PROPER", cat: "Text", sig: "PROPER(text)", hint: "Capitalise the first letter of each word." },
-  { name: "TRIM", cat: "Text", sig: "TRIM(text)", hint: "Remove extra spaces." },
+  /* (before SH19) { name: "TRIM", cat: "Text", sig: "TRIM(text)", hint: "Remove extra spaces." }, */
+  { name: "TRIM", cat: "Text", sig: "TRIM(text)", hint: "Trim leading and trailing spaces." },
   { name: "LEFT", cat: "Text", sig: "LEFT(text, [n])", hint: "First n characters (default 1)." },
   { name: "RIGHT", cat: "Text", sig: "RIGHT(text, [n])", hint: "Last n characters (default 1)." },
-  { name: "MID", cat: "Text", sig: "MID(text, start, num_chars)", hint: "Characters from a 1-based start position." },
+  /* (before SH19) { name: "MID", cat: "Text", sig: "MID(text, start, num_chars)", hint: "Characters from a 1-based start position." }, */
+  { name: "MID", cat: "Text", sig: "MID(text, start, [num_chars])", hint: "Characters from a 1-based start position. Leave num_chars out to take the rest of the string." },
   { name: "FIND", cat: "Text", sig: "FIND(find_text, within_text, [start])", hint: "1-based position of find_text (case-sensitive). #VALUE! if not found." },
   { name: "SUBSTITUTE", cat: "Text", sig: "SUBSTITUTE(text, old, new, [instance])", hint: "Replace old with new. Instance replaces only that occurrence." },
   { name: "CONCAT", cat: "Text", sig: "CONCAT(text, ...)", hint: "Join text values." },
@@ -1701,7 +1712,8 @@ var FX_CATALOG = [
   { name: "CHAR", cat: "Text", sig: "CHAR(number)", hint: "The character for a code from 1 to 255. CHAR(10) is a line break. CHAR(65) is A. A code outside that range is #VALUE!." },
   { name: "TEXTSPLIT", cat: "Text", sig: "TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])", hint: "Split text across columns and down rows. It spills. ignore_empty TRUE skips empty pieces. match_mode 1 ignores case. Short rows are padded (default #N/A). No delimiter, or a range, is #VALUE!." },
   { name: "TODAY", cat: "Date", sig: "TODAY()", hint: "Today's date as YYYY-MM-DD." },
-  { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and time." },
+  /* (before SH19) { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and time." }, */
+  { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and hours:minutes, with no seconds." },
   { name: "DATE", cat: "Date", sig: "DATE(year, month, day)", hint: "Build a date. Month or day overflow rolls over (DATE(2024,13,1) is 2025-01-01)." },
   { name: "YEAR", cat: "Date", sig: "YEAR(date)", hint: "Year of a date." },
   { name: "MONTH", cat: "Date", sig: "MONTH(date)", hint: "Month of a date (1–12)." },

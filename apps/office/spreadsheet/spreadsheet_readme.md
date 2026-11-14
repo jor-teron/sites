@@ -197,14 +197,16 @@ The grid is still 26 × 100; this release does not add rows or columns.
 The grid is still 26 × 100.
 
 - **Lookups:** `VLOOKUP`, `HLOOKUP`, `XLOOKUP`, `INDEX`, `MATCH`. They work with `Sheet2!A1:C10` ranges. Approximate `VLOOKUP` / `HLOOKUP` (the default, last argument TRUE) needs the first column / row in ascending order. Exact match uses FALSE and returns `#N/A` when nothing matches. `XLOOKUP` default is exact; an optional fallback is used when there is no match. `match_mode` 0 exact, −1 exact or next smaller, 1 exact or next larger, 2 wildcard. `search_mode` −1 searches last to first.
-- **Conditional aggregates:** `SUMIF`, `SUMIFS`, `COUNTIF`, `COUNTIFS`, `AVERAGEIF`. Criteria can be a value, `">10"`, `"<>x"`, or a wildcard (`*` and `?`; `~` escapes).
+<!-- (before SH19): - **Conditional aggregates:** `SUMIF`, `SUMIFS`, `COUNTIF`, `COUNTIFS`, `AVERAGEIF`. Criteria can be a value, `">10"`, `"<>x"`, or a wildcard (`*` and `?`; `~` escapes). -->
+- **Conditional aggregates:** `SUMIF`, `SUMIFS`, `COUNTIF`, `COUNTIFS`, `AVERAGEIF`, `AVERAGEIFS`. Criteria can be a value, `">10"`, `"<>x"`, or a wildcard (`*` and `?`; `~` escapes).
 - **Logic:** `AND`, `OR`, `NOT`, `IFS`, `SWITCH`. The literals `TRUE` and `FALSE` are accepted in formulas (and count as 1 and 0 in arithmetic).
 - **Text:** `MID`, `FIND` (case-sensitive, 1-based), `SUBSTITUTE`, `PROPER`, `TEXT` (a useful subset of formats: `0.00`, `0%`, `yyyy-mm-dd`, `dd/mm/yyyy`, …), `TEXTJOIN`.
 - **Dates:** `DATE`, `YEAR`, `MONTH`, `DAY`, `WEEKDAY`, `DATEDIF`, `EDATE`. `DATE` / `TODAY` / `EDATE` return `YYYY-MM-DD`. Month or day overflow rolls over (`DATE(2024,13,1)` is `2025-01-01`). A number is treated as an Excel serial; dates from 1 March 1900 match Excel (the 1900 leap-year bug is not reproduced).
 - **Math:** `ROUNDUP`, `ROUNDDOWN`, `MEDIAN`, `RANK`, `RAND`, `RANDBETWEEN`.
 - **Hint / picker:** while a formula is being typed in a cell or the formula bar, a hint lists the current function and highlights the argument. The **fx** button opens a searchable in-app list; picking a function inserts `NAME(`.
 - Title, `SHEET_VERSION` and `?v=` on this app's own css/js are SH9. Storage is still `sheet-v3` (no new saved fields).
-- **Limits:** `TEXT` only covers the formats listed above (not every Excel custom format). `AVERAGEIFS` is also implemented but is not in the plan list. `RAND` / `RANDBETWEEN` change on every recalculation. Approximate lookup on an unsorted first column follows Excel and can return the wrong row. Date serials before 1 March 1900 may be a day off Excel.
+<!-- (before SH19): - **Limits:** `TEXT` only covers the formats listed above (not every Excel custom format). `AVERAGEIFS` is also implemented but is not in the plan list. `RAND` / `RANDBETWEEN` change on every recalculation. Approximate lookup on an unsorted first column follows Excel and can return the wrong row. Date serials before 1 March 1900 may be a day off Excel. -->
+- **Limits:** `TEXT` only covers the formats listed above (not every Excel custom format). `RAND` / `RANDBETWEEN` change on every recalculation. Approximate lookup on an unsorted first column follows Excel and can return the wrong row. Date serials before 1 March 1900 may be a day off Excel. `AVERAGEIFS` is listed in the function catalog and FUNCTIONS.txt as of SH19.
 
 ## SH10 — data tools
 The grid is still 26 × 100. Storage is still `sheet-v3`; filters and validation lists are extra optional fields (an older v3 file still opens).
@@ -324,4 +326,13 @@ The formula argument hint, name autocomplete, and the fx button picker have been
 - **Fix:** `spreadsheet_fx.js` now loads after `spreadsheet_state.js` and `spreadsheet_edit.js`. The old early `<script>` tag is kept as an HTML comment `(before SH21)`. No other file that pushes to `SHEET_INIT`, or that uses a state global at top level, loaded before `state.js`.
 - **Release id:** title and `SHEET_VERSION` are SH21. `?v=` stays `HO3` (a cache bump is not needed; this is a script-order fix, like SL10 leaving `?v=SL9`). Storage stays `sheet-v4`. The grid is still 26 × 100.
 - **Tests:** `node apps/office/spreadsheet/test-sh21-fx-hint.js` checks the live script order in `spreadsheet.html` and loads that prefix in a vm to confirm `SHEET_INIT` includes `initFxUi`.
-- **Limits:** this only starts the existing SH9 hint and picker. It does not change hint text, add `AVERAGEIFS` to the lists, or replace File → Functions with an in-app dialog (those are parked as SH19 / SH20).
+<!-- (before SH19): - **Limits:** this only starts the existing SH9 hint and picker. It does not change hint text, add `AVERAGEIFS` to the lists, or replace File → Functions with an in-app dialog (those are parked as SH19 / SH20). -->
+- **Limits:** this only starts the existing SH9 hint and picker. List and hint-text fixes are in SH19. Replacing File → Functions with an in-app dialog stays parked as SH20.
+
+## SH19 — function list matches the engine
+The formula engine already supported 70 functions, including `AVERAGEIFS`. The fx catalog and File → Functions list (`FUNCTIONS.txt`) were one behind, and some signatures and hints did not match what the engine actually does.
+
+- **AVERAGEIFS** is now in the fx catalog (Lookup, next to `SUMIFS`) and in `FUNCTIONS.txt`. Signature: `AVERAGEIFS(average_range, criteria_range1, criteria1, …)`. The engine is unchanged (`fxIfsAgg("AVERAGE", args)`).
+- **Syntax and hints** now match the engine: `LEFT` and `RIGHT` take an optional `[n]` (default 1); `IF`'s else is optional and returns `""` when omitted; `MID`'s `num_chars` is optional (leave it out to take the rest of the string); `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA` and `MEDIAN` take `(value1, …)`; `XLOOKUP` modes are documented (`match_mode`: 0 exact (default), 2 wildcard, −1/1 approximate; `search_mode`: 1 forward (default), −1 reverse); `NOW()` is date and hours:minutes, with no seconds; `TRIM` only trims leading and trailing spaces.
+- **Release id:** title and `SHEET_VERSION` are SH19. `?v=` stays `HO3` (no cache bump). Storage stays `sheet-v4`. The grid is still 26 × 100.
+- **Not changed:** File → Functions still opens `FUNCTIONS.txt` in a new tab. The in-app Functions dialog stays parked as SH20.
