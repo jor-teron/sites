@@ -7,7 +7,8 @@
   <!-- legacy (before SH13): <title>Spreadsheet SH12</title> -->
   <!-- legacy (before SH14): <title>Spreadsheet SH13</title> -->
   <!-- (before SH18) <title>Spreadsheet SH14</title> -->
-  <title>Spreadsheet SH18</title>
+  <!-- (before SH21) <title>Spreadsheet SH18</title> -->
+  <title>Spreadsheet SH21</title>
   <!-- (before HO3) every local cache token (?v=) on this page was SH18; HO3 bumps them for the 12pt default. Title stays SH18. -->
   <link rel="icon" href="spreadsheet_icon.png">
   <link rel="stylesheet" href="spreadsheet.css?v=HO3">
@@ -286,13 +287,14 @@
   <script src="spreadsheet_config.js?v=HO3"></script>
   <script src="spreadsheet_formula.js?v=HO3"></script>
   <script src="spreadsheet_functions.js?v=HO3"></script>
-  <script src="spreadsheet_fx.js?v=HO3"></script>
+  <!-- (before SH21) <script src="spreadsheet_fx.js?v=HO3"></script> loaded here, before state.js, so SHEET_INIT.push(initFxUi) threw and the formula hint / fx picker never started -->
   <script src="spreadsheet_refs.js?v=HO3"></script>
   <script src="spreadsheet_state.js?v=HO3"></script>
   <script src="spreadsheet_storage.js?v=HO3"></script>
   <script src="spreadsheet_files.js?v=HO3"></script>
   <script src="spreadsheet_grid.js?v=HO3"></script>
   <script src="spreadsheet_edit.js?v=HO3"></script>
+  <script src="spreadsheet_fx.js?v=HO3"></script>
   <script src="spreadsheet_fill.js?v=HO3"></script>
   <script src="spreadsheet_toolbar.js?v=HO3"></script>
   <script src="spreadsheet_settings.js?v=HO3"></script>

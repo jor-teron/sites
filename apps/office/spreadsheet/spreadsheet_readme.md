@@ -317,3 +317,11 @@ The default cell text is now **12pt** (16px at 96 dpi), the same as Writer. Befo
 - **Auto-fit** (SH18) uses the default in px (16 for 12pt). One line is 6 + 16 × 1.25 = 26px, under the 30px automatic floor, which is unchanged. `defaultSheetFontSize()` now reads `SHEET_SETTINGS.s` (before HO3 it read a property that was never set and always used 13).
 - **Limits:** text that inherits the body size (column letters, row numbers, the function list) grows with it, as it already did when the Settings size was changed. XLSX export still writes the px cell size as `sz`. Changing Settings → Default size does not re-run auto-fit until the next repaint.
 - Tests: `node apps/office/spreadsheet/test-ho3-font-default.js`.
+
+## SH21 — formula hint and fx picker start again
+The formula argument hint, name autocomplete, and the fx button picker have been in the app since SH9, but they never started after a later script-order change. `spreadsheet_fx.js` ran `SHEET_INIT.push(initFxUi)` at the top level, and it was loaded before `spreadsheet_state.js`, which is the file that declares `var SHEET_INIT = []`. That throw stopped `initFxUi` from being registered, so typing `=IF(` showed no hint and the fx button did nothing.
+
+- **Fix:** `spreadsheet_fx.js` now loads after `spreadsheet_state.js` and `spreadsheet_edit.js`. The old early `<script>` tag is kept as an HTML comment `(before SH21)`. No other file that pushes to `SHEET_INIT`, or that uses a state global at top level, loaded before `state.js`.
+- **Release id:** title and `SHEET_VERSION` are SH21. `?v=` stays `HO3` (a cache bump is not needed; this is a script-order fix, like SL10 leaving `?v=SL9`). Storage stays `sheet-v4`. The grid is still 26 × 100.
+- **Tests:** `node apps/office/spreadsheet/test-sh21-fx-hint.js` checks the live script order in `spreadsheet.html` and loads that prefix in a vm to confirm `SHEET_INIT` includes `initFxUi`.
+- **Limits:** this only starts the existing SH9 hint and picker. It does not change hint text, add `AVERAGEIFS` to the lists, or replace File → Functions with an in-app dialog (those are parked as SH19 / SH20).

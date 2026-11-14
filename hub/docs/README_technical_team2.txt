@@ -2985,6 +2985,54 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   libraries or CDN. Games keep default portions and the NP-1 food lists.
 - 1.122 is NP5, so this note is numbered 1.123.
 
+### 1.124 SH21 Spreadsheet formula hint and fx picker start again (script order)
+
+- Spreadsheet (`apps/office/spreadsheet/`) already had the SH9 formula
+  argument hint (`#fx-hint`), name autocomplete, and the fx-button
+  function picker, but none of them started. `spreadsheet_fx.js` ran
+  `SHEET_INIT.push(initFxUi)` at the top level, and it was loaded in
+  `spreadsheet.html` before `spreadsheet_state.js`, which is the file
+  that declares `var SHEET_INIT = []`. That throw stopped `initFxUi`
+  from being registered, so `boot()` never called it. Typing `=IF(`
+  showed no argument hint, and the fx button did nothing. This was a
+  script-order bug, not missing hint code.
+- Fix: the `spreadsheet_fx.js` script tag now sits after
+  `spreadsheet_state.js` and `spreadsheet_edit.js` (so `SHEET_INIT`,
+  `inpGrid`, `selR` / `selC`, and `startEdit` exist by the time
+  `initFxUi` runs in `boot()`, after `buildTable()`). The old early
+  tag is kept as an HTML comment `(before SH21)`. A check of the other
+  scripts found no second case: every other `SHEET_INIT.push`, and
+  every top-level use of a state global, already loaded after
+  `state.js`.
+- Release id: `<title>Spreadsheet SH21</title>` (legacy SH18 comment),
+  `SHEET_VERSION = "SH21"`, About SH21. Page title `Spreadsheet SH21`.
+  Local `?v=` tokens stay `HO3` (no cache bump; same idea as SL10
+  leaving `?v=SL9`). Storage stays `sheet-v4`. The grid stays 26x100.
+  Replaced lines are commented `(before SH21)` and left in place.
+- Not changed: hint text, `FUNCTIONS.txt`, File -> Functions (still
+  opens `FUNCTIONS.txt` in a new tab). Adding `AVERAGEIFS` and fixing
+  stale syntax in the lists is parked as SH19; the in-app Functions
+  dialog is parked as SH20. `apps/office/shared`, Hub shell, catalog,
+  Games, Learn, other Office apps were not touched. No Hub build bump.
+  No new library, no CDN.
+- Limits: this only starts the existing SH9 hint and picker. A hard
+  refresh may be needed on a device that cached the old HTML (`?v=HO3`
+  was not changed).
+- Checked with `node --check` on the edited JS and the new test, `node
+  apps/office/spreadsheet/test-sh21-fx-hint.js` (title / SHEET_VERSION
+  SH21, `?v=` stays HO3, live script order has fx.js after state.js,
+  the old early tag kept as a `(before SH21)` comment, every
+  `SHEET_INIT.push` file loads after state.js, and a vm load of the
+  HTML script prefix registers `initFxUi` on `SHEET_INIT`), the
+  existing `node apps/office/spreadsheet/test-sh*.js`,
+  `test-hos1-format.js` and `test-ho3-font-default.js` (SH18 title /
+  `SHEET_VERSION` pins updated to SH21; `?v=HO3` pins left as they
+  were), and a static `python -m http.server` (port 18821) + curl 200
+  on spreadsheet.html (title SH21, fx.js after state.js in the live
+  tags) and the linked css / js / icon. No Puppeteer, Playwright or
+  browser runner.
+- 1.123 is NP7, so this note is numbered 1.124.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
