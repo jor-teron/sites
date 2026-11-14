@@ -24,10 +24,14 @@
     const row=el('div',undefined,'row trace-buttons'), result=el('p','Follow the faint letter, then add the top line.'); result.id='trace-result'; result.setAttribute('role','status');
     let trace;
     row.append(button('1 Body ↓',()=>trace.setPhase(1)),button('2 Top line →',()=>trace.setPhase(2)),button('Clear',()=>trace.clear()));
-    practice.append(wrap,row,result,el('p','Numbered arrows show simplified phases: curves and stems first; add the शिरोरेखा (headline) left to right last. Dot/signs also need tracing. These are shape hints, not exact handwriting strokes; font shapes vary.','note'));
+    const bars=el('div',undefined,'trace-bars'); bars.setAttribute('aria-hidden','true');
+    const bar=(name,kind)=>{const r=el('div',undefined,'trace-bar '+kind),track=el('span',undefined,'track'),fill=el('span',undefined,'fill'),val=el('span','0%','val');track.append(fill);r.append(el('span',name,'name'),track,val);bars.append(r);return (v)=>{fill.style.width=v+'%';val.textContent=v+'%';};};
+    const setCover=bar('Covered','cover'),setGuide=bar('On the guide','guide');
+    practice.append(wrap,row,result,bars,el('p','Numbered arrows show simplified phases: curves and stems first; add the शिरोरेखा (headline) left to right last. Dot/signs also need tracing. These are shape hints, not exact handwriting strokes; font shapes vary.','note'));
     layout.append(info,practice); box.append(layout);
     trace=H.createTrace(canvas,letter.glyph,r=>{
-      result.textContent='★'.repeat(r.stars)+'☆'.repeat(3-r.stars)+' · '+Math.round(r.coverage*100)+'% covered · '+Math.round(r.precision*100)+'% on the guide';
+      const c=Math.round(r.coverage*100),g=Math.round(r.precision*100); setCover(c); setGuide(g);
+      result.replaceChildren(el('span','★'.repeat(r.stars)+'☆'.repeat(3-r.stars),'trace-stars'),el('span',' · '+c+'% covered · '+g+'% on the guide','sr-only'));
       if(r.stars) { if(H.recordActivity) H.recordActivity(); H.progress.traced[letter.id]=Math.max(H.progress.traced[letter.id]||0,r.stars); progress(); H.renderChart(); }
     });
     H.trace=trace;
