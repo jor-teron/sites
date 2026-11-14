@@ -28,3 +28,5 @@ The live site is https, so the browser only allows a `wss://` relay. Put `cert.p
 ## Using it
 Tap ☰ at the top for: Ctrl-Alt-Del, Keyboard (phones), Send clipboard, Scale fit / 1:1, View only, Fullscreen, Disconnect.
 Touch: tap = click, two-finger drag = scroll (noVNC defaults). Deep link: `vnc.html#host=<name>`.
+
+IC9c: icon redrawn colourful, no tile; old icon kept as vnc_icon_before_IC9c.svg

@@ -3808,6 +3808,54 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node --test hub/tests/h146_catalog.test.cjs`.
 - 1.141 is IC9a. This note is 1.142.
 
+### 1.143 IC9c Connectivity Remote colourful icons
+
+- Connectivity Remote icons redrawn as colourful symbols, with no rounded
+  tile and no coloured background. Same 128×128 size, padding, `#1c1f24`
+  outline and soft shadow as the IC1 to IC8 plain icons and the IC9a
+  and IC9b colourful icons. Each symbol uses several clear, friendly
+  colours, and each app has its own palette. The recognisable mark is
+  kept. `connectivity_icon.png` (the category icon) is unchanged. None
+  of the three was already a plain colourful symbol (the SSH PNG still
+  had a dark body filling the window, and the outer 8px was not clear;
+  VNC and Remote were SVG only, each with a coloured tile). SSH was
+  192×192. VNC and Remote had no png.
+- Files the apps and the Connectivity page use:
+  - SSH: `ssh_icon.png` (favicon in `ssh.html`, the same file name, so
+    that link is unchanged). Blue frame `#2f6fe4` (the old title bar),
+    red `#f85850`, gold `#f8b828` and green `#28c840` traffic lights,
+    green prompt `#48c068`, light cursor `#e5e7eb`. The dark body was
+    the tile colour, so it is not filled. The CSV icon column stays
+    empty, so the page still loads this file.
+  - VNC: `vnc_icon.png` (new). Cream bezel `#fff7ed`, gold play
+    triangle `#facc15`, sky stand `#38bdf8`. The navy screen was a
+    fill, so it is not filled. The old tile was `#3b82f6` and the old
+    bezel and stand were white, in `vnc_icon.svg`. `vnc.html` still
+    uses `vnc_icon.svg` as the favicon (that file is kept, and it was
+    not renamed).
+  - Remote: `remote_icon.png` (new). Teal bezel `#14b8a6`, orange arrow
+    `#f97316` with a rose head `#fb7185`, indigo stand `#6366f1`. The
+    dark screen was a fill, so it is not filled. The old tile was
+    `#0f766e`, the old bezel and stand were white, and the old arrow
+    was `#99f6e4`, in `rm_icon.svg`. `remote.html` still uses
+    `rm_icon.svg` as the favicon (that file is kept, and it was not
+    renamed).
+- Drawn at 4× in `apps/connectivity/ic9c_colour_icons.py` and
+  downscaled. Pillow draws them and is not a repo dependency.
+- Previous icons copied to `ssh_icon_before_IC9c.png`,
+  `vnc_icon_before_IC9c.svg` and `rm_icon_before_IC9c.svg` (not
+  deleted). `vnc_icon.svg` and `rm_icon.svg` are also still in their
+  folders. The live SSH file name is unchanged, so that CSV cell stays
+  empty. VNC and Remote CSV rows now point at the png; the old rows
+  are commented `# (before IC9c)`. No hub/core or shared/ edit.
+  Favicon lines are unchanged. Each app readme has the legacy line.
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all three icons.
+  `python3 -m py_compile apps/connectivity/ic9c_colour_icons.py` and
+  `node --test hub/tests/h146_catalog.test.cjs`.
+- 1.142 is IC9b. This note is 1.143.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

@@ -113,3 +113,5 @@ host editor, known hosts panel), `ssh_app.js` (form, hash, states, reconnect, au
 ## Next
 
 S2: relay security. Later: Ed25519 (host and user keys, needs a library update), SFTP / port forwards.
+
+IC9c: icon redrawn colourful, no tile; old icon kept as ssh_icon_before_IC9c.png
