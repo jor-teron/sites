@@ -32,3 +32,7 @@ Four ten-question games: find a letter, picture/meaning-to-word, build a word fr
 Earn an active day by marking a letter learned, earning trace stars or finishing a game; consecutive local-calendar days grow the streak. Synthesized feedback sounds and speech share a global mute, with a separate spoken-audio preference. Games focus their content on phones and use two columns in short landscape viewports. Help explains the counting convention, scope and limitations.
 
 Final validation: **14 Node tests + 72 Chrome checks passed**, zero console errors. Node tests include 400 seeded sessions (4,000 questions), Unicode grapheme fallback, duplicate-tile handling, answer locking, pause and leap-day/year-boundary streak cases. Chrome completes all four games, verifies saved stars/mute, no-voice fallback, all essential game controls visible and ≥44px in both phone orientations, blocked storage, whole-box scribble rejection and a real pointer-driven glyph trace scoring three stars. See `tests/RESULTS.md`.
+
+## HL-1d
+
+- Alphabet letter tiles are fixed 140×140px squares on desktop and phone; the grid wraps them onto new rows.
