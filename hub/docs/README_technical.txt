@@ -711,3 +711,365 @@ Next free ids:
     include HO2, DF23, NL3, OC1, PS1, PN1 and NP1.
 
 Team 2 resumes after 3 days.
+
+
+================================================================================
+WEEK WRAP-UP, PHASE 2: about Thu 2026-11-12 to Sat 2026-11-14 - Team 2
+(handover to Team 3)
+================================================================================
+Written by Hub Main Builder 2, with notes from Hub Apps Builder 2 and Hub
+Games Builder 2. GitHub main at handover: b88cff9a (14 Nov 10:20 IST,
+Merge pull request #561). Build still 20261112b / hub-shell-v167 / H148.
+Added at the end; nothing above was changed.
+
+This is Phase 2 only. Phase 1 (Wed 5 Nov to Tue 10 Nov, main then
+a98cc41f, wrap-up PR #523) is the WEEK WRAP-UP block just above, at
+README_technical_team2.txt lines 5397-5782 (copied into
+README_technical.txt as well). Do not repeat it. The Phase 1 parked and
+waiting lists still stand except for the changes called out below.
+
+
+--- HUB MAIN BUILDER 2 (hub/, desktop/, apps/system, shared/)
+
+Team 2 resumed after Team 3's 11-13 Nov stint. Hub work in this phase is
+H147 and H148 (12 Nov). H145, H146 and the Team 3 notes draft also landed
+on main after Phase 1, during that stint, and are listed here as context.
+No further Hub bump after H148. Jor's "Add MCP server demo" (ab5cf163,
+13 Nov 19:46 IST) changed ai/ only.
+
+Releases:
+  - H147 e794cf2c (PR #544, branch commit 6fe135fb, 12 Nov 08:14 IST).
+    Bold Hub bar clock: desktop/wm/wm.css .wm-clock is font-weight 900
+    (was the default regular weight). Size unchanged. Phone mode has no
+    clock on the bar. Build 20261112a / hub-shell-v166.
+  - H148 7c808be4 (PR #548, 12 Nov 09:11 IST). Office file thumbnails in
+    Files: .how (Writer), .hos (Spreadsheet) and .hot (Tables) show the
+    matching Office app icon instead of the generic package icon, with
+    coloured HOW / HOS / HOT type badges in grid view only (HOW #2563eb,
+    HOS #16a34a, HOT #0d9488). Sizes 48 px in grid and 30 px in list.
+    icon() in files_core.js may return a string or {src, alt, rel};
+    FX.iconEl() paints <img class="fmt-ico"> and falls back to the 📦
+    emoji if the image fails. Icon URLs use
+    new URL('../../../' + rel, document.baseURI || location.href).
+    Base and Slides were left out (.hbase / .hslides, not .hob / .hop).
+    Branch commits: 4a12c8ff the original change; ebab0195 merge of
+    origin/main (DF25 had renamed draftly to writer); a85b638d points
+    the .how thumbnail at the Writer icon after DF25 (old path kept as
+    a "(before DF25)" comment). shared/fs/filetypes.js is
+    BY_EXT = { how: ['writer'], hos: ['spreadsheet'], hot: ['tables'] }
+    with ALIAS = { draftly: 'writer' }. Opening .how still works through
+    the draftly alias. Build 20261112b / hub-shell-v167.
+  - Docs, PR #543 94f774c9 (12 Nov 07:57 IST, branch commit f3622f86).
+    Adds hub/docs/README_technical_team3_draft.txt only (Team 3's
+    10-11 Nov notes, a copy of team2 file sections 1.95-1.111). It is
+    not in README_technical_team3.txt. No build bump. Do not strip
+    1.95-1.111 from the Team 2 file, and do not append this draft into
+    README_technical_team3.txt unless Jor asks.
+
+Already on main after Phase 1 (Team 3, 11 Nov; not Team 2 work):
+  - H145 0a6f8fbf (PR #534, 11 Nov 17:24 IST). Blur Hub behind the
+    browser leave prompt when Ask before closing actually shows the
+    Leave / Cancel box (html.hub-leave-blur; best-effort, some browsers
+    freeze the page first). Also brings the 7 bump places back into
+    agreement (H138-H144 had only moved the worker stamps; H144
+    PR #459 944a6a69 still left build.txt on 20261107b / v153).
+    Build 20261111a / hub-shell-v164.
+  - H146 35ad498f (PR #535, 11 Nov 17:30 IST). Regenerated
+    hub_catalog.js (--catalog-only) so Tables appears in the launcher,
+    and regenerated hub_appindex.js from the category CSVs. This
+    finishes the Phase 1 open item "catalog and appindex regen for the
+    10 new apps plus PDF Tools" (and Tables). Build 20261111b /
+    hub-shell-v165.
+
+Fixes:
+  - none as a separate release. The Writer icon path after DF25 is
+    inside H148 (a85b638d).
+
+Work for other teams:
+  - none new. DF25 (Apps, PR #547) is the Writer folder and Hub id
+    change H148 already followed.
+
+Diagnoses:
+  - none new.
+
+Ideas / future (not built):
+  - File icons for Base and Slides (.hbase / .hslides), left out of
+    H148. Same idea as H148, not started.
+  - Everything else in the Phase 1 Ideas list is unchanged (RL1
+    follow-ups, Apps switching Web MCP and Remote over to RL1, a named
+    Dezgo API-key row, an About Hub link in the phone quick panel).
+
+Open, not approved (discussed):
+  - Unchanged from Phase 1: H130 (move the remaining parts into the
+    Hub core); H131 (clean up the old redirect files left by the moves
+    into desktop/; those forwarders are still in hub/wm/, hub/menu/ and
+    hub/link/); fingerprint "Add phone" fix (still waits for the error
+    code from Jor's phone; H143.1 added the codes); a limit on wrong
+    PIN tries; H139b; H98, a "Pair a device" card; an Allow or
+    passcode check before a Connect link joins; a real-device test of
+    the private-code phone join; About Hub links, new tab vs same tab.
+  - New: Base and Slides file icons, as above (needs Jor's go).
+  - Changed: the Phase 1 catalog/appindex regen is done (H146). What
+    remains of that line is only whether the new games/Learn apps need
+    a hub_sw.js offline list (still needs Jor's OK; /apps/ is
+    network-first, and H146 already bumped the build for the catalog
+    work).
+
+Parked:
+  - New: H149, "App not found". Today an unknown app hash silently
+    goes home (hub/core/hub.js, around lines 510-524, the R58 path)
+    and the stale hash is cleared. The page Jor wants should say
+    "App not found", with no "404" wording. The id is reserved; do
+    not start it unless Jor unparks it.
+  - Unchanged from Phase 1: H128, more Viewer formats (PNG issue);
+    WebDAV over Tailscale Funnel; the standalone / default-apps idea;
+    the desktop Start-up manager; H99; H90; the OS5 Hub launcher
+    link. (H122 is not parked: it already shipped in the 3-4 Nov
+    wrap-up as PR #395.)
+
+Moved:
+  - none new.
+
+For Team 3:
+  - Release wording, comment-out rule, bump rule, append-only notes,
+    staging, no rebase, and commit identity are unchanged from
+    Phase 1, with these wording additions used this week: "please do
+    it" means build and commit locally only, same as "lets do" /
+    "do HNN" / "code"; "git pull n push" means pull latest main, then
+    push and merge; "git pull" means pull main only.
+  - Bump only for Hub updates: python3 hub/tools/hub_bump.py
+    --release HNN --note "..." then --check, and add a change-log
+    entry at the end of section 11 of hub/docs/hub_readme.md (before
+    ## 12. Related apps). Never pass --help to hub_appindex_gen.py.
+  - Next Hub id is H150. H149 is reserved and parked.
+  - Work in a checkout of main; Team 2 used /workspace/sites_h46.
+    Never touch /workspace/sites. /workspace/sites_h48d is not ours.
+    Never delete /workspace/sites_apps or /workspace/sites_games.
+  - Stage files by name only. Never git add -A (pre-existing tracked
+    vendor/node_modules deletions in the shared clone; never stage
+    them).
+
+
+--- HUB APPS BUILDER 2
+
+12-14 Nov, after Team 2 resumed. All of the releases below are merge
+commits on main, no Hub build bump. Docs are sections 1.112-1.129 of
+README_technical_team2.txt. Next free section is 1.130. phone/: no PH
+releases this week. Verified against git log on main b88cff9a.
+
+Also on main after Phase 1, written by Team 3 / other chats (not Apps
+Builder 2, not listed again as Phase 2 releases): AG42, HO2, NL4, RM7,
+AG44, SH13-SH17, TB1, TB2, TB4, DF24, HOW1, HOS1, HOT1 (PRs #524-#542,
+docs 1.95-1.111, which stay in this file; the same 1.95-1.111 text is
+in hub/docs/README_technical_team3_draft.txt). AG28-AG30 (PRs #445-#447)
+have no team2 doc section.
+
+Releases:
+  - DF21 f93a4939  Writer writing helpers: spell check, change case,
+                  reading time, focus mode, read aloud (PR #545),
+                  doc 1.112.
+  - TB5 dc580161  Tables Office ribbon: File menu with New, Home tab,
+                  Settings, Quick Access, Hub title bar (PR #546),
+                  doc 1.113.
+  - DF25 2c749068 full Writer rename: folder apps/office/writer/,
+                  files, Hub id writer, draftly kept as an alias,
+                  settings (PR #547), doc 1.114.
+  - SL10 7a721167 Slides startup crash fix, so the ribbon and deck
+                  load (PR #549), doc 1.115.
+  - SH18 bb3c17eb Spreadsheet row height, auto-expand and drag resize
+                  (PR #550), doc 1.116.
+  - DW5 c3335edf  move Writer tests into apps/office/writer/test/
+                  (PR #551), doc 1.117.
+  - HO3 68388301  12pt default font in Spreadsheet and Tables
+                  (PR #552), doc 1.118.
+  - MM8 7ca07187  Writer Mail Merge opens Spreadsheet .hos files
+                  (PR #553), doc 1.119.
+  - NP2-NP5 cc258cd9  Nutrition Plate kitchen garden and foods (NP2+
+                  NP3), Portions page and typed grams (NP4), and week
+                  planner (NP5) (PR #554), docs 1.120-1.122.
+  - NP7 7fe1f5a7  Nutrition Plate Every day, drop Copy, hide header
+                  and Learn back (PR #555), doc 1.123.
+  - SH21 629836dd Spreadsheet formula hint and fx picker start again
+                  (script order) (PR #556), doc 1.124.
+  - SH19 40f40faf Spreadsheet function list matches the engine
+                  (AVERAGEIFS, syntax fixes) (PR #557), doc 1.125.
+  - NL5 9e4db6f8  Notely word count in the Hub title bar (Word count,
+                  Open, Download) (PR #558), doc 1.126.
+  - AG45 452982eb Agent robot icon instead of the lab flask
+                  (PR #559), doc 1.127.
+  - SH22 0dec7668 Spreadsheet click another sheet's cell to insert
+                  Sheet2!A1 in a formula (PR #560), doc 1.128.
+  - SH23 b88cff9a Spreadsheet click or drag cells on the same sheet
+                  to insert refs and ranges (PR #561), doc 1.129.
+
+Fixes:
+  - none as separate releases. SL10, SH21 and SH19 are fix-shaped
+    feature releases, listed above.
+
+Work for other teams:
+  - NL5 wants a Hub title-bar text item so the word count is not a
+    faded disabled button (Hub side, needs Jor's go).
+  - RL1: moving Web MCP and Remote (SSH/VNC/SFTP) off the old relay
+    ports 8022/8023 onto the shared relay still needs Jor's OK (same
+    Phase 1 item).
+
+Diagnoses (reviews, nothing built):
+  - SH22/SH23 were not browser-tested. SH22: clicking the ribbon or
+    headers while pointing commits. SH23: header clicks do not insert
+    A:A / 1:1, arrow keys do not point, only the newest ref is
+    outlined.
+  - Notely's word count shows faded (the Hub bar has buttons and tabs
+    only).
+  - Agent's long-task notice can only show an emoji without a Hub
+    change.
+  - NP7: pressing minus on the last inherited item empties the slot.
+  - AG41: a duplicate btnPick id still breaks Settings Pick folder
+    on main.
+
+Ideas / future (not built):
+  - Base opens and saves .hot with optional Base parts (Jor is
+    pondering .hot vs .hob; keep .hbase as restore/backup).
+  - A fuller Base Query (joins, grouping, calculated columns,
+    runnable SQL) and a saved Query for Tables.
+  - A Hub title-bar text item, as above.
+  - Retire Notepad in favour of Notely (open question).
+
+Open, not approved (discussed):
+  - RL1 cutover of Web MCP and Remote, as above.
+  - AG41 (~2 h): duplicate btnPick id, photo history budget,
+    chat-search cache, stream parse errors.
+  - Agent long chats on a 4 GB machine (~3 h, needs a new id): bigger
+    recent window, cheaper redraw, gallery paging, save errors,
+    Continue at the step limit.
+  - AG43 leftover (~2.5 h): block write_file into agent/, vision
+    check, Stop/Send race, Gemini tool args, aria-live.
+  - DW1 (styles, Ctrl+K link, clear format, special chars), DW2
+    (outline pane, TOC, footnotes), DW3 (last 10 snapshots, export
+    txt/md/html).
+  - HOW2 (not yet specified). OC1 (~1.5 h): OCR libs on demand plus
+    a shared PDF reader.
+  - IV1 and IV2 Image Viewer, LL3 Live Location, and phone.html to
+    phone/index.html.
+
+Parked:
+  - SH20, in-app searchable Functions dialog (~1-1.5 h).
+  - NP6, Nutrition Plate month calendar.
+  - MM7, merge fields in the header/footer of a merged DOCX.
+  - WWW1, a local Hub web browser.
+  - WP1, a Wikipedia wrapper app.
+  - WB1-WB4 Remote Browser (Jor wants a local browser instead).
+  - DW4, Writer templates.
+  - Unchanged from Phase 1: PW3, MCP3, NVIDIA NIM / the API Keys
+    app, PH2, PH3.
+
+Moved:
+  - none new.
+
+For Team 3:
+  - Next Apps doc section is 1.130. Next ids: SH24, NL6, AG46, NP8,
+    DW6, SL11, BS10, TB6, HO4, MM9, HOW2, P6, PV3, CI4, VPL4.
+  - No unpushed Apps work: local branches and worktrees are ancestors
+    of origin/main. /workspace/sites_apps stays on
+    apps/vd3-video-editor; never delete it or /workspace/sites_games.
+    Work in /workspace/wt-<id> worktrees.
+  - Never git add -A. Never commit
+    apps/games/ar-game/vendor/three/build/three.module.min.js.
+  - Docs go only in README_technical_team2.txt (Team 3: its own doc).
+    Don't touch other hub/ files, root shared/, apps/system,
+    index.html, hub_appindex.js, hub_catalog.js, or
+    apps/office/shared unless the plan says so.
+  - Release id in <title> / VERSION; no Hub build bump. In-app
+    dialogs only. No new libraries or CDNs (keep apps light for a
+    4 GB Celeron). Replaced lines get "(before <id>)" comments. No
+    Puppeteer or Playwright unless Jor asks; node --check and
+    pure-helper node tests.
+  - Push = merge origin/main (keep both sides, no rebase or force),
+    open a PR, merge with a merge commit, renumber the doc section
+    on a clash.
+  - Jor: no Back-to-Category buttons or duplicate top rows;
+    Writer = .how, Spreadsheet = .hos, Tables = .hot; Base data
+    lives in IndexedDB, .hbase is backup only.
+
+
+--- HUB GAMES BUILDER 2 (apps/games/, apps/learn/)
+
+Games: nothing new since Phase 1 (all work was 10 Nov, see Phase 1).
+
+Next ids (not listed in the Phase 1 wrap-up; from Games Builder 2,
+with one correction): SHIP-3, AF-5, SNK-T2, SI-T2, SNL-3, SUDO-P2,
+SC-2a, DS-2a, Sweet Swap 1b, Garden Guard 1b, Jigsaw 1b. FM-1a stays
+reserved and parked. Do not use NP-2: Nutrition Plate NP2-NP7 already
+shipped on the Apps side in Phase 2; the next Nutrition Plate id is
+NP8.
+
+Parked and waiting items, Games rules, commit identity (J T
+<jor.teron@gmail.com>), and the sites_games worktree note are
+unchanged from Phase 1.
+
+
+--- HANDOVER TO TEAM 3
+
+Team 3 takes the repo again today. Nothing below is approved to build
+until Jor says so in that bot's own chat. Read this Phase 2 note and
+the Phase 1 wrap-up (and Team 1's WEEK NOTES at the end of
+README_technical_team1.txt) before starting any release. A plain
+release id still means give the plan and wait.
+
+Where to start:
+  - Do not begin unapproved or parked work. Do not start H149 unless
+    Jor unparks it. Do not start H130, H131, or Base/Slides file icons
+    without his own "lets do".
+  - If Jor picks a first Hub task, the next free id is H150 (H149 is
+    reserved). Natural waiting items remain H130 and H131, plus the
+    Phase 1 list. Apps next doc section is 1.130; next ids include
+    SH24, NL6, AG46, NP8, DW6. Games has no Phase 2 build waiting
+    (Flag Master is still parked; Aeroplane and Browser FPS maps are
+    for Jor later).
+
+Top waiting items (changes only; the rest is in Phase 1):
+  - Hub: same Phase 1 list, except catalog/appindex regen is done
+    (H146). Still open: whether new games/Learn apps need a hub_sw.js
+    offline list (needs Jor's OK). New, waiting on go: Base and
+    Slides file icons (.hbase / .hslides). New, parked: H149 App not
+    found (no "404" wording).
+  - Apps: RL1 cutover of Web MCP and Remote; AG41, the 4 GB long-chat
+    follow-up (needs a new id), AG43 leftover; DW1-DW3; HOW2 and OC1;
+    IV1/IV2, LL3, and phone.html to phone/index.html. Parked additions
+    since Phase 1: SH20, NP6, MM7, WWW1, WP1, WB1-WB4, DW4.
+  - Games: no new waiting build. Next ids as in the Games block
+    above (next Nutrition Plate id is NP8, not NP-2).
+
+Folders never to delete or touch:
+  - Never delete /workspace/sites_apps (Apps working folder; it is
+    currently on apps/vd3-video-editor). Cleanup there means stale
+    branches only.
+  - Don't touch /workspace/sites, /workspace/sites_h46 or
+    /workspace/sites_h48d.
+  - Leave /workspace/sites_games as it is (untracked files and the
+    learn/cr3 branch).
+  - The shared clone still has pre-existing tracked vendor and
+    node_modules deletions. Never stage them. Never git add -A.
+
+Release wording (only Jor's own words in a bot's own chat count):
+  - A plain release id means give the plan and wait.
+  - "lets do", "do HNN", "code" or "please do it" means build and
+    commit locally only.
+  - "push" means push AND merge.
+  - "code n push" or "do n push" means build, push and merge.
+  - "git pull n push" means pull latest main, then push and merge.
+  - "git pull" means pull main only.
+  - "no coding", "just discussion" or "am just asking" means talk
+    only.
+
+Next free ids:
+  - Hub: H150 (H149 reserved and parked).
+  - Apps docs: 1.130. Apps release ids: SH24, NL6, AG46, NP8, DW6,
+    SL11, BS10, TB6, HO4, MM9, HOW2, P6, PV3, CI4, VPL4.
+  - Games: SHIP-3, AF-5, SNK-T2, SI-T2, SNL-3, SUDO-P2, SC-2a,
+    DS-2a, Sweet Swap 1b, Garden Guard 1b, Jigsaw 1b. FM-1a reserved
+    and parked. Not NP-2 (use NP8).
+
+Current main is b88cff9a. Hub build 20261112b / hub-shell-v167 / H148.
+No open PRs at handover. No unpushed Hub work on /workspace/sites_h46
+(main matches origin/main; only the pre-existing vendor deletions are
+dirty).
