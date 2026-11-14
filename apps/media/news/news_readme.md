@@ -25,3 +25,6 @@ Headlines from Google News (English, India edition) in story cards. Plain HTML/C
 - Google News RSS carries no pictures, so cards normally show the source letter; pictures appear only if a feed provides them.
 - Links go through a news.google.com redirect to the publisher. No summaries (Google's description is just the headline).
 - No service worker: the page itself needs the network (or browser cache) to open; lists and Saved are in localStorage.
+
+## Legacy
+IC4: icon redrawn plain without tile; old icon kept as *_icon_before_IC4.png
