@@ -201,3 +201,5 @@ On a wide screen (about 900px and up) you can also **Open local folder**. The le
 Each file is sent or received as **one** message (the relay has no chunked transfer). The open reply includes `max` (default 100 MB, `--max-mb`). A file larger than that is refused with a clear message and is skipped in a folder transfer. Cancel stops further files; the file already in flight may still finish.
 
 If something goes wrong, the app says so clearly: relay unreachable, wrong token, login failed, host not in the allowlist, or file too large. Those messages point back here.
+
+IC9c: colourful hub icon added at remote_icon.png; old icon kept as rm_icon_before_IC9c.svg
