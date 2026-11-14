@@ -289,7 +289,8 @@ test("grid, storage and cache token stay put", function () {
   var html = fs.readFileSync(path.join(dir, "spreadsheet.html"), "utf8");
   /* (before SH18) required title Spreadsheet SH14 and forbade ?v=SH15 */
   if (html.indexOf("?v=SH15") >= 0) throw new Error("unexpected ?v=SH15");
-  if (html.indexOf("Spreadsheet SH18") < 0) throw new Error("title is not SH18");
+  /* (before SH21) if (html.indexOf("Spreadsheet SH18") < 0) throw new Error("title is not SH18"); */
+  if (html.indexOf("Spreadsheet SH21") < 0) throw new Error("title is not SH21");
   if (ctx.ROWS !== 100 || ctx.COLS !== 26) throw new Error("grid changed");
   if (ctx.STORE_KEY !== "sheet-v4") throw new Error("storage key changed");
 });

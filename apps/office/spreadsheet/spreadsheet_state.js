@@ -4,6 +4,7 @@
  * sheet's cells store, the selection, column widths, SHEET_INIT; blank grid,
  * cell styles, status text, selection helpers.
  * Loaded first after the formula engine; every other module reads these globals.
+ * Scripts that push to SHEET_INIT must load after this file (SH21: fx.js did not).
  */
 
 /* Configuration shortcut */
