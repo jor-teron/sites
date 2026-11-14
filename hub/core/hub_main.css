@@ -304,3 +304,68 @@ body.hub-menu-open #app-frame { pointer-events: none; }
 .menu .home-item { border-bottom: 1px solid var(--line); }
 .menu .home-icon { display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
 
+
+/* H149: App not found card — full-screen in the Hub content area (#frame-wrap) in Phone /
+   frame mode; a small centered card over the wallpaper in Desktop mode (same markup). */
+#hub-app-missing {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+#hub-app-missing.open { display: grid; }
+#hub-app-missing .hub-missing-card {
+  width: min(440px, 100%);
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+#hub-app-missing .hub-missing-title {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  word-break: break-word;
+}
+#hub-app-missing .hub-missing-text {
+  margin: 0 0 8px;
+  color: var(--muted);
+  word-break: break-word;
+}
+#hub-app-missing .hub-missing-btns {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+#hub-app-missing .hub-missing-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--line);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+#hub-app-missing .hub-missing-btn.primary {
+  background: var(--accent);
+  color: #0b0d12;
+}
+#hub-app-missing .hub-missing-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+#hub-app-missing .hub-missing-btn:active { transform: scale(0.93, 0.9); }
+@media (prefers-reduced-motion: reduce) {
+  #hub-app-missing .hub-missing-btn:active { transform: none; }
+}
+html.hub-motion-off #hub-app-missing .hub-missing-btn:active,
+html.hub-motion-reduced #hub-app-missing .hub-missing-btn:active { transform: none; }
