@@ -114,3 +114,6 @@ The shared Undo / Redo / Save / Print bar belongs to the other Office apps. Note
 Inside the Hub, the word and character count now sits in the window bar as well, in this order: the count, then Open, then Download. The Hub title-bar helper only knows buttons and tabs, not a plain text label, so the count is sent as a disabled button with no icon — the Hub then draws the words. The full "N words · M characters" text is kept when it fits in 24 characters; otherwise it shortens to "chars" or "w · ch", and the full text stays on the tooltip. Open and file errors that used to flash on the toolbar use the same spot in the window bar, then the count comes back.
 
 The whole in-page toolbar hides after the Hub says hello, so the notes get that row back. There is no bar at the bottom. On its own — not in a Hub window, or the Hub never says hello — Notely still has the toolbar and the count on the right, as before.
+
+## Legacy
+IC8: icon redrawn plain without tile; old icon kept as *_icon_before_IC8.png

@@ -123,3 +123,6 @@ Status line messages:
 ## FC5 (OCR) — 5-digit Hub codes, public 00000
 - **Why:** Hub codes are 5 digits since H83. The phone sender still picks the prefix by length: a 4-digit code with "Code from the OCR page" ticked → `jtocr-` (OCR's own standalone code, unchanged); anything else (5-digit Hub code) → `jtsites-`. Only comments changed.
 
+## Legacy
+IC8: icon redrawn plain without tile; old icon kept as *_icon_before_IC8.png
+

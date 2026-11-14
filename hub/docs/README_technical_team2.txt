@@ -3505,6 +3505,55 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   and the Office node checks that read the CSV and the index.
 - 1.136 is MV1. This note is 1.137.
 
+### 1.138 IC8 Write and Scan & Print plain icons
+
+- Write and Scan & Print icons redrawn without the coloured rounded
+  tile, symbol only, matching the IC1 to IC6 plain icons (same
+  128×128 size, padding, `#1c1f24` outline and soft shadow). The CSV
+  icon column is blank, so the Office page and the Hub load
+  `<folder>/<folder>_icon.png` (MS Word Diff is listed from
+  `../tools/msword_diff/`, so its file is
+  `apps/tools/msword_diff/msword_diff_icon.png`). None of the five
+  was already plain (each still had a coloured rounded tile, and the
+  outer 8px was not clear). Notely and OCR were 192×192. MS Word
+  Diff, Paper Scan and Print were 128×128.
+- Files the apps and the Office page use:
+  - Notely: `notely_icon.png` (favicon in `notely.html`). Off-white
+    pad `#e8eaed`, three binding rings `#969ca6`, rules `#6ea8fe`.
+    The old tile was the dark card.
+  - MS Word Diff: `msword_diff_icon.png` (the page path for an empty
+    CSV icon; `msword_diff.html` has no favicon link). White `W` and
+    `≠`. The old tile was teal `#00796b`.
+  - OCR: `ocr_icon.png` (no favicon link; `ocr_send.html` shows the
+    same png in the header). White page `#f5f7fa`, folded corner
+    `#c8ced8`, rules `#464e5c`, scan bar and four corner brackets
+    `#6ea8fe`. The old tile was the dark card.
+  - Paper Scan: `paper-scan_icon.png` (favicon in `paper-scan.html`).
+    White page, folded corner `#c8d7f0`, rules `#96a5be`, scan bar
+    `#ffb22e`. The old tile was `#2b7cff`.
+  - Print: `print_icon.png` (no favicon link in `print.html` or
+    `print-send.html`). White printer, sheet in and sheet out. The
+    two rules on the output sheet were the tile showing through, so
+    they stay `#1e6eaa`. The old tile was `#1e6eaa`.
+- Drawn at 4× in `apps/office/ic8_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency. The `W` and the
+  `≠` are DejaVu Sans Bold, a system font, not a repo file, because
+  that is the face already on the icon.
+- Previous icons copied to `notely_icon_before_IC8.png`,
+  `msword_diff_icon_before_IC8.png`, `ocr_icon_before_IC8.png`,
+  `paper-scan_icon_before_IC8.png` and `print_icon_before_IC8.png`
+  (not deleted). Live file names are unchanged, so no CSV or catalog
+  edit. No hub/core, shared/ or apps/system edits. The Notely and
+  Paper Scan favicons already named the png that was redrawn, so
+  those links are unchanged. OCR, MS Word Diff and Print have no
+  favicon link. Each app has the legacy line (MS Word Diff had no
+  readme, so it is in `NOTES.md`).
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all five icons.
+  `node --test hub/tests/h146_catalog.test.cjs`.
+- 1.137 is IC6. This note is 1.138.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)
