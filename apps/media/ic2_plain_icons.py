@@ -254,6 +254,12 @@ def main():
     for path, im in icons.items():
         check(im, path)
         im.save(path, "PNG")
+    # The app HTML uses screenrec_icon.png. An empty CSV icon resolves
+    # to screen-recorder/screen-recorder_icon.png, which was missing
+    # (the Media tile fell back to a letter). Same PNG, no catalog edit.
+    icons["apps/media/screen-recorder/screenrec_icon.png"].save(
+        "apps/media/screen-recorder/screen-recorder_icon.png", "PNG"
+    )
 
 
 if __name__ == "__main__":

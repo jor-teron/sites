@@ -3282,8 +3282,11 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `video-player_icon_before_IC2.png` and
   `video-editor_icon_before_IC2.png` in the same folders (not
   deleted). Live file names are unchanged, so no CSV or catalog
-  edit. No hub/core, shared/ or apps/system edits. Each app readme
-  has the legacy line (Video Editor's is in NOTES.md).
+  edit. The app HTML still uses `screenrec_icon.png`. The same plain
+  PNG is also saved as `screen-recorder_icon.png`, the path an empty
+  CSV icon already resolves to (that file was missing, so the Media
+  tile was a letter). No hub/core, shared/ or apps/system edits.
+  Each app readme has the legacy line (Video Editor's is in NOTES.md).
 - Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
   the outer 8px margin is alpha 0 on all three icons. None of the
   three was already plain.
