@@ -95,3 +95,6 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 ## HO2
 
 Settings → Theme → Auto follows the Hub when Base is open inside the Hub (dark only when the Hub theme is dark). On its own, Auto follows the device. It updates when the Hub theme changes. Excel and SQLite were already loaded on first use; that did not change.
+
+## Legacy
+IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

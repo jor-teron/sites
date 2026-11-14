@@ -278,3 +278,6 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 - If a document cannot be saved (disk full, private mode, IndexedDB blocked), a card stays on screen: "Couldn't save — storage full" or "Couldn't save — storage blocked". It stays until a later save works. One card, not a new one every keystroke.
 - Settings → Theme → Auto follows the Hub's light/dark when Draftly is inside the Hub, and the device's light/dark setting when you open Draftly on its own. It updates when the Hub theme changes.
 - PDF and DOCX libraries (jsPDF, html2canvas, html-docx) load the first time you export, from the same files in `vendor/`. Opening Draftly no longer loads them. The normal DOCX download still uses Draftly's own writer; html-docx loads only if that writer fails.
+
+## Legacy
+IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
