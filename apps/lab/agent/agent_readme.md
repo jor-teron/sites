@@ -65,7 +65,8 @@ Browser AI agent, fully in browser JS (no build, no server of its own). Talks to
 - `app/gui/chatsearch.js` — AG8 `HR.chatSearch`: search box in the 💬 drawer (title + message text), snippet results, jump to the hit
 - `app/main.js` — `HR.notify` (Hub cards, local fallback) + boot
 - `helper/agent-helper.sh` — local bash helper (HR5), bash + socat or ncat, no Python
-- `agent_icon.png`
+- `agent_icon.png` — app icon (AG45: robot head; source `agent_icon.svg`)
+- `agent_icon.svg` — AG45 source for the robot icon
 
 ## Ollama setup
 Ollama only answers browser pages whose origin is in `OLLAMA_ORIGINS`. Example: `OLLAMA_ORIGINS="https://jor-teron.github.io" ollama serve` (the error card shows the exact origin and commands for macOS / Linux service / Windows). Base URL default `http://localhost:11434` (Settings). An https page can reach `http://localhost` but not a LAN IP over plain http.
@@ -606,3 +607,11 @@ Its version is `agent-ag44`.
 - The service worker keeps `AG44 Legacy: VER = 'agent-ag42'`. The previous `VER = 'agent-ag42'` line is commented with `(before AG44)`.
 - The previous Approve card lines (no MCP kind) stay in `app/gui/approve.js`, commented with `(before AG44)`.
 - Nothing under `app/api/hub/` was changed.
+
+## AG45 — Robot icon
+
+The app icon is a robot head (`agent_icon.png`, with `agent_icon.svg` as the source) instead of the lab flask. The same picture is used in the standalone header next to the name, and on the empty-chat hello screen. Favicons already pointed at `agent_icon.png`, so they pick up the new file. The long-task notice uses 🤖, because Hub cards and the local fallback only take an emoji, not a picture. Service worker VER is `agent-ag45` so the cached icon refreshes. The page title and the rest of the app are unchanged.
+
+### Legacy code notes — AG45
+- The previous flask lines stay in `agent.html`, `app/gui/bubbles.js` and `app/gui/chat.js`, commented with `(before AG45)`.
+- The service worker keeps `AG45 Legacy: VER = 'agent-ag44'`. The previous `VER = 'agent-ag44'` line is commented with `(before AG45)`.

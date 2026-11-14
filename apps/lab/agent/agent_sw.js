@@ -12,8 +12,11 @@
    AG29: VER agent-ag29 so install precaches prompts/prompt_*.txt and prompts/prompt_fallback.js (prompt wording).
    AG30: VER agent-ag30 so install precaches usage.html (the Usage page) and the files it links.
    AG44: VER agent-ag44 so install precaches app/core/mcp.js and app/gui/mcpset.js (remote MCP).
+   AG45: VER agent-ag45 so install picks up the robot icon (agent_icon.png) in place of the lab flask.
    Never cached: non-GET, anything cross-origin, and same-origin paths outside this folder except the shell list. */
-var FILES = 'agent-files', VER = 'agent-ag44', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+var FILES = 'agent-files', VER = 'agent-ag45', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];   /* AG15: VER bump re-installs; image.html and usage.html files precached too */
+/* AG45 Legacy: VER = 'agent-ag44'. AG45 refreshes the cached robot icon (agent_icon.png) and adds agent_icon.svg as the source. */
+// (before AG45) var FILES = 'agent-files', VER = 'agent-ag44', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];
 /* AG44 Legacy: VER = 'agent-ag42'. AG44 adds app/core/mcp.js and app/gui/mcpset.js (agent.html src=; install precaches them with the shell list). */
 // (before AG44) var FILES = 'agent-files', VER = 'agent-ag42', PAGES = ['agent.html', 'image.html', 'usage.html', 'providers.html'];
 /* AG42 Legacy: VER = 'agent-ag40'. AG42 adds app/gui/confirm.js (agent.html and image.html src=; install precaches it with the shell list). */

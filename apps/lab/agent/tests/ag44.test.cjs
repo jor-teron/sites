@@ -43,7 +43,8 @@ test('syntax, shell version, settings card and no local stdio bridge', () => {
   assert.match(html, /id="sc_mcp"/);
   assert.match(html, /id="mcpDlg"/);
   assert.match(html, /id="btnMcpRefresh"/);
-  assert.match(sw, /VER = 'agent-ag44'/);
+  assert.match(sw, /VER = 'agent-ag45'/);
+  assert.match(sw, /AG45 Legacy: VER = 'agent-ag44'/);
   assert.match(sw, /AG44 Legacy: VER = 'agent-ag42'/);
   assert.match(sw, /app\/core\/mcp\.js/);
   assert.match(sw, /app\/gui\/mcpset\.js/);

@@ -3112,6 +3112,31 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   linked css / js / icon. No Puppeteer, Playwright or browser runner.
 - 1.125 is SH19, so this note is numbered 1.126.
 
+### 1.127 AG45 Agent robot icon instead of the lab flask
+
+- The Agent app icon is a 192×192 robot head (`apps/lab/agent/agent_icon.png`,
+  same file name as before) with transparent squircle corners, rendered from
+  `apps/lab/agent/agent_icon.svg`. Hub catalog already points at that PNG, so
+  no Hub file other than this note was edited. The page `<title>` and meta
+  version were not changed; this is the icon only.
+- In-app chemistry-tube marks are replaced with the same robot: the standalone
+  header (`agent.html` brand, 22px PNG next to the name) and the empty-chat
+  hello screen (`app/gui/bubbles.js`, 44px PNG). Favicons on agent.html,
+  image.html, usage.html and providers.html already used `agent_icon.png`.
+  There is no chat avatar or about-box flask. The long-task Hub/local notice
+  in `app/gui/chat.js` now uses 🤖, because both `HR.notify` and HubNotify
+  take an emoji as text, not a picture.
+- Service worker `VER` is `agent-ag45` so the offline cache picks up the new
+  icon. The previous `VER = 'agent-ag44'` line is kept as a `(before AG45)`
+  comment. Existing tests that pinned the live worker version were updated
+  to AG45. No other Agent behaviour or UI was changed. Hub build and
+  `hub-shell` CACHE were not bumped. No new library, no CDN.
+- Checked with `node --check` on the edited JS, the existing Agent node
+  tests, and a static `python -m http.server` + curl smoke test on
+  agent.html, the icon, and the linked css / js. No Puppeteer, Playwright
+  or browser runner.
+- 1.126 is NL5, so this note is numbered 1.127.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

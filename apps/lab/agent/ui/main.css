@@ -11,7 +11,9 @@ body{display:flex;flex-direction:column;overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 code{font-family:var(--mono);font-size:.9em;background:var(--think);border:1px solid var(--line);border-radius:5px;padding:0 4px}
 .top{display:flex;align-items:center;gap:6px;padding:8px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--panel)}
-.brand{font-size:17px;margin:0 2px 0 0;white-space:nowrap}
+/* (before AG45) .brand{font-size:17px;margin:0 2px 0 0;white-space:nowrap} */
+.brand{font-size:17px;margin:0 2px 0 0;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.brand .brand-ico{width:22px;height:22px;display:block;flex:none}
 .model{min-width:0;max-width:46vw;height:30px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);padding:0 6px}
 .grow{flex:1}
 .main{flex:1;min-height:0;display:flex}

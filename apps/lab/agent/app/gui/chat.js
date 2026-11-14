@@ -91,7 +91,8 @@ HR.chat = (function () {
     HR.loop.run(opts).then(function (r) {
       var sec = (Date.now() - t0) / 1000;
       if (r.status === 'stop') note('■ Stopped.');
-      else if (sec * 1000 > LONG && HR.set.get('notifyLong') !== 'off') HR.notify({ icon: '🧪', title: 'Agent', text: 'Finished in ' + Math.round(sec) + ' s · ' + model, onClick: function () { window.focus(); } });
+      /* (before AG45) else if (sec * 1000 > LONG && HR.set.get('notifyLong') !== 'off') HR.notify({ icon: '🧪', title: 'Agent', text: 'Finished in ' + Math.round(sec) + ' s · ' + model, onClick: function () { window.focus(); } }); */
+      else if (sec * 1000 > LONG && HR.set.get('notifyLong') !== 'off') HR.notify({ icon: '🤖', title: 'Agent', text: 'Finished in ' + Math.round(sec) + ' s · ' + model, onClick: function () { window.focus(); } });
       return r;
     }, function (e) {
       if (e.kind === 'download') { HR.view.errorCard(e); return; }
