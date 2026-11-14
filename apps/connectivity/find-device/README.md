@@ -13,3 +13,6 @@ Ring or locate any of your devices on the public Hub mesh **00000**.
 - Map: Leaflet 1.9.4 in `vendor/leaflet/` (BSD-2) + OpenStreetMap tiles (needs internet).
 
 Files: `fd_peer.js` mesh, `fd_ring.js` alarm, `fd_locate.js` GPS + map, `fd_app.js` glue.
+
+## Legacy
+IC9a: icon redrawn colourful, no tile; old icon kept as find-device_icon_before_IC9a.svg

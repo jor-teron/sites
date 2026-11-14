@@ -69,3 +69,6 @@ There is no config file. In `qr-scanner.js`:
 ## 12. Related apps
 - File Drop: also reads its own pairing QR with the camera.
 - OCR: reads text (not codes) from photos.
+
+## Legacy
+IC9a: icon redrawn colourful, no tile; old icon kept as qr-scanner_icon_before_IC9a.png
