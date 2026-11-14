@@ -6,7 +6,7 @@
 .cr-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
 .cr-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); grid-template-rows: minmax(0, 1fr); gap: 10px 14px; overflow: hidden; }
 .cr-stage { position: relative; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; }
-.cr-side { min-height: 0; overflow: auto; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 8px; scrollbar-width: thin; }
+.cr-side { min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; gap: 8px; }
 .cr-styles { width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
 .cr-strow { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; padding: 2px 2px 4px; }
 .cr-st { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px;
