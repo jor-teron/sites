@@ -46,3 +46,6 @@ Browser torrent client for Hub Connectivity. Uses **WebTorrent 2.8.5**
 - WebRTC / WebTorrent peers only — many public magnets stay at 0 peers
 - Folder save needs File System Access; player SW needs a secure context
 - Seeding lasts only while the tab is open
+
+## Legacy
+IC9a: colourful hub icon added at torrent_icon.png; there was no previous icon file.

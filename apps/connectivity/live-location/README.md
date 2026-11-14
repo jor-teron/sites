@@ -20,3 +20,6 @@ Share where you are with the devices on your **private** Hub mesh, live, while t
 - Not yet: background sharing (PH2).
 
 Files: `ll_store.js` settings (`VERSION = 'LL2'`), `ll_peer.js` mesh, `ll_geo.js` GPS + throttle, `ll_hist.js` history, `ll_map.js` map + list + trail, `ll_app.js` glue, `server/` history server.
+
+## Legacy
+IC9a: icon redrawn colourful, no tile; old icon kept as live-location_icon_before_IC9a.svg

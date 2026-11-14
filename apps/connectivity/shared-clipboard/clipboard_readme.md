@@ -35,3 +35,4 @@ Copy on one device, paste on another: text, links and images go to every device 
 
 - `clipboard_app.js`: the CB1/CB2 code order (`urlCode`/`localCode`/`go`/`askCode`/`boot`) is kept as an inline comment above the CB3 version.
 - FC5: the CB1/CB2 legacy block (4-digit) is kept unchanged as a comment.
+- IC9a: icon redrawn colourful, no tile; old icon kept as clipboard_icon_before_IC9a.png

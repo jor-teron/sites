@@ -107,3 +107,6 @@ Received images and PDFs get a "Print 🖨" button beside Save (`filedrop_print.
 
 ## Release 4
 - Received files get "WhatsApp ↗" (`shared/share/share_wa.js`: share sheet, else download). Unknown Hub code → "Hub not found" banner with Retry.
+
+## Legacy
+IC9a: icon redrawn colourful, no tile; old icon kept as filedrop_icon_before_IC9a.png

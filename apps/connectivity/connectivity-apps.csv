@@ -4,7 +4,8 @@
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
 File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan a QR or type a 4-digit code
-Torrent,   torrent/,   , , Share, Download magnets and .torrent files: save to a folder you pick
+# (before IC9a) Torrent,   torrent/,   , , Share, Download magnets and .torrent files: save to a folder you pick
+Torrent,   torrent/,   torrent/torrent_icon.png, , Share, Download magnets and .torrent files: save to a folder you pick
 QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
 Code Maker, code-maker/, code-maker/code-maker_icon.png, , Share, Make QR codes and barcodes: Wi-Fi - contact - UPI - links - EAN - Code 128
 Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device
@@ -17,8 +18,10 @@ Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice 
 Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: own numbers - contacts - missed-call badge - Do Not Disturb - video calls
 Messages,  messages/,  messages/messages_icon.png, , Chat, Private one-to-one messages between devices by Hub number - sent directly - history on this device
 Contacts,  contacts/,  contacts/contacts_icon.svg, , Chat, One contact list for Telephone and Messages: search - favourites - call - message - video call
-Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
-Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
+# (before IC9a) Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
+Live Location, live-location/, live-location/live-location_icon.png, , Share, See where your devices are on a live map - sharing only while you choose - private code only
+# (before IC9a) Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
+Find My Device, find-device/, find-device/find-device_icon.png, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 VNC,        vnc/,        vnc/vnc_icon.svg, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
 Remote,      remote/,        remote/rm_icon.svg, , Remote, One list for all your remote connections: SSH - VNC - SFTP - FTP

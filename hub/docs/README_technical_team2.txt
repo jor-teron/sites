@@ -3660,6 +3660,81 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node --test hub/tests/h146_catalog.test.cjs`.
 - 1.139 is IC7a. This note is 1.140.
 
+### 1.141 IC9a Connectivity Share colourful icons
+
+- Connectivity Share icons redrawn as colourful symbols, with no rounded
+  tile and no coloured background. Same 128×128 size, padding, `#1c1f24`
+  outline and soft shadow as the IC1 to IC8 plain icons. IC9a is new:
+  each symbol uses several clear, friendly colours, and each app has its
+  own palette. The recognisable mark is kept. `connectivity_icon.png`
+  (the category icon) is unchanged. None of the nine was already a plain
+  colourful symbol (each PNG still had a coloured tile or a full-bleed
+  sheet, and the outer 8px was not clear). File Drop and Whiteboard and
+  Shared Clipboard and Multi-Screen Wall were 192×192. QR Scanner was
+  220×220. Code Maker was 128×128. Live Location and Find My Device were
+  SVG only. Torrent had no icon file.
+- Files the apps and the Connectivity page use:
+  - File Drop: `filedrop_icon.png` (favicon and apple-touch icon in
+    `filedrop.html`, the same file name, so those links are unchanged).
+    Up arrow `#2f80ed` with a cyan head `#56ccf2`, down arrow `#f2994a`
+    with a red head `#eb5757`. The old tile was `#6ea8fe`. The CSV icon
+    column stays empty, so the page still loads this file.
+  - Torrent: `torrent_icon.png` (new; `index.html` has no favicon link).
+    Horseshoe magnet: steel curve `#e2e8f0`, rose pole `#f43f5e`, blue
+    pole `#2563eb`, gold caps `#facc15`. There was no previous icon.
+  - QR Scanner: `qr-scanner_icon.png` (no favicon link; the readme names
+    it as the hub icon). Three finders `#2563eb`, `#16a34a` and
+    `#ea580c`, indigo modules `#312e81`, rose timing cross `#f472b6`.
+    The old sheet was white. The CSV icon column stays empty.
+  - Code Maker: `code-maker_icon.png` (favicon in `code-maker.html`, the
+    same file name, so that link is unchanged). Violet finders
+    `#7c3aed`, magenta finder `#db2777`, teal / green / lime bars, amber
+    and rose modules. The old tile was `#2563eb`. The CSV already names
+    this png.
+  - Whiteboard: `whiteboard_icon.png` (favicon in `whiteboard.html`, the
+    same file name, so that link is unchanged). Warm board `#fff7ed`,
+    amber stand `#f4a261`, red check `#ef4444`, blue square `#2563eb`,
+    green circle `#22c55e`. The old tile was the blue gradient. The CSV
+    already names this png.
+  - Shared Clipboard: `clipboard_icon.png` (favicon in `clipboard.html`,
+    the same file name, so that link is unchanged). Sky back page
+    `#7dd3fc`, cream front page, rose clip `#fb7185`, teal lines
+    `#0d9488`, amber arrow `#f59e0b`. The old tile was the purple
+    gradient. The CSV already names this png.
+  - Multi-Screen Wall: `screenwall_icon.png` (favicon in
+    `screenwall.html`, the same file name, so that link is unchanged).
+    Four screens `#60a5fa`, `#34d399`, `#fbbf24` and `#f472b6`, white
+    ring. The old tile was `#111316`. The CSV already names this png.
+  - Live Location: `live-location_icon.png` (new). Rose pin `#ff4d6d`,
+    gold disc `#ffd64a`, teal centre `#14b8a6`. The old tile was
+    `#1a73e8`. `live-location.html` still uses `live-location_icon.svg`
+    as the favicon (that file is kept, and it was not renamed).
+  - Find My Device: `find-device_icon.png` (new). Pale phone `#eef2ff`,
+    sky screen `#38bdf8`, amber glass `#f59e0b`, orange handle
+    `#ea580c`, mint waves `#4ade80`. The old tile was `#e8710a`.
+    `find-device.html` still uses `find-device_icon.svg` as the favicon
+    (that file is kept, and it was not renamed).
+- Drawn at 4× in `apps/connectivity/ic9a_colour_icons.py` and
+  downscaled. Pillow draws them and is not a repo dependency.
+- Previous icons copied to `filedrop_icon_before_IC9a.png`,
+  `qr-scanner_icon_before_IC9a.png`, `code-maker_icon_before_IC9a.png`,
+  `whiteboard_icon_before_IC9a.png`, `clipboard_icon_before_IC9a.png`,
+  `screenwall_icon_before_IC9a.png`, `live-location_icon_before_IC9a.svg`
+  and `find-device_icon_before_IC9a.svg` (not deleted). The two svg
+  files are also still in their folders. Torrent had nothing to copy.
+  Live File Drop, QR Scanner, Code Maker, Whiteboard, Shared Clipboard
+  and Multi-Screen Wall file names are unchanged, so those CSV cells
+  stay as they were. Torrent, Live Location and Find My Device CSV rows
+  now point at the png; the old rows are commented `# (before IC9a)`.
+  No hub/core or shared/ edit. Favicon lines are unchanged. Each app
+  readme has the legacy line (Torrent's is in `README.md`).
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all nine icons.
+  `python3 -m py_compile apps/connectivity/ic9a_colour_icons.py` and
+  `node --test hub/tests/h146_catalog.test.cjs`.
+- 1.140 is IC7b. This note is 1.141.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

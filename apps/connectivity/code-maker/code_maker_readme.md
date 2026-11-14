@@ -10,3 +10,6 @@ Make QR codes, barcodes and other 2D codes on the device. Offline, works from fi
 - **Storage (localStorage):** `code_maker_history` (last 30; Save, open, ✕ delete, Clear), `code_maker_last` (form restored on open), `code_maker_theme` (System/Light/Dark; System follows the Hub's `sites-hub.theme`, else Light).
 - **Self-check:** with `BarcodeDetector` (Chrome Android/macOS) a "Scans OK" badge shows when the QR reads back; otherwise skipped silently.
 - **Files:** `code-maker.html`, `code-maker.css`, `code-maker_types.js` (one entry per type: fields + build/validate), `code-maker.js` (UI, render, output, history), `vendor/bwip-js-min.js` (bwip-js 4.11.4, MIT, `vendor/bwip-js_LICENSE.txt`). No `?v=` cache strings (NV1).
+
+## Legacy
+IC9a: icon redrawn colourful, no tile; old icon kept as code-maker_icon_before_IC9a.png

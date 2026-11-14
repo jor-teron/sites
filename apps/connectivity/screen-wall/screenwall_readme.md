@@ -20,3 +20,4 @@ Join several phones, tablets or PCs on the same Hub Connect Code into one big sc
 
 ## Legacy code notes
 - FC5: replaced lines used `\d{4}`; see git history before FC5.
+- IC9a: icon redrawn colourful, no tile; old icon kept as screenwall_icon_before_IC9a.png
