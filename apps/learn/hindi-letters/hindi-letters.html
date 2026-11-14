@@ -2,22 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Hindi Letters HL-1e</title><link rel="icon" href="hindi-letters_icon.png">
+<title>Hindi Letters HL-2</title><link rel="icon" href="hindi-letters_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.hindi-letters.theme"></script>
 <link rel="stylesheet" href="ui/hindi.css">
 </head>
 <body>
 <div id="app" class="lrn">
-<header class="lrn-head"><a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1>Hindi Letters <span lang="hi">अक्षर सीखें</span></h1><button id="help">How to use</button><button id="mute" aria-pressed="false">Sound on</button><button id="settings">Settings</button></header>
+<header class="lrn-head"><a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1>Hindi Letters <span lang="hi">अक्षर सीखें</span></h1><button id="help">How to use</button><button id="mute" aria-pressed="false">Sound on</button></header>
 <nav id="modes" aria-label="Activities"><button data-mode="chart" aria-pressed="true">Letters</button><button data-mode="matras">Matras</button><button data-mode="joins">Joined letters</button><button data-mode="numbers">Numbers</button><button data-mode="words">Words</button><button data-mode="games">Games</button></nav>
 <div class="status"><span id="progress"></span><span id="voice-note" role="status"></span></div>
 <main id="content"></main>
 </div>
 <dialog id="letter-card" aria-labelledby="letter-title"><div class="card-head"><h2 id="letter-title">Letter</h2><button data-close="letter-card">Close</button></div><div id="letter-detail"></div></dialog>
-<dialog id="preferences" aria-labelledby="settings-title"><h2 id="settings-title">Learning settings</h2>
-<label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
-<label><input id="audio" type="checkbox"> Spoken Hindi audio</label><p>Speech uses your device's Hindi voice. No microphone is needed.</p>
-<button data-close="preferences">Done</button></dialog>
 <dialog id="pause-card" aria-labelledby="pause-title"><h2 id="pause-title">Practice paused</h2><p>There is no timer. Take your time.</p><button id="resume-game">Resume</button><button id="quit-game">Quit to games</button></dialog>
 <dialog id="help-card" aria-labelledby="help-title"><div class="card-head"><h2 id="help-title">How to use</h2><button data-close="help-card">Close</button></div>
 <ol><li>Letters: tap any card for its sound hint and picture word. Mark it learned when you recognise it.</li>
@@ -29,7 +25,7 @@
 <li>Games: see or hear a letter and choose; match a picture and meaning to a word; or build a word from letter-group tiles. The letter groups (aksharas) keep matras and conjuncts attached to their base. Listen &amp; pick shows transliteration if speech is unavailable or off. Hear is manual so you can take your time.</li>
 <li>Each game has 10 questions. 4, 7 or 9 correct earns 1, 2 or 3 stars. Best game stars and trace stars are saved. Learn a letter, earn trace stars or finish a game to count an active day. Practise on consecutive local-calendar days to grow your streak.</li>
 <li>Pause / quit (or Escape) stops practice and speech. A hidden tab pauses an active game. Quitting an unfinished game does not award stars. There are no timers or penalties.</li>
-<li>Settings starts at Auto (System / Hub). A Hindi device voice enables spoken Hindi; pronunciation quality varies by device. Audio can be switched off; Sound off mutes speech and effects. Progress stays only on this browser; clearing its site data erases it.</li></ol>
+<li>The theme follows your system or Hub automatically. Sound is on by default; the Sound button on the title bar turns speech and effects on or off. A Hindi device voice enables spoken Hindi; pronunciation quality varies by device. Progress stays only on this browser; clearing its site data erases it.</li></ol>
 <p class="note">A beginner recognition and shape-practice aid, not a substitute for a Hindi teacher. The chart uses the traditional 13 vowel/sign entries and 33 basic consonants plus 3 conjuncts. Additional nukta letters such as ड़ and ढ़ appear in words but are outside the basic chart. Roman hints are approximate.</p></dialog>
 <noscript>Hindi Letters needs JavaScript to show the chart and tracing practice.</noscript>
 <script src="../shared/learn-hubbar.js"></script><script src="core/alphabet.js"></script><script src="core/logic.js"></script>

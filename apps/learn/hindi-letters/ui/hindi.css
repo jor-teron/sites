@@ -13,6 +13,8 @@ a { color:var(--accent); } .back { text-decoration:none; white-space:nowrap; }
 h2 { font-size:22px; margin:12px 0; } h3 { margin:18px 0 10px; } p { margin:10px 0; } small,.muted { color:var(--soft); } .card-head h2 { flex:1; }
 nav,.row { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; } .status { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:13px; color:var(--soft); margin:12px 0; }
 .intro { border-left:4px solid var(--accent); padding:6px 16px; background:var(--wash); border-radius:0 12px 12px 0; }
+/* HL-2: grey alpha title bar buttons */
+.lrn-head button,.lrn-head .back { background:rgba(128,128,128,.18); } .lrn-head button:hover,.lrn-head .back:hover { background:rgba(128,128,128,.28); } .lrn-head button:active,.lrn-head button[aria-pressed=true] { background:rgba(128,128,128,.34); }
 .letter-grid { display:grid; grid-template-columns:repeat(auto-fill,140px); gap:10px; }
 .letter { position:relative; width:140px; height:140px; box-sizing:border-box; display:flex; align-items:center; flex-direction:column; justify-content:center; gap:4px; }
 .letter { gap:2px; padding:4px; overflow:hidden; } .letter .glyph { font-size:84px; line-height:1.05; } .letter small { font-size:30px; line-height:1.1; } .badge { position:absolute; right:6px; top:4px; color:var(--accent); font-size:12px; }
@@ -22,7 +24,7 @@ dialog::backdrop { background:#07142bbb; backdrop-filter:blur(3px); } label { di
 .big-letter { font-size:100px; line-height:1.6; margin:0; color:var(--accent); } .example { font-size:26px; } .emoji { font-size:48px; }
 .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; } .trace-wrap { position:relative; width:100%; max-width:320px; margin:0 auto; aspect-ratio:1; background:var(--paper); border-radius:16px; overflow:hidden; border:1px solid var(--edge); }
 #trace { width:100%; height:100%; display:block; touch-action:none; } .trace-buttons button { padding:7px 11px; } #trace-result { min-height:48px; }
-.star { color:var(--accent); } .note { font-size:13px; color:var(--soft); } #preferences { max-width:480px; }
+.star { color:var(--accent); } .note { font-size:13px; color:var(--soft); }
 @media(max-width:600px) { #app { padding-top:10px; } h1 { font-size:19px; } h1 span { font-size:13px; } .lrn-head { gap:8px; } .lrn-head button,.back { padding:8px; } .detail-grid { grid-template-columns:1fr; gap:10px; } .letter-info { display:grid; grid-template-columns:90px 1fr; gap:0 10px; } .big-letter { grid-row:span 2; font-size:76px; } .letter-info .row { margin:6px 0; } .example { font-size:24px; } dialog { padding:15px; } }
 @media(max-height:500px) and (min-width:650px) { #app { padding-top:8px; } .detail-grid { grid-template-columns:1fr 1fr; } .trace-wrap { max-width:230px; } dialog { padding:12px 18px; } .big-letter { font-size:70px; } .lrn-head h1 span { display:none; } }
 @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
@@ -47,7 +49,7 @@ input[type=search] { min-height:44px; border:1px solid var(--edge); border-radiu
 .game-choices:has(.tile-row) { display:block; } .tile-row { display:flex; flex-wrap:wrap; gap:12px; }
 .word-tile { min-width:60px; min-height:64px; font-size:30px; line-height:1.6; } .built { text-align:center; font-size:32px; min-height:70px; border-bottom:2px solid var(--accent); }
 .result-stars { font-size:48px; color:var(--accent); } #rewards { color:var(--accent); }
-@media(max-width:600px) { .lrn-head { flex-wrap:wrap; } .lrn-head h1 { min-width:200px; } .lrn-head #help,.lrn-head #mute,.lrn-head #settings { flex:1; } .game-menu { gap:10px; } .game-menu-card { font-size:18px; padding:12px; } .answer { font-size:30px; } }
+@media(max-width:600px) { .lrn-head { flex-wrap:wrap; } .lrn-head h1 { min-width:200px; } .lrn-head #help,.lrn-head #mute { flex:1; } .game-menu { gap:10px; } .game-menu-card { font-size:18px; padding:12px; } .answer { font-size:30px; } }
 @media(max-height:500px) and (min-width:650px) {
   #content.playing { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:6px 18px; scroll-margin-top:8px; }
   .playing .game-head,.playing > .muted { grid-column:1/-1; margin:0; }

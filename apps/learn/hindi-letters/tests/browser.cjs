@@ -33,10 +33,7 @@ const p=require(process.env.HL_PUPPETEER || '/workspace/gg-test/node_modules/pup
     await page.mouse.move(bounds.x+40,bounds.y+60); await page.mouse.down(); await page.mouse.move(bounds.x+70,bounds.y+80,{steps:4}); await page.mouse.up();
     ok(await page.evaluate(()=>Hindi.trace.grade().stars<3),'short pointer trace not full credit');
     await page.click('[data-close="letter-card"]');
-    await page.click('#settings'); ok(await page.$eval('#theme',e=>e.value==='system'),'Auto default');
-    await page.select('#theme','dark'); ok(await page.evaluate(()=>document.documentElement.dataset.theme==='dark'),'dark theme');
-    await page.select('#theme','light'); ok(await page.evaluate(()=>document.documentElement.dataset.theme==='light'),'light theme');
-    await page.select('#theme','system'); await page.click('[data-close="preferences"]');
+    ok(!(await page.$('#settings')),'no Settings button (HL-2)'); ok(await page.evaluate(()=>HubTheme.own()==='system'),'theme follows System / Hub');
     await page.evaluate(()=>{localStorage.setItem('sites-hub.theme','dark'); window.dispatchEvent(new Event('storage'));});
     ok(await page.evaluate(()=>document.documentElement.dataset.theme==='dark'),'follows Hub');
     await page.reload({waitUntil:'networkidle0'}); ok(await page.evaluate(()=>Object.keys(Hindi.progress.traced).length===1),'resume stored progress');

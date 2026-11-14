@@ -51,9 +51,7 @@
   $('modes').onclick=e=>{const b=e.target.closest('[data-mode]'); if(b) H.navigate(b.dataset.mode);};
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
   $('letter-card').addEventListener('close',H.stopSpeech);
-  $('settings').onclick=()=>{ $('theme').value=HubTheme.own(); $('audio').checked=H.prefs.audio; $('preferences').showModal(); H.stopSpeech(); };
-  $('audio').onchange=e=>{H.prefs.audio=e.target.checked; H.write('prefs',H.prefs); H.stopSpeech(); if(H.audioChanged) H.audioChanged();};
-  $('theme').onchange=e=>HubTheme.setOwn(e.target.value);
+  if(HubTheme.own()!=='system') HubTheme.setOwn('system'); // HL-2: no Settings; theme always follows System / Hub
   function syncTheme() {
     if(HubTheme.own()!=='system') return;
     let theme='',auto=''; try {theme=localStorage.getItem('sites-hub.theme'); auto=localStorage.getItem('sites-hub.themeAuto');} catch(_){}
@@ -63,6 +61,6 @@
   window.addEventListener('message',e=>{if(e.origin===location.origin && e.data?.type==='hub-prefs') syncTheme();});
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncTheme); syncTheme();
   window.addEventListener('pagehide',H.stopSpeech); document.addEventListener('visibilitychange',()=>{if(document.hidden) H.stopSpeech();});
-  LearnHubBar.attach(document.querySelector('.lrn-head'),{buttons:'#settings,#help,#mute'});
+  LearnHubBar.attach(document.querySelector('.lrn-head'),{buttons:'#help,#mute'});
   H.navigate('chart'); progress();
 })();
