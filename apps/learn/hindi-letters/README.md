@@ -36,3 +36,7 @@ Final validation: **14 Node tests + 72 Chrome checks passed**, zero console erro
 ## HL-1d
 
 - Alphabet letter tiles are fixed 140×140px squares on desktop and phone; the grid wraps them onto new rows.
+
+## HL-1e
+
+- Alphabet tiles: the Hindi letter (84px) and the roman label under it (30px) grow together to fill about 90% of the 140px tile, same size on desktop and phone.

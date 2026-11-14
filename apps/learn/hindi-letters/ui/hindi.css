@@ -15,7 +15,7 @@ nav,.row { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; } .status { dis
 .intro { border-left:4px solid var(--accent); padding:6px 16px; background:var(--wash); border-radius:0 12px 12px 0; }
 .letter-grid { display:grid; grid-template-columns:repeat(auto-fill,140px); gap:10px; }
 .letter { position:relative; width:140px; height:140px; box-sizing:border-box; display:flex; align-items:center; flex-direction:column; justify-content:center; gap:4px; }
-.letter .glyph { font-size:36px; line-height:1.5; } .letter small { font-size:14px; } .badge { position:absolute; right:6px; top:4px; color:var(--accent); font-size:12px; }
+.letter { gap:2px; padding:4px; overflow:hidden; } .letter .glyph { font-size:84px; line-height:1.05; } .letter small { font-size:30px; line-height:1.1; } .badge { position:absolute; right:6px; top:4px; color:var(--accent); font-size:12px; }
 .group { margin-bottom:24px; } .group h2 { font-size:17px; color:var(--soft); }
 dialog { background:var(--panel); color:var(--ink); border:1px solid var(--edge); border-radius:22px; padding:22px; width:min(760px,calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
 dialog::backdrop { background:#07142bbb; backdrop-filter:blur(3px); } label { display:block; margin:14px 0; } input[type=checkbox] { width:22px; height:22px; vertical-align:middle; margin-right:8px; accent-color:var(--accent); }
@@ -23,7 +23,7 @@ dialog::backdrop { background:#07142bbb; backdrop-filter:blur(3px); } label { di
 .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; } .trace-wrap { position:relative; width:100%; max-width:320px; margin:0 auto; aspect-ratio:1; background:var(--paper); border-radius:16px; overflow:hidden; border:1px solid var(--edge); }
 #trace { width:100%; height:100%; display:block; touch-action:none; } .trace-buttons button { padding:7px 11px; } #trace-result { min-height:48px; }
 .star { color:var(--accent); } .note { font-size:13px; color:var(--soft); } #preferences { max-width:480px; }
-@media(max-width:600px) { #app { padding-top:10px; } h1 { font-size:19px; } h1 span { font-size:13px; } .lrn-head { gap:8px; } .lrn-head button,.back { padding:8px; } .letter .glyph { font-size:33px; } .detail-grid { grid-template-columns:1fr; gap:10px; } .letter-info { display:grid; grid-template-columns:90px 1fr; gap:0 10px; } .big-letter { grid-row:span 2; font-size:76px; } .letter-info .row { margin:6px 0; } .example { font-size:24px; } dialog { padding:15px; } }
+@media(max-width:600px) { #app { padding-top:10px; } h1 { font-size:19px; } h1 span { font-size:13px; } .lrn-head { gap:8px; } .lrn-head button,.back { padding:8px; } .detail-grid { grid-template-columns:1fr; gap:10px; } .letter-info { display:grid; grid-template-columns:90px 1fr; gap:0 10px; } .big-letter { grid-row:span 2; font-size:76px; } .letter-info .row { margin:6px 0; } .example { font-size:24px; } dialog { padding:15px; } }
 @media(max-height:500px) and (min-width:650px) { #app { padding-top:8px; } .detail-grid { grid-template-columns:1fr 1fr; } .trace-wrap { max-width:230px; } dialog { padding:12px 18px; } .big-letter { font-size:70px; } .lrn-head h1 span { display:none; } }
 @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
 @media(max-width:600px) { .letter-info .big-letter { grid-row:auto; } .letter-info > .row,.letter-info > p:not(.big-letter),.letter-info > button { grid-column:1/-1; } }
