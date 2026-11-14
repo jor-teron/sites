@@ -104,3 +104,6 @@ Setup steps (Google Cloud, client id) are in `mail.txt`.
 
 20 MB total attachments per mail, files are read fully into memory (slow on old phones),
 no inline images in sent mail, 20 messages per list, From is always your Gmail account.
+
+## Legacy
+IC5: icon redrawn plain without tile; old icon kept as *_icon_before_IC5.png
