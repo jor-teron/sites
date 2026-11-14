@@ -79,3 +79,6 @@ Real Linux commands: BusyBox 1.36.1 built to WebAssembly (`bin/busybox.wasm`, ~3
 - **Tests hook:** `window.HubTerminal.run(line)` returns a promise; `HubTerminal.fs` is the file layer, `HubTerminal.asking()` tells whether a y/n question waits.
 
 Files: `index.html`, `terminal.js`, `terminal_fs.js`, `terminal_wr.js`, `terminal_edit.js`, `terminal_bb.js`, `terminal_etc.js`, `terminal_rc.js`, `terminal_worker.js`, `terminal.css`, `terminal_icon.png`, `README.md`, `bin/` (`busybox.wasm`, `busybox.js`, `APPLETS.txt`, `BUILD.md`).
+
+## Legacy
+IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png

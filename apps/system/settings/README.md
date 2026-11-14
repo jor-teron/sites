@@ -34,3 +34,6 @@ Line 1 = version (internal only, not displayed anywhere since R41), line 2 = dat
 the current release (`YYYY-MM-DD`, shown as "Current release"). Read with `cache: 'no-cache'`
 by `hub/update/hub_update.js` and `sec_about.js`; "—" shows when it can't be read. Bump it with
 each release (together with the `?v=` tags and `hub-shell-vN` in `hub/update/hub_sw.js`).
+
+## Legacy
+IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png

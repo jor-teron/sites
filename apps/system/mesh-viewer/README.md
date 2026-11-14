@@ -37,3 +37,6 @@ to open it from the Hub.
 Files: `index.html`, `mv.js`, `mv.css`, `mesh-viewer_icon.png`, this README. Hub side:
 `hub/link/hub_meshlog.js` (loaded right after `hub_mesh.js` in `hub.html`).
 Tests: `/workspace/h69test/t69.py` (two and three real Hub pages on the stand-in PeerJS broker).
+
+## Legacy
+IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png

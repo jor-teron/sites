@@ -19,3 +19,6 @@ Click opens, Shift+click / middle-click opens another window. Apps open like the
 Files: `index.html`, `search.js` (data, matching, UI), `search_items.js` (Hub items), `search.css`,
 `search_icon.png`. Planned: H48b taskbar 🔍 button after Show desktop, H48c CSV description column,
 H48d descriptions for every category (Apps / Games bots).
+
+## Legacy
+IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png
