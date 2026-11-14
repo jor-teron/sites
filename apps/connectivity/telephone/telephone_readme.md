@@ -80,3 +80,5 @@ Why: Jor wants Do Not Disturb to belong to the Hub, with connectivity apps follo
 - telephone_hubline.js (TPLine) wraps window.top.HubLine (H91) when present. Calling a number whose Telephone is closed rings through HubLine.call(num,{video:false}) (CX1.1: a decline reason is shown as is);
   on accepted, Telephone dials over its own lobby as soon as the number appears (20 s). #call=<callId>&from=<num> auto-answers the next ring from that number (60 s).
   takeInbox('missed') entries go into the call log as missed. Media stays P2P. No HubLine → unchanged.
+
+IC9b: icon redrawn colourful, no tile; old icon kept as telephone_icon_before_IC9b.png

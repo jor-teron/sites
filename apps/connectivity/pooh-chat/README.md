@@ -53,3 +53,5 @@ broadcast failure toast, dedupe, 200 cap, bubble grouping, dot.
 - PC1 first build (H84 rework): `pooh-chat-peer.js` (own `jtsites-<code>-pooh-*` lobby, `hi/roster/msg/sync`, last-50
   backfill) was deleted, never merged; its boot code is kept as `//` comments in `pooh-chat.js`, and
   `PoohCore.merge/backfill` stay for reference. The separate `pooh-chat-history-<code>` store is gone.
+
+IC9b: icon redrawn colourful, no tile; old icon kept as pooh-chat_icon_before_IC9b.png
