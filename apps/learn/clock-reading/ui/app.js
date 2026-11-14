@@ -1,4 +1,4 @@
-/* Clock Reading CR3 — one page, no modes: a big live clock that always shows the real time in GMT (UTC), ticking once a
+/* Clock Reading CR4 — one page, no modes: a big live clock that always shows the real time in GMT (UTC), ticking once a
    second, with the digital time (12 h with AM / PM, or 24 h), the time in words and a "Now (GMT)" badge. Hover (mouse) or tap
    (touch) any part of the clock — the face, each hand, the centre pin, each of the 12 hour marks, the minute marks between
    them and the style's own parts (pendulum, shadow, crown ...) — to see its name and one plain line about it; tap anywhere
@@ -6,7 +6,7 @@
    Saves in localStorage: learn.clock-reading.style, .fmt ('12' / '24') and .sec (second hand, on unless turned off).
    In a Hub desktop window the header moves to the Hub title bar (LearnHubBar); CR3 sends no tabs and no buttons. */
 (() => {
-  const C = window.CR, VER = 'CR3', PRE = 'learn.clock-reading.', store = LRN.store;
+  const C = window.CR, VER = 'CR4', PRE = 'learn.clock-reading.', store = LRN.store;
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -33,7 +33,8 @@
     C.miniClock(st.id), h('span', { class: 'cr-stn' }, st.name)));
   const row = h('section', { class: 'cr-styles', 'aria-label': 'Clock styles' }, h('div', { class: 'cr-strow', role: 'group', 'aria-label': 'Pick a clock style' }, tiles), note);
   const head = h('header', { class: 'lrn-head' }, h('h1', null, h('span', { class: 'lrn-here' }, 'Clock Reading')), h('span', { class: 'cr-ver' }, VER));
-  const main = h('main', { class: 'lrn-main cr-main', id: 'lrn-main' }, stage, side, row);
+  side.append(row);   // CR4: the style tiles sit on the right, under the time panel, so the clock gets the full height
+  const main = h('main', { class: 'lrn-main cr-main', id: 'lrn-main' }, stage, side);
   root.className = 'lrn cr'; root.replaceChildren(head, main);
   document.title = 'Clock Reading ' + VER;
   if (window.LearnHubBar) LearnHubBar.attach(head);   // Hub desktop window: the header goes to the title bar (no tabs, no buttons)
