@@ -1,6 +1,10 @@
 # Invoice Maker (INV1)
 
-Office app at `apps/office/invoice-maker/`. Make GST tax invoices, quotes, receipts and bills of supply on this device. Nothing is uploaded.
+MV1: moved from apps/office to apps/tools (Money section); old path redirects
+
+Tools app at `apps/tools/invoice-maker/` (Tools → Money). Make GST tax invoices, quotes, receipts and bills of supply on this device. Nothing is uploaded.
+
+<!-- (before MV1) Office app at `apps/office/invoice-maker/`. Make GST tax invoices, quotes, receipts and bills of supply on this device. Nothing is uploaded. -->
 
 ## What it does
 - Business profile (name, address, GSTIN, phone, email, logo, signature, bank and UPI), saved locally.
@@ -10,7 +14,8 @@ Office app at `apps/office/invoice-maker/`. Make GST tax invoices, quotes, recei
 - Tax is CGST+SGST when the place of supply is the same state as the business, otherwise IGST. The total is rounded to the nearest rupee (optional) and written in Indian words (lakh / crore).
 - Notes, terms and a due date.
 - Live A4 preview with Classic, Modern and Minimal templates and an accent colour.
-- Print, and Save as PDF (lazy-loads the jsPDF already vendored in Writer, `../writer/vendor/jspdf.umd.min.js` since DF25; if that fails, use Print and choose Save as PDF).
+- Print, and Save as PDF (lazy-loads the jsPDF already vendored in Writer, `../../office/writer/vendor/jspdf.umd.min.js` since MV1; if that fails, use Print and choose Save as PDF).
+<!-- (before MV1) `../writer/vendor/jspdf.umd.min.js` since DF25 -->
 - Optional UPI QR when a UPI ID is saved (lazy-loads `shared/vendor/qrcode.js`).
 - History with search, Paid/Unpaid, duplicate, edit and delete (in-app confirm).
 - JSON backup export/import, and CSV of the history.
@@ -23,7 +28,8 @@ Office app at `apps/office/invoice-maker/`. Make GST tax invoices, quotes, recei
 - `test_inv_calc.js` — `node test_inv_calc.js`
 - `invoice-maker_icon.svg`
 
-RELEASE, the `<title>` and `?v=` are INV1. No CDN. In-app dialogs only (`../shared/office-dialog.js`).
+RELEASE, the `<title>` and `?v=` are INV1. No CDN. In-app dialogs only (`../../office/shared/office-dialog.js`).
+<!-- (before MV1) In-app dialogs only (`../shared/office-dialog.js`). -->
 
 ## Limits
 - Plays no part in e-invoicing / IRN / e-way bills. This is a document you print or save, not a filing tool.

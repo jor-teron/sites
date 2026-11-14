@@ -1,12 +1,14 @@
 /* Invoice Maker INV1 — editor, live A4 preview, history, clients, backup.
-   Totals come from inv_calc.js. Dialogs: ../shared/office-dialog.js. */
+   Totals come from inv_calc.js. Dialogs: ../../office/shared/office-dialog.js. */
+/* (before MV1) Dialogs: ../shared/office-dialog.js. */
 'use strict';
 
 var RELEASE = 'INV1';
 var STORE_KEY = 'invoice-maker-v1';
 /* (before DF25) var JSPDF_SRC = '../draftly/vendor/jspdf.umd.min.js'; */
-var JSPDF_SRC = '../writer/vendor/jspdf.umd.min.js';   /* DF25: Writer's folder is now writer/ */
-var QR_SRC = '../../../shared/vendor/qrcode.js';
+/* (before MV1) var JSPDF_SRC = '../writer/vendor/jspdf.umd.min.js'; */   /* DF25: Writer's folder is now writer/ */
+var JSPDF_SRC = '../../office/writer/vendor/jspdf.umd.min.js';   /* MV1: this app now lives in apps/tools/ */
+var QR_SRC = '../../../shared/vendor/qrcode.js';   /* MV1: apps/<cat>/<app>/ is the same depth, so this still reaches shared/vendor */
 var DEFAULT_TERMS = 'Goods once sold will not be taken back. Interest may be charged on overdue payments. Subject to the jurisdiction of the place of supply.';
 var DEFAULT_ACCENT = '#0f5c4c';
 

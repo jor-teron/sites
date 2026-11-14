@@ -1,6 +1,8 @@
 # Expense Tracker (EXT1)
 
-Offline spending and income tracker. No libraries, no network. Amounts are in rupees with Indian grouping (1,23,456.00).
+MV1: moved from apps/office to apps/tools (Money section); old path redirects
+
+Offline spending and income tracker. No libraries, no network. Amounts are in rupees with Indian grouping (1,23,456.00). Tools app at `apps/tools/expense-tracker/` (Tools → Money).
 
 - Files: `expense-tracker.html`, `expense-tracker.css`, `expense-tracker.js` (RELEASE = 'EXT1', `?v=EXT1`), `ex_core.js` (pure helpers, node-testable), `index.html` redirect, `expense-tracker_icon.svg`, `test_ex_core.js` (`node test_ex_core.js`).
 - Storage: localStorage `expense-tracker-v1`. Writes are guarded; a toast is shown if a save fails. Auto theme follows `sites-hub.theme` (else the device setting).

@@ -3363,6 +3363,56 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   the outer 8px margin is alpha 0 on both icons.
 - 1.134 is left for IC4 (running in parallel). This note is 1.135.
 
+### 1.136 MV1 Invoice Maker and Expense Tracker move to Tools (Money)
+
+- IC4 is 1.134 and IC5 is 1.135, both running in parallel, so this note is
+  1.136 and is appended after them.
+- Invoice Maker and Expense Tracker left Office (Hub Office) for Tools, in a
+  new section called Money. Folders moved with `git mv` so history stays:
+  `apps/office/invoice-maker/` → `apps/tools/invoice-maker/`, and
+  `apps/office/expense-tracker/` → `apps/tools/expense-tracker/`.
+- Each old path keeps a tiny redirect stub only: `index.html` and
+  `invoice-maker.html`, and the same pair for Expense Tracker. The script
+  sends the browser to the new app page and keeps the query string and hash,
+  so old bookmarks, pinned apps and desktop shortcuts still open. The
+  noscript refresh and link point at the same new page. No `?v=` on the stubs.
+- Paths inside Invoice Maker that pointed at Office neighbours were updated
+  (old lines kept as `(before MV1)` comments). Dialog CSS and JS are now
+  `../../office/shared/office-dialog.css` and `.js`. Save as PDF lazy-loads
+  `../../office/writer/vendor/jspdf.umd.min.js`. The UPI QR script stays
+  `../../../shared/vendor/qrcode.js`: `apps/<category>/<app>/` is the same
+  depth, so that path still reaches `shared/vendor`. Expense Tracker has no
+  path that leaves its own folder. Icon files moved with the apps.
+- Data is not keyed by the folder path, so nothing was remapped. Invoice
+  Maker reads and writes localStorage `invoice-maker-v1` (and reads
+  `sites-hub.theme` for Auto). Expense Tracker uses localStorage
+  `expense-tracker-v1` (and the same theme key). Neither app uses IndexedDB
+  or a Local drive folder. The origin is unchanged, so the keys still resolve.
+  JSON backup types stay `hub-invoice-maker-backup` and
+  `hub-expense-tracker-backup`. Phone pins and the Hub id stay
+  `invoice-maker` and `expense-tracker`.
+- Lists: the two rows in `apps/office/office-apps.csv` are commented with
+  `# (before MV1)` (the CSV already treats `#` as a comment). They are added
+  to `apps/tools/tools-apps.csv` with section `Money`, paths relative to
+  `apps/tools` (`invoice-maker/`, `expense-tracker/`), and Expense Tracker's
+  icon still `expense-tracker/expense-tracker_icon.svg`. Invoice Maker's icon
+  column stays empty, so the index keeps the default
+  `<folder>/<folder>_icon.png` name. `hub/core/hub_catalog.js` Office and
+  Tools text is the exact CSV text. `hub/core/hub_appindex.js` category is
+  `Tools` and the entry paths are `apps/tools/invoice-maker/` and
+  `apps/tools/expense-tracker/` (old Office entries commented). No other
+  hub/core file, and no `shared/` or `apps/system` edit.
+- Other references: `hub/tests/h146_catalog.test.cjs` now expects category
+  Tools for both apps (old Office lines commented). The DF25 rename check
+  reads Invoice Maker from `apps/tools/invoice-maker/` and expects the new
+  jsPDF path. Both app readmes carry the legacy line: MV1: moved from
+  apps/office to apps/tools (Money section); old path redirects.
+- No new library, no CDN, no `?v=` change and no build bump. RELEASE stays
+  INV1 and EXT1.
+- Checked with `node --check` on the touched JS, `node test_inv_calc.js`,
+  `node test_ex_core.js`, `node hub/tests/h146_catalog.test.cjs`, and
+  `node apps/office/writer/test/test-df25-rename.js`.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

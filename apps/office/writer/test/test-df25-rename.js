@@ -169,10 +169,13 @@ ok('profile lists office/writer with writer_settings', prof.indexOf("['office', 
 ok('profile keeps office/draftly for older profile files', prof.indexOf("['office', 'draftly', ['draftly_settings',") !== -1);
 
 /* ----- other apps ----- */
-var inv = live(read('apps/office/invoice-maker/invoice-maker.js'));
+/* (before MV1) var inv = live(read('apps/office/invoice-maker/invoice-maker.js')); */
+var inv = live(read('apps/tools/invoice-maker/invoice-maker.js'));
 var m = inv.match(/var JSPDF_SRC = '([^']+)'/);
-ok('Invoice Maker loads jsPDF from ../writer/vendor/', m && m[1] === '../writer/vendor/jspdf.umd.min.js');
-ok('Invoice Maker jsPDF file exists', m && exists(path.posix.join('apps/office/invoice-maker/', m[1])));
+/* (before MV1) ok('Invoice Maker loads jsPDF from ../writer/vendor/', m && m[1] === '../writer/vendor/jspdf.umd.min.js'); */
+ok('Invoice Maker loads jsPDF from ../../office/writer/vendor/', m && m[1] === '../../office/writer/vendor/jspdf.umd.min.js');
+/* (before MV1) ok('Invoice Maker jsPDF file exists', m && exists(path.posix.join('apps/office/invoice-maker/', m[1]))); */
+ok('Invoice Maker jsPDF file exists', m && exists(path.posix.join('apps/tools/invoice-maker/', m[1])));
 
 if (fails.length) {
   console.error('FAILED:\n' + fails.join('\n'));

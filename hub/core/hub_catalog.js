@@ -108,12 +108,12 @@ name, path, icon, newtab, section, description
 Writer,       writer/,              , , Hub Office, Word processor with A4 pages: native .how files - PDF or DOCX
 # (before HOS1) Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Spreadsheet,  spreadsheet/,         , , Hub Office, Spreadsheet with formulas and styles: native .hos files - CSV or XLSX
-Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
+# (before MV1) Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
 Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
 # (before HOT1) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database with typed columns - saved on this device
 Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
-Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
+# (before MV1) Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
@@ -176,6 +176,8 @@ Map,                   map/,             map/map_icon.svg, , Navigation, Simple 
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
 Numerology,            numerology/,      numerology/numerology_icon.svg, , Fun, Life Path and name numbers from your birth date - traditional readings for fun
 Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings
+Invoice Maker, invoice-maker/,         , , Money, GST invoices quotes and receipts - saved on this device and printed as PDF
+Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Money, Track daily spending and income with budgets and charts - all offline
 `,
   "Lab": `# Lab apps — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon optional (empty = <folder>/<folder>_icon.png or a letter tile); newtab 1 = own tab on desktop;
