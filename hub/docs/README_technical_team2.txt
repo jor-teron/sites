@@ -3335,6 +3335,43 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   the outer 8px margin is alpha 0 on all six icons.
 - 1.132 is IC2. This note is 1.133.
 
+### 1.134 IC4 3D and Read plain icons
+
+- Media 3D and Read icons redrawn without the coloured rounded tile,
+  symbol only, matching the IC1–IC3 plain icons (same 128×128 size,
+  padding, `#1c1f24` outline and soft shadow). The CSV icon column is
+  blank, so the Media page (`shared/tiles/tiles.js`) loads
+  `<folder>/<folder>_icon.png`. None of the three was already plain
+  (each still had a coloured rounded tile, and the outer 8px was not
+  clear). 3D Builder's cube did not fill its tile, but the tile was
+  still there.
+- Files the apps and the Media page use. All three expected
+  `<folder>/<folder>_icon.png` files were already present, so no
+  extra copy was added.
+  - 3D Viewer: `3d-viewer_icon.png` (no favicon link in the HTML).
+    White `3D` wordmark. The old tile was purple `#7b3fa0`.
+  - 3D Builder: `3d-builder_icon.png` (favicon in `index.html`).
+    Was 192×192. Isometric cube: top-left `#2563eb`, top-right
+    `#93c5fd`, front `#1e40af`, edges `#f1f5f9`, axis ticks
+    `#4ade80` and `#f87171`. The right-hand face was the same colour
+    as the slate tile `#0f172a`, so it is not drawn; the wordmark
+    and the cube stay different marks.
+  - News: `news_icon.png` (favicon in `news.html`). Was 192×192.
+    White page, masthead `#f43f5e`, picture `#93c5fd`, lines
+    `#94a3b8`, pale sheet behind `#dbeafe`. The old tile was blue
+    `#2563eb`.
+- Drawn at 4× in `apps/media/ic4_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency.
+- Previous icons copied to `3d-viewer_icon_before_IC4.png`,
+  `3d-builder_icon_before_IC4.png` and `news_icon_before_IC4.png`
+  (not deleted). Live file names are unchanged, so no CSV or catalog
+  edit. No hub/core, shared/ or apps/system edits. Each app has the
+  legacy line (3D Viewer had no readme, so it is in `NOTES.md`;
+  3D Builder's is in `NOTES.md`; News is in `news_readme.md`).
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all three icons.
+- 1.133 is IC3. This note is 1.134.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

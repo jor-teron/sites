@@ -104,3 +104,6 @@
   separate `.mtl`.
 - Large models make `.h3d` autosave heavy; IndexedDB holds the full project,
   localStorage may drop models/textures if the quota is hit.
+
+## Legacy
+IC4: icon redrawn plain without tile; old icon kept as *_icon_before_IC4.png
