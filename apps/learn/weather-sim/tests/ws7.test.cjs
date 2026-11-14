@@ -115,3 +115,33 @@ test('WS7a big face letter A|M or P|M and icon', () => {
   assert.equal(S.clockPeriodIcon(6), '☀️');
   assert.equal(S.clockPeriodIcon(19), '🌙');
 });
+
+/* WS7b: simulate a real drag in small steps, the way pointermove feeds it. */
+function drag(start, angles, fn) {
+  let t = start;
+  for (const a of angles) t = fn(t, a, true);
+  return t;
+}
+const steps = (from, to, by) => { const out = []; for (let a = from; by > 0 ? a <= to : a >= to; a += by) out.push(a); return out; };
+
+test('WS7b hour hand drag PM -> past midnight -> AM, and back', () => {
+  // 11:00 PM (330 deg) clockwise to 1:00 AM (390 = 30 deg)
+  const fwd = drag(23, steps(330, 390, 5).map(a => a % 360), S.applyHourDrag);
+  assert.equal(minutesOf(fwd), 60); // 1:00 AM
+  assert.equal(S.formatClockAria(fwd), '1:00 AM');
+  // back again: 1:00 AM anticlockwise to 11:00 PM
+  const back = drag(fwd, steps(30, -30, -5).map(a => (a + 360) % 360), S.applyHourDrag);
+  assert.equal(minutesOf(back), 23 * 60);
+  // AM -> PM at noon
+  const noon = drag(11, steps(330, 390, 5).map(a => a % 360), S.applyHourDrag);
+  assert.equal(minutesOf(noon), 13 * 60);
+});
+
+test('WS7b minute hand drag rolls the hour both ways', () => {
+  const fwd = drag(3 + 58 / 60, [354, 0, 6, 12], S.applyMinuteDrag);
+  assert.equal(minutesOf(fwd), 4 * 60 + 2);
+  const back = drag(fwd, [6, 0, 354, 348], S.applyMinuteDrag);
+  assert.equal(minutesOf(back), 3 * 60 + 58);
+  const midnight = drag(23 + 58 / 60, [354, 0, 6], S.applyMinuteDrag);
+  assert.equal(minutesOf(midnight), 1); // 12:01 AM
+});

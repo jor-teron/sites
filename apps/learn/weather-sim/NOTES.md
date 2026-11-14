@@ -275,3 +275,7 @@ works well on a weak phone.
 ## 29. WS7a — bigger clock, big A|M or P|M
 
 The clock is 1.5× bigger (165px desktop, 114px phone). A big soft **A** or **P** sits on the left of the face and **M** on the right, drawn *before* the hands in the SVG so the hands stay on top. The small label under 12 now shows only ☀️ or 🌙.
+
+## 30. WS7b — dragging past 12 really crosses
+
+The maths already handled crossing 12, but `pointermove` passed `allowWrap=false`, so the hour hand stayed in its AM/PM half and the minute hand never rolled the hour. Now only `pointerdown` passes false; every drag move passes true.
