@@ -297,9 +297,11 @@ function initClock() {
     if (clockDragHand == null) return;
     if (el.hasPointerCapture && !el.hasPointerCapture(e.pointerId)) return;
     const polar = clockPointerPolar(e, el);
+    /* WS7b: while dragging, crossing 12 must roll the hour (minute hand)
+       or flip AM/PM (hour hand). Only pointerdown passes false. */
     const next = clockDragHand === "minute"
-      ? applyMinuteDrag(state.time, polar.angle, false)
-      : applyHourDrag(state.time, polar.angle, false);
+      ? applyMinuteDrag(state.time, polar.angle, true)
+      : applyHourDrag(state.time, polar.angle, true);
     setTimeFromClock(next);
   });
 
