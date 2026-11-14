@@ -50,3 +50,8 @@ Final validation: **14 Node tests + 72 Chrome checks passed**, zero console erro
 ## HL-2a
 
 - Alphabet letter tile gap doubled from 10px to 20px (desktop and phone).
+
+## HL-3a
+
+- Letter pop-up wider (960px) and the trace box bigger (up to 480px; near full width on phones; sized by height in landscape).
+- Under the trace stars: two live progress bars, Covered (accent) and On the guide (green). Screen readers still hear the same % text.
