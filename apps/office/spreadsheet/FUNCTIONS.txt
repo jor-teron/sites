@@ -9,10 +9,11 @@ CELL / TEXT
   UPPER(text)
   LOWER(text)
   PROPER(text)
-  TRIM(text)
-  LEFT(text, n)
-  RIGHT(text, n)
-  MID(text, start, n)
+  TRIM(text)              leading and trailing spaces only
+  LEFT(text, [n])         first n characters, default 1
+  RIGHT(text, [n])        last n characters, default 1
+  MID(text, start, [num_chars])
+                        leave num_chars out to take the rest of the string
   FIND(find, within, [start])     case-sensitive, 1-based
   SUBSTITUTE(text, old, new, [n])
   TEXT(value, format)             0.00, 0%, yyyy-mm-dd, dd/mm/yyyy
@@ -34,12 +35,12 @@ CELL / TEXT
 
 MATH
   +  -  *  /  ^
-  SUM(range)
-  AVERAGE(range)
-  MIN(range)
-  MAX(range)
-  COUNT(range)          numbers only
-  COUNTA(range)         non-empty cells
+  SUM(value1, ...)
+  AVERAGE(value1, ...)
+  MIN(value1, ...)
+  MAX(value1, ...)
+  COUNT(value1, ...)        numbers only
+  COUNTA(value1, ...)       non-empty cells
   ROUND(n, digits)
   ROUNDUP(n, digits)    away from zero
   ROUNDDOWN(n, digits)  toward zero
@@ -48,7 +49,7 @@ MATH
   SQRT(n)
   MOD(n, d)
   POWER(n, p)
-  MEDIAN(range)
+  MEDIAN(value1, ...)
   RANK(n, range, [order])   0 desc (default), 1 asc
   RAND()
   RANDBETWEEN(bottom, top)
@@ -99,7 +100,7 @@ ARRAYS / SPILL (SH13, extended in SH14)
   Zero or a negative size is #VALUE!. A result that does not fit is #SPILL!.
 
 LOGIC
-  IF(cond, then, else)
+  IF(condition, then, [else])   omitted else returns ""
   ISBLANK(cell)
   IFERROR(value, fallback)
   AND(cond, ...)
@@ -113,6 +114,8 @@ LOOKUP
   VLOOKUP(value, table, col, [approx])
   HLOOKUP(value, table, row, [approx])
   XLOOKUP(value, lookup, return, [if_not_found], [match_mode], [search_mode])
+                        match_mode: 0 exact (default), 2 wildcard, -1/1 approximate
+                        search_mode: 1 forward (default), -1 reverse
   INDEX(range, row, [column])
   ROW([ref])                    no argument: row of the cell that holds the formula
                                 ROW(B5) is 5
@@ -130,15 +133,16 @@ LOOKUP
                                 a circular reference is #LOOP!
   MATCH(value, range, [type])          0 exact; 1 largest ≤ (default); -1 smallest ≥
   SUMIF(range, criteria, [sum_range])
-  SUMIFS(sum_range, range1, crit1, ...)
+  SUMIFS(sum_range, criteria_range1, criteria1, ...)
+  AVERAGEIFS(average_range, criteria_range1, criteria1, ...)
   COUNTIF(range, criteria)
-  COUNTIFS(range1, crit1, ...)
-  AVERAGEIF(range, criteria, [avg_range])
+  COUNTIFS(criteria_range1, criteria1, ...)
+  AVERAGEIF(range, criteria, [average_range])
   Criteria may be a value, ">10", "<>x", or a wildcard (* and ?; ~ escapes).
 
 DATE
   TODAY()
-  NOW()
+  NOW()                     date and hours:minutes, no seconds
   DATE(year, month, day)
   YEAR(date)  MONTH(date)  DAY(date)
   WEEKDAY(date, [type])     1: Sun=1 (default); 2: Mon=1; 3: Mon=0

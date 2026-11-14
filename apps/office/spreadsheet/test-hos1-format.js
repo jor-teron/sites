@@ -233,13 +233,15 @@ assert.ok(html.indexOf('id="file-import"') !== -1);
 assert.ok(html.indexOf('id="btn-export"') !== -1);
 assert.ok(html.indexOf('id="btn-export-xlsx"') !== -1);
 /* (before SH21) assert.ok(html.indexOf('<title>Spreadsheet SH18</title>') !== -1); */
-assert.ok(html.indexOf('<title>Spreadsheet SH21</title>') !== -1);
+/* (before SH19) assert.ok(html.indexOf('<title>Spreadsheet SH21</title>') !== -1); */
+assert.ok(html.indexOf('<title>Spreadsheet SH19</title>') !== -1);
 /* (before HO3) assert.ok(html.indexOf('?v=SH18') !== -1); */
 assert.ok(html.indexOf('?v=HO3') !== -1);
 assert.strictEqual(html.indexOf('?v=HOS'), -1);
 var settingsJs = read('spreadsheet_settings.js');
 /* (before SH21) assert.ok(settingsJs.indexOf('SHEET_VERSION = "SH18"') !== -1); */
-assert.ok(settingsJs.indexOf('SHEET_VERSION = "SH21"') !== -1);
+/* (before SH19) assert.ok(settingsJs.indexOf('SHEET_VERSION = "SH21"') !== -1); */
+assert.ok(settingsJs.indexOf('SHEET_VERSION = "SH19"') !== -1);
 
 var typesSrc = fs.readFileSync(path.join(dir, '../../../shared/fs/filetypes.js'), 'utf8');
 var typesCtx = { window: {} };
