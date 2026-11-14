@@ -15,7 +15,7 @@ nav,.row { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; } .status { dis
 .intro { border-left:4px solid var(--accent); padding:6px 16px; background:var(--wash); border-radius:0 12px 12px 0; }
 /* HL-2: grey alpha title bar buttons */
 .lrn-head button,.lrn-head .back { background:rgba(128,128,128,.18); } .lrn-head button:hover,.lrn-head .back:hover { background:rgba(128,128,128,.28); } .lrn-head button:active,.lrn-head button[aria-pressed=true] { background:rgba(128,128,128,.34); }
-.letter-grid { display:grid; grid-template-columns:repeat(auto-fill,140px); gap:10px; }
+.letter-grid { display:grid; grid-template-columns:repeat(auto-fill,140px); gap:20px; }
 .letter { position:relative; width:140px; height:140px; box-sizing:border-box; display:flex; align-items:center; flex-direction:column; justify-content:center; gap:4px; }
 .letter { gap:2px; padding:4px; overflow:hidden; } .letter .glyph { font-size:84px; line-height:1.05; } .letter small { font-size:30px; line-height:1.1; } .badge { position:absolute; right:6px; top:4px; color:var(--accent); font-size:12px; }
 .group { margin-bottom:24px; } .group h2 { font-size:17px; color:var(--soft); }
