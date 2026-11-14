@@ -197,7 +197,7 @@ test('image viewer rebuilds from the fresh list after a delete', async () => {
   assert.equal(r.v.ids.ivCount.textContent, '1 / 1');
 });
 
-test('pages load confirm.js, the worker version is agent-ag44, and the old lines stay as comments', () => {
+test('pages load confirm.js, the worker version is agent-ag45, and the old lines stay as comments', () => {
   for (const f of ['app/gui/confirm.js', 'app/gui/chats.js', 'app/gui/imageviewer.js', 'app/gui/knowview.js', 'app/gui/semview.js', 'app/gui/imagepage.js', 'agent_sw.js'])
     execFileSync(process.execPath, ['--check', path.join(base, f)]);
   const agent = read('agent.html'), image = read('image.html'), sw = read('agent_sw.js'), swLive = live(sw);
@@ -210,9 +210,11 @@ test('pages load confirm.js, the worker version is agent-ag44, and the old lines
     while ((m = re.exec(html))) urls.push(m[1]);
     assert.ok(urls.includes('app/gui/confirm.js'), html.slice(0, 20));
   }
-  assert.match(swLive, /VER = 'agent-ag44'/);
+  assert.match(swLive, /VER = 'agent-ag45'/);
+  assert.equal(swLive.includes("VER = 'agent-ag44'"), false);
   assert.equal(swLive.includes("VER = 'agent-ag42'"), false);
   assert.equal(swLive.includes("VER = 'agent-ag40'"), false);
+  assert.match(sw, /AG45 Legacy: VER = 'agent-ag44'/);
   assert.match(sw, /AG44 Legacy: VER = 'agent-ag42'/);
   assert.match(sw, /AG42 Legacy: VER = 'agent-ag40'/);
   assert.match(sw, /app\/gui\/confirm\.js/);

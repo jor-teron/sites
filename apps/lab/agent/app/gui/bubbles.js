@@ -87,7 +87,9 @@ HR.view = (function () {
   function note(text, cls) { var n = el('div', 'note' + (cls ? ' ' + cls : ''), text); log.appendChild(n); bottom(); return n; }
   function hello() {
     var h = el('div', 'hello');
-    h.append(el('div', 'hello-ico', '🧪'), el('div', 'hello-t', 'Agent'), el('div', 'hello-s', 'Chat with Ollama, an online provider, or the built-in Browser model. Models can call tools; every model and tool call shows in Steps.'));
+    /* (before AG45) h.append(el('div', 'hello-ico', '🧪'), el('div', 'hello-t', 'Agent'), el('div', 'hello-s', 'Chat with Ollama, an online provider, or the built-in Browser model. Models can call tools; every model and tool call shows in Steps.')); */
+    var ico = el('img', 'hello-ico'); ico.src = 'agent_icon.png'; ico.alt = ''; ico.width = 44; ico.height = 44;
+    h.append(ico, el('div', 'hello-t', 'Agent'), el('div', 'hello-s', 'Chat with Ollama, an online provider, or the built-in Browser model. Models can call tools; every model and tool call shows in Steps.'));
     h.appendChild(el('div', 'hello-f')); log.appendChild(h); folderHint();
   }
   function folderHint() {
