@@ -43,3 +43,6 @@ first 64 KB of each file (two at a time), and the song list is virtual (52 px ro
 - Tags are only read from MP3 (ID3); Ogg/FLAC/M4A use the file name. Durations appear once a song's metadata has loaded.
 - Reordering uses ▲▼, not drag. Once the level bar is turned on, the audio stays routed through Web Audio until reload.
 - Queues larger than 5000 songs are restored from sort + search instead of a saved path list.
+
+## Legacy
+IC1: icon redrawn plain without tile; old icon kept as *_icon_before_IC1.png
