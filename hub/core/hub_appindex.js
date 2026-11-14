@@ -71,12 +71,15 @@ window.HUB_APP_INDEX = {
   "image-converter": ["Media", "apps/media/image-converter/", "Image Converter", "apps/media/image-converter/image-converter_icon.png", 0, "Convert resize and compress photos: JPG PNG WebP - strip location - download a zip"],
   "sound-recorder": ["Media", "apps/media/sound-recorder/", "Sound Recorder", "apps/media/sound-recorder/sound-recorder_icon.png", 0, "Record audio from the microphone - long recordings with a waveform"],
   "music-player": ["Media", "apps/media/music-player/", "Music Player", "apps/media/music-player/music-player_icon.png", 0, "Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls"],
+  "radio-app": ["Media", "apps/media/radio-app/", "Radio", "apps/media/radio-app/radio-app_icon.png", 0, "Simple internet radio player"],
   "screen-recorder": ["Media", "apps/media/screen-recorder/", "Screen Recorder", "apps/media/screen-recorder/screen-recorder_icon.png", 0, "Record your screen window or tab with microphone audio"],
   "video-player": ["Media", "apps/media/video-player/", "Video Player", "apps/media/video-player/video-player_icon.png", 0, "Play your own videos: subtitles - speed - resume - picture-in-picture"],
   "video-editor": ["Media", "apps/media/video-editor/", "Video Editor", "apps/media/video-editor/video-editor_icon.png", 0, "Cut and export a video: in and out marks - cut or keep a selection - undo and redo"],
+  "video-trimmer": ["Media", "apps/media/video-trimmer/", "Video Trimmer", "apps/media/video-trimmer/video-trimmer_icon.png", 0, "Basic video trimmer: cut a clip from a video"],
   "3d-viewer": ["Media", "apps/media/3d-viewer/", "3D Viewer", "apps/media/3d-viewer/3d-viewer_icon.png", 0, "View 3D GLB and glTF models: orbit - play animations - screenshot"],
   "3d-builder": ["Media", "apps/media/3d-builder/", "3D Builder", "apps/media/3d-builder/3d-builder_icon.png", 0, "Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d"],
   "news": ["Media", "apps/media/news/", "News", "apps/media/news/news_icon.png", 0, "Latest headlines from Google News India in story cards"],
+  "pdf-viewer": ["Media", "apps/media/pdf-viewer/", "PDF Viewer", "apps/media/pdf-viewer/pdf-viewer_icon.png", 0, "Open and read PDF files in the browser"],
   /* (before DF24) "draftly": ["Office", "apps/office/draftly/", "Draftly", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
   /* (before HOW1) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
   /* (before DF25) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"], */
@@ -91,6 +94,7 @@ window.HUB_APP_INDEX = {
   "slides": ["Office", "apps/office/slides/", "Slides", "apps/office/slides/slides_icon.png", 0, "Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export"],
   /* (before MV1) "expense-tracker": ["Office", "apps/office/expense-tracker/", "Expense Tracker", "apps/office/expense-tracker/expense-tracker_icon.svg", 0, "Track daily spending and income with budgets and charts - all offline"], */
   "notely": ["Office", "apps/office/notely/", "Notely", "apps/office/notely/notely_icon.png", 0, "Plain-text notes that save as you type - open and download .txt"],
+  "sketchbook": ["Office", "apps/office/sketchbook/", "Sketchbook", "apps/office/sketchbook/sketchbook_icon.png", 0, "Paper sketchbook with 50 pages: draw with finger mouse or pen"],
   "msword-diff": ["Office", "apps/tools/msword_diff/", "MS Word Diff", "apps/tools/msword_diff/msword_diff_icon.png", 0, "Compare two Word .docx files and see what text changed"],
   "ocr": ["Office", "apps/office/ocr/", "OCR", "apps/office/ocr/ocr_icon.png", 0, "Turn text in photos scans and PDFs into editable text - works offline"],
   "paper-scan": ["Office", "apps/office/paper-scan/", "Paper Scan", "apps/office/paper-scan/paper-scan_icon.png", 0, "Scan paper pages with the camera into one PDF"],
@@ -137,6 +141,7 @@ window.HUB_APP_INDEX = {
   "password-generator": ["Tools", "apps/tools/password-generator/", "Password Generator", "apps/tools/password-generator/password-generator_icon.png", 0, "Generate strong passwords with options - works offline"],
   "password-manager": ["Tools", "apps/tools/password-manager/", "Password Manager", "apps/tools/password-manager/password-manager_icon.svg", 0, "Encrypted vault for logins cards notes and Wi-Fi - stays on this device"],
   "map": ["Tools", "apps/tools/map/", "Map", "apps/tools/map/map_icon.svg", 0, "Simple OpenStreetMap: find your location and search places"],
+  "compass": ["Tools", "apps/tools/compass/", "Compass", "apps/tools/compass/compass_icon.png", 0, "Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats"],
   "astrology": ["Tools", "apps/tools/astrology/", "Astrology", "apps/tools/astrology/astrology_icon.svg", 0, "Sun sign and daily lucky card and sign match - traditional readings for fun"],
   "numerology": ["Tools", "apps/tools/numerology/", "Numerology", "apps/tools/numerology/numerology_icon.svg", 0, "Life Path and name numbers from your birth date - traditional readings for fun"],
   "read-aloud": ["Tools", "apps/tools/read-aloud/", "Read Aloud", "apps/tools/read-aloud/read-aloud_icon.svg", 0, "Read News headlines or pasted text aloud with play pause and voice settings"],
@@ -146,9 +151,9 @@ window.HUB_APP_INDEX = {
   "story": ["Lab", "apps/lab/story/", "Story", "apps/lab/story/story_icon.png", 0, "Type a beginning and get a short story from a tiny on-device AI model"],
   "onnx-runner": ["Lab", "apps/lab/onnx-runner/", "ONNX Runner", "apps/lab/onnx-runner/onnx-runner_icon.png", 0, "Run any .onnx machine learning model in the browser - nothing uploaded"],
   "agent": ["Lab", "apps/lab/agent/", "Agent", "apps/lab/agent/agent_icon.png", 0, "Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini"],
-  "sketchbook": ["Lab", "apps/lab/sketchbook/", "Sketchbook", "apps/lab/sketchbook/sketchbook_icon.png", 0, "Paper sketchbook with 50 pages: draw with finger mouse or pen"],
+  /* (before MV2) "sketchbook": ["Lab", "apps/lab/sketchbook/", "Sketchbook", "apps/lab/sketchbook/sketchbook_icon.png", 0, "Paper sketchbook with 50 pages: draw with finger mouse or pen"], */
   "code-lab": ["Lab", "apps/lab/code-lab/", "Code Lab", "apps/lab/code-lab/codelab_icon.png", 0, "Jupyter-style code cells: run Python on a remote Jupyter server"],
-  "compass": ["Lab", "apps/lab/compass/", "Compass", "apps/lab/compass/compass_icon.png", 0, "Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats"],
+  /* (before MV2) "compass": ["Lab", "apps/lab/compass/", "Compass", "apps/lab/compass/compass_icon.png", 0, "Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats"], */
   "paper-keyboard": ["Lab", "apps/lab/paper-keyboard/", "Paper Keyboard", "apps/lab/paper-keyboard/paper-keyboard_icon.png", 0, "Phone keyboard that types on a desktop over PeerJS (demo)"],
   "mybookmark": ["Lab", "apps/lab/mybookmark/", "MyBookmark", "apps/lab/mybookmark/mybookmark_icon.png", 0, "View and manage your browser bookmarks: import - search - organise"],
   "wiki-extractor": ["Lab", "apps/lab/wiki-extractor/", "Wiki Extractor", "apps/lab/wiki-extractor/wiki-extractor_icon.png", 0, "Extract plain text from Wikipedia pages and linked pages - download .txt"],
@@ -164,9 +169,9 @@ window.HUB_APP_INDEX = {
   "ingredient-substitutions": ["Lab", "apps/lab/ingredient-substitutions/", "Ingredient Swaps", "apps/lab/ingredient-substitutions/ingredient-substitutions_icon.png", 0, "Find substitutes for common cooking ingredients"],
   "knife-skills": ["Lab", "apps/lab/knife-skills/", "Knife Skills", "apps/lab/knife-skills/knife-skills_icon.png", 0, "Kitchen knife skills 101: basic cuts and safety tips"],
   "nutrition-calculator": ["Lab", "apps/lab/nutrition-calculator/", "Nutrition Calculator", "apps/lab/nutrition-calculator/nutrition-calculator_icon.png", 0, "Work out calories and nutrients for your meals"],
-  "pdf-viewer": ["Lab", "apps/lab/pdf-viewer/", "PDF Viewer", "apps/lab/pdf-viewer/pdf-viewer_icon.png", 0, "Open and read PDF files in the browser"],
-  "radio-app": ["Lab", "apps/lab/radio-app/", "Radio", "apps/lab/radio-app/radio-app_icon.png", 0, "Simple internet radio player"],
-  "video-trimmer": ["Lab", "apps/lab/video-trimmer/", "Video Trimmer", "apps/lab/video-trimmer/video-trimmer_icon.png", 0, "Basic video trimmer: cut a clip from a video"],
+  /* (before MV2) "pdf-viewer": ["Lab", "apps/lab/pdf-viewer/", "PDF Viewer", "apps/lab/pdf-viewer/pdf-viewer_icon.png", 0, "Open and read PDF files in the browser"], */
+  /* (before MV2) "radio-app": ["Lab", "apps/lab/radio-app/", "Radio", "apps/lab/radio-app/radio-app_icon.png", 0, "Simple internet radio player"], */
+  /* (before MV2) "video-trimmer": ["Lab", "apps/lab/video-trimmer/", "Video Trimmer", "apps/lab/video-trimmer/video-trimmer_icon.png", 0, "Basic video trimmer: cut a clip from a video"], */
   "weather-sim": ["Lab", "apps/lab/weather-sim/", "Weather Simulator", "apps/lab/weather-sim/weather-sim_icon.png", 0, "Animated weather scene: sky - clouds - rain - snow and fog"],
   "paint": ["Lab", "apps/media/paint/", "Paint", "apps/media/paint/paint_icon.png", 0, "Old simple paint app: brush - eraser - fill and shapes"],
   "photo-editor": ["Lab", "apps/media/photo-editor/", "Photo Editor", "apps/media/photo-editor/photo-editor_icon.png", 0, "Old photo editor: brightness - contrast - rotate - crop and print"],

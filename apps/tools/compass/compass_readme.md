@@ -1,6 +1,12 @@
 # Compass (CP1, CP2)
 
-A phone compass with a GPS speedometer and altimeter (Speed tab). Lab → Tools. Works offline; no network calls.
+MV2: moved from apps/lab to apps/tools (Navigation section); old path redirects.
+
+<!-- (before MV2) A phone compass with a GPS speedometer and altimeter (Speed tab). Lab → Tools. Works offline; no network calls. -->
+
+A phone compass with a GPS speedometer and altimeter (Speed tab). Tools → Navigation. Works offline; no network calls.
+
+Storage keys are unchanged: `compass-settings-v1`, `compass-speed-v1`, `compass-trip-v1`, and the shared Hub key `sites-hub.theme` (read-only). No IndexedDB. No service worker and no manifest. Scripts stay in this folder. Sun Position keeps its own copy of the WMM model.
 
 ## CP1 — first release
 

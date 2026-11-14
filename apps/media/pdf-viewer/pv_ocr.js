@@ -4,6 +4,7 @@
 
   var M = root.PVOcrMath;
 
+  /* (before MV2) var VENDOR = '../../office/ocr/vendor/'; same string: apps/media/<app>/ is the same depth as apps/lab/<app>/. */
   var VENDOR = '../../office/ocr/vendor/';
   var DB_NAME = 'pdfviewer-ocr';
   var DB_STORE = 'ocrPages';

@@ -1,70 +1,21 @@
 <!DOCTYPE html>
+<!-- MV2: Sketchbook moved to apps/office/sketchbook/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. No ?v=. -->
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Sketchbook</title>
-<!--
-  Project: sketchbook
-  File: sketchbook.html
-  Role: Markup only. Sketchbook: 50 pages, LocalStorage, no undo, crumble page, PNG/PDF export.
-  Scripts are plain (no build step) and share globals; order matters (store first, sketchbook.js last).
--->
-<link rel="stylesheet" href="sketchbook.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sketchbook</title>
+  <link rel="canonical" href="../../office/sketchbook/sketchbook.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../office/sketchbook/sketchbook.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../office/sketchbook/sketchbook.html"></noscript>
 </head>
-<body>
-<div id="main">
-  <canvas id="canvas"></canvas>
-  <div id="wrinkle" hidden></div>
-  <div id="curl" hidden><div id="curlUnder"></div><canvas id="curlPage"></canvas><div id="curlFlapWrap"><div id="curlFlap"></div></div></div>
-  <div id="overlay"></div>
-  <svg id="jelly" viewBox="0 0 240 240" aria-hidden="true"></svg>
-  <div id="floatBtn" aria-label="Sketchbook menu">☰</div>
-  <div id="pageToast"></div>
-  <div id="pagesGrid"><h3>Pages</h3><div id="gridContainer"></div></div>
-  <!-- Page 49: settings + about written on the ruled paper (text layer, only the PNG link takes taps) -->
-  <div id="settingsPanel">
-    <h2>Settings</h2>
-    <p><button type="button" id="dlPng" class="inkBtn">⬇ page PNG</button> · <button type="button" id="dlPdf" class="inkBtn">⬇ sketchbook PDF</button></p>
-    <p class="note">50 pages · saved in this browser · no undo</p>
-    <h3>About</h3>
-    <p><b>Sketchbook</b> — a 50-page sketch pad for finger, mouse or pen. Pages can be crumpled, never erased.</p>
-    <p>Button: <button type="button" id="togPos" class="inkBtn">bottom</button> · Swap gestures: <button type="button" id="togSwap" class="inkBtn">off</button></p>
-    <h3>How to</h3>
-    <ul id="howTo"></ul>
-    <h3>Tips</h3>
-    <ul>
-      <li>pull past a third of the screen — the jelly glows when it will fire</li>
-      <li>short pulls just play with the jelly; hold again for more crumple</li>
-      <li>write your name on the cover; fill the index on pages 2–3</li>
-      <li>crumples are forever ✿</li>
-    </ul>
-  </div>
-  <!-- Quick menu: hold ☰ (sk_popup.js) -->
-  <div id="skPopup" hidden>
-    <div class="penDots">
-      <button type="button" class="pen" data-pen="black" aria-label="Black pen" style="--c:#222"></button>
-      <button type="button" class="pen" data-pen="blue" aria-label="Blue pen" style="--c:#1f4fbf"></button>
-      <button type="button" class="pen" data-pen="red" aria-label="Red pen" style="--c:#c62828"></button>
-    </div>
-    <button type="button" data-act="png">Download this page (PNG)</button>
-    <button type="button" data-act="settings">Go to settings page</button>
-  </div>
-</div>
-
-<script src="vendor/jspdf.umd.min.js"></script>
-<script src="sk_store.js"></script>
-<script src="sk_wrinkle.js"></script>
-<script src="sk_cover.js"></script>
-<script src="sk_canvas.js"></script>
-<script src="sk_pages.js"></script>
-<script src="sk_draw.js"></script>
-<script src="sk_export.js"></script>
-<script src="sk_settings.js"></script>
-<script src="sk_jelly.js"></script>
-<script src="sk_popup.js"></script>
-<script src="sk_curl.js"></script>
-<script src="sk_float.js"></script>
-<script src="sketchbook.js"></script>
-</body>
+<body><noscript><p><a href="../../office/sketchbook/sketchbook.html">Open Sketchbook</a></p></noscript></body>
 </html>

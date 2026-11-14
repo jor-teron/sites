@@ -1,6 +1,11 @@
-# Sketchbook (Lab)
+# Sketchbook
 
-A paper sketchbook: 50 fixed pages, draw with finger, mouse or pen. Saved in the browser. No undo.
+MV2: moved from apps/lab to apps/office (Write section); old path redirects.
+
+<!-- (before MV2) # Sketchbook (Lab) -->
+<!-- (before MV2) A paper sketchbook: 50 fixed pages, draw with finger, mouse or pen. Saved in the browser. No undo. -->
+
+A paper sketchbook: 50 fixed pages, draw with finger, mouse or pen. Saved in the browser. No undo. Office → Write.
 
 Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself needs touch, mouse or pen.
 
@@ -38,7 +43,8 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - `sk_popup.js` — hold quick menu
 - `sk_jelly.js` — jelly look: SVG blob, goo filter tail, spring bounce, jiggle
 - `sketchbook.js` — event wiring + start-up (loaded last)
-- `sketchbook_icon.png` — Lab / Hub icon
+- `sketchbook_icon.png` — Office / Hub icon
+<!-- (before MV2) - `sketchbook_icon.png` — Lab / Hub icon -->
 
 ## Keys
 - No keyboard shortcuts of its own. Use the floating button.
@@ -56,7 +62,8 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - Broken / wrong-size saved data → sketchbook starts empty (warning in the console).
 
 ## Manual browser testing (no Node)
-1. Open `apps/lab/sketchbook/` → lands on `sketchbook.html`, cover shows.
+1. Open `apps/office/sketchbook/` → lands on `sketchbook.html`, cover shows.
+<!-- (before MV2) 1. Open `apps/lab/sketchbook/` → lands on `sketchbook.html`, cover shows. -->
 2. Swipe the ☰ right → page 2 (Index); keep going to page 4 → ruled lines.
 3. Draw a few strokes, reload → strokes still there.
 4. Drag ☰ left halfway → page curls, next page visible under it; let go short → springs back. Pull ☰ up past 1/3 → grid with thumbnails; tap one → opens.
@@ -77,4 +84,5 @@ Works in the Hub and responds to its D-pad (the Hub bar / menu); drawing itself 
 - LocalStorage is ~5 MB; very dense sketchbooks can fill it.
 
 ## Rename note
-Formerly "Notebook" (`apps/lab/notebook/`, keys `paperNotebook_*`). `apps/lab/notebook/index.html` is a redirect stub to this folder. On first start `sk_store.js` copies any old `paperNotebook_*` localStorage values to `sketchbook_*` and removes the old keys.
+Formerly "Notebook" (`apps/lab/notebook/`, keys `paperNotebook_*`). `apps/lab/notebook/index.html` redirects to `apps/office/sketchbook/sketchbook.html` (MV2). On first start `sk_store.js` copies any old `paperNotebook_*` localStorage values to `sketchbook_*` and removes the old keys. Storage keys are unchanged: `sketchbook_v2`, `sketchbook_pen`, `sketchbook_btnPos`, `sketchbook_swap`, `sketchbook_crumple`. No IndexedDB. jsPDF stays in `vendor/jspdf.umd.min.js` inside this folder. No service worker and no manifest.
+<!-- (before MV2) Formerly "Notebook" (`apps/lab/notebook/`, keys `paperNotebook_*`). `apps/lab/notebook/index.html` is a redirect stub to this folder. On first start `sk_store.js` copies any old `paperNotebook_*` localStorage values to `sketchbook_*` and removes the old keys. -->

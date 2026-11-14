@@ -90,12 +90,15 @@ GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animate
 Image Converter, image-converter/, , , Photo, Convert resize and compress photos: JPG PNG WebP - strip location - download a zip
 Sound Recorder,  sound-recorder/,  , , Audio, Record audio from the microphone - long recordings with a waveform
 Music Player,    music-player/,    , , Audio, Play music from a folder on this device: playlists - shuffle - repeat - lock-screen controls
+Radio,           radio-app/,       radio-app/radio-app_icon.png, , Audio, Simple internet radio player
 Screen Recorder, screen-recorder/, , , Video, Record your screen window or tab with microphone audio
 Video Player,    video-player/,    , , Video, Play your own videos: subtitles - speed - resume - picture-in-picture
 Video Editor,   video-editor/,    , , Video, Cut and export a video: in and out marks - cut or keep a selection - undo and redo
+Video Trimmer,  video-trimmer/,   video-trimmer/video-trimmer_icon.png, , Video, Basic video trimmer: cut a clip from a video
 3D Viewer,       3d-viewer/,       , , 3D, View 3D GLB and glTF models: orbit - play animations - screenshot
 3D Builder,      3d-builder/,      , , 3D, Build a 3D scene: add shapes - move rotate scale - undo and redo - save as .h3d
 News,            news/,            , , Read, Latest headlines from Google News India in story cards
+PDF Viewer,      pdf-viewer/,      pdf-viewer/pdf-viewer_icon.png, , Read, Open and read PDF files in the browser
 `,
   "Office": `# Office — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -116,6 +119,7 @@ Tables,       tables/,              tables/tables_icon.png, , Hub Office, Simple
 Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
 # (before MV1) Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
+Sketchbook,   sketchbook/,          sketchbook/sketchbook_icon.png, , Write, Paper sketchbook with 50 pages: draw with finger mouse or pen
 MS Word Diff, ../tools/msword_diff/, , , Write, Compare two Word .docx files and see what text changed
 OCR,          ocr/,                 , , Scan & Print, Turn text in photos scans and PDFs into editable text - works offline
 Paper Scan,   paper-scan/,          , , Scan & Print, Scan paper pages with the camera into one PDF
@@ -174,6 +178,7 @@ Altimeter,             altimeter/,          , , Weather, GPS altitude from your 
 Password Generator,    password-generator/, , , , Generate strong passwords with options - works offline
 Password Manager,     password-manager/, password-manager/password-manager_icon.svg, , Security, Encrypted vault for logins cards notes and Wi-Fi - stays on this device
 Map,                   map/,             map/map_icon.svg, , Navigation, Simple OpenStreetMap: find your location and search places
+Compass,               compass/,         compass/compass_icon.png, , Navigation, Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats
 Astrology,             astrology/,       astrology/astrology_icon.svg, , Fun, Sun sign and daily lucky card and sign match - traditional readings for fun
 Numerology,            numerology/,      numerology/numerology_icon.svg, , Fun, Life Path and name numbers from your birth date - traditional readings for fun
 Read Aloud,            read-aloud/,      read-aloud/read-aloud_icon.svg, , Language, Read News headlines or pasted text aloud with play pause and voice settings
@@ -190,9 +195,9 @@ Story,              story/,                       , , AI, Type a beginning and g
 ONNX Runner,        onnx-runner/,                 , , AI, Run any .onnx machine learning model in the browser - nothing uploaded
 Agent,              agent/,                       , , AI, Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
 
-Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook with 50 pages: draw with finger mouse or pen
+# (before MV2) Sketchbook,         sketchbook/,                  , , Tools, Paper sketchbook with 50 pages: draw with finger mouse or pen
 Code Lab,           code-lab/,                    code-lab/codelab_icon.png, , Tools, Jupyter-style code cells: run Python on a remote Jupyter server
-Compass,            compass/,                     compass/compass_icon.png, , Tools, Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats
+# (before MV2) Compass,            compass/,                     compass/compass_icon.png, , Tools, Phone compass + GPS speedometer and altimeter: true or magnetic north - lock a bearing - trip stats
 Paper Keyboard,     paper-keyboard/,              , , Tools, Phone keyboard that types on a desktop over PeerJS (demo)
 MyBookmark,         mybookmark/,                  , , Tools, View and manage your browser bookmarks: import - search - organise
 Wiki Extractor,     wiki-extractor/,              , , Tools, Extract plain text from Wikipedia pages and linked pages - download .txt
@@ -211,9 +216,9 @@ Cooking Timer,      cooking-timer/,               , , New, Kitchen timers for co
 Ingredient Swaps,   ingredient-substitutions/,    , , New, Find substitutes for common cooking ingredients
 Knife Skills,       knife-skills/,                , , New, Kitchen knife skills 101: basic cuts and safety tips
 Nutrition Calculator, nutrition-calculator/,      , , New, Work out calories and nutrients for your meals
-PDF Viewer,         pdf-viewer/,                  , , New, Open and read PDF files in the browser
-Radio,              radio-app/,                   , , New, Simple internet radio player
-Video Trimmer,      video-trimmer/,               , , New, Basic video trimmer: cut a clip from a video
+# (before MV2) PDF Viewer,         pdf-viewer/,                  , , New, Open and read PDF files in the browser
+# (before MV2) Radio,              radio-app/,                   , , New, Simple internet radio player
+# (before MV2) Video Trimmer,      video-trimmer/,               , , New, Basic video trimmer: cut a clip from a video
 Weather Simulator,  weather-sim/,                 , , New, Animated weather scene: sky - clouds - rain - snow and fog
 
 Paint,              ../media/paint/,              , , Legacy, Old simple paint app: brush - eraser - fill and shapes

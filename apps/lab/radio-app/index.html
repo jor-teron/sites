@@ -1,28 +1,21 @@
 <!DOCTYPE html>
+<!-- MV2: Radio moved to apps/media/radio-app/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. No ?v=. -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Radio App</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Radio</title>
+  <link rel="canonical" href="../../media/radio-app/index.html">
+  <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#121418;color:#9aa0a6}html.dark a{color:#6ea8fe}</style>
+  <script>
+    (function () {
+      var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
+      var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.className = 'dark';
+      location.replace('../../media/radio-app/index.html' + location.search + location.hash);
+    })();
+  </script>
+  <noscript><meta http-equiv="refresh" content="0; url=../../media/radio-app/index.html"></noscript>
 </head>
-<body>
-  <div class="container">
-    <h1>📻 Radio Player</h1>
-
-    <!-- Station List -->
-    <div id="stations"></div>
-
-    <!-- Audio Element -->
-    <audio id="audio-player"></audio>
-
-    <!-- Controls -->
-    <div class="controls">
-      <button id="play-pause">▶️ Play</button>
-      <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7"/>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+<body><noscript><p><a href="../../media/radio-app/index.html">Open Radio</a></p></noscript></body>
 </html>

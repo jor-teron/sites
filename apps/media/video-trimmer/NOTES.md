@@ -1,5 +1,14 @@
 # Video Trimmer — notes
 
+MV2: moved from apps/lab to apps/media (Video section); old path redirects.
+
+<!-- (before MV2) Lab app at `apps/lab/video-trimmer/`. -->
+
+Storage is unchanged. Theme reads the shared Hub keys `sites-hub.theme` and
+`sites-hub.themeAuto` (read-only). There is no app localStorage key and no
+IndexedDB database. No service worker and no manifest. Nothing in this folder
+points outside it, so the move did not change a relative path.
+
 ## VT1
 
 - System / Hub theme: light and dark CSS variables. Reads Hub
