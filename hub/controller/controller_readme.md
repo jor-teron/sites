@@ -111,3 +111,6 @@ Turns a phone into a controller for the hub. Pair once with the hub's QR or code
 - Inside a phone Hub the controller runs in the Hub's app frame and sends through the Hub's link
   (`SharedLink.borrowed`); opened on its own it still auto-joins with the saved code.
 - Mapping unchanged: arrows, A = Space, B = X, X = Z, Y = C, Start = Enter, Select = Esc.
+
+## Legacy
+IC7a: icon redrawn plain without tile; old icon kept as *_icon_before_IC7a.png

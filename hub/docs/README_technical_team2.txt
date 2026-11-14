@@ -3554,6 +3554,47 @@ branch apps/ra2-read-aloud. Local commit only at the time of writing.
   `node --test hub/tests/h146_catalog.test.cjs`.
 - 1.137 is IC6. This note is 1.138.
 
+### 1.139 IC7a Files, Disk, Viewer and D-Pad Controller plain icons
+
+- System Files and Hub tools icons redrawn without the coloured rounded
+  tile, symbol only, matching the IC1 to IC8 plain icons (same
+  128×128 size, padding, `#1c1f24` outline and soft shadow). Files,
+  Disk and Viewer have an empty CSV icon column, so the System page
+  and the Hub load `<folder>/<folder>_icon.png`. D-Pad Controller's
+  CSV icon is `../../hub/controller/controller_icon.png`. None of the
+  four was already plain (each still had a coloured rounded tile, and
+  the outer 8px was not clear). All four were 128×128.
+- Files the apps and the System page use:
+  - Files: `files_icon.png` (no favicon link; the page header shows
+    it). Off-white folder `#f5f8ff`, tab `#3c8cff`, slot `#ffaa3d`
+    (the orange tile showing through), two white sparkles. The old
+    tile was the orange gradient.
+  - Disk: `disk_icon.png` (no favicon link; the page header shows
+    it). White drive outline, divider and two lights on the bottom
+    edge. The old tile was the teal gradient. The window was that
+    tile, so it is not filled.
+  - Viewer: `viewer_icon.png` (no favicon link). Sky `#6ea8fe`,
+    mountain `#1e468c`, sun `#ffd666`, play button `#f46060` with a
+    white triangle. The old tile was `#20283a`.
+  - D-Pad Controller: `controller_icon.png` (favicon in
+    `controller.html`, the same file name, so that link is unchanged).
+    Blue plus `#6ea8fe`, green light `#50c878`, red light `#dc5a5a`.
+    The old tile was `#1a1e26`. `controller_qr_icon.png` is unchanged.
+- Drawn at 4× in `apps/system/ic7a_plain_icons.py` and downscaled.
+  Pillow draws them and is not a repo dependency.
+- Previous icons copied to `files_icon_before_IC7a.png`,
+  `disk_icon_before_IC7a.png`, `viewer_icon_before_IC7a.png` and
+  `controller_icon_before_IC7a.png` (not deleted). Live file names
+  are unchanged, so no CSV or catalog edit. No hub/core or shared/
+  edit. Favicon lines are unchanged.
+  Each app has the legacy line (Files had no readme, so it is in
+  `NOTES.md`).
+- No new library, no CDN, no `?v=` change and no build bump.
+- Checked: 128×128 RGBA, the four corner pixels are alpha 0, and
+  the outer 8px margin is alpha 0 on all four icons.
+  `node --test hub/tests/h146_catalog.test.cjs`.
+- 1.138 is IC8. This note is 1.139.
+
 ## 2. Releases (PR → what)
 
 ### 2.1 This session (22 Oct 2026, all merged)

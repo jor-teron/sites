@@ -24,3 +24,6 @@ Files: `index.html`, `viewer_core.js` (open, list, prev / next), `viewer_image.j
 rotate), `viewer_video.js` (speed, skip, resume), `viewer.js` (buttons, keys, life cycle),
 `viewer.css`, `viewer_icon.png`. Shared: `shared/fs/filetypes.js` (which app opens what — Open
 with), `shared/fs/fs_ref.js`, `shared/fs/fs_drives.js`, `shared/fs/fs_ops.js`, `shared/google/*`.
+
+## Legacy
+IC7a: icon redrawn plain without tile; old icon kept as *_icon_before_IC7a.png
