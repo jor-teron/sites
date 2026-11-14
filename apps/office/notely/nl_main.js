@@ -1,5 +1,6 @@
 /* Notely — nl_main.js: wires the toolbar (Open, Download) and starts everything.
-   NL4: the same two buttons also go to the Hub window bar (nl_hubbar.js). */
+   NL4: the same two buttons also go to the Hub window bar (nl_hubbar.js).
+   NL5: the word count goes there too, in front of Open and Download. */
 NL.main = (function () {
   let flashTimer = 0;
   function flash(msg) {
@@ -7,7 +8,13 @@ NL.main = (function () {
     clearTimeout(flashTimer);
     s.dataset.msg = msg;
     s.classList.add('flash');
-    flashTimer = setTimeout(() => { s.classList.remove('flash'); delete s.dataset.msg; }, 2500);
+    /* NL5: the in-page bar is hidden in the Hub, so the same message goes to the title-bar count. */
+    if (NL.hubbar) NL.hubbar.sync();
+    flashTimer = setTimeout(() => {
+      s.classList.remove('flash');
+      delete s.dataset.msg;
+      if (NL.hubbar) NL.hubbar.sync();
+    }, 2500);
   }
   function init() {
     NL.theme.init();
