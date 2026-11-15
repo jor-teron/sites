@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- Relay (RY1) — set up and test the Hub relay (hub/relay, RL1). Saves one shared address under localStorage 'hub.relay'
+     (relay_shared.js). Static page, no outside requests except the Test call to the relay address you enter. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relay</title><link rel="icon" href="relay_icon.svg"><link rel="stylesheet" href="relay.css">
+<script src="../../../shared/theme/hub_theme.js"></script></head><body>
+<main class="ry">
+  <header class="ry-head"><h1>Relay</h1><span class="tag">RY1</span></header>
+  <p class="mut">The Hub relay is a small program on your PC or Pi. Web MCP, SSH, VNC and fetch (WebDAV and API calls) all use it on one port.
+    A web page can't start the relay: run it on the PC with the commands under <b>Set up</b>, then test it here.</p>
+
+  <section class="panel" aria-labelledby="hConn">
+    <h2 id="hConn">Connection <span id="dot" class="dot" title="Not tested"></span></h2>
+    <label class="field"><span>Relay address</span>
+      <input id="url" type="url" spellcheck="false" autocapitalize="off" placeholder="http://127.0.0.1:8787"></label>
+    <label class="field"><span>Relay token (optional, 16–512 characters)</span>
+      <span class="row"><input id="token" type="password" autocomplete="new-password" spellcheck="false" autocapitalize="off" placeholder="Only if the relay has HUB_RELAY_TOKEN set">
+      <button type="button" class="btn" id="showTok" aria-pressed="false">Show</button></span></label>
+    <div class="row"><button type="button" class="btn primary" id="save">Save</button><button type="button" class="btn" id="test">Test</button>
+      <button type="button" class="btn" id="reset">Default</button></div>
+    <p id="status" class="status mut" aria-live="polite">Not tested yet.</p>
+    <ul id="mods" class="mods" aria-label="Modules"></ul>
+    <p class="mut small" id="savedInfo"></p>
+    <p class="mut small">Saved on this device only (key <code>hub.relay</code>), so other Hub apps can use the same address. The token is stored in plain text in this browser.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="hEnd">
+    <h2 id="hEnd">Endpoints</h2>
+    <div id="ends" class="ends"></div>
+    <label class="field inline"><span>SSH / VNC target</span>
+      <span class="row"><input id="tHost" placeholder="192.168.1.20" spellcheck="false" autocapitalize="off"><input id="tPort" class="port" inputmode="numeric" placeholder="22"></span></label>
+    <p class="mut small">Web MCP keeps its PIN. HTTP calls (/mcp, /fetch, /health) send the token as <code>Authorization: Bearer …</code> or <code>X-Relay-Token</code>; WebSockets use <code>?relay_token=</code>. Don't share URLs that contain the token.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="hSet">
+    <h2 id="hSet">Set up</h2>
+    <p class="mut small">Needs Node 18 or newer. Stop the old Web MCP relay first: it uses the same port 8787. The relay listens on 127.0.0.1:8787 and runs until Ctrl+C.</p>
+    <div class="cmd"><b>Install and start — Linux / macOS</b><pre id="cLinux">curl -fsSL https://raw.githubusercontent.com/jor-teron/sites/main/hub/relay/install.sh | bash</pre></div>
+    <div class="cmd"><b>Restart — Linux / macOS</b><pre id="cLinuxR">bash ~/.local/share/sites-hub-relay/start-relay.sh</pre></div>
+    <div class="cmd"><b>Install and start — Windows PowerShell</b><pre id="cWin">irm https://raw.githubusercontent.com/jor-teron/sites/main/hub/relay/install.ps1 | iex</pre></div>
+    <div class="cmd"><b>Restart — Windows PowerShell</b><pre id="cWinR">node "$env:LOCALAPPDATA\sites-hub-relay\hub-relay.js" --config "$env:LOCALAPPDATA\sites-hub-relay\relay.json"</pre></div>
+    <p class="mut small">Settings live in <code>relay.json</code> in the install folder; restart after changing it. Set a token with the <code>HUB_RELAY_TOKEN</code> environment variable. A secure (https) Hub on another device needs wss:// / https:// (TLS_CERT + TLS_KEY, or an HTTPS proxy) and a token.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="hAllow">
+    <h2 id="hAllow">Allow lists</h2>
+    <p class="mut small">SSH/VNC and fetch refuse every target until you list it. Add entries, then paste the result into <code>relay.json</code> (keys you leave out keep their defaults) and restart the relay.</p>
+    <form class="row" id="fTcp"><input id="iTcp" placeholder="SSH/VNC host:port, e.g. 127.0.0.1:5900" spellcheck="false" autocapitalize="off"><button class="btn">Add</button></form>
+    <form class="row" id="fFetch"><input id="iFetch" placeholder="Fetch origin, e.g. https://dav.example.com" spellcheck="false" autocapitalize="off"><button class="btn">Add</button></form>
+    <form class="row" id="fHost"><input id="iHost" placeholder="Public hostname, e.g. pc.tailnet.ts.net" spellcheck="false" autocapitalize="off"><button class="btn">Add</button></form>
+    <p id="allowErr" class="err" aria-live="polite"></p>
+    <ul id="chips" class="chips"></ul>
+    <pre id="snip" class="snip"></pre>
+    <div class="row"><button type="button" class="btn" id="copySnip">Copy</button><button type="button" class="btn" id="clrAllow">Clear</button></div>
+  </section>
+</main>
+<script src="relay_shared.js"></script><script src="relay_ui.js"></script>
+</body></html>
