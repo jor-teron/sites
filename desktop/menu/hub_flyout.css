@@ -3,6 +3,8 @@
  * Category rows: icon + name, big tap targets. Flyout: second column beside the menu,
  * jelly slide-in, soft shadow, highlighted hovered row, grey section headings with thin
  * dividers, hidden scrollbar + bottom fade when more apps below. Hover styles only for real mice.
+ * H150: the flyout lists section rows (.fly-row: name, "(count)", ›); the hovered section's apps
+ * open in a third column (#menu-fly-apps.menu-fly.menu-fly-apps, same look as the flyout).
  */
 .menu .menu-cat {
   display: flex;
@@ -111,6 +113,39 @@
   background: linear-gradient(135deg, #6ea8fe, #b06efe);
   color: #fff; font-weight: 700; font-size: 14px;
 }
+/* H150: section rows in the flyout (hover / click opens the apps column) */
+.menu-fly .fly-row {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.menu-fly .fly-row .fly-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-fly .fly-row .fly-row-count { color: var(--muted); font-size: 12.5px; flex: 1; }
+.menu-fly .fly-row::after { content: '\203A'; font-size: 18px; opacity: 0.5; margin-left: 8px; }
+.menu-fly .fly-row:hover, .menu-fly .fly-row.fly-on {
+  background: var(--wm-hi, rgba(110, 168, 254, 0.20));
+  color: #fff;
+}
+.menu-fly .fly-row:hover .fly-row-count, .menu-fly .fly-row.fly-on .fly-row-count { color: inherit; opacity: 0.8; }
+.menu-fly .fly-row.fly-on::after { opacity: 1; }
+html.hub-light .menu-fly .fly-row:hover, html.hub-light .menu-fly .fly-row.fly-on { color: var(--text); }
+html.hub-xp .menu-fly .fly-row { border-radius: 0; }
+html.hub-xp .menu-fly .fly-row:hover, html.hub-xp .menu-fly .fly-row.fly-on { background: var(--xp-sel); color: #fff; }
+html.hub-glass .menu-fly .fly-row { color: var(--gl-text); }
+html.hub-glass .menu-fly .fly-row:hover, html.hub-glass .menu-fly .fly-row.fly-on { background: var(--gl-hover); color: var(--gl-text); }
+.menu-fly.menu-fly-apps { z-index: 102; }   /* H150: apps column above the section column */
 
 /* Real mouse only: › arrow on rows that have a flyout */
 @media (hover: hover) and (pointer: fine) {
@@ -124,5 +159,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .menu-fly.pop { animation: none; }
-  .menu-fly .fly-app { transition: none; }
+  .menu-fly .fly-app, .menu-fly .fly-row { transition: none; }   /* H150: + .fly-row */
 }

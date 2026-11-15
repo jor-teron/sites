@@ -24,6 +24,7 @@ Contacts,  contacts/,  contacts/contacts_icon.png, , Chat, One contact list for 
 Live Location, live-location/, live-location/live-location_icon.png, , Share, See where your devices are on a live map - sharing only while you choose - private code only
 # (before IC9a) Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
 Find My Device, find-device/, find-device/find-device_icon.png, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
+Web Browser, browser/,    browser/browser_icon.png, , Web, Browse the web in tabs: search - bookmarks - history - opens blocked sites in a new tab
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
 # (before IC9c) VNC,        vnc/,        vnc/vnc_icon.svg, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
 VNC,        vnc/,        vnc/vnc_icon.png, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del

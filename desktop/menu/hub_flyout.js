@@ -1,15 +1,20 @@
 /*
  * Hub menu flyout (desktop/menu/hub_flyout.js) — GNOME 2 style cascading menu, DESKTOP MOUSE ONLY.
  *
+ * H150 (sections step): category → sections → apps.
  * Hovering a category row in the open Hub menu (~100 ms) opens a second column beside the
- * menu with that category's apps, read from its own CSV (window.HUB_CAT_CSV in hub_config.js,
- * parsed by window.TilesCsv from shared/tiles/tiles.js — the same parser the category pages use).
- * - Apps are grouped by the CSV's optional section column (TilesCsv.groups): small grey
- *   headings with a thin divider between groups; no sections in the CSV = plain list.
- * - The column grows up to the viewport height; scrollbar hidden (wheel still scrolls) and a
- *   soft fade at the bottom edge while more apps are below.
+ * menu with ONLY that category's sections (one row each: "Puzzle (12)" ›), read from its own CSV
+ * (window.HUB_CAT_CSV in hub_config.js, parsed by window.TilesCsv from shared/tiles/tiles.js).
+ * Hovering (or clicking) a section row (~100 ms) opens a third column (#menu-fly-apps) beside the
+ * section column, aligned with that row, with only that section's apps.
+ * - Sections keep the CSV order; apps with no section go into a last "Other"; Favorite shows
+ *   "My favorites" first. Grouping is the pure window.HubFlyout.sectionsOf(list) (hub/tests).
+ * - (before H150) apps were grouped in one column by TilesCsv.groups with small grey headings.
+ * - Both columns grow up to the viewport height; scrollbar hidden (wheel still scrolls) and a
+ *   soft fade at the bottom edge while more rows are below.
  * - Diagonal grace zone: while the mouse travels from the row towards the column (inside the
- *   triangle "last point → column's left edge") other rows don't steal the flyout.
+ *   triangle "last point → column's left edge") other rows don't steal the flyout. H150: the
+ *   same for section row → apps column. Back on another category row = switch + apps column closes.
  * - Clicking an app opens it like a category-page tile (window.__hubFly.openFromCat in hub.js).
  *   Shift+click / middle-click = a new window of it (Desktop mode instances).
  * - Clicking the category row itself still opens its category page (hub.js, unchanged).
@@ -20,10 +25,36 @@
  * - R16c: built lists are cached in localStorage 'sites-hub.startList' (see loadCat below).
  * - R33a: window.HubStartList {cached(cat), load(cat)} hands the same lists to hub.js, which
  *   registers every CSV app (hash ids, last app, session restore, __hubOpenApp).
- * Look in hub_main.css (.menu-fly).
+ * Styles: desktop/menu/hub_flyout.css (.menu-fly, .fly-row, .menu-fly-apps).
+ * (before H150) Look in hub_main.css (.menu-fly).
  */
 (function () {
   'use strict';
+  const FAV_SEC = 'My favorites';
+  /** H150: apps → [{section, apps}] for the sections step. Pure (no DOM, no TilesCsv): sections in
+   *  CSV (first-appearance) order, apps with no section in a last "Other", "My favorites" first.
+   *  No apps → []. */
+  function sectionsOf(list) {
+    const map = new Map(), rest = [];
+    (list || []).forEach((a) => {
+      const sec = a && a.section ? String(a.section).trim() : '';
+      if (!sec) { rest.push(a); return; }
+      if (!map.has(sec)) map.set(sec, []);
+      map.get(sec).push(a);
+    });
+    const out = Array.from(map, ([section, apps]) => ({ section, apps }));
+    const fav = out.findIndex((g) => g.section === FAV_SEC);
+    if (fav > 0) out.unshift(out.splice(fav, 1)[0]);
+    if (rest.length) {
+      const oi = out.findIndex((g) => g.section === 'Other');   // a CSV "Other" section: merge, keep it last
+      const other = oi >= 0 ? out.splice(oi, 1)[0] : { section: 'Other', apps: [] };
+      other.apps = other.apps.concat(rest);
+      out.push(other);
+    }
+    return out;
+  }
+  window.HubFlyout = { sectionsOf };
+
   const menu = document.getElementById('menu');
   const host = menu && menu.parentElement;           // .header-left (menu scrolls, so the flyout is its sibling)
   const MQ = window.matchMedia ? window.matchMedia('(hover: hover) and (pointer: fine)') : null;
@@ -39,11 +70,19 @@
   fly.setAttribute('role', 'menu');
   fly.hidden = true;
   host.appendChild(fly);
+  // H150: third column, the apps of the hovered section (sibling of fly, same .menu-fly look)
+  const appsCol = document.createElement('div');
+  appsCol.id = 'menu-fly-apps';
+  appsCol.className = 'menu-fly menu-fly-apps';
+  appsCol.setAttribute('role', 'menu');
+  appsCol.hidden = true;
+  host.appendChild(appsCol);
 
   const csvCache = {};       // cat → Promise<[{name, entryUrl, icon, newTab}]>
   let curRow = null;         // row whose flyout is shown
   let openTimer = 0, closeTimer = 0, graceTries = 0;
   let last = null, anchor = null;   // mouse points (anchor = where it left curRow)
+  let curSec = null, secAnchor = null, secTimer = 0, secTries = 0, secPending;   // H150: section row → apps column
 
   const isMouse = (e) => MQ.matches && e.pointerType === 'mouse';
   const catOf = (row) => row && row.dataset.cat;
@@ -130,13 +169,13 @@
   else window.addEventListener('load', () => setTimeout(() => idle(warm), 2000), { once: true });
 
   /** Favorite category: the CSV apps + your own (shared/favorites/favorites.js) under "My favorites". */
-  const FAV_CAT = 'Favorite';
+  const FAV_CAT = 'Favorite';   // (H150: its "My favorites" section name is FAV_SEC, top)
   function withFavorites(cat, list) {
     const F = window.HubFavorites;
     if (cat !== FAV_CAT || !F) return list;
     const base = list || [];
     const mine = F.list().filter((f) => !base.some((a) => a.entryUrl === f.path)).map((f) => ({
-      name: f.name, entryUrl: f.path, newTab: !!f.newTab, section: 'My favorites',
+      name: f.name, entryUrl: f.path, newTab: !!f.newTab, section: FAV_SEC,
       icon: f.icon || window.TilesCsv.defaultIcon(f.path)
     }));
     return mine.length ? base.concat(mine) : list;
@@ -175,28 +214,93 @@
 
   /** Put the flyout beside the menu, top aligned with the row, kept on screen (up to full height). */
   function place(row) {
-    const h = host.getBoundingClientRect(), m = menu.getBoundingClientRect(), r = row.getBoundingClientRect();
-    fly.style.left = (m.right - h.left + 4) + 'px';
+    placeAt(fly, menu.getBoundingClientRect().right + 4, row);   // H150: shared with the apps column
+  }
+  /** H150: apps column right of the section column, top aligned with the section row. */
+  function placeApps(secRow) {
+    placeAt(appsCol, fly.getBoundingClientRect().right + 4, secRow, true);
+  }
+  /** col at viewport x, top aligned with row, kept on screen (clampX: also keep it inside the width). */
+  function placeAt(col, x, row, clampX) {
+    const h = host.getBoundingClientRect(), r = row.getBoundingClientRect();
+    // (before H150) fly.style.left = (m.right - h.left + 4) + 'px';
     const tb = document.getElementById('wm-taskbar');   // Desktop mode taskbar (wm_taskbar.js), bottom or top
     const tr = tb && tb.offsetHeight ? tb.getBoundingClientRect() : null;
     const tbTop = !!tr && tr.top < window.innerHeight / 2;
     const bottom = tr && !tbTop ? tr.top : window.innerHeight;
     const hdr = document.getElementById('header');
     const topMin = Math.max(hdr ? hdr.getBoundingClientRect().bottom : h.bottom, tbTop ? tr.bottom : 0) + 2;   // below the Hub bar / top taskbar
-    fly.style.maxHeight = Math.max(120, bottom - topMin - 6) + 'px';
-    const maxTop = bottom - fly.offsetHeight - 6;
-    fly.style.top = (Math.max(topMin, Math.min(r.top - 7, maxTop)) - h.top) + 'px';
+    col.style.maxHeight = Math.max(120, bottom - topMin - 6) + 'px';
+    const maxTop = bottom - col.offsetHeight - 6;
+    col.style.top = (Math.max(topMin, Math.min(r.top - 7, maxTop)) - h.top) + 'px';
+    if (clampX) x = Math.max(0, Math.min(x, window.innerWidth - col.offsetWidth - 4));
+    col.style.left = (x - h.left) + 'px';
+  }
+
+  /** H150: one section row: name, "(count)", › (CSS). Hover / click opens its apps column. */
+  function secRow(cat, g) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fly-row';
+    b.dataset.sec = g.section;
+    b.setAttribute('role', 'menuitem');
+    b.setAttribute('aria-haspopup', 'menu');
+    b.tabIndex = -1;   // keyboard stays in the main menu (hub.js)
+    const n = document.createElement('span');
+    n.className = 'fly-row-name';
+    n.textContent = g.section;
+    const c = document.createElement('span');
+    c.className = 'fly-row-count';
+    c.textContent = '(' + g.apps.length + ')';
+    b.append(n, c);
+    b._fly = { cat, apps: g.apps };
+    b.addEventListener('click', (e) => { e.stopPropagation(); cancelSec(); showSec(b); });
+    return b;
+  }
+
+  /** H150: open the apps column for a section row (already open → nothing to do). */
+  function showSec(row) {
+    if (!row || !row._fly || fly.hidden || !fly.contains(row)) return;
+    if (row === curSec && !appsCol.hidden) return;
+    if (curSec) curSec.classList.remove('fly-on');
+    curSec = row;
+    row.classList.add('fly-on');
+    secAnchor = null; secTries = 0;
+    const { cat, apps } = row._fly;
+    appsCol.replaceChildren();
+    const head = document.createElement('div');
+    head.className = 'fly-head';
+    head.textContent = row.dataset.sec;
+    appsCol.appendChild(head);
+    apps.forEach((a) => appsCol.appendChild(item(cat, a)));
+    const again = !appsCol.hidden;
+    appsCol.hidden = false;
+    appsCol.scrollTop = 0;
+    placeApps(row);
+    fade(appsCol);
+    if (!again) { appsCol.classList.remove('pop'); void appsCol.offsetWidth; appsCol.classList.add('pop'); }
+  }
+  function hideApps() {
+    cancelSec();
+    if (curSec) curSec.classList.remove('fly-on');
+    curSec = null; secAnchor = null; secTries = 0;
+    appsCol.hidden = true;
+    appsCol.classList.remove('pop');
   }
 
   function show(row) {
     const cat = catOf(row);
     if (curRow) curRow.classList.remove('fly-on');
+    if (curRow !== row) hideApps();   // H150: another category → its apps column closes
     curRow = row;
     row.classList.add('fly-on');
     anchor = null; graceTries = 0;
     loadCat(cat).then((csvList) => {
       if (curRow !== row || !menu.classList.contains('open')) return;
       const list = withFavorites(cat, csvList);
+      const keep = curSec && fly.dataset.cat === cat ? curSec.dataset.sec : null;   // H150: a redraw keeps the open section
+      hideApps();
+      fly.dataset.cat = cat;
       fly.replaceChildren();
       const head = document.createElement('div');
       head.className = 'fly-head';
@@ -208,15 +312,8 @@
         msg.textContent = list ? 'No apps yet' : 'Could not load the app list';
         fly.appendChild(msg);
       } else {
-        window.TilesCsv.groups(list).forEach((g) => {
-          if (g.section) {
-            const sec = document.createElement('div');
-            sec.className = 'fly-sec';
-            sec.textContent = g.section;
-            fly.appendChild(sec);
-          }
-          g.apps.forEach((a) => fly.appendChild(item(cat, a)));
-        });
+        // (before H150) window.TilesCsv.groups(list).forEach((g) => { if (g.section) fly.appendChild(<div.fly-sec>g.section); g.apps.forEach((a) => fly.appendChild(item(cat, a))); });
+        sectionsOf(list).forEach((g) => fly.appendChild(secRow(cat, g)));
       }
       const again = !fly.hidden;
       fly.hidden = false;
@@ -224,17 +321,25 @@
       place(row);
       fade();
       if (!again) { fly.classList.remove('pop'); void fly.offsetWidth; fly.classList.add('pop'); }
+      if (keep != null) {
+        const back = Array.prototype.find.call(fly.querySelectorAll('.fly-row'), (r) => r.dataset.sec === keep);
+        if (back) showSec(back);
+      }
     });
   }
 
   /** Soft fade at the bottom edge while more apps are below. */
-  function fade() {
-    fly.classList.toggle('more', fly.scrollTop + fly.clientHeight < fly.scrollHeight - 2);
+  function fade(col) {
+    const el = col || fly;   // H150: either column
+    el.classList.toggle('more', el.scrollTop + el.clientHeight < el.scrollHeight - 2);
   }
-  fly.addEventListener('scroll', fade, { passive: true });
+  // (before H150) fly.addEventListener('scroll', fade, { passive: true });
+  fly.addEventListener('scroll', () => { fade(); if (curSec && !appsCol.hidden) placeApps(curSec); }, { passive: true });
+  appsCol.addEventListener('scroll', () => fade(appsCol), { passive: true });
 
   function hide() {
     cancel(); clearTimeout(closeTimer);
+    hideApps();   // H150
     if (curRow) curRow.classList.remove('fly-on');
     curRow = null; anchor = null;
     fly.hidden = true;
@@ -252,6 +357,27 @@
     if (fly.hidden || !anchor || !last) return false;
     const f = fly.getBoundingClientRect();
     return inTri(last, anchor, { x: f.left, y: f.top - 8 }, { x: f.left, y: f.bottom + 8 });
+  }
+
+  /** H150: mouse is on its way from curSec into the open apps column. */
+  function headingToApps() {
+    if (appsCol.hidden || !secAnchor || !last) return false;
+    const f = appsCol.getBoundingClientRect();
+    return inTri(last, secAnchor, { x: f.left, y: f.top - 8 }, { x: f.left, y: f.bottom + 8 });
+  }
+  function cancelSec() { clearTimeout(secTimer); secTimer = 0; secPending = undefined; }
+  /** H150: hover target in the section column changed to a section row (null = none); after OPEN_DELAY. */
+  function wantSec(row) {
+    if (secTimer && secPending === row) return;
+    cancelSec();
+    secPending = row;
+    secTimer = setTimeout(function check() {
+      if (!menu.classList.contains('open') || fly.hidden) { cancelSec(); return; }
+      if (headingToApps() && secTries++ < GRACE_MAX) { secTimer = setTimeout(check, OPEN_DELAY); return; }
+      cancelSec();
+      if (row) showSec(row);
+      else hideApps();
+    }, OPEN_DELAY);
   }
 
   /** Hover target changed to row (null = a row without a flyout); opens after OPEN_DELAY. */
@@ -275,6 +401,7 @@
     const prev = last;
     last = { x: e.clientX, y: e.clientY };
     clearTimeout(closeTimer);
+    cancelSec();   // H150
     const row = e.target.closest ? e.target.closest('.menu-cat, .home-item, button.app') : null;
     if (row && row === curRow) { anchor = null; graceTries = 0; cancel(); return; }
     if (curRow && !anchor) anchor = prev || last;   // the point where the mouse left the open row
@@ -282,20 +409,35 @@
   });
   fly.addEventListener('pointermove', (e) => {
     if (!isMouse(e)) return;
+    const prev = last;   // H150
     last = { x: e.clientX, y: e.clientY };
     clearTimeout(closeTimer); cancel();
     anchor = null; graceTries = 0;
+    // H150: section rows open the apps column (same delay + diagonal grace zone as category rows)
+    const sec = e.target.closest ? e.target.closest('.fly-row') : null;
+    if (sec && sec === curSec) { secAnchor = null; secTries = 0; cancelSec(); return; }
+    if (curSec && !secAnchor) secAnchor = prev || last;   // where the mouse left the open section row
+    wantSec(sec);
+  });
+  appsCol.addEventListener('pointermove', (e) => {   // H150
+    if (!isMouse(e)) return;
+    last = { x: e.clientX, y: e.clientY };
+    clearTimeout(closeTimer); cancel(); cancelSec();
+    anchor = null; graceTries = 0; secAnchor = null; secTries = 0;
   });
   const leave = (e) => {
     if (!isMouse(e) || fly.hidden) return;
     const to = e.relatedTarget;
-    if (to && (menu.contains(to) || fly.contains(to))) return;
+    // (before H150) if (to && (menu.contains(to) || fly.contains(to))) return;
+    if (to && (menu.contains(to) || fly.contains(to) || appsCol.contains(to))) return;
     clearTimeout(closeTimer);
     closeTimer = setTimeout(hide, CLOSE_DELAY);
   };
   menu.addEventListener('pointerleave', leave);
   fly.addEventListener('pointerleave', leave);
+  appsCol.addEventListener('pointerleave', leave);   // H150
   fly.addEventListener('click', (e) => e.stopPropagation());
+  appsCol.addEventListener('click', (e) => e.stopPropagation());   // H150
 
   // Keys drive hub.js's menu; the mouse flyout just gets out of the way.
   document.addEventListener('keydown', (e) => {   // any key hides it, except a held modifier (Shift+click = new window)
@@ -308,6 +450,10 @@
   // Rows with a flyout get a › arrow (CSS shows it on mouse devices only).
   const markRows = () => menu.querySelectorAll('.menu-cat').forEach((r) => r.classList.toggle('has-fly', hasFly(r)));
   markRows();   // hub.js (loaded first) has already drawn the menu
-  menu.addEventListener('scroll', () => { if (curRow && !fly.hidden) place(curRow); });
+  // (before H150) menu.addEventListener('scroll', () => { if (curRow && !fly.hidden) place(curRow); });
+  menu.addEventListener('scroll', () => {
+    if (curRow && !fly.hidden) place(curRow);
+    if (curSec && !appsCol.hidden) placeApps(curSec);   // H150
+  });
   window.addEventListener('resize', hide);
 })();

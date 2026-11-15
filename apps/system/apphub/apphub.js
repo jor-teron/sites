@@ -21,6 +21,12 @@
  * standalone (no Hub) a friendly message with a link to the Hub.
  * Theme: shared/theme/hub_theme.js (H22) paints html.light + --accent from the Hub theme (no picker).
  * All text goes in with textContent.
+ * H153: a search box in the top row (shared/search/search_core.js + search_bar.js / .css; startSearch). Apps only:
+ *   home = every app of every category, a category page = only that category's apps. Results (icon, name,
+ *   category › section, description, matches marked) replace the page while the box has words; click / Enter
+ *   opens the app like its tile (openApp), Shift+Enter / Shift+click / middle-click = another window. Esc / ×
+ *   clears and the page comes back; opening another page clears it. The lists come from load() below (the same
+ *   rows the tiles use, so a result opens exactly like its tile). Without the shared files there is no box.
  */
 (function () {
   'use strict';
@@ -65,6 +71,7 @@
     return cats.sort((a, b) => a.order - b.order);
   }
   const cache = {};
+  const loaded = {};   // H153: cat → apps, once load(cat) has finished
   function csvText(cat) {
     const path = (window.HUB_CAT_CSV || {})[cat];
     const fallback = () => (window.SITES_CSV && window.SITES_CSV[cat]) || '';
@@ -83,10 +90,13 @@
       if (!T || !text) return [];
       return T.parse(text).map((a) => {
         const entryUrl = joinPath(dir, a.path);
+        // return { name: a.name, entryUrl, newTab: !!a.newTab, section: a.section || '',
+        //   icon: a.icon ? joinPath(dir, a.icon) : T.defaultIcon(entryUrl), cat };   (before H153)
         return { name: a.name, entryUrl, newTab: !!a.newTab, section: a.section || '',
-          icon: a.icon ? joinPath(dir, a.icon) : T.defaultIcon(entryUrl), cat };
+          icon: a.icon ? joinPath(dir, a.icon) : T.defaultIcon(entryUrl), cat, desc: a.description || '' };   // H153: + desc for search
       }).filter((a) => a.name && a.entryUrl);
     });
+    cache[cat].then((list) => { loaded[cat] = list; });   // H153: ready lists for the search box
     return cache[cat];
   }
 
@@ -178,6 +188,7 @@
   }
   function setTop(cat) {
     crumbs(cat);
+    searchScope(cat);   // H153
     /* AH5: the top-row icon is always the App Hub icon (index.html), on home and category pages; category icons stay on the tiles. */
     document.title = cat ? cat.name + ' - App Hub' : 'App Hub';
   }
@@ -224,6 +235,59 @@
     if (first && kb) first.focus();
   }
 
+  // ---- H153: search box (apps only) ----
+  const MAX_HITS = 40;
+  let bar = null, out = null;
+  /** The apps the box searches: one category, or every category (one row per app, first category wins). */
+  function scopeApps(cat, cats, lists) {
+    if (cat) return (lists[cat] || []).slice();
+    const seen = new Set(), all = [];
+    cats.forEach((c) => (lists[c.name] || []).forEach((a) => { if (!seen.has(a.entryUrl)) { seen.add(a.entryUrl); all.push(a); } }));
+    return all;
+  }
+  /** Search groups for the box: [[title, rows]] ([] for no words). Rows carry the app for openApp. */
+  function searchGroups(qw, cat, apps, C) {
+    if (!qw.length) return [];
+    const rows = apps.map((a) => ({ name: a.name, icon: a.icon, desc: a.desc || '', cat: a.cat, section: a.section || '',
+      sub: cat ? (a.section || '') : a.cat + (a.section ? ' \u203A ' + a.section : ''), app: a }));
+    const hit = C.filter(rows, qw, (r) => [[r.cat, 30], [r.section, 30], [r.desc, 20]]);
+    const more = hit.length > MAX_HITS ? hit.length - MAX_HITS : 0;
+    if (more) hit.length = MAX_HITS;
+    return hit.length ? [[(cat ? 'Apps in ' + cat : 'Apps') + (more ? ' (first ' + MAX_HITS + ', type more to narrow)' : ''), hit]] : [];
+  }
+  function searchScope(cat) {
+    if (!bar) return;
+    const ph = cat ? 'Search in ' + cat.name : 'Search apps';
+    bar.input.placeholder = ph;
+    bar.input.setAttribute('aria-label', ph);
+  }
+  function startSearch() {
+    const B = window.HubSearchBar, C = window.HubSearchCore;
+    const top = document.querySelector('.top');
+    if (!B || !C || !top) return;   // shared files missing: App Hub as before H153
+    const host = el('div', 'top-search');
+    top.appendChild(host);
+    bar = B.create({ mount: host, root: ROOT, placeholder: 'Search apps', label: 'Search apps',
+      groups: (qw) => {
+        if (!qw.length) return [];
+        const cats = categories();
+        const need = page ? [page] : cats.map((c) => c.name);
+        const wait = need.filter((n) => !loaded[n]);
+        if (wait.length) Promise.all(wait.map(load)).then(() => { if (bar.input.value.trim()) bar.refresh(); });
+        return searchGroups(qw, page, scopeApps(page, cats, loaded), C);
+      },
+      noneText: (text) => 'No apps found for \u201C' + text.trim() + '\u201D' + (page ? ' in ' + page : '') + '.',
+      onOpen: (r, alt) => openApp(r.app, alt),
+      onRefresh: (qw) => { const on = qw.length > 0; view.hidden = on; out.hidden = !on; } });
+    // the results go under the top row, in place of the page
+    out = el('div', 'search-out');
+    out.hidden = true;
+    out.appendChild(bar.el.querySelector('.hsb-results'));
+    out.classList.add('hsb');   // keeps search_bar.css (scoped to .hsb) for the moved list
+    view.parentNode.insertBefore(out, view);
+  }
+  window.AppHubSearch = { scopeApps, searchGroups };   // H153: for hub/tests/hub_apphub_search.test.cjs
+
   // ---- routing ----
   let pushed = false;   // a category page was opened from home in this document (Back = history.back)
   function hashCat() {
@@ -232,6 +296,7 @@
     try { return decodeURIComponent(m[1]); } catch (_) { return ''; }
   }
   function route() {
+    if (bar) bar.clear();   // H153: another page clears the search box
     const cat = hashCat();
     const was = page;
     if (cat) category(cat); else home(was);
@@ -275,5 +340,6 @@
     if (best) { best.focus(); best.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
   });
 
+  startSearch();   // H153
   route();
 })();
