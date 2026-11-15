@@ -1,0 +1,40 @@
+/*
+ * Hub search bar look (shared/search/search_bar.css), H151 — for HubSearchBar.create() boxes (class "hsb").
+ * Everything is under .hsb so it never changes the page around it. Uses the page's --accent / --card /
+ * --card2 / --line / --text / --muted when it has them (App Hub, Settings, Search), else dark defaults.
+ * Hub Search itself keeps apps/system/search/search.css (same look) and does not load this file.
+ */
+.hsb { --hsb-accent: var(--accent, #6ea8fe); --hsb-card: var(--card, #1a1e27); --hsb-card2: var(--card2, #212633);
+  --hsb-line: var(--line, rgba(255,255,255,.08)); --hsb-text: var(--text, #e8eaed); --hsb-muted: var(--muted, #9aa0a6);
+  --hsb-hi: color-mix(in srgb, var(--hsb-accent) 22%, transparent); position: relative; width: 100%; }
+.hsb-box { position: relative; display: flex; align-items: center; }
+.hsb-lens { position: absolute; left: 12px; color: var(--hsb-muted); font-size: 16px; pointer-events: none; }
+.hsb-q { width: 100%; height: 40px; padding: 0 40px 0 38px; border: 1px solid var(--hsb-line); border-radius: 12px;
+  background: var(--hsb-card); color: var(--hsb-text); font: inherit; font-size: 16px; outline: none; box-sizing: border-box; }
+.hsb-q:focus { border-color: var(--hsb-accent); box-shadow: 0 0 0 3px var(--hsb-hi); }
+.hsb-q::-webkit-search-cancel-button { display: none; }
+.hsb-clear { position: absolute; right: 4px; width: 32px; height: 32px; border: 0; border-radius: 9px; background: transparent;
+  color: var(--hsb-muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.hsb-clear:hover { background: var(--hsb-hi); color: var(--hsb-text); }
+.hsb-clear[hidden], .hsb-results[hidden] { display: none; }
+.hsb-results { margin-top: 6px; }
+.hsb .grp { margin-top: 10px; }
+.hsb .grp h2 { margin: 4px 2px 6px; font-size: 12px; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; color: var(--hsb-muted); }
+.hsb .res { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin: 0 0 6px; padding: 6px 12px;
+  border: 1px solid var(--hsb-line); border-radius: 12px; background: var(--hsb-card); color: var(--hsb-text); text-align: left;
+  font: inherit; cursor: pointer; box-sizing: border-box; transition: background .12s, border-color .12s; }
+.hsb .res:hover, .hsb .res.on { background: var(--hsb-card2); border-color: color-mix(in srgb, var(--hsb-accent) 55%, var(--hsb-line)); }
+.hsb .res.on { box-shadow: 0 0 0 2px var(--hsb-hi); }
+.hsb .ic { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; overflow: hidden; }
+.hsb .ic img { width: 100%; height: 100%; object-fit: contain; }
+.hsb .ic.letter { background: var(--hsb-hi); color: var(--hsb-accent); font-weight: 700; font-size: 16px; }
+.hsb .ic.emoji { background: var(--hsb-card2); font-size: 18px; }
+.hsb .txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.hsb .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hsb .sub, .hsb .desc { font-size: 13px; color: var(--hsb-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hsb .kind { flex: none; font-size: 12px; color: var(--hsb-muted); padding: 2px 8px; border: 1px solid var(--hsb-line); border-radius: 999px; }
+.hsb mark { background: color-mix(in srgb, var(--hsb-accent) 35%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.hsb-none { margin: 12px 4px; color: var(--hsb-muted); }
+:focus-visible.hsb-q, .hsb .res:focus-visible { outline: 2px solid var(--hsb-accent); outline-offset: 2px; }
+@media (max-width: 520px) { .hsb .kind { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hsb .res { transition: none; } }

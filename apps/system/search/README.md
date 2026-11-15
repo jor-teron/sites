@@ -22,3 +22,9 @@ H48d descriptions for every category (Apps / Games bots).
 
 ## Legacy
 IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png
+
+## H151: shared search
+The matching, the app / category / Settings lists and the result list moved to `shared/search/`
+(`search_core.js`, `search_sources.js`, `search_bar.js` + `search_bar.css`), so the Settings (H152) and
+App Hub (H153) search bars work the same way. `search.js` keeps the page, box, keys and Hub links; old
+code kept as `(before H151)` comments. No visible change.
