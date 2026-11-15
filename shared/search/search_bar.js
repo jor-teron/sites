@@ -12,6 +12,7 @@
  * window.HubSearchBar.create(opts)   a whole box + list in opts.mount (class "hsb", look: search_bar.css)
  *   opts: mount (element), root, placeholder, label, groups(qw, text) → [[title, rows], …] (empty query:
  *   called with qw = [] — return [] to show nothing), onOpen(row, alt), noneText(text), delay (ms, 40).
+ *   H152: onRefresh(qw, text) after every redraw (Settings hides its sections list while qw has words).
  *   Keys in the box: ↑ / ↓ / PageUp / PageDown / Home / End pick (Home / End only while results show),
  *   Enter opens the picked (or first) row, Shift+Enter = alt, Esc clears (then blurs). × clears.
  *   Returns { el, input, refresh(), clear(), focus(), list }.
@@ -119,6 +120,7 @@
       res.hidden = !res.firstChild;
       input.setAttribute('aria-expanded', L.size() ? 'true' : 'false');
       if (qw.length) L.pick(0, true); else L.unpick();
+      if (o.onRefresh) o.onRefresh(qw, text);   // H152: e.g. Settings hides its sections list while searching
     }
     function clear() { input.value = ''; refresh(); }
     let t = 0;
