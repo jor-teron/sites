@@ -92,3 +92,22 @@ test('automatic gear lever shows R N D; wheel drag steers; town and mock lessons
   for (const id of ['lane', 'roundabout', 'mock']) { ids.lessons.value = id; ids.lessons.onchange(); for (let i = 0; i < 5; i++) frame(16 * (i + 2)); assert.equal(ctx.drivingTest.s.l.def.id, id); }
   assert.equal(ids['end-test'].hidden, false);
 });
+test('DS-3: Open road group, route number input, endless and loop run on the map fallback', () => {
+  const { ctx, ids, frame } = boot();
+  const groups = ids.lessons.children.map(g => g.label);
+  assert.deepEqual(groups, ['Practice lot', 'Town', 'Open road', 'Test']);
+  assert.deepEqual(ids.lessons.children[2].children.map(o => o.value), ['endless', 'loop']);
+  assert.equal(ctx.drivingTest.s.c.auto, false, 'manual stays the default');
+  for (const id of ['endless', 'loop']) {
+    ids.lessons.value = id; ids.lessons.onchange();
+    assert.equal(ids['route-box'].hidden, false); assert.equal(ids.route.value, '1');
+    const shape = () => ctx.drivingTest.s.w.road.pts.slice(40, 120).map(p => p.y.toFixed(2)).join(), before = shape();
+    ids.route.value = '17'; ids.route.onchange();
+    assert.equal(ctx.drivingTest.s.l.def.route, 17); assert.notEqual(shape(), before);
+    for (let i = 0; i < 5; i++) frame(16 * (i + 2));
+    assert.match(ids.progress.textContent, /km\/h/); assert.match(ids['lesson-name'].textContent, /route 17/);
+    ids.route.value = '1'; ids.route.onchange();
+  }
+  ids.lessons.value = 'lane'; ids.lessons.onchange(); assert.equal(ids['route-box'].hidden, true);
+  assert.match(fs.readFileSync(path.join(dir, 'ui/driving.css'), 'utf8'), /body\.hub-titlebar \.lrn-head\{display:none!important\}/, 'Hub title bar hides the in-page row');
+});

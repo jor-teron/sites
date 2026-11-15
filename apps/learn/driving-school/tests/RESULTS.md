@@ -35,3 +35,14 @@ stub DOM: manual default, gear lever, handbrake, wheel rotation, indicator, 3D h
 3D failure falls back to the map, automatic R/N/D, wheel drag and pedals, town + mock.
 No browser run (browser.cjs updated for the new controls but not executed). No real
 phone, WebGL rendering or visual check yet.
+
+DS-3: Node 52/52 passing (`basics`, `roads`, `exam`, `cockpit`, `scene3d`, `ui-stub`, `openroad`).
+New: same route number gives the same road in both modes (and chunked generation equals
+one-shot generation); 25 loops close (gap = one step, heading and height join) and never
+cross themselves; a 30 km endless run keeps under ~245 points; all four road types and
+all four events appear, events only on city/village straights and 100 m apart; ghat
+hairpins exist; an autodriven lap of the practice loop completes; rule checks for off
+road, keep left (both traffic sides), speed limit, speed breaker, zebra pedestrian,
+roundabout give way and wrong way; the Open road group, route box and both modes run in
+the stub UI; the 3D open road keeps 3–5 chunks, drops old ones and stays under 600 meshes
+(max 58 while driving, 114 with every area built). No browser run; no visual check.

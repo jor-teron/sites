@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Driving School DS-2a</title>
+<title>Driving School DS-3</title>
 <link rel="icon" href="driving-school_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.driving-school.theme"></script>
 <link rel="stylesheet" href="ui/driving.css">
@@ -10,7 +10,7 @@
 <body>
 <div id="app" class="lrn">
 <header class="lrn-head"><h1><span class="lrn-here">Driving School</span></h1><button id="quiz">Signs quiz</button><button id="help">How to drive</button><button id="mute" aria-pressed="false">Sound on</button><button id="settings">Settings</button></header>
-<div class="toolbar"><label>Lesson <select id="lessons" aria-label="Lesson"></select></label><button id="retry">Retry</button><button id="pause">Pause</button><button id="end-test" hidden>End test</button><p class="status"><strong id="lesson-name"></strong> <span id="progress"></span><span id="score"></span></p></div>
+<div class="toolbar"><label>Lesson <select id="lessons" aria-label="Lesson"></select></label><label id="route-box" hidden>Route <input id="route" type="number" min="1" max="9999" step="1" value="1" inputmode="numeric" aria-label="Route number: the same number always gives the same road"></label><button id="retry">Retry</button><button id="pause">Pause</button><button id="end-test" hidden>End test</button><p class="status"><strong id="lesson-name"></strong> <span id="progress"></span><span id="score"></span></p></div>
 <main class="world">
 <section class="screen flat" id="screen">
 <canvas id="view3d" aria-label="View through the windscreen. Use the steering wheel and pedals below."></canvas>
@@ -54,12 +54,13 @@
 <li>Touch: drag the steering wheel round; let go and it straightens. Tap the middle of the wheel for the horn. Tap a slot on the gear lever to change gear. Hold accelerator/brake/clutch. Gear and signal buttons latch. Keyboard arrows steer/accelerate/brake; Z/X signals, B horn. Indicators do not cancel automatically.</li>
 <li>Drive through the blue arches (rings) in order; the next one glows. Move-off and braking lessons finish in a blue stop box. Parking needs full alignment inside the bay, neutral and handbrake. Retry resets only the current attempt; best scores stay saved.</li>
 <li>Town limit is 30 km/h. Stop fully at STOP. Red means stop before the line. Amber: do not begin entering. Give way to pedestrians and traffic already on the roundabout. Signal BEFORE turning, cancel after.</li>
+<li>Open road: Endless drive keeps making new road ahead of you; Practice loop is a closed loop you finish by driving one lap. Type a route number: the same number always gives the same road. Roads change type (city 40, highway 80, ghat 30, village 25 km/h). Keep left and on the tarmac, slow to 20 km/h for speed breakers, stop for people on zebra crossings, and give way at roundabouts.</li>
 <li>Mock test: follow the whole route then parallel park. End test shows an incomplete report. Any serious fault fails the practice test; at most 10 minor faults pass. These are practice thresholds, not official licence rules.</li></ol>
 <p><a href="../road-safety/road-safety.html">Road Safety — more signs and road rules</a></p><button id="close-help">Back to practice</button></dialog>
 <dialog id="quiz-card" aria-label="Road signs quiz"></dialog><dialog id="report-card" aria-label="Mock test report"></dialog>
 <noscript>Driving School requires JavaScript.</noscript>
 <script src="../shared/learn-hubbar.js"></script>
-<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/town.js"></script><script src="core/rules.js"></script><script src="core/exam.js"></script><script src="core/session.js"></script><script src="core/cockpit.js"></script>
-<script src="ui/town-render.js"></script><script src="ui/render.js"></script><script src="../road-safety/core/signs.js"></script><script src="ui/exam-ui.js"></script><script src="ui/audio.js"></script><script src="ui/dash.js"></script><script src="ui/app.js"></script>
+<script src="core/physics.js"></script><script src="core/lessons.js"></script><script src="core/town.js"></script><script src="core/rules.js"></script><script src="core/exam.js"></script><script src="core/roadgen.js"></script><script src="core/roadrules.js"></script><script src="core/session.js"></script><script src="core/cockpit.js"></script>
+<script src="ui/town-render.js"></script><script src="ui/road-render.js"></script><script src="ui/render.js"></script><script src="../road-safety/core/signs.js"></script><script src="ui/exam-ui.js"></script><script src="ui/audio.js"></script><script src="ui/dash.js"></script><script src="ui/app.js"></script>
 <script type="module" src="ui/view3d.js"></script>
 </body></html>
