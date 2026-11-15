@@ -8,6 +8,7 @@
   page still searches apps and Settings. Opens apps the Start-menu way (parent.__hubFly.openFromCat).
   Data: hub_config.js, hub_apps.js, hub_appindex.js (instant list), hub_catalog.js + tiles.js (CSV
   sections / descriptions). Hub items: search_items.js. Look: search.css (follows the Hub theme).
+  H151: matching, lists and the result list come from shared/search/ (also for Settings H152 / App Hub H153).
   Planned: H48b taskbar 🔍 button, H48c CSV description column, H48d descriptions for every category.
 -->
 <html lang="en">
@@ -46,6 +47,10 @@
   <!-- <script src="search_items.js"></script> -->
   <!-- <script src="search_items.js"></script> -->
   <script src="search_items.js"></script><!-- H52: + Hub bar, Auto update rows; H52b: phone top bar words; H55: Join public mesh; H52c: Update row without dot words -->
+  <!-- H151: shared search pieces (matching, app / category / Settings lists, result list) -->
+  <script src="../../../shared/search/search_core.js"></script>
+  <script src="../../../shared/search/search_sources.js"></script>
+  <script src="../../../shared/search/search_bar.js"></script>
   <script src="search.js"></script>
 </body>
 </html>
