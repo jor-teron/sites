@@ -4,10 +4,11 @@
   function read(k, fallback) { try { return JSON.parse(localStorage.getItem(PRE + k)) ?? fallback; } catch (_) { return fallback; } }
   function write(k, v) { try { localStorage.setItem(PRE + k, JSON.stringify(v)); } catch (_) { /* storage unavailable */ } }
   const prefs = Object.assign({ auto: false, side: 'left', muted: false }, read('settings', {})), best = read('best', {});
-  let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0;
+  let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0, view = null, frameNo = 0;
   function notice(text) { noticeText = text; noticeUntil = performance.now() + 3000; }
   const keys = new Set(), held = { throttle: 0, brake: 0, clutch: 0, steer: 0 };
-  const wheel = $('wheel'), list = $('lessons');
+  const list = $('lessons'), screen = $('screen');
+  const flatOnly = new URLSearchParams(location.search).get('view') === 'map';
   const definitions = () => D.basics.concat(D.roadLessons(prefs.side), [D.mockDefinition(prefs.side)]);
   function options() {
     list.replaceChildren(...definitions().map(def => {
@@ -22,14 +23,18 @@
     $('end-test').hidden = !def.mock; $('lesson-name').textContent = def.name; write('last', def.id); mirrorTime = 0;
   }
   list.value = read('last', 'start'); reset();
+  $('cockpit').classList.toggle('auto', prefs.auto);
   list.onchange = reset; $('retry').onclick = reset;
   $('engine').onclick = () => { if (!D.start(s.c)) notice(s.c.message); };
-  $('up').onclick = () => { if (!D.shift(s.c, s.c.gear + 1)) notice(s.c.message); };
-  $('down').onclick = () => { if (!D.shift(s.c, s.c.gear - 1)) notice(s.c.message); };
+  // Automatic: D = first forward gear (it changes up by itself); stepping down from D goes to N.
+  function selectGear(gear) { if (!D.shift(s.c, gear)) notice(s.c.message); }
+  function gearUp() { selectGear(s.c.auto && s.c.gear > 0 ? s.c.gear : s.c.gear + 1); }
+  function gearDown() { selectGear(s.c.auto && s.c.gear > 0 ? 0 : s.c.gear - 1); }
   $('park').onclick = () => { s.c.handbrake = !s.c.handbrake; };
   function indicator(side) { s.c.indicator = s.c.indicator === side ? '' : side; }
   $('left').onclick = () => indicator('left'); $('right').onclick = () => indicator('right');
   $('look').onclick = () => { mirrorTime = s.c.elapsed + 3; };
+  $('cockpit').classList.toggle('lhd', prefs.side === 'right');
   function clearInput() { keys.clear(); Object.keys(held).forEach(k => held[k] = 0); }
   function pause() { s.paused = true; clearInput(); if (!$('pause-card').open) $('pause-card').showModal(); }
   $('pause').onclick = pause;
@@ -56,9 +61,9 @@
   $('close-settings').onclick = () => { $('preferences').close(); s.paused = false; };
   $('preferences').addEventListener('cancel', () => { s.paused = false; });
   $('transmission').onchange = e => {
-    prefs.auto = e.target.value === 'auto'; write('settings', prefs); reset(); s.paused = true;
+    prefs.auto = e.target.value === 'auto'; write('settings', prefs); reset(); s.paused = true; $('cockpit').classList.toggle('auto', prefs.auto);
   };
-  $('side').onchange = e => { prefs.side = e.target.value; write('settings', prefs); const id = list.value; options(); list.value = id; reset(); s.paused = true; };
+  $('side').onchange = e => { prefs.side = e.target.value; write('settings', prefs); $('cockpit').classList.toggle('lhd', prefs.side === 'right'); const id = list.value; options(); list.value = id; reset(); s.paused = true; };
   $('theme').onchange = e => HubTheme.setOwn(e.target.value);
   // Follow Hub preference when set, otherwise the operating system. No shared files changed.
   function syncTheme() {
@@ -73,12 +78,13 @@
   }
   HubTheme.onChange(syncTheme); window.addEventListener('storage', syncTheme); window.addEventListener('focus', syncTheme);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme); syncTheme();
-  const actions = { Enter: 'engine', q: 'down', e: 'up', h: 'park', z: 'left', x: 'right', m: 'look', b: 'horn' };
+  const actions = { Enter: () => $('engine').click(), q: gearDown, e: gearUp, h: () => $('park').click(), z: () => $('left').click(),
+    x: () => $('right').click(), m: () => $('look').click(), b: () => $('horn').click() };
   const driving = ['w', 's', 'a', 'd', 'c', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
   window.addEventListener('keydown', e => {
     if (e.target.matches('select,input,textarea') || s.paused) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (driving.includes(k) || actions[k]) { e.preventDefault(); if (!e.repeat && actions[k]) $(actions[k]).click(); keys.add(k); }
+    if (driving.includes(k) || actions[k]) { e.preventDefault(); if (!e.repeat && actions[k]) actions[k](); keys.add(k); }
     if (k === 'Escape') pause();
   });
   window.addEventListener('keyup', e => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
@@ -89,12 +95,7 @@
     const release = () => { held[b.dataset.hold] = 0; b.classList.remove('active'); };
     b.onpointerup = b.onpointercancel = b.onlostpointercapture = release;
   });
-  let wheelPointer = null, wheelStart = 0;
-  wheel.onpointerdown = e => { e.preventDefault(); wheelPointer = e.pointerId; wheelStart = e.clientX; wheel.setPointerCapture(e.pointerId); };
-  wheel.onpointermove = e => { if (e.pointerId === wheelPointer) held.steer = D.clamp((e.clientX - wheelStart) / 45, -1, 1); };
-  wheel.onpointerup = wheel.onpointercancel = wheel.onlostpointercapture = () => { held.steer = 0; wheelPointer = null; };
-  wheel.onkeydown = e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); held.steer = e.key === 'ArrowLeft' ? -1 : 1; } };
-  wheel.onkeyup = () => { held.steer = 0; };
+  D.dash.build({ onSteer: v => { held.steer = s.paused ? 0 : v; } });
   function input() {
     return { throttle: Math.max(held.throttle, +(keys.has('w') || keys.has('ArrowUp'))),
       brake: Math.max(held.brake, +(keys.has('s') || keys.has('ArrowDown') || keys.has(' '))),
@@ -104,31 +105,51 @@
   function update(dt) {
     D.tick(s, input(), dt);
     if (s.l.done && !s.saved) { best[s.l.def.id] = Math.max(best[s.l.def.id] || 0, s.l.score); write('best', best); s.saved = true; const id = list.value; options(); list.value = id; }
-    $('speed').textContent = Math.round(Math.abs(s.c.v) * 3.6);
-    $('rpm-meter').value = s.c.rpm;
-    $('rpm').textContent = Math.round(s.c.rpm / 100) * 100 + ' RPM';
-    $('gear').textContent = s.c.gear === -1 ? 'R' : s.c.gear ? (s.c.auto ? 'D' : '') + s.c.gear : 'N';
-    $('lamps').textContent = (s.c.handbrake ? 'Ⓟ PARK · ' : '') + (s.c.stalled ? 'STALL · ' : '') + (s.c.indicator === 'left' ? '◀ LEFT' : s.c.indicator === 'right' ? 'RIGHT ▶' : 'Signals off');
-    $('hint').textContent = noticeUntil > performance.now() ? noticeText : D.hint(s.l, s.c);
-    $('progress').textContent = (s.l.def.finish || 'Follow the guide.') + ' · ' + (s.l.def.gates.length > 1 ? s.l.gate + '/' + s.l.def.gates.length + ' rings · ' : '') + Math.floor(s.l.elapsed) + ' s · clutch ' + Math.round(s.c.clutch * 100) + '%';
-    $('score').textContent = ' · Score ' + s.l.score + '/100 · Best ' + (best[s.l.def.id] ?? '—');
-    $('park').setAttribute('aria-pressed', s.c.handbrake);
-    $('left').setAttribute('aria-pressed', s.c.indicator === 'left'); $('right').setAttribute('aria-pressed', s.c.indicator === 'right');
-    wheel.style.transform = 'rotate(' + s.c.steer * 65 + 'deg)'; wheel.setAttribute('aria-valuenow', Math.round(s.c.steer * 100));
-    $('mirror').textContent = mirrorTime > s.c.elapsed ? 'REAR CHECKED · lot clear · check sides too' : 'REAR · practice lot · M to look';
+    if (s.l.def.mock && s.l.done && !s.reported) { s.reported = true; report(); }
+  }
+  // 3D view when the ES module and WebGL work; otherwise (file://, no WebGL, ?view=map) the old top-down map.
+  function use3d() {
+    if (view || flatOnly || !D.view3dFactory) return;
+    try { view = D.view3dFactory($('view3d')); screen.classList.remove('flat'); }
+    catch (_) { view = null; notice('The 3D view does not work on this device, so the map view is shown.'); }
+  }
+  window.addEventListener('ds-view3d', use3d); use3d();
+  $('view3d').addEventListener('webglcontextlost', e => { e.preventDefault(); view = null; screen.classList.add('flat'); });
+  window.addEventListener('load', () => setTimeout(() => {
+    if (!view && !flatOnly && location.protocol === 'file:') notice('The 3D view needs the Hub or a web server. Showing the map view.');
+  }, 300));
+  function paint(now) {
+    const c = s.c, inp = input();
+    // Draw first (reads layout), then update the DOM, so a frame never forces two layouts.
+    frameNo++;
+    if (view) {
+      const sides = screen.clientWidth >= 520;
+      screen.classList.toggle('sides', sides);
+      try { view.render(s, prefs, { rear: $('mirror'), left: $('mirror-l'), right: $('mirror-r'), sides }, now / 1000); }
+      catch (err) { console.error(err); view = null; screen.classList.add('flat'); notice('The 3D view stopped, so the map view is shown.'); }
+      if (frameNo % 3 === 0) D.draw($('road'), s, prefs);   // small map, every third frame
+    } else D.draw($('road'), s, prefs);
+    D.dash.update(c, inp, selectGear);
+    const done = s.l.done, text = noticeUntil > performance.now() ? noticeText : D.hint(s.l, c);
+    $('hint').textContent = done || noticeUntil > performance.now() ? text : D.nextHint(text);
+    $('progress').textContent = (s.l.def.gates.length > 1 ? 'Arch ' + Math.min(s.l.gate + 1, s.l.def.gates.length) + ' of ' + s.l.def.gates.length + ' · ' : '') + Math.floor(s.l.elapsed) + ' s';
+    $('score').textContent = ' · Score ' + s.l.score + ' · Best ' + (best[s.l.def.id] ?? '—');
     const f = s.l.faults[s.l.faults.length - 1];
     $('fault').textContent = f && (s.w ? s.w.time - f.time < 5 : s.l.elapsed - f.time < 5) ? f.reason : '';
+    const checked = mirrorTime > c.elapsed;
+    let rearText = checked ? 'Mirror checked · look over your shoulder too' : 'Rear view · M to check';
     if (s.w) {
-      const back = s.w.cars.filter(ai => { const dx = ai.x - s.c.x, dy = ai.y - s.c.y; return dx * Math.cos(s.c.heading) + dy * Math.sin(s.c.heading) < 0 && Math.hypot(dx, dy) < 30; });
-      $('mirror').textContent = 'REAR · ' + back.length + ' vehicle(s) nearby · check blind spots';
+      const back = s.w.cars.filter(ai => { const dx = ai.x - c.x, dy = ai.y - c.y; return dx * Math.cos(c.heading) + dy * Math.sin(c.heading) < 0 && Math.hypot(dx, dy) < 30; });
+      rearText = 'Behind you: ' + back.length + ' vehicle(s)' + (checked ? ' · checked' : '');
     }
-    D.sound.update(s.c, s.paused || s.l.done);
-    if (s.l.def.mock && s.l.done && !s.reported) { s.reported = true; report(); }
-    D.draw($('road'), s, prefs);
+    $('mirror').classList.toggle('checked', checked); $('mirror').setAttribute('aria-label', 'Rear-view mirror. ' + rearText);
+    $('mirror-text').textContent = view ? '' : rearText;
+    D.sound.update(c, s.paused || done);
   }
-  function frame(t) { let dt = Math.min(.1, (t - (last || t)) / 1000); last = t; while (dt > 0) { const step = Math.min(dt, 1 / 60); update(step); dt -= step; } requestAnimationFrame(frame); }
-  if (window.LearnHubBar) LearnHubBar.attach(document.querySelector('.lrn-head'));
+  function frame(t) { let dt = Math.min(.1, (t - (last || t)) / 1000); last = t; while (dt > 0) { const step = Math.min(dt, 1 / 60); update(step); dt -= step; } paint(t); requestAnimationFrame(frame); }
+  // Inside a Hub window the head row moves to the title bar; send its buttons so they stay reachable.
+  if (window.LearnHubBar) LearnHubBar.attach(document.querySelector('.lrn-head'), { buttons: '#quiz,#help,#mute,#settings' });
   // Deterministic harness uses exactly the same session/physics; never shipped with auto-driving enabled.
-  if (new URLSearchParams(location.search).has('test')) window.drivingTest = { D, get s() { return s; }, reset, input, update, prefs };
+  if (new URLSearchParams(location.search).has('test')) window.drivingTest = { D, get s() { return s; }, reset, input, update(dt) { update(dt); paint(performance.now()); }, prefs, get view3d() { return !!view; } };
   requestAnimationFrame(frame);
 })();

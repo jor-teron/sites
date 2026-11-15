@@ -31,7 +31,7 @@ Loads shared/theme/hub_theme.js without modifying it. Header uses LearnHubBar.
 `core/` is DOM-free UMD and unit-testable with Node. `ui/` owns canvas, input and
 storage. No dependencies/build step. Art and 128 px icon are original code/PIL.
 
-Tests: `node --test apps/learn/driving-school/tests/*.cjs`.
+Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub}.cjs`.
 Browser harness: `node apps/learn/driving-school/tests/browser.cjs` after starting
 `python3 -m http.server 8829` at the repository root. Requires puppeteer externally.
 Only `?test` exposes the deterministic test interface. No lesson is auto-completed.
@@ -82,3 +82,57 @@ Pure unit tests (no server/browser):
 The AI and physics are deliberately simplified. Real vehicle behavior, sightlines,
 clutch bite, hazard perception and local regulations need supervised real-world
 instruction. No real phone or actual driving test has been used for validation.
+
+## DS-2a: driver's-seat view (three.js)
+You now sit INSIDE the car. The top of the screen is the windscreen: a real 3D scene
+(three.js r170, shared Learn copy at `../common/vendor/three/`, loaded as an ES module
+with a relative path, no CDN). The bottom is the dashboard, drawn in HTML/SVG on top:
+
+- Steering wheel in front of you; it turns with the steering. Drag the wheel ROUND
+  (touch or mouse); let go and it straightens. Tap the middle for the horn.
+- Speedometer (0-100 km/h) and rev counter (0-7000 rpm, red from 5500) as analogue
+  dials; the big letter in the rev counter is the gear (N, 1-5, R; D in Automatic).
+- Gear lever: tap a slot (H pattern 1-5, N, R; Automatic shows R, N, D). Handbrake
+  lever button, Start engine, Check mirrors. RHD (India): these sit LEFT of the wheel;
+  with right-hand traffic (LHD) they move to the right of it.
+- Indicator arrows above the wheel blink green when on (tap them to signal).
+- Clutch, Brake and Accelerator pedals: big hold buttons, each shows how far it is
+  pressed (clutch shows real clutch travel, so you can see the bite point). Automatic
+  hides the clutch.
+- Rear-view mirror (top centre) and door mirrors (when the screen is at least 520 px
+  wide) are extra cameras looking back, flipped like real mirrors.
+- One "Next: ..." line from the instructor sits above the dashboard. A small map in
+  the corner shows the area from above.
+
+Manual is the default (Automatic in Settings). India / left-hand traffic is the
+default, so the driver's eye is right of the car's centre line.
+
+Lessons 1-6 (practice lot) and lessons 7-13 + the mock test (town) are all drawn in
+3D: lot lines and cones, roads, centre dashes, zebra, stop lines, the traffic signal,
+STOP / 30 / give-way signs, buildings, parking bays, AI cars and pedestrians. Lesson
+rings are blue arches to drive through (next one glows; passed ones turn green), with
+a dashed guide line and blue stop / parking boxes. Core logic (physics, lessons,
+rules, scoring, exam) is unchanged; DS-2a only replaces the presentation.
+
+Performance: pixel ratio capped at 1.5 (1 on canvases wider than 1500 px), no
+shadows, Lambert/basic materials, instanced cones/dashes/trees, under 400 meshes,
+antialias off on devices with 4 GB or less. The small map redraws every third frame.
+
+Fallback: browsers refuse ES module imports over `file://`, and some devices lack
+WebGL. Then the module never registers and the app keeps the old top-down map
+(`ui/render.js`, `ui/town-render.js`) full size with the same dashboard, and says so
+once. `?view=map` forces the map view. If WebGL fails mid-drive it also falls back.
+Inside a Hub window the head row moves to the title bar with Signs quiz, How to drive,
+Sound and Settings buttons (LearnHubBar buttons list, like Hindi Letters).
+
+Files: `core/cockpit.js` (DOM-free maths: wheel angle and drag, dial needles, gear
+lever slots, driver / mirror camera poses, horizon framing, mirror viewports, lot,
+town and marker layouts), `ui/scene3d.js` (three.js scene, no DOM), `ui/view3d.js`
+(renderer, cameras, mirrors), `ui/dash.js` (dashboard SVG and wheel drag).
+Tests: `tests/cockpit.cjs` (maths), `tests/scene3d.cjs` (builds and updates every
+lesson's scene in Node, no WebGL), `tests/ui-stub.cjs` (runs the classic UI scripts
+in a stub DOM). `tests/browser.cjs` was updated for the new controls but not run.
+
+Left for DS-2b/2c: home screen and first-time guide, Signs quiz as its own page,
+plainer lesson wording (lesson cards still mention keys), Learn look/title bar,
+P for park in Automatic, a 3D bonnet/interior, mirror-check scoring.

@@ -1,23 +1,88 @@
+/* Driving School DS-2a: first-person cockpit. Windscreen (three.js canvas) on top, dashboard below. */
 :root{--bg:#101e2b;--panel:#1b3041;--ink:#eff7fb;--muted:#adc4d4;--line:#36566d;--blue:#65d9ff;color-scheme:dark;font:15px system-ui,sans-serif}
 :root.light{--bg:#edf4f6;--panel:#fff;--ink:#163348;--muted:#4c6574;--line:#bacfd9;--blue:#007da8;color-scheme:light}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,select{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:9px;min-height:44px;padding:8px 12px}button{cursor:pointer;touch-action:manipulation}button:hover,button.active{background:#176b87;color:white}button:focus-visible,select:focus-visible,#wheel:focus-visible{outline:3px solid var(--blue);outline-offset:2px}button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--blue)}
-.lrn-head{display:flex;align-items:center;gap:12px;padding:7px 16px;border-bottom:1px solid var(--line)}h1{font-size:20px;margin:0;flex:1}.toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;flex-wrap:wrap}.toolbar label{flex:1}.toolbar select{max-width:300px;width:75%}main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;padding:0 12px}.world{position:relative;border-radius:15px;overflow:hidden;background:#31423e;min-height:340px}canvas{display:block;width:100%;height:100%;position:absolute;inset:0}#mirror{position:absolute;top:9px;left:50%;transform:translateX(-50%);background:#d1e0e6e8;border:3px solid #263c49;border-radius:10px;color:#132936;padding:6px;font-size:11px;white-space:nowrap}#rotate{display:none;position:absolute;bottom:4px;left:9px;right:9px;background:#123b4cdd;color:white;font-size:12px;padding:6px;border-radius:6px}
-aside{min-width:0}.dash{display:grid;grid-template-columns:1.5fr 1fr 40px;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;align-items:center}.dash strong:first-child{font-size:28px;font-variant-numeric:tabular-nums}.dash small{font-size:12px}.dash #gear{font-size:28px;color:var(--blue)}#lamps{grid-column:1/-1;color:#d98618;font-weight:700;font-size:13px}.instructor{padding:12px;margin:8px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;min-height:144px}.instructor p{margin:7px 0}.instructor #score{color:var(--blue);font-size:13px}#progress{color:var(--muted);font-size:12px}.touch{display:flex;gap:10px;align-items:center}.pedals{display:flex;gap:6px;flex:1}.pedals button{flex:1;padding:8px 4px;min-height:68px;touch-action:none;user-select:none}.pedals button:last-child{background:#176c59;color:white}#wheel{border:7px solid var(--muted);border-radius:50%;height:96px;width:96px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;user-select:none;cursor:grab}#wheel span{font-size:32px;line-height:1}#wheel small{font-size:10px}.switches{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}.switches button{flex:1;white-space:nowrap}.disclaimer{font-size:11px;color:var(--muted);padding:0 14px;margin:8px 0}dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;max-width:min(92vw,520px);max-height:90dvh;overflow:auto}dialog::backdrop{background:#06121ccc}dialog label{display:block;margin:12px 0}dialog select{width:100%;margin-top:5px}dialog p{line-height:1.6}dialog h2{margin:0 0 10px}body{min-height:100dvh}.world{height:calc(100dvh - 160px)}
-@media(max-width:700px) and (orientation:portrait){main{grid-template-columns:1fr;padding:0 8px;gap:6px}.world{height:32dvh;min-height:200px}#rotate{display:block}aside{display:grid;grid-template-columns:1fr;gap:4px}.instructor{min-height:0;margin:0;padding:8px}.dash{padding:5px 10px}.touch{justify-content:center}#wheel{width:90px;height:90px}.toolbar{gap:5px;padding:5px 8px}.toolbar button{padding:7px}.toolbar label{min-width:100%}.toolbar select{width:80%;max-width:none}.switches{margin:0}.disclaimer{font-size:10px}}
-@media(max-height:520px) and (orientation:landscape){.lrn-head{padding:2px 10px}h1{font-size:16px}.lrn-head button{min-height:32px;padding:3px 10px}.toolbar{padding:3px 8px}.toolbar button,.toolbar select{min-height:36px;padding:3px 8px}main{grid-template-columns:minmax(0,1fr) 310px;padding:0 6px;gap:6px}.world{height:calc(100dvh - 106px);min-height:200px}.instructor{min-height:0;font-size:12px;padding:5px;margin:3px 0}.instructor p{margin:2px 0}.dash{padding:3px 8px;font-size:11px;grid-template-columns:1fr 1fr 30px}.dash strong:first-child,.dash #gear{font-size:20px}.dash #lamps{grid-column:auto}.touch{gap:5px}#wheel{width:70px;height:70px;border-width:5px}.pedals button{min-height:48px;font-size:12px}.switches{margin-top:3px;gap:3px}.switches button{font-size:11px;padding:4px;min-height:44px}.disclaimer{margin:3px 0;font-size:9px}}
-#fault{font-size:12px;color:#d65544;font-weight:600}.light #fault{color:#ad3028}
-/* DS-1c: full-height cockpit, with all landscape touch controls in view. */
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);min-height:100dvh}
+button,select{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:9px;min-height:44px;padding:8px 12px}
+button{cursor:pointer;touch-action:manipulation}button:hover,button.active{background:#176b87;color:#fff}
+button:focus-visible,select:focus-visible,#wheel:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--blue)}button:disabled{cursor:default;opacity:.8}
 #app{height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
-.lrn-head{flex-shrink:0;flex-wrap:wrap;padding:4px 12px;gap:6px}
-.lrn-head button{font-size:13px}h1{white-space:nowrap}.toolbar{flex-shrink:0}
-main{flex:1;min-height:0}.world{height:auto;min-height:0}
-aside{min-height:0;overflow:auto;padding-bottom:2px}.disclaimer{flex-shrink:0}
-.dash{background:linear-gradient(135deg,var(--panel),var(--bg));box-shadow:inset 0 1px #ffffff19}
-#lamps{white-space:nowrap;font-size:11px;min-height:15px}
-#rpm-meter{grid-column:1/-1;width:100%;height:6px;border:0}
-.switches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
-.switches button{font-size:12px;padding:4px;min-height:44px}
-#fault:empty{display:none}button:disabled{cursor:default;opacity:.8}
+.lrn-head{display:flex;align-items:center;flex-wrap:wrap;flex-shrink:0;gap:6px;padding:4px 12px;border-bottom:1px solid var(--line)}
+h1{font-size:20px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:13px}
+.toolbar{display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;flex-wrap:wrap}
+.toolbar select{max-width:300px}.status{margin:0;flex:1;min-width:180px;font-size:13px;color:var(--muted);text-align:right}
+.status strong{color:var(--ink)}#score{color:var(--blue)}
+.world{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 10px}
+.disclaimer{font-size:11px;color:var(--muted);padding:0 14px;margin:4px 0;flex-shrink:0}
+
+/* Windscreen. */
+.screen{position:relative;flex:1;min-height:150px;border-radius:14px 14px 0 0;overflow:hidden;background:#9fd3f0}
+.screen canvas{display:block;position:absolute}
+#view3d{inset:0;width:100%;height:100%}
+#road{top:8px;left:8px;width:min(150px,24%);height:min(110px,30%);border:2px solid #1b2b36;border-radius:10px;opacity:.92;z-index:2}
+.screen.flat{background:#31423e}.screen.flat #view3d,.screen.flat .pillar,.screen.flat .side{display:none}
+.screen.flat #road{inset:0;width:100%;height:100%;border:0;border-radius:0;opacity:1;z-index:0}
+.pillar{position:absolute;top:0;bottom:0;width:7%;max-width:60px;background:linear-gradient(90deg,#0e171d,#24313a);z-index:1;pointer-events:none}
+.pillar.l{left:0;clip-path:polygon(0 0,35% 0,100% 100%,0 100%)}.pillar.r{right:0;clip-path:polygon(65% 0,100% 0,100% 100%,0 100%)}
+.mirror{position:absolute;z-index:3;border:4px solid #1d2830;background:transparent;box-shadow:0 3px 8px #0006;pointer-events:none}
+.mirror.rear{top:4px;left:50%;transform:translateX(-50%);width:min(240px,34%);aspect-ratio:3.2;border-radius:12px;display:flex;align-items:center;justify-content:center;transition:border-color .2s}
+.screen.flat .mirror.rear{background:#d1e0e6e8;width:auto;aspect-ratio:auto;padding:4px 8px}
+#mirror-text{font-size:11px;color:#132936;white-space:nowrap}
+.mirror.checked{border-color:#3fd0ff}
+.mirror.side{bottom:30px;width:min(150px,17%);aspect-ratio:1.45;border-radius:14px 14px 22px 22px;display:none}
+.screen.sides:not(.flat) .mirror.side{display:block}.mirror.side.l{left:3%}.mirror.side.r{right:3%}
+.next{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;margin:0;max-width:min(560px,58%);background:#0c2633e8;color:#fff;border:1px solid #3fd0ff88;border-radius:12px;padding:6px 12px;font-size:14px;line-height:1.3;text-align:center}
+#hint:empty{display:none}.next:has(#hint:empty){display:none}
+#fault{position:absolute;top:84px;left:50%;transform:translateX(-50%);z-index:3;margin:0;max-width:70%;background:#a52c40ee;color:#fff;font-weight:600;font-size:13px;padding:5px 10px;border-radius:10px;text-align:center}
+#fault:empty{display:none}
+#rotate{display:none;position:absolute;top:8px;right:8px;z-index:4;max-width:46%;margin:0;background:#123b4cee;color:#fff;font-size:11px;padding:5px 8px;border-radius:8px}
+
+/* Dashboard. RHD (India) by default: gear lever and handbrake to the LEFT of the wheel. */
+.cockpit{position:relative;z-index:5;flex-shrink:0;height:clamp(140px,38vh,250px);margin-top:-18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:stretch;
+  padding:16px 14px 8px;color:#e9f3f8;background:linear-gradient(180deg,#2c3a44 0,#1a242b 22%,#11181d 100%);border-radius:50% 50% 12px 12px/26px 26px 12px 12px;box-shadow:0 -2px 0 #3d4d58,0 -10px 18px #0005}
+.cockpit button{background:#24323b;border-color:#445866;color:#e9f3f8}.cockpit button:hover{background:#2f6d84}
+.cockpit.lhd .console{order:2}.cockpit.lhd .cluster{order:1}.cockpit.lhd .pedals{order:3}
+.console{display:flex;gap:8px;align-items:center;min-width:0}
+.gate{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px;padding:6px;border-radius:14px;background:#0b1115;border:1px solid #3a4a55;
+  background-image:linear-gradient(#56656f,#56656f),linear-gradient(#56656f,#56656f),linear-gradient(#56656f,#56656f),linear-gradient(#56656f,#56656f);
+  background-size:3px 100%,3px 100%,3px 100%,72% 3px;background-position:20% 50%,50% 50%,80% 50%,50% 50%;background-repeat:no-repeat}
+.gate.auto{background-size:3px 100%;background-position:50% 50%}
+.gate button{min-height:0;padding:0;border-radius:50%;font-weight:700;font-size:15px;background:#1f2b33}
+.gate button[aria-pressed=true]{background:radial-gradient(circle at 35% 30%,#8ee6ff,#1690b8);color:#04202c;box-shadow:0 0 0 2px #bff0ff}
+.console-btns{display:flex;flex-direction:column;gap:5px;min-width:0}
+.console-btns button{font-size:12px;padding:4px 8px;white-space:nowrap}
+.handbrake{position:relative;padding-left:26px!important;text-align:left}
+.handbrake .lever{position:absolute;left:8px;top:50%;width:8px;height:22px;margin-top:-11px;border-radius:4px;background:#8b9aa4;transform-origin:50% 100%;transform:rotate(25deg);transition:transform .15s}
+.handbrake.on{border-color:#e24a4a;color:#ffd2d2}.handbrake.on .lever{background:#e24a4a;transform:rotate(-10deg)}
+.engine.running{border-color:#3ee68a;color:#b9ffd8}
+.cluster{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.lamps{display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0}
+.signal{min-width:56px;padding:0 10px;font-size:18px;line-height:1;color:#4d6a5a!important}
+.signal.lit{color:#43f08f!important;text-shadow:0 0 8px #43f08f;border-color:#43f08f}
+.lamp-text{font-size:12px;color:#ffb347;min-width:9em;text-align:center;white-space:nowrap}
+.dials{flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center;gap:4px}
+.dial{height:82%;max-height:150px;aspect-ratio:1;flex-shrink:1;min-width:0;align-self:center}
+.dial-face{fill:#0b1115;stroke:#4d5d68;stroke-width:2}.dial-red{fill:none;stroke:#e24a4a;stroke-width:5}
+.tick{stroke:#8fa3b0;stroke-width:1}.tick.major{stroke:#e9f3f8;stroke-width:2}
+.dial-num{fill:#cfdde6;font-size:9px;text-anchor:middle}.dial-big{fill:#fff;font-size:17px;font-weight:700;text-anchor:middle}
+.dial-unit{fill:#8fa3b0;font-size:7px;text-anchor:middle}.needle path{fill:#ff6a3d}.hubcap{fill:#2b3a44;stroke:#8fa3b0}
+.wheel-box{position:relative;height:118%;aspect-ratio:1;max-width:48%;flex-shrink:0;align-self:flex-start;margin-top:2px}
+#wheel{position:absolute;inset:0;border-radius:50%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;will-change:transform}
+#wheel.held{cursor:grabbing}#wheel svg{display:block;width:100%;height:100%;overflow:visible}
+.rim{fill:none;stroke:#1d2328;stroke-width:16}.rim-mark{fill:none;stroke:#3fd0ff;stroke-width:16}
+.spoke{stroke:#262e34;stroke-width:15;stroke-linecap:round;fill:none}.hub-plate{fill:#2a3238;stroke:#151a1e;stroke-width:3}
+.hub{position:absolute;left:50%;top:50%;width:24%;height:24%;min-height:0;transform:translate(-50%,-50%);border-radius:50%;padding:0;font-size:11px;background:#30393f!important;z-index:1}
+.pedals{display:flex;gap:8px;align-items:flex-end}
+.pedal{position:relative;overflow:hidden;width:clamp(58px,8vw,92px);height:92%;max-height:180px;min-height:70px;padding:4px;border-radius:12px 12px 18px 18px;touch-action:none;user-select:none;-webkit-user-select:none;
+  font-size:13px;font-weight:700;display:flex;align-items:flex-end;justify-content:center;background:repeating-linear-gradient(0deg,#2b3943 0 6px,#23303a 6px 12px)!important;--press:0%}
+.pedal::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--press);background:#3fd0ff55;transition:height .05s}
+.pedal span{position:relative}.pedal.brake{height:80%}.pedal.gas{height:100%;width:clamp(52px,7vw,80px)}
+.pedal.gas::before{background:#43f08f66}.pedal.brake::before{background:#ff6a6a66}
+.pedal.active{outline:3px solid #fff}
+.cockpit.auto .pedal.clutch{display:none}
+
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:16px;max-width:min(92vw,520px);max-height:90dvh;overflow:auto}
+dialog::backdrop{background:#06121ccc}dialog label{display:block;margin:12px 0}dialog select{width:100%;margin-top:5px}dialog p{line-height:1.6}dialog h2{margin:0 0 10px}
 .quiz-sign{width:130px;height:130px;display:block;margin:12px auto}
 .quiz-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .quiz-choices button{min-height:52px}button.correct{background:#1a7159;color:#fff}
@@ -26,28 +91,28 @@ button.incorrect{background:#a52c40;color:#fff}#report-card li{margin-bottom:10p
 a{color:var(--blue)}dialog[open]{animation:appear .15s ease-out}
 @keyframes appear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){dialog[open]{animation:none}}
+
+/* Phone landscape (e.g. 844x390): one compact top row, more room for the windscreen. */
 @media(max-height:520px) and (orientation:landscape){
   #app{padding:0 max(0px,env(safe-area-inset-right)) 0 max(0px,env(safe-area-inset-left))}
-  .lrn-head{padding:2px 8px;gap:4px}.lrn-head button{font-size:11px;min-height:36px;padding:4px 9px}
-  .toolbar{flex-wrap:nowrap;padding:2px 6px;gap:4px}.toolbar label{min-width:0;font-size:12px}
-  .toolbar select{width:83%;max-width:270px;font-size:12px}.toolbar button{font-size:12px;min-height:36px}
-  main{grid-template-columns:minmax(0,1fr) 310px;gap:5px}.world{height:auto;min-height:0}
-  aside{display:grid;grid-template-rows:42px minmax(54px,1fr) 70px 88px;gap:3px;overflow:hidden;padding:0}
-  .dash{padding:2px 8px;gap:0;grid-template-columns:1fr 1fr 34px;position:relative}
-  .dash strong:first-child,.dash #gear{font-size:20px}.dash #lamps{grid-column:1/-1;font-size:10px;line-height:12px;min-height:12px}
-  #rpm-meter{position:absolute;bottom:0;left:4%;width:92%;height:3px}
-  .instructor{padding:4px 7px;margin:0;min-height:0;overflow:auto;font-size:11px}
-  .instructor #hint{margin:2px 0;font-size:11px;line-height:1.2}
-  .instructor #progress,.instructor #score{display:inline;font-size:10px;margin:0}
-  .touch{height:70px}.pedals button{height:62px;font-size:11px;min-width:0}
-  #wheel{height:68px;width:68px;flex-shrink:0}.switches{gap:3px;margin:0;grid-template-rows:44px 44px}
-  .switches button{font-size:10px}.disclaimer{font-size:9px;margin:3px 8px;padding:0}
+  .lrn-head{padding:2px 8px;gap:4px}h1{font-size:15px}.lrn-head button{font-size:11px;min-height:34px;padding:3px 9px}
+  .toolbar{flex-wrap:nowrap;padding:2px 8px;gap:4px;font-size:12px}.toolbar select,.toolbar button{font-size:12px;min-height:34px;padding:3px 8px}
+  .toolbar select{max-width:210px}.status{font-size:11px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .world{padding:0 6px}.cockpit{height:44vh;min-height:166px;padding:10px 8px 4px;gap:6px}
+  .gate{gap:3px;padding:3px}.console-btns{gap:3px}
+  .gate button{font-size:13px}.console-btns button{font-size:11px;padding:2px 6px}
+  .signal{min-width:48px}.lamps{gap:6px}.lamp-text{font-size:11px;min-width:7em}
+  .pedal{min-height:60px;font-size:11px;width:56px}.pedal.gas{width:52px}
+  .next{font-size:12px;bottom:22px;padding:4px 10px}#fault{top:50px;font-size:12px}.disclaimer{display:none}
 }
-@media(max-width:700px) and (orientation:portrait){
-  #app{height:auto;min-height:100dvh}.lrn-head{padding:5px 8px}.lrn-head h1{min-width:100%;font-size:18px}
-  .lrn-head button{flex:1;min-height:40px;font-size:11px;padding:4px}.toolbar{font-size:13px}
-  main{flex:none;display:flex;flex-direction:column}.world{height:25dvh;min-height:190px;flex-shrink:0}
-  aside{overflow:visible}.dash{gap:2px}.instructor{min-height:0;font-size:13px}
-  .switches{margin-top:4px}.switches button{font-size:11px}
-  #rotate{font-size:10px;margin:0;bottom:4px;padding:4px}#mirror{font-size:9px;padding:4px}
+/* Portrait phones: still works; dashboard wraps into two rows below the windscreen. */
+@media(orientation:portrait) and (max-width:700px){
+  #app{height:auto;min-height:100dvh}.lrn-head{padding:4px 8px}.lrn-head h1{min-width:100%;font-size:18px}
+  .lrn-head button{flex:1;min-height:40px;font-size:11px;padding:4px}.toolbar{padding:4px 8px;gap:5px}.status{text-align:left;min-width:100%}
+  .world{padding:0 6px;flex:none}.screen{flex:none;height:36dvh;min-height:200px}#rotate{display:block}
+  .cockpit{height:auto;grid-template-columns:1fr;grid-template-areas:"cluster" "console" "pedals";row-gap:8px}
+  .cluster{grid-area:cluster;height:170px}.console{grid-area:console;justify-content:center}.pedals{grid-area:pedals;height:96px;justify-content:center}
+  .cockpit.lhd .console,.cockpit.lhd .cluster,.cockpit.lhd .pedals{order:0}
+  .pedal,.pedal.gas{width:30%;max-width:110px;height:100%}.pedal.brake{height:88%}.mirror.rear{width:46%}.next{max-width:86%;font-size:13px}
+  #road{width:30%;height:26%}
 }
