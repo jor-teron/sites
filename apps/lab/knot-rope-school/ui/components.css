@@ -1,0 +1,57 @@
+/* Components styles. */
+.lesson-card{background:#eeeee8;border:1px solid var(--line);padding:0;text-align:left;color:inherit;display:flex;flex-direction:column;min-width:0;transition:border-color .2s,transform .2s}
+.lesson-card:hover{border-color:#9da99c;transform:translateY(-2px)}
+.card-art{height:170px;display:grid;place-items:center;background:#e6e8e0;border-bottom:1px solid var(--line);overflow:hidden}
+.card-art svg{width:80%;height:145px}
+.card-body{padding:20px 21px 18px}
+.card-topline{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.card-body h3{font-family:var(--serif);font-weight:400;font-size:25px;margin:9px 0 6px}
+.card-body p{color:var(--muted);font-size:13px;margin:0;max-width:390px}
+.card-link{display:flex;justify-content:space-between;align-items:center;margin-top:21px;font-size:11px;font-weight:700;color:var(--green)}
+.done-mark{color:var(--green);font-weight:800}
+.safety-note{display:flex;gap:15px;margin-top:44px;padding:19px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.safety-icon{flex:0 0 23px;height:23px;border:1px solid #9d8460;color:#8b704a;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700}
+.safety-note strong{font-size:12px}.safety-note p{margin:3px 0 0;color:var(--muted);font-size:12px;max-width:700px}
+.page-intro{max-width:650px;margin:0 0 35px}.page-intro h1{font-size:clamp(42px,7vw,62px);margin-bottom:12px}.page-intro>p:last-child{color:var(--muted);max-width:490px}
+.back-button{margin:-28px 0 24px}
+.lesson-header{display:flex;justify-content:space-between;gap:20px;align-items:start;margin-bottom:28px}
+.lesson-header h1{font-family:var(--serif);font-size:clamp(40px,7vw,62px);font-weight:400;line-height:1.05;letter-spacing:-.035em;margin:8px 0}
+.lesson-header p{color:var(--muted);max-width:570px;margin:0}
+.lesson-visual{background:#e8eae3;border:1px solid var(--line);padding:16px;margin-bottom:35px}
+.lesson-visual svg{display:block;width:100%;max-height:260px}
+.visual-caption{text-align:center;color:var(--muted);font-size:10px;letter-spacing:.08em;margin:8px 0 0}
+.lesson-columns{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.8fr);gap:52px}
+.content-section{margin-bottom:32px}.content-section h2{font-family:var(--serif);font-size:25px;font-weight:400;margin:0 0 12px}
+.steps{list-style:none;padding:0;margin:0;counter-reset:step}.steps li{counter-increment:step;display:grid;grid-template-columns:29px 1fr;gap:12px;margin:0 0 16px;color:#55594f;font-size:14px}
+.steps li:before{content:counter(step,decimal-leading-zero);font-size:10px;color:var(--green);font-weight:800;padding-top:4px}
+.side-card{background:#eeeee8;border:1px solid var(--line);padding:19px;margin-bottom:14px}.side-card h3{font-size:11px;letter-spacing:.1em;margin:0 0 9px;text-transform:uppercase}.side-card p,.side-card li{font-size:12px;color:var(--muted)}.side-card ul{padding-left:17px;margin:0}
+.quiz{padding:20px;border:1px solid var(--line);margin:24px 0}.quiz h3{font-family:var(--serif);font-size:22px;font-weight:400;margin:0 0 12px}.quiz-option{display:block;padding:9px 10px;border:1px solid var(--line);margin:8px 0;font-size:13px;cursor:pointer}.quiz-option input{margin-right:8px;accent-color:var(--green)}.quiz-feedback{min-height:20px;font-size:12px;color:var(--green);margin:10px 0 0}
+.lesson-actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:22px 0 45px}.lesson-actions .button{gap:12px}
+.practice-panel{display:flex;gap:55px;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:37px}.practice-stat{display:flex;flex-direction:column}.stat-number{font-family:var(--serif);font-size:42px;line-height:1.1}.stat-label{font-size:9px;margin-top:7px}
+.practice-list{margin:15px 0 40px}.practice-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 0;border-bottom:1px solid var(--line);font-size:13px}.practice-row label{display:flex;align-items:center;gap:10px}.practice-row input{accent-color:var(--green);width:16px;height:16px}
+.journal{max-width:580px}.journal label{font-family:var(--serif);font-size:25px}.journal p{font-size:12px;color:var(--muted);margin:4px 0 13px}.journal textarea{display:block;width:100%;resize:vertical;border:1px solid var(--line);background:#eeeee8;padding:13px;color:var(--ink);outline-color:var(--green);margin-bottom:12px}.save-status{font-size:12px;color:var(--green);margin-left:12px}
+.footer{max-width:1080px;margin:0 auto;padding:20px 28px 35px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-size:9px;letter-spacing:.12em}
+
+.visual-tutorial{background:#f6f5f1;border:1px solid #d6d9cf;margin:0 0 22px;padding:16px}
+.visual-tutorial-top{display:flex;justify-content:space-between;align-items:center}
+.visual-step-count{font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.tutorial-diagram{background:#e8eae3;margin:12px 0 0;min-height:174px;display:grid;place-items:center}
+.tutorial-diagram svg{width:100%;max-width:470px;height:174px}
+.standing-rope{fill:none;stroke:#8b9b86;stroke-width:10;stroke-linecap:round}
+.rope-main{fill:none;stroke:#425b49;stroke-width:10;stroke-linecap:round;stroke-linejoin:round}
+.rope-tail{fill:none;stroke:#b27b42;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:5 2}
+.rope-dot{fill:#425b49}
+.diagram-label{font:700 8px var(--sans);letter-spacing:.08em;fill:#666e62}
+.direction-arrow{fill:none;stroke:#b27b42;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.tutorial-caption{padding:14px 2px 8px}
+.tutorial-caption h3{font-family:var(--serif);font-size:22px;font-weight:400;margin:0 0 4px}
+.tutorial-caption p{font-size:13px;color:var(--muted);margin:0;max-width:470px}
+.tutorial-controls{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:12px}
+.tutorial-nav{border:0;background:none;color:var(--green);font-size:12px;font-weight:700;padding:7px 0}
+.tutorial-nav:disabled{opacity:.35;cursor:default}
+.tutorial-next{font-weight:800}
+.tutorial-dots{display:flex;gap:6px}
+.tutorial-dots span{width:6px;height:6px;border-radius:50%;background:#c9cdc3}
+.tutorial-dots span.current{background:var(--green);width:17px;border-radius:5px}
+
+[hidden]{display:none!important}

@@ -1,0 +1,45 @@
+<!--
+  Solar Smash SS3 - Main HTML
+  Project: solar-smash
+  Purpose: Entry point for Planet Smash with multiple planets, time scale, sounds.
+  Author: Games Builder
+  Date: 2026-11-11
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Smash SS3</title>
+  <link rel="stylesheet" href="solar-smash.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="ui">
+    <h1>Solar Smash SS3</h1>
+    <div id="controls">
+      <button id="btnAsteroid">Asteroid</button>
+      <button id="btnLaser">Laser</button>
+      <button id="btnNuke">Nuke</button>
+      <button id="btnBlackHole">Black Hole</button>
+      <button id="btnPause">Pause</button>
+      <button id="btnReset">Reset</button>
+    </div>
+    <div id="sizeControl">
+      Size: <button id="btnSmall">S</button> <button id="btnMed" class="active">M</button> <button id="btnLarge">L</button>
+    </div>
+    <div id="planetControl">
+      Planet: <button id="btnEarth" class="active">Earth</button> <button id="btnMars">Mars</button> <button id="btnMoon">Moon</button>
+    </div>
+    <div id="timeControl">
+      Time: <button id="btnSlow">0.25x</button> <button id="btnNormal" class="active">1x</button> <button id="btnFast">2x</button>
+    </div>
+    <div id="status">Weapon: Asteroid | Size: M | Planet: Earth | Time: 1x | Click to fire</div>
+  </div>
+  <div id="container"></div>
+  <script src="solar-smash-utils.js"></script>
+  <script src="solar-smash-planet.js"></script>
+  <script src="solar-smash-weapons.js"></script>
+  <script src="solar-smash.js"></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+/*
+  Earth Simulator - Styles
+  Project: globe
+  Purpose: UI overlay and full-viewport canvas styling.
+  Author: Games Builder
+  Date: 2026-11-11
+*/
+
+/* Full viewport dark background */
+body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Canvas container */
+#container {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Left overlay UI */
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#ui h1 {
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+}
+
+/* Control buttons */
+#controls button {
+  margin: 2px;
+  padding: 8px 12px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#controls button:hover {
+  background: #555;
+}
+
+#controls button.active {
+  background: #0a0;
+}
+
+/* Status text */
+#status {
+  margin-top: 8px;
+  font-size: 0.85em;
+}
+
+/* Right sidebar */
+#sidebar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 220px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 12px;
+  border-radius: 8px;
+  z-index: 10;
+  font-size: 0.9em;
+}
+
+#sidebar h2 {
+  margin: 0 0 10px 0;
+  font-size: 1.1em;
+}
+
+#sidebar .section {
+  margin-bottom: 12px;
+}
+
+#sidebar label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+#sidebar button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 6px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+#sidebar button:hover {
+  background: #555;
+}
+
+#sidebar button.active {
+  background: #0a0;
+}
+
+/* Progress bar */
+#progressWrap {
+  margin-top: 8px;
+}
+#progressBar {
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+#progressFill {
+  height: 100%;
+  width: 0%;
+  background: #0a0;
+  transition: width 0.15s;
+}
+#progressText {
+  font-size: 0.75em;
+  margin-top: 2px;
+}
+
+#sidebarStatus {
+  margin-top: 8px;
+  font-size: 0.8em;
+  color: #aaa;
+}
+
+#modeStatus {
+  margin-top: 6px;
+  font-size: 0.85em;
+  color: #8f8;
+}
+
+/* 2D map container */
+#map2d {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 5;
+}

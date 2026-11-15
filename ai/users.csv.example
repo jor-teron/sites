@@ -1,2 +1,0 @@
-uid,user,password,home,enabled,perms
-10000,demo,demo,home/demo,1,read|write|run|share

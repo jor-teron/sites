@@ -1,0 +1,10 @@
+{
+  "name": "Campcraft School",
+  "short_name": "Campcraft",
+  "description": "Practical outdoor skills, taught one clear step at a time.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f2eb",
+  "theme_color": "#f4f2eb",
+  "icons": [{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

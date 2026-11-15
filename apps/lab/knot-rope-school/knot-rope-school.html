@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f1">
+  <meta name="description" content="A practical, beginner-friendly school for learning useful knots.">
+  <title>Knot & Rope School</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./ui/tokens.css">
+  <link rel="stylesheet" href="./ui/layout.css">
+  <link rel="stylesheet" href="./ui/components.css">
+  <link rel="stylesheet" href="./ui/responsive.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="Knot and Rope School home">
+      <span class="brand-mark" aria-hidden="true">K</span>
+      <span>KNOT <span class="amp">&</span> ROPE <span class="brand-light">SCHOOL</span></span>
+    </a>
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-view="home">Home</button>
+      <button class="tab" data-view="lessons">Lessons <span class="tab-count">07</span></button>
+      <button class="tab" data-view="practice">Practice</button>
+    </nav>
+  </header>
+
+  <main id="app" class="shell">
+
+    <section id="home-view" class="view">
+      <div class="hero">
+        <p class="eyebrow">LEARN BY DOING</p>
+        <h1>Good knots.<br><span>Real confidence.</span></h1>
+        <p class="hero-copy">A small school for useful rope skills. Learn the steps, understand the knot, then practise with a real rope.</p>
+        <button class="button button-dark" data-action="start-learning">Start learning <span aria-hidden="true">↗</span></button>
+        <div class="hero-meta"><span>01 — BEGINNER FRIENDLY</span><span>02 — HANDS-ON PRACTICE</span></div>
+      </div>
+      <div class="section-heading">
+        <div><p class="eyebrow">THE COLLECTION</p><h2>Start with the basics</h2></div>
+        <button class="text-button" data-view-link="lessons">All lessons ↗</button>
+      </div>
+      <div id="home-lessons" class="lesson-grid"></div>
+      <aside class="safety-note">
+        <span class="safety-icon" aria-hidden="true">!</span>
+        <div><strong>A note on safety</strong><p>These lessons teach general-purpose knots. They are not instructions for climbing, rescue, lifting people, or other life-safety applications.</p></div>
+      </aside>
+    </section>
+
+    <section id="lessons-view" class="view" hidden>
+      <div class="page-intro"><p class="eyebrow">THE KNOT LIBRARY · 07 LESSONS</p><h1>Learn a knot.</h1><p>Take it one step at a time. A short lesson, followed by practice with your own rope.</p></div>
+      <div id="all-lessons" class="lesson-grid"></div>
+    </section>
+
+    <section id="lesson-view" class="view" hidden>
+      <button class="back-button" data-action="back-to-lessons">← All lessons</button>
+      <div id="lesson-content"></div>
+    </section>
+
+    <section id="practice-view" class="view" hidden>
+      <div class="page-intro"><p class="eyebrow">FIELD NOTES</p><h1>Make it muscle memory.</h1><p>Practise slowly, dress each knot neatly, and record your progress.</p></div>
+      <div class="practice-panel">
+        <div class="practice-stat"><span class="stat-number" id="completed-count">0</span><span class="stat-label">LESSONS COMPLETED</span></div>
+        <div class="practice-stat"><span class="stat-number">7</span><span class="stat-label">KNOTS TO LEARN</span></div>
+      </div>
+      <h2 class="subheading">Your practice checklist</h2>
+      <div id="practice-list" class="practice-list"></div>
+      <div class="journal">
+        <label for="practice-notes">Field journal</label>
+        <p>What felt easy? What would you like to improve next time?</p>
+        <textarea id="practice-notes" rows="4" placeholder="Write a quick practice note…"></textarea>
+        <button class="button button-dark" id="save-notes">Save note</button>
+        <span id="save-status" class="save-status" role="status"></span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><span>KNOT & ROPE SCHOOL</span><span>LEARN · TIE · PRACTISE</span></footer>
+  <script src="./core/lessons.js" defer></script>
+  <script src="./lessons/lesson-01.js" defer></script>
+  <script src="./lessons/lesson-02.js" defer></script>
+  <script src="./lessons/lesson-03.js" defer></script>
+  <script src="./lessons/lesson-04.js" defer></script>
+  <script src="./lessons/lesson-05.js" defer></script>
+  <script src="./lessons/lesson-06.js" defer></script>
+  <script src="./lessons/lesson-07.js" defer></script>
+  <script src="./core/diagrams.js" defer></script>
+  <script src="./core/tutorials.js" defer></script>
+  <script src="./core/app.js" defer></script>
+</body>
+</html>

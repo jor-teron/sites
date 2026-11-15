@@ -1,0 +1,84 @@
+/*
+  Solar Smash SS1 - Styles
+  Project: solar-smash
+  Purpose: UI and canvas container styling for dark space theme.
+  Author: Games Builder
+  Date: 2026-11-11
+*/
+
+/* Full viewport dark background */
+body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Game canvas container */
+#container {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Overlay UI */
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#ui h1 {
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+}
+
+/* Control buttons */
+#controls button {
+  margin: 2px;
+  padding: 8px 12px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#controls button:hover {
+  background: #555;
+}
+
+#controls button.active {
+  background: #0a0;
+}
+
+/* Status text */
+#status {
+  margin-top: 8px;
+  font-size: 0.85em;
+}
+
+/* Extra control rows */
+#planetControl, #timeControl, #sizeControl {
+  margin-top: 6px;
+  font-size: 0.9em;
+}
+
+#planetControl button, #timeControl button, #sizeControl button {
+  margin: 1px 2px;
+  padding: 4px 8px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+#planetControl button.active, #timeControl button.active, #sizeControl button.active {
+  background: #0a0;
+}

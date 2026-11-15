@@ -1,2 +1,0 @@
-# Optional local embedding provider. Not installed by the base MCP/API server.
-sentence-transformers==3.4.1

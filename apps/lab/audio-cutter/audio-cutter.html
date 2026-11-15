@@ -1,0 +1,43 @@
+<!--
+  Project: Audio Cutter
+  File: audio-cutter.html
+  Description: Main page for cutting audio files.
+  Date: 2026-11-11
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Cutter</title>
+  <link rel="stylesheet" href="ui/style.css">
+</head>
+<body>
+  <div class="app">
+    <h1>Audio Cutter</h1>
+
+    <div class="upload" id="dropZone">
+      <p>Drop audio file here or click to choose</p>
+      <input type="file" id="fileInput" accept="audio/*" hidden>
+    </div>
+
+    <div class="controls" id="controls" hidden>
+      <div class="timeline">
+        <label>Start <input type="range" id="start" min="0" max="100" value="0"></label>
+        <label>End <input type="range" id="end" min="0" max="100" value="100"></label>
+        <span id="timeInfo">0.0s – 0.0s</span>
+      </div>
+      <div class="buttons">
+        <button id="playBtn">Play Selection</button>
+        <button id="exportBtn">Export WAV</button>
+      </div>
+    </div>
+
+    <audio id="audio" controls hidden></audio>
+    <p id="status"></p>
+  </div>
+
+  <script src="core/audio.js"></script>
+  <script src="core/ui.js"></script>
+</body>
+</html>

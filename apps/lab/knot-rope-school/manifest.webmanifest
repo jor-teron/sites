@@ -1,0 +1,10 @@
+{
+  "name": "Knot & Rope School",
+  "short_name": "Knot School",
+  "description": "A practical, beginner-friendly school for learning useful knots.",
+  "start_url": "./knot-rope-school.html",
+  "display": "standalone",
+  "background_color": "#f6f5f1",
+  "theme_color": "#f6f5f1",
+  "icons": [{"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

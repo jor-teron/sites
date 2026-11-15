@@ -1,0 +1,60 @@
+<!--
+  Globe - Main HTML
+  Project: globe
+  Purpose: Three.js globe (default) + OpenStreetMap 2D at high zoom.
+  Author: Games Builder
+  Date: 2026-11-11
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Globe</title>
+  <link rel="stylesheet" href="ui/globe.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Settings</h2>
+    <div id="progressWrap" style="display:none;">
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <div id="progressText">Loading… 0%</div>
+    </div>
+    <div class="section">
+      <label>View Mode</label>
+      <button id="btnModeGlobe" class="active">3D Globe</button>
+      <button id="btnModeMap">2D Map</button>
+    </div>
+    <div class="section" id="mapLayerSection" style="display:none;">
+      <label>2D Map Layer</label>
+      <button id="btnLayerHybrid" class="active">Hybrid</button>
+      <button id="btnLayerOSM">Street</button>
+      <button id="btnLayerSat">Satellite</button>
+      <button id="btnLayerTopo">Topo</button>
+      <label style="margin-top:10px;">Search</label>
+      <input id="searchInput" type="text" placeholder="Search place..." style="width:100%; padding:6px; margin-top:4px; border:1px solid #555; background:#222; color:#fff; border-radius:4px;">
+      <button id="btnSearch" style="margin-top:4px; width:100%;">Search</button>
+      <div id="searchResults" style="margin-top:6px; font-size:0.8em; max-height:120px; overflow-y:auto;"></div>
+    </div>
+    <div id="zoomInfo" style="font-size:0.8em; margin-top:4px; color:#aaa;"></div>
+    <div id="coordBox" style="margin-top:6px; background:#111; border:1px solid #444; border-radius:4px; padding:6px; font-family:monospace; font-size:0.8em;">
+      <div id="latInfo">Lat: --</div>
+      <div id="lonInfo">Long: --</div>
+      <button id="btnCopyCoord" style="margin-top:4px; width:100%; font-size:0.85em;">Copy</button>
+    </div>
+  </div>
+
+  <div id="container"></div>
+  <div id="map2d" style="display:none;"></div>
+
+  <script src="core/globe-globe.js"></script>
+  <script src="core/globe-map.js"></script>
+  <script src="core/globe-controls.js"></script>
+  <script src="core/globe.js"></script>
+</body>
+</html>
