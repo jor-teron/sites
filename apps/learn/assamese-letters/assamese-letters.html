@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Assamese Letters AL-1</title><link rel="icon" href="assamese-letters_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.assamese-letters.theme"></script>
+<link rel="stylesheet" href="ui/assamese.css">
+</head>
+<body>
+<div id="app" class="lrn">
+<header class="lrn-head"><a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1>Assamese Letters <span lang="as">আহক, আখৰ শিকোঁ</span></h1><button id="help">How to use</button><button id="mute" aria-pressed="false">Sound on</button></header>
+<nav id="modes" aria-label="Activities"><button data-mode="chart" aria-pressed="true">Letters</button><button data-mode="matras">Matras</button><button data-mode="joins">Joined letters</button><button data-mode="numbers">Numbers</button><button data-mode="words">Words</button><button data-mode="games">Games</button></nav>
+<div class="status"><span id="progress"></span><span id="voice-note" role="status"></span></div>
+<main id="content"></main>
+</div>
+<dialog id="letter-card" aria-labelledby="letter-title"><div class="card-head"><h2 id="letter-title">Letter</h2><button data-close="letter-card">Close</button></div><div id="letter-detail"></div></dialog>
+<dialog id="pause-card" aria-labelledby="pause-title"><h2 id="pause-title">Practice paused</h2><p>There is no timer. Take your time.</p><button id="resume-game">Resume</button><button id="quit-game">Quit to games</button></dialog>
+<dialog id="help-card" aria-labelledby="help-title"><div class="card-head"><h2 id="help-title">How to use</h2><button data-close="help-card">Close</button></div>
+<ol><li>Letters: tap any card for its Assamese sound, a hint and a picture word. Mark it learned when you recognise it.</li>
+<li>Labels: the tile shows a simple roman spelling. Where Assamese says a letter very differently the sound follows a slash: শ ষ স = śa/xa ṣa/xa sa/xa (the Assamese x, like ch in Scottish loch), চ ছ = ca/sa cha/sa, জ ঝ য = ja/za jha/za ya/za. The letter card also shows the Assamese sound.</li>
+<li>Trace the faint glyph with a finger, pen or mouse. Number 1: curves and stems. Number 2: the top line (মাত্ৰা), left to right, last. The arrows are broad phases, not exact pen strokes. Follow the actual faint shape. Some letters such as এ ঐ ও ঔ have little or no top line.</li>
+<li>Trace stars combine coverage and accuracy, shown live in the Covered and On the guide bars. Filling the entire box does not earn full stars. Clear starts a new attempt; your best result stays saved.</li>
+<li>Matras: choose a consonant; tap a form for its explanation. ি ে ৈ are typed after the consonant even though you see them on the left; ো ৌ wrap around it. ং ঃ ঁ are nasal and breath signs.</li>
+<li>Joined letters: a hasanta (্) removes the inherent অ. Learn ক্ষ জ্ঞ ন্ত স্ত ক্ত ঙ্ক ন্দ ম্প ত্ৰ শ্ৰ plus ৰেফ and য-ফলা. Different fonts can draw joined letters differently.</li>
+<li>Numbers teaches ০–১০. Words has 143 entries in eight themes. Search by Assamese or English. Emoji are approximate memory cues; read the meaning too.</li>
+<li>Games: see or hear a letter and choose; match a picture and meaning to a word; or build a word from letter-group tiles. Letter groups keep vowel signs and joined letters attached to their base. Listen &amp; pick uses one letter per Assamese sound (for example স but not শ or ষ) and shows the roman label if speech is unavailable or off. Hear is manual so you can take your time.</li>
+<li>Each game has 10 questions. 4, 7 or 9 correct earns 1, 2 or 3 stars. Best game stars and trace stars are saved. Learn a letter, earn trace stars or finish a game to count an active day. Practise on consecutive local-calendar days to grow your streak.</li>
+<li>Pause / quit (or Escape) stops practice and speech. A hidden tab pauses an active game. Quitting an unfinished game does not award stars. There are no timers or penalties.</li>
+<li>The theme follows your system or Hub automatically. Sound is on by default; the Sound button on the title bar turns speech and effects on or off. Speech uses an Assamese device voice if there is one, else a Bengali voice (same script, some sounds differ), else a Hindi voice (may not read Assamese well). Progress stays only on this browser; clearing its site data erases it.</li></ol>
+<p class="note">A beginner recognition and shape-practice aid, not a substitute for an Assamese teacher. The chart has 11 vowels, 37 consonants (including ক্ষ ড় ঢ় য়) and 4 signs (ৎ ং ঃ ঁ). Roman labels are approximate pronunciation aids.</p></dialog>
+<noscript>Assamese Letters needs JavaScript to show the chart and tracing practice.</noscript>
+<script src="../shared/learn-hubbar.js"></script><script src="core/alphabet.js"></script><script src="core/logic.js"></script>
+<script src="ui/audio.js"></script><script src="ui/trace.js"></script><script src="core/lessons.js"></script><script src="core/words.js"></script><script src="core/games.js"></script><script src="ui/sound.js"></script><script src="ui/app.js"></script><script src="ui/lessons.js"></script><script src="ui/games.js"></script>
+</body></html>
