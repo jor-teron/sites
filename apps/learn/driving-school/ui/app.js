@@ -3,28 +3,37 @@
   const D = window.DS, $ = id => document.getElementById(id), PRE = 'learn.driving-school.';
   function read(k, fallback) { try { return JSON.parse(localStorage.getItem(PRE + k)) ?? fallback; } catch (_) { return fallback; } }
   function write(k, v) { try { localStorage.setItem(PRE + k, JSON.stringify(v)); } catch (_) { /* storage unavailable */ } }
-  const prefs = Object.assign({ auto: false, side: 'left', muted: false }, read('settings', {})), best = read('best', {});
+  const prefs = Object.assign({ auto: false, side: 'left', muted: false, route: 1 }, read('settings', {})), best = read('best', {});
   let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0, view = null, frameNo = 0;
   function notice(text) { noticeText = text; noticeUntil = performance.now() + 3000; }
   const keys = new Set(), held = { throttle: 0, brake: 0, clutch: 0, steer: 0 };
   const list = $('lessons'), screen = $('screen');
   const flatOnly = new URLSearchParams(location.search).get('view') === 'map';
-  const definitions = () => D.basics.concat(D.roadLessons(prefs.side), [D.mockDefinition(prefs.side)]);
+  const definitions = () => D.basics.concat(D.roadLessons(prefs.side), D.roadDefinitions(prefs.side, prefs.route), [D.mockDefinition(prefs.side)]);
+  // Lesson list in groups: practice lot, town, open road (DS-3), test.
+  const groupOf = def => def.group || (def.mock ? 'Test' : def.town ? 'Town' : 'Practice lot');
   function options() {
-    list.replaceChildren(...definitions().map(def => {
+    const groups = [];
+    for (const def of definitions()) {
+      let g = groups.find(x => x.label === groupOf(def));
+      if (!g) { g = document.createElement('optgroup'); g.label = groupOf(def); groups.push(g); }
       const opt = document.createElement('option'); opt.value = def.id;
-      opt.textContent = def.name + (best[def.id] != null ? ' · best ' + best[def.id] : ''); return opt;
-    }));
+      opt.textContent = def.name + (best[def.id] != null ? ' · best ' + best[def.id] : ''); g.appendChild(opt);
+    }
+    list.replaceChildren(...groups);
   }
   options();
   function reset() {
     const def = definitions().find(d => d.id === list.value) || D.basics[0];
     s = D.session(def, prefs); keys.clear(); Object.keys(held).forEach(k => held[k] = 0);
-    $('end-test').hidden = !def.mock; $('lesson-name').textContent = def.name; write('last', def.id); mirrorTime = 0;
+    $('end-test').hidden = !def.mock; $('lesson-name').textContent = def.name + (def.road ? ' · route ' + def.route : '');
+    $('route-box').hidden = !def.road; $('route').value = String(prefs.route); write('last', def.id); mirrorTime = 0;
   }
   list.value = read('last', 'start'); reset();
   $('cockpit').classList.toggle('auto', prefs.auto);
   list.onchange = reset; $('retry').onclick = reset;
+  // Route number (open road): the same number always gives the same road.
+  $('route').onchange = () => { const n = Math.max(1, Math.min(9999, parseInt($('route').value, 10) || 1)); prefs.route = n; write('settings', prefs); reset(); };
   $('engine').onclick = () => { if (!D.start(s.c)) notice(s.c.message); };
   // Automatic: D = first forward gear (it changes up by itself); stepping down from D goes to N.
   function selectGear(gear) { if (!D.shift(s.c, gear)) notice(s.c.message); }
@@ -132,7 +141,9 @@
     D.dash.update(c, inp, selectGear);
     const done = s.l.done, text = noticeUntil > performance.now() ? noticeText : D.hint(s.l, c);
     $('hint').textContent = done || noticeUntil > performance.now() ? text : D.nextHint(text);
-    $('progress').textContent = (s.l.def.gates.length > 1 ? 'Arch ' + Math.min(s.l.gate + 1, s.l.def.gates.length) + ' of ' + s.l.def.gates.length + ' · ' : '') + Math.floor(s.l.elapsed) + ' s';
+    const at = s.w && s.w.road && s.w.at;
+    if (at) $('progress').textContent = D.ROAD_TYPES[at.type].name + ' · ' + at.limit + ' km/h · ' + (s.w.road.mode === 'loop' ? 'lap ' + Math.min(100, Math.round((s.l.lap || 0) * 100)) + '%' : (Math.max(0, s.w.progress) / 1000).toFixed(1) + ' km') + ' · ' + Math.floor(s.l.elapsed) + ' s';
+    else $('progress').textContent = (s.l.def.gates.length > 1 ? 'Arch ' + Math.min(s.l.gate + 1, s.l.def.gates.length) + ' of ' + s.l.def.gates.length + ' · ' : '') + Math.floor(s.l.elapsed) + ' s';
     $('score').textContent = ' · Score ' + s.l.score + ' · Best ' + (best[s.l.def.id] ?? '—');
     const f = s.l.faults[s.l.faults.length - 1];
     $('fault').textContent = f && (s.w ? s.w.time - f.time < 5 : s.l.elapsed - f.time < 5) ? f.reason : '';

@@ -71,6 +71,7 @@
     if (l.done) return 'Lesson complete! Score ' + l.score + '/100. Choose the next lesson or retry.';
     if (c.stalled) return c.message;
     if (c.handbrake && c.engine) return 'Hold clutch, select a gear, check surroundings, then release handbrake (H).';
+    if (l.tip) return l.tip;   // DS-3 open road: the next sign or event ahead
     return l.def.cards[Math.min(l.phase, l.def.cards.length - 1)];
   }
   return { basics, lesson, updateLesson, penalize, hint };

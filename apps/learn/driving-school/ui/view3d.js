@@ -1,4 +1,4 @@
-/* DS-2a first-person view. ES module: loads the shared Learn copy of three.js r170.
+/* DS-2a first-person view (DS-3: open road too). ES module: loads the shared Learn copy of three.js r170.
    Over file:// browsers block module imports, so this file never runs there and
    ui/app.js keeps the old top-down map (ui/render.js) as the main view instead. */
 import * as THREE from '../../common/vendor/three/three.module.min.js';
@@ -20,10 +20,11 @@ function signTexture(kind, text) {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d'); g.lineWidth = 12; g.strokeStyle = '#c83e42'; g.beginPath();
   if (kind === 'yield') { g.moveTo(10, 14); g.lineTo(118, 14); g.lineTo(64, 116); g.closePath(); }
+  else if (kind === 'warn') { g.moveTo(64, 10); g.lineTo(120, 114); g.lineTo(8, 114); g.closePath(); }   // DS-3 warning triangle
   else { const n = kind === 'stop' ? 8 : 40; for (let i = 0; i <= n; i++) { const a = (i + .5) / n * Math.PI * 2; g.lineTo(64 + Math.cos(a) * 56, 64 + Math.sin(a) * 56); } }
   g.fillStyle = kind === 'stop' ? '#c83e42' : '#ffffff'; g.fill(); if (kind !== 'stop') g.stroke();
-  g.fillStyle = kind === 'stop' ? '#ffffff' : '#202020'; g.font = 'bold ' + (kind === 'stop' ? 34 : 54) + 'px system-ui,sans-serif';
-  g.textAlign = 'center'; g.textBaseline = 'middle'; if (text) g.fillText(text, 64, 66);
+  g.fillStyle = kind === 'stop' ? '#ffffff' : '#202020'; g.font = 'bold ' + (kind === 'stop' ? 34 : kind === 'warn' ? (text.length > 3 ? 20 : 40) : 54) + 'px system-ui,sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle'; if (text) g.fillText(text, 64, kind === 'warn' ? 84 : 66);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 

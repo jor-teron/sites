@@ -23,7 +23,7 @@ Loads shared/theme/hub_theme.js without modifying it. Header uses LearnHubBar.
 
 | Key | Meaning / default |
 | --- | --- |
-| `learn.driving-school.settings` | transmission + traffic side; manual + left |
+| `learn.driving-school.settings` | transmission + traffic side + open-road route number; manual + left + route 1 |
 | `learn.driving-school.theme` | absent = Auto (System / Hub); light or dark override |
 | `learn.driving-school.best` | lesson id → best 0–100 score |
 | `learn.driving-school.last` | last selected lesson |
@@ -31,7 +31,7 @@ Loads shared/theme/hub_theme.js without modifying it. Header uses LearnHubBar.
 `core/` is DOM-free UMD and unit-testable with Node. `ui/` owns canvas, input and
 storage. No dependencies/build step. Art and 128 px icon are original code/PIL.
 
-Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub}.cjs`.
+Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad}.cjs`.
 Browser harness: `node apps/learn/driving-school/tests/browser.cjs` after starting
 `python3 -m http.server 8829` at the repository root. Requires puppeteer externally.
 Only `?test` exposes the deterministic test interface. No lesson is auto-completed.
@@ -136,3 +136,57 @@ in a stub DOM). `tests/browser.cjs` was updated for the new controls but not run
 Left for DS-2b/2c: home screen and first-time guide, Signs quiz as its own page,
 plainer lesson wording (lesson cards still mention keys), Learn look/title bar,
 P for park in Automatic, a 3D bonnet/interior, mirror-check scoring.
+
+## DS-3 · Open road (procedural roads)
+A new **Open road** group in the lesson menu has two modes. Both take a **route number**
+(default 1, the Route box in the toolbar); the same number always gives the same road.
+
+- **Endless drive**: new road is generated about 420 m ahead and points more than 160 m
+  behind are dropped, so memory stays bounded however far you go (no finish; the
+  status line shows km driven and the score).
+- **Practice loop**: a closed loop of about 1.2–2 km that joins back to the start;
+  one full lap completes it and saves a best score.
+
+`core/roadgen.js` (DOM-free) is a seeded generator. The idea is the OutRun-style chain
+of sections (enter, hold, leave, curve, hill), adapted here, not imported from Games.
+Endless roads are built from stretches of sections with eased curves and hills; the
+heading is pulled back towards east, so the road never doubles back over itself. Loops
+are star-shaped (a polar radius made of a few seeded waves), so they can never cross
+themselves either. Road types, each with its own speed limit:
+
+| Type | Width | Limit | Look |
+| --- | --- | --- | --- |
+| City road | 7.4 m, 1 lane each way | 40 km/h | pavement, lamp posts, buildings |
+| Highway | 14 m, 2 lanes each way | 80 km/h | long gentle curves, trees |
+| Ghat road | 7 m | 30 km/h | climbing hairpin switchbacks (endless), winding hills (loop), dense trees |
+| Village road | 5.2 m | 25 km/h | short bends, trees, huts |
+
+Road events are placed by rules: only on city or village straights, never in the
+first 120–150 m, at least 100 m apart, with a warning sign 40 m before:
+**roundabout** (one car always circulating), **T-junction** (a car waits in the side
+road), **speed breaker** and **zebra crossing** (a person starts to cross when you
+are 45 m away). Speed-limit signs mark each change of road type.
+
+Rules (`core/roadrules.js`, the same fault list and scoring as the town: minor −5,
+serious −25): off road onto the verge (minor; the verge also slows the car), keep
+left (minor, after 1.5 s on the wrong half), the limit for the road type (a lower
+limit starts 60 m after the change), too fast over a speed breaker (over 20 km/h,
+minor), not stopping for a person on the zebra (serious), give way to the car on the
+roundabout (serious), wrong way round (serious), signal left when leaving (minor),
+collisions (serious). Right-hand traffic mirrors the lanes and the roundabout.
+
+3D (`ui/road3d.js`): the road is built in 100 m chunks, one behind and three ahead
+of the car, 3 meshes per chunk (tarmac, verge, paint with vertex colours). Trees,
+poles, houses and signs are InstancedMeshes refilled as chunks change. The open road
+adds about 45–50 meshes; the whole scene stays near 115 with every area built (cap
+600). The existing pixel-ratio cap is unchanged. Hills lift the camera with the road.
+The file:// map fallback draws the generated road as a polyline (`ui/road-render.js`).
+
+Also in DS-3: inside a Hub window the in-page top row is hidden (its buttons are in
+the Hub title bar), as in Hindi Letters. Manual stays the default.
+
+Limits: not open world; you drive on the generated road (leaving it is a fault and
+there is nothing beyond the verge). No oncoming traffic on the open road. The
+roundabout is a straight-through crossing of a single road (no other exits). Ghat
+hairpins appear on endless routes only. Lesson text still names keyboard keys.
+No browser or real-device check of DS-3 yet.

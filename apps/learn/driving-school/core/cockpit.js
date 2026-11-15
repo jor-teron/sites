@@ -40,22 +40,23 @@
   // Scene mapping and the car's own axes (scene x/z plane).
   function toScene(x, y, h = 0) { return { x, y: h, z: y }; }
   function axes(heading) { return { fx: Math.cos(heading), fz: Math.sin(heading), rx: -Math.sin(heading), rz: Math.cos(heading) }; }
-  function offset(c, forward, right, h) { const a = axes(c.heading); return { x: c.x + a.fx * forward + a.rx * right, y: h, z: c.y + a.fz * forward + a.rz * right }; }
+  // c.z = road height under the car (DS-3 open-road hills), 0 elsewhere.
+  function offset(c, forward, right, h) { const a = axes(c.heading); return { x: c.x + a.fx * forward + a.rx * right, y: h + (c.z || 0), z: c.y + a.fz * forward + a.rz * right }; }
   // Right-hand-drive (India, left-hand traffic): the driver sits right of the centre line.
   function driverSide(side) { return side === 'right' ? -1 : 1; }
   function driverCamera(c, side) {
     const eye = offset(c, -.25, .37 * driverSide(side), 1.18), a = axes(c.heading);
-    return { position: eye, target: { x: eye.x + a.fx * 10, y: .95, z: eye.z + a.fz * 10 }, fov: 70 };
+    return { position: eye, target: { x: eye.x + a.fx * 10, y: .95 + (c.z || 0), z: eye.z + a.fz * 10 }, fov: 70 };
   }
   // Interior mirror: top centre of the windscreen, looking straight back.
   function rearMirrorCamera(c) {
     const p = offset(c, .35, 0, 1.3), a = axes(c.heading);
-    return { position: p, target: { x: p.x - a.fx * 10, y: 1.05, z: p.z - a.fz * 10 }, fov: 38, flip: true };
+    return { position: p, target: { x: p.x - a.fx * 10, y: 1.05 + (c.z || 0), z: p.z - a.fz * 10 }, fov: 38, flip: true };
   }
   // Door mirrors: just outside each front door, looking back and a little outwards.
   function sideMirrorCamera(c, which) {
     const s = which === 'right' ? 1 : -1, p = offset(c, .55, 1.0 * s, 1.0), a = axes(c.heading);
-    return { position: p, target: { x: p.x - a.fx * 10 + a.rx * s * 2.2, y: .8, z: p.z - a.fz * 10 + a.rz * s * 2.2 }, fov: 44, flip: true };
+    return { position: p, target: { x: p.x - a.fx * 10 + a.rx * s * 2.2, y: .8 + (c.z || 0), z: p.z - a.fz * 10 + a.rz * s * 2.2 }, fov: 44, flip: true };
   }
   // Put the horizon in the upper part of the canvas (the dashboard covers the bottom),
   // using a taller virtual frame and a view offset. Returns values for setViewOffset.

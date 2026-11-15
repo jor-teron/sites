@@ -1,7 +1,9 @@
 /* DS-2a: low-poly three.js world for the first-person view. Pure three.js, no DOM:
    text/sign textures come from optional opts.label / opts.sign factories, so Node can
    build and update the whole scene in tests. Every material is double-sided because the
-   mirrors flip their projection (a real mirror shows a left-right reversed picture). */
+   mirrors flip their projection (a real mirror shows a left-right reversed picture).
+   DS-3: the open road (ui/road3d.js) is a third area beside the lot and the town. */
+import { createDrive } from './road3d.js';
 export function createWorld(THREE, M, opts = {}) {
   const scene = new THREE.Scene(), DS = THREE.DoubleSide;
   const sky = new THREE.Color('#9fd3f0');
@@ -27,10 +29,10 @@ export function createWorld(THREE, M, opts = {}) {
   const label = (text, style) => opts.label ? opts.label(text, style || {}) : null;
 
   // Ground and a ring of trees for depth cues.
-  flat(scene, 1400, 1400, '#6f9a6c', 130, 120, 0);
+  const ground = flat(scene, 1400, 1400, '#6f9a6c', 130, 120, 0);
   const trees = [];
   for (let i = 0; i < 44; i++) { const a = i / 44 * Math.PI * 2, r = 175 + (i % 4) * 14; trees.push([130 + Math.cos(a) * r, 120 + Math.sin(a) * r * .9, 6 + (i % 3) * 2]); }
-  instanced(scene, new THREE.ConeGeometry(2.6, 1, 6), lit('#3f7a4a'), trees, (o, t) => { o.position.set(t[0], t[2] / 2, t[1]); o.scale.set(1, t[2], 1); });
+  const treeRing = instanced(scene, new THREE.ConeGeometry(2.6, 1, 6), lit('#3f7a4a'), trees, (o, t) => { o.position.set(t[0], t[2] / 2, t[1]); o.scale.set(1, t[2], 1); });
 
   // Practice lot.
   const lot = new THREE.Group(), L = M.lotLayout(); scene.add(lot);
@@ -95,12 +97,15 @@ export function createWorld(THREE, M, opts = {}) {
       face.position.set(sg.x, 2.7, sg.y); face.rotation.y = sg.kind === 'stop' ? Math.PI : -Math.PI / 2; town.add(face);
     }
     ['#e3b85f', '#df798b', '#e3e5da', '#a8abd9'].forEach(c => { const m = carMesh(c); m.visible = false; town.add(m); aiCars.push(m); });
-    for (let i = 0; i < 2; i++) {
-      const g = new THREE.Group(), body = new THREE.Mesh(new THREE.CylinderGeometry(.22, .25, 1.1, 6), lit('#2e5f86')); body.position.y = .75; g.add(body);
-      const headM = new THREE.Mesh(new THREE.SphereGeometry(.17, 8, 6), lit('#e2b48c')); headM.position.y = 1.5; g.add(headM);
-      g.visible = false; town.add(g); walkers.push(g);
-    }
+    for (let i = 0; i < 2; i++) { const g = walkerMesh(); g.visible = false; town.add(g); walkers.push(g); }
   }
+  function walkerMesh() {
+    const g = new THREE.Group(), body = new THREE.Mesh(new THREE.CylinderGeometry(.22, .25, 1.1, 6), lit('#2e5f86')); body.position.y = .75; g.add(body);
+    const headM = new THREE.Mesh(new THREE.SphereGeometry(.17, 8, 6), lit('#e2b48c')); headM.position.y = 1.5; g.add(headM);
+    return g;
+  }
+  // Open road (DS-3), built in chunks around the car.
+  const drive = createDrive(THREE, M, { sign: opts.sign, carMesh, walker: walkerMesh }); scene.add(drive.group);
 
   // Lesson markers: blue arches to drive through, numbers, a dashed guide and finish boxes.
   const markers = new THREE.Group(); scene.add(markers);
@@ -138,22 +143,25 @@ export function createWorld(THREE, M, opts = {}) {
   function update(s, prefs, time = 0) {
     const side = prefs.side || 'left', def = s.l.def;
     if (def.id + '|' + side !== markerKey) setLesson(def, side);
-    lot.visible = !s.w; town.visible = !!s.w;
-    if (s.w && townSide !== side) buildTown(side);
+    const open = !!(s.w && s.w.road);
+    lot.visible = !s.w; town.visible = !!s.w && !open; drive.group.visible = open; treeRing.visible = !open;
+    if (open) { ground.position.set(Math.round(s.c.x / 50) * 50, -.05, Math.round(s.c.y / 50) * 50); drive.update(s, prefs); }
+    else ground.position.set(130, 0, 120);
+    if (s.w && !open && townSide !== side) buildTown(side);
     rings.forEach((r, i) => {
       const passed = i < s.l.gate, next = i === s.l.gate, color = passed ? '#6fdc9f' : next ? '#3fd0ff' : '#9ab8c8';
       r.am.color.set(color); r.gm.color.set(color); r.am.opacity = passed ? .35 : next ? 1 : .55; r.gm.opacity = r.am.opacity;
       const k = next ? 1 + .06 * Math.sin(time * 5) : 1; r.a.scale.set(k, k, k);
       if (r.n) r.n.visible = !passed;
     });
-    if (s.w) {
+    if (s.w && !open) {
       const light = s.w.time % 24 < 9 ? 'green' : s.w.time % 24 < 12 ? 'amber' : 'red';
       for (const l of signalLamps) l.m.color.set(l.c === light ? { red: '#ff3b30', amber: '#ffbf2e', green: '#3ee68a' }[l.c] : '#3c4247');
       aiCars.forEach((m, i) => { const ai = s.w.cars[i]; m.visible = !!ai; if (ai) { m.position.set(ai.x, 0, ai.y); m.rotation.y = -ai.heading; } });
       walkers.forEach((m, i) => { const p = s.w.pedestrians[i]; m.visible = !!p; if (p) m.position.set(p.x, 0, p.y); });
     }
   }
-  return { scene, update, setLesson, get markerCount() { return rings.length; }, get town() { return town; }, get lot() { return lot; } };
+  return { scene, update, setLesson, get markerCount() { return rings.length; }, get town() { return town; }, get lot() { return lot; }, get drive() { return drive; } };
 }
 
 // Point a camera using a pose from core/cockpit.js; mirror poses flip left-right.
