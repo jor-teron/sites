@@ -37,3 +37,10 @@ each release (together with the `?v=` tags and `hub-shell-vN` in `hub/update/hub
 
 ## Legacy
 IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png
+
+## H152: Settings search
+A search box above the sections list (`settings.js` `startSearch`), built from `shared/search/` (`search_core.js`,
+`search_sources.js`, `search_bar.js` + `.css`) and the Settings rows of `apps/system/search/search_items.js`
+(Settings only: no apps, windows or actions). Typing swaps the list for matching pages and switches, grouped by
+section; click / Enter opens it like a `#section[/sub]` link, scrolls to the switch and flashes it; Esc / × brings
+the list back. New pages and switches go in `search_items.js` (optional `find` = the on-page label).
