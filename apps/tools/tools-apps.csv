@@ -16,6 +16,7 @@ NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionar
 Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
 Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
 Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
+Relay,                 relay/,           relay/relay_icon.svg, , Network, Set up and test the Hub relay for Web MCP - SSH - VNC and fetch
 Device Benchmark,      devbench/,        , , Device, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
 Zip,                   zip/,             , , Files, Make and open zip files offline - optional password and folder extract
 DB Browser,            db-browser/,    , , Files, Browse and query SQLite .db files offline - export CSV and save a copy
