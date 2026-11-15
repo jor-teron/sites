@@ -20,3 +20,12 @@ Files: `index.html`, `apphub.js`, `apphub.css`, `apphub_icon.png`.
 
 ## Legacy
 IC7b: icon redrawn plain without tile; old icon kept as *_icon_before_IC7b.png
+
+## H153: search box
+A search box on the right of the top row (the row stays 40px), from `shared/search/` (`search_core.js` matching,
+`search_bar.js` + `search_bar.css`). Apps only: on the home page it searches every app (one row per app), on a
+category page only that category's apps ("Search in Games"). Results (icon, name, category › section, the CSV
+description, matches marked) replace the page while the box has words; click / Enter opens the app like its tile,
+Shift+Enter / Shift+click / middle-click opens another window. Esc / × clears and the page comes back; going to
+another page clears the box. The rows come from the same `load()` as the tiles. The three shared files are in the
+service worker shell too. Without them App Hub works as before, with no box.
