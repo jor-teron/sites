@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261114a';
-const CACHE = 'hub-shell-v168';  // 2026-11-14a: App not found page for unknown app links
+const V = '20261115d';
+const CACHE = 'hub-shell-v172';  // 2026-11-15d: App Hub search box (apps only; home = all, category = that category)
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -75,6 +75,7 @@ const SHELL = [
   'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png', 'apps/media/media_icon.png', 'apps/office/office_icon.png',
   'apps/connectivity/connectivity_icon.png', 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/learn/learn_icon.png', 'apps/system/system_icon.png', 'apps/system/settings/settings_icon.png',
   'apps/system/apphub/', 'apps/system/apphub/index.html', 'apps/system/apphub/apphub.js', 'apps/system/apphub/apphub.css', 'apps/system/apphub/apphub_icon.png',   // AH2: the category pages live here now, so the first offline visit works
+  'shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css',   // H153: App Hub search box works offline too
   'apps/system/files/files_icon.png', 'apps/system/disk/disk_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
   /* (before DF25) 'apps/office/draftly/draftly_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg', */  // H148
   'apps/office/writer/writer_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg',   // H148: Files Office format thumbnails (.how / .hos / .hot)

@@ -7,6 +7,8 @@
  *   (Settings.add ids and their ui.title() rows) when a page or option is added or renamed.
  *   words: extra search words (not shown; the top-level pages also have 'settings', so the query
  *   'settings' lists the pages, not every option).
+ * H152: + Screen lock, Do Not Disturb, Network drives, Ask before closing, fullscreen button and other missing
+ *   switches; optional find = the on-page label (Settings search scrolls to it).
  * window.HUB_SEARCH_ITEMS.actions: Hub actions, run on the parent Hub's window.HubWM (Desktop mode only);
  *   search.js knows each id. Only safe, undoable ones (nothing closes or deletes).
  */
@@ -58,7 +60,31 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'How-to', hash: 'howto', icon: '\uD83D\uDCA1', where: 'Settings', words: 'settings help tips guide shortcuts keyboard' },
     { name: 'About', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings', words: 'settings version build release update contact feedback github' },
     { name: 'Auto update every', hash: 'about/autoupdate', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'auto update automatic daily days 6 am interval refresh last updated' },   // H52
-    { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' }
+    { name: 'Contact & Feedback', hash: 'about', icon: '\u2139\uFE0F', where: 'Settings \u203A About', words: 'bug issue github idea' },
+    // H152: pages and switches that were missing (also listed by the Settings search box, apps/system/settings/settings.js).
+    //   find: the label on the Settings page when it differs from name ('a|b' = either), so Settings can scroll to it.
+    { name: 'Ask before closing the Hub', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'close confirm quit leave tab window warning askclose' },
+    { name: 'Show fullscreen button in taskbar', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'fullscreen full screen button taskbar hide window bar esc' },
+    { name: 'Show tiles on the home screen', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'tiles qr link home screen' },
+    { name: 'Computer break', hash: 'desktop/break', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'break timer work rest pause countdown pomodoro lock' },
+    { name: 'Hub bar: Eye comfort button', hash: 'hubbar/barEye', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray moon night warm hide show', find: 'Eye comfort' },
+    { name: 'Hub bar: Notifications button', hash: 'hubbar/barNotif', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray bell notification centre hide show', find: 'Notifications' },
+    { name: 'Do Not Disturb', hash: 'dnd', icon: '\uD83D\uDD15', where: 'Settings', words: 'settings dnd quiet silent mute notifications pop-ups calls alerts' },
+    { name: 'Favourites still ring', hash: 'dnd', icon: '\uD83D\uDD15', where: 'Settings \u203A Do Not Disturb', words: 'favorites favourites urgent calls ring dnd' },
+    { name: 'Screen lock', hash: 'lock', icon: '\uD83D\uDD12', where: 'Settings', words: 'settings lock pin passcode password fingerprint unlock security' },
+    { name: 'Lock PIN (set / change)', hash: 'lock', icon: '\uD83D\uDD12', where: 'Settings \u203A Screen lock', words: 'pin passcode password 4 digit set change remove', find: 'Set PIN|Change PIN' },
+    { name: 'Activate screen lock', hash: 'lock', icon: '\uD83D\uDD12', where: 'Settings \u203A Screen lock', words: 'activate lock on off startup pin', find: 'Activate' },
+    { name: 'Unlock with PIN / Fingerprint / Both', hash: 'lock', icon: '\uD83D\uDD12', where: 'Settings \u203A Screen lock', words: 'fingerprint pin both unlock method phone biometric', find: 'Unlock with' },
+    { name: 'Fingerprint phones (Add phone)', hash: 'lock', icon: '\uD83D\uDD12', where: 'Settings \u203A Screen lock', words: 'fingerprint phone add remove webauthn biometric unlock', find: 'Add phone' },
+    { name: 'Network drives', hash: 'drives', icon: '\uD83C\uDF10', where: 'Settings', words: 'settings drives network sftp webdav server disk relay' },
+    { name: 'Network drive thumbnails', hash: 'drives', icon: '\uD83C\uDF10', where: 'Settings \u203A Network drives', words: 'thumbnails previews pictures drives sftp webdav slow', find: 'Thumbnails' },
+    { name: 'Eye comfort', hash: 'look/eye', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'warm night light blue schedule warmth' },
+    { name: 'Reduce transparency', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'glass blur solid transparency' },
+    { name: 'Animations', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'motion reduced off animation' },
+    { name: 'Focus window on hover', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'focus hover point front' },
+    { name: 'Magnetic edges', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'magnet stick snap edges' },
+    { name: 'Show thumbnails', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'files thumbnails previews pictures videos' },
+    { name: 'Trusted devices', hash: 'devices/trusted', icon: '\uD83D\uDCF2', where: 'Settings \u203A Devices', words: 'trusted mesh passcode pair forget devices' }
   ],
   actions: [
     { id: 'showdesk', name: 'Show desktop', icon: '\u2B1C', words: 'minimise minimize all windows home desktop' },

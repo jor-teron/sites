@@ -1,0 +1,32 @@
+/* Relay (RY1) — Hub theme (shared/theme/hub_theme.js: data-theme + --accent), system scheme if no theme set. Same look as Speed Test. */
+:root{--bg:#f4f6fb;--card:#fff;--fg:#111827;--mut:#4b5563;--acc:var(--accent,#2563eb);--line:#d1d5db;--ok:#16a34a;--warn:#d97706;--bad:#dc2626}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#0f1420;--card:#1b2233;--fg:#f3f4f6;--mut:#c0c7d4;--acc:var(--accent,#60a5fa);--line:#374151}}
+html[data-theme="dark"]{--bg:#0f1420;--card:#1b2233;--fg:#f3f4f6;--mut:#c0c7d4;--acc:var(--accent,#60a5fa);--line:#374151}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui,sans-serif}
+.ry{max-width:640px;margin:auto;padding:12px;display:grid;gap:12px}
+.ry-head{display:flex;gap:8px;align-items:center}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 8px;display:flex;gap:8px;align-items:center}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:8px;padding:1px 6px;color:var(--mut)}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px}
+.mut{color:var(--mut);margin:0}.small{font-size:13px;margin-top:6px}p.mut:not(.small){font-size:14px}
+.field{display:grid;gap:4px;margin:0 0 8px;font-size:14px}.field>span:first-child{color:var(--mut)}
+input{min-height:30px;padding:3px 8px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit;min-width:0;flex:1}
+input:focus{outline:2px solid var(--acc);outline-offset:1px}.port{flex:0 0 80px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}form.row{margin-bottom:6px}
+.btn{min-height:30px;padding:3px 12px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);font:inherit;cursor:pointer;transition:transform .18s cubic-bezier(.34,1.8,.64,1)}
+.btn:hover{transform:scale(1.05)}.btn:active{transform:scale(.92)}.btn.small{min-height:24px;font-size:13px;padding:1px 8px}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line);display:inline-block}
+.dot.ok{background:var(--ok)}.dot.auth,.dot.busy{background:var(--warn)}.dot.down,.dot.blocked{background:var(--bad)}
+.status{margin-top:8px}.status.ok{color:var(--ok)}.status.auth,.status.busy{color:var(--warn)}.status.down,.status.blocked{color:var(--bad)}
+.mods,.chips{list-style:none;margin:6px 0 0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+.mods li,.chips li{border:1px solid var(--line);border-radius:999px;padding:1px 10px;font-size:13px}
+.mods li.on{border-color:var(--ok);color:var(--ok)}.mods li.off{opacity:.6;text-decoration:line-through}
+.chips li button{border:0;background:none;color:var(--mut);cursor:pointer;font:inherit;padding:0 0 0 4px}
+.ends{display:grid;gap:8px;margin-bottom:8px}.end b{font-size:14px}.end .row{flex-wrap:nowrap}
+code,pre,.url{font:13px/1.4 ui-monospace,Consolas,monospace}
+.url{flex:1;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.cmd{margin:8px 0}.cmd b{font-size:14px}
+pre{margin:4px 0 0;padding:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;position:relative}
+.snip{min-height:2.5em}.err{color:var(--bad);font-size:13px;margin:0;min-height:1em}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(min-width:1000px){body{font-size:18px}.ry{max-width:800px}}

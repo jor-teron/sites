@@ -1,0 +1,45 @@
+# =============================================================================
+# ai-mcp — MCP server for a sandboxed workspace
+#
+# File:         mcp/mcp.service
+# Purpose:      Optional systemd unit for the v3.15 MCP server. Starts at boot
+#               and restarts after a crash. Needs `sudo loginctl enable-linger`
+#               (or a system unit) to run on a headless box with nobody logged in.
+# Place:        mcp/mcp.service — copy to /etc/systemd/system/ai-mcp.service.
+# Version:      3.3
+# Project:      ai-mcp
+# Author:       Jor Teron
+# Licence:      All rights reserved.
+# Dependencies: systemd, /bin/sh, /home/www/ai/mcp.sh, a low-privilege User=.
+# =============================================================================
+
+[Unit]
+Description=AI remote MCP server (v3.15)
+After=network.target
+
+[Service]
+Type=simple
+# Change User= to the low-privilege account that should run the server.
+User=user
+WorkingDirectory=/home/www/ai
+Environment=MCP_HOST=127.0.0.1
+Environment=MCP_PORT=10001
+Environment=MCP_LOG=/home/ai/mcp.log
+Environment=MCP_ROOT=/home/www/ai/sandbox
+Environment=MCP_SANDBOX=ns
+Environment=MCP_SANDBOX_NET=0
+# Default demo PIN is used if unset. Change it before Funnel:
+# Environment=MCP_PIN=change-me
+# Environment=MCP_PIN_FILE=/home/ai/mcp.pin
+# Optional: allow a browser-based Agent. Comma-separated origins, or * .
+# Environment=MCP_CORS_ORIGINS=https://your-agent.example
+# Only enable this if a trusted reverse proxy sets X-Forwarded-For.
+# Environment=MCP_TRUST_PROXY=0
+# Environment=MCP_PUBLIC_URL=https://debian.tail94ffdb.ts.net/ai/mcp
+ExecStart=/bin/sh /home/www/ai/mcp.sh
+Restart=on-failure
+RestartSec=3
+# Do not set NoNewPrivileges=yes: the jail needs unprivileged user namespaces.
+
+[Install]
+WantedBy=multi-user.target

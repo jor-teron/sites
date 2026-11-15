@@ -8,6 +8,8 @@
   Data: the Hub's own lists, hub/core/hub_config.js (HUB_CAT_CSV), hub_apps.js (category order),
   hub_catalog.js (SITES_CSV, used on file:// and as the fallback) and shared/tiles/tiles.js (CSV
   reader). Look: apphub.css, follows the Hub theme (light / dark, accent). Scripts: apphub.js.
+  H153: a search box in the top row (apps only; home = all apps, a category page = that category):
+  shared/search/search_core.js, search_bar.js + search_bar.css.
 -->
 <html lang="en">
 <head>
@@ -15,6 +17,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>App Hub</title>
   <link rel="icon" href="apphub_icon.png" />
+  <link rel="stylesheet" href="../../../shared/search/search_bar.css" /><!-- H153: search box -->
   <link rel="stylesheet" href="apphub.css" />
   <script src="../../../shared/theme/hub_theme.js"></script>
 </head>
@@ -29,6 +32,9 @@
   <script src="../../../hub/core/hub_apps.js"></script>
   <script src="../../../hub/core/hub_catalog.js"></script>
   <script src="../../../shared/tiles/tiles.js"></script>
+  <!-- H153: search box (matching + box); apphub.js works without them -->
+  <script src="../../../shared/search/search_core.js"></script>
+  <script src="../../../shared/search/search_bar.js"></script>
   <script src="apphub.js"></script>
 </body>
 </html>

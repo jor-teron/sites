@@ -309,3 +309,14 @@ button.tap { width: 100%; text-align: left; border: 1px solid var(--line); font:
 .nd-url { color: var(--muted); overflow-wrap: anywhere; }
 .nd-form { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .nd-form [hidden] { display: none; }
+
+/* H152: search box above the sections list (shared/search/search_bar.css draws the box and results) */
+.side-search { margin: 0 2px 12px; --card2: color-mix(in srgb, var(--text) 7%, var(--card)); }
+.side-search .hsb-q { height: 40px; font-size: 15px; }
+.side-search .hsb .res { min-height: 46px; padding: 6px 10px; gap: 10px; }
+.side-search .hsb .sub { white-space: normal; }
+.nav[hidden] { display: none; }
+.search-hit { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px;
+  box-shadow: 0 0 0 6px var(--hi); transition: box-shadow .3s, outline-color .3s; }
+@media (max-width: 699px) { .side-search { margin: 0 0 14px; } .side-search .hsb-q { height: 46px; font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { .search-hit { transition: none; } }
