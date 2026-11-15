@@ -236,7 +236,8 @@
   });
 
   /** Pointer inside Start, the menu or its flyout? */
-  const inside = (t) => !!(t && t.closest && (t.closest('#wm-start') || t.closest('#menu') || t.closest('#menu-fly')));
+  // (before H150) const inside = (t) => !!(t && t.closest && (t.closest('#wm-start') || t.closest('#menu') || t.closest('#menu-fly')));
+  const inside = (t) => !!(t && t.closest && (t.closest('#wm-start') || t.closest('#menu') || t.closest('#menu-fly') || t.closest('#menu-fly-apps')));   // H150: + apps column
   document.addEventListener('pointerover', (e) => {
     if (e.pointerType !== 'mouse' || !window.HubMode || !window.HubMode.isDesktop() || !hoverOn()) return;
     const t = e.target;

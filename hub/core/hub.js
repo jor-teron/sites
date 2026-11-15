@@ -873,7 +873,8 @@
     if (!menu.classList.contains('open')) return;
     if (menu.contains(e.target) || catBtn.contains(e.target)) return;
     if (e.target.closest && e.target.closest('#wm-start')) return;   // taskbar Start (wm_taskbar.js)
-    if (e.target.closest && e.target.closest('#menu-fly')) return;   // desktop flyout (hub_flyout.js)
+    // (before H150) if (e.target.closest && e.target.closest('#menu-fly')) return;   // desktop flyout (hub_flyout.js)
+    if (e.target.closest && e.target.closest('#menu-fly, #menu-fly-apps')) return;   // desktop flyout + H150 apps column (hub_flyout.js)
     closeMenu();
   }, true);
   menu.addEventListener('click', (e) => e.stopPropagation());
