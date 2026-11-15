@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--
+  Web Browser — WWW1: a local Hub web browser. Tabs, an address bar that takes URLs or search terms,
+  Back / Forward / Reload / Stop / Home, bookmarks (bar + list), history (list, search, clear) and a
+  speed-dial home page. Each tab loads pages in its own sandboxed iframe. Many big sites refuse to load
+  inside another page (X-Frame-Options / CSP frame-ancestors); those show a "This site doesn't allow
+  embedding" card with "Open in new tab". Back/forward is the app's own list of URLs you navigated to,
+  because a cross-origin frame cannot be read.
+  Styles: browser.css. Classic scripts: www_config.js (constants), www_logic.js (pure logic, tested by
+  tests/www1.test.cjs), www_store.js (localStorage, keys browser_*), www_main.js (UI). Static, no build,
+  no CDN, works on file://. Theme: reads 'sites-hub.theme' (never writes it).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Web Browser</title>
+  <link rel="icon" href="browser_icon.png">
+  <script>try{var t=localStorage.getItem('sites-hub.theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
+  <link rel="stylesheet" href="browser.css">
+</head>
+<body>
+<div class="app">
+  <header class="tabbar">
+    <img class="logo" src="browser_icon.png" alt="">
+    <nav id="tabs" class="tabs" aria-label="Tabs"></nav>
+    <button type="button" id="newTab" class="ic jelly" title="New tab (Ctrl+T)" aria-label="New tab">＋</button>
+  </header>
+
+  <div class="toolbar">
+    <div class="nav">
+      <button type="button" id="back" class="ic jelly" title="Back (Alt+Left)" aria-label="Back">←</button>
+      <button type="button" id="fwd" class="ic jelly" title="Forward (Alt+Right)" aria-label="Forward">→</button>
+      <button type="button" id="reload" class="ic jelly" title="Reload" aria-label="Reload">↻</button>
+      <button type="button" id="stop" class="ic jelly" title="Stop" aria-label="Stop" hidden>✕</button>
+      <button type="button" id="home" class="ic jelly" title="Home" aria-label="Home">⌂</button>
+    </div>
+    <form id="addrForm" class="addr" autocomplete="off">
+      <input id="addr" type="text" inputmode="url" enterkeyhint="go" spellcheck="false" autocapitalize="off"
+             placeholder="Search or type a URL" aria-label="Address (Ctrl+L)">
+    </form>
+    <div class="acts">
+      <button type="button" id="star" class="ic jelly" title="Bookmark this page" aria-label="Bookmark this page">☆</button>
+      <button type="button" id="ext" class="ic jelly" title="Open in new tab" aria-label="Open in new tab">↗</button>
+      <button type="button" id="menuBtn" class="ic jelly" title="Menu" aria-label="Menu" aria-haspopup="true">⋮</button>
+    </div>
+  </div>
+
+  <div id="bmbar" class="bmbar" aria-label="Bookmarks bar"></div>
+
+  <main id="panes" class="panes"></main>
+</div>
+
+<div id="menu" class="menu" hidden>
+  <button type="button" data-sheet="bookmarks">★ Bookmarks</button>
+  <button type="button" data-sheet="history">🕘 History</button>
+  <button type="button" data-sheet="settings">⚙ Settings</button>
+  <button type="button" data-sheet="help">? Help</button>
+</div>
+
+<div id="sheetWrap" class="sheetwrap" hidden>
+  <section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <header class="sheethead"><h2 id="sheetTitle"></h2><button type="button" id="sheetClose" class="ic jelly" aria-label="Close">✕</button></header>
+    <div id="sheetBody" class="sheetbody"></div>
+  </section>
+</div>
+
+<div id="confirmWrap" class="sheetwrap" hidden>
+  <section class="sheet small" role="alertdialog" aria-modal="true" aria-labelledby="confirmText">
+    <p id="confirmText"></p>
+    <div class="row"><button type="button" id="confirmNo" class="ghost jelly">Cancel</button><button type="button" id="confirmYes" class="danger jelly">OK</button></div>
+  </section>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="www_config.js"></script>
+<script src="www_logic.js"></script>
+<script src="www_store.js"></script>
+<script src="www_main.js"></script>
+</body>
+</html>
