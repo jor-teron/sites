@@ -35,7 +35,7 @@ var SECRET = 'S3cr3t-Token_0123456789';
 var RELAY = { url: BASE, secret: SECRET, enabled: true };
 
 /* ---- config ---- */
-assertEq(C.RELEASE, 'WWW2b', 'release tag is WWW2b');
+assert(/^WWW2[b-z]/.test(C.RELEASE), 'release tag is WWW2b or later');
 assertEq(C.LS_RELAY_SESSION, 'browser_relay_session', 'session key');
 assert(C.LS_RELAY_SESSION.indexOf(C.LS_PREFIX) === 0, 'session key has the browser_ prefix');
 assert(C.RELAY_SESSION_LEN >= 16, 'session id is 16+ chars');

@@ -104,3 +104,7 @@ button:disabled{opacity:.35;cursor:default}
 .relaystat.warn{color:#d97706}
 .relaystat.error{color:var(--bad)}
 .relaywarn{border-left:3px solid #d97706;padding:6px 10px;border-radius:6px;background:#d977061a}
+
+/* WWW2c: Reader button (pressed state) and the final-URL hint */
+#reader.on{background:#8b5cf6;color:#fff}
+.finalhint{border-left:3px solid #8b5cf6;padding:6px 10px;border-radius:6px;background:#8b5cf61a}
