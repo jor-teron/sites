@@ -36,6 +36,7 @@
   var keEl = document.getElementById('pl-ke');
   var peEl = document.getElementById('pl-pe');
   var totalEl = document.getElementById('pl-total');
+  var liveEl = document.getElementById('pl-live');
 
   var world = P.world(W, H);
   var sceneId = 'sandbox';
@@ -98,6 +99,7 @@
     var s = scenes.get(sceneId);
     goalText.textContent = s.goal;
     tipText.textContent = s.tip;
+    liveEl.textContent = s.name + ' experiment: ' + s.goal;
     restitution = s.bounce;
     grip = s.friction;
     bounce.value = String(restitution);
