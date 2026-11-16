@@ -1,4 +1,4 @@
-/* Web Browser WWW1 styles: phone-first, light/dark (html.dark), big tap targets, jelly press effect (same palette as VNC/Remote). */
+/* Web Browser WWW1/WWW2a styles: phone-first, light/dark (html.dark), big tap targets, jelly press effect (same palette as VNC/Remote). */
 :root{--bg:#f5f7fb;--card:#fff;--fg:#1f2937;--mut:#6b7280;--acc:#3b82f6;--bad:#ef4444;--line:#0001;--chip:#e8edf5}
 html.dark{--bg:#121418;--card:#1e2128;--fg:#e5e7eb;--mut:#9aa0a6;--line:#fff1;--chip:#2a2f38}
 *{box-sizing:border-box}
@@ -90,3 +90,17 @@ button:disabled{opacity:.35;cursor:default}
 .sheetbody select,.sheetbody input[type=search]{font:inherit;font-size:16px;padding:9px 12px;border-radius:12px;border:2px solid #8884;background:var(--bg);color:var(--fg);flex:1;width:100%}
 .sheetbody input[type=checkbox]{width:22px;height:22px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111d;color:#fff;padding:12px 18px;border-radius:14px;z-index:40;animation:pop .3s;max-width:90vw}
+
+/* WWW2a: via-relay badge (tab + address bar), Settings > Relay */
+.via{flex:0 0 auto;font-size:11px;font-weight:600;line-height:1;padding:3px 7px;border-radius:9px;background:#8b5cf6;color:#fff;white-space:nowrap}
+.addr{position:relative}
+.addr .via{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none}
+.addr.via #addr{padding-right:84px;border-color:#8b5cf688}
+.sheetbody h3.sec{margin:22px 0 4px;font-size:1em}
+.sheetbody label.field{flex-direction:column;align-items:stretch;gap:4px;margin:10px 0}
+.sheetbody input[type=url],.sheetbody input[type=password]{font:inherit;font-size:16px;padding:9px 12px;border-radius:12px;border:2px solid #8884;background:var(--bg);color:var(--fg);width:100%}
+.relaystat{min-height:1.4em;margin:10px 0;font-size:14px;color:var(--mut);word-break:break-word}
+.relaystat.ok{color:#16a34a}
+.relaystat.warn{color:#d97706}
+.relaystat.error{color:var(--bad)}
+.relaywarn{border-left:3px solid #d97706;padding:6px 10px;border-radius:6px;background:#d977061a}

@@ -4,10 +4,12 @@
   Back / Forward / Reload / Stop / Home, bookmarks (bar + list), history (list, search, clear) and a
   speed-dial home page. Each tab loads pages in its own sandboxed iframe. Many big sites refuse to load
   inside another page (X-Frame-Options / CSP frame-ancestors); those show a "This site doesn't allow
-  embedding" card with "Open in new tab". Back/forward is the app's own list of URLs you navigated to,
+  embedding" card with "Open in new tab". WWW2a: with a Relay Server set in Settings > Relay, those sites, plain
+  http pages and timed-out pages load through the relay instead (a "via relay" badge). WWW2b: a relay cookie session per
+  Hub browser (New session, Clear relay cookies), privacy notes, and relay URLs never saved. Back/forward is the app's own list of URLs you navigated to,
   because a cross-origin frame cannot be read.
   Styles: browser.css. Classic scripts: www_config.js (constants), www_logic.js (pure logic, tested by
-  tests/www1.test.cjs), www_store.js (localStorage, keys browser_*), www_main.js (UI). Static, no build,
+  tests/www1.test.cjs, tests/www2a.test.cjs and tests/www2b.test.cjs), www_store.js (localStorage, keys browser_*), www_main.js (UI). Static, no build,
   no CDN, works on file://. Theme: reads 'sites-hub.theme' (never writes it).
 -->
 <html lang="en">
@@ -39,6 +41,7 @@
     <form id="addrForm" class="addr" autocomplete="off">
       <input id="addr" type="text" inputmode="url" enterkeyhint="go" spellcheck="false" autocapitalize="off"
              placeholder="Search or type a URL" aria-label="Address (Ctrl+L)">
+      <span id="viaBadge" class="via" title="This page is loading through your relay; the address shown is the real one" hidden>via relay</span>
     </form>
     <div class="acts">
       <button type="button" id="star" class="ic jelly" title="Bookmark this page" aria-label="Bookmark this page">☆</button>
@@ -55,6 +58,7 @@
 <div id="menu" class="menu" hidden>
   <button type="button" data-sheet="bookmarks">★ Bookmarks</button>
   <button type="button" data-sheet="history">🕘 History</button>
+  <button type="button" id="relayToggle">⇄ Load through relay</button>
   <button type="button" data-sheet="settings">⚙ Settings</button>
   <button type="button" data-sheet="help">? Help</button>
 </div>
