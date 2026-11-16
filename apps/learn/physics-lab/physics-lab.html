@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Physics Lab PS1c (Learn > Science): a ball and a box on a ramp, with bounce and friction.
-     Pause freezes the scene; Reset puts everything back. Drag and the meters come in PS1d-PS1e.
+<!-- Physics Lab PS1d (Learn > Science): a ball and a box on a ramp, with bounce and friction.
+     Drag a body to throw it, add a ball, double-tap to remove one, and switch motion trails on or off.
      Classic scripts only, no build step, works from file://. -->
-<title>Physics Lab PS1c</title>
+<title>Physics Lab PS1d</title>
 <meta name="theme-color" content="#14171c">
 <script src="../../../shared/theme/hub_theme.js"></script>
 <link rel="stylesheet" href="../common/ui/learn.css">
@@ -15,7 +15,7 @@
 <body>
 <div id="app" class="lrn pl">
   <header class="lrn-head pl-head">
-    <h1>Physics Lab <span class="pl-ver">PS1c</span></h1>
+    <h1>Physics Lab <span class="pl-ver">PS1d</span></h1>
   </header>
 
   <div class="pl-stage" id="pl-stage">
@@ -26,6 +26,8 @@
     <div class="pl-row">
       <button id="pl-play" type="button" class="pl-btn pl-btn-main">Pause</button>
       <button id="pl-reset" type="button" class="pl-btn">Reset</button>
+      <button id="pl-trails" type="button" class="pl-btn" aria-pressed="true">Trails</button>
+      <button id="pl-add" type="button" class="pl-btn">+ Ball</button>
     </div>
     <div class="pl-fields">
       <label class="pl-field">Bounce <output id="pl-bounce-out">0.50</output>
@@ -35,7 +37,7 @@
         <input id="pl-friction" type="range" min="0" max="1" step="0.05" value="0.4">
       </label>
     </div>
-    <p class="pl-note" id="pl-note">The ball rolls down the ramp and the box slides on the floor. Bounce and friction change every body.</p>
+    <p class="pl-note" id="pl-note">Drag a body to throw it. Tap empty space or + Ball to add a ball; double-tap a body to remove it.</p>
   </div>
 </div>
 <noscript><p>Physics Lab needs JavaScript. It shows a ball rolling down a ramp and a box sliding on the floor.</p></noscript>
