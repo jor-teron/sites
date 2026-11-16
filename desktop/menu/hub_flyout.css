@@ -5,6 +5,10 @@
  * dividers, hidden scrollbar + bottom fade when more apps below. Hover styles only for real mice.
  * H150: the flyout lists section rows (.fly-row: name, "(count)", ›); the hovered section's apps
  * open in a third column (#menu-fly-apps.menu-fly.menu-fly-apps, same look as the flyout).
+ * H154: both flyout columns look exactly like the Start menu (.menu, hub/core/hub_main.css) in every theme:
+ *   panel radius 10px + the menu shadow, section rows = the menu's category rows (.menu .menu-cat),
+ *   app rows = the menu's app rows (.menu button.app: 22px icons, no slide), headings = .menu-group.
+ *   Theme overrides: desktop/wm/wm.css (Light), hub/core/hub_xp.css (XP), hub/core/hub_glass.css (Glass).
  */
 .menu .menu-cat {
   display: flex;
@@ -41,9 +45,14 @@
   -ms-overflow-style: none;
   background: var(--menu);
   border: 1px solid var(--line);
+/* (before H154)
   border-radius: 12px;
   padding: 6px;
   box-shadow: 0 18px 50px rgba(0,0,0,0.5), 0 4px 14px rgba(0,0,0,0.3);
+*/
+  border-radius: 10px;                       /* H154: = .menu */
+  padding: 6px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);  /* H154: = .menu */
   transform-origin: left top;
 }
 .menu-fly::-webkit-scrollbar { width: 0; height: 0; display: none; }
@@ -53,12 +62,23 @@
           mask-image: linear-gradient(to bottom, #000 calc(100% - 46px), transparent);
 }
 /* section heading: small grey title, thin divider line above (not above the first group) */
+/* (before H154)
 .menu-fly .fly-sec {
   margin: 6px 6px 2px;
   padding: 8px 4px 3px;
   border-top: 1px solid var(--line);
   font-size: 10.5px;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+*/
+.menu-fly .fly-sec {   /* H154: text like .menu-group, divider kept */
+  margin: 6px 0 2px;
+  padding: 8px 10px 4px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -71,6 +91,7 @@
   78%  { transform: translateX(-1px) scale(0.99, 1.01); }
   100% { transform: none; }
 }
+/* (before H154)
 .menu-fly .fly-head {
   padding: 6px 10px 6px;
   font-size: 11px;
@@ -79,7 +100,16 @@
   letter-spacing: 0.08em;
   color: var(--muted);
 }
+*/
+.menu-fly .fly-head {   /* H154: = .menu-group */
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
 .menu-fly .fly-msg { padding: 10px; color: var(--muted); font-size: 13px; }
+/* (before H154)
 .menu-fly .fly-app {
   width: 100%;
   min-height: 44px;
@@ -113,7 +143,41 @@
   background: linear-gradient(135deg, #6ea8fe, #b06efe);
   color: #fff; font-weight: 700; font-size: 14px;
 }
+*/
+/* H154: app rows = .menu button.app (hub_main.css) */
+.menu-fly .fly-app {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.menu-fly .fly-app:hover {
+  background: var(--wm-hi, rgba(110, 168, 254, 0.16));
+  color: var(--text);
+}
+.menu-fly .icon {
+  width: 22px; height: 22px; flex: 0 0 22px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: rgba(255,255,255,0.04);
+}
+.menu-fly .icon.letter {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #6ea8fe, #b06efe);
+  color: #fff; font-weight: 700; font-size: 12px;
+}
+html.hub-glass .menu-fly .icon:not(.letter) { background: transparent; }   /* = html.hub-glass .menu button.app .icon */
 /* H150: section rows in the flyout (hover / click opens the apps column) */
+/* (before H154)
 .menu-fly .fly-row {
   width: 100%;
   min-height: 40px;
@@ -131,20 +195,57 @@
   cursor: pointer;
   transition: background 0.12s ease;
 }
+*/
+/* H154: section rows = the menu's category rows (.menu .menu-cat: hub_main.css + the block at the top of this file) */
+.menu-fly .fly-row {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
 .menu-fly .fly-row .fly-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* (before H154)
 .menu-fly .fly-row .fly-row-count { color: var(--muted); font-size: 12.5px; flex: 1; }
+*/
+.menu-fly .fly-row .fly-row-count { color: var(--muted); font-size: 12px; font-weight: 400; flex: 1; }
 .menu-fly .fly-row::after { content: '\203A'; font-size: 18px; opacity: 0.5; margin-left: 8px; }
+/* (before H154)
 .menu-fly .fly-row:hover, .menu-fly .fly-row.fly-on {
   background: var(--wm-hi, rgba(110, 168, 254, 0.20));
   color: #fff;
 }
 .menu-fly .fly-row:hover .fly-row-count, .menu-fly .fly-row.fly-on .fly-row-count { color: inherit; opacity: 0.8; }
+*/
+.menu-fly .fly-row:hover { background: rgba(255,255,255,0.05); color: var(--text); }   /* H154: = .menu .menu-cat:hover */
+.menu-fly .fly-row.fly-on {                                                           /* H154: = .menu .menu-cat.fly-on */
+  background: var(--wm-hi, rgba(110, 168, 254, 0.20));
+  color: #fff;
+}
+.menu-fly .fly-row.fly-on .fly-row-count { color: inherit; opacity: 0.8; }
 .menu-fly .fly-row.fly-on::after { opacity: 1; }
 html.hub-light .menu-fly .fly-row:hover, html.hub-light .menu-fly .fly-row.fly-on { color: var(--text); }
 html.hub-xp .menu-fly .fly-row { border-radius: 0; }
 html.hub-xp .menu-fly .fly-row:hover, html.hub-xp .menu-fly .fly-row.fly-on { background: var(--xp-sel); color: #fff; }
 html.hub-glass .menu-fly .fly-row { color: var(--gl-text); }
+/* (before H154)
 html.hub-glass .menu-fly .fly-row:hover, html.hub-glass .menu-fly .fly-row.fly-on { background: var(--gl-hover); color: var(--gl-text); }
+*/
+html.hub-glass .menu-fly .fly-row:hover { background: var(--gl-hover); color: var(--gl-text); }   /* H154: = glass .menu-cat:hover */
+html.hub-glass .menu-fly .fly-row.fly-on { background: var(--wm-hi); color: var(--gl-text); }   /* H154: = glass .menu-cat.fly-on */
 .menu-fly.menu-fly-apps { z-index: 102; }   /* H150: apps column above the section column */
 
 /* Real mouse only: › arrow on rows that have a flyout */
@@ -159,5 +260,8 @@ html.hub-glass .menu-fly .fly-row:hover, html.hub-glass .menu-fly .fly-row.fly-o
 }
 @media (prefers-reduced-motion: reduce) {
   .menu-fly.pop { animation: none; }
-  .menu-fly .fly-app, .menu-fly .fly-row { transition: none; }   /* H150: + .fly-row */
+/* (before H154)
+  .menu-fly .fly-app, .menu-fly .fly-row { transition: none; }   / * H150: + .fly-row * /
+*/
+  .menu-fly .fly-row { transition: none; }   /* H154: .fly-app has no transition now (as .menu button.app) */
 }
