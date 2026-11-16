@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Physics Lab PS1d (Learn > Science): a ball and a box on a ramp, with bounce and friction.
-     Drag a body to throw it, add a ball, double-tap to remove one, and switch motion trails on or off.
+<!-- Physics Lab PS1e (Learn > Science): a ball and a box on a ramp, with bounce, friction and live meters.
+     Drag a body to throw it, tap to add a ball, double-tap to remove one; the HUD shows speed, height and energy.
      Classic scripts only, no build step, works from file://. -->
-<title>Physics Lab PS1d</title>
+<title>Physics Lab PS1e</title>
 <meta name="theme-color" content="#14171c">
 <script src="../../../shared/theme/hub_theme.js"></script>
 <link rel="stylesheet" href="../common/ui/learn.css">
@@ -15,11 +15,20 @@
 <body>
 <div id="app" class="lrn pl">
   <header class="lrn-head pl-head">
-    <h1>Physics Lab <span class="pl-ver">PS1d</span></h1>
+    <h1>Physics Lab <span class="pl-ver">PS1e</span></h1>
   </header>
 
   <div class="pl-stage" id="pl-stage">
     <canvas id="pl-canvas" aria-label="A ball rolling down a ramp and a box on the floor."></canvas>
+    <div class="pl-hud" id="pl-hud">
+      <div class="pl-hud-row"><span class="pl-k">Time</span><b id="pl-time">0.00 s</b></div>
+      <div class="pl-hud-row"><span class="pl-k">Body</span><b id="pl-body">-</b></div>
+      <div class="pl-hud-row"><span class="pl-k">Speed</span><b id="pl-speed">0.00 m/s</b></div>
+      <div class="pl-hud-row"><span class="pl-k">Height</span><b id="pl-height">0.00 m</b></div>
+      <div class="pl-bars" aria-hidden="true"><span class="pl-bar pl-ke" id="pl-ke"></span><span class="pl-bar pl-pe" id="pl-pe"></span></div>
+      <div class="pl-hud-row pl-small"><span class="pl-ke-key">moving</span><span class="pl-pe-key">height</span><b id="pl-total">0.0 J</b></div>
+    </div>
+    <p class="pl-sr" id="pl-live" aria-live="polite"></p>
   </div>
 
   <div class="pl-controls">
@@ -30,6 +39,14 @@
       <button id="pl-add" type="button" class="pl-btn">+ Ball</button>
     </div>
     <div class="pl-fields">
+      <label class="pl-field">Gravity
+        <select id="pl-gravity">
+          <option value="9.81">Earth 9.8</option>
+          <option value="1.62">Moon 1.6</option>
+          <option value="3.71">Mars 3.7</option>
+          <option value="0">Zero</option>
+        </select>
+      </label>
       <label class="pl-field">Bounce <output id="pl-bounce-out">0.50</output>
         <input id="pl-bounce" type="range" min="0" max="0.95" step="0.05" value="0.5">
       </label>
