@@ -1,0 +1,58 @@
+/*
+ * Physics Lab PS1a - page shell for the 2D scene.
+ * Dark first, like the Learn kit, with a light version that follows the Hub theme (html.light).
+ * No blur, no filters, no external fonts or images.
+ */
+.pl {
+  --pl-bg: #0f1319;
+  --pl-grid: rgba(255, 255, 255, 0.055);
+  --pl-floor: #77839a;
+  --pl-hatch: rgba(255, 255, 255, 0.12);
+  --pl-ball: #5fb8ad;
+  --pl-ball-hi: #a7e6dc;
+  --pl-ball-edge: rgba(0, 0, 0, 0.35);
+}
+html.light .pl {
+  --pl-bg: #eef2f6;
+  --pl-grid: rgba(20, 32, 48, 0.07);
+  --pl-floor: #7f8a99;
+  --pl-hatch: rgba(20, 32, 48, 0.14);
+  --pl-ball: #2f9e91;
+  --pl-ball-hi: #6fc9be;
+  --pl-ball-edge: rgba(0, 0, 0, 0.2);
+}
+
+.pl-head { padding-top: 8px; padding-bottom: 8px; }
+.pl-head h1 { font-size: 1.15rem; }
+.pl-ver {
+  flex: none; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.pl-stage {
+  position: relative; flex: 1; min-height: 220px; min-width: 0;
+  background: var(--pl-bg);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+#pl-canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.pl-controls { flex: none; padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 8px; }
+.pl-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pl-btn {
+  min-height: 46px; padding: 0 18px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel2); color: var(--text);
+  font-weight: 650;
+}
+.pl-btn:hover { border-color: var(--accent); }
+.pl-btn:active { filter: brightness(1.12); }
+.pl-btn-main { background: var(--accent); border-color: var(--accent); color: var(--on); min-width: 96px; }
+.pl-btn-main:hover { background: #b3c4dc; }
+.pl-note { margin: 0; color: var(--muted); font-size: 0.88rem; }
+
+@media (max-width: 420px) {
+  .pl-btn { flex: 1; padding: 0 12px; }
+  .pl-note { font-size: 0.82rem; }
+}

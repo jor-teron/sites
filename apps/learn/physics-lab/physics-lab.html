@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Physics Lab PS1a (Learn > Science): the first slice - one ball, gravity and a floor.
+     Pause freezes it, Reset drops it again. Bounce, ramps, dragging and the meters come in later PS1 releases.
+     Classic scripts only, no build step, works from file://. -->
+<title>Physics Lab PS1a</title>
+<meta name="theme-color" content="#14171c">
+<script src="../../../shared/theme/hub_theme.js"></script>
+<link rel="stylesheet" href="../common/ui/learn.css">
+<link rel="stylesheet" href="ui/physics-lab.css">
+</head>
+<body>
+<div id="app" class="lrn pl">
+  <header class="lrn-head pl-head">
+    <h1>Physics Lab <span class="pl-ver">PS1a</span></h1>
+  </header>
+
+  <div class="pl-stage" id="pl-stage">
+    <canvas id="pl-canvas" aria-label="A ball falling under gravity onto a floor."></canvas>
+  </div>
+
+  <div class="pl-controls">
+    <div class="pl-row">
+      <button id="pl-play" type="button" class="pl-btn pl-btn-main">Pause</button>
+      <button id="pl-reset" type="button" class="pl-btn">Reset</button>
+    </div>
+    <p class="pl-note" id="pl-note">Gravity pulls the ball down. Pause to freeze it; Reset drops it from the top again.</p>
+  </div>
+</div>
+<noscript><p>Physics Lab needs JavaScript. It shows a ball falling under gravity onto a floor.</p></noscript>
+<script src="core/engine.js"></script>
+<script src="core/app.js"></script>
+</body>
+</html>
