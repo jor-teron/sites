@@ -99,3 +99,17 @@ For "Relay offline or unreachable" on a device where the relay is healthy from o
   and any `/www/<x>/` segment become `•••`).
 - **Open health page** opens `<base>/health?format=json` in a new tab.
 
+### Tailscale / local network access (WWW2d)
+- On a device that is on the tailnet, `<machine>.<tailnet>.ts.net` can resolve to the relay's Tailscale `100.x` address.
+  Chrome's **Local Network Access** treats that as a local address and blocks fetches and frames to it from an https Hub
+  (`net::ERR_FAILED`, "Permission was denied for this request to access the `local` address space"), so before this fix Test
+  said "offline".
+- When both Test requests fail (or time out), the app asks `navigator.permissions.query` for `local-network-access`,
+  `local-network` and `loopback-network` (names Chrome doesn't know are skipped). If any is `denied` or `prompt`, Test says:
+  "Your browser blocked the relay … Allow 'Local network access' for this site (the icon left of the address bar › Site
+  settings), or turn Tailscale off, then tap Test again" (plus "the browser may ask you first" for `prompt`). Step (e) of the
+  report and Copy details list the permission states.
+- The same check runs for Clear relay cookies, on a relayed tab that times out or fails (the hint shows on the card), and
+  quietly for the real-address probe (it just stops probing).
+- A relay URL that is filled in but still unusable after the auto-fix (for example `ftp://…`) now gives the URL error on Test,
+  not "Relay not set"; a URL typed without a scheme gets `https://` and Test uses the fixed URL.

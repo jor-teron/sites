@@ -1,4 +1,4 @@
-/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), WWW2a (Relay Server routing), WWW2b (relay sessions, clear cookies, privacy) and WWW2c (real address after redirects, Reader) and WWW2d (relay URL auto-fix, Hub-relay warning, detailed Test report), each one commented. */
+/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), WWW2a (Relay Server routing), WWW2b (relay sessions, clear cookies, privacy) and WWW2c (real address after redirects, Reader) and WWW2d (relay URL auto-fix, Hub-relay warning, detailed Test report, Local Network Access hint), each one commented. */
 (function (root) {
   'use strict';
 
@@ -125,7 +125,19 @@
     /* Warning shown when the URL looks like the Hub's own relay. */
     HUB_RELAY_WARN: "That looks like the Hub's own relay (RL1/SSH), which has no web module. Use your Relay Server URL, e.g. https://<machine>.<tailnet>.ts.net/relay",
     /* Note shown when the Hub is opened from a file. */
-    FILE_HUB_NOTE: 'This Hub is opened from a file (file://). The relay should still work: Relay Server answers any origin for health checks and page loads.'
+    FILE_HUB_NOTE: 'This Hub is opened from a file (file://). The relay should still work: Relay Server answers any origin for health checks and page loads.',
+    /* WWW2d: Chrome Local Network Access permission names to ask about (newest first); unknown names throw and are skipped. */
+    LNA_PERMISSIONS: ['local-network-access', 'local-network', 'loopback-network'],
+    /* WWW2d: a permissions.query that hangs is given up after this many ms. */
+    LNA_QUERY_TIMEOUT_MS: 1500,
+    /* WWW2d: Test / card text when the browser blocks the relay because its address is local (a Tailscale 100.x address counts). */
+    LNA_TEXT: "Your browser blocked the relay: on this device the relay's address is a local/Tailscale address. Allow 'Local network access' for this site (the icon left of the address bar \u203a Site settings), or turn Tailscale off, then tap Test again.",
+    /* WWW2d: added when the permission is still 'prompt'. */
+    LNA_PROMPT_NOTE: 'The browser may ask you first: choose Allow when it does.',
+    /* WWW2d: card title for a relay tab blocked by Local network access. */
+    LNA_TITLE: 'Your browser blocked the relay',
+    /* WWW2d: Test text when the relay URL is filled in but can't be used. */
+    RELAY_BAD_URL: 'The relay URL must start with https:// (or http://), e.g. https://<machine>.<tailnet>.ts.net/relay'
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */

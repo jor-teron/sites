@@ -328,12 +328,15 @@
   /*
    * Message for the Settings > Relay > Test result. r: {kind, status, body}, kind one of:
    *   'notset' | 'mixed' | 'http' (status + body from /health?format=json) | 'cors' (fetch failed but a no-cors probe reached it)
-   *   | 'offline' (network failure) | 'timeout'.
+   *   | 'offline' (network failure) | 'timeout' | 'badurl' (URL filled in but not usable)
+   *   | 'lna' (WWW2d: both fetches failed and Chrome's Local Network Access permission is 'denied' or 'prompt'; r.state).
    * Returns {level: 'ok'|'warn'|'error', text, version, www}.
    */
   function healthMessage(r) {
     var x = r || {};
     if (x.kind === 'notset') return { level: 'error', text: 'Relay not set: fill in the relay URL and secret first.' };
+    if (x.kind === 'badurl') return { level: 'error', text: C.RELAY_BAD_URL };
+    if (x.kind === 'lna') return { level: 'error', text: lnaText(x.state) };
     if (x.kind === 'mixed') return { level: 'error', text: 'This Hub is https, so the relay URL must be https too (Tailscale Funnel gives one).' };
     if (x.kind === 'cors') return { level: 'warn', text: "Couldn't verify (relay may not allow this Hub origin); the relay did answer, so you can still try loading a page." };
     if (x.kind === 'timeout') return { level: 'error', text: 'Relay offline: no answer within ' + Math.round(C.RELAY_TEST_TIMEOUT_MS / 1000) + ' s. Is the relay running and Funnel on?' };
@@ -512,13 +515,15 @@
   /*
    * Message for Clear relay cookies. r: {kind, status, body}, kind one of:
    *   'notset' | 'mixed' | 'http' (status + JSON body {cleared, session}) | 'cors' (CORS fetch failed, a no-cors POST got through)
-   *   | 'offline' | 'timeout'.  origin: this Hub's origin, named in the CORS hint.
+   *   | 'offline' | 'timeout' | 'badurl' | 'lna' (WWW2d: blocked by Local Network Access, r.state).  origin: this Hub's origin, named in the CORS hint.
    * Returns {level: 'ok'|'warn'|'error', text}. Never includes the secret.
    */
   function clearMessage(r, origin) {
     var x = r || {};
     if (x.kind === 'notset') return { level: 'error', text: 'Relay not set: fill in the relay URL and secret first.' };
     if (x.kind === 'mixed') return healthMessage({ kind: 'mixed' });
+    if (x.kind === 'badurl') return healthMessage({ kind: 'badurl' });
+    if (x.kind === 'lna') return { level: 'error', text: 'Cookies were not cleared. ' + lnaText(x.state) };
     if (x.kind === 'cors') {
       return { level: 'warn', text: 'The clear request was sent, but the relay does not let this Hub read its answer (CORS), so it could not be confirmed. ' +
         'Add ' + (origin || "this Hub's address") + ' to RELAY_WWW_ORIGINS in relay.conf, or tap New session, which logs you out of relayed sites just the same.' };
@@ -789,7 +794,8 @@
   }
 
   /*
-   * WWW2d: the Test report. t: {release, rawUrl, url, notes, warnings, healthUrl, health, noCors, secret, summary, env},
+   * WWW2d: the Test report. t: {release, rawUrl, url, notes, warnings, healthUrl, health, noCors, secret, lna, summary, env},
+   * lna (optional): {states: {name: state}, state: 'denied'|'prompt'|'', blocked: bool} adds step e.
    * env: {userAgent, origin, onLine, secureContext, protocol, time}. secret: redacted from every line.
    * Returns {steps: [{label, text}], text} where text is the full redacted report for Copy details.
    */
@@ -801,6 +807,8 @@
       { label: 'c. no-cors probe', text: stepResultText(x.noCors || { skipped: 'not needed' }) },
       { label: 'd. Secret check', text: stepResultText(x.secret || { skipped: 'health check did not pass' }) + (x.secret && x.secret.status != null ? ' (' + secretProbeMessage(x.secret.status).text + ')' : '') }
     ];
+    /* WWW2d: Chrome Local Network Access permission states, when they were asked. */
+    if (x.lna) steps.push({ label: 'e. Local network access', text: lnaStatesText(x.lna) });
     var env = x.env || {};
     var lines = ['Web Browser ' + (x.release || C.RELEASE) + ' relay Test report'];
     if (env.time) lines.push('Time: ' + env.time);
@@ -821,6 +829,37 @@
       text: redactAll(lines.join('\n'), secret)
     };
     return out;
+  }
+
+  /* ---- WWW2d: Chrome Local Network Access (a relay host that resolves to a Tailscale 100.x / private address) ---- */
+
+  /*
+   * The state that matters from permissions.query results {name: 'granted'|'denied'|'prompt'|'unsupported'|...}:
+   * 'denied' if any is denied, else 'prompt' if any is prompt, else ''.
+   */
+  function lnaState(states) {
+    var v = [];
+    var o = states && typeof states === 'object' ? states : {};
+    Object.keys(o).forEach(function (k) { v.push(String(o[k])); });
+    if (v.indexOf('denied') >= 0) return 'denied';
+    if (v.indexOf('prompt') >= 0) return 'prompt';
+    return '';
+  }
+
+  /* The Local network access hint ('prompt' adds that the browser may ask first). */
+  function lnaText(state) {
+    return C.LNA_TEXT + (state === 'prompt' ? ' ' + C.LNA_PROMPT_NOTE : '');
+  }
+
+  /* Step e of the Test report: "local-network-access=denied, local-network=unsupported → blocked (denied)". */
+  function lnaStatesText(lna) {
+    var x = lna || {};
+    var o = x.states && typeof x.states === 'object' ? x.states : {};
+    var parts = Object.keys(o).map(function (k) { return k + '=' + o[k]; });
+    var s = parts.length ? parts.join(', ') : 'no Permissions API';
+    if (x.blocked) return s + ' \u2192 blocked the relay (' + (x.state || 'denied') + ')';
+    if (x.state) return s + ' \u2192 ' + x.state + ' (not the cause this time)';
+    return s;
   }
 
   /* WWW2d: redact the secret everywhere, and any /www/<x>/ path segment (a secret pasted into the URL field). */
@@ -902,7 +941,10 @@
     describeError: describeError,
     stepResultText: stepResultText,
     buildTestReport: buildTestReport,
-    redactAll: redactAll
+    redactAll: redactAll,
+    lnaState: lnaState,
+    lnaText: lnaText,
+    lnaStatesText: lnaStatesText
   };
 
   root.WWW_LOGIC = WWW_LOGIC;

@@ -203,5 +203,56 @@ assert(/\.relaysteps\{/.test(css) && /a\.healthlink\{/.test(css) && /\.relayusin
 var readme = fs.readFileSync(path.join(app, 'readme.md'), 'utf8');
 assert(has(readme, 'WWW2d') && has(readme, 'Copy details') && has(readme, 'Open health page') && has(readme, 'fixRelayUrl'), 'readme documents WWW2d');
 
+/* ---- Local Network Access (Chrome blocks a relay host that resolves to a Tailscale 100.x / private address) ---- */
+assert(C.LNA_PERMISSIONS.join() === 'local-network-access,local-network,loopback-network', 'LNA permission names, newest first');
+assertEq(L.lnaState({ 'local-network-access': 'denied', 'local-network': 'unsupported' }), 'denied', 'lnaState: denied');
+assertEq(L.lnaState({ 'local-network-access': 'unsupported', 'local-network': 'prompt', 'loopback-network': 'granted' }), 'prompt', 'lnaState: prompt');
+assertEq(L.lnaState({ a: 'prompt', b: 'denied' }), 'denied', 'lnaState: denied wins over prompt');
+assertEq(L.lnaState({ 'local-network-access': 'granted', 'local-network': 'unsupported' }), '', 'lnaState: granted is not a block');
+assertEq(L.lnaState({}), '', 'lnaState: no Permissions API');
+assertEq(L.lnaState(null), '', 'lnaState: null');
+var lnaD = L.healthMessage({ kind: 'lna', state: 'denied' });
+assertEq(lnaD.level, 'error', 'lna message is an error');
+assert(has(lnaD.text, 'Your browser blocked the relay') && has(lnaD.text, 'local/Tailscale address') && has(lnaD.text, "Allow 'Local network access'") &&
+  has(lnaD.text, 'Site settings') && has(lnaD.text, 'turn Tailscale off') && has(lnaD.text, 'tap Test again'), 'lna message: cause and how to allow it');
+assert(!has(lnaD.text, 'may ask'), 'denied: no prompt note');
+assert(has(L.healthMessage({ kind: 'lna', state: 'prompt' }).text, 'may ask'), 'prompt: says the browser may ask');
+assert(!has(lnaD.text, 'Relay offline'), 'lna is not reported as offline');
+var lnaC = L.clearMessage({ kind: 'lna', state: 'denied' });
+assert(lnaC.level === 'error' && has(lnaC.text, 'not cleared') && has(lnaC.text, 'Local network access'), 'clearMessage: lna');
+assert(has(L.clearMessage({ kind: 'lna', state: 'prompt' }).text, 'may ask'), 'clearMessage: lna prompt');
+assertEq(L.lnaText('denied'), C.LNA_TEXT, 'lnaText denied = LNA_TEXT');
+var repL = L.buildTestReport({ rawUrl: BASE, url: BASE, healthUrl: BASE + '/health?format=json',
+  health: { error: 'TypeError: Failed to fetch', ms: 12 }, noCors: { error: 'TypeError: Failed to fetch', ms: 9 },
+  lna: { states: { 'local-network-access': 'denied', 'local-network': 'unsupported', 'loopback-network': 'unsupported' }, state: 'denied', blocked: true },
+  summary: lnaD.text, env: {} }, SECRET);
+assertEq(repL.steps.length, 5, 'report has step e when LNA was asked');
+assert(repL.steps[4].label.indexOf('e.') === 0 && has(repL.steps[4].text, 'local-network-access=denied') && has(repL.steps[4].text, 'local-network=unsupported') &&
+  has(repL.steps[4].text, 'blocked the relay'), 'step e: permission states and the block');
+assert(has(repL.text, 'local-network-access=denied') && has(repL.text, 'Result: Your browser blocked the relay'), 'Copy details: permission states and result');
+var repG = L.buildTestReport({ rawUrl: BASE, url: BASE, lna: { states: { 'local-network-access': 'prompt' }, state: 'prompt', blocked: false }, env: {} }, SECRET);
+assert(has(repG.steps[4].text, 'not the cause'), 'step e: prompt but relay reached is not the cause');
+assert(has(L.lnaStatesText({ states: {}, state: '' }), 'no Permissions API'), 'step e: no Permissions API');
+
+/* ---- no-scheme / unusable URL: a URL error, never "Relay not set" ---- */
+var bad = L.healthMessage({ kind: 'badurl' });
+assert(bad.level === 'error' && has(bad.text, 'must start with https://') && !has(bad.text, 'not set'), 'badurl message');
+assert(has(L.clearMessage({ kind: 'badurl' }).text, 'must start with https://'), 'clearMessage: badurl');
+assertEq(L.fixRelayUrl('debian.tail94ffdb.ts.net/relay').url, BASE, 'no scheme: https:// added');
+assertEq(L.fixRelayUrl('debian.tail94ffdb.ts.net').url, BASE, 'no scheme, bare ts.net: https:// and /relay added');
+assertEq(L.fixRelayUrl('ftp://debian.tail94ffdb.ts.net/relay').url, '', 'ftp:// stays unusable (badurl)');
+assert(L.relayConfigured({ url: L.fixRelayUrl('debian.tail94ffdb.ts.net/relay').url, secret: SECRET }), 'fixed no-scheme URL counts as configured');
+
+/* ---- LNA wiring in www_main.js ---- */
+['navigator.permissions', 'perms.query({ name: name })', "settle('unsupported')", 'C.LNA_PERMISSIONS.map(', "kind: 'lna', state: q.state",
+ "L.healthMessage({ kind: 'badurl' })", "L.clearMessage({ kind: 'badurl' })", 'relayFailCard(tab, url)', 'showLnaCard(tab, q.state)', 't.lna.blocked = true'].forEach(function (k) {
+  assert(main.indexOf(k) >= 0, 'www_main.js uses ' + k);
+});
+assert(/function testRelay\(done\)[\s\S]{0,1600}kind: 'badurl'[\s\S]{0,300}kind: 'notset'/.test(main), 'Test checks a bad URL before "not set"');
+assert(/function clearRelayCookies\(done\)[\s\S]{0,1400}queryLna\(\)/.test(main), 'Clear relay cookies checks LNA');
+assert(/function probeFinalUrl\(tab\)[\s\S]{0,1800}queryLna\(\)[\s\S]{0,200}finalOffKey = key/.test(main), 'final-URL probe stops quietly on an LNA block');
+assert(main.indexOf('C.RELAY_TIMEOUT_TITLE, C.RELAY_TIMEOUT_TEXT, true);\n') > 0 && (main.match(/relayFailCard\(tab, url\)/g) || []).length === 3, 'both relay timeouts go through relayFailCard');
+assert(has(readme, 'Local network access') && has(readme, 'Tailscale'), 'readme: Tailscale / local network access note');
+
 if (failed) { console.error(failed + ' failed'); process.exit(1); }
 console.log('all passed');
