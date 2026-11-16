@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Physics Lab PS1b (Learn > Science): one ball, gravity, a floor and bounce.
-     The Bounce slider sets restitution (0 = stops dead, 1 = all the speed back); Pause freezes, Reset drops again.
-     Ramps, boxes, dragging and the meters come in later PS1 releases. Classic scripts only, works from file://. -->
-<title>Physics Lab PS1b</title>
+<!-- Physics Lab PS1c (Learn > Science): a ball and a box on a ramp, with bounce and friction.
+     Pause freezes the scene; Reset puts everything back. Drag and the meters come in PS1d-PS1e.
+     Classic scripts only, no build step, works from file://. -->
+<title>Physics Lab PS1c</title>
 <meta name="theme-color" content="#14171c">
 <script src="../../../shared/theme/hub_theme.js"></script>
 <link rel="stylesheet" href="../common/ui/learn.css">
@@ -15,11 +15,11 @@
 <body>
 <div id="app" class="lrn pl">
   <header class="lrn-head pl-head">
-    <h1>Physics Lab <span class="pl-ver">PS1b</span></h1>
+    <h1>Physics Lab <span class="pl-ver">PS1c</span></h1>
   </header>
 
   <div class="pl-stage" id="pl-stage">
-    <canvas id="pl-canvas" aria-label="A ball falling under gravity onto a floor."></canvas>
+    <canvas id="pl-canvas" aria-label="A ball rolling down a ramp and a box on the floor."></canvas>
   </div>
 
   <div class="pl-controls">
@@ -27,15 +27,18 @@
       <button id="pl-play" type="button" class="pl-btn pl-btn-main">Pause</button>
       <button id="pl-reset" type="button" class="pl-btn">Reset</button>
     </div>
-    <div class="pl-row">
-      <label class="pl-field">Bounce <output id="pl-bounce-out">0.70</output>
-        <input id="pl-bounce" type="range" min="0" max="0.95" step="0.05" value="0.7">
+    <div class="pl-fields">
+      <label class="pl-field">Bounce <output id="pl-bounce-out">0.50</output>
+        <input id="pl-bounce" type="range" min="0" max="0.95" step="0.05" value="0.5">
+      </label>
+      <label class="pl-field">Friction <output id="pl-friction-out">0.40</output>
+        <input id="pl-friction" type="range" min="0" max="1" step="0.05" value="0.4">
       </label>
     </div>
-    <p class="pl-note" id="pl-note">Drop the ball and watch it bounce. Bounce 0 stops it dead; 1 gives all the speed back.</p>
+    <p class="pl-note" id="pl-note">The ball rolls down the ramp and the box slides on the floor. Bounce and friction change every body.</p>
   </div>
 </div>
-<noscript><p>Physics Lab needs JavaScript. It shows a ball falling under gravity onto a floor.</p></noscript>
+<noscript><p>Physics Lab needs JavaScript. It shows a ball rolling down a ramp and a box sliding on the floor.</p></noscript>
 <script src="core/engine.js"></script>
 <script src="core/app.js"></script>
 </body>
