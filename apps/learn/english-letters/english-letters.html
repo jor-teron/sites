@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>English Letters EL-1</title><link rel="icon" href="english-letters_icon.png">
+<script src="../../../shared/theme/hub_theme.js" data-own-key="learn.english-letters.theme"></script>
+<link rel="stylesheet" href="ui/english.css">
+</head>
+<body>
+<div id="app" class="lrn">
+<header class="lrn-head"><a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a><h1>English Letters <span>Let's learn ABC</span></h1><button id="help">How to use</button><button id="mute" aria-pressed="false">Sound on</button></header>
+<nav id="modes" aria-label="Activities"><button data-mode="chart" aria-pressed="true">Letters</button><button data-mode="lessons">Lessons</button><button data-mode="numbers">Numbers</button><button data-mode="words">Words</button><button data-mode="games">Games</button></nav>
+<div class="status"><span id="progress"></span><span id="voice-note" role="status"></span></div>
+<main id="content"></main>
+</div>
+<dialog id="letter-card" aria-labelledby="letter-title"><div class="card-head"><h2 id="letter-title">Letter</h2><button data-close="letter-card">Close</button></div><div id="letter-detail"></div></dialog>
+<dialog id="pause-card" aria-labelledby="pause-title"><h2 id="pause-title">Practice paused</h2><p>There is no timer. Take your time.</p><button id="resume-game">Resume</button><button id="quit-game">Quit to games</button></dialog>
+<dialog id="help-card" aria-labelledby="help-title"><div class="card-head"><h2 id="help-title">How to use</h2><button data-close="help-card">Close</button></div>
+<ol>
+<li>Letters: tap any card for the letter name, the phonics sound (for example "a as in apple"), a picture word, and tracing for both the capital and the small letter. Mark it learned when you recognise it.</li>
+<li>Trace the faint glyph with a finger, pen or mouse. Choose Capital or Small, then follow the numbered stroke arrows. The arrows are a simple school-print order, not exact handwriting. Follow the faint shape as well. Clear starts a new attempt; your best result stays saved.</li>
+<li>Trace stars combine coverage and accuracy, shown live in the Covered and On the guide bars. Filling the entire box does not earn full stars.</li>
+<li>Lessons: vowels and consonants; capital and small pairs; digraphs such as sh ch th and blends such as bl st tr; CVC three-letter words such as cat and dog; and common sight words such as the, is and you. Y is a consonant at the start of a word and a vowel in words such as sky.</li>
+<li>Numbers teaches 0–10 with English spellings (zero to ten). Words has 150 entries in eight themes, including India-friendly words such as mango, roti, rickshaw and peacock. Search by English. Emoji are approximate memory cues; read the meaning too.</li>
+<li>Games: match a capital to its small letter; hear a letter and choose it; pick the first letter of a picture word; spell a short word from tiles; or fill a missing letter. Listen &amp; pick shows the letter name if speech is unavailable or off. Hear is manual so you can take your time.</li>
+<li>Each game has 10 questions. 4, 7 or 9 correct earns 1, 2 or 3 stars. Best game stars and trace stars are saved. Learn a letter, earn trace stars or finish a game to count an active day. Practise on consecutive local-calendar days to grow your streak.</li>
+<li>Pause / quit (or Escape) stops practice and speech. A hidden tab pauses an active game. Quitting an unfinished game does not award stars. There are no timers or penalties.</li>
+<li>The theme follows your system or Hub automatically. Sound is on by default; the Sound button on the title bar turns speech and effects on or off. Speech uses an Indian English voice if there is one, else British, American, or any other English voice. Progress stays only on this browser; clearing its site data erases it.</li>
+</ol>
+<p class="note">A beginner recognition, phonics and shape-practice aid, not a substitute for a teacher. Letter names use zed (not zee) and school-print forms. Phonics starts with the common short or simple sound; many letters also have other sounds, noted in the letter card.</p></dialog>
+<noscript>English Letters needs JavaScript to show the chart and tracing practice.</noscript>
+<script src="../shared/learn-hubbar.js"></script><script src="core/alphabet.js"></script><script src="core/logic.js"></script>
+<script src="ui/audio.js"></script><script src="ui/trace.js"></script><script src="core/lessons.js"></script><script src="core/words.js"></script><script src="core/games.js"></script><script src="ui/sound.js"></script><script src="ui/app.js"></script><script src="ui/lessons.js"></script><script src="ui/games.js"></script>
+</body></html>
