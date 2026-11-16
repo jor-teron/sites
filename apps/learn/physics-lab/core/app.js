@@ -1,14 +1,17 @@
 /*
- * Physics Lab PS1d - PS1c plus hands-on input: drag a body to throw it, tap
- * empty space (or + Ball) to add a ball, double-tap a body to remove it, and
- * motion trails. The page draws the same world core/engine.js steps.
+ * Physics Lab PS1f - experiment scenes, chips, goal card and saved progress.
+ * The page draws the same world core/engine.js steps. Scenes live in
+ * core/scenes.js; this file owns the DOM, input, meters and localStorage.
  */
 (function () {
   'use strict';
 
   var P = window.PLPhysics;
+  var scenes = window.PLScenes;
   var W = 10, H = 6;
   var MAX_THROW = 12;
+  var DONE_KEY = 'learn.physics-lab.done';
+  var EXP_KEY = 'learn.physics-lab.exp';
 
   var stage = document.getElementById('pl-stage');
   var canvas = document.getElementById('pl-canvas');
@@ -22,6 +25,10 @@
   var friction = document.getElementById('pl-friction');
   var frictionOut = document.getElementById('pl-friction-out');
   var gravity = document.getElementById('pl-gravity');
+  var chips = document.getElementById('pl-chips');
+  var goalText = document.getElementById('pl-goal-text');
+  var tipText = document.getElementById('pl-tip');
+  var doneBtn = document.getElementById('pl-done');
   var timeEl = document.getElementById('pl-time');
   var bodyEl = document.getElementById('pl-body');
   var speedEl = document.getElementById('pl-speed');
@@ -31,9 +38,10 @@
   var totalEl = document.getElementById('pl-total');
 
   var world = P.world(W, H);
-  var restitution = parseFloat(bounce.value) || 0.5;
-  var grip = parseFloat(friction.value) || 0.4;
-  var ramp = null;
+  var sceneId = 'sandbox';
+  var restitution = 0.5;
+  var grip = 0.4;
+  var done = loadDone();
 
   var running = true;
   var last = 0;
@@ -48,6 +56,15 @@
   var lastTap = { body: null, t: 0 };
 
   function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+
+  function loadDone() {
+    try {
+      var a = JSON.parse(localStorage.getItem(DONE_KEY) || '[]');
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  function isDone(id) { return done.indexOf(id) >= 0; }
+  function saveDone() { try { localStorage.setItem(DONE_KEY, JSON.stringify(done)); } catch (e) { /* private mode */ } }
 
   function readPalette() {
     var cs = getComputedStyle(document.querySelector('.pl'));
@@ -66,24 +83,68 @@
     };
   }
 
-  function reset() {
+  function build() {
     world.clear();
-    world.addSegment(0, 0, W, 0, 0.9);
-    world.addSegment(0, 0, 0, H, 0.5);
-    world.addSegment(W, 0, W, H, 0.5);
-    ramp = world.addSegment(1.4, 0, 5.4, 2.5, 0.7);
-    world.addBody(P.circle({
-      x: 4.44, y: 2.26, r: 0.3, mass: 1,
-      restitution: restitution, friction: grip, color: pal ? pal.ball : '#5fb8ad', label: 'ball'
-    }));
-    world.addBody(P.box({
-      x: 7.2, y: 0.5, w: 0.7, h: 0.5, mass: 2, angle: 0.12, vx: -1.8,
-      restitution: Math.min(restitution, 0.4), friction: grip, color: pal ? pal.box : '#e0a458', label: 'box'
-    }));
-    world.time = 0;
+    scenes.get(sceneId).build(world);
     selected = null;
     drag = null;
+    lastTap = { body: null, t: 0 };
+    world.time = 0;
     updateHUD();
+  }
+
+  function loadScene(id) {
+    sceneId = scenes.has(id) ? id : 'sandbox';
+    var s = scenes.get(sceneId);
+    goalText.textContent = s.goal;
+    tipText.textContent = s.tip;
+    restitution = s.bounce;
+    grip = s.friction;
+    bounce.value = String(restitution);
+    bounceOut.textContent = restitution.toFixed(2);
+    friction.value = String(grip);
+    frictionOut.textContent = grip.toFixed(2);
+    world.gravity = s.gravity;
+    gravity.value = String(s.gravity);
+    setTrails(s.trails !== false);
+    build();
+    renderChips();
+    updateDone();
+    setRunning(true);
+    try { localStorage.setItem(EXP_KEY, sceneId); } catch (e) { /* private mode */ }
+  }
+
+  function renderChips() {
+    chips.textContent = '';
+    for (var i = 0; i < scenes.list.length; i++) {
+      var s = scenes.list[i];
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pl-chip';
+      b.dataset.scene = s.id;
+      b.textContent = s.name + (isDone(s.id) ? ' \u2713' : '');
+      b.setAttribute('aria-pressed', s.id === sceneId ? 'true' : 'false');
+      (function (id) {
+        b.addEventListener('click', function () { loadScene(id); });
+      })(s.id);
+      chips.appendChild(b);
+    }
+  }
+
+  function updateDone() {
+    var on = isDone(sceneId);
+    doneBtn.hidden = sceneId === 'sandbox';
+    doneBtn.textContent = on ? 'Done \u2713' : 'Done';
+    doneBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+
+  function toggleDone() {
+    if (sceneId === 'sandbox') return;
+    if (isDone(sceneId)) done = done.filter(function (id) { return id !== sceneId; });
+    else done.push(sceneId);
+    saveDone();
+    renderChips();
+    updateDone();
   }
 
   function addBallAt(x, y) {
@@ -114,35 +175,6 @@
   function setTrails(v) {
     trailsOn = v;
     trailsBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
-  }
-
-  function currentBody() {
-    if (selected && world.bodies.indexOf(selected) >= 0) return selected;
-    return world.bodies[0] || null;
-  }
-
-  function updateHUD() {
-    timeEl.textContent = world.time.toFixed(2) + ' s';
-    var b = currentBody();
-    if (!b) {
-      bodyEl.textContent = '\u2014';
-      speedEl.textContent = '0.00 m/s';
-      heightEl.textContent = '0.00 m';
-      keEl.style.width = '0%';
-      peEl.style.width = '0%';
-      totalEl.textContent = '0.0 J';
-      return;
-    }
-    var speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
-    var e = world.energy(b);
-    var ke = Math.max(0, e.ke), pe = Math.max(0, e.pe), sum = ke + pe;
-    var pct = sum > 0.001 ? (ke / sum) * 100 : 0;
-    bodyEl.textContent = b.label || b.kind;
-    speedEl.textContent = speed.toFixed(2) + ' m/s';
-    heightEl.textContent = b.y.toFixed(2) + ' m';
-    keEl.style.width = pct.toFixed(1) + '%';
-    peEl.style.width = (100 - pct).toFixed(1) + '%';
-    totalEl.textContent = e.total.toFixed(1) + ' J';
   }
 
   function resize() {
@@ -266,7 +298,7 @@
       var seg = world.segments[i];
       if (Math.abs(seg.ax - seg.bx) < 0.001) continue;
       ctx.strokeStyle = pal.floor;
-      ctx.lineWidth = (seg === ramp ? 5 : 3) * dpr;
+      ctx.lineWidth = (seg.ramp ? 5 : 3) * dpr;
       ctx.beginPath();
       ctx.moveTo(px(seg.ax), py(seg.ay));
       ctx.lineTo(px(seg.bx), py(seg.by));
@@ -296,6 +328,35 @@
       b.trail.push({ x: b.x, y: b.y });
       if (b.trail.length > 150) b.trail.shift();
     }
+  }
+
+  function currentBody() {
+    if (selected && world.bodies.indexOf(selected) >= 0) return selected;
+    return world.bodies[0] || null;
+  }
+
+  function updateHUD() {
+    timeEl.textContent = world.time.toFixed(2) + ' s';
+    var b = currentBody();
+    if (!b) {
+      bodyEl.textContent = '\u2014';
+      speedEl.textContent = '0.00 m/s';
+      heightEl.textContent = '0.00 m';
+      keEl.style.width = '0%';
+      peEl.style.width = '0%';
+      totalEl.textContent = '0.0 J';
+      return;
+    }
+    var speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    var e = world.energy(b);
+    var ke = Math.max(0, e.ke), pe = Math.max(0, e.pe), sum = ke + pe;
+    var pct = sum > 0.001 ? (ke / sum) * 100 : 0;
+    bodyEl.textContent = b.label || b.kind;
+    speedEl.textContent = speed.toFixed(2) + ' m/s';
+    heightEl.textContent = b.y.toFixed(2) + ' m';
+    keEl.style.width = pct.toFixed(1) + '%';
+    peEl.style.width = (100 - pct).toFixed(1) + '%';
+    totalEl.textContent = e.total.toFixed(1) + ' J';
   }
 
   // ---- pointer: select, drag and throw -----------------------------------
@@ -393,12 +454,13 @@
   }
 
   playBtn.addEventListener('click', function () { setRunning(!running); });
-  resetBtn.addEventListener('click', reset);
+  resetBtn.addEventListener('click', function () { loadScene(sceneId); });
   addBtn.addEventListener('click', addBall);
   trailsBtn.addEventListener('click', function () { setTrails(!trailsOn); });
   bounce.addEventListener('input', function () { setBounce(parseFloat(bounce.value)); });
   friction.addEventListener('input', function () { setFriction(parseFloat(friction.value)); });
   gravity.addEventListener('change', function () { world.gravity = parseFloat(gravity.value) || 0; updateHUD(); });
+  doneBtn.addEventListener('click', toggleDone);
   window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { last = 0; });
   if (window.MutationObserver) {
@@ -407,12 +469,9 @@
   }
 
   pal = readPalette();
-  reset();
   resize();
-  setBounce(restitution);
-  setFriction(grip);
-  setTrails(true);
-  updateHUD();
-  setRunning(true);
+  var saved = '';
+  try { saved = localStorage.getItem(EXP_KEY) || ''; } catch (e) { saved = ''; }
+  loadScene(saved);
   requestAnimationFrame(frame);
 })();

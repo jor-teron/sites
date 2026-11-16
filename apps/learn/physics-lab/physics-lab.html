@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Physics Lab PS1e (Learn > Science): a ball and a box on a ramp, with bounce, friction and live meters.
+<!-- Physics Lab PS1f (Learn > Science): six experiments - Sandbox, Falling, Ramps, Bounce, Collision and Launch.
      Drag a body to throw it, tap to add a ball, double-tap to remove one; the HUD shows speed, height and energy.
      Classic scripts only, no build step, works from file://. -->
-<title>Physics Lab PS1e</title>
+<title>Physics Lab PS1f</title>
 <meta name="theme-color" content="#14171c">
 <script src="../../../shared/theme/hub_theme.js"></script>
 <link rel="stylesheet" href="../common/ui/learn.css">
@@ -15,8 +15,18 @@
 <body>
 <div id="app" class="lrn pl">
   <header class="lrn-head pl-head">
-    <h1>Physics Lab <span class="pl-ver">PS1e</span></h1>
+    <h1>Physics Lab <span class="pl-ver">PS1f</span></h1>
   </header>
+
+  <nav class="pl-chips" id="pl-chips" aria-label="Experiments"></nav>
+
+  <div class="pl-goal">
+    <div class="pl-goal-text">
+      <p id="pl-goal-text">Free play</p>
+      <p class="pl-tip" id="pl-tip"></p>
+    </div>
+    <button id="pl-done" class="pl-done" type="button" aria-pressed="false">Done</button>
+  </div>
 
   <div class="pl-stage" id="pl-stage">
     <canvas id="pl-canvas" aria-label="A ball rolling down a ramp and a box on the floor."></canvas>
@@ -59,6 +69,7 @@
 </div>
 <noscript><p>Physics Lab needs JavaScript. It shows a ball rolling down a ramp and a box sliding on the floor.</p></noscript>
 <script src="core/engine.js"></script>
+<script src="core/scenes.js"></script>
 <script src="core/app.js"></script>
 </body>
 </html>
