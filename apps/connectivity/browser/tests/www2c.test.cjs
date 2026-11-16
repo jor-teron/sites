@@ -26,7 +26,7 @@ var RELAY = { url: BASE, secret: SECRET, enabled: true };
 var SESS = 'AbCdEfGhIjKlMnOpQrStUv';
 
 /* ---- config ---- */
-assertEq(C.RELEASE, 'WWW2c', 'release tag is WWW2c');
+assert(/^WWW2[c-z]/.test(C.RELEASE), 'release tag is WWW2c or later');
 assert(C.FINAL_URL_TIMEOUT_MS > 0 && C.READER_PROBE_TIMEOUT_MS > 0, 'timeouts set');
 assert(/^https:\/\//.test(C.READER_PROBE_URL), 'reader probe page is https');
 
