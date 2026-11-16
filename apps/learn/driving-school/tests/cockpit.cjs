@@ -137,3 +137,7 @@ test('DS-4a: distance comes from abs speed * dt, including reverse', () => {
   const o = M.addDistance(M.odometersFrom({}), M.takeDelta(before, c.distance).delta);
   assert(o.total > 0 && o.trip > 0);
 });
+
+test('DS-4b: trip reset hit target is 44 px', () => {
+  assert.equal(M.TRIP_RESET_HIT_PX, 44);
+});

@@ -53,3 +53,33 @@ test('manual high-gear launch bogs and stalls; reverse launch drives backwards',
   const c = D.car({ handbrake:false }); D.start(c); D.shift(c,5); drive(c,{ throttle:.5 },3); assert(c.stalled);
   const r = D.car({ handbrake:false }); D.start(r); D.shift(r,-1); drive(r,{ throttle:.6 },5); assert(r.v < -1); assert(r.engine);
 });
+
+test('DS-4b: engine can be switched off while moving; the car coasts without power', () => {
+  const c = D.car({ handbrake: false }); D.start(c); D.shift(c, 1);
+  drive(c, { throttle: .65 }, 6); assert(c.v > 4); assert(c.engine);
+  const moving = c.v;
+  assert(D.stop(c));
+  assert.equal(c.engine, false); assert.equal(c.rpm, 0); assert.equal(c.stalled, false); assert.equal(c.stalls, 0);
+  assert(c.v > 3, 'speed is kept at the moment of switching off');
+  assert.match(c.message, /coast/i);
+  const after = c.v;
+  drive(c, { throttle: 1 }, 3);
+  assert(c.v < after, 'throttle adds no power with the engine off');
+  assert(c.v > 0, 'the car still coasts');
+  assert.equal(c.engine, false);
+  assert.equal(D.start(c), false, 'existing start rule: cannot restart while moving');
+  drive(c, { brake: 1, clutch: 1 }, 6);
+  assert.equal(c.v, 0);
+  assert(D.start(c)); assert(c.engine); assert.equal(c.stalled, false);
+});
+test('DS-4b: toggle starts and stops; start still needs clutch or neutral at rest', () => {
+  const c = D.car();
+  assert(D.toggle(c)); assert(c.engine);
+  assert(D.toggle(c)); assert.equal(c.engine, false); assert.equal(c.rpm, 0); assert.equal(c.message, 'Engine off.');
+  c.gear = 1; c.clutch = 0;
+  assert.equal(D.start(c), false); assert.equal(c.engine, false);
+  c.clutch = 1; assert(D.start(c)); assert(c.engine);
+  const auto = D.car({ auto: true, gear: 1, clutch: 0, handbrake: true });
+  assert(D.start(auto)); assert(auto.engine);
+  assert(D.stop(auto)); assert.equal(auto.engine, false);
+});

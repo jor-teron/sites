@@ -44,7 +44,11 @@
   list.onchange = reset; $('retry').onclick = reset;
   // Route number (open road): the same number always gives the same road.
   $('route').onchange = () => { const n = Math.max(1, Math.min(9999, parseInt($('route').value, 10) || 1)); prefs.route = n; write('settings', prefs); reset(); };
-  $('engine').onclick = () => { if (s.c.engine) return; if (!D.start(s.c)) notice(s.c.message); else D.sound.crank(); };
+  function toggleEngine() {
+    if (s.c.engine) { D.stop(s.c); D.sound.cutEngine(); notice(s.c.message); return; }
+    if (!D.start(s.c)) notice(s.c.message); else D.sound.crank();
+  }
+  $('engine').onclick = toggleEngine;
   // Automatic: D = first forward gear (it changes up by itself); stepping down from D goes to N.
   function selectGear(gear) { if (!D.shift(s.c, gear)) notice(s.c.message); }
   function gearUp() { selectGear(s.c.auto && s.c.gear > 0 ? s.c.gear : s.c.gear + 1); }

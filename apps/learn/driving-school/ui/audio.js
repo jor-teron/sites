@@ -1,6 +1,6 @@
 /* Local Web Audio synthesis only. Starts solely after a user gesture. */
 (function () {
-  let ctx, engine, gain, muted = false, blink = -1, cranking = false, crankEnds = 0;
+  let ctx, engine, gain, muted = false, blink = -1, cranking = false, crankEnds = 0, crankNodes = [];
   const CRANK_S = .8;
   function unlock() {
     try {
@@ -23,8 +23,14 @@
     osc.connect(amp).connect(ctx.destination); osc.start(t); osc.stop(t + duration);
     osc.onended = () => { osc.disconnect(); amp.disconnect(); };
   }
+  function dropCrank() {
+    cranking = false; crankEnds = 0;
+    for (const n of crankNodes) { try { n.stop(); } catch (_) {} try { n.disconnect(); } catch (_) {} }
+    crankNodes = [];
+  }
   function playCrank() {
     if (!ctx || muted || ctx.state !== 'running') return;
+    dropCrank();
     const t = ctx.currentTime, dur = CRANK_S;
     cranking = true; crankEnds = t + dur;
     // Starter motor: low sawtooth that rises, then drops as the engine catches.
@@ -41,6 +47,7 @@
     }
     amp.gain.exponentialRampToValueAtTime(.0001, t + dur);
     motor.connect(amp).connect(ctx.destination); motor.start(t); motor.stop(t + dur);
+    crankNodes.push(motor, amp);
     motor.onended = () => { motor.disconnect(); amp.disconnect(); };
     // Pinion chatter over the top.
     const chat = ctx.createOscillator(), camp = ctx.createGain();
@@ -54,6 +61,7 @@
       camp.gain.exponentialRampToValueAtTime(.0001, ti + .04);
     }
     chat.connect(camp).connect(ctx.destination); chat.start(t); chat.stop(t + dur);
+    crankNodes.push(chat, camp);
     chat.onended = () => { chat.disconnect(); camp.disconnect(); };
     // Catch: a short mid tone as the idle hum takes over.
     tone(200, .2, .04, 'sawtooth', t + .65);
@@ -79,7 +87,11 @@
       if (b !== blink && c.indicator && !paused) tone(b % 2 ? 850 : 650, .035, .025, 'triangle');
       blink = b;
     },
-    close() { if (ctx) ctx.close().catch(() => {}); ctx = null; cranking = false; }
+    cutEngine() {
+      dropCrank();
+      if (gain && ctx) gain.gain.setTargetAtTime(0, ctx.currentTime, .05);
+    },
+    close() { dropCrank(); if (ctx) ctx.close().catch(() => {}); ctx = null; }
   };
   window.addEventListener('pagehide', () => window.DS.sound.close());
 })();

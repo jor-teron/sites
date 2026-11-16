@@ -79,7 +79,9 @@ h1{font-size:14px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 .odos{display:flex;flex-direction:column;gap:0;font-variant-numeric:tabular-nums;font-size:9px;line-height:1.2;color:#cfdde6;text-align:center;flex-shrink:0;background:#0b1115;border:1px solid #3a4a55;border-radius:5px;padding:1px 5px 2px;min-width:0}
 .odo{display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
 .odo-name{color:#8fa3b0;text-transform:uppercase;font-size:8px;letter-spacing:.04em}
-#trip-reset{min-height:22px;height:22px;padding:0 5px;font-size:8px;border-radius:4px;margin:0;line-height:1}
+/* DS-4b: the Reset label stays 22px tall so the dash does not grow; a 44×44 hit area is centred on it. The wheel (z-index 2) stays above any overlap. */
+#trip-reset{position:relative;z-index:1;min-height:22px;height:22px;padding:0 5px;font-size:8px;border-radius:4px;margin:0;line-height:1}
+#trip-reset::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%)}
 .dial-face{fill:#0b1115;stroke:#4d5d68;stroke-width:2}.dial-red{fill:none;stroke:#e24a4a;stroke-width:5}
 .tick{stroke:#8fa3b0;stroke-width:1}.tick.major{stroke:#e9f3f8;stroke-width:2}
 .dial-num{fill:#cfdde6;font-size:8px;text-anchor:middle}.dial-big{fill:#fff;font-size:15px;font-weight:700;text-anchor:middle}
