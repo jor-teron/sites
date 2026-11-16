@@ -103,3 +103,4 @@ button:disabled{opacity:.35;cursor:default}
 .relaystat.ok{color:#16a34a}
 .relaystat.warn{color:#d97706}
 .relaystat.error{color:var(--bad)}
+.relaywarn{border-left:3px solid #d97706;padding:6px 10px;border-radius:6px;background:#d977061a}

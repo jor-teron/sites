@@ -31,9 +31,9 @@ var L = require(path.join(app, 'www_logic.js'));
 var Store = require(path.join(app, 'www_store.js'));
 
 /* Config */
-assertEq(C.RELEASE, 'WWW2a', 'release tag is WWW2a');
+assert(/^WWW2/.test(C.RELEASE), 'release tag is WWW2a or later');
 assertEq(C.LS_RELAY, 'browser_relay', 'relay key is browser_relay');
-assertEq(C.RELAY_SESSION, 'default', 'session is the fixed default for WWW2a');
+assertEq(C.RELAY_SESSION, 'default', 'fallback session is default (WWW2b uses a per-device id)');
 assertEq(C.DEFAULT_RELAY.enabled, false, 'relay off by default');
 assertEq(C.TAB_MODES.join(','), 'auto,relay,direct', 'tab modes');
 

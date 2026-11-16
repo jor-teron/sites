@@ -1,4 +1,4 @@
-/* Web Browser — www_main.js: WWW1 UI wiring (tabs, toolbar, frames, embed-blocked card, bookmarks, history, settings, help, shortcuts, theme) + WWW2a relay (Settings > Relay + Test, auto/per-tab routing, via-relay badge). */
+/* Web Browser — www_main.js: WWW1 UI wiring (tabs, toolbar, frames, embed-blocked card, bookmarks, history, settings, help, shortcuts, theme) + WWW2a relay (Settings > Relay + Test, auto/per-tab routing, via-relay badge) + WWW2b (per-device relay session, New session, Clear relay cookies, privacy notes, relay-URL sanitising before every save). */
 (function () {
   'use strict';
 
@@ -20,9 +20,27 @@
   var bookmarks = S.bookmarks();
   var history = S.history();
   var relay = L.sanitizeRelay(S.relay());
+  var relaySession = loadSession();
   var tabs = [];
   var activeId = 0;
   var nextId = 1;
+
+  /* ---------- WWW2b: per-device relay session + sanitising ---------- */
+  /* This Hub browser's relay cookie session id: the saved one, or a new random one (saved). */
+  function loadSession() {
+    var id = S.relaySession();
+    if (L.validSessionId(id)) return id;
+    id = L.newSessionId();
+    if (!L.validSessionId(id)) return C.RELAY_SESSION; /* no crypto: fall back to the shared default session */
+    S.saveRelaySession(id);
+    return id;
+  }
+  /* A URL safe to show or save: relay URLs become the original page URL; anything holding the secret becomes ''. */
+  function clean(url) { return L.stripRelay(url, relay); }
+  function saveHistory() {
+    history = L.cleanHistory(history, relay);
+    S.saveHistory(history);
+  }
 
   /* ---------- theme (shared Hub key, read only) ---------- */
   function applyTheme() {
@@ -35,6 +53,7 @@
     if (e.key === C.HUB_THEME_KEY) applyTheme();
     if (e.key === C.LS_BOOKMARKS) { bookmarks = S.bookmarks(); renderBookmarks(); }
     if (e.key === C.LS_RELAY) { relay = L.sanitizeRelay(S.relay()); renderTabs(); renderChrome(); }
+    if (e.key === C.LS_RELAY_SESSION) { var id = S.relaySession(); if (L.validSessionId(id)) relaySession = id; }
   });
 
   /* ---------- toast + in-app confirm (a Hub window blocks confirm()) ---------- */
@@ -84,7 +103,8 @@
 
   function saveTabs() {
     var idx = Math.max(0, tabs.indexOf(activeTab()));
-    S.saveTabs({ active: idx, tabs: tabs.map(function (t) { return { hist: t.hist, title: t.title, mode: t.mode }; }) });
+    /* WWW2b: relay URLs and the secret never reach saved tabs. */
+    S.saveTabs(L.cleanTabsState({ active: idx, tabs: tabs.map(function (t) { return { hist: t.hist, title: t.title, mode: t.mode }; }) }, relay));
   }
 
   function newTab(url) {
@@ -146,7 +166,7 @@
     var t = activeTab();
     if (!t) return;
     var u = L.current(t.hist);
-    if (force || document.activeElement !== $('addr')) $('addr').value = u === C.HOME_URL ? '' : u;
+    if (force || document.activeElement !== $('addr')) $('addr').value = u === C.HOME_URL ? '' : clean(u);
     $('back').disabled = !L.canBack(t.hist);
     $('fwd').disabled = !L.canForward(t.hist);
     var loading = t.status === 'loading';
@@ -167,11 +187,16 @@
 
   /* ---------- navigation ---------- */
   function navigate(tab, url, fromUser) {
+    if (url !== C.HOME_URL) {
+      /* WWW2b: a pasted relay URL opens its original page; an address holding the secret is refused. */
+      url = clean(url);
+      if (!url) { toast('That address contains your relay secret, so it was not opened or saved'); return; }
+    }
     tab.hist = L.push(tab.hist, url);
     tab.title = '';
     if (url !== C.HOME_URL) {
       history = L.addHistory(history, url, L.labelFor(url), Date.now());
-      S.saveHistory(history);
+      saveHistory();
     }
     load(tab, fromUser);
   }
@@ -252,7 +277,7 @@
         rf.hidden = false;
         tab.status = 'loading';
         tab.via = true;
-        var src = L.buildRelayUrl(relay.url, relay.secret, url, C.RELAY_SESSION);
+        var src = L.buildRelayUrl(relay.url, relay.secret, url, relaySession);
         tab.expect = src;
         rf.src = src;
         tab.timer = setTimeout(function () {
@@ -307,6 +332,7 @@
       var href = w.location.href;
       /* A same-origin relay frame shows the relay URL: keep only the original page URL (never the secret). */
       if (tab.via) href = L.unwrapRelayUrl(href, relay.url);
+      href = clean(href);
       if (href && href !== 'about:blank' && href !== L.current(tab.hist)) {
         tab.hist = L.push(tab.hist, href);
         history = L.addHistory(history, href, '', Date.now());
@@ -316,7 +342,7 @@
         tab.title = title;
         history = L.addHistory(history, L.current(tab.hist), title, Date.now());
       }
-      S.saveHistory(history);
+      saveHistory();
     } catch (_) { /* cross-origin: keep the app-level URL and host label */ }
     if (tab.id === activeId) { renderTabs(); renderChrome(); saveTabs(); } else renderTabs();
   }
@@ -453,7 +479,7 @@
 
   /* ---------- bookmarks ---------- */
   function setBookmarks(list) {
-    bookmarks = list;
+    bookmarks = L.cleanBookmarks(list, relay);
     S.saveBookmarks(bookmarks);
     renderBookmarks();
   }
@@ -546,7 +572,7 @@
         if (!found.length) holder.appendChild(el('p', 'hint', history.length ? 'No matches.' : 'History is empty.'));
         holder.appendChild(listOf(found, goClose, function (e) {
           history = L.removeHistory(history, e.url, e.t);
-          S.saveHistory(history);
+          saveHistory();
           draw();
         }, true));
       };
@@ -559,7 +585,7 @@
       clr.onclick = function () {
         confirmIn('Clear all ' + history.length + ' history entries on this device?', 'Clear', function () {
           history = [];
-          S.saveHistory(history);
+          saveHistory();
           draw();
           toast('History cleared');
         });
@@ -685,7 +711,8 @@
     var out = el('p', 'relaystat');
     out.setAttribute('role', 'status');
     body.appendChild(out);
-    var show = function (m) { out.className = 'relaystat ' + (m.level || ''); out.textContent = m.text || ''; };
+    /* WWW2b: every status text is redacted, so the secret never shows on screen. */
+    var show = function (m) { out.className = 'relaystat ' + (m.level || ''); out.textContent = L.redactSecret(m.text || '', relay.secret); };
     var sync = function () {
       var ok = L.relayConfigured(relay);
       en.disabled = !ok;
@@ -716,7 +743,60 @@
       show({ level: '', text: 'Testing…' });
       testRelay(function (m) { test.disabled = false; show(m); });
     };
+    /* WWW2b: cookie session buttons and notes. */
+    var clr = el('button', 'jelly', 'Clear relay cookies');
+    clr.type = 'button';
+    clr.title = 'Ask the relay to forget the cookies (logins) it keeps for this device';
+    row.appendChild(clr);
+    var ns = el('button', 'jelly', 'New session');
+    ns.type = 'button';
+    ns.title = 'Start a fresh relay cookie session on this device (logs you out of sites opened through the relay)';
+    row.appendChild(ns);
+    clr.onclick = function () {
+      clr.disabled = true;
+      show({ level: '', text: 'Clearing relay cookies…' });
+      clearRelayCookies(function (m) { clr.disabled = false; show(m); });
+    };
+    ns.onclick = function () {
+      confirmIn('Start a new relay session? You will be logged out of sites opened through the relay on this device.', 'New session', function () {
+        show(newRelaySession());
+      });
+    };
+    body.appendChild(el('p', 'hint', C.RELAY_LOGIN_NOTE));
+    body.appendChild(el('p', 'hint relaywarn', C.RELAY_PRIVACY_NOTE));
     sync();
+  }
+
+  /* WWW2b: POST <base>/www/<secret>/clear?session=<id> (a CORS simple request). If CORS hides the answer, a no-cors POST still clears it. */
+  function clearRelayCookies(done) {
+    if (!L.relayConfigured(relay)) { done(L.clearMessage({ kind: 'notset' })); return; }
+    if (L.relayMixed(relay, isHttpsHub())) { done(L.clearMessage({ kind: 'mixed' })); return; }
+    var req = L.buildClearRequest(relay, relaySession);
+    var noCors = { method: 'POST', mode: 'no-cors', cache: 'no-store', credentials: 'omit' };
+    timedFetch(req.url, req.init).then(function (res) {
+      return res.text().then(function (body) { return { kind: 'http', status: res.status, body: body }; },
+        function () { return { kind: 'http', status: res.status, body: '' }; });
+    }, function (err) {
+      if (err && err.name === 'AbortError') return { kind: 'timeout' };
+      return timedFetch(req.url, noCors).then(function () { return { kind: 'cors' }; },
+        function (e2) { return { kind: e2 && e2.name === 'AbortError' ? 'timeout' : 'offline' }; });
+    }).then(function (r) { done(L.clearMessage(r, location.origin)); },
+      function () { done(L.clearMessage({ kind: 'offline' })); });
+  }
+
+  /* WWW2b: new random session id (saved), best-effort clear of the old one, and relayed tabs reload with the new id. */
+  function newRelaySession() {
+    var old = relaySession;
+    var id = L.newSessionId();
+    if (!L.validSessionId(id)) return { level: 'error', text: "This browser can't make a random session id (no crypto), so the session was not changed." };
+    relaySession = id;
+    S.saveRelaySession(id);
+    if (L.relayConfigured(relay) && !L.relayMixed(relay, isHttpsHub())) {
+      var req = L.buildClearRequest(relay, old);
+      timedFetch(req.url, { method: 'POST', mode: 'no-cors', cache: 'no-store', credentials: 'omit' }).then(function () {}, function () {});
+    }
+    tabs.forEach(function (t) { if (t.via) load(t, false); });
+    return { level: 'ok', text: 'New relay session started: sites opened through the relay on this device are logged out.' };
   }
 
   /* ---------- wiring ---------- */
@@ -765,12 +845,17 @@
   function start() {
     applyTheme();
     wire();
+    /* WWW2b: older saved data is cleaned once (saved back only if something changed). */
+    var h2 = L.cleanHistory(history, relay);
+    if (JSON.stringify(h2) !== JSON.stringify(history)) { history = h2; S.saveHistory(history); }
+    var b2 = L.cleanBookmarks(bookmarks, relay);
+    if (JSON.stringify(b2) !== JSON.stringify(bookmarks)) { bookmarks = b2; S.saveBookmarks(bookmarks); }
     var saved = S.tabs();
     var activeIdx = 0;
     if (saved && Array.isArray(saved.tabs) && saved.tabs.length) {
       saved.tabs.slice(0, C.TABS_MAX).forEach(function (s) {
-        var t = makeTab(L.sanitizeTabHistory(s && s.hist));
-        t.title = (s && typeof s.title === 'string') ? s.title : '';
+        var t = makeTab(L.cleanTabHistory(s && s.hist, relay));
+        t.title = (s && typeof s.title === 'string' && !L.containsSecret(s.title, relay.secret)) ? s.title : '';
         t.mode = (s && C.TAB_MODES.indexOf(s.mode) >= 0) ? s.mode : 'auto';
       });
       activeIdx = Math.max(0, Math.min(tabs.length - 1, saved.active | 0));

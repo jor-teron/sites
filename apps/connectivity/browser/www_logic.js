@@ -1,4 +1,4 @@
-/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) and WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages). No DOM; tested by tests/www1.test.cjs and tests/www2a.test.cjs. */
+/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages) and WWW2b (session ids, relay-URL sanitiser, clear-cookies request and messages). No DOM; tested by tests/www1.test.cjs, tests/www2a.test.cjs and tests/www2b.test.cjs. */
 (function (root) {
   'use strict';
 
@@ -360,6 +360,182 @@
     return { level: 'warn', text: 'Secret check unclear (' + n + '); try loading a page.' };
   }
 
+  /* ---- WWW2b: relay sessions, sanitising, clear cookies ---- */
+
+  var SESSION_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+  /*
+   * New random relay session id: RELAY_SESSION_LEN URL-safe characters (22 → 132 bits).
+   * fill(bytes): fills a Uint8Array with random bytes (crypto.getRandomValues in the page; tests pass their own).
+   * 256 is a multiple of 64, so byte & 63 is unbiased. Returns '' when no random source is available.
+   */
+  function newSessionId(fill, len) {
+    var n = len || C.RELAY_SESSION_LEN;
+    var f = fill;
+    if (typeof f !== 'function') {
+      var cr = root.crypto;
+      if (!cr || typeof cr.getRandomValues !== 'function') return '';
+      f = function (a) { return cr.getRandomValues(a); };
+    }
+    var bytes = new Uint8Array(n);
+    f(bytes);
+    var out = '';
+    for (var i = 0; i < n; i++) out += SESSION_ALPHABET.charAt(bytes[i] & 63);
+    return out;
+  }
+
+  /* True for a usable saved session id (URL-safe, 16-128 chars). 'default' is not one. */
+  function validSessionId(id) {
+    return typeof id === 'string' && C.RELAY_SESSION_RE.test(id);
+  }
+
+  /* The URL a relay URL points at, whatever relay base it used: path .../www/<x>/fetch or .../www/fetch with ?url=. '' if not one. */
+  function unwrapAnyRelayUrl(href) {
+    var h = String(href || '');
+    if (!/^https?:\/\/[^?#]*\/www\/(?:[^\/?#]+\/)?fetch\/?\?/i.test(h)) return '';
+    return unwrapRelayUrl(h, h.slice(0, h.search(/\/www\//i)));
+  }
+
+  /* True when text holds the secret as typed or URL-encoded (secrets shorter than RELAY_SECRET_MIN_SCAN are not scanned). */
+  function containsSecret(text, secret) {
+    var sec = String(secret == null ? '' : secret).trim();
+    if (sec.length < C.RELAY_SECRET_MIN_SCAN) return false;
+    var t = String(text == null ? '' : text);
+    if (t.indexOf(sec) >= 0) return true;
+    var enc = encodeURIComponent(sec);
+    if (enc !== sec && t.indexOf(enc) >= 0) return true;
+    try { if (t.indexOf(encodeURIComponent(enc)) >= 0) return true; } catch (_) { /* ignore */ }
+    return false;
+  }
+
+  /*
+   * Sanitiser used before every save (history, bookmarks, tabs) and the address bar:
+   * a relay URL becomes the original page URL (also nested ones, and relay URLs of an older relay base);
+   * anything still holding the relay secret becomes '' (meaning: don't keep it). Other URLs pass through unchanged.
+   * relay: {url, secret} (may be null).
+   */
+  function stripRelay(url, relay) {
+    var u = typeof url === 'string' ? url : '';
+    if (!u) return '';
+    var base = relay ? relay.url : '';
+    var secret = relay ? relay.secret : '';
+    for (var i = 0; i < 5; i++) {
+      var inner = unwrapRelayUrl(u, base) || unwrapAnyRelayUrl(u);
+      if (!inner) break;
+      u = inner;
+    }
+    if (unwrapRelayUrl(u, base) || unwrapAnyRelayUrl(u)) return '';
+    if (containsSecret(u, secret)) return '';
+    return u;
+  }
+
+  /* Remove the secret (typed or encoded) from text meant for the screen (status lines, toasts). */
+  function redactSecret(text, secret) {
+    var t = String(text == null ? '' : text);
+    var sec = String(secret == null ? '' : secret).trim();
+    if (!sec) return t;
+    var enc = encodeURIComponent(sec);
+    t = t.split(sec).join('•••');
+    if (enc !== sec) t = t.split(enc).join('•••');
+    return t;
+  }
+
+  /* History list with relay URLs unwrapped and secret-holding entries dropped. */
+  function cleanHistory(list, relay) {
+    var out = [];
+    (Array.isArray(list) ? list : []).forEach(function (e) {
+      if (!e || typeof e.url !== 'string') return;
+      var u = stripRelay(e.url, relay);
+      if (!u) return;
+      var title = containsSecret(e.title, relay && relay.secret) ? '' : e.title;
+      out.push({ url: u, title: title || labelFor(u), t: e.t });
+    });
+    return out;
+  }
+
+  /* Bookmarks with relay URLs unwrapped, secret-holding ones dropped, and no duplicates after unwrapping. */
+  function cleanBookmarks(list, relay) {
+    var out = [];
+    (Array.isArray(list) ? list : []).forEach(function (b) {
+      if (!b || typeof b.url !== 'string') return;
+      var u = stripRelay(b.url, relay);
+      if (!u || hasBookmark(out, u)) return;
+      var title = containsSecret(b.title, relay && relay.secret) ? '' : b.title;
+      out.push({ url: u, title: title || labelFor(u) });
+    });
+    return out;
+  }
+
+  /* One tab's back/forward list cleaned the same way (index kept on the same page where possible). */
+  function cleanTabHistory(h, relay) {
+    var s = sanitizeTabHistory(h);
+    var entries = [];
+    var index = 0;
+    s.entries.forEach(function (u, i) {
+      var c = stripRelay(u, relay);
+      if (c && entries[entries.length - 1] !== c) entries.push(c);
+      if (i <= s.index) index = Math.max(0, entries.length - 1);
+    });
+    if (!entries.length) return tabHistory();
+    return { entries: entries, index: Math.min(index, entries.length - 1) };
+  }
+
+  /* Saved tabs state {active, tabs:[{hist, title, mode}]} cleaned for saving. */
+  function cleanTabsState(state, relay) {
+    var st = state && typeof state === 'object' ? state : {};
+    var list = Array.isArray(st.tabs) ? st.tabs : [];
+    return {
+      active: st.active | 0,
+      tabs: list.map(function (t) {
+        var x = t || {};
+        var title = typeof x.title === 'string' && !containsSecret(x.title, relay && relay.secret) ? x.title : '';
+        return { hist: cleanTabHistory(x.hist, relay), title: title, mode: x.mode };
+      })
+    };
+  }
+
+  /*
+   * The Clear relay cookies request: POST <base>/www/<secret>/clear?session=<id>.
+   * Path-secret and ?session= (no custom headers, no body) keep it a CORS "simple" request, so there is no preflight.
+   * Returns {url, init} or null when the relay is not configured.
+   */
+  function buildClearRequest(relay, session) {
+    if (!relayConfigured(relay)) return null;
+    var b = normalizeRelayBase(relay.url);
+    var sess = String(session == null || session === '' ? C.RELAY_SESSION : session);
+    return {
+      url: b + '/www/' + encodeURIComponent(String(relay.secret).trim()) + '/clear?session=' + encodeURIComponent(sess),
+      init: { method: 'POST', cache: 'no-store', credentials: 'omit' }
+    };
+  }
+
+  /*
+   * Message for Clear relay cookies. r: {kind, status, body}, kind one of:
+   *   'notset' | 'mixed' | 'http' (status + JSON body {cleared, session}) | 'cors' (CORS fetch failed, a no-cors POST got through)
+   *   | 'offline' | 'timeout'.  origin: this Hub's origin, named in the CORS hint.
+   * Returns {level: 'ok'|'warn'|'error', text}. Never includes the secret.
+   */
+  function clearMessage(r, origin) {
+    var x = r || {};
+    if (x.kind === 'notset') return { level: 'error', text: 'Relay not set: fill in the relay URL and secret first.' };
+    if (x.kind === 'mixed') return healthMessage({ kind: 'mixed' });
+    if (x.kind === 'cors') {
+      return { level: 'warn', text: 'The clear request was sent, but the relay does not let this Hub read its answer (CORS), so it could not be confirmed. ' +
+        'Add ' + (origin || "this Hub's address") + ' to RELAY_WWW_ORIGINS in relay.conf, or tap New session, which logs you out of relayed sites just the same.' };
+    }
+    if (x.kind === 'timeout') return { level: 'error', text: 'Relay offline: no answer within ' + Math.round(C.RELAY_TEST_TIMEOUT_MS / 1000) + ' s. Tap New session to start fresh anyway.' };
+    if (x.kind === 'offline') return { level: 'error', text: 'Relay offline or unreachable, so cookies were not cleared. Tap New session to start fresh anyway.' };
+    if (x.kind !== 'http') return { level: 'error', text: 'Clearing relay cookies failed.' };
+    var st = x.status | 0;
+    if (st === 405) return { level: 'error', text: 'The relay refused the clear request (405). It needs Relay Server v0.7.0 or later.' };
+    if (st < 200 || st > 299) return { level: 'error', text: statusMessage(st) };
+    var j = null;
+    if (typeof x.body === 'string') { try { j = JSON.parse(x.body); } catch (_) { j = null; } } else if (x.body && typeof x.body === 'object') j = x.body;
+    if (!j || typeof j !== 'object') return { level: 'warn', text: 'The relay answered, but not like a Relay Server clear (no JSON). Tap New session to be sure.' };
+    if (j.cleared === true) return { level: 'ok', text: 'Relay cookies cleared for this device: you are logged out of sites opened through the relay.' };
+    return { level: 'ok', text: 'Nothing to clear: the relay had no cookies for this device (they also end after about ' + C.RELAY_SESSION_TTL_MIN + ' minutes idle or a relay restart).' };
+  }
+
   var WWW_LOGIC = {
     searchUrl: searchUrl,
     parseInput: parseInput,
@@ -398,7 +574,19 @@
     parseHealth: parseHealth,
     statusMessage: statusMessage,
     healthMessage: healthMessage,
-    secretProbeMessage: secretProbeMessage
+    secretProbeMessage: secretProbeMessage,
+    newSessionId: newSessionId,
+    validSessionId: validSessionId,
+    unwrapAnyRelayUrl: unwrapAnyRelayUrl,
+    containsSecret: containsSecret,
+    stripRelay: stripRelay,
+    redactSecret: redactSecret,
+    cleanHistory: cleanHistory,
+    cleanBookmarks: cleanBookmarks,
+    cleanTabHistory: cleanTabHistory,
+    cleanTabsState: cleanTabsState,
+    buildClearRequest: buildClearRequest,
+    clearMessage: clearMessage
   };
 
   root.WWW_LOGIC = WWW_LOGIC;

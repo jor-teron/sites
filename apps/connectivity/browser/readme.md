@@ -1,4 +1,4 @@
-# Web Browser (WWW1, WWW2a)
+# Web Browser (WWW1, WWW2a, WWW2b)
 
 A local Hub web browser: tabs, an address bar that takes URLs or search words, Back / Forward / Reload / Stop / Home,
 bookmarks (bar, list and a speed-dial home page) and history (list, search, clear). Static files only, no build, no CDN,
@@ -7,11 +7,11 @@ classic scripts, works on `file://`.
 ## Files
 - `browser.html`, `browser.css`: page and styles (phone-first, Hub theme `sites-hub.theme` read only).
 - `www_config.js`: every constant (engines, known-blocked hosts, timeouts, texts).
-- `www_logic.js`: pure logic (address parsing, blocked check, per-tab back/forward, history, bookmarks; WWW2a relay URLs, routing, health messages).
-- `www_store.js`: localStorage, keys `browser_bookmarks`, `browser_history`, `browser_settings`, `browser_tabs`, `browser_relay`.
+- `www_logic.js`: pure logic (address parsing, blocked check, per-tab back/forward, history, bookmarks; WWW2a relay URLs, routing, health messages; WWW2b session ids, `stripRelay`, clear-cookies request).
+- `www_store.js`: localStorage, keys `browser_bookmarks`, `browser_history`, `browser_settings`, `browser_tabs`, `browser_relay`, `browser_relay_session`.
 - `www_main.js`: UI wiring.
 - `www1_icon.py`: draws `browser_icon.png` (IC9 style, reuses `../ic9c_colour_icons.py` helpers; Pillow).
-- `tests/www1.test.cjs`, `tests/www2a.test.cjs`: `node apps/connectivity/browser/tests/www1.test.cjs` (and `www2a`).
+- `tests/www1.test.cjs`, `tests/www2a.test.cjs`, `tests/www2b.test.cjs`: `node apps/connectivity/browser/tests/www1.test.cjs` (and `www2a`, `www2b`).
 
 ## Embedding limits (honest version)
 Each tab is a sandboxed `<iframe>`. Many big sites send `X-Frame-Options` or CSP `frame-ancestors` and refuse to load
@@ -34,7 +34,7 @@ and its secret, saved in `browser_relay` as `{url, secret, enabled}`. It stays o
 Jor's own relay-server (port 9000 behind Tailscale Funnel), not the shared Hub relay RL1.
 
 - Routing (`routeFor`): with the relay on, known-blocked sites, plain http pages on an https Hub and pages that time out
-  (15 s) load in the frame as `<base>/www/<secret>/fetch?url=<encoded>&session=default`. Everything else loads directly.
+  (15 s) load in the frame as `<base>/www/<secret>/fetch?url=<encoded>&session=<id>`. Everything else loads directly.
   Without a relay (or when it's off) the "Open in new tab" cards stay as before.
 - Menu > Load through relay / Load directly switches the current tab, and the choice sticks for that tab. Cards get a
   "Load through relay" button when the relay is set; the relay timeout card offers "Load directly".
@@ -47,5 +47,20 @@ Jor's own relay-server (port 9000 behind Tailscale Funnel), not the shared Hub r
 
 Limits: the iframe can't see relay error codes, so a failed relay load just shows the relay's error text or the timeout card.
 Scripts on relayed pages that fetch data still call the real site. The secret is in the frame URL, so it can show up in the
-browser's own history. Coming next: WWW2b (per-device session, clear relay cookies, privacy notes) and WWW2c (real
-address after redirects, Reader).
+browser's own history. Coming next: WWW2c (real address after redirects, Reader).
+
+## Relay sessions and privacy (WWW2b)
+- Each Hub browser gets its own random relay cookie session id (22 URL-safe characters from `crypto.getRandomValues`),
+  saved in `browser_relay_session` and sent as `&session=<id>` in every relay URL instead of `default`. The relay keeps
+  that session's cookies in memory: logins end after about 30 minutes idle or when the relay restarts.
+- Settings > Relay > **Clear relay cookies** sends `POST <base>/www/<secret>/clear?session=<id>` (no custom headers, so no
+  CORS preflight) and reports whether anything was cleared. If the relay doesn't list this Hub in `RELAY_WWW_ORIGINS`,
+  the answer can't be read; a no-cors POST still goes through and the app says it couldn't confirm.
+- **New session** makes a fresh id (logging you out of relayed sites on this device), asks the relay to forget the old
+  one (best effort) and reloads relayed tabs.
+- Privacy: the secret is part of every relay page address, so the browser's own history may keep it. Settings > Relay
+  says so: use the relay only on your own devices, and change `RELAY_TOKEN` if the secret leaks.
+- `stripRelay(url, relay)` runs before every save (history, bookmarks, saved tabs) and on the address bar: relay URLs
+  (any relay base, nested too) become the original address, and anything still holding the secret is dropped. A pasted
+  relay URL opens its original page. Status messages are passed through `redactSecret`; the app never logs to the console.
+  Secrets shorter than 6 characters are not scanned for inside URLs (the relay requires 16+).

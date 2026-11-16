@@ -5,10 +5,11 @@
   speed-dial home page. Each tab loads pages in its own sandboxed iframe. Many big sites refuse to load
   inside another page (X-Frame-Options / CSP frame-ancestors); those show a "This site doesn't allow
   embedding" card with "Open in new tab". WWW2a: with a Relay Server set in Settings > Relay, those sites, plain
-  http pages and timed-out pages load through the relay instead (a "via relay" badge). Back/forward is the app's own list of URLs you navigated to,
+  http pages and timed-out pages load through the relay instead (a "via relay" badge). WWW2b: a relay cookie session per
+  Hub browser (New session, Clear relay cookies), privacy notes, and relay URLs never saved. Back/forward is the app's own list of URLs you navigated to,
   because a cross-origin frame cannot be read.
   Styles: browser.css. Classic scripts: www_config.js (constants), www_logic.js (pure logic, tested by
-  tests/www1.test.cjs and tests/www2a.test.cjs), www_store.js (localStorage, keys browser_*), www_main.js (UI). Static, no build,
+  tests/www1.test.cjs, tests/www2a.test.cjs and tests/www2b.test.cjs), www_store.js (localStorage, keys browser_*), www_main.js (UI). Static, no build,
   no CDN, works on file://. Theme: reads 'sites-hub.theme' (never writes it).
 -->
 <html lang="en">
