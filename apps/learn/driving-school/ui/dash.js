@@ -64,9 +64,14 @@
     wheel.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); onSteer(e.key === 'ArrowLeft' ? -1 : 1); } });
     wheel.addEventListener('keyup', () => onSteer(0));
   }
-  function update(c, input, onGear) {
+  function update(c, input, onGear, odo) {
     if (!parts) return;
     gate(c, onGear);
+    if (odo) {
+      const total = D.formatKm(odo.total), trip = D.formatKm(odo.trip);
+      if ($('odo-total').textContent !== total) $('odo-total').textContent = total;
+      if ($('odo-trip').textContent !== trip) $('odo-trip').textContent = trip;
+    }
     $('wheel').style.transform = 'rotate(' + D.wheelAngle(c.steer).toFixed(1) + 'deg)';
     $('wheel').setAttribute('aria-valuenow', Math.round(c.steer * 100));
     parts.speed.setAttribute('transform', 'rotate(' + D.needleAngle(Math.abs(c.v) * 3.6, D.SPEEDO_MAX).toFixed(1) + ')');
