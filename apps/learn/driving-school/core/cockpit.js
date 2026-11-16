@@ -135,8 +135,9 @@
   function shouldSaveOdo(lastSavedAt, now, force, ms = ODO_SAVE_MS) { return !!force || (now - lastSavedAt) >= ms; }
   function faultBeepDue(lastAt, now, ms = FAULT_BEEP_MS) { return !lastAt || (now - lastAt) >= ms; }
   function settingsFrom(stored) {
-    const s = Object.assign({ auto: false, side: 'left', muted: false, route: 1, minimap: false }, stored || {});
+    const s = Object.assign({ auto: false, side: 'left', muted: false, route: 1, minimap: false, edgeAlert: true }, stored || {});
     s.minimap = s.minimap === true;
+    s.edgeAlert = s.edgeAlert !== false;   // DS-5: edge alert is on unless explicitly off
     return s;
   }
   function showMinimap(prefs, flat) { return !!flat || !!(prefs && prefs.minimap); }

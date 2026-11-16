@@ -9,7 +9,7 @@ class El {
   constructor(tag, id) {
     Object.assign(this, { tag, id: id || '', children: [], dataset: {}, attrs: {}, listeners: {}, textContent: '', hidden: false, value: '', open: false, disabled: false,
       offsetWidth: 200, clientWidth: 800, offsetParent: {} });
-    const set = new Set(); this.classList = { toggle: (c, on) => { on = on === undefined ? !set.has(c) : !!on; on ? set.add(c) : set.delete(c); return on; }, add: c => set.add(c), remove: c => set.delete(c), contains: c => set.has(c) };
+    const set = new Set(); this.classList = { toggle: (c, on) => { on = on === undefined ? !set.has(c) : !!on; on ? set.add(c) : set.delete(c); return on; }, add: (...cs) => cs.forEach(c => set.add(c)), remove: (...cs) => cs.forEach(c => set.delete(c)), contains: c => set.has(c) };
     const style = {}; style.setProperty = (k, v) => { style[k] = v; }; this.style = style;
   }
   addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); }
@@ -48,7 +48,7 @@ test('page loads the classic scripts, ES module last, and the Hub bar gets its b
   assert.match(html, /<script type="module" src="ui\/view3d.js"><\/script>\s*<\/body>/);
   assert(fs.readFileSync(path.join(dir, 'ui/app.js'), 'utf8').includes("{ buttons: '#quiz,#help,#mute,#settings' }"));
   assert.match(fs.readFileSync(path.join(dir, 'ui/view3d.js'), 'utf8'), /from '\.\.\/\.\.\/common\/vendor\/three\/three\.module\.min\.js'/);
-  for (const id of ['view3d', 'road', 'mirror', 'mirror-l', 'mirror-r', 'hint', 'note', 'note-show', 'minimap', 'wheel', 'horn', 'speedo', 'tacho', 'gate', 'park', 'engine', 'left', 'right', 'look', 'cockpit', 'lessons', 'end-test', 'odo-total', 'odo-trip', 'trip-reset'])
+  for (const id of ['view3d', 'road', 'mirror', 'mirror-l', 'mirror-r', 'hint', 'note', 'note-show', 'minimap', 'wheel', 'horn', 'speedo', 'tacho', 'gate', 'park', 'engine', 'left', 'right', 'look', 'cockpit', 'lessons', 'end-test', 'odo-total', 'odo-trip', 'trip-reset', 'dash-score', 'edge-alert', 'edge-alert-pref'])
     assert.match(html, new RegExp('id="' + id + '"'), id);
 });
 test('map fallback runs; manual by default; dashboard follows the car', () => {
@@ -316,4 +316,72 @@ test('DS-4b: engine button and Enter toggle on and off; restart cranks; trip res
   assert.match(css, /#trip-reset\{[^}]*min-height:22px;height:22px/, 'visual Reset stays compact');
   assert.match(css, /height:clamp\(150px,34\.5vh,270px\)/, 'dashboard height is unchanged');
   assert.match(css, /\.wheel-box\{[^}]*height:153\.33%/, 'wheel size is unchanged');
+});
+
+test('DS-5: horn hold and tap wiring; key B does not restart on repeat', () => {
+  const { ctx, ids } = boot();
+  let downs = 0, ups = 0, stops = 0;
+  const sound = ctx.DS.sound;
+  sound.hornDown = () => { downs++; };
+  sound.hornUp = () => { ups++; };
+  sound.hornStop = () => { stops++; };
+  ids.horn.dispatch('pointerdown', { pointerId: 7 });
+  assert.equal(downs, 1); assert.equal(ups, 0);
+  ids.horn.dispatch('pointerup', { pointerId: 7 });
+  assert.equal(ups, 1);
+  ids.horn.dispatch('pointerdown', { pointerId: 8 });
+  ids.horn.dispatch('pointerleave', { pointerId: 8 });
+  assert.equal(downs, 2); assert.equal(ups, 2, 'leaving the button releases the horn');
+  const key = (type, k, extra = {}) => ctx.dispatchEvent(Object.assign(new ctx.Event(type), { key: k, target: { matches: () => false }, preventDefault() {}, repeat: false }, extra));
+  key('keydown', 'b');
+  assert.equal(downs, 3);
+  key('keydown', 'b', { repeat: true });
+  assert.equal(downs, 3, 'key repeat does not start the horn again');
+  key('keyup', 'b');
+  assert.equal(ups, 3);
+  ctx.dispatchEvent(new ctx.Event('blur'));
+  assert(stops >= 1, 'blur stops the horn');
+
+  const css = fs.readFileSync(path.join(dir, 'ui/driving.css'), 'utf8');
+  const js = fs.readFileSync(path.join(dir, 'ui/audio.js'), 'utf8');
+  assert.match(js, /HORN_MIN_S = \.6/, 'tap / minimum hold is 0.6 s');
+  assert.match(css, /#edge-alert\.pulse-amber\{animation:dsEdgeAmber \.45s ease-out 2\}/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+  assert.match(css, /height:clamp\(150px,34\.5vh,270px\)/, 'dashboard height is unchanged');
+  assert.match(css, /\.wheel-box\{[^}]*height:153\.33%/, 'wheel size is unchanged');
+});
+
+test('DS-5: live score is on the dashboard and edge alert follows settings', () => {
+  const PRE = 'learn.driving-school.settings';
+  const first = boot();
+  first.frame(16);
+  assert.equal(first.ctx.drivingTest.prefs.edgeAlert, true);
+  assert.equal(first.ids['dash-score'].textContent, '100%');
+  assert(first.ids['dash-score'].classList.contains('green'));
+  first.ctx.DS.penalize(first.ctx.drivingTest.s.l, 'lane_line', 'Keep to your side.', 5, 'minor');
+  first.ctx.drivingTest.update(0);
+  assert.equal(first.ctx.drivingTest.s.l.score, 95);
+  assert.equal(first.ids['dash-score'].textContent, '95%');
+  assert(first.ids['dash-score'].classList.contains('green'));
+  assert(first.ids['edge-alert'].classList.contains('pulse-amber'), 'minor fault glows amber');
+  first.ctx.DS.penalize(first.ctx.drivingTest.s.l, 'collision', 'Collision.', 25, 'serious');
+  first.ctx.drivingTest.update(0);
+  assert.equal(first.ids['dash-score'].textContent, '70%');
+  assert(first.ids['dash-score'].classList.contains('amber'));
+  assert(first.ids['edge-alert'].classList.contains('pulse-red'));
+  assert.match(first.ids.score.textContent, /Score 70%/);
+
+  first.ids['edge-alert-pref'].value = 'off';
+  first.ids['edge-alert-pref'].onchange({ target: first.ids['edge-alert-pref'] });
+  assert.equal(first.ctx.drivingTest.prefs.edgeAlert, false);
+  const saved = JSON.parse(first.ctx.localStorage.getItem(PRE));
+  assert.equal(saved.edgeAlert, false);
+
+  const off = boot('?test', { [PRE]: JSON.stringify({ auto: false, side: 'left', muted: false, route: 1, edgeAlert: false }) });
+  off.frame(16);
+  assert.equal(off.ctx.drivingTest.prefs.edgeAlert, false);
+  off.ctx.DS.penalize(off.ctx.drivingTest.s.l, 'x', 'reason', 5, 'minor');
+  off.ctx.drivingTest.update(0);
+  assert.equal(off.ctx.document.getElementById('edge-alert').classList.contains('pulse-amber'), false, 'edge alert stays off when switched off');
+  assert.equal(off.ids['dash-score'].textContent, '95%');
 });

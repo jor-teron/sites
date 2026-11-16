@@ -29,3 +29,12 @@ test('quiz reuses exactly 20 different procedural Indian signs with four distinc
   assert.equal(quiz.length,20); assert.equal(new Set(quiz.map(q => q.sign.id)).size,20);
   for (const q of quiz) { assert.equal(new Set(q.choices).size,4); assert(q.choices.includes(q.answer)); assert(q.sign.svg.includes('<')); assert(q.sign.meaning.length > 10); }
 });
+
+test('DS-5: mock report can use the live score, which may be higher after clean driving', () => {
+  const faults = [{ code:'speeding', reason:'Slow down', severity:'minor', time:10 }];
+  const raw = E.testReport(faults, true, 200);
+  assert.equal(raw.score, 95);
+  const live = E.testReport(faults, true, 200, 97);
+  assert.equal(live.score, 97);
+  assert(live.pass);
+});

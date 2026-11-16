@@ -16,6 +16,24 @@ h1{font-size:14px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 .toolbar select,.toolbar button,.toolbar input{font-size:12px;min-height:28px;padding:2px 8px;border-radius:6px}
 .toolbar select{max-width:280px}.status{margin:0;flex:1;min-width:140px;font-size:11px;color:var(--muted);text-align:right}
 .status strong{color:var(--ink)}#score{color:var(--blue)}
+#score.green,.dash-score.green{color:#3ee68a}#score.amber,.dash-score.amber{color:#ffb347}#score.red,.dash-score.red{color:#ff6a6a}
+/* DS-5: compact live score in the cluster; does not change dash or wheel size. */
+.dash-score{position:absolute;top:0;left:8px;z-index:3;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2;padding:1px 6px;border-radius:6px;background:#0b1115cc;border:1px solid #3a4a55;pointer-events:none}
+/* DS-5: inset edge glow; centre of the road stays clear. */
+#edge-alert{position:fixed;inset:0;z-index:20;pointer-events:none;opacity:0}
+#edge-alert.pulse-amber,#edge-alert.pulse-red,#edge-alert.show-amber,#edge-alert.show-red{opacity:1}
+#edge-alert.pulse-amber{animation:dsEdgeAmber .45s ease-out 2}
+#edge-alert.pulse-red{animation:dsEdgeRed .45s ease-out 2}
+#edge-alert.show-amber{box-shadow:inset 0 0 56px 14px #ffb347cc}
+#edge-alert.show-red{box-shadow:inset 0 0 56px 14px #e24a4acc}
+@keyframes dsEdgeAmber{0%,100%{opacity:0;box-shadow:inset 0 0 28px 4px transparent}45%,55%{opacity:1;box-shadow:inset 0 0 64px 16px #ffb347cc}}
+@keyframes dsEdgeRed{0%,100%{opacity:0;box-shadow:inset 0 0 28px 4px transparent}45%,55%{opacity:1;box-shadow:inset 0 0 64px 16px #e24a4acc}}
+@media(prefers-reduced-motion:reduce){
+  #edge-alert.pulse-amber,#edge-alert.pulse-red{animation:none}
+  #edge-alert.pulse-amber{box-shadow:inset 0 0 56px 14px #ffb347cc}
+  #edge-alert.pulse-red{box-shadow:inset 0 0 56px 14px #e24a4acc}
+}
+
 .world{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;padding:0}
 /* DS-4: the footer disclaimer was removed so the dashboard can sit lower. */
 

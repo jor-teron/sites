@@ -5,7 +5,7 @@
   function write(k, v) { try { localStorage.setItem(PRE + k, JSON.stringify(v)); } catch (_) { /* storage unavailable */ } }
   const prefs = D.settingsFrom(read('settings', {})), best = read('best', {});
   let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0, view = null, frameNo = 0, clock = 0, noteShownAt = 0;
-  let odo = D.odometersFrom(read('odo', {})), odoMark = 0, odoSavedAt = 0, faultCount = 0, faultBeepAt = 0;
+  let odo = D.odometersFrom(read('odo', {})), odoMark = 0, odoSavedAt = 0, faultCount = 0, faultBeepAt = 0, edgeTimer = 0;
   function saveOdo(force, now) {
     now = now == null ? clock : now;
     if (!D.shouldSaveOdo(odoSavedAt, now, force)) return;
@@ -33,7 +33,17 @@
     list.replaceChildren(...groups);
   }
   options();
+  function rememberBest() {
+    if (!s || !s.l) return;
+    const id = s.l.def.id, live = s.l.score;
+    const ended = s.l.done || (s.l.def.road === 'endless' && (s.l.distance || 0) > 0);
+    if (!ended) return;
+    const next = D.recordBest(best, id, live);
+    if (next[id] !== best[id]) { Object.assign(best, next); write('best', best); const cur = list.value; options(); list.value = cur; }
+    s.saved = true;
+  }
   function reset() {
+    rememberBest();
     const def = definitions().find(d => d.id === list.value) || D.basics[0];
     s = D.session(def, prefs); keys.clear(); Object.keys(held).forEach(k => held[k] = 0);
     $('end-test').hidden = !def.mock; $('lesson-name').textContent = def.name + (def.road ? ' · route ' + def.route : '');
@@ -59,13 +69,30 @@
   $('look').onclick = () => { mirrorTime = s.c.elapsed + 3; };
   $('cockpit').classList.toggle('lhd', prefs.side === 'right');
   function clearInput() { keys.clear(); Object.keys(held).forEach(k => held[k] = 0); }
-  function pause() { s.paused = true; clearInput(); if (!$('pause-card').open) $('pause-card').showModal(); }
+  function pause() { s.paused = true; clearInput(); D.sound.hornStop(); if (!$('pause-card').open) $('pause-card').showModal(); }
   $('pause').onclick = pause;
   D.sound.mute(prefs.muted);
   function muteLabel() { $('mute').textContent = prefs.muted ? 'Muted' : 'Sound on'; $('mute').setAttribute('aria-pressed', prefs.muted); }
   muteLabel();
   $('mute').onclick = () => { prefs.muted = !prefs.muted; D.sound.mute(prefs.muted); write('settings', prefs); muteLabel(); };
-  $('horn').onclick = () => D.sound.horn();
+  (function bindHorn(btn) {
+    let heldId = null;
+    const down = e => {
+      if (e.button != null && e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      try { btn.setPointerCapture(e.pointerId); } catch (_) { /* capture is optional */ }
+      heldId = e.pointerId; btn.classList.add('active'); D.sound.hornDown();
+    };
+    const up = e => {
+      if (heldId != null && e.pointerId != null && e.pointerId !== heldId) return;
+      heldId = null; btn.classList.remove('active'); D.sound.hornUp();
+    };
+    btn.addEventListener('pointerdown', down);
+    btn.addEventListener('pointerup', up);
+    btn.addEventListener('pointercancel', up);
+    btn.addEventListener('pointerleave', up);
+  })($('horn'));
+
   $('trip-reset').onclick = () => { odo = D.resetTrip(odo); saveOdo(true, clock); };
   window.addEventListener('pointerdown', D.sound.unlock, { passive: true });
   window.addEventListener('keydown', D.sound.unlock);
@@ -75,13 +102,13 @@
   $('help').onclick = () => { modalOpen(); $('help-card').showModal(); };
   $('close-help').onclick = () => $('help-card').close();
   $('quiz').onclick = () => { modalOpen(); D.showQuiz($('quiz-card'), read('quiz-best', 0), v => write('quiz-best', v)); };
-  function report() { modalOpen(); const r = D.testReport(s.l.faults, s.l.done, s.l.elapsed); write('test-last', r); D.showReport($('report-card'), r); }
+  function report() { modalOpen(); const r = D.testReport(s.l.faults, s.l.done, s.l.elapsed, s.l.score); write('test-last', r); D.showReport($('report-card'), r); }
   $('end-test').onclick = report;
   $('resume').onclick = () => { $('pause-card').close(); s.paused = false; };
   $('pause-card').addEventListener('cancel', () => { s.paused = false; });
   $('settings').onclick = () => {
     s.paused = true; clearInput(); $('transmission').value = prefs.auto ? 'auto' : 'manual';
-    $('side').value = prefs.side; $('minimap').value = prefs.minimap ? 'on' : 'off'; $('theme').value = HubTheme.own(); $('preferences').showModal();
+    $('side').value = prefs.side; $('minimap').value = prefs.minimap ? 'on' : 'off'; $('edge-alert-pref').value = prefs.edgeAlert ? 'on' : 'off'; $('theme').value = HubTheme.own(); $('preferences').showModal();
   };
   $('close-settings').onclick = () => { $('preferences').close(); s.paused = false; };
   $('preferences').addEventListener('cancel', () => { s.paused = false; });
@@ -93,6 +120,8 @@
   function applyMinimap() { $('screen').classList.toggle('no-minimap', !prefs.minimap); }
   applyMinimap();
   $('minimap').onchange = e => { prefs.minimap = e.target.value === 'on'; write('settings', prefs); applyMinimap(); };
+  $('edge-alert-pref').onchange = e => { prefs.edgeAlert = e.target.value !== 'off'; write('settings', prefs); };
+
   // Floating lesson note: fades after a few seconds; tap the Note chip to bring it back.
   $('note').addEventListener('click', () => { if ($('note').classList.contains('faded')) noteShownAt = clock; });
   $('note-show').addEventListener('click', e => { e.stopPropagation(); noteShownAt = clock; });
@@ -110,16 +139,21 @@
   HubTheme.onChange(syncTheme); window.addEventListener('storage', syncTheme); window.addEventListener('focus', syncTheme);
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme); syncTheme();
   const actions = { Enter: () => $('engine').click(), q: gearDown, e: gearUp, h: () => $('park').click(), z: () => $('left').click(),
-    x: () => $('right').click(), m: () => $('look').click(), b: () => $('horn').click() };
+    x: () => $('right').click(), m: () => $('look').click() };
   const driving = ['w', 's', 'a', 'd', 'c', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
   window.addEventListener('keydown', e => {
     if (e.target.matches('select,input,textarea') || s.paused) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (k === 'b') { e.preventDefault(); if (!e.repeat) D.sound.hornDown(); return; }
     if (driving.includes(k) || actions[k]) { e.preventDefault(); if (!e.repeat && actions[k]) actions[k](); keys.add(k); }
     if (k === 'Escape') pause();
   });
-  window.addEventListener('keyup', e => keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
-  window.addEventListener('blur', () => { if (!s.paused) pause(); });
+  window.addEventListener('keyup', e => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    keys.delete(k);
+    if (k === 'b') D.sound.hornUp();
+  });
+  window.addEventListener('blur', () => { D.sound.hornStop(); if (!s.paused) pause(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && !s.paused) pause(); });
   document.querySelectorAll('[data-hold]').forEach(b => {
     b.onpointerdown = e => { if (s.paused) return; e.preventDefault(); b.setPointerCapture(e.pointerId); held[b.dataset.hold] = 1; b.classList.add('active'); };
@@ -135,7 +169,7 @@
   }
   function update(dt) {
     D.tick(s, input(), dt);
-    if (s.l.done && !s.saved) { best[s.l.def.id] = Math.max(best[s.l.def.id] || 0, s.l.score); write('best', best); s.saved = true; const id = list.value; options(); list.value = id; }
+    if (s.l.done && !s.saved) { rememberBest(); const id = list.value; options(); list.value = id; }
     if (s.l.def.mock && s.l.done && !s.reported) { s.reported = true; report(); }
   }
   // 3D view when the ES module and WebGL work; otherwise (file://, no WebGL, ?view=map) the old top-down map.
@@ -164,10 +198,20 @@
     rollOdo();
     saveOdo(false, now);
     if (s.l.faults.length > faultCount) {
+      const added = s.l.faults.slice(faultCount);
+      const severe = added.some(f => f.severity === 'serious') ? 'serious' : 'minor';
       if (D.faultBeepDue(faultBeepAt, now)) { D.sound.fault(); faultBeepAt = now; }
+      if (D.edgeAlertOn(prefs)) {
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const cls = D.edgeAlertPulse(severe, reduced), el = $('edge-alert');
+        el.classList.remove('pulse-amber', 'pulse-red', 'show-amber', 'show-red');
+        void el.offsetWidth;
+        el.classList.add(cls);
+        if (reduced) { clearTimeout(edgeTimer); edgeTimer = setTimeout(() => el.classList.remove(cls), 800); }
+      }
       faultCount = s.l.faults.length;
     }
-    D.dash.update(c, inp, selectGear, odo);
+    D.dash.update(c, inp, selectGear, odo, { value: s.l.score });
     const done = s.l.done, raw = noticeUntil > now ? noticeText : D.hint(s.l, c);
     const text = done || noticeUntil > now ? raw : D.nextHint(raw);
     if ($('hint').textContent !== text) { $('hint').textContent = text; noteShownAt = now; }
@@ -175,7 +219,14 @@
     const at = s.w && s.w.road && s.w.at;
     if (at) $('progress').textContent = D.ROAD_TYPES[at.type].name + ' · ' + at.limit + ' km/h · ' + (s.w.road.mode === 'loop' ? 'lap ' + Math.min(100, Math.round((s.l.lap || 0) * 100)) + '%' : (Math.max(0, s.w.progress) / 1000).toFixed(1) + ' km') + ' · ' + Math.floor(s.l.elapsed) + ' s';
     else $('progress').textContent = (s.l.def.gates.length > 1 ? 'Arch ' + Math.min(s.l.gate + 1, s.l.def.gates.length) + ' of ' + s.l.def.gates.length + ' · ' : '') + Math.floor(s.l.elapsed) + ' s';
-    $('score').textContent = ' · Score ' + s.l.score + ' · Best ' + (best[s.l.def.id] ?? '—');
+    $('score').textContent = ' · Score ' + s.l.score + '% · Best ' + (best[s.l.def.id] ?? '—');
+    const tone = D.scoreColour(s.l.score);
+    if ($('score').dataset.colour !== tone) {
+      $('score').dataset.colour = tone;
+      $('score').classList.remove('green', 'amber', 'red');
+      $('score').classList.add(tone);
+    }
+
     const f = s.l.faults[s.l.faults.length - 1];
     $('fault').textContent = f && (s.w ? s.w.time - f.time < 5 : s.l.elapsed - f.time < 5) ? f.reason : '';
     const checked = mirrorTime > c.elapsed;

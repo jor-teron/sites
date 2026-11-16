@@ -3,7 +3,7 @@
    Reuses the fault shape of core/rules.js (code, reason, minor/serious, time) and its scoring.
    Roundabout give-way / direction / exit-signal checks are adapted from the DS-2b roundabout. */
 (function (root, factory) {
-  const api = factory(typeof module === 'object' ? require('./roadgen.js') : root.DS);
+  const api = factory(typeof module === 'object' ? Object.assign({}, require('./roadgen.js'), require('./score.js')) : root.DS);
   if (typeof module === 'object') module.exports = api;
   else Object.assign(root.DS, api);
 })(typeof window === 'object' ? window : globalThis, function (G) {
@@ -38,7 +38,7 @@
     if ((w.cooldown[code] ?? -100) + 5 > w.time) return;
     w.cooldown[code] = w.time;
     const [text, severity] = reasons[code], item = { code, reason: reason || text, severity, time: +w.time.toFixed(1) };
-    w.faults.push(item); w.totalFaults++; l.faults.push(item);
+    w.faults.push(item); w.totalFaults++; l.faults.push(item); G.applyLessonFault(l, severity);
   }
   // Signed distance along the road from a to b (loops wrap the short way round).
   function ds(road, a, b) { let d = b - a; if (road.mode === 'loop') { const L = road.length; d = ((d % L) + L * 1.5) % L - L / 2; } return d; }
@@ -133,7 +133,7 @@
     l.elapsed += dt; l.distance = c.distance;
     if (c.distance > 3) l.phase = 1;
     if (w.road.mode === 'loop') { l.lap = Math.max(0, w.progress) / w.road.length; if (w.progress >= w.road.length - 6) l.done = true; }
-    l.score = Math.max(0, 100 - l.faults.reduce((n, f) => n + (f.severity === 'serious' ? 25 : 5), 0));
+    G.advanceLessonScore(l, c.distance);
     l.tip = roadTip(w, c);
   }
   // A short look-ahead hint: the next event or sign within 120 m, else the road type and limit.
