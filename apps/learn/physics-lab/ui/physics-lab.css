@@ -11,6 +11,8 @@
   --pl-ball: #5fb8ad;
   --pl-ball-hi: #a7e6dc;
   --pl-ball-edge: rgba(0, 0, 0, 0.35);
+  --pl-box: #e0a458;
+  --pl-box-hi: #f2cf9a;
 }
 html.light .pl {
   --pl-bg: #eef2f6;
@@ -20,6 +22,8 @@ html.light .pl {
   --pl-ball: #2f9e91;
   --pl-ball-hi: #6fc9be;
   --pl-ball-edge: rgba(0, 0, 0, 0.2);
+  --pl-box: #c2842f;
+  --pl-box-hi: #e8b46b;
 }
 
 .pl-head { padding-top: 8px; padding-bottom: 8px; }
@@ -55,6 +59,7 @@ html.light .pl {
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
   color: var(--muted); font-size: 0.9rem;
 }
+.pl-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 4px 16px; }
 .pl-field output { min-width: 3ch; color: var(--text); font-weight: 650; font-variant-numeric: tabular-nums; }
 .pl-field input[type="range"] { flex: 1; min-width: 0; height: 32px; accent-color: var(--accent); }
 
