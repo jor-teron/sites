@@ -21,6 +21,14 @@
   var bounceOut = document.getElementById('pl-bounce-out');
   var friction = document.getElementById('pl-friction');
   var frictionOut = document.getElementById('pl-friction-out');
+  var gravity = document.getElementById('pl-gravity');
+  var timeEl = document.getElementById('pl-time');
+  var bodyEl = document.getElementById('pl-body');
+  var speedEl = document.getElementById('pl-speed');
+  var heightEl = document.getElementById('pl-height');
+  var keEl = document.getElementById('pl-ke');
+  var peEl = document.getElementById('pl-pe');
+  var totalEl = document.getElementById('pl-total');
 
   var world = P.world(W, H);
   var restitution = parseFloat(bounce.value) || 0.5;
@@ -36,6 +44,7 @@
   var drag = null;
   var trailsOn = true;
   var trailTick = 0;
+  var hudAt = 0;
   var lastTap = { body: null, t: 0 };
 
   function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
@@ -74,6 +83,7 @@
     world.time = 0;
     selected = null;
     drag = null;
+    updateHUD();
   }
 
   function addBallAt(x, y) {
@@ -104,6 +114,35 @@
   function setTrails(v) {
     trailsOn = v;
     trailsBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
+  }
+
+  function currentBody() {
+    if (selected && world.bodies.indexOf(selected) >= 0) return selected;
+    return world.bodies[0] || null;
+  }
+
+  function updateHUD() {
+    timeEl.textContent = world.time.toFixed(2) + ' s';
+    var b = currentBody();
+    if (!b) {
+      bodyEl.textContent = '\u2014';
+      speedEl.textContent = '0.00 m/s';
+      heightEl.textContent = '0.00 m';
+      keEl.style.width = '0%';
+      peEl.style.width = '0%';
+      totalEl.textContent = '0.0 J';
+      return;
+    }
+    var speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+    var e = world.energy(b);
+    var ke = Math.max(0, e.ke), pe = Math.max(0, e.pe), sum = ke + pe;
+    var pct = sum > 0.001 ? (ke / sum) * 100 : 0;
+    bodyEl.textContent = b.label || b.kind;
+    speedEl.textContent = speed.toFixed(2) + ' m/s';
+    heightEl.textContent = b.y.toFixed(2) + ' m';
+    keEl.style.width = pct.toFixed(1) + '%';
+    peEl.style.width = (100 - pct).toFixed(1) + '%';
+    totalEl.textContent = e.total.toFixed(1) + ' J';
   }
 
   function resize() {
@@ -345,6 +384,7 @@
     last = t;
     if (running) { world.step(dt); recordTrails(); }
     draw();
+    if (t - hudAt > 90) { updateHUD(); hudAt = t; }
   }
 
   function setRunning(v) {
@@ -358,6 +398,7 @@
   trailsBtn.addEventListener('click', function () { setTrails(!trailsOn); });
   bounce.addEventListener('input', function () { setBounce(parseFloat(bounce.value)); });
   friction.addEventListener('input', function () { setFriction(parseFloat(friction.value)); });
+  gravity.addEventListener('change', function () { world.gravity = parseFloat(gravity.value) || 0; updateHUD(); });
   window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { last = 0; });
   if (window.MutationObserver) {
@@ -371,6 +412,7 @@
   setBounce(restitution);
   setFriction(grip);
   setTrails(true);
+  updateHUD();
   setRunning(true);
   requestAnimationFrame(frame);
 })();
