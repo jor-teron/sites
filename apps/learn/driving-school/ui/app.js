@@ -3,9 +3,9 @@
   const D = window.DS, $ = id => document.getElementById(id), PRE = 'learn.driving-school.';
   function read(k, fallback) { try { return JSON.parse(localStorage.getItem(PRE + k)) ?? fallback; } catch (_) { return fallback; } }
   function write(k, v) { try { localStorage.setItem(PRE + k, JSON.stringify(v)); } catch (_) { /* storage unavailable */ } }
-  const prefs = Object.assign({ auto: false, side: 'left', muted: false, route: 1 }, read('settings', {})), best = read('best', {});
-  let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0, view = null, frameNo = 0;
-  function notice(text) { noticeText = text; noticeUntil = performance.now() + 3000; }
+  const prefs = D.settingsFrom(read('settings', {})), best = read('best', {});
+  let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0, view = null, frameNo = 0, clock = 0, noteShownAt = 0;
+  function notice(text) { noticeText = text; noticeUntil = clock + 3000; }
   const keys = new Set(), held = { throttle: 0, brake: 0, clutch: 0, steer: 0 };
   const list = $('lessons'), screen = $('screen');
   const flatOnly = new URLSearchParams(location.search).get('view') === 'map';
@@ -65,7 +65,7 @@
   $('pause-card').addEventListener('cancel', () => { s.paused = false; });
   $('settings').onclick = () => {
     s.paused = true; clearInput(); $('transmission').value = prefs.auto ? 'auto' : 'manual';
-    $('side').value = prefs.side; $('theme').value = HubTheme.own(); $('preferences').showModal();
+    $('side').value = prefs.side; $('minimap').value = prefs.minimap ? 'on' : 'off'; $('theme').value = HubTheme.own(); $('preferences').showModal();
   };
   $('close-settings').onclick = () => { $('preferences').close(); s.paused = false; };
   $('preferences').addEventListener('cancel', () => { s.paused = false; });
@@ -74,6 +74,12 @@
   };
   $('side').onchange = e => { prefs.side = e.target.value; write('settings', prefs); $('cockpit').classList.toggle('lhd', prefs.side === 'right'); const id = list.value; options(); list.value = id; reset(); s.paused = true; };
   $('theme').onchange = e => HubTheme.setOwn(e.target.value);
+  function applyMinimap() { $('screen').classList.toggle('no-minimap', !prefs.minimap); }
+  applyMinimap();
+  $('minimap').onchange = e => { prefs.minimap = e.target.value === 'on'; write('settings', prefs); applyMinimap(); };
+  // Floating lesson note: fades after a few seconds; tap the Note chip to bring it back.
+  $('note').addEventListener('click', () => { if ($('note').classList.contains('faded')) noteShownAt = clock; });
+  $('note-show').addEventListener('click', e => { e.stopPropagation(); noteShownAt = clock; });
   // Follow Hub preference when set, otherwise the operating system. No shared files changed.
   function syncTheme() {
     if (HubTheme.own() !== 'system') return;
@@ -129,6 +135,7 @@
   }, 300));
   function paint(now) {
     const c = s.c, inp = input();
+    clock = now;
     // Draw first (reads layout), then update the DOM, so a frame never forces two layouts.
     frameNo++;
     if (view) {
@@ -136,11 +143,13 @@
       screen.classList.toggle('sides', sides);
       try { view.render(s, prefs, { rear: $('mirror'), left: $('mirror-l'), right: $('mirror-r'), sides }, now / 1000); }
       catch (err) { console.error(err); view = null; screen.classList.add('flat'); notice('The 3D view stopped, so the map view is shown.'); }
-      if (frameNo % 3 === 0) D.draw($('road'), s, prefs);   // small map, every third frame
-    } else D.draw($('road'), s, prefs);
+      if (prefs.minimap && frameNo % 3 === 0) D.draw($('road'), s, prefs);   // mini-map, every third frame, only when enabled
+    } else D.draw($('road'), s, prefs);   // map fallback (?view=map / file://) always fills the screen
     D.dash.update(c, inp, selectGear);
-    const done = s.l.done, text = noticeUntil > performance.now() ? noticeText : D.hint(s.l, c);
-    $('hint').textContent = done || noticeUntil > performance.now() ? text : D.nextHint(text);
+    const done = s.l.done, raw = noticeUntil > now ? noticeText : D.hint(s.l, c);
+    const text = done || noticeUntil > now ? raw : D.nextHint(raw);
+    if ($('hint').textContent !== text) { $('hint').textContent = text; noteShownAt = now; }
+    $('note').classList.toggle('faded', !!text && D.noteFaded(noteShownAt, now, false));
     const at = s.w && s.w.road && s.w.at;
     if (at) $('progress').textContent = D.ROAD_TYPES[at.type].name + ' · ' + at.limit + ' km/h · ' + (s.w.road.mode === 'loop' ? 'lap ' + Math.min(100, Math.round((s.l.lap || 0) * 100)) + '%' : (Math.max(0, s.w.progress) / 1000).toFixed(1) + ' km') + ' · ' + Math.floor(s.l.elapsed) + ' s';
     else $('progress').textContent = (s.l.def.gates.length > 1 ? 'Arch ' + Math.min(s.l.gate + 1, s.l.def.gates.length) + ' of ' + s.l.def.gates.length + ' · ' : '') + Math.floor(s.l.elapsed) + ' s';

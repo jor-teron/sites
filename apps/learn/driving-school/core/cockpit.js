@@ -107,7 +107,18 @@
     return { rings, box, park, path };
   }
   function nextHint(text) { return 'Next: ' + String(text || '').replace(/^Next:\s*/, ''); }
-  return { WHEEL_MAX_DEG, SPEEDO_MAX, TACHO_MAX, wheelAngle, pointerAngle, angleDelta, dragSteer, nearHub,
+  // DS-4: engine button wording, mini-map preference (off unless explicitly on), floating lesson note fade.
+  const NOTE_FADE_MS = 5000;
+  function engineChrome(c) { return { text: c && c.engine ? 'Engine ON' : 'Engine OFF', running: !!(c && c.engine) }; }
+  function settingsFrom(stored) {
+    const s = Object.assign({ auto: false, side: 'left', muted: false, route: 1, minimap: false }, stored || {});
+    s.minimap = s.minimap === true;
+    return s;
+  }
+  function showMinimap(prefs, flat) { return !!flat || !!(prefs && prefs.minimap); }
+  function noteFaded(shownAt, now, held, ms = NOTE_FADE_MS) { return !held && (now - shownAt) >= ms; }
+  return { WHEEL_MAX_DEG, SPEEDO_MAX, TACHO_MAX, NOTE_FADE_MS, wheelAngle, pointerAngle, angleDelta, dragSteer, nearHub,
     needleAngle, speedKmh, gearLabel, gateSlots, gateSlotFor, toScene, axes, driverSide, driverCamera, rearMirrorCamera,
-    sideMirrorCamera, cameraFrame, viewportFromRect, renderPixelRatio, isPortrait, lotLayout, townLayout, lessonMarkers, nextHint };
+    sideMirrorCamera, cameraFrame, viewportFromRect, renderPixelRatio, isPortrait, lotLayout, townLayout, lessonMarkers, nextHint,
+    engineChrome, settingsFrom, showMinimap, noteFaded };
 });

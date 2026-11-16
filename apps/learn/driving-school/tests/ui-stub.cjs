@@ -13,7 +13,7 @@ class El {
     const style = {}; style.setProperty = (k, v) => { style[k] = v; }; this.style = style;
   }
   addEventListener(type, fn) { (this.listeners[type] = this.listeners[type] || []).push(fn); }
-  dispatch(type, e = {}) { const ev = Object.assign({ preventDefault() {}, pointerId: 1, clientX: 0, clientY: 0, target: this }, e); (this.listeners[type] || []).forEach(f => f(ev)); if (this['on' + type]) this['on' + type](ev); }
+  dispatch(type, e = {}) { const ev = Object.assign({ preventDefault() {}, stopPropagation() {}, pointerId: 1, clientX: 0, clientY: 0, target: this }, e); (this.listeners[type] || []).forEach(f => f(ev)); if (this['on' + type]) this['on' + type](ev); }
   setAttribute(k, v) { this.attrs[k] = String(v); } getAttribute(k) { return this.attrs[k] ?? null; }
   appendChild(c) { this.children.push(c); return c; } replaceChildren(...c) { this.children = c; }
   querySelector() { return this._q || (this._q = new El('svg')); } querySelectorAll() { return []; }
@@ -22,10 +22,10 @@ class El {
   click() { this.dispatch('click'); }
   matches() { return false; } closest() { return null; } getContext() { return noop; } remove() {}
 }
-function boot(search = '?test') {
+function boot(search = '?test', seed) {
   const ids = {}, rafs = [], winListeners = {};
   const pedals = ['clutch', 'brake', 'throttle'].map(h => { const e = new El('button'); e.dataset.hold = h; return e; });
-  const store = new Map();
+  const store = new Map(Object.entries(seed || {}));
   const document = { getElementById: id => ids[id] || (ids[id] = new El('div', id)), createElement: t => new El(t), createElementNS: (_, t) => new El(t),
     querySelector: sel => sel.startsWith('[data-hold="') ? pedals.find(p => sel.includes('"' + p.dataset.hold + '"')) : document.getElementById('q:' + sel),
     querySelectorAll: sel => sel === '[data-hold]' ? pedals : [], addEventListener() {}, documentElement: new El('html'), body: new El('body'), hidden: false };
@@ -48,7 +48,7 @@ test('page loads the classic scripts, ES module last, and the Hub bar gets its b
   assert.match(html, /<script type="module" src="ui\/view3d.js"><\/script>\s*<\/body>/);
   assert(fs.readFileSync(path.join(dir, 'ui/app.js'), 'utf8').includes("{ buttons: '#quiz,#help,#mute,#settings' }"));
   assert.match(fs.readFileSync(path.join(dir, 'ui/view3d.js'), 'utf8'), /from '\.\.\/\.\.\/common\/vendor\/three\/three\.module\.min\.js'/);
-  for (const id of ['view3d', 'road', 'mirror', 'mirror-l', 'mirror-r', 'hint', 'wheel', 'horn', 'speedo', 'tacho', 'gate', 'park', 'engine', 'left', 'right', 'look', 'cockpit', 'lessons', 'end-test'])
+  for (const id of ['view3d', 'road', 'mirror', 'mirror-l', 'mirror-r', 'hint', 'note', 'note-show', 'minimap', 'wheel', 'horn', 'speedo', 'tacho', 'gate', 'park', 'engine', 'left', 'right', 'look', 'cockpit', 'lessons', 'end-test'])
     assert.match(html, new RegExp('id="' + id + '"'), id);
 });
 test('map fallback runs; manual by default; dashboard follows the car', () => {
@@ -110,4 +110,76 @@ test('DS-3: Open road group, route number input, endless and loop run on the map
   }
   ids.lessons.value = 'lane'; ids.lessons.onchange(); assert.equal(ids['route-box'].hidden, true);
   assert.match(fs.readFileSync(path.join(dir, 'ui/driving.css'), 'utf8'), /body\.hub-titlebar \.lrn-head\{display:none!important\}/, 'Hub title bar hides the in-page row');
+});
+
+test('DS-4: engine button label and running class follow the engine state', () => {
+  const { ctx, ids, frame } = boot();
+  frame(16);
+  assert.equal(ids.engine.textContent, 'Engine OFF');
+  assert.equal(ids.engine.classList.contains('running'), false);
+  assert.equal(ctx.drivingTest.s.c.engine, false);
+  ids.engine.click(); frame(32);
+  assert.equal(ctx.drivingTest.s.c.engine, true);
+  assert.equal(ids.engine.textContent, 'Engine ON');
+  assert.equal(ids.engine.classList.contains('running'), true);
+});
+test('DS-4: mini-map is off by default, saved in settings, and the map fallback still draws', () => {
+  const PRE = 'learn.driving-school.settings';
+  const first = boot();
+  assert.equal(first.ctx.drivingTest.prefs.minimap, false);
+  assert(first.ids.screen.classList.contains('no-minimap'));
+  assert(first.ids.screen.classList.contains('flat'), 'stub boots in map fallback');
+  first.ids.minimap.value = 'on'; first.ids.minimap.onchange({ target: first.ids.minimap });
+  assert.equal(first.ctx.drivingTest.prefs.minimap, true);
+  assert(!first.ids.screen.classList.contains('no-minimap'));
+  const saved = JSON.parse(first.ctx.localStorage.getItem(PRE));
+  assert.equal(saved.minimap, true);
+
+  const again = boot('?test', { [PRE]: JSON.stringify({ auto: false, side: 'left', muted: false, route: 1, minimap: true }) });
+  assert.equal(again.ctx.drivingTest.prefs.minimap, true);
+  assert(!again.ids.screen.classList.contains('no-minimap'));
+
+  const legacy = boot('?test', { [PRE]: JSON.stringify({ auto: false, side: 'left', muted: false, route: 1 }) });
+  assert.equal(legacy.ctx.drivingTest.prefs.minimap, false, 'old settings without the key stay off');
+
+  // Map fallback (?view=map style / no 3D) still draws every frame when the mini-map is off.
+  const { ctx, ids, frame } = boot();
+  let draws = 0; const orig = ctx.DS.draw; ctx.DS.draw = function () { draws++; return orig.apply(this, arguments); };
+  frame(16); frame(32);
+  assert(draws >= 2, 'flat fallback still paints the full map');
+  assert(ids.screen.classList.contains('flat') && ids.screen.classList.contains('no-minimap'));
+
+  // In 3D, the mini-map canvas is not drawn until Settings turns it on.
+  const td = boot();
+  td.ctx.DS.view3dFactory = () => ({ render() {} }); td.ctx.dispatchEvent(new td.ctx.Event('ds-view3d'));
+  let mini = 0; const base = td.ctx.DS.draw; td.ctx.DS.draw = function () { mini++; return base.apply(this, arguments); };
+  for (let i = 0; i < 9; i++) td.frame(16 * (i + 1));
+  assert.equal(mini, 0, '3D view does not draw the mini-map when it is off');
+  assert(!td.ids.screen.classList.contains('flat'));
+  assert(td.ids.screen.classList.contains('no-minimap'));
+  td.ids.minimap.value = 'on'; td.ids.minimap.onchange({ target: td.ids.minimap });
+  td.ctx.drivingTest.s.paused = false;
+  mini = 0;
+  for (let i = 0; i < 9; i++) td.frame(16 * (i + 10));
+  assert(mini > 0, 'turning the mini-map on draws it in the 3D view');
+  assert(!td.ids.screen.classList.contains('no-minimap'));
+});
+test('DS-4: lesson note fades after a few seconds and a tap brings it back', () => {
+  const { ids, frame } = boot();
+  frame(16);
+  assert.match(ids.hint.textContent, /^Next: /);
+  assert.equal(ids.note.classList.contains('faded'), false);
+  frame(16 + 5000);
+  assert.equal(ids.note.classList.contains('faded'), true);
+  assert.match(ids.hint.textContent, /^Next: /, 'text stays in the document for the chip / reader');
+  ids['note-show'].click();
+  frame(16 + 5000 + 16);
+  assert.equal(ids.note.classList.contains('faded'), false);
+  const html = require('node:fs').readFileSync(require('node:path').join(dir, 'driving-school.html'), 'utf8');
+  assert(!html.includes('class="disclaimer"'), 'footer row is gone');
+  assert.match(html, /id="left"[\s\S]*id="speedo"[\s\S]*id="wheel"[\s\S]*id="tacho"[\s\S]*id="right"/, 'indicators sit beside the dials');
+  const css = require('node:fs').readFileSync(require('node:path').join(dir, 'ui/driving.css'), 'utf8');
+  assert.match(css, /width:100vw;height:100vh;width:100dvw;height:100dvh/, 'driving view fills the screen with vw/vh fallbacks');
+  assert.match(css, /html,body\{[^}]*overflow:hidden/, 'the page does not scroll while driving');
+  assert.match(css, /\.lrn-head button\{font-size:11px;min-height:28px/, 'the in-app top bar is thinner');
 });
