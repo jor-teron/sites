@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Physics Lab PS1a (Learn > Science): the first slice - one ball, gravity and a floor.
-     Pause freezes it, Reset drops it again. Bounce, ramps, dragging and the meters come in later PS1 releases.
-     Classic scripts only, no build step, works from file://. -->
-<title>Physics Lab PS1a</title>
+<!-- Physics Lab PS1b (Learn > Science): one ball, gravity, a floor and bounce.
+     The Bounce slider sets restitution (0 = stops dead, 1 = all the speed back); Pause freezes, Reset drops again.
+     Ramps, boxes, dragging and the meters come in later PS1 releases. Classic scripts only, works from file://. -->
+<title>Physics Lab PS1b</title>
 <meta name="theme-color" content="#14171c">
 <script src="../../../shared/theme/hub_theme.js"></script>
 <link rel="stylesheet" href="../common/ui/learn.css">
@@ -15,7 +15,7 @@
 <body>
 <div id="app" class="lrn pl">
   <header class="lrn-head pl-head">
-    <h1>Physics Lab <span class="pl-ver">PS1a</span></h1>
+    <h1>Physics Lab <span class="pl-ver">PS1b</span></h1>
   </header>
 
   <div class="pl-stage" id="pl-stage">
@@ -27,7 +27,12 @@
       <button id="pl-play" type="button" class="pl-btn pl-btn-main">Pause</button>
       <button id="pl-reset" type="button" class="pl-btn">Reset</button>
     </div>
-    <p class="pl-note" id="pl-note">Gravity pulls the ball down. Pause to freeze it; Reset drops it from the top again.</p>
+    <div class="pl-row">
+      <label class="pl-field">Bounce <output id="pl-bounce-out">0.70</output>
+        <input id="pl-bounce" type="range" min="0" max="0.95" step="0.05" value="0.7">
+      </label>
+    </div>
+    <p class="pl-note" id="pl-note">Drop the ball and watch it bounce. Bounce 0 stops it dead; 1 gives all the speed back.</p>
   </div>
 </div>
 <noscript><p>Physics Lab needs JavaScript. It shows a ball falling under gravity onto a floor.</p></noscript>
