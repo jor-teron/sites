@@ -111,7 +111,7 @@
   const NOTE_FADE_MS = 5000;
   function engineChrome(c) { return { text: c && c.engine ? 'Engine ON' : 'Engine OFF', running: !!(c && c.engine) }; }
   // DS-4a: persisted Total / Trip odometers (metres) and a rate-limit for the fault beep.
-  const ODO_SAVE_MS = 4000, FAULT_BEEP_MS = 800;
+  const ODO_SAVE_MS = 4000, FAULT_BEEP_MS = 800, TRIP_RESET_HIT_PX = 44;
   function odometersFrom(stored) {
     const src = stored && typeof stored === 'object' ? stored : {};
     const n = v => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
@@ -141,7 +141,7 @@
   }
   function showMinimap(prefs, flat) { return !!flat || !!(prefs && prefs.minimap); }
   function noteFaded(shownAt, now, held, ms = NOTE_FADE_MS) { return !held && (now - shownAt) >= ms; }
-  return { WHEEL_MAX_DEG, SPEEDO_MAX, TACHO_MAX, NOTE_FADE_MS, ODO_SAVE_MS, FAULT_BEEP_MS, wheelAngle, pointerAngle, angleDelta, dragSteer, nearHub,
+  return { WHEEL_MAX_DEG, SPEEDO_MAX, TACHO_MAX, NOTE_FADE_MS, ODO_SAVE_MS, FAULT_BEEP_MS, TRIP_RESET_HIT_PX, wheelAngle, pointerAngle, angleDelta, dragSteer, nearHub,
     needleAngle, speedKmh, gearLabel, gateSlots, gateSlotFor, toScene, axes, driverSide, driverCamera, rearMirrorCamera,
     sideMirrorCamera, cameraFrame, viewportFromRect, renderPixelRatio, isPortrait, lotLayout, townLayout, lessonMarkers, nextHint,
     engineChrome, settingsFrom, showMinimap, noteFaded, odometersFrom, addDistance, resetTrip, formatKm, takeDelta, shouldSaveOdo, faultBeepDue };

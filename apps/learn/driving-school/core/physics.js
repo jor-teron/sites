@@ -24,6 +24,16 @@
     c.message = 'Engine running. Check mirrors and surroundings before moving.';
     return true;
   }
+  // DS-4b: a running engine can be switched off at any speed (the car coasts without power).
+  function stop(c) {
+    const moving = Math.abs(c.v) > .3;
+    c.engine = false; c.stalled = false; c.rpm = 0;
+    c.message = moving
+      ? 'Engine off while moving. The car will coast without power. Brake to a stop before restarting.'
+      : 'Engine off.';
+    return true;
+  }
+  function toggle(c) { return c.engine ? stop(c) : start(c); }
   function shift(c, gear) {
     gear = clamp(Math.round(gear), -1, 5);
     if (gear === c.gear) return true;
@@ -77,5 +87,5 @@
     c.rpm = clamp(c.rpm, 0, 6500);
     return c;
   }
-  return { car, start, shift, step, clamp, angle };
+  return { car, start, stop, toggle, shift, step, clamp, angle };
 });

@@ -266,3 +266,54 @@ test('DS-4a: dashboard is 25% shorter and the wheel keeps its DS-4 size', () => 
   const html = require('node:fs').readFileSync(require('node:path').join(dir, 'driving-school.html'), 'utf8');
   assert.match(html, /id="odo-total"/); assert.match(html, /id="trip-reset"/);
 });
+
+test('DS-4b: engine button and Enter toggle on and off; restart cranks; trip reset has a 44px hit area', () => {
+  const { ctx, ids, frame } = boot();
+  frame(16);
+  let cranks = 0, cuts = 0;
+  const sound = ctx.DS.sound;
+  const crank = sound.crank.bind(sound), cut = sound.cutEngine.bind(sound);
+  sound.crank = () => { cranks++; crank(); };
+  sound.cutEngine = () => { cuts++; cut(); };
+  ids.engine.click(); frame(32);
+  assert.equal(ctx.drivingTest.s.c.engine, true);
+  assert.equal(ids.engine.textContent, 'Engine ON');
+  assert.equal(ids.engine.classList.contains('running'), true);
+  assert.equal(cranks, 1);
+  ids.engine.click(); frame(48);
+  assert.equal(ctx.drivingTest.s.c.engine, false);
+  assert.equal(ctx.drivingTest.s.c.rpm, 0);
+  assert.equal(ids.engine.textContent, 'Engine OFF');
+  assert.equal(ids.engine.classList.contains('running'), false);
+  assert.equal(cranks, 1, 'switching off does not crank');
+  assert.equal(cuts, 1);
+
+  const key = k => ctx.dispatchEvent(Object.assign(new ctx.Event('keydown'), { key: k, target: { matches: () => false }, preventDefault() {}, repeat: false }));
+  key('Enter'); frame(64);
+  assert.equal(ctx.drivingTest.s.c.engine, true);
+  assert.equal(cranks, 2, 'Enter starts and cranks again');
+  key('Enter'); frame(80);
+  assert.equal(ctx.drivingTest.s.c.engine, false);
+  assert.equal(cuts, 2, 'Enter also switches off');
+
+  const t = ctx.drivingTest;
+  t.s.c.v = 0; t.s.c.gear = 0; t.s.c.clutch = 1; t.s.c.handbrake = true;
+  ids.engine.click();
+  assert.equal(t.s.c.engine, true); assert.equal(cranks, 3);
+  t.D.shift(t.s.c, 1); t.s.c.handbrake = false; t.s.c.clutch = 0; t.s.c.v = 10;
+  const moving = t.s.c.v;
+  ids.engine.click();
+  assert.equal(t.s.c.engine, false);
+  for (let i = 0; i < 30; i++) t.update(0.05);
+  assert(t.s.c.v < moving && t.s.c.v > 0, 'coasts without power');
+  assert.equal(t.s.c.engine, false);
+  ids.engine.click();
+  assert.equal(t.s.c.engine, false, 'start still refused while moving');
+  assert.equal(cranks, 3, 'a refused start does not crank');
+
+  const css = fs.readFileSync(path.join(dir, 'ui/driving.css'), 'utf8');
+  assert.match(css, /#trip-reset::after\{[^}]*width:44px;height:44px/, '44px hit area around the compact Reset');
+  assert.match(css, /#trip-reset\{[^}]*min-height:22px;height:22px/, 'visual Reset stays compact');
+  assert.match(css, /height:clamp\(150px,34\.5vh,270px\)/, 'dashboard height is unchanged');
+  assert.match(css, /\.wheel-box\{[^}]*height:153\.33%/, 'wheel size is unchanged');
+});
