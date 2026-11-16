@@ -1,20 +1,22 @@
 /*
- * Physics Lab PS1c - canvas, loop, buttons and the bounce / friction sliders.
- * The page draws the same world core/engine.js steps: floor, walls, one ramp,
- * a ball and a box. Palette comes from the CSS variables in
- * ui/physics-lab.css so light and dark stay in one place.
+ * Physics Lab PS1d - PS1c plus hands-on input: drag a body to throw it, tap
+ * empty space (or + Ball) to add a ball, double-tap a body to remove it, and
+ * motion trails. The page draws the same world core/engine.js steps.
  */
 (function () {
   'use strict';
 
   var P = window.PLPhysics;
   var W = 10, H = 6;
+  var MAX_THROW = 12;
 
   var stage = document.getElementById('pl-stage');
   var canvas = document.getElementById('pl-canvas');
   var ctx = canvas.getContext('2d');
   var playBtn = document.getElementById('pl-play');
   var resetBtn = document.getElementById('pl-reset');
+  var addBtn = document.getElementById('pl-add');
+  var trailsBtn = document.getElementById('pl-trails');
   var bounce = document.getElementById('pl-bounce');
   var bounceOut = document.getElementById('pl-bounce-out');
   var friction = document.getElementById('pl-friction');
@@ -29,6 +31,14 @@
   var last = 0;
   var dpr = 1, cw = 0, ch = 0;
   var pal = null;
+  var view = { ox: 0, oy: 0, s: 1 };
+  var selected = null;
+  var drag = null;
+  var trailsOn = true;
+  var trailTick = 0;
+  var lastTap = { body: null, t: 0 };
+
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
   function readPalette() {
     var cs = getComputedStyle(document.querySelector('.pl'));
@@ -42,7 +52,8 @@
       ballHi: v('--pl-ball-hi', '#a7e6dc'),
       ballEdge: v('--pl-ball-edge', 'rgba(0,0,0,.35)'),
       box: v('--pl-box', '#e0a458'),
-      boxHi: v('--pl-box-hi', '#f2cf9a')
+      boxHi: v('--pl-box-hi', '#f2cf9a'),
+      accent: v('--accent', '#8fa6c4')
     };
   }
 
@@ -61,6 +72,21 @@
       restitution: Math.min(restitution, 0.4), friction: grip, color: pal ? pal.box : '#e0a458', label: 'box'
     }));
     world.time = 0;
+    selected = null;
+    drag = null;
+  }
+
+  function addBallAt(x, y) {
+    var b = P.circle({
+      x: x, y: y, r: 0.28, mass: 1,
+      restitution: restitution, friction: grip, color: pal ? pal.ball : '#5fb8ad', label: 'ball'
+    });
+    world.addBody(b);
+    selected = b;
+  }
+
+  function addBall() {
+    addBallAt(8.2 + (world.bodies.length % 3) * 0.35, 4.6);
   }
 
   function setBounce(v) {
@@ -73,6 +99,11 @@
     grip = v;
     frictionOut.textContent = v.toFixed(2);
     for (var i = 0; i < world.bodies.length; i++) world.bodies[i].friction = v;
+  }
+
+  function setTrails(v) {
+    trailsOn = v;
+    trailsBtn.setAttribute('aria-pressed', v ? 'true' : 'false');
   }
 
   function resize() {
@@ -121,7 +152,6 @@
     ctx.lineWidth = Math.max(1, 1.5 * dpr);
     ctx.strokeStyle = pal.ballEdge;
     ctx.stroke();
-    // a small top edge so rotation is easy to see
     ctx.beginPath();
     ctx.moveTo(-bw / 2 + r, -bh / 2 + 2);
     ctx.lineTo(bw / 2 - r, -bh / 2 + 2);
@@ -131,11 +161,54 @@
     ctx.restore();
   }
 
+  function drawTrails(px, py) {
+    for (var i = 0; i < world.bodies.length; i++) {
+      var b = world.bodies[i], t = b.trail;
+      if (!t || t.length < 2) continue;
+      ctx.beginPath();
+      for (var j = 0; j < t.length; j++) {
+        if (j === 0) ctx.moveTo(px(t[j].x), py(t[j].y));
+        else ctx.lineTo(px(t[j].x), py(t[j].y));
+      }
+      ctx.strokeStyle = b.color || pal.ball;
+      ctx.globalAlpha = 0.28;
+      ctx.lineWidth = 2 * dpr;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawSelection(b, px, py, s) {
+    if (b.kind === 'circle') {
+      ctx.beginPath();
+      ctx.arc(px(b.x), py(b.y), (b.r + 0.07) * s, 0, Math.PI * 2);
+      ctx.strokeStyle = pal.accent;
+      ctx.lineWidth = 2 * dpr;
+      ctx.setLineDash([5 * dpr, 4 * dpr]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+    var corners = P.boxCorners(b);
+    ctx.beginPath();
+    for (var i = 0; i < 4; i++) {
+      if (i === 0) ctx.moveTo(px(corners[i].x), py(corners[i].y));
+      else ctx.lineTo(px(corners[i].x), py(corners[i].y));
+    }
+    ctx.closePath();
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 2 * dpr;
+    ctx.setLineDash([5 * dpr, 4 * dpr]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   function draw() {
     var s = Math.min(cw / W, ch / H);
     var ox = (cw - W * s) / 2;
     var oy = (ch - H * s) / 2;
     var i, x, y;
+    view = { ox: ox, oy: oy, s: s };
 
     function px(v) { return ox + v * s; }
     function py(v) { return oy + (H - v) * s; }
@@ -143,7 +216,6 @@
     ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, cw, ch);
 
-    // one-metre grid
     ctx.strokeStyle = pal.grid;
     ctx.lineWidth = Math.max(1, dpr);
     ctx.beginPath();
@@ -151,7 +223,6 @@
     for (y = 0; y <= H; y += 1) { ctx.moveTo(px(0), py(y)); ctx.lineTo(px(W), py(y)); }
     ctx.stroke();
 
-    // floor and ramp (skip the vertical side walls)
     for (i = 0; i < world.segments.length; i++) {
       var seg = world.segments[i];
       if (Math.abs(seg.ax - seg.bx) < 0.001) continue;
@@ -163,7 +234,6 @@
       ctx.stroke();
     }
 
-    // ground hatching under the floor line
     ctx.strokeStyle = pal.hatch;
     ctx.lineWidth = 1.5 * dpr;
     ctx.beginPath();
@@ -173,15 +243,107 @@
     }
     ctx.stroke();
 
+    if (trailsOn) drawTrails(px, py);
     for (i = 0; i < world.bodies.length; i++) drawBody(world.bodies[i], px, py, s);
+    if (selected && world.bodies.indexOf(selected) >= 0) drawSelection(selected, px, py, s);
   }
+
+  function recordTrails() {
+    if (!trailsOn) return;
+    trailTick++;
+    if (trailTick % 3) return;
+    for (var i = 0; i < world.bodies.length; i++) {
+      var b = world.bodies[i];
+      b.trail.push({ x: b.x, y: b.y });
+      if (b.trail.length > 150) b.trail.shift();
+    }
+  }
+
+  // ---- pointer: select, drag and throw -----------------------------------
+  function toWorld(e) {
+    var r = canvas.getBoundingClientRect();
+    var dx = (e.clientX - r.left) * dpr;
+    var dy = (e.clientY - r.top) * dpr;
+    return { x: (dx - view.ox) / view.s, y: H - (dy - view.oy) / view.s };
+  }
+
+  function bodyAt(x, y) {
+    for (var i = world.bodies.length - 1; i >= 0; i--) {
+      var b = world.bodies[i];
+      if (b.kind === 'circle') {
+        var dx = x - b.x, dy = y - b.y;
+        if (dx * dx + dy * dy <= (b.r + 0.1) * (b.r + 0.1)) return b;
+      } else {
+        var c = Math.cos(b.angle), s = Math.sin(b.angle);
+        var lx = (x - b.x) * c + (y - b.y) * s;
+        var ly = -(x - b.x) * s + (y - b.y) * c;
+        if (Math.abs(lx) <= b.w / 2 + 0.08 && Math.abs(ly) <= b.h / 2 + 0.08) return b;
+      }
+    }
+    return null;
+  }
+
+  function release(e) {
+    if (!drag) return;
+    var b = drag.b, now = performance.now();
+    b.fixed = false;
+    if (now - drag.lt < 130) {
+      b.vx = clamp(drag.vx, -MAX_THROW, MAX_THROW);
+      b.vy = clamp(drag.vy, -MAX_THROW, MAX_THROW);
+    }
+    drag = null;
+    if (canvas.hasPointerCapture && e && canvas.hasPointerCapture(e.pointerId)) {
+      canvas.releasePointerCapture(e.pointerId);
+    }
+  }
+
+  canvas.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    var p = toWorld(e);
+    var b = bodyAt(p.x, p.y);
+    if (!b) {
+      if (p.x > 0.2 && p.x < W - 0.2 && p.y > 0.3 && p.y < H - 0.2) addBallAt(p.x, p.y);
+      else selected = null;
+      return;
+    }
+    var now = performance.now();
+    if (lastTap.body === b && now - lastTap.t < 350) {
+      world.remove(b);
+      if (selected === b) selected = null;
+      lastTap = { body: null, t: 0 };
+      return;
+    }
+    lastTap = { body: b, t: now };
+    selected = b;
+    drag = { b: b, dx: b.x - p.x, dy: b.y - p.y, lx: p.x, ly: p.y, lt: now, vx: 0, vy: 0 };
+    b.fixed = true;
+    b.vx = 0; b.vy = 0; b.av = 0;
+    if (canvas.setPointerCapture) canvas.setPointerCapture(e.pointerId);
+    if (e.preventDefault) e.preventDefault();
+  });
+
+  canvas.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var p = toWorld(e), b = drag.b;
+    b.x = p.x + drag.dx;
+    b.y = p.y + drag.dy;
+    var now = performance.now(), dt = (now - drag.lt) / 1000;
+    if (dt > 0.012) {
+      var vx = (p.x - drag.lx) / dt, vy = (p.y - drag.ly) / dt;
+      if (Math.abs(vx) < 30 && Math.abs(vy) < 30) { drag.vx = vx; drag.vy = vy; }
+      drag.lx = p.x; drag.ly = p.y; drag.lt = now;
+    }
+  });
+
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
 
   function frame(t) {
     requestAnimationFrame(frame);
     if (!last) last = t;
     var dt = (t - last) / 1000;
     last = t;
-    if (running) world.step(dt);
+    if (running) { world.step(dt); recordTrails(); }
     draw();
   }
 
@@ -192,6 +354,8 @@
 
   playBtn.addEventListener('click', function () { setRunning(!running); });
   resetBtn.addEventListener('click', reset);
+  addBtn.addEventListener('click', addBall);
+  trailsBtn.addEventListener('click', function () { setTrails(!trailsOn); });
   bounce.addEventListener('input', function () { setBounce(parseFloat(bounce.value)); });
   friction.addEventListener('input', function () { setFriction(parseFloat(friction.value)); });
   window.addEventListener('resize', resize);
@@ -206,6 +370,7 @@
   resize();
   setBounce(restitution);
   setFriction(grip);
+  setTrails(true);
   setRunning(true);
   requestAnimationFrame(frame);
 })();

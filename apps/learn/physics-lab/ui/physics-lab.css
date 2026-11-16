@@ -52,6 +52,7 @@ html.light .pl {
 }
 .pl-btn:hover { border-color: var(--accent); }
 .pl-btn:active { filter: brightness(1.12); }
+.pl-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .pl-btn-main { background: var(--accent); border-color: var(--accent); color: var(--on); min-width: 96px; }
 .pl-btn-main:hover { background: #b3c4dc; }
 .pl-note { margin: 0; color: var(--muted); font-size: 0.88rem; }
