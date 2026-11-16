@@ -103,6 +103,13 @@ button:disabled{opacity:.35;cursor:default}
 .relaystat.ok{color:#16a34a}
 .relaystat.warn{color:#d97706}
 .relaystat.error{color:var(--bad)}
+/* WWW2d: "Using:" line, URL warnings, Test step list, Copy details + Open health page. */
+.relayusing{margin:-4px 0 6px;word-break:break-all}
+.relaywarns .relaystat{margin:4px 0}
+.relaysteps{margin:6px 0 10px;padding-left:20px;font-size:13px;word-break:break-word}
+.relaysteps li{margin:3px 0}
+a.healthlink{flex:1 1 140px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:12px;background:var(--chip);color:var(--fg);padding:8px 14px;min-height:40px;box-sizing:border-box}
+a.healthlink[hidden]{display:none}
 .relaywarn{border-left:3px solid #d97706;padding:6px 10px;border-radius:6px;background:#d977061a}
 
 /* WWW2c: Reader button (pressed state) and the final-URL hint */

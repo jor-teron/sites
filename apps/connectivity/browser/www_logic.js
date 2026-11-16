@@ -1,4 +1,4 @@
-/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages) WWW2b (session ids, relay-URL sanitiser, clear-cookies request and messages) and WWW2c (real address after relay redirects via X-Relay-Final-Url, Reader support detection and reader URLs). No DOM; tested by tests/www1.test.cjs, tests/www2a.test.cjs, tests/www2b.test.cjs and tests/www2c.test.cjs. */
+/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages) WWW2b (session ids, relay-URL sanitiser, clear-cookies request and messages) WWW2c (real address after relay redirects via X-Relay-Final-Url, Reader support detection and reader URLs) and WWW2d (relay URL auto-fix, Hub-relay/localhost warnings, Test report building with the secret redacted). No DOM; tested by tests/www1.test.cjs, tests/www2a.test.cjs, tests/www2b.test.cjs, tests/www2c.test.cjs and tests/www2d.test.cjs. */
 (function (root) {
   'use strict';
 
@@ -337,7 +337,7 @@
     if (x.kind === 'mixed') return { level: 'error', text: 'This Hub is https, so the relay URL must be https too (Tailscale Funnel gives one).' };
     if (x.kind === 'cors') return { level: 'warn', text: "Couldn't verify (relay may not allow this Hub origin); the relay did answer, so you can still try loading a page." };
     if (x.kind === 'timeout') return { level: 'error', text: 'Relay offline: no answer within ' + Math.round(C.RELAY_TEST_TIMEOUT_MS / 1000) + ' s. Is the relay running and Funnel on?' };
-    if (x.kind === 'offline') return { level: 'error', text: 'Relay offline or unreachable (or it does not allow this Hub origin). Check the URL, that the relay is running and that Funnel is on.' };
+    if (x.kind === 'offline') return { level: 'error', text: offlineText(x.healthUrl) };
     if (x.kind !== 'http') return { level: 'error', text: 'Relay test failed.' };
     var st = x.status | 0;
     if (st < 200 || st > 299) return { level: 'error', text: statusMessage(st) };
@@ -683,6 +683,152 @@
     return supported === true && relayReady(relay) && !relayMixed(relay, isHttpsHub) && /^https?:\/\//i.test(String(url || ''));
   }
 
+  /* ---- WWW2d: relay URL auto-fix, Hub-relay warning, detailed Test report ---- */
+
+  /* WWW2d: offline text with likely causes (the health URL to open in this browser, if known). */
+  function offlineText(healthUrl) {
+    var h = String(healthUrl || '') || 'the relay health page (<relay URL>/health?format=json)';
+    return 'Relay offline or unreachable: the request never reached the relay from this device. Open ' + h +
+      " in this browser: if it fails too, it's the network, Tailscale, DNS or an ad blocker; if it works, send me the details (Copy details).";
+  }
+
+  /* Invisible characters that sneak in when a URL is pasted (zero-width, BOM, soft hyphen, nbsp, bidi marks). */
+  var INVISIBLE_RE = /[\u00A0\u00AD\u180E\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u2064\u3000\uFEFF]/g;
+
+  /*
+   * WWW2d: auto-fix a typed or pasted relay URL. Returns {url, changed, notes}:
+   *   url: the usable relay base ('' when it still can't be used), changed: true when url differs from the trimmed input,
+   *   notes: short descriptions of each fix (never contain the secret).
+   * Fixes: spaces and invisible characters, a missing https://, //host, a trailing /health(?format=json),
+   * /www, /www/<anything>/fetch… (also /clear, /reader, /health), a query or #hash, a doubled /relay/relay, trailing slashes,
+   * and a bare https://<x>.ts.net gets /relay (the Funnel path of Relay Server).
+   */
+  function fixRelayUrl(raw) {
+    var notes = [];
+    var s0 = String(raw == null ? '' : raw);
+    var s = s0.replace(INVISIBLE_RE, '');
+    if (s !== s0) notes.push('removed invisible characters');
+    var t = s.replace(/\s+/g, '');
+    if (t !== s.trim()) notes.push('removed spaces');
+    s = t;
+    if (!s) return { url: '', changed: false, notes: [] };
+    if (/^\/\//.test(s)) { s = 'https:' + s; notes.push('added https:'); }
+    else if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) {
+      if (/^[a-z][a-z0-9+.-]*:(?!\d)/i.test(s) && !/^[^:\/]+\.[^:\/]+:/.test(s)) return { url: '', changed: false, notes: notes };
+      s = 'https://' + s.replace(/^:?\/+/, '');
+      notes.push('added https://');
+    }
+    var m = /^([a-z][a-z0-9+.-]*):\/\/([^\/?#]*)([^?#]*)([?#].*)?$/i.exec(s);
+    if (!m || !/^https?$/i.test(m[1]) || !m[2]) return { url: '', changed: false, notes: notes };
+    var scheme = m[1].toLowerCase();
+    /* Lower-case the host (not any user@ part) and drop a trailing dot. */
+    var hostLower = m[2].replace(/(^|@)([^@]*)$/, function (all, at, h) { return at + h.toLowerCase(); }).replace(/\.(?=$|:)/, '');
+    var path = m[3] || '';
+    if (m[4]) notes.push('removed ' + (m[4].charAt(0) === '?' ? 'the query' : 'the #part'));
+    path = path.replace(/\/{2,}/g, '/');
+    /* /www and everything after it (fetch, clear, reader, health, a secret) is not part of the base. */
+    var w = path.search(/\/www(?:\/|$)/i);
+    if (w >= 0) { path = path.slice(0, w); notes.push('removed /www…'); }
+    path = path.replace(/\/+$/, '');
+    if (/\/health$/i.test(path)) { path = path.replace(/\/health$/i, ''); notes.push('removed /health'); }
+    path = path.replace(/\/+$/, '');
+    if (/(?:\/relay){2,}(?=\/|$)/i.test(path)) { path = path.replace(/(?:\/relay){2,}(?=\/|$)/ig, C.RELAY_PATH); notes.push('removed a doubled /relay'); }
+    if (!path && /\.ts\.net(?::\d+)?$/i.test(hostLower.replace(/^.*@/, ''))) { path = C.RELAY_PATH; notes.push('added ' + C.RELAY_PATH); }
+    var url = normalizeRelayBase(scheme + '://' + hostLower + path);
+    var trimmed = String(raw == null ? '' : raw).trim().replace(/\/+$/, '');
+    return { url: url, changed: !!url && url !== trimmed, notes: url ? notes : [] };
+  }
+
+  /* WWW2d: port of an http(s) URL ('' for the default). */
+  function portOf(url) {
+    var m = /^https?:\/\/(?:[^@\/?#]*@)?(?:\[[^\]]+\]|[^:\/?#]+)(?::(\d+))?/i.exec(String(url || ''));
+    return m && m[1] ? m[1] : '';
+  }
+
+  /* WWW2d: true when the URL points at this device (localhost, 127.x, ::1, 0.0.0.0) or a Hub relay port (8787 RL1, 8022/8023 SSH). */
+  function isHubRelayUrl(url) {
+    var u = String(url || '');
+    var h = hostOf(u);
+    if (!h) return false;
+    if (C.LOCAL_HOSTS.indexOf(h) >= 0 || /^127\./.test(h) || /\.localhost$/.test(h)) return true;
+    return C.HUB_RELAY_PORTS.indexOf(portOf(u)) >= 0;
+  }
+
+  /*
+   * WWW2d: warnings for a relay URL on this Hub. hubProtocol: location.protocol ('https:', 'http:', 'file:').
+   * Returns [{level: 'error'|'warn'|'info', kind, text}] — kinds 'hubrelay', 'mixed', 'file'.
+   */
+  function relayUrlWarnings(url, hubProtocol) {
+    var out = [];
+    var b = normalizeRelayBase(url);
+    if (!b) return out;
+    if (isHubRelayUrl(b)) out.push({ level: 'error', kind: 'hubrelay', text: C.HUB_RELAY_WARN });
+    if (hubProtocol === 'https:' && isMixedContent('https:', b)) out.push({ level: 'error', kind: 'mixed', text: healthMessage({ kind: 'mixed' }).text });
+    if (hubProtocol === 'file:') out.push({ level: 'info', kind: 'file', text: C.FILE_HUB_NOTE });
+    return out;
+  }
+
+  /* WWW2d: "TypeError: Failed to fetch" from a fetch error (AbortError gets "timeout"). */
+  function describeError(err) {
+    if (!err) return 'unknown error';
+    var name = err.name ? String(err.name) : 'Error';
+    var msg = err.message != null ? String(err.message) : String(err);
+    if (name === 'AbortError' && (!msg || /abort/i.test(msg))) msg = 'timeout';
+    return msg ? name + ': ' + msg : name;
+  }
+
+  /* WWW2d: one step's result as text: {status, ms} | {error, ms} | {opaque: true, ms} | {skipped: reason}. */
+  function stepResultText(r) {
+    var x = r || {};
+    if (x.skipped) return 'skipped (' + x.skipped + ')';
+    var t = x.ms != null ? ' in ' + Math.max(0, Math.round(x.ms)) + ' ms' : '';
+    if (x.error) return 'failed: ' + x.error + t;
+    if (x.opaque) return 'reached the relay (opaque no-cors answer)' + t;
+    if (x.status != null) return 'HTTP ' + (x.status | 0) + t;
+    return 'not run';
+  }
+
+  /*
+   * WWW2d: the Test report. t: {release, rawUrl, url, notes, warnings, healthUrl, health, noCors, secret, summary, env},
+   * env: {userAgent, origin, onLine, secureContext, protocol, time}. secret: redacted from every line.
+   * Returns {steps: [{label, text}], text} where text is the full redacted report for Copy details.
+   */
+  function buildTestReport(t, secret) {
+    var x = t || {};
+    var steps = [
+      { label: 'a. Health URL', text: x.healthUrl || '(none: relay URL not usable)' },
+      { label: 'b. Health GET', text: stepResultText(x.health) },
+      { label: 'c. no-cors probe', text: stepResultText(x.noCors || { skipped: 'not needed' }) },
+      { label: 'd. Secret check', text: stepResultText(x.secret || { skipped: 'health check did not pass' }) + (x.secret && x.secret.status != null ? ' (' + secretProbeMessage(x.secret.status).text + ')' : '') }
+    ];
+    var env = x.env || {};
+    var lines = ['Web Browser ' + (x.release || C.RELEASE) + ' relay Test report'];
+    if (env.time) lines.push('Time: ' + env.time);
+    lines.push('Relay URL typed: ' + (x.rawUrl == null ? '' : String(x.rawUrl)));
+    lines.push('Relay URL used: ' + (x.url || '(not usable)'));
+    if (x.notes && x.notes.length) lines.push('Auto-fixes: ' + x.notes.join(', '));
+    (x.warnings || []).forEach(function (w) { lines.push('Warning: ' + w.text); });
+    steps.forEach(function (s) { lines.push(s.label + ': ' + s.text); });
+    if (x.summary) lines.push('Result: ' + x.summary);
+    lines.push('userAgent: ' + (env.userAgent || ''));
+    lines.push('location.origin: ' + (env.origin || ''));
+    if (env.protocol) lines.push('location.protocol: ' + env.protocol);
+    lines.push('navigator.onLine: ' + String(env.onLine));
+    lines.push('isSecureContext: ' + String(env.secureContext));
+    lines.push('Secret: ' + (String(secret || '').trim() ? 'set (hidden)' : 'not set'));
+    var out = {
+      steps: steps.map(function (s) { return { label: s.label, text: redactAll(s.text, secret) }; }),
+      text: redactAll(lines.join('\n'), secret)
+    };
+    return out;
+  }
+
+  /* WWW2d: redact the secret everywhere, and any /www/<x>/ path segment (a secret pasted into the URL field). */
+  function redactAll(text, secret) {
+    var t = redactSecret(text, secret);
+    return t.replace(/(\/www\/)(?!fetch\b|clear\b|reader\b|health\b)[^\/?#\s]+(?=\/)/gi, '$1•••');
+  }
+
 
   var WWW_LOGIC = {
     searchUrl: searchUrl,
@@ -747,7 +893,16 @@
     readerFromHealth: readerFromHealth,
     readerFromStatus: readerFromStatus,
     readerSupported: readerSupported,
-    showReaderButton: showReaderButton
+    showReaderButton: showReaderButton,
+    offlineText: offlineText,
+    fixRelayUrl: fixRelayUrl,
+    portOf: portOf,
+    isHubRelayUrl: isHubRelayUrl,
+    relayUrlWarnings: relayUrlWarnings,
+    describeError: describeError,
+    stepResultText: stepResultText,
+    buildTestReport: buildTestReport,
+    redactAll: redactAll
   };
 
   root.WWW_LOGIC = WWW_LOGIC;

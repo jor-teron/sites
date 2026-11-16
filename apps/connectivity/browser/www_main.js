@@ -1,4 +1,4 @@
-/* Web Browser — www_main.js: WWW1 UI wiring (tabs, toolbar, frames, embed-blocked card, bookmarks, history, settings, help, shortcuts, theme) + WWW2a relay (Settings > Relay + Test, auto/per-tab routing, via-relay badge) + WWW2b (per-device relay session, New session, Clear relay cookies, privacy notes, relay-URL sanitising before every save) + WWW2c (real address after relay redirects from X-Relay-Final-Url, Reader button when the relay supports it). */
+/* Web Browser — www_main.js: WWW1 UI wiring (tabs, toolbar, frames, embed-blocked card, bookmarks, history, settings, help, shortcuts, theme) + WWW2a relay (Settings > Relay + Test, auto/per-tab routing, via-relay badge) + WWW2b (per-device relay session, New session, Clear relay cookies, privacy notes, relay-URL sanitising before every save) + WWW2c (real address after relay redirects from X-Relay-Final-Url, Reader button when the relay supports it) + WWW2d (relay URL auto-fix on save and Test, Hub-relay/localhost warning, step-by-step Test report with Copy details and Open health page). */
 (function () {
   'use strict';
 
@@ -19,7 +19,7 @@
   var settings = L.mergeSettings(S.settings());
   var bookmarks = S.bookmarks();
   var history = S.history();
-  var relay = L.sanitizeRelay(S.relay());
+  var relay = loadRelay();
   var relaySession = loadSession();
   var tabs = [];
   var activeId = 0;
@@ -32,6 +32,16 @@
   var readerCache = {};
   var readerBusy = '';
   var readerTimer = 0;
+
+  /* WWW2d: saved relay settings with the URL auto-fixed (older saves may hold /health, /www/…/fetch, no scheme…). */
+  function loadRelay() {
+    var r = L.sanitizeRelay(S.relay());
+    var f = L.fixRelayUrl(r.url);
+    if (f.url && f.url !== r.url) { r.url = f.url; S.saveRelay(r); }
+    return r;
+  }
+  /* WWW2d: the last Test report ({steps, text}, already redacted) for Copy details. */
+  var lastReport = null;
 
   /* ---------- WWW2b: per-device relay session + sanitising ---------- */
   /* This Hub browser's relay cookie session id: the saved one, or a new random one (saved). */
@@ -60,7 +70,7 @@
   window.addEventListener('storage', function (e) {
     if (e.key === C.HUB_THEME_KEY) applyTheme();
     if (e.key === C.LS_BOOKMARKS) { bookmarks = S.bookmarks(); renderBookmarks(); }
-    if (e.key === C.LS_RELAY) { relay = L.sanitizeRelay(S.relay()); relayChanged(); renderTabs(); renderChrome(); }
+    if (e.key === C.LS_RELAY) { relay = loadRelay(); relayChanged(); renderTabs(); renderChrome(); }
     if (e.key === C.LS_RELAY_SESSION) { var id = S.relaySession(); if (L.validSessionId(id)) relaySession = id; }
   });
 
@@ -787,28 +797,98 @@
     });
   }
 
-  /* Health check, then (if www is on) the secret check. Calls done({level, text}). */
+  /* WWW2d: what the Copy details report says about this browser. */
+  function envInfo() {
+    return {
+      userAgent: navigator.userAgent || '',
+      origin: location.origin,
+      protocol: location.protocol,
+      onLine: navigator.onLine,
+      secureContext: typeof window.isSecureContext === 'boolean' ? window.isSecureContext : 'unknown',
+      time: new Date().toString()
+    };
+  }
+  function nowMs() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
+
+  /*
+   * Health check, then (if www is on) the secret check. Calls done({level, text}, report).
+   * WWW2d: every step is timed and recorded (health GET, no-cors probe, secret check) into a redacted report.
+   */
   function testRelay(done) {
-    if (!L.relayConfigured(relay)) { done(L.healthMessage({ kind: 'notset' })); return; }
-    if (L.relayMixed(relay, isHttpsHub())) { done(L.healthMessage({ kind: 'mixed' })); return; }
-    var hurl = L.relayHealthUrl(relay.url);
+    var raw = relay.url;
+    var fix = L.fixRelayUrl(relay.url);
+    if (fix.url && fix.url !== relay.url) { relay.url = fix.url; S.saveRelay(relay); relayChanged(); }
+    var t = {
+      release: C.RELEASE, rawUrl: raw, url: L.normalizeRelayBase(relay.url), notes: fix.notes,
+      warnings: L.relayUrlWarnings(relay.url, location.protocol), healthUrl: L.relayHealthUrl(relay.url),
+      health: null, noCors: null, secret: null, summary: '', env: envInfo()
+    };
+    var finish = function (m) {
+      /* The Hub's own relay (RL1/SSH, localhost) can never pass: say so first. */
+      if (m.level !== 'ok' && t.warnings.some(function (w) { return w.kind === 'hubrelay'; })) m = { level: 'error', text: C.HUB_RELAY_WARN + ' · ' + m.text };
+      t.summary = m.text;
+      lastReport = L.buildTestReport(t, relay.secret);
+      done(m, lastReport);
+    };
+    if (!L.relayConfigured(relay)) { t.health = { skipped: 'relay not set' }; finish(L.healthMessage({ kind: 'notset' })); return; }
+    if (L.relayMixed(relay, isHttpsHub())) { t.health = { skipped: 'http relay on an https Hub' }; finish(L.healthMessage({ kind: 'mixed' })); return; }
+    var hurl = t.healthUrl;
+    var t0 = nowMs();
     timedFetch(hurl, { cache: 'no-store' }).then(function (res) {
-      return res.text().then(function (body) { return { kind: 'http', status: res.status, body: body }; });
+      t.health = { status: res.status, ms: nowMs() - t0 };
+      return res.text().then(function (body) { return { kind: 'http', status: res.status, body: body }; },
+        function () { return { kind: 'http', status: res.status, body: '' }; });
     }, function (err) {
-      if (err && err.name === 'AbortError') return { kind: 'timeout' };
+      t.health = { error: L.describeError(err), ms: nowMs() - t0 };
+      var timedOut = err && err.name === 'AbortError';
       /* CORS or network failure: a no-cors probe only proves the relay is reachable. */
-      return timedFetch(hurl, { mode: 'no-cors', cache: 'no-store' }).then(function () { return { kind: 'cors' }; },
-        function (e2) { return { kind: e2 && e2.name === 'AbortError' ? 'timeout' : 'offline' }; });
+      var t1 = nowMs();
+      return timedFetch(hurl, { mode: 'no-cors', cache: 'no-store' }).then(function () {
+        t.noCors = { opaque: true, ms: nowMs() - t1 };
+        return { kind: timedOut ? 'timeout' : 'cors' };
+      }, function (e2) {
+        t.noCors = { error: L.describeError(e2), ms: nowMs() - t1 };
+        return { kind: timedOut || (e2 && e2.name === 'AbortError') ? 'timeout' : 'offline', healthUrl: hurl };
+      });
     }).then(function (r) {
       var m = L.healthMessage(r);
-      if (r.kind !== 'http' || m.www !== true) { done(m); return; }
+      if (r.kind !== 'http' || m.www !== true) {
+        t.secret = { skipped: r.kind === 'http' ? 'health check did not pass' : 'relay not reached with CORS' };
+        finish(m);
+        return;
+      }
+      var t2 = nowMs();
       timedFetch(L.relaySecretProbeUrl(relay.url, relay.secret), { cache: 'no-store' })
-        .then(function (res) { return res.status; }, function () { return 0; })
+        .then(function (res) { t.secret = { status: res.status, ms: nowMs() - t2 }; return res.status; },
+          function (e3) { t.secret = { error: L.describeError(e3), ms: nowMs() - t2 }; return 0; })
         .then(function (st) {
           var sm = L.secretProbeMessage(st);
-          done({ level: sm.level === 'ok' ? 'ok' : sm.level, text: m.text + ' · ' + sm.text });
+          finish({ level: sm.level === 'ok' ? 'ok' : sm.level, text: m.text + ' · ' + sm.text });
         });
-    }).catch(function () { done(L.healthMessage({ kind: 'offline' })); });
+    }).catch(function (e) {
+      if (!t.health) t.health = { error: L.describeError(e) };
+      finish(L.healthMessage({ kind: 'offline', healthUrl: hurl }));
+    });
+  }
+
+  /* WWW2d: copy text to the clipboard (Clipboard API, then a hidden textarea). Calls done(true|false). */
+  function copyText(text, done) {
+    var fallback = function () {
+      var ta = el('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok);
+    };
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else fallback();
   }
 
   function renderRelaySettings(body) {
@@ -829,6 +909,11 @@
       return i;
     };
     var urlIn = field('Relay URL', 'url', relay.url, 'https://machine.tailnet.ts.net/relay');
+    /* WWW2d: the URL actually used after the auto-fix, and warnings (Hub's own relay, http on https, file://). */
+    var using = el('p', 'hint relayusing');
+    body.appendChild(using);
+    var warnBox = el('div', 'relaywarns');
+    body.appendChild(warnBox);
     var secIn = field('Secret', 'password', relay.secret, 'relay token');
     var enL = el('label');
     var en = el('input');
@@ -844,12 +929,62 @@
     var out = el('p', 'relaystat');
     out.setAttribute('role', 'status');
     body.appendChild(out);
+    /* WWW2d: step list of the last Test, Copy details and Open health page. */
+    var stepsEl = el('ol', 'relaysteps');
+    stepsEl.hidden = true;
+    body.appendChild(stepsEl);
+    var row2 = el('div', 'row');
+    var copyBtn = el('button', 'jelly', 'Copy details');
+    copyBtn.type = 'button';
+    copyBtn.title = 'Copy the Test report (secret hidden) with browser details, to paste to the Connect builder';
+    row2.appendChild(copyBtn);
+    var healthA = el('a', 'jelly healthlink', 'Open health page');
+    healthA.target = '_blank';
+    healthA.rel = 'noopener noreferrer';
+    row2.appendChild(healthA);
+    body.appendChild(row2);
+    var drawSteps = function (rep) {
+      stepsEl.textContent = '';
+      stepsEl.hidden = !rep;
+      if (!rep) return;
+      rep.steps.forEach(function (st) {
+        var li = el('li');
+        li.appendChild(el('b', '', st.label + ': '));
+        li.appendChild(document.createTextNode(st.text));
+        stepsEl.appendChild(li);
+      });
+    };
+    var report = function () {
+      if (lastReport) return lastReport.text;
+      var f = L.fixRelayUrl(relay.url);
+      return L.buildTestReport({ rawUrl: relay.url, url: f.url, notes: f.notes, warnings: L.relayUrlWarnings(relay.url, location.protocol),
+        healthUrl: L.relayHealthUrl(relay.url), health: { skipped: 'Test not run yet' }, env: envInfo() }, relay.secret).text;
+    };
+    copyBtn.onclick = function () {
+      var text = L.redactAll(report(), relay.secret);
+      copyText(text, function (ok) { toast(ok ? 'Details copied (secret hidden)' : "Couldn't copy: select the steps above instead"); });
+    };
     /* WWW2b: every status text is redacted, so the secret never shows on screen. */
     var show = function (m) { out.className = 'relaystat ' + (m.level || ''); out.textContent = L.redactSecret(m.text || '', relay.secret); };
+    /* WWW2d: "Using:" line, warnings and the health link for the saved (auto-fixed) URL. */
+    var syncUrl = function () {
+      var f = L.fixRelayUrl(urlIn.value);
+      var b = L.normalizeRelayBase(relay.url);
+      using.textContent = b ? L.redactAll('Using: ' + b + (f.notes.length ? ' (auto-fixed: ' + f.notes.join(', ') + ')' : ''), relay.secret) : '';
+      using.hidden = !b;
+      warnBox.textContent = '';
+      L.relayUrlWarnings(relay.url, location.protocol).forEach(function (w) {
+        warnBox.appendChild(el('p', 'relaystat ' + (w.level === 'info' ? '' : w.level), w.text));
+      });
+      var hu = L.relayHealthUrl(relay.url);
+      if (hu) healthA.href = hu; else healthA.removeAttribute('href');
+      healthA.hidden = !hu;
+    };
     var sync = function () {
       var ok = L.relayConfigured(relay);
       en.disabled = !ok;
       en.checked = ok && relay.enabled;
+      syncUrl();
       if (relay.url && !L.normalizeRelayBase(relay.url)) show({ level: 'error', text: 'The relay URL must start with https:// (or http://).' });
       else if (!ok) show({ level: '', text: C.RELAY_NOT_SET });
       else if (!relay.enabled) show({ level: '', text: C.RELAY_OFF });
@@ -858,8 +993,12 @@
     };
     var save = function () {
       var was = L.relayConfigured(relay);
-      relay.url = urlIn.value.trim();
+      /* WWW2d: the auto-fixed URL is saved; the field keeps what was typed, "Using:" shows the fixed one. */
+      var f = L.fixRelayUrl(urlIn.value);
+      relay.url = f.url || urlIn.value.trim();
       relay.secret = secIn.value.trim();
+      lastReport = null;
+      drawSteps(null);
       var now = L.relayConfigured(relay);
       if (now && !was) relay.enabled = true; /* switch on the first time both fields are filled */
       if (!now) relay.enabled = false;
@@ -875,7 +1014,8 @@
     test.onclick = function () {
       test.disabled = true;
       show({ level: '', text: 'Testing…' });
-      testRelay(function (m) { test.disabled = false; show(m); });
+      drawSteps(null);
+      testRelay(function (m, rep) { test.disabled = false; show(m); drawSteps(rep); syncUrl(); });
       /* WWW2c: Test also re-checks Reader support. */
       delete readerCache[L.readerKey(relay)];
       ensureReader();
@@ -906,6 +1046,7 @@
     finalHintEl.hidden = !finalHint;
     body.appendChild(finalHintEl);
     sync();
+    if (lastReport) drawSteps(lastReport);
   }
 
   /* WWW2b: POST <base>/www/<secret>/clear?session=<id> (a CORS simple request). If CORS hides the answer, a no-cors POST still clears it. */

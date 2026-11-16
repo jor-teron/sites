@@ -1,4 +1,4 @@
-# Web Browser (WWW1, WWW2a, WWW2b, WWW2c)
+# Web Browser (WWW1, WWW2a, WWW2b, WWW2c, WWW2d)
 
 A local Hub web browser: tabs, an address bar that takes URLs or search words, Back / Forward / Reload / Stop / Home,
 bookmarks (bar, list and a speed-dial home page) and history (list, search, clear). Static files only, no build, no CDN,
@@ -11,7 +11,7 @@ classic scripts, works on `file://`.
 - `www_store.js`: localStorage, keys `browser_bookmarks`, `browser_history`, `browser_settings`, `browser_tabs`, `browser_relay`, `browser_relay_session`.
 - `www_main.js`: UI wiring.
 - `www1_icon.py`: draws `browser_icon.png` (IC9 style, reuses `../ic9c_colour_icons.py` helpers; Pillow).
-- `tests/www1.test.cjs`, `tests/www2a.test.cjs`, `tests/www2b.test.cjs`, `tests/www2c.test.cjs`: `node apps/connectivity/browser/tests/www1.test.cjs` (and `www2a`, `www2b`, `www2c`).
+- `tests/www1.test.cjs`, `tests/www2a.test.cjs`, `tests/www2b.test.cjs`, `tests/www2c.test.cjs`, `tests/www2d.test.cjs`: `node apps/connectivity/browser/tests/www1.test.cjs` (and `www2a`, `www2b`, `www2c`, `www2d`).
 
 ## Embedding limits (honest version)
 Each tab is a sandboxed `<iframe>`. Many big sites send `X-Frame-Options` or CSP `frame-ancestors` and refuse to load
@@ -78,3 +78,24 @@ browser's own history. WWW2c adds the real address after redirects and Reader (b
   `<base>/www/<secret>/reader?url=https://example.com/` (2xx = shown; 501, 404 and the rest = hidden; a network or CORS failure
   = unknown, hidden). Results are kept in memory only; Test re-checks. When it works, the tab loads
   `<base>/www/<secret>/reader?url=<encoded>&session=<id>` with a "reader" badge. v0.7.0 answers 501, so it stays hidden.
+
+## Relay URL auto-fix and detailed Test (WWW2d)
+For "Relay offline or unreachable" on a device where the relay is healthy from outside.
+- **Auto-fix** (`fixRelayUrl`, on every save, on load of older saves and on Test): drops spaces and invisible characters
+  (zero-width, BOM, nbsp, bidi marks), adds `https://` when no scheme is typed, removes a trailing `/health` or
+  `/health?format=json`, `/www` and anything after it (`/www/<secret>/fetch?url=…`, `/www/health`, …), a query or `#part`, a
+  doubled `/relay/relay` and trailing slashes, and adds `/relay` to a bare `https://<x>.ts.net`. The field keeps what was typed;
+  "Using: <URL>" under it shows the URL actually saved and used, with the fixes made.
+- **Warnings** (`relayUrlWarnings`): localhost, `127.x`, `::1`, `0.0.0.0` or ports 8787 / 8022 / 8023 → "That looks like the
+  Hub's own relay (RL1/SSH), which has no web module. Use your Relay Server URL, e.g. https://<machine>.<tailnet>.ts.net/relay".
+  An http relay on an https Hub is still an error. A `file://` Hub gets a note that the relay should still work.
+- **Test steps**: (a) the health URL tried, (b) the CORS GET result (HTTP status, or the fetch error name and message such as
+  `TypeError: Failed to fetch` or `AbortError: timeout`) with the time in ms, (c) the no-cors probe (run only when (b) fails),
+  (d) the secret check status. The offline message now says the request never reached the relay from this device and to open
+  the health URL in the same browser: if that fails too, it's the network, Tailscale, DNS or an ad blocker; if it works, send
+  the details.
+- **Copy details** copies the report (`buildTestReport`) with `navigator.userAgent`, `location.origin`, `navigator.onLine` and
+  `isSecureContext`. The secret is never shown or copied: every line goes through `redactAll` (the secret, typed or encoded,
+  and any `/www/<x>/` segment become `•••`).
+- **Open health page** opens `<base>/health?format=json` in a new tab.
+
