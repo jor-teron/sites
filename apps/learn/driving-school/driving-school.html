@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Driving School DS-3</title>
+<title>Driving School DS-4</title>
 <link rel="icon" href="driving-school_icon.png">
 <script src="../../../shared/theme/hub_theme.js" data-own-key="learn.driving-school.theme"></script>
 <link rel="stylesheet" href="ui/driving.css">
@@ -20,32 +20,33 @@
 <div id="mirror-l" class="mirror side l" role="img" aria-label="Left door mirror"></div>
 <div id="mirror-r" class="mirror side r" role="img" aria-label="Right door mirror"></div>
 <p id="fault" aria-live="polite"></p>
-<p class="next"><span id="hint" aria-live="polite"></span></p>
 <p id="rotate">Turn your phone sideways for a bigger view. Everything still works like this.</p>
 </section>
 <section class="cockpit" id="cockpit" aria-label="Dashboard">
 <div class="console">
 <div class="gate" id="gate" role="group" aria-label="Gear lever"></div>
-<div class="console-btns"><button id="park" class="handbrake" aria-pressed="true"><span class="lever" aria-hidden="true"></span>Handbrake</button><button id="engine" class="engine">Start engine</button><button id="look">Check mirrors</button></div>
+<div class="console-btns"><button id="park" class="handbrake" aria-pressed="true"><span class="lever" aria-hidden="true"></span>Handbrake</button><button id="engine" class="engine">Engine OFF</button><button id="look">Check mirrors</button></div>
 </div>
 <div class="cluster">
-<div class="lamps"><button id="left" class="signal" aria-label="Left indicator" aria-pressed="false">◀</button><span id="lamps" class="lamp-text">Engine off</span><button id="right" class="signal" aria-label="Right indicator" aria-pressed="false">▶</button></div>
+<span id="lamps" class="lamp-text">Engine off</span>
 <div class="dials">
+<button id="left" class="signal" aria-label="Left indicator" aria-pressed="false">◀</button>
 <svg id="speedo" class="dial" viewBox="-60 -60 120 120" role="img" aria-label="Speedometer"></svg>
 <div class="wheel-box"><div id="wheel" role="slider" tabindex="0" aria-label="Steering wheel: drag it round to steer" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><svg viewBox="-100 -100 200 200" aria-hidden="true"></svg></div><button id="horn" class="hub" aria-label="Horn">Horn</button></div>
 <svg id="tacho" class="dial" viewBox="-60 -60 120 120" role="img" aria-label="Rev counter and gear"></svg>
+<button id="right" class="signal" aria-label="Right indicator" aria-pressed="false">▶</button>
 </div>
 </div>
 <div class="pedals" role="group" aria-label="Pedals"><button data-hold="clutch" class="pedal clutch"><span>Clutch</span></button><button data-hold="brake" class="pedal brake"><span>Brake</span></button><button data-hold="throttle" class="pedal gas"><span>Accelerator</span></button></div>
 </section>
+<p id="note" class="note"><span id="hint" aria-live="polite"></span><button type="button" id="note-show" class="note-show" aria-label="Show lesson note">Note</button></p>
 </main>
-<p class="disclaimer">Practice only, not real driving lessons. Learn to drive with a qualified instructor in a real car.</p>
 </div>
-<dialog id="preferences"><h2>Driving settings</h2><label>Transmission <select id="transmission"><option value="manual">Manual · 5 speed</option><option value="auto">Automatic</option></select></label><label>Road side <select id="side"><option value="left">Left-hand traffic · India · RHD</option><option value="right">Right-hand traffic · LHD</option></select></label><label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label><p>W / ↑ accelerator · S / ↓ or Space brake · A/D or ←/→ steer · C clutch · Q/E gears · H handbrake · Z/X indicators. Enter starts engine. M checks mirrors.</p><button id="close-settings">Done</button></dialog>
+<dialog id="preferences"><h2>Driving settings</h2><label>Transmission <select id="transmission"><option value="manual">Manual · 5 speed</option><option value="auto">Automatic</option></select></label><label>Road side <select id="side"><option value="left">Left-hand traffic · India · RHD</option><option value="right">Right-hand traffic · LHD</option></select></label><label>Show mini-map <select id="minimap"><option value="off">Off</option><option value="on">On</option></select></label><label>Theme <select id="theme"><option value="system">Auto (System / Hub)</option><option value="light">Light</option><option value="dark">Dark</option></select></label><p>W / ↑ accelerator · S / ↓ or Space brake · A/D or ←/→ steer · C clutch · Q/E gears · H handbrake · Z/X indicators. Enter starts engine. M checks mirrors.</p><button id="close-settings">Done</button></dialog>
 <dialog id="pause-card"><h2>Practice paused</h2><p>Take your time. The car and lesson clock are stopped.</p><button id="resume">Resume</button></dialog>
 <dialog id="help-card"><h2>How to drive</h2>
 <p>This is a conceptual practice simulator, not professional instruction. Never use it while driving. Use a qualified instructor for a real car; rules and test criteria vary by location.</p>
-<ol><li>Adjust settings: India uses LEFT-hand traffic and a RIGHT-hand-drive seat. Manual is the default; Automatic is in Settings. You sit in the driver's seat (on the right in India) and look out through the windscreen. The small map in the corner shows the area from above.</li>
+<ol><li>Adjust settings: India uses LEFT-hand traffic and a RIGHT-hand-drive seat. Manual is the default; Automatic is in Settings. You sit in the driver's seat (on the right in India) and look out through the windscreen. A mini-map can be turned on in Settings (off by default).</li>
 <li>Manual start: handbrake on; hold Clutch (C), start engine (Enter), select first (E), check Mirrors (M) and all around. Release handbrake (H). Add gentle accelerator (W) and release clutch. The clutch gauge shows the bite point. A stall needs brake, clutch down, neutral, restart.</li>
 <li>Accelerate in a straight line, ease off W, clutch down, select the next gear, release clutch. First gear is for moving off. Look ahead through turns and reduce speed before steering.</li>
 <li>To stop: release accelerator, apply brake (S/Space) progressively. Hold clutch near walking speed so the engine does not stall. At rest select neutral and apply handbrake.</li>

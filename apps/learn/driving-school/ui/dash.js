@@ -80,7 +80,7 @@
     $('left').setAttribute('aria-pressed', c.indicator === 'left'); $('right').setAttribute('aria-pressed', c.indicator === 'right');
     $('park').setAttribute('aria-pressed', c.handbrake); $('park').classList.toggle('on', c.handbrake);
     $('lamps').textContent = [c.handbrake ? 'Handbrake on' : '', c.stalled ? 'Stalled' : !c.engine ? 'Engine off' : ''].filter(Boolean).join(' · ') || 'Ready';
-    $('engine').classList.toggle('running', c.engine); $('engine').textContent = c.engine ? 'Engine on' : 'Start engine';
+    const eng = D.engineChrome(c); $('engine').classList.toggle('running', eng.running); $('engine').textContent = eng.text;
     const pedal = (name, v) => { const b = document.querySelector('[data-hold="' + name + '"]'); if (b) b.style.setProperty('--press', Math.round(D.clamp(v, 0, 1) * 100) + '%'); };
     pedal('clutch', c.auto ? 0 : c.clutch); pedal('brake', input.brake); pedal('throttle', input.throttle);
   }

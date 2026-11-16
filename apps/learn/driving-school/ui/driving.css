@@ -1,26 +1,31 @@
 /* Driving School DS-2a: first-person cockpit. Windscreen (three.js canvas) on top, dashboard below. */
 :root{--bg:#101e2b;--panel:#1b3041;--ink:#eff7fb;--muted:#adc4d4;--line:#36566d;--blue:#65d9ff;color-scheme:dark;font:15px system-ui,sans-serif}
 :root.light{--bg:#edf4f6;--panel:#fff;--ink:#163348;--muted:#4c6574;--line:#bacfd9;--blue:#007da8;color-scheme:light}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);min-height:100dvh}
+*{box-sizing:border-box}
+/* DS-4: fill the screen (dvw/dvh with vw/vh fallback) and never scroll the page while driving. */
+html,body{margin:0;background:var(--bg);color:var(--ink);overflow:hidden;overscroll-behavior:none;width:100vw;height:100vh;width:100dvw;height:100dvh}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;width:100vw;height:100vh;width:100dvw;height:100dvh}
 button,select{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:9px;min-height:44px;padding:8px 12px}
 button{cursor:pointer;touch-action:manipulation}button:hover,button.active{background:#176b87;color:#fff}
 button:focus-visible,select:focus-visible,#wheel:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 button[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--blue)}button:disabled{cursor:default;opacity:.8}
-#app{height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
-.lrn-head{display:flex;align-items:center;flex-wrap:wrap;flex-shrink:0;gap:6px;padding:4px 12px;border-bottom:1px solid var(--line)}
-h1{font-size:20px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:13px}
-.toolbar{display:flex;align-items:center;gap:8px;padding:6px 12px;flex-shrink:0;flex-wrap:wrap}
-.toolbar select{max-width:300px}.status{margin:0;flex:1;min-width:180px;font-size:13px;color:var(--muted);text-align:right}
+/* DS-4: the in-app top bar (not the Hub title bar) is thinner, so the view gets more room. */
+.lrn-head{display:flex;align-items:center;flex-wrap:wrap;flex-shrink:0;gap:4px;padding:1px 8px;padding-top:max(1px,env(safe-area-inset-top));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));border-bottom:1px solid var(--line)}
+h1{font-size:14px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:11px;min-height:28px;padding:2px 8px;border-radius:6px}
+.toolbar{display:flex;align-items:center;gap:4px;padding:2px 8px;flex-shrink:0;flex-wrap:wrap;font-size:12px;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+.toolbar select,.toolbar button,.toolbar input{font-size:12px;min-height:28px;padding:2px 8px;border-radius:6px}
+.toolbar select{max-width:280px}.status{margin:0;flex:1;min-width:140px;font-size:11px;color:var(--muted);text-align:right}
 .status strong{color:var(--ink)}#score{color:var(--blue)}
-.world{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 10px}
-.disclaimer{font-size:11px;color:var(--muted);padding:0 14px;margin:4px 0;flex-shrink:0}
+.world{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;padding:0}
+/* DS-4: the footer disclaimer was removed so the dashboard can sit lower. */
 
 /* Windscreen. */
-.screen{position:relative;flex:1;min-height:150px;border-radius:14px 14px 0 0;overflow:hidden;background:#9fd3f0}
+.screen{position:relative;flex:1;min-height:120px;border-radius:0;overflow:hidden;background:#9fd3f0}
 .screen canvas{display:block;position:absolute}
 #view3d{inset:0;width:100%;height:100%}
 #road{top:8px;left:8px;width:min(150px,24%);height:min(110px,30%);border:2px solid #1b2b36;border-radius:10px;opacity:.92;z-index:2}
 .screen.flat{background:#31423e}.screen.flat #view3d,.screen.flat .pillar,.screen.flat .side{display:none}
+.screen:not(.flat).no-minimap #road{display:none}
 .screen.flat #road{inset:0;width:100%;height:100%;border:0;border-radius:0;opacity:1;z-index:0}
 .pillar{position:absolute;top:0;bottom:0;width:7%;max-width:60px;background:linear-gradient(90deg,#0e171d,#24313a);z-index:1;pointer-events:none}
 .pillar.l{left:0;clip-path:polygon(0 0,35% 0,100% 100%,0 100%)}.pillar.r{right:0;clip-path:polygon(65% 0,100% 0,100% 100%,0 100%)}
@@ -31,16 +36,24 @@ h1{font-size:20px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 .mirror.checked{border-color:#3fd0ff}
 .mirror.side{bottom:30px;width:min(150px,17%);aspect-ratio:1.45;border-radius:14px 14px 22px 22px;display:none}
 .screen.sides:not(.flat) .mirror.side{display:block}.mirror.side.l{left:3%}.mirror.side.r{right:3%}
-.next{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;margin:0;max-width:min(560px,58%);background:#0c2633e8;color:#fff;border:1px solid #3fd0ff88;border-radius:12px;padding:6px 12px;font-size:14px;line-height:1.3;text-align:center}
-#hint:empty{display:none}.next:has(#hint:empty){display:none}
+/* DS-4: lesson note floats just above the dash / wheel (sibling of the cockpit so it can stack above it). */
+.note{position:absolute;left:50%;bottom:clamp(230px, calc(46vh + 28px), 400px);transform:translateX(-50%);z-index:6;margin:0;max-width:min(560px,70%);background:#0c2633cc;color:#fff;border:1px solid #3fd0ff88;border-radius:12px;padding:6px 12px;font-size:14px;line-height:1.3;text-align:center;pointer-events:none;transition:opacity .35s}
+#hint:empty{display:none}#note:has(#hint:empty){display:none}
+.note-show{display:none}
+.note.faded{pointer-events:auto;cursor:pointer;padding:2px 4px;background:transparent;border-color:transparent;max-width:none}
+.note.faded #hint{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.note.faded .note-show{display:inline-block;min-height:36px;padding:4px 12px;font-size:12px;border-radius:10px;background:#0c2633ee;border:1px solid #3fd0ff88;color:#fff}
 #fault{position:absolute;top:84px;left:50%;transform:translateX(-50%);z-index:3;margin:0;max-width:70%;background:#a52c40ee;color:#fff;font-weight:600;font-size:13px;padding:5px 10px;border-radius:10px;text-align:center}
 #fault:empty{display:none}
 #rotate{display:none;position:absolute;top:8px;right:8px;z-index:4;max-width:46%;margin:0;background:#123b4cee;color:#fff;font-size:11px;padding:5px 8px;border-radius:8px}
 
-/* Dashboard. RHD (India) by default: gear lever and handbrake to the LEFT of the wheel. */
-.cockpit{position:relative;z-index:5;flex-shrink:0;height:clamp(140px,38vh,250px);margin-top:-18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:stretch;
-  padding:16px 14px 8px;color:#e9f3f8;background:linear-gradient(180deg,#2c3a44 0,#1a242b 22%,#11181d 100%);border-radius:50% 50% 12px 12px/26px 26px 12px 12px;box-shadow:0 -2px 0 #3d4d58,0 -10px 18px #0005}
+/* Dashboard. RHD (India) by default: gear lever and handbrake to the LEFT of the wheel.
+   DS-4: taller dash (footer gone), bigger wheel sitting lower, indicators beside the dials. */
+.cockpit{position:relative;z-index:5;flex-shrink:0;height:clamp(200px,46vh,360px);margin-top:-22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:stretch;
+  padding:10px 14px 4px;padding-bottom:max(4px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));color:#e9f3f8;background:linear-gradient(180deg,#2c3a44 0,#1a242b 22%,#11181d 100%);border-radius:50% 50% 0 0/26px 26px 0 0;box-shadow:0 -2px 0 #3d4d58,0 -10px 18px #0005}
 .cockpit button{background:#24323b;border-color:#445866;color:#e9f3f8}.cockpit button:hover{background:#2f6d84}
+.cockpit button.engine:not(.running),.cockpit button.engine:not(.running):hover{background:#4a5359!important;border-color:#6d787e;color:#c5cccf}
+.cockpit button.engine.running,.cockpit button.engine.running:hover{background:#1b8a4e!important;border-color:#3ee68a;color:#e9fff2}
 .cockpit.lhd .console{order:2}.cockpit.lhd .cluster{order:1}.cockpit.lhd .pedals{order:3}
 .console{display:flex;gap:8px;align-items:center;min-width:0}
 .gate{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px;padding:6px;border-radius:14px;background:#0b1115;border:1px solid #3a4a55;
@@ -54,19 +67,17 @@ h1{font-size:20px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 .handbrake{position:relative;padding-left:26px!important;text-align:left}
 .handbrake .lever{position:absolute;left:8px;top:50%;width:8px;height:22px;margin-top:-11px;border-radius:4px;background:#8b9aa4;transform-origin:50% 100%;transform:rotate(25deg);transition:transform .15s}
 .handbrake.on{border-color:#e24a4a;color:#ffd2d2}.handbrake.on .lever{background:#e24a4a;transform:rotate(-10deg)}
-.engine.running{border-color:#3ee68a;color:#b9ffd8}
-.cluster{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
-.lamps{display:flex;align-items:center;justify-content:center;gap:10px;flex-shrink:0}
-.signal{min-width:56px;padding:0 10px;font-size:18px;line-height:1;color:#4d6a5a!important}
+.cluster{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible;position:relative}
+.signal{min-width:44px;min-height:44px;padding:0 8px;font-size:18px;line-height:1;color:#4d6a5a!important;flex-shrink:0;align-self:center}
 .signal.lit{color:#43f08f!important;text-shadow:0 0 8px #43f08f;border-color:#43f08f}
-.lamp-text{font-size:12px;color:#ffb347;min-width:9em;text-align:center;white-space:nowrap}
-.dials{flex:1;min-height:0;display:flex;align-items:flex-start;justify-content:center;gap:4px}
-.dial{height:82%;max-height:150px;aspect-ratio:1;flex-shrink:1;min-width:0;align-self:center}
+.lamp-text{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:3;font-size:11px;color:#ffb347;text-align:center;white-space:nowrap;pointer-events:none}
+.dials{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:2px}
+.dial{height:58%;max-height:170px;aspect-ratio:1;flex-shrink:1;min-width:0;align-self:center}
 .dial-face{fill:#0b1115;stroke:#4d5d68;stroke-width:2}.dial-red{fill:none;stroke:#e24a4a;stroke-width:5}
 .tick{stroke:#8fa3b0;stroke-width:1}.tick.major{stroke:#e9f3f8;stroke-width:2}
 .dial-num{fill:#cfdde6;font-size:9px;text-anchor:middle}.dial-big{fill:#fff;font-size:17px;font-weight:700;text-anchor:middle}
 .dial-unit{fill:#8fa3b0;font-size:7px;text-anchor:middle}.needle path{fill:#ff6a3d}.hubcap{fill:#2b3a44;stroke:#8fa3b0}
-.wheel-box{position:relative;height:118%;aspect-ratio:1;max-width:48%;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.wheel-box{position:relative;height:115%;aspect-ratio:1;max-width:64%;flex-shrink:0;align-self:flex-end;margin:0 -2% -4px;z-index:2}
 #wheel{position:absolute;inset:0;border-radius:50%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;will-change:transform}
 #wheel.held{cursor:grabbing}#wheel svg{display:block;width:100%;height:100%;overflow:visible}
 .rim{fill:none;stroke:#1d2328;stroke-width:16}.rim-mark{fill:none;stroke:#3fd0ff;stroke-width:16}
@@ -94,29 +105,29 @@ a{color:var(--blue)}dialog[open]{animation:appear .15s ease-out}
 
 /* Phone landscape (e.g. 844x390): one compact top row, more room for the windscreen. */
 @media(max-height:520px) and (orientation:landscape){
-  #app{padding:0 max(0px,env(safe-area-inset-right)) 0 max(0px,env(safe-area-inset-left))}
-  .lrn-head{padding:2px 8px;gap:4px}h1{font-size:15px}.lrn-head button{font-size:11px;min-height:34px;padding:3px 9px}
-  .toolbar{flex-wrap:nowrap;padding:2px 8px;gap:4px;font-size:12px}.toolbar select,.toolbar button{font-size:12px;min-height:34px;padding:3px 8px}
-  .toolbar select{max-width:210px}.status{font-size:11px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .world{padding:0 6px}.cockpit{height:44vh;min-height:166px;padding:10px 8px 4px;gap:6px}
+  .lrn-head{padding:0 8px;gap:3px}h1{font-size:13px}.lrn-head button{font-size:10px;min-height:24px;padding:1px 7px}
+  .toolbar{flex-wrap:nowrap;padding:1px 8px;gap:3px;font-size:11px}.toolbar select,.toolbar button,.toolbar input{font-size:11px;min-height:24px;padding:1px 7px}
+  .toolbar select{max-width:200px}.status{font-size:10px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .world{padding:0}.cockpit{height:56vh;min-height:190px;padding:8px 8px 2px;padding-bottom:max(2px,env(safe-area-inset-bottom));gap:6px}
   .gate{gap:3px;padding:3px}.console-btns{gap:3px}
   .gate button{font-size:13px}.console-btns button{font-size:11px;padding:2px 6px}
-  .signal{min-width:48px}.lamps{gap:6px}.lamp-text{font-size:11px;min-width:7em}
+  .signal{min-width:44px;min-height:40px}.lamp-text{font-size:10px}
   .pedal{min-height:60px;font-size:11px;width:56px}.pedal.gas{width:52px}
-  .next{font-size:12px;bottom:22px;padding:4px 10px}#fault{top:50px;font-size:12px}.disclaimer{display:none}
+  .wheel-box{height:118%;max-width:58%}.note{font-size:12px;bottom:calc(56vh + 16px);padding:4px 10px}#fault{top:50px;font-size:12px}
 }
 /* Portrait phones: still works; dashboard wraps into two rows below the windscreen. */
 @media(orientation:portrait) and (max-width:700px){
-  #app{height:auto;min-height:100dvh}.lrn-head{padding:4px 8px}.lrn-head h1{min-width:100%;font-size:18px}
-  .lrn-head button{flex:1;min-height:40px;font-size:11px;padding:4px}.toolbar{padding:4px 8px;gap:5px}.status{text-align:left;min-width:100%}
-  .world{padding:0 6px;flex:none}.screen{flex:none;height:36dvh;min-height:200px}#rotate{display:block}
-  .cockpit{height:auto;grid-template-columns:1fr;grid-template-areas:"cluster" "console" "pedals";row-gap:8px}
-  .cluster{grid-area:cluster;height:170px}.console{grid-area:console;justify-content:center}.pedals{grid-area:pedals;height:96px;justify-content:center}
+  .lrn-head{gap:3px}.lrn-head button{flex:1;min-height:26px;font-size:10px;padding:1px 6px}
+  .toolbar{gap:3px}.status{text-align:left;min-width:0}
+  .world{padding:0;flex:1;min-height:0}.screen{flex:1;min-height:100px}#rotate{display:block}
+  .cockpit{height:auto;max-height:62dvh;grid-template-columns:1fr;grid-template-areas:"cluster" "console" "pedals";row-gap:6px;padding:8px 8px 4px;padding-bottom:max(4px,env(safe-area-inset-bottom))}
+  .cluster{grid-area:cluster;height:min(230px,28dvh)}.console{grid-area:console;justify-content:center}.pedals{grid-area:pedals;height:min(96px,12dvh);justify-content:center}
   .cockpit.lhd .console,.cockpit.lhd .cluster,.cockpit.lhd .pedals{order:0}
-  .pedal,.pedal.gas{width:30%;max-width:110px;height:100%}.pedal.brake{height:88%}.mirror.rear{width:46%}.next{max-width:86%;font-size:13px}
+  .wheel-box{height:130%;max-width:72%}
+  .pedal,.pedal.gas{width:30%;max-width:110px;height:100%}.pedal.brake{height:88%}.mirror.rear{width:46%}.note{max-width:86%;font-size:13px;bottom:auto;top:22%}
   #road{width:30%;height:26%}
 }
 /* DS-2b: inside a Hub window the title bar has these buttons, so the in-page row goes (display:flex beat the hidden attribute). */
 .lrn-head[hidden],body.hub-titlebar .lrn-head{display:none!important}
 /* DS-3: route number for the open road. */
-#route-box[hidden]{display:none}#route{width:5.5em;font:inherit;min-height:30px}
+#route-box[hidden]{display:none}#route{width:5.5em;font:inherit;min-height:26px}

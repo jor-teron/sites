@@ -70,3 +70,27 @@ test('lesson markers: one arch per ring, travel direction, finish and parking bo
   assert.equal(M.lotLayout().cones.length, 32); assert.equal(M.townLayout('left').o, -3.5); assert.equal(M.townLayout('right').o, 3.5);
   assert.equal(M.nextHint('Next: Brake'), 'Next: Brake'); assert.equal(M.nextHint('Brake'), 'Next: Brake');
 });
+
+test('DS-4: engine button is grey Engine OFF or green Engine ON', () => {
+  assert.deepEqual(M.engineChrome({ engine: false }), { text: 'Engine OFF', running: false });
+  assert.deepEqual(M.engineChrome({ engine: true }), { text: 'Engine ON', running: true });
+  assert.deepEqual(M.engineChrome(null), { text: 'Engine OFF', running: false });
+});
+test('DS-4: mini-map is off by default and only an explicit true turns it on', () => {
+  assert.equal(M.settingsFrom(undefined).minimap, false);
+  assert.equal(M.settingsFrom({}).minimap, false);
+  assert.equal(M.settingsFrom({ auto: false, side: 'left', muted: false, route: 1 }).minimap, false);
+  assert.equal(M.settingsFrom({ minimap: true, auto: true }).minimap, true);
+  assert.equal(M.settingsFrom({ minimap: 'on' }).minimap, false);
+  assert.equal(M.settingsFrom({ minimap: true }).auto, false, 'other defaults remain');
+  assert.equal(M.showMinimap({ minimap: false }, false), false);
+  assert.equal(M.showMinimap({ minimap: false }, true), true, 'map fallback always shows the full map');
+  assert.equal(M.showMinimap({ minimap: true }, false), true);
+});
+test('DS-4: lesson note fades after 5 seconds and a reshow starts the timer again', () => {
+  assert.equal(M.NOTE_FADE_MS, 5000);
+  assert.equal(M.noteFaded(0, 4999, false), false);
+  assert.equal(M.noteFaded(0, 5000, false), true);
+  assert.equal(M.noteFaded(0, 8000, true), false, 'held / tapped note stays visible');
+  assert.equal(M.noteFaded(6000, 7000, false), false);
+});
