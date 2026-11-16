@@ -51,6 +51,12 @@ html.light .pl {
 .pl-btn-main { background: var(--accent); border-color: var(--accent); color: var(--on); min-width: 96px; }
 .pl-btn-main:hover { background: #b3c4dc; }
 .pl-note { margin: 0; color: var(--muted); font-size: 0.88rem; }
+.pl-field {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
+  color: var(--muted); font-size: 0.9rem;
+}
+.pl-field output { min-width: 3ch; color: var(--text); font-weight: 650; font-variant-numeric: tabular-nums; }
+.pl-field input[type="range"] { flex: 1; min-width: 0; height: 32px; accent-color: var(--accent); }
 
 @media (max-width: 420px) {
   .pl-btn { flex: 1; padding: 0 12px; }

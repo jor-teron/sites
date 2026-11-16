@@ -1,8 +1,9 @@
 /*
  * Physics Lab PS1a (Learn > Science) - tiny 2D physics core, no DOM.
  * Units: metres, seconds, kilograms; y points up, the floor is y = 0.
- * PS1a has circles and static segments only: gravity, a floor and a ball
- * that lands and stays. Bounce, boxes, friction and dragging come later.
+ * PS1b has circles and static segments: gravity, a floor and a ball that
+ * lands and bounces with its restitution (0 = dead, 1 = all the speed back).
+ * Rotated boxes, friction and dragging come later.
  * Classic script: window.PLPhysics. No modules, no vendor code, no build step.
  */
 (function (root) {
@@ -101,11 +102,17 @@
         nx = -(s.by - s.ay) / len; ny = (s.bx - s.ax) / len;
         if ((b.x - q.x) * nx + (b.y - q.y) * ny < 0) { nx = -nx; ny = -ny; }
       }
-      // separate and remove the inward speed (PS1a: no bounce yet)
+      // separate, then reflect the inward speed by the restitution.
+      // Below 0.25 m/s the bounce is dropped, so a ball settles instead of buzzing.
       b.x += nx * (b.r - d);
       b.y += ny * (b.r - d);
       var vn = b.vx * nx + b.vy * ny;
-      if (vn < 0) { b.vx -= nx * vn; b.vy -= ny * vn; }
+      if (vn < 0) {
+        var e = Math.abs(vn) < 0.25 ? 0 : b.restitution;
+        var j = -(1 + e) * vn;
+        b.vx += nx * j;
+        b.vy += ny * j;
+      }
     }
   };
 

@@ -1,5 +1,5 @@
 /*
- * Physics Lab PS1a - canvas, loop and the two buttons.
+ * Physics Lab PS1b - canvas, loop, buttons and the bounce slider.
  * The page draws the same world core/engine.js steps, so what you see is the
  * physics state (no separate animation maths). Palette comes from the CSS
  * variables in ui/physics-lab.css, so light and dark stay in one place.
@@ -15,8 +15,11 @@
   var ctx = canvas.getContext('2d');
   var playBtn = document.getElementById('pl-play');
   var resetBtn = document.getElementById('pl-reset');
+  var bounce = document.getElementById('pl-bounce');
+  var bounceOut = document.getElementById('pl-bounce-out');
 
   var world = P.world(W, H);
+  var restitution = parseFloat(bounce.value) || 0.7;
   var running = true;
   var last = 0;
   var dpr = 1, cw = 0, ch = 0;
@@ -40,8 +43,14 @@
     world.addSegment(0, 0, W, 0, 0.9);
     world.addSegment(0, 0, 0, H, 0.5);
     world.addSegment(W, 0, W, H, 0.5);
-    world.addBody(P.circle({ x: 5, y: 4.7, r: 0.34, mass: 1 }));
+    world.addBody(P.circle({ x: 5, y: 4.7, r: 0.34, mass: 1, restitution: restitution }));
     world.time = 0;
+  }
+
+  function setBounce(v) {
+    restitution = v;
+    bounceOut.textContent = v.toFixed(2);
+    for (var i = 0; i < world.bodies.length; i++) world.bodies[i].restitution = v;
   }
 
   function resize() {
@@ -124,6 +133,7 @@
 
   playBtn.addEventListener('click', function () { setRunning(!running); });
   resetBtn.addEventListener('click', reset);
+  bounce.addEventListener('input', function () { setBounce(parseFloat(bounce.value)); });
   window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { last = 0; });
   if (window.MutationObserver) {
@@ -133,6 +143,7 @@
 
   reset();
   resize();
+  setBounce(restitution);
   setRunning(true);
   requestAnimationFrame(frame);
 })();
