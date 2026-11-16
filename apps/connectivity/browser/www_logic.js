@@ -1,4 +1,4 @@
-/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages) and WWW2b (session ids, relay-URL sanitiser, clear-cookies request and messages). No DOM; tested by tests/www1.test.cjs, tests/www2a.test.cjs and tests/www2b.test.cjs. */
+/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages) WWW2b (session ids, relay-URL sanitiser, clear-cookies request and messages) and WWW2c (real address after relay redirects via X-Relay-Final-Url, Reader support detection and reader URLs). No DOM; tested by tests/www1.test.cjs, tests/www2a.test.cjs, tests/www2b.test.cjs and tests/www2c.test.cjs. */
 (function (root) {
   'use strict';
 
@@ -389,10 +389,10 @@
     return typeof id === 'string' && C.RELAY_SESSION_RE.test(id);
   }
 
-  /* The URL a relay URL points at, whatever relay base it used: path .../www/<x>/fetch or .../www/fetch with ?url=. '' if not one. */
+  /* The URL a relay URL points at, whatever relay base it used: path .../www/<x>/fetch (or /reader, WWW2c) or .../www/fetch with ?url=. '' if not one. */
   function unwrapAnyRelayUrl(href) {
     var h = String(href || '');
-    if (!/^https?:\/\/[^?#]*\/www\/(?:[^\/?#]+\/)?fetch\/?\?/i.test(h)) return '';
+    if (!/^https?:\/\/[^?#]*\/www\/(?:[^\/?#]+\/)?(?:fetch|reader)\/?\?/i.test(h)) return '';
     return unwrapRelayUrl(h, h.slice(0, h.search(/\/www\//i)));
   }
 
@@ -536,6 +536,154 @@
     return { level: 'ok', text: 'Nothing to clear: the relay had no cookies for this device (they also end after about ' + C.RELAY_SESSION_TTL_MIN + ' minutes idle or a relay restart).' };
   }
 
+  /* ---- WWW2c: real address after relay redirects (X-Relay-Final-Url) ---- */
+
+  /*
+   * The light "where did it end up?" request for a relay load: HEAD on the same relay fetch URL
+   * (Relay Server v0.7.0 accepts HEAD on fetch and answers with headers only, X-Relay-Final-Url included).
+   * Path secret + ?session=, no custom headers: a CORS simple request, so no preflight. null when not configured.
+   */
+  function buildFinalUrlRequest(relay, url, session) {
+    if (!relayConfigured(relay)) return null;
+    var u = buildRelayUrl(relay.url, relay.secret, url, session);
+    if (!u) return null;
+    return { url: u, init: { method: 'HEAD', cache: 'no-store', credentials: 'omit', redirect: 'follow' } };
+  }
+
+  /*
+   * The original page URL to show after a relay load, from the X-Relay-Final-Url header value.
+   * Returns '' (keep the requested URL) when the header is missing, not http(s), the same page, a relay URL that
+   * can't be unwrapped, or anything holding the secret. Never returns a relay URL.
+   */
+  function finalUrlFrom(header, relay, requested) {
+    var v = String(header == null ? '' : header).trim();
+    if (!v || /[\s<>"]/.test(v)) return '';
+    if (!/^https?:\/\/[^\/?#\s]+/i.test(v)) return '';
+    var u = stripRelay(v, relay);
+    if (!u || !/^https?:\/\//i.test(u)) return '';
+    if (u === requested) return '';
+    return u;
+  }
+
+  /*
+   * What a final-URL probe result means. r: {kind, status, header}, kind one of:
+   *   'http' (a readable response: status + X-Relay-Final-Url value or null) | 'cors' (the fetch failed though the frame loaded:
+   *   the relay doesn't list this Hub in RELAY_WWW_ORIGINS) | 'offline' | 'timeout'.
+   * Returns {url, hint}: url = final original URL or ''; hint = '' | 'origin' (add the Hub origin to RELAY_WWW_ORIGINS)
+   *   | 'expose' (CORS works but the relay doesn't expose X-Relay-Final-Url via Access-Control-Expose-Headers).
+   */
+  function finalUrlOutcome(r, relay, requested) {
+    var x = r || {};
+    if (x.kind === 'cors') return { url: '', hint: 'origin' };
+    if (x.kind !== 'http') return { url: '', hint: '' };
+    var st = x.status | 0;
+    if (x.header == null || x.header === '') {
+      /* A readable 2xx/3xx answer without the header: the relay hides it from page scripts. Relay errors (401, 429, 502...) carry no header anyway. */
+      return { url: '', hint: st >= 200 && st < 400 ? 'expose' : '' };
+    }
+    return { url: finalUrlFrom(x.header, relay, requested), hint: '' };
+  }
+
+  /* The one-time Settings > Relay hint for a final-URL problem ('' for none). origin: this Hub's origin. */
+  function finalUrlHint(kind, origin) {
+    var o = origin || "this Hub's address";
+    if (kind === 'origin') return 'Add this Hub\'s origin (' + o + ') to RELAY_WWW_ORIGINS to show the real address after redirects.';
+    if (kind === 'expose') return "The relay allows this Hub but doesn't expose X-Relay-Final-Url (Access-Control-Expose-Headers), so the real address after redirects can't be shown yet. That needs a Relay Server update.";
+    return '';
+  }
+
+  /* Tab back/forward list with the current entry replaced by url (a redirect is the same step, not a new one). Collapses a duplicate of the step before. */
+  function replaceCurrent(h, url) {
+    var s = sanitizeTabHistory(h);
+    if (!url) return { entries: s.entries.slice(), index: s.index };
+    var entries = s.entries.slice();
+    var i = s.index;
+    entries[i] = url;
+    if (i > 0 && entries[i - 1] === url) { entries.splice(i, 1); i -= 1; }
+    return { entries: entries, index: i };
+  }
+
+  /*
+   * Visited history after a redirect: the newest entry for the requested URL becomes the final URL (its time kept,
+   * an auto label relabelled); if the newest entry is something else, the final URL is added as a visit.
+   */
+  function replaceHistoryUrl(list, fromUrl, toUrl, now, max) {
+    var arr = Array.isArray(list) ? list.slice() : [];
+    if (!toUrl || toUrl === C.HOME_URL || toUrl === fromUrl) return arr;
+    if (arr.length && arr[0] && arr[0].url === fromUrl) {
+      var old = arr[0];
+      var title = !old.title || old.title === labelFor(fromUrl) ? labelFor(toUrl) : old.title;
+      arr[0] = { url: toUrl, title: title, t: old.t };
+      if (arr.length > 1 && arr[1] && arr[1].url === toUrl) arr.splice(1, 1);
+      return arr;
+    }
+    return addHistory(arr, toUrl, '', now, max);
+  }
+
+  /* ---- WWW2c: Reader view (only when the relay supports it; v0.7.0 answers 501) ---- */
+
+  /* <base>/www/<secret>/reader?url=<encoded>&session=<id>, or '' when the relay isn't configured or the URL isn't http(s). */
+  function relayReaderUrl(relay, url, session) {
+    if (!relayConfigured(relay)) return '';
+    var u = String(url == null ? '' : url).trim();
+    if (!/^https?:\/\/[^\/\s?#]+/i.test(u)) return '';
+    var sess = String(session == null || session === '' ? C.RELAY_SESSION : session);
+    return normalizeRelayBase(relay.url) + '/www/' + encodeURIComponent(String(relay.secret).trim()) + '/reader?url=' + encodeURIComponent(u) + '&session=' + encodeURIComponent(sess);
+  }
+
+  /* The one-time reader probe: the reader URL for a small harmless page (C.READER_PROBE_URL), default session. */
+  function readerProbeUrl(relay) {
+    return relayReaderUrl(relay, C.READER_PROBE_URL, C.RELAY_SESSION);
+  }
+
+  /* Cache key for reader support: one probe per relay base + secret (kept in memory only, never saved). */
+  function readerKey(relay) {
+    if (!relayConfigured(relay)) return '';
+    return normalizeRelayBase(relay.url) + '\n' + String(relay.secret).trim();
+  }
+
+  /*
+   * Reader support from the health JSON (string or object): true when it reports reader (modules.reader, or a
+   * top-level reader / features.reader flag), false when it says reader is off or www is off, null when it doesn't say.
+   */
+  function readerFromHealth(body) {
+    var j = body;
+    if (typeof body === 'string') { try { j = JSON.parse(body); } catch (_) { return null; } }
+    if (!j || typeof j !== 'object' || Array.isArray(j)) return null;
+    var mods = j.modules && typeof j.modules === 'object' && !Array.isArray(j.modules) ? j.modules : {};
+    var feats = j.features && typeof j.features === 'object' && !Array.isArray(j.features) ? j.features : {};
+    if (mods.www === false) return false;
+    var flags = [mods.reader, j.reader, feats.reader];
+    if (mods.www && typeof mods.www === 'object') flags.push(mods.www.reader);
+    for (var i = 0; i < flags.length; i++) if (flags[i] === true) return true;
+    for (var k = 0; k < flags.length; k++) if (flags[k] === false) return false;
+    return null;
+  }
+
+  /*
+   * Reader support from the probe status: 2xx → true (shown); 501, 404, 405 and other answers → false (hidden);
+   * 0 (network or CORS failure) → null (unknown: hidden, not cached).
+   */
+  function readerFromStatus(status) {
+    var n = status | 0;
+    if (n === 0) return null;
+    return n >= 200 && n < 300;
+  }
+
+  /* Final reader decision: health first, then the probe. Only true shows the button. */
+  function readerSupported(health, probeStatus) {
+    var h = readerFromHealth(health);
+    if (h !== null) return h;
+    if (probeStatus === undefined || probeStatus === null) return null;
+    return readerFromStatus(probeStatus);
+  }
+
+  /* True when the Reader button should show for this tab URL: support confirmed, relay usable, http(s) page. */
+  function showReaderButton(supported, relay, url, isHttpsHub) {
+    return supported === true && relayReady(relay) && !relayMixed(relay, isHttpsHub) && /^https?:\/\//i.test(String(url || ''));
+  }
+
+
   var WWW_LOGIC = {
     searchUrl: searchUrl,
     parseInput: parseInput,
@@ -586,7 +734,20 @@
     cleanTabHistory: cleanTabHistory,
     cleanTabsState: cleanTabsState,
     buildClearRequest: buildClearRequest,
-    clearMessage: clearMessage
+    clearMessage: clearMessage,
+    buildFinalUrlRequest: buildFinalUrlRequest,
+    finalUrlFrom: finalUrlFrom,
+    finalUrlOutcome: finalUrlOutcome,
+    finalUrlHint: finalUrlHint,
+    replaceCurrent: replaceCurrent,
+    replaceHistoryUrl: replaceHistoryUrl,
+    relayReaderUrl: relayReaderUrl,
+    readerProbeUrl: readerProbeUrl,
+    readerKey: readerKey,
+    readerFromHealth: readerFromHealth,
+    readerFromStatus: readerFromStatus,
+    readerSupported: readerSupported,
+    showReaderButton: showReaderButton
   };
 
   root.WWW_LOGIC = WWW_LOGIC;

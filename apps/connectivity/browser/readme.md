@@ -1,4 +1,4 @@
-# Web Browser (WWW1, WWW2a, WWW2b)
+# Web Browser (WWW1, WWW2a, WWW2b, WWW2c)
 
 A local Hub web browser: tabs, an address bar that takes URLs or search words, Back / Forward / Reload / Stop / Home,
 bookmarks (bar, list and a speed-dial home page) and history (list, search, clear). Static files only, no build, no CDN,
@@ -7,11 +7,11 @@ classic scripts, works on `file://`.
 ## Files
 - `browser.html`, `browser.css`: page and styles (phone-first, Hub theme `sites-hub.theme` read only).
 - `www_config.js`: every constant (engines, known-blocked hosts, timeouts, texts).
-- `www_logic.js`: pure logic (address parsing, blocked check, per-tab back/forward, history, bookmarks; WWW2a relay URLs, routing, health messages; WWW2b session ids, `stripRelay`, clear-cookies request).
+- `www_logic.js`: pure logic (address parsing, blocked check, per-tab back/forward, history, bookmarks; WWW2a relay URLs, routing, health messages; WWW2b session ids, `stripRelay`, clear-cookies request; WWW2c final-URL and Reader helpers).
 - `www_store.js`: localStorage, keys `browser_bookmarks`, `browser_history`, `browser_settings`, `browser_tabs`, `browser_relay`, `browser_relay_session`.
 - `www_main.js`: UI wiring.
 - `www1_icon.py`: draws `browser_icon.png` (IC9 style, reuses `../ic9c_colour_icons.py` helpers; Pillow).
-- `tests/www1.test.cjs`, `tests/www2a.test.cjs`, `tests/www2b.test.cjs`: `node apps/connectivity/browser/tests/www1.test.cjs` (and `www2a`, `www2b`).
+- `tests/www1.test.cjs`, `tests/www2a.test.cjs`, `tests/www2b.test.cjs`, `tests/www2c.test.cjs`: `node apps/connectivity/browser/tests/www1.test.cjs` (and `www2a`, `www2b`, `www2c`).
 
 ## Embedding limits (honest version)
 Each tab is a sandboxed `<iframe>`. Many big sites send `X-Frame-Options` or CSP `frame-ancestors` and refuse to load
@@ -47,7 +47,7 @@ Jor's own relay-server (port 9000 behind Tailscale Funnel), not the shared Hub r
 
 Limits: the iframe can't see relay error codes, so a failed relay load just shows the relay's error text or the timeout card.
 Scripts on relayed pages that fetch data still call the real site. The secret is in the frame URL, so it can show up in the
-browser's own history. Coming next: WWW2c (real address after redirects, Reader).
+browser's own history. WWW2c adds the real address after redirects and Reader (below).
 
 ## Relay sessions and privacy (WWW2b)
 - Each Hub browser gets its own random relay cookie session id (22 URL-safe characters from `crypto.getRandomValues`),
@@ -64,3 +64,17 @@ browser's own history. Coming next: WWW2c (real address after redirects, Reader)
   (any relay base, nested too) become the original address, and anything still holding the secret is dropped. A pasted
   relay URL opens its original page. Status messages are passed through `redactSecret`; the app never logs to the console.
   Secrets shorter than 6 characters are not scanned for inside URLs (the relay requires 16+).
+
+## Real address after redirects and Reader (WWW2c)
+- After a page loads through the relay, the app sends one `HEAD` to the same relay fetch URL (path secret + `?session=`,
+  no custom headers, so no CORS preflight) and reads `X-Relay-Final-Url`. If it names another page, the address bar, the
+  tab's current Back/Forward step and the newest history entry switch to that original address (`finalUrlFrom`,
+  `replaceCurrent`, `replaceHistoryUrl`; always through `stripRelay`, never a relay URL or the secret). Once per navigation.
+- Reading the header needs the Hub's origin in `RELAY_WWW_ORIGINS` (relay.conf) **and** the relay sending
+  `Access-Control-Expose-Headers: X-Relay-Final-Url`. Relay Server v0.7.0 doesn't send the expose header yet. Until both are in
+  place the requested address stays, Settings > Relay shows a one-time hint, and probing stops for that relay config.
+- Reader button (📖): hidden by default. Shown only when the relay reports reader support: `modules.reader` (or
+  `reader` / `features.reader`) in `/health?format=json`, otherwise one probe per relay config of
+  `<base>/www/<secret>/reader?url=https://example.com/` (2xx = shown; 501, 404 and the rest = hidden; a network or CORS failure
+  = unknown, hidden). Results are kept in memory only; Test re-checks. When it works, the tab loads
+  `<base>/www/<secret>/reader?url=<encoded>&session=<id>` with a "reader" badge. v0.7.0 answers 501, so it stays hidden.

@@ -1,4 +1,4 @@
-/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), WWW2a (Relay Server routing) and WWW2b (relay sessions, clear cookies, privacy), each one commented. */
+/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), WWW2a (Relay Server routing), WWW2b (relay sessions, clear cookies, privacy) and WWW2c (real address after redirects, Reader), each one commented. */
 (function (root) {
   'use strict';
 
@@ -6,7 +6,7 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Web Browser',
     /* Release tag shown next to the title. */
-    RELEASE: 'WWW2b',
+    RELEASE: 'WWW2c',
     /* Every localStorage key this app writes starts with this prefix. */
     LS_PREFIX: 'browser_',
     /* localStorage keys (prefix + name). */
@@ -103,7 +103,15 @@
     RELAY_TIMEOUT_TITLE: "The relay hasn't returned this page",
     RELAY_TIMEOUT_TEXT: 'The relay may be offline, the secret may be wrong, or the page may be slow or over 5 MB. Run Settings > Relay > Test, or open it in a new tab.',
     RELAY_NOT_SET: 'Relay not set: add the relay URL and secret in Settings > Relay to load sites like this inside the app.',
-    RELAY_OFF: 'The relay is switched off in Settings > Relay.'
+    RELAY_OFF: 'The relay is switched off in Settings > Relay.',
+
+    /* ---- WWW2c: real address after redirects, Reader ---- */
+    /* The HEAD request for X-Relay-Final-Url gives up after this many ms (then the requested address stays). */
+    FINAL_URL_TIMEOUT_MS: 8000,
+    /* Small harmless page used once per relay config to ask the relay whether Reader works (v0.7.0 answers 501). */
+    READER_PROBE_URL: 'https://example.com/',
+    /* Reader probe gives up after this many ms (unknown = button hidden). */
+    READER_PROBE_TIMEOUT_MS: 8000
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */
