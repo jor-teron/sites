@@ -1,4 +1,4 @@
-/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), each one commented. */
+/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback) and WWW2a (Relay Server routing), each one commented. */
 (function (root) {
   'use strict';
 
@@ -6,7 +6,7 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Web Browser',
     /* Release tag shown next to the title. */
-    RELEASE: 'WWW1',
+    RELEASE: 'WWW2a',
     /* Every localStorage key this app writes starts with this prefix. */
     LS_PREFIX: 'browser_',
     /* localStorage keys (prefix + name). */
@@ -14,6 +14,8 @@
     LS_HISTORY: 'browser_history',
     LS_SETTINGS: 'browser_settings',
     LS_TABS: 'browser_tabs',
+    /* WWW2a: Relay Server settings {url, secret, enabled}. */
+    LS_RELAY: 'browser_relay',
     /* Shared Hub theme key — read only, never written by this app. */
     HUB_THEME_KEY: 'sites-hub.theme',
     /* Pseudo URL for the speed-dial home page (never loaded in a frame). */
@@ -71,7 +73,24 @@
     MIXED_TITLE: "This http page can't load here",
     MIXED_TEXT: 'This app runs on a secure (https) page so plain http pages are blocked inside it.',
     STOPPED_TITLE: 'Loading stopped',
-    STOPPED_TEXT: 'Tap Reload to try again.'
+    STOPPED_TEXT: 'Tap Reload to try again.',
+
+    /* ---- WWW2a: Relay Server (Jor's relay v0.7.0+, www module) ---- */
+    /* Relay settings until the user fills them in: off. */
+    DEFAULT_RELAY: { url: '', secret: '', enabled: false },
+    /* Relay cookie session id. Fixed for WWW2a; WWW2b makes it per device. */
+    RELAY_SESSION: 'default',
+    /* Per-tab routing modes: auto (relay only when needed), relay (always), direct (never). */
+    TAB_MODES: ['auto', 'relay', 'direct'],
+    /* Settings > Relay > Test gives up after this many ms. */
+    RELAY_TEST_TIMEOUT_MS: 8000,
+    /* A page loading through the relay gets this long before the relay timeout card (relay upstream timeout is 15 s). */
+    RELAY_LOAD_TIMEOUT_MS: 25000,
+    /* Card and message texts. */
+    RELAY_TIMEOUT_TITLE: "The relay hasn't returned this page",
+    RELAY_TIMEOUT_TEXT: 'The relay may be offline, the secret may be wrong, or the page may be slow or over 5 MB. Run Settings > Relay > Test, or open it in a new tab.',
+    RELAY_NOT_SET: 'Relay not set: add the relay URL and secret in Settings > Relay to load sites like this inside the app.',
+    RELAY_OFF: 'The relay is switched off in Settings > Relay.'
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */

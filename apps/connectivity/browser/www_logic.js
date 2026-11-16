@@ -1,4 +1,4 @@
-/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks). No DOM; tested by tests/www1.test.cjs. */
+/* Web Browser — www_logic.js: pure WWW1 logic (address/search parsing, blocked-host check, per-tab back/forward, history, bookmarks) and WWW2a relay logic (relay settings, relay URLs, routing, health/secret-test messages). No DOM; tested by tests/www1.test.cjs and tests/www2a.test.cjs. */
 (function (root) {
   'use strict';
 
@@ -172,6 +172,194 @@
     return out;
   }
 
+  /* ---- WWW2a: Relay Server ---- */
+
+  /* Relay base URL as typed: trimmed, trailing slashes dropped. '' unless it is http(s)://host... */
+  function normalizeRelayBase(base) {
+    var s = String(base == null ? '' : base).trim().replace(/\/+$/, '');
+    if (!/^https?:\/\/[^\/\s?#]+/i.test(s) || /\s/.test(s)) return '';
+    return s.replace(/[?#].*$/, '').replace(/\/+$/, '');
+  }
+
+  /* Saved relay settings made safe: {url, secret, enabled}. enabled is false unless both fields are filled. */
+  function sanitizeRelay(saved) {
+    var d = C.DEFAULT_RELAY;
+    var r = {
+      url: saved && typeof saved.url === 'string' ? saved.url.trim() : d.url,
+      secret: saved && typeof saved.secret === 'string' ? saved.secret.trim() : d.secret,
+      enabled: !!(saved && saved.enabled === true)
+    };
+    if (!r.url || !r.secret) r.enabled = false;
+    return r;
+  }
+
+  /* True when both fields are filled in and the URL is a usable http(s) base (enabled or not). */
+  function relayConfigured(relay) {
+    return !!(relay && normalizeRelayBase(relay.url) && String(relay.secret || '').trim());
+  }
+
+  /* True when the relay can be used for a page right now: configured and switched on. */
+  function relayReady(relay) {
+    return !!(relay && relay.enabled === true && relayConfigured(relay));
+  }
+
+  /* An http (not https) relay on an https Hub would itself be mixed content, unless it is localhost. */
+  function relayMixed(relay, isHttpsHub) {
+    if (!isHttpsHub || !relay) return false;
+    return isMixedContent('https:', normalizeRelayBase(relay.url));
+  }
+
+  /*
+   * Relay URL for a page (path-secret form, so a plain iframe src needs no headers):
+   * <base>/www/<secret>/fetch?url=<encoded>&session=<id>. Returns '' when base, secret or url is missing.
+   */
+  function buildRelayUrl(base, secret, url, session) {
+    var b = normalizeRelayBase(base);
+    var sec = String(secret == null ? '' : secret).trim();
+    var u = String(url == null ? '' : url).trim();
+    if (!b || !sec || !u) return '';
+    var sess = String(session == null || session === '' ? C.RELAY_SESSION : session);
+    return b + '/www/' + encodeURIComponent(sec) + '/fetch?url=' + encodeURIComponent(u) + '&session=' + encodeURIComponent(sess);
+  }
+
+  /* <base>/health?format=json, or '' when the base is not usable. */
+  function relayHealthUrl(base) {
+    var b = normalizeRelayBase(base);
+    return b ? b + '/health?format=json' : '';
+  }
+
+  /* Secret check URL: fetch with no ?url=. v0.7.0 answers 400 "missing ?url=" for a good secret, 401 for a wrong one. */
+  function relaySecretProbeUrl(base, secret) {
+    var b = normalizeRelayBase(base);
+    var sec = String(secret == null ? '' : secret).trim();
+    return b && sec ? b + '/www/' + encodeURIComponent(sec) + '/fetch' : '';
+  }
+
+  /*
+   * The original page URL inside a relay URL (for a same-origin relay frame whose location can be read),
+   * or '' when href is not a relay fetch URL for this base. History and the address bar never keep relay URLs.
+   */
+  function unwrapRelayUrl(href, base) {
+    var b = normalizeRelayBase(base);
+    var h = String(href || '');
+    if (!b || h.indexOf(b + '/www/') !== 0) return '';
+    var q = h.indexOf('?');
+    if (q < 0) return '';
+    var parts = h.slice(q + 1).split('#')[0].split('&');
+    for (var i = 0; i < parts.length; i++) {
+      var kv = parts[i].split('=');
+      if (kv[0] === 'url') {
+        try { return decodeURIComponent((kv.slice(1).join('=')).replace(/\+/g, ' ')); } catch (_) { return ''; }
+      }
+    }
+    return '';
+  }
+
+  /*
+   * Where a page should load:
+   *   'direct' — in the frame as-is;  'relay' — in the frame through the relay;  'newtab' — show the card (Open in new tab).
+   * opts: { relay, tabMode ('auto'|'relay'|'direct'), isHttpsHub, blockedList, timedOut }.
+   * Only http(s) pages can go through the relay. In auto mode, known-blocked hosts, http pages on an https Hub
+   * and pages that timed out go through the relay when it is ready; otherwise they get the card.
+   */
+  function routeFor(url, opts) {
+    var o = opts || {};
+    var u = String(url || '');
+    var web = /^https?:\/\//i.test(u);
+    var mixed = isMixedContent(o.isHttpsHub ? 'https:' : '', u);
+    var blocked = isKnownBlocked(u, o.blockedList);
+    var canRelay = web && relayReady(o.relay) && !relayMixed(o.relay, o.isHttpsHub);
+    var mode = C.TAB_MODES.indexOf(o.tabMode) >= 0 ? o.tabMode : 'auto';
+    if (mode === 'relay' && canRelay) return 'relay';
+    var needsHelp = mixed || blocked || !!o.timedOut;
+    if (!needsHelp) return 'direct';
+    if (mode !== 'direct' && canRelay) return 'relay';
+    return 'newtab';
+  }
+
+  /* Origin (scheme://host[:port], lower-case) of an http(s) URL, or ''. */
+  function originOf(url) {
+    var m = /^(https?:\/\/[^\/?#]+)/i.exec(String(url || ''));
+    if (!m) return '';
+    var o = m[1].toLowerCase().replace(/^(https?:\/\/)[^@]*@/, '$1');
+    return o.replace(/^(https:\/\/[^\/]+):443$/, '$1').replace(/^(http:\/\/[^\/]+):80$/, '$1');
+  }
+
+  /* Sandbox for a relay frame: without allow-same-origin when the relay shares the Hub's origin, so proxied sites can't reach the app. */
+  function relaySandbox(sandbox, relayBase, hubOrigin) {
+    var ro = originOf(normalizeRelayBase(relayBase));
+    if (ro && ro === originOf(hubOrigin)) {
+      return String(sandbox).split(/\s+/).filter(function (t) { return t && t !== 'allow-same-origin'; }).join(' ');
+    }
+    return sandbox;
+  }
+
+  /* Parse a /health?format=json body (string or object): {ok, version, www (true|false|null), modules}. null if not JSON. */
+  function parseHealth(body) {
+    var j = body;
+    if (typeof body === 'string') {
+      try { j = JSON.parse(body); } catch (_) { return null; }
+    }
+    if (!j || typeof j !== 'object' || Array.isArray(j)) return null;
+    var mods = j.modules && typeof j.modules === 'object' && !Array.isArray(j.modules) ? j.modules : {};
+    return {
+      ok: j.status === 'ok',
+      version: typeof j.version === 'string' ? j.version : (j.version != null ? String(j.version) : ''),
+      www: Object.prototype.hasOwnProperty.call(mods, 'www') ? mods.www === true : null,
+      modules: mods
+    };
+  }
+
+  /* Plain-language meaning of a relay HTTP status (health check, secret check, or a known fetch status). */
+  function statusMessage(status) {
+    var n = status | 0;
+    if (n === 401 || n === 403) return 'Secret is wrong: the relay refused it (' + n + '). Check the secret in Settings > Relay.';
+    if (n === 404) return 'Relay not found at this URL (404). The URL should end in /relay, e.g. https://machine.tailnet.ts.net/relay.';
+    if (n === 413) return 'The request was too big for the relay (413, limit 1 MB).';
+    if (n === 429) return 'Too many requests: the relay rate limit was hit (429). Wait a minute and try again.';
+    if (n === 501) return 'The relay does not support this yet (501).';
+    if (n === 502) return 'The relay could not get the page (502): the site failed, was blocked by the relay, or is over 5 MB.';
+    if (n === 503 || n === 504) return 'The relay or Funnel is not answering (' + n + '). Is the relay running on your computer?';
+    if (n >= 500) return 'The relay had an error (' + n + ').';
+    if (n === 0) return 'Relay offline or unreachable.';
+    return 'Unexpected answer from the relay (' + n + ').';
+  }
+
+  /*
+   * Message for the Settings > Relay > Test result. r: {kind, status, body}, kind one of:
+   *   'notset' | 'mixed' | 'http' (status + body from /health?format=json) | 'cors' (fetch failed but a no-cors probe reached it)
+   *   | 'offline' (network failure) | 'timeout'.
+   * Returns {level: 'ok'|'warn'|'error', text, version, www}.
+   */
+  function healthMessage(r) {
+    var x = r || {};
+    if (x.kind === 'notset') return { level: 'error', text: 'Relay not set: fill in the relay URL and secret first.' };
+    if (x.kind === 'mixed') return { level: 'error', text: 'This Hub is https, so the relay URL must be https too (Tailscale Funnel gives one).' };
+    if (x.kind === 'cors') return { level: 'warn', text: "Couldn't verify (relay may not allow this Hub origin); the relay did answer, so you can still try loading a page." };
+    if (x.kind === 'timeout') return { level: 'error', text: 'Relay offline: no answer within ' + Math.round(C.RELAY_TEST_TIMEOUT_MS / 1000) + ' s. Is the relay running and Funnel on?' };
+    if (x.kind === 'offline') return { level: 'error', text: 'Relay offline or unreachable (or it does not allow this Hub origin). Check the URL, that the relay is running and that Funnel is on.' };
+    if (x.kind !== 'http') return { level: 'error', text: 'Relay test failed.' };
+    var st = x.status | 0;
+    if (st < 200 || st > 299) return { level: 'error', text: statusMessage(st) };
+    var h = parseHealth(x.body);
+    if (!h) return { level: 'error', text: 'That URL answered, but not like a Relay Server (no health JSON). The URL should end in /relay.' };
+    var ver = h.version ? ' ' + h.version : '';
+    if (!h.ok) return { level: 'error', text: 'Relay' + ver + ' reports a problem (status not ok).', version: h.version, www: h.www };
+    if (h.www === false) return { level: 'warn', text: 'Relay' + ver + ' is up, but the www module is off. Add www to RELAY_MODULES in relay.conf.', version: h.version, www: false };
+    if (h.www === null) return { level: 'warn', text: 'Relay' + ver + ' is up but has no www module (needs Relay Server v0.7.0 or later).', version: h.version, www: null };
+    return { level: 'ok', text: 'Relay' + ver + ' is up · www on', version: h.version, www: true };
+  }
+
+  /* Meaning of the secret check status (GET <base>/www/<secret>/fetch with no url). */
+  function secretProbeMessage(status) {
+    var n = status | 0;
+    if (n === 400) return { level: 'ok', text: 'Secret accepted.' };
+    if (n === 401 || n === 403) return { level: 'error', text: statusMessage(n) };
+    if (n === 429) return { level: 'warn', text: statusMessage(n) };
+    if (n === 0) return { level: 'warn', text: "Couldn't check the secret from this page; try loading a page." };
+    return { level: 'warn', text: 'Secret check unclear (' + n + '); try loading a page.' };
+  }
+
   var WWW_LOGIC = {
     searchUrl: searchUrl,
     parseInput: parseInput,
@@ -194,7 +382,23 @@
     addBookmark: addBookmark,
     removeBookmark: removeBookmark,
     toggleBookmark: toggleBookmark,
-    mergeSettings: mergeSettings
+    mergeSettings: mergeSettings,
+    normalizeRelayBase: normalizeRelayBase,
+    sanitizeRelay: sanitizeRelay,
+    relayConfigured: relayConfigured,
+    relayReady: relayReady,
+    relayMixed: relayMixed,
+    buildRelayUrl: buildRelayUrl,
+    relayHealthUrl: relayHealthUrl,
+    relaySecretProbeUrl: relaySecretProbeUrl,
+    unwrapRelayUrl: unwrapRelayUrl,
+    originOf: originOf,
+    relaySandbox: relaySandbox,
+    routeFor: routeFor,
+    parseHealth: parseHealth,
+    statusMessage: statusMessage,
+    healthMessage: healthMessage,
+    secretProbeMessage: secretProbeMessage
   };
 
   root.WWW_LOGIC = WWW_LOGIC;
