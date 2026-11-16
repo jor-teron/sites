@@ -16,12 +16,14 @@
         [[110,180-o],[60+o,180-o],[60+o,125],[60+o,75],[68,60+o],[90,60+o],[110,60+o],[112,50],[104,45]]),
       parking: { x:104, y:45, heading:0, width:12, height:3 } };
   }
-  function testReport(faults, completed, elapsed) {
+  function testReport(faults, completed, elapsed, liveScore) {
     const list = faults.map(f => Object.assign({}, f));
     if (!completed) list.push({ code:'incomplete', severity:'serious', reason:'The full route and final parking were not completed.', time: +elapsed.toFixed(1) });
     const serious = list.filter(f => f.severity === 'serious').length, minor = list.length - serious;
+    const fromFaults = Math.max(0, 100 - serious * 25 - minor * 5);
+    const live = Number(liveScore), score = Number.isFinite(live) ? Math.max(0, Math.min(100, Math.round(live))) : fromFaults;
     return { pass: completed && serious === 0 && minor <= 10, serious, minor, faults: list,
-      elapsed: Math.round(elapsed), completed, score: Math.max(0, 100 - serious * 25 - minor * 5) };
+      elapsed: Math.round(elapsed), completed, score };
   }
   const quizIDs = ['stop','giveway','noentry','speed50','nopark','nohorn','nouturn','noovertake','oneway','left','right','noped','school','zebra','bendL','bendR','bridge','hump','slip','round'];
   function shuffled(items, rng) {

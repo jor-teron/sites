@@ -1,8 +1,8 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(typeof module === 'object' ? require('./score.js') : root.DS);
   if (typeof module === 'object') module.exports = api;
   else Object.assign(root.DS = root.DS || {}, api);
-})(typeof window === 'object' ? window : globalThis, function () {
+})(typeof window === 'object' ? window : globalThis, function (S) {
   'use strict';
   const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
@@ -88,7 +88,7 @@
         l.done = (l.reverseDistance || 0) >= 3 && dx < p.width / 2 - .8 && dy < p.height / 2 - .6 && aligned && Math.abs(c.v) < .1 && c.handbrake && c.gear === 0;
       } else l.done = (!l.def.needsStop || w.stopSatisfied) && (!l.def.needsWait || w.waitDwell >= 1);
     }
-    l.score = Math.max(0, 100 - l.faults.reduce((n, f) => n + (f.severity === 'serious' ? 25 : 5), 0));
+    S.advanceLessonScore(l, c.distance);
   }
   return { roadLessons, signalAt, pathPose, world, updateWorld, updateRoadLesson };
 });
