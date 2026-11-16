@@ -1,4 +1,4 @@
-/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), each one commented. */
+/* Web Browser — www_config.js: every constant for WWW1 (tabs, address/search, bookmarks, history, open-in-tab fallback), WWW2a (Relay Server routing), WWW2b (relay sessions, clear cookies, privacy) and WWW2c (real address after redirects, Reader) and WWW2d (relay URL auto-fix, Hub-relay warning, detailed Test report, Local Network Access hint), each one commented. */
 (function (root) {
   'use strict';
 
@@ -6,7 +6,7 @@
     /* Display name shown in the page header and title. */
     APP_NAME: 'Web Browser',
     /* Release tag shown next to the title. */
-    RELEASE: 'WWW1',
+    RELEASE: 'WWW2d',
     /* Every localStorage key this app writes starts with this prefix. */
     LS_PREFIX: 'browser_',
     /* localStorage keys (prefix + name). */
@@ -14,6 +14,10 @@
     LS_HISTORY: 'browser_history',
     LS_SETTINGS: 'browser_settings',
     LS_TABS: 'browser_tabs',
+    /* WWW2a: Relay Server settings {url, secret, enabled}. */
+    LS_RELAY: 'browser_relay',
+    /* WWW2b: this Hub browser's relay cookie session id (a random string, see newSessionId). */
+    LS_RELAY_SESSION: 'browser_relay_session',
     /* Shared Hub theme key — read only, never written by this app. */
     HUB_THEME_KEY: 'sites-hub.theme',
     /* Pseudo URL for the speed-dial home page (never loaded in a frame). */
@@ -71,7 +75,69 @@
     MIXED_TITLE: "This http page can't load here",
     MIXED_TEXT: 'This app runs on a secure (https) page so plain http pages are blocked inside it.',
     STOPPED_TITLE: 'Loading stopped',
-    STOPPED_TEXT: 'Tap Reload to try again.'
+    STOPPED_TEXT: 'Tap Reload to try again.',
+
+    /* ---- WWW2a: Relay Server (Jor's relay v0.7.0+, www module) ---- */
+    /* Relay settings until the user fills them in: off. */
+    DEFAULT_RELAY: { url: '', secret: '', enabled: false },
+    /* Fallback relay cookie session id, only used when no per-device id is given (WWW2b makes one per Hub browser). */
+    RELAY_SESSION: 'default',
+    /* WWW2b: characters in a per-device session id (each from one random byte, 64-letter URL-safe alphabet: 6 bits each). */
+    RELAY_SESSION_LEN: 22,
+    /* WWW2b: a saved session id must look like this (URL-safe, 16-128 chars; the relay keeps at most 128). */
+    RELAY_SESSION_RE: /^[A-Za-z0-9_-]{16,128}$/,
+    /* WWW2b: a secret this long or longer is also searched for inside URLs before saving (shorter ones would match by chance). */
+    RELAY_SECRET_MIN_SCAN: 6,
+    /* WWW2b: relay cookie sessions end after this many idle minutes (relay RELAY_WWW_SESSION_TTL, 1800 s by default). */
+    RELAY_SESSION_TTL_MIN: 30,
+    /* WWW2b: Settings > Relay notes. */
+    RELAY_LOGIN_NOTE: 'Logins through the relay are kept on the relay, for this device only. They end after about 30 minutes without use, or when the relay restarts.',
+    RELAY_PRIVACY_NOTE: "Privacy: the secret is part of every relay page address, so this browser's own history (and the history of any device you use) may store it. Use the relay only on your own devices. If the secret leaks, change RELAY_TOKEN on the relay and here. This app never saves relay addresses in its history, bookmarks or tabs.",
+    /* Per-tab routing modes: auto (relay only when needed), relay (always), direct (never). */
+    TAB_MODES: ['auto', 'relay', 'direct'],
+    /* Settings > Relay > Test gives up after this many ms. */
+    RELAY_TEST_TIMEOUT_MS: 8000,
+    /* A page loading through the relay gets this long before the relay timeout card (relay upstream timeout is 15 s). */
+    RELAY_LOAD_TIMEOUT_MS: 25000,
+    /* Card and message texts. */
+    RELAY_TIMEOUT_TITLE: "The relay hasn't returned this page",
+    RELAY_TIMEOUT_TEXT: 'The relay may be offline, the secret may be wrong, or the page may be slow or over 5 MB. Run Settings > Relay > Test, or open it in a new tab.',
+    RELAY_NOT_SET: 'Relay not set: add the relay URL and secret in Settings > Relay to load sites like this inside the app.',
+    RELAY_OFF: 'The relay is switched off in Settings > Relay.',
+
+    /* ---- WWW2c: real address after redirects, Reader ---- */
+    /* The HEAD request for X-Relay-Final-Url gives up after this many ms (then the requested address stays). */
+    FINAL_URL_TIMEOUT_MS: 8000,
+    /* Small harmless page used once per relay config to ask the relay whether Reader works (v0.7.0 answers 501). */
+    READER_PROBE_URL: 'https://example.com/',
+    /* Reader probe gives up after this many ms (unknown = button hidden). */
+    READER_PROBE_TIMEOUT_MS: 8000,
+
+    /* ---- WWW2d: relay URL auto-fix, Hub-relay warning, detailed Test report ---- */
+    /* Ports of the Hub's own relays (RL1 8787, SSH relay 8022/8023): none of them has the www module. */
+    HUB_RELAY_PORTS: ['8787', '8022', '8023'],
+    /* Hosts that only point at this device itself. */
+    LOCAL_HOSTS: ['localhost', '127.0.0.1', '[::1]', '0.0.0.0'],
+    /* Funnel publishes Relay Server under this path: a bare *.ts.net URL gets it added. */
+    RELAY_PATH: '/relay',
+    /* Example relay URL used in warnings. */
+    RELAY_EXAMPLE: 'https://<machine>.<tailnet>.ts.net/relay',
+    /* Warning shown when the URL looks like the Hub's own relay. */
+    HUB_RELAY_WARN: "That looks like the Hub's own relay (RL1/SSH), which has no web module. Use your Relay Server URL, e.g. https://<machine>.<tailnet>.ts.net/relay",
+    /* Note shown when the Hub is opened from a file. */
+    FILE_HUB_NOTE: 'This Hub is opened from a file (file://). The relay should still work: Relay Server answers any origin for health checks and page loads.',
+    /* WWW2d: Chrome Local Network Access permission names to ask about (newest first); unknown names throw and are skipped. */
+    LNA_PERMISSIONS: ['local-network-access', 'local-network', 'loopback-network'],
+    /* WWW2d: a permissions.query that hangs is given up after this many ms. */
+    LNA_QUERY_TIMEOUT_MS: 1500,
+    /* WWW2d: Test / card text when the browser blocks the relay because its address is local (a Tailscale 100.x address counts). */
+    LNA_TEXT: "Your browser blocked the relay: on this device the relay's address is a local/Tailscale address. Allow 'Local network access' for this site (the icon left of the address bar \u203a Site settings), or turn Tailscale off, then tap Test again.",
+    /* WWW2d: added when the permission is still 'prompt'. */
+    LNA_PROMPT_NOTE: 'The browser may ask you first: choose Allow when it does.',
+    /* WWW2d: card title for a relay tab blocked by Local network access. */
+    LNA_TITLE: 'Your browser blocked the relay',
+    /* WWW2d: Test text when the relay URL is filled in but can't be used. */
+    RELAY_BAD_URL: 'The relay URL must start with https:// (or http://), e.g. https://<machine>.<tailnet>.ts.net/relay'
   };
 
   /* Attach to the global so script-tag loads can see it, and export for Node tests. */

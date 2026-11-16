@@ -24,3 +24,25 @@ pedal hold/release + wheel drag/recenter; complete 20-question quiz; incomplete
 mock report; help; mute and horn; pause; theme/side/score persistence on reload.
 The successful full mock route was not autodriven; its route/parking/pass logic is
 covered by unit checks. No real phone or real-world handling validation claimed.
+
+DS-2a: Node 42/42 passing (`basics`, `roads`, `exam`, `cockpit`, `scene3d`, `ui-stub`).
+New: wheel angle/drag maths (incl. past 180 degrees), dial needles, gear labels and lever
+slots, RHD/LHD driver eye, rear and door mirror poses (look back, flipped), horizon
+framing, mirror viewport maths, pixel-ratio cap, marker layouts for all 14 lessons;
+three.js r170 loads in Node and the scene builds/updates for every lesson on both
+traffic sides (double-sided materials, under 400 meshes); classic UI scripts run in a
+stub DOM: manual default, gear lever, handbrake, wheel rotation, indicator, 3D hand-over,
+3D failure falls back to the map, automatic R/N/D, wheel drag and pedals, town + mock.
+No browser run (browser.cjs updated for the new controls but not executed). No real
+phone, WebGL rendering or visual check yet.
+
+DS-3: Node 52/52 passing (`basics`, `roads`, `exam`, `cockpit`, `scene3d`, `ui-stub`, `openroad`).
+New: same route number gives the same road in both modes (and chunked generation equals
+one-shot generation); 25 loops close (gap = one step, heading and height join) and never
+cross themselves; a 30 km endless run keeps under ~245 points; all four road types and
+all four events appear, events only on city/village straights and 100 m apart; ghat
+hairpins exist; an autodriven lap of the practice loop completes; rule checks for off
+road, keep left (both traffic sides), speed limit, speed breaker, zebra pedestrian,
+roundabout give way and wrong way; the Open road group, route box and both modes run in
+the stub UI; the 3D open road keeps 3–5 chunks, drops old ones and stays under 600 meshes
+(max 58 while driving, 114 with every area built). No browser run; no visual check.

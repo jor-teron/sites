@@ -173,6 +173,7 @@ html.hub-xp .menu .menu-cat .cat-icon { box-shadow: none; }
 html.hub-xp .menu .menu-cat:hover, html.hub-xp .menu button.app:hover,
 html.hub-xp .menu .menu-cat.fly-on, html.hub-xp .menu .menu-cat[aria-expanded="true"] { background: var(--xp-sel); color: #fff; }
 html.hub-xp .menu input { background: #fff; color: #000; border: 1px solid #7f9db9; border-radius: 0; }
+/* (before H154) light-blue flyout with an orange left edge
 html.hub-xp .menu-fly {
   --text: #00136b; --muted: #3a4f86;
   background: #d3e5fa;
@@ -185,6 +186,17 @@ html.hub-xp .menu-fly .fly-head { color: #00136b; font-weight: 700; }
 html.hub-xp .menu-fly .fly-sec { border-top-color: #95bdee; }
 html.hub-xp .menu-fly .fly-app { color: #00136b; border-radius: 0; }
 html.hub-xp .menu-fly .fly-app:hover { background: var(--xp-sel); color: #fff; }
+*/
+/* H154: the flyout columns look like the XP Start menu itself (white, same edge and shadow; square, no header band) */
+html.hub-xp .menu-fly {
+  --text: #000; --muted: #444;
+  background: #fff;
+  border: 1px solid var(--xp-edge);
+  border-radius: 0;
+  box-shadow: 3px 4px 14px rgba(0, 0, 0, 0.40);
+}
+html.hub-xp .menu-fly .fly-app, html.hub-xp .menu-fly .fly-row { color: #000; border-radius: 0; }
+html.hub-xp .menu-fly .fly-app:hover, html.hub-xp .menu-fly .fly-row:hover, html.hub-xp .menu-fly .fly-row.fly-on { background: var(--xp-sel); color: #fff; }
 
 /* ---------- right-click menus (shared/ctxmenu) + title-bar tab menu ---------- */
 html.hub-xp .ctx {
@@ -294,9 +306,15 @@ html.hub-xp:not(.hub-light) .menu .menu-cat, html.hub-xp:not(.hub-light) .menu b
 html.hub-xp:not(.hub-light) .menu .menu-cat:hover, html.hub-xp:not(.hub-light) .menu button.app:hover,
 html.hub-xp:not(.hub-light) .menu .menu-cat.fly-on, html.hub-xp:not(.hub-light) .menu .menu-cat[aria-expanded="true"] { background: var(--xp-sel); color: #fff; }
 html.hub-xp:not(.hub-light) .menu input { background: #1b2130; color: var(--xp-text); border-color: #4f6a96; }
+/* (before H154)
 html.hub-xp:not(.hub-light) .menu-fly { --text: #dce7fb; --muted: #9fb3d8; background: #1d2a44; border-color: #34507f; }
 html.hub-xp:not(.hub-light) .menu-fly .fly-head, html.hub-xp:not(.hub-light) .menu-fly .fly-app { color: #dce7fb; }
 html.hub-xp:not(.hub-light) .menu-fly .fly-sec { border-top-color: #34507f; }
+*/
+html.hub-xp:not(.hub-light) .menu-fly { --text: var(--xp-text); --muted: var(--xp-muted); background: var(--xp-face); border-color: #0b2a6e; box-shadow: 3px 4px 16px rgba(0, 0, 0, 0.6); }   /* H154: = XP dark .menu */
+html.hub-xp:not(.hub-light) .menu-fly .fly-app, html.hub-xp:not(.hub-light) .menu-fly .fly-row { color: var(--xp-text); }
+html.hub-xp:not(.hub-light) .menu-fly .fly-app:hover, html.hub-xp:not(.hub-light) .menu-fly .fly-row:hover,
+html.hub-xp:not(.hub-light) .menu-fly .fly-row.fly-on { background: var(--xp-sel); color: #fff; }
 /* right-click menus + tab menu */
 html.hub-xp:not(.hub-light) .ctx { color: var(--xp-text); box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.6); }
 html.hub-xp:not(.hub-light) .ctx-item:disabled { color: #7b8497; }

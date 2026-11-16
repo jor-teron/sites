@@ -1,8 +1,8 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(typeof module === 'object' ? require('./score.js') : root.DS);
   if (typeof module === 'object') module.exports = api;
   else Object.assign(root.DS = root.DS || {}, api);
-})(typeof window === 'object' ? window : globalThis, function () {
+})(typeof window === 'object' ? window : globalThis, function (S) {
   'use strict';
   const reasons = {
     no_indicator: ['Signal before turning or changing lanes.', 'minor'],
@@ -18,7 +18,7 @@
     if ((w.cooldown[code] ?? -100) + 5 > w.time) return;
     w.cooldown[code] = w.time;
     const [reason, severity] = reasons[code], item = { code, reason, severity, time: +w.time.toFixed(1) };
-    w.faults.push(item); w.totalFaults++; l.faults.push(item);
+    w.faults.push(item); w.totalFaults++; l.faults.push(item); S.applyLessonFault(l, severity);
   }
   const cross = (a, b, line) => a < line && b >= line;
   function checkRules(w, c, l, dt) {

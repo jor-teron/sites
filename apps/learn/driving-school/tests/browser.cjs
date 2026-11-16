@@ -13,9 +13,10 @@ const puppeteer = require(process.env.DS_PUPPETEER || '/workspace/gg-test/node_m
       await page.setViewport({ width, height, deviceScaleFactor: 2, hasTouch: true });
       await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       const geometry = await page.evaluate(() => {
-        const c = document.getElementById('road'), b = c.getBoundingClientRect();
-        return { w: document.documentElement.scrollWidth, vw: innerWidth, cw: c.width, css: b.width,
-          sizes: [...document.querySelectorAll('.touch button,.switches button')].map(e => e.getBoundingClientRect().height) };
+        // DS-2a: 3D canvas renders at most 1.5x (weak phones); the map fallback stays at full DPR.
+        const three = drivingTest.view3d, c = document.getElementById(three ? 'view3d' : 'road'), b = c.getBoundingClientRect();
+        return { w: document.documentElement.scrollWidth, vw: innerWidth, cw: c.width, css: b.width * (three ? .75 : 1),
+          sizes: [...document.querySelectorAll('.cockpit button:not(#horn)')].map(e => e.getBoundingClientRect().height) };
       });
       assert(geometry.w <= width + 1, JSON.stringify(geometry));
       assert(Math.abs(geometry.cw - geometry.css * 2) < 2, 'DPR crisp');
@@ -54,7 +55,7 @@ const puppeteer = require(process.env.DS_PUPPETEER || '/workspace/gg-test/node_m
     }
     await page.setViewport({ width: 844, height: 390, deviceScaleFactor: 2 });
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const bounds = await page.evaluate(() => [...document.querySelectorAll('.touch button,.switches button,#wheel')].map(e => ({id:e.id || e.textContent,bottom:e.getBoundingClientRect().bottom,height:e.getBoundingClientRect().height})));
+    const bounds = await page.evaluate(() => [...document.querySelectorAll('.cockpit button:not(#horn)')].map(e => ({id:e.id || e.textContent,bottom:e.getBoundingClientRect().bottom,height:e.getBoundingClientRect().height})));
     assert(bounds.every(b => b.bottom <= 390 && b.height >= 44), JSON.stringify(bounds));
     await page.screenshot({ path:'/workspace/ds-polished-844x390.png' });
     await page.select('#lessons','start');
@@ -64,9 +65,11 @@ const puppeteer = require(process.env.DS_PUPPETEER || '/workspace/gg-test/node_m
     assert.equal(await page.evaluate(() => drivingTest.input().throttle),1);
     await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     assert.equal(await page.evaluate(() => drivingTest.input().throttle),0);
-    const wheel = await page.$eval('#wheel',e=>{const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});
-    await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...wheel,id:2}]});
-    await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:wheel.x+30,y:wheel.y,id:2}]});
+    // DS-2a: grab the rim at 12 o'clock and drag it round clockwise (about 90 degrees).
+    const wheel = await page.$eval('#wheel',e=>{const r=e.getBoundingClientRect(),q=e.offsetWidth*.42;return {x:r.x+r.width/2,y:r.y+r.height/2,q};});
+    await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:wheel.x,y:wheel.y-wheel.q,id:2}]});
+    await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:wheel.x+wheel.q*.7,y:wheel.y-wheel.q*.7,id:2}]});
+    await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:wheel.x+wheel.q,y:wheel.y,id:2}]});
     assert(await page.evaluate(() => drivingTest.input().steer > .5));
     await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     assert.equal(await page.evaluate(() => drivingTest.input().steer),0);

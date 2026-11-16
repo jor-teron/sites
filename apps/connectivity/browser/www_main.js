@@ -1,4 +1,4 @@
-/* Web Browser — www_main.js: WWW1 UI wiring (tabs, toolbar, frames, embed-blocked card, bookmarks, history, settings, help, shortcuts, theme). */
+/* Web Browser — www_main.js: WWW1 UI wiring (tabs, toolbar, frames, embed-blocked card, bookmarks, history, settings, help, shortcuts, theme) + WWW2a relay (Settings > Relay + Test, auto/per-tab routing, via-relay badge) + WWW2b (per-device relay session, New session, Clear relay cookies, privacy notes, relay-URL sanitising before every save) + WWW2c (real address after relay redirects from X-Relay-Final-Url, Reader button when the relay supports it) + WWW2d (relay URL auto-fix on save and Test, Hub-relay/localhost warning, step-by-step Test report with Copy details and Open health page, Chrome Local Network Access block hint). */
 (function () {
   'use strict';
 
@@ -19,9 +19,46 @@
   var settings = L.mergeSettings(S.settings());
   var bookmarks = S.bookmarks();
   var history = S.history();
+  var relay = loadRelay();
+  var relaySession = loadSession();
   var tabs = [];
   var activeId = 0;
   var nextId = 1;
+  /* WWW2c: final-URL probe state: the one-time Settings hint ('' | 'origin' | 'expose') and the relay config it gave up on. */
+  var finalHint = '';
+  var finalOffKey = '';
+  var finalHintEl = null;
+  /* WWW2c: reader support per relay config (memory only): true shows the button; false/null keep it hidden. */
+  var readerCache = {};
+  var readerBusy = '';
+  var readerTimer = 0;
+
+  /* WWW2d: saved relay settings with the URL auto-fixed (older saves may hold /health, /www/…/fetch, no scheme…). */
+  function loadRelay() {
+    var r = L.sanitizeRelay(S.relay());
+    var f = L.fixRelayUrl(r.url);
+    if (f.url && f.url !== r.url) { r.url = f.url; S.saveRelay(r); }
+    return r;
+  }
+  /* WWW2d: the last Test report ({steps, text}, already redacted) for Copy details. */
+  var lastReport = null;
+
+  /* ---------- WWW2b: per-device relay session + sanitising ---------- */
+  /* This Hub browser's relay cookie session id: the saved one, or a new random one (saved). */
+  function loadSession() {
+    var id = S.relaySession();
+    if (L.validSessionId(id)) return id;
+    id = L.newSessionId();
+    if (!L.validSessionId(id)) return C.RELAY_SESSION; /* no crypto: fall back to the shared default session */
+    S.saveRelaySession(id);
+    return id;
+  }
+  /* A URL safe to show or save: relay URLs become the original page URL; anything holding the secret becomes ''. */
+  function clean(url) { return L.stripRelay(url, relay); }
+  function saveHistory() {
+    history = L.cleanHistory(history, relay);
+    S.saveHistory(history);
+  }
 
   /* ---------- theme (shared Hub key, read only) ---------- */
   function applyTheme() {
@@ -33,6 +70,8 @@
   window.addEventListener('storage', function (e) {
     if (e.key === C.HUB_THEME_KEY) applyTheme();
     if (e.key === C.LS_BOOKMARKS) { bookmarks = S.bookmarks(); renderBookmarks(); }
+    if (e.key === C.LS_RELAY) { relay = loadRelay(); relayChanged(); renderTabs(); renderChrome(); }
+    if (e.key === C.LS_RELAY_SESSION) { var id = S.relaySession(); if (L.validSessionId(id)) relaySession = id; }
   });
 
   /* ---------- toast + in-app confirm (a Hub window blocks confirm()) ---------- */
@@ -74,7 +113,7 @@
 
   function makeTab(hist) {
     var pane = el('div', 'pane');
-    var tab = { id: nextId++, hist: hist || L.tabHistory(), title: '', status: 'home', timer: 0, pane: pane, frame: null, expect: '' };
+    var tab = { id: nextId++, hist: hist || L.tabHistory(), title: '', status: 'home', timer: 0, pane: pane, frame: null, expect: '', mode: 'auto', via: false, slowUrl: '', reader: '', readerOn: false, probed: '' };
     $('panes').appendChild(pane);
     tabs.push(tab);
     return tab;
@@ -82,7 +121,8 @@
 
   function saveTabs() {
     var idx = Math.max(0, tabs.indexOf(activeTab()));
-    S.saveTabs({ active: idx, tabs: tabs.map(function (t) { return { hist: t.hist, title: t.title }; }) });
+    /* WWW2b: relay URLs and the secret never reach saved tabs. */
+    S.saveTabs(L.cleanTabsState({ active: idx, tabs: tabs.map(function (t) { return { hist: t.hist, title: t.title, mode: t.mode }; }) }, relay));
   }
 
   function newTab(url) {
@@ -132,6 +172,7 @@
       x.setAttribute('aria-label', 'Close tab');
       x.onclick = function (e) { e.stopPropagation(); closeTab(t.id); };
       b.appendChild(title);
+      if (t.via) { var vb = el('span', 'via', t.readerOn ? 'reader' : 'relay'); vb.title = t.readerOn ? 'Reader view through the relay' : 'Loaded through the relay'; b.appendChild(vb); }
       b.appendChild(x);
       nav.appendChild(b);
       if (t.id === activeId) setTimeout(function () { b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }, 0);
@@ -143,7 +184,7 @@
     var t = activeTab();
     if (!t) return;
     var u = L.current(t.hist);
-    if (force || document.activeElement !== $('addr')) $('addr').value = u === C.HOME_URL ? '' : u;
+    if (force || document.activeElement !== $('addr')) $('addr').value = u === C.HOME_URL ? '' : clean(u);
     $('back').disabled = !L.canBack(t.hist);
     $('fwd').disabled = !L.canForward(t.hist);
     var loading = t.status === 'loading';
@@ -155,16 +196,32 @@
     var on = !isHome && L.hasBookmark(bookmarks, u);
     $('star').textContent = on ? '★' : '☆';
     $('star').title = on ? 'Remove bookmark' : 'Bookmark this page';
+    $('viaBadge').hidden = !t.via;
+    $('viaBadge').textContent = t.readerOn ? 'reader' : 'via relay';
+    /* WWW2c: Reader button only when the relay reports reader support (hidden while it answers 501). */
+    var rb = $('reader');
+    rb.hidden = isHome || !(t.readerOn || L.showReaderButton(readerState(), relay, u, isHttpsHub()));
+    rb.classList.toggle('on', !!t.readerOn);
+    rb.setAttribute('aria-pressed', t.readerOn ? 'true' : 'false');
+    rb.title = t.readerOn ? 'Leave Reader view' : 'Reader view (through the relay)';
+    $('addrForm').classList.toggle('via', !!t.via);
+    $('relayToggle').textContent = t.via ? '⇄ Load directly' : '⇄ Load through relay';
+    $('relayToggle').disabled = isHome;
     document.title = (t.title || (isHome ? '' : L.labelFor(u))) ? (t.title || L.labelFor(u)) + ' — ' + C.APP_NAME : C.APP_NAME;
   }
 
   /* ---------- navigation ---------- */
   function navigate(tab, url, fromUser) {
+    if (url !== C.HOME_URL) {
+      /* WWW2b: a pasted relay URL opens its original page; an address holding the secret is refused. */
+      url = clean(url);
+      if (!url) { toast('That address contains your relay secret, so it was not opened or saved'); return; }
+    }
     tab.hist = L.push(tab.hist, url);
     tab.title = '';
     if (url !== C.HOME_URL) {
       history = L.addHistory(history, url, L.labelFor(url), Date.now());
-      S.saveHistory(history);
+      saveHistory();
     }
     load(tab, fromUser);
   }
@@ -190,35 +247,119 @@
     Array.prototype.slice.call(tab.pane.querySelectorAll('.card,.home')).forEach(function (n) { n.remove(); });
   }
 
-  /* Load the tab's current URL: home page, a card, or the frame. */
-  function load(tab, fromUser) {
+  /* ---------- relay (WWW2a) ---------- */
+  function isHttpsHub() { return location.protocol === 'https:'; }
+
+  /* 'direct' | 'relay' | 'newtab' for this tab and URL (see L.routeFor). */
+  function routeOf(tab, url, timedOut) {
+    return L.routeFor(url, { relay: relay, tabMode: tab.mode, isHttpsHub: isHttpsHub(), timedOut: !!timedOut });
+  }
+
+  /* Relay frames drop allow-same-origin when the relay shares this Hub's origin (proxied sites must not reach the app). */
+  function setSandbox(f, viaRelay) {
+    var want = viaRelay ? L.relaySandbox(C.FRAME_SANDBOX, relay.url, location.origin) : C.FRAME_SANDBOX;
+    if (f.getAttribute('sandbox') !== want) f.setAttribute('sandbox', want);
+  }
+
+  /* Why the relay can't take this page right now, or '' when it can. */
+  function relayProblem(url) {
+    if (!/^https?:\/\//i.test(url || '')) return 'Only http and https pages can go through the relay.';
+    if (!L.relayConfigured(relay)) return C.RELAY_NOT_SET;
+    if (!relay.enabled) return C.RELAY_OFF;
+    if (L.relayMixed(relay, isHttpsHub())) return 'This Hub is https, so the relay URL must be https too.';
+    return '';
+  }
+
+  /* Menu: Load through relay / Load directly for the active tab (sticks for this tab). */
+  function toggleRelay() {
+    $('menu').hidden = true;
+    var t = activeTab();
+    var u = L.current(t.hist);
+    if (u === C.HOME_URL) { toast('Open a page first'); return; }
+    if (t.via) { t.mode = 'direct'; t.reader = ''; load(t, true); toast('This tab now loads pages directly'); return; }
+    var why = relayProblem(u);
+    if (why) { toast(why); if (!L.relayConfigured(relay) || !relay.enabled) openSheet('settings'); return; }
+    t.mode = 'relay';
+    load(t, true);
+    toast('This tab now loads pages through the relay');
+  }
+
+  /* Load the tab's current URL: home page, a card, the frame, or the frame through the relay. timedOut: a direct load just timed out. */
+  function load(tab, fromUser, timedOut) {
     clearTimeout(tab.timer);
     clearPaneExtras(tab);
     var url = L.current(tab.hist);
+    tab.via = false;
+    tab.readerOn = false;
+    /* WWW2c: Reader stays on only for the page it was turned on for, and only while the relay supports it. */
+    var readerSrc = url !== C.HOME_URL && tab.reader === url && L.showReaderButton(readerState(), relay, url, isHttpsHub())
+      ? L.relayReaderUrl(relay, url, relaySession) : '';
+    if (!readerSrc) tab.reader = '';
     if (url === C.HOME_URL) {
       blankFrame(tab);
       tab.status = 'home';
       tab.pane.appendChild(renderHome());
-    } else if (L.isMixedContent(location.protocol, url)) {
-      blankFrame(tab);
-      tab.status = 'mixed';
-      showCard(tab, C.MIXED_TITLE, C.MIXED_TEXT, false);
-    } else if (L.isKnownBlocked(url)) {
-      blankFrame(tab);
-      tab.status = 'blocked';
-      showCard(tab, C.BLOCKED_TITLE, C.BLOCKED_TEXT, false);
-      if (fromUser && settings.autoOpenBlocked) openExternal(url);
-    } else {
-      var f = ensureFrame(tab);
-      f.hidden = false;
+    } else if (readerSrc) {
+      var rdf = ensureFrame(tab);
+      setSandbox(rdf, true);
+      rdf.hidden = false;
       tab.status = 'loading';
-      tab.expect = url;
-      f.src = url;
+      tab.via = true;
+      tab.readerOn = true;
+      tab.expect = readerSrc;
+      rdf.src = readerSrc;
       tab.timer = setTimeout(function () {
-        if (tab.status === 'loading') showCard(tab, C.TIMEOUT_TITLE, C.TIMEOUT_TEXT, true);
-      }, C.LOAD_TIMEOUT_MS);
+        if (tab.status === 'loading' && L.current(tab.hist) === url) relayFailCard(tab, url);
+      }, C.RELAY_LOAD_TIMEOUT_MS);
+    } else {
+      var route = routeOf(tab, url, timedOut || tab.slowUrl === url);
+      if (route === 'relay') {
+        var rf = ensureFrame(tab);
+        setSandbox(rf, true);
+        rf.hidden = false;
+        tab.status = 'loading';
+        tab.via = true;
+        var src = L.buildRelayUrl(relay.url, relay.secret, url, relaySession);
+        tab.expect = src;
+        rf.src = src;
+        ensureReader();
+        tab.timer = setTimeout(function () {
+          if (tab.status === 'loading' && L.current(tab.hist) === url) relayFailCard(tab, url);
+        }, C.RELAY_LOAD_TIMEOUT_MS);
+      } else if (route === 'newtab' && L.isMixedContent(location.protocol, url)) {
+        blankFrame(tab);
+        tab.status = 'mixed';
+        showCard(tab, C.MIXED_TITLE, C.MIXED_TEXT, false);
+      } else if (route === 'newtab' && L.isKnownBlocked(url)) {
+        blankFrame(tab);
+        tab.status = 'blocked';
+        showCard(tab, C.BLOCKED_TITLE, C.BLOCKED_TEXT, false);
+        if (fromUser && settings.autoOpenBlocked) openExternal(url);
+      } else if (route === 'newtab') {
+        blankFrame(tab);
+        tab.status = 'timeout';
+        showCard(tab, C.TIMEOUT_TITLE, C.TIMEOUT_TEXT, false, true);
+      } else {
+        var f = ensureFrame(tab);
+        setSandbox(f, false);
+        f.hidden = false;
+        tab.status = 'loading';
+        tab.expect = url;
+        f.src = url;
+        tab.timer = setTimeout(function () {
+          if (tab.status !== 'loading' || L.current(tab.hist) !== url) return;
+          /* Auto mode + relay ready: a page that timed out is tried again through the relay. */
+          if (routeOf(tab, url, true) === 'relay') {
+            tab.slowUrl = url;
+            toast('Slow or refusing site: trying through the relay');
+            load(tab, false, true);
+          } else {
+            showCard(tab, C.TIMEOUT_TITLE, C.TIMEOUT_TEXT, true);
+          }
+        }, C.LOAD_TIMEOUT_MS);
+      }
     }
-    if (tab.id === activeId) { renderTabs(); renderChrome(true); saveTabs(); }
+    if (tab.id === activeId) { renderTabs(); renderChrome(true); saveTabs(); } else renderTabs();
   }
 
   function onFrameLoad(tab) {
@@ -232,6 +373,9 @@
     try {
       var w = tab.frame.contentWindow;
       var href = w.location.href;
+      /* A same-origin relay frame shows the relay URL: keep only the original page URL (never the secret). */
+      if (tab.via) href = L.unwrapRelayUrl(href, relay.url);
+      href = clean(href);
       if (href && href !== 'about:blank' && href !== L.current(tab.hist)) {
         tab.hist = L.push(tab.hist, href);
         history = L.addHistory(history, href, '', Date.now());
@@ -241,9 +385,160 @@
         tab.title = title;
         history = L.addHistory(history, L.current(tab.hist), title, Date.now());
       }
-      S.saveHistory(history);
+      saveHistory();
     } catch (_) { /* cross-origin: keep the app-level URL and host label */ }
     if (tab.id === activeId) { renderTabs(); renderChrome(); saveTabs(); } else renderTabs();
+    if (tab.via && !tab.readerOn) probeFinalUrl(tab);
+  }
+
+  /* ---------- WWW2c: real address after relay redirects ---------- */
+  /*
+   * Once per relay navigation: HEAD the same relay fetch URL and read X-Relay-Final-Url. When it names another page,
+   * the address bar, the tab's current step and the newest history entry switch to that original URL (cleaned, never a
+   * relay URL or the secret). When CORS hides the answer, the requested URL stays and Settings > Relay shows a hint once;
+   * probing then stops for this relay config.
+   */
+  function probeFinalUrl(tab) {
+    var src = tab.expect;
+    if (!src || tab.probed === src) return;
+    tab.probed = src;
+    var requested = L.current(tab.hist);
+    var key = L.readerKey(relay);
+    if (!key || finalOffKey === key || L.relayMixed(relay, isHttpsHub())) return;
+    var req = L.buildFinalUrlRequest(relay, requested, relaySession);
+    if (!req) return;
+    timedFetch(req.url, req.init, C.FINAL_URL_TIMEOUT_MS).then(function (res) {
+      var h = null;
+      try { h = res.headers.get('X-Relay-Final-Url'); } catch (_) { h = null; }
+      return { kind: 'http', status: res.status, header: h };
+    }, function (err) {
+      if (err && err.name === 'AbortError') return { kind: 'timeout' };
+      /* A failed CORS read: a no-cors HEAD tells "relay up but this Hub not allowed" from "relay offline". */
+      return timedFetch(req.url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store', credentials: 'omit' }, C.FINAL_URL_TIMEOUT_MS)
+        .then(function () { return { kind: 'cors' }; }, function () { return { kind: 'offline' }; });
+    }).then(function (r) {
+      /* WWW2d: both requests failed though the frame was loaded: Local Network Access may block this relay. Quietly
+         stop probing for this relay config, and put the hint on the tab when the relayed frame failed too. */
+      if (r.kind !== 'offline' && r.kind !== 'timeout') return r;
+      return queryLna().then(function (q) {
+        if (!q.state) return r;
+        finalOffKey = key;
+        if (tabs.indexOf(tab) >= 0 && tab.expect === src && L.current(tab.hist) === requested) showLnaCard(tab, q.state);
+        return { kind: 'lna' };
+      });
+    }).then(function (r) {
+      if (r.kind === 'lna') return;
+      var out = L.finalUrlOutcome(r, relay, requested);
+      if (out.hint) { finalOffKey = key; setFinalHint(out.hint); return; }
+      if (!out.url) return;
+      if (tabs.indexOf(tab) < 0 || tab.expect !== src || L.current(tab.hist) !== requested) return; /* moved on meanwhile */
+      applyFinalUrl(tab, requested, out.url);
+    }, function () { /* keep the requested URL */ });
+  }
+
+  function applyFinalUrl(tab, from, to) {
+    var u = clean(to);
+    if (!u) return;
+    tab.hist = L.replaceCurrent(tab.hist, u);
+    history = L.replaceHistoryUrl(history, from, u, Date.now());
+    saveHistory();
+    if (tab.slowUrl === from) tab.slowUrl = u;
+    renderTabs();
+    if (tab.id === activeId) renderChrome();
+    saveTabs();
+  }
+
+  function setFinalHint(kind) {
+    if (finalHint === kind) return;
+    finalHint = kind;
+    if (finalHintEl) { finalHintEl.textContent = L.finalUrlHint(finalHint, location.origin); finalHintEl.hidden = !finalHint; }
+  }
+
+  /* ---------- WWW2c: Reader support (health first, then one probe per relay config) ---------- */
+  function readerState() {
+    var k = L.readerKey(relay);
+    return k && Object.prototype.hasOwnProperty.call(readerCache, k) ? readerCache[k] : null;
+  }
+
+  function ensureReader() {
+    var key = L.readerKey(relay);
+    if (!key || !L.relayReady(relay) || L.relayMixed(relay, isHttpsHub())) return;
+    if (Object.prototype.hasOwnProperty.call(readerCache, key) || readerBusy === key) return;
+    readerBusy = key;
+    var finish = function (v) {
+      if (readerBusy === key) readerBusy = '';
+      readerCache[key] = v === true ? true : (v === false ? false : null); /* null (unknown) is kept too: no re-probe until the relay config changes or Test */
+      renderChrome();
+    };
+    timedFetch(L.relayHealthUrl(relay.url), { cache: 'no-store', credentials: 'omit' }, C.READER_PROBE_TIMEOUT_MS)
+      .then(function (res) { return res.text().then(function (b) { return L.readerFromHealth(b); }, function () { return null; }); }, function () { return null; })
+      .then(function (h) {
+        if (h !== null) { finish(h); return; }
+        timedFetch(L.readerProbeUrl(relay), { cache: 'no-store', credentials: 'omit' }, C.READER_PROBE_TIMEOUT_MS)
+          .then(function (res) { finish(L.readerFromStatus(res.status)); }, function () { finish(null); });
+      }, function () { finish(null); });
+  }
+
+  /* Relay URL, secret or switch changed: forget per-config caches and re-check reader support. */
+  function relayChanged() {
+    readerCache = {};
+    readerBusy = '';
+    finalOffKey = '';
+    setFinalHint('');
+    /* Debounced: the fields save on every keystroke. */
+    clearTimeout(readerTimer);
+    readerTimer = setTimeout(ensureReader, 800);
+  }
+
+  function toggleReader() {
+    var t = activeTab();
+    var u = L.current(t.hist);
+    if (u === C.HOME_URL) return;
+    if (t.readerOn) { t.reader = ''; load(t, true); return; }
+    if (!L.showReaderButton(readerState(), relay, u, isHttpsHub())) { toast("The relay doesn't support Reader view yet"); return; }
+    t.reader = u;
+    load(t, true);
+  }
+
+  /* ---------- WWW2d: Chrome Local Network Access ---------- */
+  /*
+   * Chrome blocks an https page's fetches and frames to a "local" address (a relay host that resolves to a Tailscale
+   * 100.x address on this device counts) unless the site has the Local network access permission.
+   * Resolves {states: {name: state}, state: 'denied'|'prompt'|''}; names Chrome doesn't know throw and become 'unsupported'.
+   */
+  var lnaLast = { states: {}, state: '' };
+  function queryLna() {
+    var perms = typeof navigator !== 'undefined' && navigator.permissions;
+    if (!perms || typeof perms.query !== 'function') return Promise.resolve({ states: {}, state: '' });
+    var one = function (name) {
+      return new Promise(function (resolve) {
+        var t = setTimeout(function () { resolve('no answer'); }, C.LNA_QUERY_TIMEOUT_MS);
+        var settle = function (v) { clearTimeout(t); resolve(v); };
+        try {
+          perms.query({ name: name }).then(function (st) { settle(st && st.state ? String(st.state) : 'unknown'); },
+            function () { settle('unsupported'); });
+        } catch (_) { settle('unsupported'); }
+      });
+    };
+    return Promise.all(C.LNA_PERMISSIONS.map(one)).then(function (vals) {
+      var states = {};
+      C.LNA_PERMISSIONS.forEach(function (n, i) { states[n] = vals[i]; });
+      lnaLast = { states: states, state: L.lnaState(states) };
+      return lnaLast;
+    }, function () { return { states: {}, state: '' }; });
+  }
+
+  function showLnaCard(tab, state) {
+    showCard(tab, C.LNA_TITLE, L.lnaText(state), true, true);
+  }
+
+  /* A relayed tab that didn't load in time: the Local network access hint when that permission blocks it, else the relay timeout card. */
+  function relayFailCard(tab, url) {
+    queryLna().then(function (q) {
+      if (tab.status !== 'loading' || L.current(tab.hist) !== url || tabs.indexOf(tab) < 0) return;
+      if (q.state) showLnaCard(tab, q.state);
+      else showCard(tab, C.RELAY_TIMEOUT_TITLE, C.RELAY_TIMEOUT_TEXT, true);
+    });
   }
 
   function stop(tab) {
@@ -271,6 +566,18 @@
     open.type = 'button';
     open.onclick = function () { openExternal(url); };
     row.appendChild(open);
+    var web = /^https?:\/\//i.test(url);
+    if (web && tab.via) {
+      var direct = el('button', 'ghost jelly', 'Load directly');
+      direct.type = 'button';
+      direct.onclick = function () { tab.mode = 'direct'; load(tab, true); };
+      row.appendChild(direct);
+    } else if (web && !relayProblem(url)) {
+      var viaBtn = el('button', 'jelly', 'Load through relay ⇄');
+      viaBtn.type = 'button';
+      viaBtn.onclick = function () { tab.mode = 'relay'; load(tab, true); };
+      row.appendChild(viaBtn);
+    }
     if (overlay) {
       var wait = el('button', 'ghost jelly', 'Keep waiting');
       wait.type = 'button';
@@ -284,6 +591,14 @@
       row.appendChild(re);
     }
     box.appendChild(row);
+    if (web && !tab.via && relayProblem(url) && relayProblem(url) !== 'Only http and https pages can go through the relay.') {
+      var note = el('p', 'hint', relayProblem(url) + ' ');
+      var set = el('a', '', 'Relay settings');
+      set.href = '#';
+      set.onclick = function (e) { e.preventDefault(); openSheet('settings'); };
+      note.appendChild(set);
+      box.appendChild(note);
+    }
     card.appendChild(box);
     tab.pane.appendChild(card);
   }
@@ -314,7 +629,9 @@
       av.style.background = avatarColour(L.hostOf(b.url) || b.url);
       tile.appendChild(av);
       tile.appendChild(el('span', 'nm', b.title || L.labelFor(b.url)));
-      if (L.isKnownBlocked(b.url)) tile.appendChild(el('span', 'hint', 'opens in new tab'));
+      var tr = L.routeFor(b.url, { relay: relay, tabMode: 'auto', isHttpsHub: isHttpsHub() });
+      if (tr === 'newtab') tile.appendChild(el('span', 'hint', 'opens in new tab'));
+      else if (tr === 'relay') tile.appendChild(el('span', 'hint', 'via relay'));
       tile.onclick = function () { go(b.url); };
       var rm = el('span', 'ic rm', '✕');
       rm.setAttribute('role', 'button');
@@ -333,7 +650,9 @@
       home.appendChild(el('h3', '', 'Recent'));
       home.appendChild(listOf(recent, function (e) { go(e.url); }, null, true));
     }
-    var note = el('p', 'hint', 'Many big sites refuse to load inside this app; they show a card with "Open in new tab". ');
+    var note = el('p', 'hint', L.relayReady(relay)
+      ? 'Sites that refuse to load inside this app go through your relay (marked "via relay"). '
+      : 'Many big sites refuse to load inside this app; they show a card with "Open in new tab". Set up a relay in Settings to load them here. ');
     var help = el('a', '', 'Help');
     help.href = '#';
     help.onclick = function (e) { e.preventDefault(); openSheet('help'); };
@@ -354,7 +673,7 @@
 
   /* ---------- bookmarks ---------- */
   function setBookmarks(list) {
-    bookmarks = list;
+    bookmarks = L.cleanBookmarks(list, relay);
     S.saveBookmarks(bookmarks);
     renderBookmarks();
   }
@@ -447,7 +766,7 @@
         if (!found.length) holder.appendChild(el('p', 'hint', history.length ? 'No matches.' : 'History is empty.'));
         holder.appendChild(listOf(found, goClose, function (e) {
           history = L.removeHistory(history, e.url, e.t);
-          S.saveHistory(history);
+          saveHistory();
           draw();
         }, true));
       };
@@ -460,7 +779,7 @@
       clr.onclick = function () {
         confirmIn('Clear all ' + history.length + ' history entries on this device?', 'Clear', function () {
           history = [];
-          S.saveHistory(history);
+          saveHistory();
           draw();
           toast('History cleared');
         });
@@ -492,6 +811,7 @@
       };
       check('bookmarksBar', 'Show the bookmarks bar');
       check('autoOpenBlocked', 'Open sites that refuse embedding straight in a new tab');
+      renderRelaySettings(body);
       body.appendChild(el('p', 'hint', 'Bookmarks history and settings are saved on this device only (localStorage keys starting browser_).'));
     } else {
       $('sheetTitle').textContent = 'Help';
@@ -500,12 +820,335 @@
         "Many big sites (Google YouTube GitHub X Facebook DuckDuckGo and more) send a header that forbids loading inside another page. The app can't get around that: it shows \"This site doesn't allow embedding\" with an Open in new tab button. The ↗ button always opens the current page in a real browser tab.",
         "Some refusals can't be detected: a blocked page may show an empty or error frame. If nothing appears after a few seconds the app offers Open in new tab. Use ↗ any time.",
         'Back and Forward follow the addresses you opened from this app. Clicking links inside a page from another site is not tracked (browsers keep that private) so Back may skip those steps.',
-        'On a secure (https) Hub, plain http pages are blocked inside the frame; open them in a new tab.',
+        'On a secure (https) Hub, plain http pages are blocked inside the frame; open them in a new tab, or load them through the relay.',
+        'Relay (Settings > Relay): with your Relay Server URL (ending in /relay) and its secret, sites that refuse embedding, plain http pages and pages that time out load through the relay instead, marked "via relay". Menu > Load through relay / Load directly switches the current tab. The address bar, history and bookmarks always keep the real address. Logins through the relay may not stick yet, and scripts on relayed pages that fetch data still go to the real site, so some pages look broken.',
+        'Through the relay, the address bar switches to the real address after redirects (needs this Hub in RELAY_WWW_ORIGINS on the relay). A Reader button (📖) appears only when your relay supports Reader view; it shows a simplified page marked "reader".',
         'Shortcuts (desktop, when the app has focus, not the page): Ctrl+L address bar · Ctrl+T new tab · Ctrl+W close tab · Alt+Left back · Alt+Right forward. Some browsers keep Ctrl+T and Ctrl+W for themselves.',
         'Logins and cookies inside frames may not work: browsers often block third-party cookies.'
       ].forEach(function (p) { body.appendChild(el('p', '', p)); });
     }
     $('sheetWrap').hidden = false;
+  }
+
+  /* ---------- Settings > Relay (WWW2a) ---------- */
+  function timedFetch(url, opts, ms) {
+    if (typeof fetch !== 'function') return Promise.reject(new Error('no fetch'));
+    var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    var o = {};
+    Object.keys(opts || {}).forEach(function (k) { o[k] = opts[k]; });
+    if (ctl) o.signal = ctl.signal;
+    var timer = 0;
+    return new Promise(function (resolve, reject) {
+      timer = setTimeout(function () {
+        if (ctl) ctl.abort();
+        var e = new Error('timeout');
+        e.name = 'AbortError';
+        reject(e);
+      }, ms || C.RELAY_TEST_TIMEOUT_MS);
+      fetch(url, o).then(function (r) { clearTimeout(timer); resolve(r); }, function (e) { clearTimeout(timer); reject(e); });
+    });
+  }
+
+  /* WWW2d: what the Copy details report says about this browser. */
+  function envInfo() {
+    return {
+      userAgent: navigator.userAgent || '',
+      origin: location.origin,
+      protocol: location.protocol,
+      onLine: navigator.onLine,
+      secureContext: typeof window.isSecureContext === 'boolean' ? window.isSecureContext : 'unknown',
+      time: new Date().toString()
+    };
+  }
+  function nowMs() { return typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now(); }
+
+  /*
+   * Health check, then (if www is on) the secret check. Calls done({level, text}, report).
+   * WWW2d: every step is timed and recorded (health GET, no-cors probe, secret check) into a redacted report.
+   */
+  function testRelay(done) {
+    var raw = relay.url;
+    var fix = L.fixRelayUrl(relay.url);
+    if (fix.url && fix.url !== relay.url) { relay.url = fix.url; S.saveRelay(relay); relayChanged(); }
+    var t = {
+      release: C.RELEASE, rawUrl: raw, url: L.normalizeRelayBase(relay.url), notes: fix.notes,
+      warnings: L.relayUrlWarnings(relay.url, location.protocol), healthUrl: L.relayHealthUrl(relay.url),
+      health: null, noCors: null, secret: null, lna: null, summary: '', env: envInfo()
+    };
+    /* WWW2d: Local Network Access states for the report (and the cause when both fetches fail). */
+    var lnaP = queryLna().then(function (q) { t.lna = { states: q.states, state: q.state, blocked: false }; return q; });
+    var finish = function (m) {
+      if (!t.lna && lnaLast.states && Object.keys(lnaLast.states).length) t.lna = { states: lnaLast.states, state: lnaLast.state, blocked: false };
+      /* The Hub's own relay (RL1/SSH, localhost) can never pass: say so first. */
+      if (m.level !== 'ok' && t.warnings.some(function (w) { return w.kind === 'hubrelay'; })) m = { level: 'error', text: C.HUB_RELAY_WARN + ' · ' + m.text };
+      t.summary = m.text;
+      lastReport = L.buildTestReport(t, relay.secret);
+      done(m, lastReport);
+    };
+    /* WWW2d: a filled-in URL that still can't be used (after the auto-fix) is a URL error, not "Relay not set". */
+    if (String(relay.url || '').trim() && !L.normalizeRelayBase(relay.url)) { t.health = { skipped: 'relay URL not usable' }; finish(L.healthMessage({ kind: 'badurl' })); return; }
+    if (!L.relayConfigured(relay)) { t.health = { skipped: 'relay not set' }; finish(L.healthMessage({ kind: 'notset' })); return; }
+    if (L.relayMixed(relay, isHttpsHub())) { t.health = { skipped: 'http relay on an https Hub' }; finish(L.healthMessage({ kind: 'mixed' })); return; }
+    var hurl = t.healthUrl;
+    var t0 = nowMs();
+    timedFetch(hurl, { cache: 'no-store' }).then(function (res) {
+      t.health = { status: res.status, ms: nowMs() - t0 };
+      return res.text().then(function (body) { return { kind: 'http', status: res.status, body: body }; },
+        function () { return { kind: 'http', status: res.status, body: '' }; });
+    }, function (err) {
+      t.health = { error: L.describeError(err), ms: nowMs() - t0 };
+      var timedOut = err && err.name === 'AbortError';
+      /* CORS or network failure: a no-cors probe only proves the relay is reachable. */
+      var t1 = nowMs();
+      return timedFetch(hurl, { mode: 'no-cors', cache: 'no-store' }).then(function () {
+        t.noCors = { opaque: true, ms: nowMs() - t1 };
+        return { kind: timedOut ? 'timeout' : 'cors' };
+      }, function (e2) {
+        t.noCors = { error: L.describeError(e2), ms: nowMs() - t1 };
+        return { kind: timedOut || (e2 && e2.name === 'AbortError') ? 'timeout' : 'offline', healthUrl: hurl };
+      });
+    }).then(function (r) {
+      /* WWW2d: offline or timeout with Local network access 'denied'/'prompt': Chrome blocked the (local/Tailscale) relay address. */
+      if (r.kind !== 'offline' && r.kind !== 'timeout') return r;
+      return lnaP.then(function (q) {
+        if (!q.state) return r;
+        t.lna.blocked = true;
+        return { kind: 'lna', state: q.state, healthUrl: hurl };
+      });
+    }).then(function (r) {
+      var m = L.healthMessage(r);
+      if (r.kind !== 'http' || m.www !== true) {
+        t.secret = { skipped: r.kind === 'http' ? 'health check did not pass' : 'relay not reached with CORS' };
+        finish(m);
+        return;
+      }
+      var t2 = nowMs();
+      timedFetch(L.relaySecretProbeUrl(relay.url, relay.secret), { cache: 'no-store' })
+        .then(function (res) { t.secret = { status: res.status, ms: nowMs() - t2 }; return res.status; },
+          function (e3) { t.secret = { error: L.describeError(e3), ms: nowMs() - t2 }; return 0; })
+        .then(function (st) {
+          var sm = L.secretProbeMessage(st);
+          finish({ level: sm.level === 'ok' ? 'ok' : sm.level, text: m.text + ' · ' + sm.text });
+        });
+    }).catch(function (e) {
+      if (!t.health) t.health = { error: L.describeError(e) };
+      finish(L.healthMessage({ kind: 'offline', healthUrl: hurl }));
+    });
+  }
+
+  /* WWW2d: copy text to the clipboard (Clipboard API, then a hidden textarea). Calls done(true|false). */
+  function copyText(text, done) {
+    var fallback = function () {
+      var ta = el('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok);
+    };
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
+    } else fallback();
+  }
+
+  function renderRelaySettings(body) {
+    body.appendChild(el('h3', 'sec', 'Relay'));
+    body.appendChild(el('p', 'hint', 'Your Relay Server (v0.7.0 or later, www module) loads sites that refuse embedding and plain http pages inside this app. Off until both fields are filled in.'));
+    var field = function (text, type, value, ph) {
+      var l = el('label', 'field');
+      l.appendChild(el('span', '', text));
+      var i = el('input');
+      i.type = type;
+      i.value = value;
+      i.placeholder = ph;
+      i.spellcheck = false;
+      i.setAttribute('autocapitalize', 'off');
+      i.setAttribute('autocomplete', type === 'password' ? 'new-password' : 'off');
+      l.appendChild(i);
+      body.appendChild(l);
+      return i;
+    };
+    var urlIn = field('Relay URL', 'url', relay.url, 'https://machine.tailnet.ts.net/relay');
+    /* WWW2d: the URL actually used after the auto-fix, and warnings (Hub's own relay, http on https, file://). */
+    var using = el('p', 'hint relayusing');
+    body.appendChild(using);
+    var warnBox = el('div', 'relaywarns');
+    body.appendChild(warnBox);
+    var secIn = field('Secret', 'password', relay.secret, 'relay token');
+    var enL = el('label');
+    var en = el('input');
+    en.type = 'checkbox';
+    enL.appendChild(en);
+    enL.appendChild(document.createTextNode('Use the relay for sites that need it'));
+    body.appendChild(enL);
+    var row = el('div', 'row');
+    var test = el('button', 'jelly', 'Test');
+    test.type = 'button';
+    row.appendChild(test);
+    body.appendChild(row);
+    var out = el('p', 'relaystat');
+    out.setAttribute('role', 'status');
+    body.appendChild(out);
+    /* WWW2d: step list of the last Test, Copy details and Open health page. */
+    var stepsEl = el('ol', 'relaysteps');
+    stepsEl.hidden = true;
+    body.appendChild(stepsEl);
+    var row2 = el('div', 'row');
+    var copyBtn = el('button', 'jelly', 'Copy details');
+    copyBtn.type = 'button';
+    copyBtn.title = 'Copy the Test report (secret hidden) with browser details, to paste to the Connect builder';
+    row2.appendChild(copyBtn);
+    var healthA = el('a', 'jelly healthlink', 'Open health page');
+    healthA.target = '_blank';
+    healthA.rel = 'noopener noreferrer';
+    row2.appendChild(healthA);
+    body.appendChild(row2);
+    var drawSteps = function (rep) {
+      stepsEl.textContent = '';
+      stepsEl.hidden = !rep;
+      if (!rep) return;
+      rep.steps.forEach(function (st) {
+        var li = el('li');
+        li.appendChild(el('b', '', st.label + ': '));
+        li.appendChild(document.createTextNode(st.text));
+        stepsEl.appendChild(li);
+      });
+    };
+    var report = function () {
+      if (lastReport) return lastReport.text;
+      var f = L.fixRelayUrl(relay.url);
+      return L.buildTestReport({ rawUrl: relay.url, url: f.url, notes: f.notes, warnings: L.relayUrlWarnings(relay.url, location.protocol),
+        healthUrl: L.relayHealthUrl(relay.url), health: { skipped: 'Test not run yet' }, env: envInfo() }, relay.secret).text;
+    };
+    copyBtn.onclick = function () {
+      var text = L.redactAll(report(), relay.secret);
+      copyText(text, function (ok) { toast(ok ? 'Details copied (secret hidden)' : "Couldn't copy: select the steps above instead"); });
+    };
+    /* WWW2b: every status text is redacted, so the secret never shows on screen. */
+    var show = function (m) { out.className = 'relaystat ' + (m.level || ''); out.textContent = L.redactSecret(m.text || '', relay.secret); };
+    /* WWW2d: "Using:" line, warnings and the health link for the saved (auto-fixed) URL. */
+    var syncUrl = function () {
+      var f = L.fixRelayUrl(urlIn.value);
+      var b = L.normalizeRelayBase(relay.url);
+      using.textContent = b ? L.redactAll('Using: ' + b + (f.notes.length ? ' (auto-fixed: ' + f.notes.join(', ') + ')' : ''), relay.secret) : '';
+      using.hidden = !b;
+      warnBox.textContent = '';
+      L.relayUrlWarnings(relay.url, location.protocol).forEach(function (w) {
+        warnBox.appendChild(el('p', 'relaystat ' + (w.level === 'info' ? '' : w.level), w.text));
+      });
+      var hu = L.relayHealthUrl(relay.url);
+      if (hu) healthA.href = hu; else healthA.removeAttribute('href');
+      healthA.hidden = !hu;
+    };
+    var sync = function () {
+      var ok = L.relayConfigured(relay);
+      en.disabled = !ok;
+      en.checked = ok && relay.enabled;
+      syncUrl();
+      if (relay.url && !L.normalizeRelayBase(relay.url)) show(L.healthMessage({ kind: 'badurl' }));
+      else if (!ok) show({ level: '', text: C.RELAY_NOT_SET });
+      else if (!relay.enabled) show({ level: '', text: C.RELAY_OFF });
+      else if (L.relayMixed(relay, isHttpsHub())) show(L.healthMessage({ kind: 'mixed' }));
+      else show({ level: '', text: 'Relay on. Tap Test to check it.' });
+    };
+    var save = function () {
+      var was = L.relayConfigured(relay);
+      /* WWW2d: the auto-fixed URL is saved; the field keeps what was typed, "Using:" shows the fixed one. */
+      var f = L.fixRelayUrl(urlIn.value);
+      relay.url = f.url || urlIn.value.trim();
+      relay.secret = secIn.value.trim();
+      lastReport = null;
+      drawSteps(null);
+      var now = L.relayConfigured(relay);
+      if (now && !was) relay.enabled = true; /* switch on the first time both fields are filled */
+      if (!now) relay.enabled = false;
+      S.saveRelay(relay);
+      relayChanged();
+      sync();
+      renderTabs();
+      renderChrome();
+    };
+    urlIn.oninput = save;
+    secIn.oninput = save;
+    en.onchange = function () { relay.enabled = en.checked && L.relayConfigured(relay); S.saveRelay(relay); relayChanged(); sync(); renderTabs(); renderChrome(); };
+    test.onclick = function () {
+      test.disabled = true;
+      show({ level: '', text: 'Testing…' });
+      drawSteps(null);
+      testRelay(function (m, rep) { test.disabled = false; show(m); drawSteps(rep); syncUrl(); });
+      /* WWW2c: Test also re-checks Reader support. */
+      delete readerCache[L.readerKey(relay)];
+      ensureReader();
+    };
+    /* WWW2b: cookie session buttons and notes. */
+    var clr = el('button', 'jelly', 'Clear relay cookies');
+    clr.type = 'button';
+    clr.title = 'Ask the relay to forget the cookies (logins) it keeps for this device';
+    row.appendChild(clr);
+    var ns = el('button', 'jelly', 'New session');
+    ns.type = 'button';
+    ns.title = 'Start a fresh relay cookie session on this device (logs you out of sites opened through the relay)';
+    row.appendChild(ns);
+    clr.onclick = function () {
+      clr.disabled = true;
+      show({ level: '', text: 'Clearing relay cookies…' });
+      clearRelayCookies(function (m) { clr.disabled = false; show(m); });
+    };
+    ns.onclick = function () {
+      confirmIn('Start a new relay session? You will be logged out of sites opened through the relay on this device.', 'New session', function () {
+        show(newRelaySession());
+      });
+    };
+    body.appendChild(el('p', 'hint', C.RELAY_LOGIN_NOTE));
+    body.appendChild(el('p', 'hint relaywarn', C.RELAY_PRIVACY_NOTE));
+    /* WWW2c: one-time hint when the real address after redirects can't be read (CORS). */
+    finalHintEl = el('p', 'hint finalhint', L.finalUrlHint(finalHint, location.origin));
+    finalHintEl.hidden = !finalHint;
+    body.appendChild(finalHintEl);
+    sync();
+    if (lastReport) drawSteps(lastReport);
+  }
+
+  /* WWW2b: POST <base>/www/<secret>/clear?session=<id> (a CORS simple request). If CORS hides the answer, a no-cors POST still clears it. */
+  function clearRelayCookies(done) {
+    if (String(relay.url || '').trim() && !L.normalizeRelayBase(relay.url)) { done(L.clearMessage({ kind: 'badurl' })); return; }
+    if (!L.relayConfigured(relay)) { done(L.clearMessage({ kind: 'notset' })); return; }
+    if (L.relayMixed(relay, isHttpsHub())) { done(L.clearMessage({ kind: 'mixed' })); return; }
+    var req = L.buildClearRequest(relay, relaySession);
+    var noCors = { method: 'POST', mode: 'no-cors', cache: 'no-store', credentials: 'omit' };
+    timedFetch(req.url, req.init).then(function (res) {
+      return res.text().then(function (body) { return { kind: 'http', status: res.status, body: body }; },
+        function () { return { kind: 'http', status: res.status, body: '' }; });
+    }, function (err) {
+      if (err && err.name === 'AbortError') return { kind: 'timeout' };
+      return timedFetch(req.url, noCors).then(function () { return { kind: 'cors' }; },
+        function (e2) { return { kind: e2 && e2.name === 'AbortError' ? 'timeout' : 'offline' }; });
+    }).then(function (r) {
+      /* WWW2d: the same Local Network Access check as Test. */
+      if (r.kind !== 'offline' && r.kind !== 'timeout') return r;
+      return queryLna().then(function (q) { return q.state ? { kind: 'lna', state: q.state } : r; });
+    }).then(function (r) { done(L.clearMessage(r, location.origin)); },
+      function () { done(L.clearMessage({ kind: 'offline' })); });
+  }
+
+  /* WWW2b: new random session id (saved), best-effort clear of the old one, and relayed tabs reload with the new id. */
+  function newRelaySession() {
+    var old = relaySession;
+    var id = L.newSessionId();
+    if (!L.validSessionId(id)) return { level: 'error', text: "This browser can't make a random session id (no crypto), so the session was not changed." };
+    relaySession = id;
+    S.saveRelaySession(id);
+    if (L.relayConfigured(relay) && !L.relayMixed(relay, isHttpsHub())) {
+      var req = L.buildClearRequest(relay, old);
+      timedFetch(req.url, { method: 'POST', mode: 'no-cors', cache: 'no-store', credentials: 'omit' }).then(function () {}, function () {});
+    }
+    tabs.forEach(function (t) { if (t.via) load(t, false); });
+    return { level: 'ok', text: 'New relay session started: sites opened through the relay on this device are logged out.' };
   }
 
   /* ---------- wiring ---------- */
@@ -521,6 +1164,8 @@
     $('addrForm').onsubmit = function (e) { e.preventDefault(); go($('addr').value); };
     $('addr').onfocus = function () { this.select(); };
     $('addr').onblur = function () { renderChrome(); };
+    $('relayToggle').onclick = toggleRelay;
+    $('reader').onclick = toggleReader;
     $('menuBtn').onclick = function (e) { e.stopPropagation(); $('menu').hidden = !$('menu').hidden; };
     Array.prototype.slice.call(document.querySelectorAll('#menu [data-sheet]')).forEach(function (b) {
       b.onclick = function () { openSheet(b.getAttribute('data-sheet')); };
@@ -553,18 +1198,25 @@
   function start() {
     applyTheme();
     wire();
+    /* WWW2b: older saved data is cleaned once (saved back only if something changed). */
+    var h2 = L.cleanHistory(history, relay);
+    if (JSON.stringify(h2) !== JSON.stringify(history)) { history = h2; S.saveHistory(history); }
+    var b2 = L.cleanBookmarks(bookmarks, relay);
+    if (JSON.stringify(b2) !== JSON.stringify(bookmarks)) { bookmarks = b2; S.saveBookmarks(bookmarks); }
     var saved = S.tabs();
     var activeIdx = 0;
     if (saved && Array.isArray(saved.tabs) && saved.tabs.length) {
       saved.tabs.slice(0, C.TABS_MAX).forEach(function (s) {
-        var t = makeTab(L.sanitizeTabHistory(s && s.hist));
-        t.title = (s && typeof s.title === 'string') ? s.title : '';
+        var t = makeTab(L.cleanTabHistory(s && s.hist, relay));
+        t.title = (s && typeof s.title === 'string' && !L.containsSecret(s.title, relay.secret)) ? s.title : '';
+        t.mode = (s && C.TAB_MODES.indexOf(s.mode) >= 0) ? s.mode : 'auto';
       });
       activeIdx = Math.max(0, Math.min(tabs.length - 1, saved.active | 0));
     } else {
       makeTab();
     }
     activeId = tabs[activeIdx].id;
+    ensureReader();
     tabs.forEach(function (t) { load(t, false); });
     renderBookmarks();
     switchTo(activeId);

@@ -1,8 +1,8 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(typeof module === 'object' ? require('./score.js') : root.DS);
   if (typeof module === 'object') module.exports = api;
   else Object.assign(root.DS = root.DS || {}, api);
-})(typeof window === 'object' ? window : globalThis, function () {
+})(typeof window === 'object' ? window : globalThis, function (S) {
   'use strict';
   const basics = [
     { id: 'start', name: '1 · Move off and stop', spawn: [30, 100, 0],
@@ -31,18 +31,19 @@
   ];
   function lesson(def) {
     return { def, phase: 0, gate: 0, elapsed: 0, distance: 0, done: false,
-      score: 100, faults: [], stallCount: 0, harshTime: 0, reachedSpeed: false, moved: false };
+      score: 100, scoreState: S.scoreState(100), faults: [], stallCount: 0, harshTime: 0, reachedSpeed: false, moved: false };
   }
-  function penalize(l, code, reason, amount = 5, severity = 'minor') {
-    l.score = Math.max(0, l.score - amount);
+  function penalize(l, code, reason, amount = 5, severity) {
+    severity = severity || (amount >= 25 ? 'serious' : 'minor');
+    S.applyLessonFault(l, severity);
     l.faults.push({ code, reason, severity, time: +l.elapsed.toFixed(1) });
   }
   function updateLesson(l, c, dt) {
     if (l.done) return;
     l.elapsed += dt; l.distance = c.distance;
-    if (c.stalls > l.stallCount) { penalize(l, 'stall', 'Clutch released without enough engine torque.', 6); l.stallCount = c.stalls; }
+    if (c.stalls > l.stallCount) { penalize(l, 'stall', 'Clutch released without enough engine torque.'); l.stallCount = c.stalls; }
     l.harshTime += c.acceleration < -4.5 && Math.abs(c.v) > 1 ? dt : 0;
-    if (l.harshTime > 1) { penalize(l, 'harsh', 'Brake progressively for a smooth stop.', 3); l.harshTime = 0; }
+    if (l.harshTime > 1) { penalize(l, 'harsh', 'Brake progressively for a smooth stop.'); l.harshTime = 0; }
     const id = l.def.id, stopped = Math.abs(c.v) < .18 && (c.auto || c.clutch > .7);
     if (id === 'start') {
       if (c.engine) l.phase = Math.max(l.phase, 1);
@@ -65,12 +66,14 @@
       l.phase = c.distance > 2 ? 1 : 0;
       if (l.gate === l.def.gates.length) l.done = true;
     }
+    S.advanceLessonScore(l, c.distance);
     if (l.done) l.score = Math.round(Math.max(0, Math.min(100, l.score)));
   }
   function hint(l, c) {
-    if (l.done) return 'Lesson complete! Score ' + l.score + '/100. Choose the next lesson or retry.';
+    if (l.done) return 'Lesson complete! Score ' + S.scoreLabel(l.score) + '. Choose the next lesson or retry.';
     if (c.stalled) return c.message;
     if (c.handbrake && c.engine) return 'Hold clutch, select a gear, check surroundings, then release handbrake (H).';
+    if (l.tip) return l.tip;   // DS-3 open road: the next sign or event ahead
     return l.def.cards[Math.min(l.phase, l.def.cards.length - 1)];
   }
   return { basics, lesson, updateLesson, penalize, hint };

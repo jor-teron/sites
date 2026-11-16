@@ -1,4 +1,4 @@
-/* Web Browser — www_store.js: WWW1 localStorage wrapper. Every key starts with browser_. Storage may be blocked (file://, private mode); then data lives for this visit only. */
+/* Web Browser — www_store.js: WWW1/WWW2a/WWW2b localStorage wrapper. Every key starts with browser_. Storage may be blocked (file://, private mode); then data lives for this visit only. */
 (function (root) {
   'use strict';
 
@@ -42,7 +42,11 @@
       settings: function () { return get(C.LS_SETTINGS, null); },
       saveSettings: function (s) { set(C.LS_SETTINGS, s); },
       tabs: function () { return get(C.LS_TABS, null); },
-      saveTabs: function (t) { set(C.LS_TABS, t); }
+      saveTabs: function (t) { set(C.LS_TABS, t); },
+      relay: function () { return get(C.LS_RELAY, null); },
+      saveRelay: function (r) { set(C.LS_RELAY, r); },
+      relaySession: function () { var v = get(C.LS_RELAY_SESSION, ''); return typeof v === 'string' ? v : ''; },
+      saveRelaySession: function (id) { set(C.LS_RELAY_SESSION, id); }
     };
   }
 

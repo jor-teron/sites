@@ -9,7 +9,8 @@
     const g = canvas.getContext('2d'), c = s.c, z = Math.max(2.2, Math.min(6, box.width / 85));
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = '#668773'; g.fillRect(0, 0, box.width, box.height);
     g.translate(box.width / 2 - c.x * z, box.height / 2 - c.y * z); g.scale(z, z);
-    if (s.w) D.drawTown(g, s, prefs);
+    if (s.w && s.w.road) D.drawDrive(g, s, prefs);   // DS-3 open road
+    else if (s.w) D.drawTown(g, s, prefs);
     else {
     g.fillStyle = '#48545c'; g.fillRect(0, 0, 240, 200);
     g.strokeStyle = '#c2cdcf'; g.lineWidth = .3; g.strokeRect(3, 3, 234, 194);

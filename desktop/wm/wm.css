@@ -297,7 +297,9 @@ html.hub-light {
 }
 html.hub-light:not(.hub-glass) .ctx { box-shadow: 0 12px 32px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08); }
 html.hub-light .menu .menu-cat:hover, html.hub-light .menu button.app:hover { background: rgba(0,0,0,0.05); color: var(--text); }
-html.hub-light .menu .menu-cat.fly-on, html.hub-light .menu-fly .fly-app:hover { background: var(--wm-hi); color: var(--text); }
+/* (before H154) html.hub-light .menu .menu-cat.fly-on, html.hub-light .menu-fly .fly-app:hover { background: var(--wm-hi); color: var(--text); } */
+html.hub-light .menu-fly .fly-row:hover, html.hub-light .menu-fly .fly-app:hover { background: rgba(0,0,0,0.05); color: var(--text); }   /* H154: = Light .menu-cat / button.app hover */
+html.hub-light .menu .menu-cat.fly-on, html.hub-light .menu-fly .fly-row.fly-on { background: var(--wm-hi); color: var(--text); }   /* H154: flyout = menu */
 html.hub-light .menu-fly .fly-app { color: var(--text); }
 html.hub-light .wm-win { box-shadow: 0 16px 44px rgba(0,0,0,0.22), 0 3px 10px rgba(0,0,0,0.12); }
 

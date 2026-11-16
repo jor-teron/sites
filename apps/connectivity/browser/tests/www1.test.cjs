@@ -30,7 +30,7 @@ var L = require(path.join(app, 'www_logic.js'));
 var Store = require(path.join(app, 'www_store.js'));
 
 /* Config */
-assertEq(C.RELEASE, 'WWW1', 'release tag is WWW1');
+assert(/^WWW\d/.test(C.RELEASE), 'release tag is a WWW release (WWW1 or later)');
 assertEq(C.APP_NAME, 'Web Browser', 'app name');
 assertEq(C.DEFAULT_ENGINE, 'duckduckgo', 'default engine is DuckDuckGo');
 assertEq(C.DEFAULT_SETTINGS.engine, 'duckduckgo', 'default settings engine is DuckDuckGo');
