@@ -1626,3 +1626,675 @@ Parked: Unblock 3D look (needs new id); LandCraft LC1/LC2; AoE balance, Ages, AR
   Technology Learn topic; optional Connect 4 / Game of Life hub bridge.
 Moved: Unblock apps/lab/unblock-game -> apps/games/unblock (UNB-0); Lab row removed, Games row added in both CSVs.
 
+
+
+==========================================================================
+WEEK NOTES: Tue 2026-11-10 evening to Tue 2026-11-17 - Team 1
+Written by Hub Builder 1, with notes from Hub Main Builder 2, Team 3,
+Hub Apps Builder, Hub Office Builder, Hub Phone Builder, Hub Lab
+Builder, and the Games, Learn, Connectivity and Tools category work
+on main. GitHub main at end of period: 9ccc4718. Hub build 20261116b /
+hub-shell-v174 / H155.
+==========================================================================
+
+Period starts after the previous Team 1 notes (PR #460 / cf4521cf,
+Tue 10 17:58 IST, main then ending at H144). Last merge in this period
+is PR #612, Mon 16 13:59 IST. 152 merged PRs plus a few direct pushes
+to main. No Phone, OS.js or tv/ commits. Testing this week: syntax
+and smoke tests only; browser tests only with Jor's approval; no
+Phone tests.
+
+On Sat 14, Games was handed to a new Games owner and Learn
+(apps/learn/**, learn-apps.csv) to a separate Learn owner (Team 3
+note). On Sun 15, five category builders and Hub Lab Builder were
+created; Apps Builder handed the category folders to those builders
+and apps/lab to Lab Builder (reported by Apps; role still waiting on
+Jor's decision).
+
+
+--- HUB BUILDER 1 (Hub/main: hub/, desktop/, shared/, apps/system/,
+    apps/favorite/, sw.js, root entrypoints)
+
+Releases (all pushed + merged to main on Jor's "push"):
+Sun 15:
+  - H150 682b2e95  Start menu sections step: hovering a category shows
+                   its sections (CSV order, name (count) ›), then a
+                   third column of that section's apps. "Other" for
+                   rows with no section; "My favorites" first in
+                   Favorite. Keyboard, touch/phone, category pages,
+                   App Store, Search and startList cache unchanged.
+                   Build 20261115a / hub-shell-v169 (PR #594, 11 files
+                   +486/-45). Tests: hub_flyout_sections.test.cjs 7/7;
+                   suite 322/323 (pre-existing hub_lock_core v163
+                   failure also on main).
+  - H151 70173d10  Extracted shared/search/: search_core.js
+                   (HubSearchCore), search_sources.js (apps,
+                   categories, Settings items), search_bar.js + .css
+                   (result list + reusable box). Search app now uses
+                   them; old code kept as "(before H151)" comments.
+                   Search keeps its own box and CSS and uses only the
+                   shared result list. Build 20261115b / hub-shell-v170
+                   (PR #595, 14 files +788/-205). New
+                   hub_shared_search.test.cjs. Suite 335/336; only the
+                   pre-existing v163 lock failure.
+  - H152 1a30f83e  Settings sidebar search box (Settings items only)
+                   via shared/search/ and search_items.js. 23 new
+                   search_items rows (Screen lock PIN / fingerprint /
+                   fingerprint phones, Do Not Disturb, Network drives,
+                   Ask before closing, fullscreen button, Eye comfort,
+                   Computer break, and others; optional find field).
+                   Click opens #section/sub and flashes the item.
+                   (sec_dnd.js is Do Not Disturb, not drag-and-drop.)
+                   Build 20261115c / hub-shell-v171 (PR #596, 13 files
+                   +248/-14). Suite 340/341; only v163.
+  - H153 fed00c01  App Hub search box, apps only: home searches every
+                   app, a category page searches only that category.
+                   Rows come from apphub.js load() (same as tiles),
+                   not HubSearchSources. Build 20261115d /
+                   hub-shell-v172 (PR #597, 11 files +238/-13).
+                   Suite 345/346; only v163. shared/search files added
+                   to the hub_sw.js shell list.
+Mon 16:
+  - H154 9b1320c6  Flyout CSS matches the Start menu in every theme,
+                   including XP (Jor: "Match everywhere, XP too").
+                   JS of H150 untouched. Build 20261116a /
+                   hub-shell-v173 (PR #608, 10 files +252/-15).
+  - H155 8a606285  Favourites flat list: TV, then My Day
+                   (../tools/dashboard/), News (../media/news/),
+                   Agent (../lab/agent/), Globe (../lab/globe/),
+                   LandCraft (../games/landcraft/). Sections empty
+                   (one flat list); old TV "Watch" row kept as a
+                   "(before H155)" comment. Globe is not in
+                   lab-apps.csv; description taken from its code.
+                   Catalog and appindex not regenerated (per rule).
+                   Build 20261116b / hub-shell-v174 (PR #609, 8 files
+                   +73/-13). New hub_favorite_csv.test.cjs. Suite
+                   356/357; only v163.
+
+Fixes:
+  - none as a separate release. H154 was the Start menu / flyout
+    visual mismatch Jor reported after "git pull".
+
+Work for other teams:
+  - Favourites now points at Apps/Lab/Games/Media/Tools apps,
+    including Globe, which Lab has not listed in lab-apps.csv yet.
+  - Suggested, not approved: a flyout category with only one section
+    could skip the section step (Favourites currently shows a lone
+    "Other" row before the six apps). Optional: section names in
+    normal case.
+
+Diagnoses:
+  - After H155, a Favourites flyout still shows a single "Other"
+    section row, because every Favourites CSV section is empty.
+  - hub_catalog.js and hub_appindex.js are stale for everything
+    after MV3 (14 Nov): missing Web Browser, Relay, Assamese Letters,
+    English Letters, CampCraft School, and the new Favourites list
+    (and the unlisted Lab apps). Last catalog/appindex edits on main
+    are MV3 c5485876. H146 (11 Nov) was the last full regen.
+  - App Hub lists 205 WebApps on current main (Games 55, Learn 32,
+    Tools 28, Lab 27, Connectivity 20, Media 18, Office 13, System
+    12). Favourites' 6 rows are links, not extra apps. apps/ has 240
+    app folders (connectivity 22, games 58, lab 41, learn 30,
+    media 23, office 17, system 12, tools 37); many extras are
+    redirects, shared/common, or unlisted apps. (An earlier mid-week
+    count of 232 folders is stale.)
+  - Pages deployment for v169–v174 has not been verified.
+
+Ideas (not built): skip the section step when a category has only one
+  section; optional normal-case section names in the flyout.
+Open, not approved: those two flyout follow-ups; catalog / appindex
+  regen (manual or at most daily; never run hub_appindex_gen.py
+  unless Jor asks); Globe + other Lab apps in lab-apps.csv (Lab's
+  job); fingerprint "Add phone" fix (still waits on a screenshot /
+  error code from Jor's phone); the stale v163 expectation in
+  hub_lock_core.test.cjs (also fails on main); Base/Slides file
+  icons (.hbase / .hslides); whether new games/Learn apps need a
+  hub_sw.js offline list.
+Parked: H130 (remaining moves into the Hub core); H131 (cleanup of
+  old redirect files in hub/wm/, hub/menu/, hub/link/); desktop
+  Start-up manager; PIN retry limit; H139b; H98 "Pair a device"
+  card; Connect-link Allow/passcode gate.
+Moved: none by Hub Builder 1 this week.
+
+
+--- HUB WORK BY TEAM 3 AND TEAM 2 (11–14 Nov; not Hub Builder 1)
+
+Team 3 stint, Wed 11 (already noted as context in Team 2's Phase 2
+wrap-up):
+  - H145 2b3f05e9  Blur Hub behind the browser leave prompt when Ask
+                   before closing actually shows Leave / Cancel
+                   (html.hub-leave-blur; best-effort). Also brought
+                   the seven bump places back into agreement (H144
+                   had left build.txt behind). Build 20261111a /
+                   hub-shell-v164 (PR #534, 10 files +151/-17).
+  - H146 296b5973  Regenerated hub_catalog.js (--catalog-only) so
+                   Tables appears, and hub_appindex.js from the
+                   category CSVs (11 listed apps plus 15 other CSV
+                   apps that were missing; Code Lab stays Lab, not
+                   Learn). Build 20261111b / hub-shell-v165
+                   (PR #535, 10 files +174/-80).
+
+Team 2 / Hub Main Builder 2, Thu 12:
+  - Docs, PR #543 94f774c9  Adds
+                   hub/docs/README_technical_team3_draft.txt only
+                   (Team 3's 10–11 Nov notes, a copy of Team 2
+                   sections 1.95–1.111). Not copied into
+                   README_technical_team3.txt.
+  - H147 6fe135fb  Bold Hub bar clock: .wm-clock font-weight 900.
+                   Phone mode has no clock on the bar. Build
+                   20261112a / hub-shell-v166 (PR #544, 8 files
+                   +16/-14).
+  - H148 4a12c8ff  Office file thumbnails in Files: .how / .hos /
+                   .hot show the Writer / Spreadsheet / Tables icon
+                   plus a coloured HOW / HOS / HOT badge (grid only).
+                   Base and Slides left out. Writer path follows
+                   DF25. Build 20261112b / hub-shell-v167 (PR #548,
+                   11 files +244/-16).
+  - Docs, PR #562 db08cc34  Team 2 Phase 2 week wrap-up (12–14 Nov),
+                   handover to Team 3, appended to
+                   README_technical_team2.txt and README_technical.txt.
+                   Main then b88cff9a; build still H148. That wrap-up
+                   still listed H149 as parked.
+
+After that handover, Sat 14 10:45 IST (not written up in Team 2 or
+Team 3 week notes; Team 3's 14 Nov update said "No Hub releases
+today"):
+  - H149 2f89844e  Unknown non-empty app hash shows an in-Hub "App
+                   not found" card (no "404" wording) with Go home and
+                   Search apps. Stale hash cleared. Phone: full-screen
+                   card; Desktop: small centered card. Build
+                   20261114a / hub-shell-v168 (PR #563, 10 files
+                   +569/-21). Attribution is not stated in either
+                   team's notes; merge was 15 minutes after PR #562.
+
+Icon work that touched System / Hub files (Apps, Sat 14; no Hub
+build bump; old icons kept as *_icon_before_IC7a/b.png):
+  - IC7a aac16f7d  Plain Files, Disk, Viewer and D-Pad
+                   (hub/controller/controller_icon.png) icons
+                   (PR #573, 14 files +365).
+  - IC7b d8cf6b9a  Plain System-section icons: Settings, API Keys,
+                   System Monitor, Mesh Viewer, Notification Centre,
+                   Terminal, App Hub, Search (PR #574, 26 files
+                   +626). system_icon.png unchanged. Live file names
+                   unchanged, so no CSV / catalog / ?v= edit.
+
+
+--- HUB APPS BUILDER (until the 15 Nov handover)
+
+Tue 10 evening, after the previous Team 1 notes (also in Team 2
+Phase 1 wrap-up):
+  - RL1 b9cce6b6  Shared modular Node relay in hub/relay/ (MCP
+                   forwarder, TCP bridge for SSH/VNC, fetch proxy),
+                   127.0.0.1:8787, install.sh / install.ps1, tests.
+                   New files only; no sw.js, catalog or app changes,
+                   no build bump (PR #461, 20 files +1674). This is
+                   the RL1 that had been approved once, then stopped,
+                   then built.
+  - A large same-evening wave of new or extended apps, all merged
+    Tue 10 21:15–22:18 IST, catalog rows added in those PRs (full
+    regen later in H146). Listed below under Office, Media, Tools,
+    Games and Learn.
+  - AG42 1ea7e8f3  Agent in-app confirm dialog and image viewer after
+                   delete (PR #524, 13 files +387/-10).
+
+Wed 11 – Sat 14 (Team 3 stint, then Team 2 Phase 2, then Team 3
+14 Nov), still Apps / Agent / Remote / Office / icons / moves:
+  - RM7 9d966399  Remote saved-connection actions and one-row top bar
+                   (PR #527, 12 files +643/-55).
+  - AG44 9ef9bad6  Agent remote MCP servers (PR #528, 15 files
+                   +917/-16).
+  - AG45 452982eb  Agent robot icon instead of the lab flask
+                   (PR #559, 12 files +68/-10).
+  - HO2, NL4, SH13–SH24, TB1–TB5, DF21, DF24, DF25, HOW1, HOS1,
+    HOT1, SL10, DW5, HO3, MM8, NL5: see Office section.
+  - IC1–IC9 and MV1–MV3: see Media, Office, Connectivity, Tools,
+    Lab and Learn (moves and icons, Sat 14).
+  - Docs: Team 2 numbered Apps sections in
+    README_technical_team2.txt (through 1.145-range by 14 Nov).
+    Team 3 said the next Apps docs section is 1.146.
+
+Sun 15 handover (reported by Apps Builder; no Apps commits after
+it): category folders went to the new builders and apps/lab to Lab
+Builder. Apps Builder keeps only the Learn-CSV pointer rows for
+nei-dict, caption-for-nei, code-lab and learning-html, plus Weather
+Simulator (moved to Learn under Science by MV3; Team 3 also said
+Weather Simulator stays with Apps). Its future role is waiting on
+Jor's decision.
+Reported next ids: docs 1.146, SH25, RM8 (RM7 and RL1 already on
+main).
+
+Open / parked from earlier Apps notes, still relevant: RL1 cutover
+of Web MCP and Remote (relay exists; apps have not fully switched);
+AG41 and AG43 leftovers; 4 GB long-chat follow-up (needs a new id);
+WB1–WB4 Remote Browser; MCP3 (v86); PV3; SHA / HOW2 / OC1 as listed
+under Office.
+
+
+--- HUB OFFICE BUILDER / OFFICE APPS (apps/office/)
+
+No releases by Office Builder after it was set up on Sun 15
+(reported; confirmed: no office PRs after Sat 14). It sent a
+readiness report covering the 13 office-apps.csv rows (verified:
+Writer, Tables, Sketchbook, plus the pre-existing Office apps;
+Draftly renamed and left as a redirect).
+
+Office work already on main this week, built before that handover
+(Apps / Team 2 / Team 3):
+
+Tue 10 evening, new or extended apps (then still under Apps):
+  - SH8–SH12  Spreadsheet: multiple sheets, lookups, find/filter,
+              merges/borders, canvas charts and sheet-v4
+              (PRs #488–#492).
+  - SL5–SL9   Slides: rich text, shapes/tables, presenter view,
+              themes/sections, PowerPoint and PNG export
+              (PRs #493–#497).
+  - BS5–BS9   Base: undo and field types, linked records, reports,
+              saved views/gallery/calendar, backups and import-export
+              (PRs #498–#502).
+  - P2–P5     PDF Tools: merge/split, image pages, stamps/crop,
+              forms/annotate/signatures (PRs #505–#508).
+  - INV1      Invoice Maker, then in Office (PR #518, 10 files
+              +2573); moved to Tools / Money in MV1.
+  - EXT1      Expense Tracker, then in Office (PR #519, 10 files
+              +2169); moved to Tools / Money in MV1.
+
+Wed 11 – Sat 14:
+  - HO2 4aa4f6f5  Office save notices, in-app dialogs, Hub auto theme
+                   (PR #525, 39 files +1188/-125).
+  - NL4 e89e0a93  Notely Open and Download into the Hub window bar
+                   (PR #526, 7 files +344/-2).
+  - SH13–SH17     Spill/SEQUENCE/RANDARRAY; SORT/FILTER/UNIQUE;
+                  TEXTSPLIT/CHAR; ROW/COLUMN/INDIRECT; print and
+                  cell borders (PRs #529–#532, #538).
+  - TB1–TB2, TB4  Tables app added (new office-apps.csv row, Hub
+                  Office section) then card view, spreadsheet look
+                  and dates (PRs #533, #536, #537).
+  - DF24 639c77f5  Show the word processor as Writer (PR #539).
+  - HOW1, HOS1, HOT1  Native .how / .hos / .hot files
+                   (PRs #540–#542); catalog/CSV updated in those
+                   commits.
+  - DF21 f93a4939  Writer writing helpers (PR #545).
+  - TB5 dc580161  Tables Office ribbon (PR #546).
+  - DF25 2c749068  Full Writer rename: folder apps/office/writer/,
+                   Hub id writer, draftly kept as an alias and as a
+                   redirect at apps/office/draftly/ (PR #547, 100
+                   files +2527/-2534).
+  - SL10 7a721167  Fix Slides startup crash (PR #549, 5 files
+                   +213/-7).
+  - SH18 bb3c17eb  Spreadsheet row height (PR #550).
+  - DW5 c3335edf  Writer tests moved to apps/office/writer/test/
+                   (PR #551).
+  - HO3 68388301  12pt default font in Spreadsheet and Tables
+                   (PR #552).
+  - MM8 7ca07187  Open .hos files in Writer Mail Merge (PR #553).
+  - SH21, SH19, NL5, SH22, SH23, SH24  Formula hint/fx picker;
+                  function list matches the engine; Notely word
+                  count in the Hub title bar; click another sheet
+                  or drag cells to insert refs; grid A–FZ × 1000
+                  (PRs #556–#558, #560, #561, #564).
+  - IC5, IC6, IC8  Plain icons for PDF Tools/Mail; Hub Office
+                   (Writer, Spreadsheet, Base, Tables, Slides);
+                   Write and Scan & Print (PRs #568, #571, #572).
+                   Tables live icon is now tables_icon.png (old CSV
+                   rows commented).
+  - MV1 5c1b86bd  Invoice Maker and Expense Tracker moved to Tools
+                   under Money, with redirects left at
+                   apps/office/invoice-maker/ and
+                   apps/office/expense-tracker/ (PR #569, 27 files
+                   +555/-398). office-apps.csv 13 rows after
+                   +Writer +Tables +Sketchbook −Draftly, and after
+                   this move.
+  - MV2 93bd946c  Sketchbook moved Lab → Office (Write section);
+                   redirect at apps/lab/sketchbook/ (PR #578).
+
+CSV (office-apps.csv vs 10 Nov evening): −Draftly (Hub Office);
++Writer (Hub Office), +Tables (Hub Office), +Sketchbook (Write).
+Net 11 → 13 rows. apps/office/draftly/, invoice-maker/ and
+expense-tracker/ remain as redirects only.
+
+Hub-side Office items (reported by Office Builder; the Tables icon
+mismatch is verified): NL5 faded title-bar text; .hbase / .hslides
+thumbnails still not in H148; files_core.js still uses
+tables_icon.svg for .hot (line 63) while the live CSV icon after
+IC6 is tables_icon.png.
+Reported next ids: SH25, DF26, DW6, HOW2, HOS2, HOT2, HO4, SL11,
+BS10, P6, MM9, NL6. The TB prefix clashes, so Tables needs a new
+prefix.
+Reported parked: SH20, MM7, DW4, DW1–3, OC1, Base .hot vs .hob,
+retiring Notepad (Notepad is not in office-apps.csv; a Lab Legacy
+row still points at ../office/notepad/, and the folder is still
+there).
+
+
+--- GAMES (apps/games/, games-apps.csv)
+
+All Games releases this week were Tue 10 evening (also in Team 2
+Phase 1). No Games PRs after that (Team 3 14 Nov note, and git,
+agree). Games ownership moved to a new Games owner on Sat 14.
+
+New games (each also added a games-apps.csv row):
+  - MINE-1  PR #462  19 files +495/-1   Minesweeper (Puzzle).
+  - BRK-1   PR #463  21 files +1008/-1  Breakout (Arcade).
+  - SWAP-1a PR #464  19 files +885/-1   Sweet Swap (Puzzle).
+  - GG-1a   PR #465  21 files +726/-7   Garden Guard (Strategy).
+  - JIG-1a  PR #466  17 files +770      Jigsaw (Puzzle).
+  - SC-1a–c PR #467  25 files +1331     Star Colony (Simulator).
+  - AE-1a/b PR #469  21 files +925      Arrow Escape (Puzzle).
+  - BUB-1   PR #470  19 files +490      Bubble Shooter (Arcade).
+Extended existing games:
+  - SUDO-P1 PR #472  7 files +400       Printable Sudoku.
+  - SI-T1   PR #473  8 files +499/-69   Space Invaders themes.
+  - SNL-2a–c PR #474 28 files +2713/-1179  Snake and Ladder.
+  - SNK-T1  PR #477  12 files +527/-75  Snake themes.
+  - SHIP-2  PR #520  17 files +1997/-256  Battleship Classic and
+                   Salvo, fleet choice, harder AI and polish.
+  - AF-4    PR #521  21 files +1494/-183  Ant Farm camera, soil,
+                   inspect, soldiers, seasons and goals.
+
+CSV: games-apps.csv 47 → 55 (+8 new titles). LandCraft was already
+listed; H155 only added a Favourites pointer. Unlisted game folders
+still include hero-builder (199 committed node_modules files, noted
+by Team 3) and leftover contra-alpha; engine/ is shared, not a
+title. A blank line in games-apps.csv was flagged on 14 Nov as
+undecided.
+Reported next ids (from Team 2 Phase 2 / Team 3 14 Nov): SHIP-3,
+AF-5, SNK-T2, SI-T2, SNL-3, SUDO-P2, SC-2a, Garden Guard 1b,
+Jigsaw 1b, Sweet Swap 1b (Team 3: SWAP-1b waiting on Jor's Code).
+FM-1a remains reserved and parked. Do not use NP-2 (Nutrition Plate
+next id is NP8).
+
+
+--- LEARN (apps/learn/, learn-apps.csv)
+
+Tue 10 evening (new apps + CSV rows):
+  - DS-1a–c PR #468  24 files +1181  Driving School (Life Skills).
+  - HL-1a–c PR #471  23 files +1152  Hindi Letters (Language).
+  - HT-1a–c PR #475  20 files +1238  History Timeline (History).
+  - CC-1a/b PR #476  16 files +997   Camping Checklist (Outdoors).
+  - NP-1    PR #522  18 files +1866  Nutrition Plate (Health).
+
+Thu 12:
+  - NP2–NP5 PR #554  16 files +1510/-78  Foods, portions, week planner.
+  - NP7     PR #555  10 files +489/-81   Every day, drop Copy, hide
+                   header and Learn back.
+
+Sat 14 (after Learn was split out at 14:46 IST; MV3 first, then
+Hindi / Weather Sim / Clock Reading):
+  - MV3 fb24347f  Knife Skills and Ingredient Swaps Lab → Learn
+                   (new Cooking section); Nutrition Calculator under
+                   Health; Weather Simulator under Science. Redirects
+                   left under apps/lab/. learn-apps.csv and catalog
+                   updated in this commit (PR #579, 45 files
+                   +574/-386). Last catalog regen on main.
+  - HL-1d, HL-1e, HL-2, HL-2a, HL-3a  Square 140px tiles, big letter
+                   + roman label, drop Settings / Auto theme / Sound
+                   on the title bar, wider gap, bigger trace box and
+                   live progress (PRs #580–#584).
+  - WS7, WS7a, WS7b  Weather Sim draggable 12-hour analog clock,
+                   larger face, drag across 12 flips AM/PM
+                   (PRs #585–#587).
+  - PR #590  Weather Simulator app icon (1 file).
+  - CR4, CR5, CR5a  Clock Reading: style tiles on the right, drag
+                   hour and minute hands, no right-panel scrollbar
+                   (PRs #588, #589, #591). Sundial left undraggable,
+                   per Jor.
+
+Sun 15 – Mon 16 (after the category-builder split; catalog not
+regenerated in these PRs):
+  - AL-1 37459dd4  New Assamese Letters (Language), modelled on
+                   Hindi Letters, CSV row after Hindi Letters
+                   (PR #593, 20 files +896). 17 node smoke tests.
+                   Team 3's 14 Nov line "Assamese Letters and a
+                   Globe app were never built" is stale after this
+                   and after b2f5bd3a.
+  - CFS-1 a4db3270  CampCraft School copied Lab → Learn (Outdoors,
+                   after Camping Checklist); SW cache v2. Lab folder
+                   removal left to Hub Lab Builder. Lab copy remains
+                   on main (almost identical; SW cache line differs)
+                   (PR #600, 8 files +125).
+  - DS-2a 90e32008  First-person 3D cockpit (three.js r170 in
+                   learn/common/vendor), manual default (PR #601,
+                   17 files +950/-96).
+  - DS-3  9cb46c40  Procedural roads, endless and loop modes, route
+                   numbers, road types and events (PR #602, 19 files
+                   +920/-36).
+  - DS-4, DS-4a, DS-4b, DS-5  Bigger wheel, engine colours, floating
+                   note, optional mini-map, full-screen; shorter
+                   dashboard, odometers, crank and fault beep;
+                   engine on/off toggle and larger trip-reset hit
+                   target; hold-to-honk, live 0–100% score, edge
+                   alert (PRs #603–#606).
+  - EL-1 46f930cf  New English Letters (Language), modelled on
+                   Hindi / Assamese Letters (PR #607, 20 files
+                   +1088).
+
+CSV: learn-apps.csv 20 → 32. New sections include Health, Cooking,
+Language (Hindi, Assamese, English Letters), Outdoors (Camping
+Checklist, CampCraft School), Science (Weather Simulator), History,
+Life Skills (Driving School). Four pointer rows still belong to
+Apps: NE-India Dictionary and Caption for NEI and Learning HTML
+(../tools/...), Code Lab (../lab/code-lab/). Code Lab is also a
+Lab CSV row at code-lab/, which is the hub_appindex key collision
+Lab reported.
+
+
+--- HUB LAB BUILDER / LAB (apps/lab/, lab-apps.csv)
+
+Nothing merged by Lab Builder this week (confirmed: no Lab-owned
+PRs). Jor pushed directly to main, and LB3 exists only locally.
+
+Direct push, Sun 15 15:24 IST, author "Jor Teron", no PR:
+  - b2f5bd3a  "Add more lab apps". Adds six full apps under
+    apps/lab/: audio-cutter, campcraft-school, globe,
+    knot-rope-school, solar-smash, todo. No lab-apps.csv rows, so
+    they do not appear in App Hub or the Lab flyout. Globe is in
+    Favourites (H155) nevertheless.
+  - The same commit deleted the top-level ai/ tree (about 284
+    files / ~24.7k lines: ai/mcp, ai/docs, ai/rag, ai/api,
+    ai/storage and the ai/ root docs). Whether that deletion was
+    intentional is still an open question (flagged before, now
+    confirmed in git). A later direct push, 319a2834 (Mon 16 00:07
+    IST, "Add MCP server demo"), restored ai/mcp/ (ai/ on main now
+    contains only mcp/). An earlier 13 Nov push ab5cf163 had first
+    added an MCP demo under ai/, and was part of what b2f5bd3a
+    removed.
+  - Team 3's 14 Nov note that Globe was never built is stale.
+
+LB3, committed locally only on branch lab/lb3 (/workspace/wt_lb3),
+not pushed, no PR (verified: lab/lb3 is ahead 3 and behind 26 of
+origin/main). Waiting on Jor's push:
+  - 1f01df01  Removes 6 redirect stubs: aeroplane, island-demo,
+              basic-mail, print, bookmark-manager, notebook.
+  - 82998f6d  Merge of origin/main into lab/lb3.
+  - 464e78bc  Removes apps/lab/campcraft-school (moved to Learn in
+              CFS-1). Until this is pushed, the Lab copy remains
+              on main.
+
+Moves already on main:
+  - MV2 / MV3 (Apps, Sat 14): Video Trimmer, PDF Viewer and Radio
+    → Media; Compass → Tools; Sketchbook → Office; Knife Skills,
+    Ingredient Swaps, Nutrition Calculator, Weather Simulator →
+    Learn. Old Lab paths are redirects, not copies. lab-apps.csv
+    36 → 27 (−9 moved rows).
+  - CFS-1 (Learn, Mon 16): CampCraft School → Learn; Lab folder
+    still present on main (see LB3).
+Reported pending moves: AC1 Audio Cutter to Media, SS4 Solar Smash
+to Games.
+Still unlisted on main (no CSV row): globe, knot-rope-school, todo,
+audio-cutter, solar-smash, campcraft-school (Lab copy), and
+pdf-viewer-old. Also still under apps/lab/: the MV2/MV3 redirects
+and the six stubs LB3 would remove.
+Parked (reported by Lab): TV8, AG41 and AG43 leftovers, Agent long
+chats on 4 GB. Next ids reported: AG46, CL11, ML2, IG5, VS3, CT2,
+LB4.
+Code Lab: listed in both lab-apps.csv (code-lab/) and learn-apps.csv
+(../lab/code-lab/), which collides in hub_appindex (verified).
+
+
+--- MEDIA (apps/media/, media-apps.csv)
+
+Tue 10 evening, new apps + CSV rows (Photo / Video / 3D / Read /
+Audio as later labelled):
+  - VD1–VD3  Video Editor: preview/trim/export; join and projects;
+             filters, transforms, speed and titles (PRs #478–#480).
+  - TD1–TD3  3D Builder: primitives and gizmos; groups/materials;
+             import and GLB/OBJ/STL/PNG export (PRs #483–#485).
+  - VPL1–VPL3  Video Player: playback/resume/subtitles; queue and
+             A-B loop; frame capture and picture controls
+             (PRs #512–#514).
+  - CI1–CI3  Image Converter: batch convert/resize/ZIP; presets
+             and watermarks; photo info / EXIF / icon sets
+             (PRs #515–#517).
+  - PV2      PDF Viewer offline OCR, selectable text and Find
+             (PR #504, 14 files +1820/-21); later moved Lab → Media
+             in MV2 (the Media PDF Viewer is this app).
+
+Sat 14 icons and moves (Apps; no Hub build bump):
+  - IC1–IC4  Plain, tile-free Media icons: Sound Recorder and Music
+             Player; Screen Recorder, Video Player and Video Editor;
+             Photo section; 3D Viewer, 3D Builder and News
+             (PRs #565–#567, #570). Team 3 noted leftover tiled
+             icons in Media (Draw, Paint and Phone) and elsewhere.
+  - MV2      Video Trimmer, PDF Viewer and Radio added to
+             media-apps.csv (Video / Read / Audio) from Lab.
+
+CSV: media-apps.csv 11 → 18. New rows: Image Converter (Photo),
+Radio (Audio), Video Player, Video Editor, Video Trimmer (Video),
+3D Builder (3D), PDF Viewer (Read). Unlisted media folders include
+paint, phone, photo-editor, shared-media, webcam (some are still
+Lab Legacy pointers).
+
+
+--- CONNECTIVITY (apps/connectivity/, connectivity-apps.csv)
+
+Tue 10 had no new Connectivity app. Wed 11:
+  - RM7  PR #527  Remote saved-connection actions and one-row top
+                   bar (12 files +643/-55).
+
+Sat 14, Apps icon pass (colourful, tile-free; all 19 Connectivity
+apps then in the CSV):
+  - IC9a PR #575  29 files +631/-3  Share icons.
+  - IC9b PR #576  24 files +521/-2  Chat icons.
+  - IC9c PR #577  12 files +378/-2  Remote icons.
+
+Sun 15 – Mon 16, after the category split (catalog not regenerated):
+  - WWW1 4569e078  New Web Browser app, apps/connectivity/browser/,
+                   CSV row in a new Web section. Tabs, address/search
+                   (DuckDuckGo default), bookmarks, history,
+                   sandboxed iframes, open-in-tab fallback when a
+                   site refuses framing (PR #599, 12 files +1425).
+  - WWW2a+WWW2b  PR #610  10 files +1266/-50  Load blocked/http/
+                   timed-out pages through the Relay Server;
+                   per-tab relay/direct toggle; via-relay badge;
+                   one cookie session per device; clear relay
+                   cookies; never store a relay URL or the secret.
+  - WWW2c PR #611  8 files +545/-20  Real address after relay
+                   redirects (X-Relay-Final-Url) and a Reader
+                   button when the relay supports it.
+  - WWW2d PR #612  8 files +768/-33  Relay URL auto-fix, Hub-relay
+                   warning, step-by-step Test report with Copy
+                   details, and detection of Chrome Local Network
+                   Access when the relay is a Tailscale address.
+
+CSV: connectivity-apps.csv 19 → 20 (+Web Browser, section Web).
+Unlisted folders: shared, webrtc-chat (webrtc-chat is a Lab CSV
+pointer, not a Connectivity CSV row).
+
+
+--- TOOLS (apps/tools/, tools-apps.csv)
+
+Tue 10 evening, new apps + CSV rows:
+  - RA1–RA2  Read Aloud (Language): headlines and text; PDF, web
+             articles and sleep timer (PRs #481–#482).
+  - PW1–PW2  Password Manager (Security): encrypted vault and
+             generator; backups, CSV import and vault health
+             (PRs #486–#487).
+  - NU1      Numerology (Fun) (PR #503, 10 files +975).
+  - SP1–SP3  Sun Position (Time): sun dial / rise-set; shadow
+             planner and year chart; point-to-sun, moon, alerts
+             (PRs #509–#511).
+
+Sat 14 moves (Apps):
+  - MV1  Invoice Maker and Expense Tracker → Tools / Money.
+  - MV2  Compass Lab → Tools / Navigation, with a redirect at
+         apps/lab/compass/.
+
+Sun 15, after the category split (catalog not regenerated):
+  - RY1 325fa13f  New Relay app, apps/tools/relay/, Tools CSV row
+                   under Network: set up and test the Hub relay
+                   (RL1), /health, shared localStorage key hub.relay,
+                   install/restart commands (PR #598, 9 files +546).
+                   hub/relay tests 25/25; app tests 7/7. No
+                   hub_catalog regen.
+
+CSV: tools-apps.csv 20 → 28. New rows: Sun Position (Time), Relay
+(Network), Password Manager (Security), Compass (Navigation),
+Numerology (Fun), Read Aloud (Language), Invoice Maker and Expense
+Tracker (Money).
+Unlisted tools folders include transcribe, phonekey and vDesktop
+(Team 3 listed these as never in the Hub catalog; parked LB1 would
+move them to Lab), plus calculator-beta, files, live-subtitle-assam,
+msword_diff, sysmon, viewer (some are aliases or leftovers).
+
+
+--- HUB PHONE BUILDER (phone/, phone.html)
+
+No Phone releases and no phone/ or phone.html commits this week
+(confirmed on origin/main). Team 2 Phase 2 also recorded no PH
+releases.
+
+Week-start check on 15 Nov (reported by Phone Builder): PH14 Connect
+sheet files are in the hub_sw.js SHELL list. Verified on current
+main: phone.html, phone/, the phone_*.js files, hidden-apps.csv,
+phone/phone_connect.js and phone/vendor/jsQR.js, with an H129b /
+PH14 comment so phone.html's Connect works offline.
+
+Reported open: message vs messages dock id, dock centering, mesh
+group chat. PH17 and PH18 parked. Next id PH20.
+
+
+--- OS.js / TV / MCP (other areas)
+
+  - os/ and tv/: no commits this week. No OS.js work to record.
+  - ai/: see Lab / b2f5bd3a. After the deletion and the 16 Nov
+    re-add, origin/main has ai/mcp/ only (MCP server demo,
+    319a2834). The rest of the previous ai/ tree is not on main.
+
+
+--- CATALOG, COUNTS AND OPEN ITEMS (cross-cutting)
+
+Category CSV totals on origin/main vs the previous week notes
+(cf4521cf): Connectivity 19→20, Favourite 1→6, Games 47→55,
+Lab 36→27, Learn 20→32, Media 11→18, Office 11→13, Tools 20→28,
+System unchanged at 12. App Hub listed WebApps: 205 (System 12 +
+the seven category CSVs; Favourites not double-counted).
+
+hub_catalog.js / hub_appindex.js: last full regen H146 (11 Nov);
+later updated in HOW/HOS/HOT, DF25, IC6, MV1, MV2 and MV3
+(last: c5485876, 14 Nov). Stale after that for WWW1, RY1, AL-1,
+CFS-1, EL-1, H155 Favourites, and the unlisted Lab apps.
+
+Still open (Hub and shared):
+  - Stale v163 expectation in hub/tests/hub_lock_core.test.cjs
+    (also fails on main; only allowed test failure this week).
+  - Manual catalog / appindex regen, when Jor asks.
+  - Globe and the other unlisted Lab apps in lab-apps.csv
+    (Lab Builder). AC1 / SS4 moves not on main yet. LB3 not
+    pushed.
+  - Favourites flyout shows a lone "Other" section.
+  - Pages deploy for v169–v174 not verified.
+  - Fingerprint "Add phone" fix, waiting on a screenshot / error
+    code.
+  - Whether the ai/ deletion in b2f5bd3a was intentional; only
+    ai/mcp/ was put back.
+  - Apps Builder's future role, waiting on Jor.
+  - Nutrition Plate ownership (Learn app; next id NP8).
+  - Code Lab listed in both Lab and Learn CSVs.
+  - Office: NL5 faded title-bar text; .hbase/.hslides thumbnails;
+    tables_icon.svg vs .png in files_core.js; Tables prefix clash.
+  - Testing rule, unchanged: syntax and smoke tests only; browser
+    tests only with Jor's approval; no Phone tests.
+  - Do not run hub_appindex_gen.py unless Jor asks.
+
+Next free Hub id: H156 (H155 is current).
+
