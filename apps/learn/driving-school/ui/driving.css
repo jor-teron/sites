@@ -37,7 +37,7 @@ h1{font-size:14px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 .mirror.side{bottom:30px;width:min(150px,17%);aspect-ratio:1.45;border-radius:14px 14px 22px 22px;display:none}
 .screen.sides:not(.flat) .mirror.side{display:block}.mirror.side.l{left:3%}.mirror.side.r{right:3%}
 /* DS-4: lesson note floats just above the dash / wheel (sibling of the cockpit so it can stack above it). */
-.note{position:absolute;left:50%;bottom:clamp(230px, calc(46vh + 28px), 400px);transform:translateX(-50%);z-index:6;margin:0;max-width:min(560px,70%);background:#0c2633cc;color:#fff;border:1px solid #3fd0ff88;border-radius:12px;padding:6px 12px;font-size:14px;line-height:1.3;text-align:center;pointer-events:none;transition:opacity .35s}
+.note{position:absolute;left:50%;bottom:clamp(172px, calc(34.5vh + 28px), 300px);transform:translateX(-50%);z-index:6;margin:0;max-width:min(560px,70%);background:#0c2633cc;color:#fff;border:1px solid #3fd0ff88;border-radius:12px;padding:6px 12px;font-size:14px;line-height:1.3;text-align:center;pointer-events:none;transition:opacity .35s}
 #hint:empty{display:none}#note:has(#hint:empty){display:none}
 .note-show{display:none}
 .note.faded{pointer-events:auto;cursor:pointer;padding:2px 4px;background:transparent;border-color:transparent;max-width:none}
@@ -48,9 +48,10 @@ h1{font-size:14px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 #rotate{display:none;position:absolute;top:8px;right:8px;z-index:4;max-width:46%;margin:0;background:#123b4cee;color:#fff;font-size:11px;padding:5px 8px;border-radius:8px}
 
 /* Dashboard. RHD (India) by default: gear lever and handbrake to the LEFT of the wheel.
-   DS-4: taller dash (footer gone), bigger wheel sitting lower, indicators beside the dials. */
-.cockpit{position:relative;z-index:5;flex-shrink:0;height:clamp(200px,46vh,360px);margin-top:-22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:stretch;
-  padding:10px 14px 4px;padding-bottom:max(4px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));color:#e9f3f8;background:linear-gradient(180deg,#2c3a44 0,#1a242b 22%,#11181d 100%);border-radius:50% 50% 0 0/26px 26px 0 0;box-shadow:0 -2px 0 #3d4d58,0 -10px 18px #0005}
+   DS-4: taller dash (footer gone), bigger wheel sitting lower, indicators beside the dials.
+   DS-4a: dash 25% shorter; wheel keeps its DS-4 size (height % raised to match) and sits at the bottom. */
+.cockpit{position:relative;z-index:5;flex-shrink:0;height:clamp(150px,34.5vh,270px);margin-top:-22px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:stretch;
+  padding:6px 12px 4px;padding-bottom:max(4px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));color:#e9f3f8;background:linear-gradient(180deg,#2c3a44 0,#1a242b 22%,#11181d 100%);border-radius:50% 50% 0 0/20px 20px 0 0;box-shadow:0 -2px 0 #3d4d58,0 -10px 18px #0005}
 .cockpit button{background:#24323b;border-color:#445866;color:#e9f3f8}.cockpit button:hover{background:#2f6d84}
 .cockpit button.engine:not(.running),.cockpit button.engine:not(.running):hover{background:#4a5359!important;border-color:#6d787e;color:#c5cccf}
 .cockpit button.engine.running,.cockpit button.engine.running:hover{background:#1b8a4e!important;border-color:#3ee68a;color:#e9fff2}
@@ -62,22 +63,28 @@ h1{font-size:14px;margin:0;flex:1;white-space:nowrap}.lrn-head button{font-size:
 .gate.auto{background-size:3px 100%;background-position:50% 50%}
 .gate button{min-height:0;padding:0;border-radius:50%;font-weight:700;font-size:15px;background:#1f2b33}
 .gate button[aria-pressed=true]{background:radial-gradient(circle at 35% 30%,#8ee6ff,#1690b8);color:#04202c;box-shadow:0 0 0 2px #bff0ff}
-.console-btns{display:flex;flex-direction:column;gap:5px;min-width:0}
-.console-btns button{font-size:12px;padding:4px 8px;white-space:nowrap}
+.console-btns{display:flex;flex-direction:column;gap:3px;min-width:0}
+.console-btns button{font-size:11px;padding:2px 6px;min-height:32px;white-space:nowrap}
 .handbrake{position:relative;padding-left:26px!important;text-align:left}
 .handbrake .lever{position:absolute;left:8px;top:50%;width:8px;height:22px;margin-top:-11px;border-radius:4px;background:#8b9aa4;transform-origin:50% 100%;transform:rotate(25deg);transition:transform .15s}
 .handbrake.on{border-color:#e24a4a;color:#ffd2d2}.handbrake.on .lever{background:#e24a4a;transform:rotate(-10deg)}
 .cluster{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:visible;position:relative}
-.signal{min-width:44px;min-height:44px;padding:0 8px;font-size:18px;line-height:1;color:#4d6a5a!important;flex-shrink:0;align-self:center}
+.signal{min-width:40px;min-height:40px;padding:0 6px;font-size:16px;line-height:1;color:#4d6a5a!important;flex-shrink:0;align-self:center}
 .signal.lit{color:#43f08f!important;text-shadow:0 0 8px #43f08f;border-color:#43f08f}
-.lamp-text{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:3;font-size:11px;color:#ffb347;text-align:center;white-space:nowrap;pointer-events:none}
+.lamp-text{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:3;font-size:10px;color:#ffb347;text-align:center;white-space:nowrap;pointer-events:none}
 .dials{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:2px}
-.dial{height:58%;max-height:170px;aspect-ratio:1;flex-shrink:1;min-width:0;align-self:center}
+.dial{height:58%;max-height:128px;aspect-ratio:1;flex-shrink:1;min-width:0;align-self:center}
+.speedo-col{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;height:100%;gap:1px}
+.speedo-col .dial{height:58%;max-height:128px}
+.odos{display:flex;flex-direction:column;gap:0;font-variant-numeric:tabular-nums;font-size:9px;line-height:1.2;color:#cfdde6;text-align:center;flex-shrink:0;background:#0b1115;border:1px solid #3a4a55;border-radius:5px;padding:1px 5px 2px;min-width:0}
+.odo{display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.odo-name{color:#8fa3b0;text-transform:uppercase;font-size:8px;letter-spacing:.04em}
+#trip-reset{min-height:22px;height:22px;padding:0 5px;font-size:8px;border-radius:4px;margin:0;line-height:1}
 .dial-face{fill:#0b1115;stroke:#4d5d68;stroke-width:2}.dial-red{fill:none;stroke:#e24a4a;stroke-width:5}
 .tick{stroke:#8fa3b0;stroke-width:1}.tick.major{stroke:#e9f3f8;stroke-width:2}
-.dial-num{fill:#cfdde6;font-size:9px;text-anchor:middle}.dial-big{fill:#fff;font-size:17px;font-weight:700;text-anchor:middle}
-.dial-unit{fill:#8fa3b0;font-size:7px;text-anchor:middle}.needle path{fill:#ff6a3d}.hubcap{fill:#2b3a44;stroke:#8fa3b0}
-.wheel-box{position:relative;height:115%;aspect-ratio:1;max-width:64%;flex-shrink:0;align-self:flex-end;margin:0 -2% -4px;z-index:2}
+.dial-num{fill:#cfdde6;font-size:8px;text-anchor:middle}.dial-big{fill:#fff;font-size:15px;font-weight:700;text-anchor:middle}
+.dial-unit{fill:#8fa3b0;font-size:6px;text-anchor:middle}.needle path{fill:#ff6a3d}.hubcap{fill:#2b3a44;stroke:#8fa3b0}
+.wheel-box{position:relative;height:153.33%;aspect-ratio:1;max-width:64%;flex-shrink:0;align-self:flex-end;margin:0 -2% -4px;z-index:2}
 #wheel{position:absolute;inset:0;border-radius:50%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;will-change:transform}
 #wheel.held{cursor:grabbing}#wheel svg{display:block;width:100%;height:100%;overflow:visible}
 .rim{fill:none;stroke:#1d2328;stroke-width:16}.rim-mark{fill:none;stroke:#3fd0ff;stroke-width:16}
@@ -108,12 +115,12 @@ a{color:var(--blue)}dialog[open]{animation:appear .15s ease-out}
   .lrn-head{padding:0 8px;gap:3px}h1{font-size:13px}.lrn-head button{font-size:10px;min-height:24px;padding:1px 7px}
   .toolbar{flex-wrap:nowrap;padding:1px 8px;gap:3px;font-size:11px}.toolbar select,.toolbar button,.toolbar input{font-size:11px;min-height:24px;padding:1px 7px}
   .toolbar select{max-width:200px}.status{font-size:10px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .world{padding:0}.cockpit{height:56vh;min-height:190px;padding:8px 8px 2px;padding-bottom:max(2px,env(safe-area-inset-bottom));gap:6px}
+  .world{padding:0}.cockpit{height:42vh;min-height:143px;padding:6px 8px 2px;padding-bottom:max(2px,env(safe-area-inset-bottom));gap:4px}
   .gate{gap:3px;padding:3px}.console-btns{gap:3px}
   .gate button{font-size:13px}.console-btns button{font-size:11px;padding:2px 6px}
   .signal{min-width:44px;min-height:40px}.lamp-text{font-size:10px}
   .pedal{min-height:60px;font-size:11px;width:56px}.pedal.gas{width:52px}
-  .wheel-box{height:118%;max-width:58%}.note{font-size:12px;bottom:calc(56vh + 16px);padding:4px 10px}#fault{top:50px;font-size:12px}
+  .wheel-box{height:157.33%;max-width:58%}.note{font-size:12px;bottom:calc(42vh + 16px);padding:4px 10px}#fault{top:50px;font-size:12px}
 }
 /* Portrait phones: still works; dashboard wraps into two rows below the windscreen. */
 @media(orientation:portrait) and (max-width:700px){
@@ -121,9 +128,9 @@ a{color:var(--blue)}dialog[open]{animation:appear .15s ease-out}
   .toolbar{gap:3px}.status{text-align:left;min-width:0}
   .world{padding:0;flex:1;min-height:0}.screen{flex:1;min-height:100px}#rotate{display:block}
   .cockpit{height:auto;max-height:62dvh;grid-template-columns:1fr;grid-template-areas:"cluster" "console" "pedals";row-gap:6px;padding:8px 8px 4px;padding-bottom:max(4px,env(safe-area-inset-bottom))}
-  .cluster{grid-area:cluster;height:min(230px,28dvh)}.console{grid-area:console;justify-content:center}.pedals{grid-area:pedals;height:min(96px,12dvh);justify-content:center}
+  .cluster{grid-area:cluster;height:min(172px,21dvh)}.console{grid-area:console;justify-content:center}.pedals{grid-area:pedals;height:min(96px,12dvh);justify-content:center}
   .cockpit.lhd .console,.cockpit.lhd .cluster,.cockpit.lhd .pedals{order:0}
-  .wheel-box{height:130%;max-width:72%}
+  .wheel-box{height:173.33%;max-width:72%}
   .pedal,.pedal.gas{width:30%;max-width:110px;height:100%}.pedal.brake{height:88%}.mirror.rear{width:46%}.note{max-width:86%;font-size:13px;bottom:auto;top:22%}
   #road{width:30%;height:26%}
 }

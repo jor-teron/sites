@@ -5,6 +5,16 @@
   function write(k, v) { try { localStorage.setItem(PRE + k, JSON.stringify(v)); } catch (_) { /* storage unavailable */ } }
   const prefs = D.settingsFrom(read('settings', {})), best = read('best', {});
   let s, last = 0, mirrorTime = 0, noticeText = '', noticeUntil = 0, view = null, frameNo = 0, clock = 0, noteShownAt = 0;
+  let odo = D.odometersFrom(read('odo', {})), odoMark = 0, odoSavedAt = 0, faultCount = 0, faultBeepAt = 0;
+  function saveOdo(force, now) {
+    now = now == null ? clock : now;
+    if (!D.shouldSaveOdo(odoSavedAt, now, force)) return;
+    write('odo', { total: odo.total, trip: odo.trip }); odoSavedAt = now;
+  }
+  function rollOdo() {
+    const step = D.takeDelta(odoMark, s.c.distance);
+    odoMark = step.at; if (step.delta) odo = D.addDistance(odo, step.delta);
+  }
   function notice(text) { noticeText = text; noticeUntil = clock + 3000; }
   const keys = new Set(), held = { throttle: 0, brake: 0, clutch: 0, steer: 0 };
   const list = $('lessons'), screen = $('screen');
@@ -27,14 +37,14 @@
     const def = definitions().find(d => d.id === list.value) || D.basics[0];
     s = D.session(def, prefs); keys.clear(); Object.keys(held).forEach(k => held[k] = 0);
     $('end-test').hidden = !def.mock; $('lesson-name').textContent = def.name + (def.road ? ' · route ' + def.route : '');
-    $('route-box').hidden = !def.road; $('route').value = String(prefs.route); write('last', def.id); mirrorTime = 0;
+    $('route-box').hidden = !def.road; $('route').value = String(prefs.route); write('last', def.id); mirrorTime = 0; odoMark = 0; faultCount = 0;
   }
   list.value = read('last', 'start'); reset();
   $('cockpit').classList.toggle('auto', prefs.auto);
   list.onchange = reset; $('retry').onclick = reset;
   // Route number (open road): the same number always gives the same road.
   $('route').onchange = () => { const n = Math.max(1, Math.min(9999, parseInt($('route').value, 10) || 1)); prefs.route = n; write('settings', prefs); reset(); };
-  $('engine').onclick = () => { if (!D.start(s.c)) notice(s.c.message); };
+  $('engine').onclick = () => { if (s.c.engine) return; if (!D.start(s.c)) notice(s.c.message); else D.sound.crank(); };
   // Automatic: D = first forward gear (it changes up by itself); stepping down from D goes to N.
   function selectGear(gear) { if (!D.shift(s.c, gear)) notice(s.c.message); }
   function gearUp() { selectGear(s.c.auto && s.c.gear > 0 ? s.c.gear : s.c.gear + 1); }
@@ -52,8 +62,10 @@
   muteLabel();
   $('mute').onclick = () => { prefs.muted = !prefs.muted; D.sound.mute(prefs.muted); write('settings', prefs); muteLabel(); };
   $('horn').onclick = () => D.sound.horn();
+  $('trip-reset').onclick = () => { odo = D.resetTrip(odo); saveOdo(true, clock); };
   window.addEventListener('pointerdown', D.sound.unlock, { passive: true });
   window.addEventListener('keydown', D.sound.unlock);
+  window.addEventListener('pagehide', () => saveOdo(true, clock));
   function modalOpen() { s.paused = true; clearInput(); }
   for (const id of ['help-card','quiz-card','report-card']) $(id).addEventListener('close', () => { s.paused = false; clearInput(); });
   $('help').onclick = () => { modalOpen(); $('help-card').showModal(); };
@@ -145,7 +157,13 @@
       catch (err) { console.error(err); view = null; screen.classList.add('flat'); notice('The 3D view stopped, so the map view is shown.'); }
       if (prefs.minimap && frameNo % 3 === 0) D.draw($('road'), s, prefs);   // mini-map, every third frame, only when enabled
     } else D.draw($('road'), s, prefs);   // map fallback (?view=map / file://) always fills the screen
-    D.dash.update(c, inp, selectGear);
+    rollOdo();
+    saveOdo(false, now);
+    if (s.l.faults.length > faultCount) {
+      if (D.faultBeepDue(faultBeepAt, now)) { D.sound.fault(); faultBeepAt = now; }
+      faultCount = s.l.faults.length;
+    }
+    D.dash.update(c, inp, selectGear, odo);
     const done = s.l.done, raw = noticeUntil > now ? noticeText : D.hint(s.l, c);
     const text = done || noticeUntil > now ? raw : D.nextHint(raw);
     if ($('hint').textContent !== text) { $('hint').textContent = text; noteShownAt = now; }
@@ -170,6 +188,6 @@
   // Inside a Hub window the head row moves to the title bar; send its buttons so they stay reachable.
   if (window.LearnHubBar) LearnHubBar.attach(document.querySelector('.lrn-head'), { buttons: '#quiz,#help,#mute,#settings' });
   // Deterministic harness uses exactly the same session/physics; never shipped with auto-driving enabled.
-  if (new URLSearchParams(location.search).has('test')) window.drivingTest = { D, get s() { return s; }, reset, input, update(dt) { update(dt); paint(performance.now()); }, prefs, get view3d() { return !!view; } };
+  if (new URLSearchParams(location.search).has('test')) window.drivingTest = { D, get s() { return s; }, reset, input, update(dt) { update(dt); paint(performance.now()); }, prefs, get view3d() { return !!view; }, get odo() { return odo; }, saveOdo };
   requestAnimationFrame(frame);
 })();

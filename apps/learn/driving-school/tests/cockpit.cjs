@@ -94,3 +94,46 @@ test('DS-4: lesson note fades after 5 seconds and a reshow starts the timer agai
   assert.equal(M.noteFaded(0, 8000, true), false, 'held / tapped note stays visible');
   assert.equal(M.noteFaded(6000, 7000, false), false);
 });
+
+test('DS-4a: odometers accumulate metres as km, persist-shape, and trip can reset', () => {
+  assert.deepEqual(M.odometersFrom(undefined), { total: 0, trip: 0 });
+  assert.deepEqual(M.odometersFrom({}), { total: 0, trip: 0 });
+  assert.deepEqual(M.odometersFrom({ total: -5, trip: 'nope' }), { total: 0, trip: 0 });
+  assert.deepEqual(M.odometersFrom({ total: 12340, trip: 400 }), { total: 12340, trip: 400 });
+  let o = M.odometersFrom({});
+  o = M.addDistance(o, 1000);
+  assert.deepEqual(o, { total: 1000, trip: 1000 });
+  o = M.addDistance(o, 250);
+  assert.deepEqual(o, { total: 1250, trip: 1250 });
+  const kept = o;
+  o = M.resetTrip(o);
+  assert.deepEqual(o, { total: 1250, trip: 0 });
+  assert.deepEqual(kept, { total: 1250, trip: 1250 }, 'resetTrip does not mutate the previous object');
+  o = M.addDistance(o, 100);
+  assert.deepEqual(o, { total: 1350, trip: 100 });
+  o = M.addDistance(o, 0);
+  o = M.addDistance(o, -10);
+  o = M.addDistance(o, NaN);
+  assert.deepEqual(o, { total: 1350, trip: 100 }, 'non-positive deltas are ignored');
+  assert.equal(M.formatKm(12340), '12.3 km');
+  assert.equal(M.formatKm(0), '0.0 km');
+  assert.equal(M.formatKm(-5), '0.0 km');
+  assert.deepEqual(M.takeDelta(0, 10), { delta: 10, at: 10 });
+  assert.deepEqual(M.takeDelta(10, 25), { delta: 15, at: 25 });
+  assert.deepEqual(M.takeDelta(25, 0), { delta: 0, at: 0 }, 'session reset does not subtract');
+  assert.equal(M.shouldSaveOdo(0, 3999, false), false);
+  assert.equal(M.shouldSaveOdo(0, 4000, false), true);
+  assert.equal(M.shouldSaveOdo(0, 100, true), true);
+  assert.equal(M.ODO_SAVE_MS, 4000);
+  assert.equal(M.FAULT_BEEP_MS, 800);
+  assert.equal(M.faultBeepDue(0, 16), true, 'first beep is always due');
+  assert.equal(M.faultBeepDue(32, 48), false);
+  assert.equal(M.faultBeepDue(32, 832), true);
+});
+test('DS-4a: distance comes from abs speed * dt, including reverse', () => {
+  const c = D.car({ v: -10, handbrake: false }), before = c.distance;
+  D.step(c, {}, .2);
+  assert(c.v < 0); assert(c.distance > before, 'reverse still adds distance');
+  const o = M.addDistance(M.odometersFrom({}), M.takeDelta(before, c.distance).delta);
+  assert(o.total > 0 && o.trip > 0);
+});

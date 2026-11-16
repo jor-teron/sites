@@ -48,7 +48,7 @@ test('page loads the classic scripts, ES module last, and the Hub bar gets its b
   assert.match(html, /<script type="module" src="ui\/view3d.js"><\/script>\s*<\/body>/);
   assert(fs.readFileSync(path.join(dir, 'ui/app.js'), 'utf8').includes("{ buttons: '#quiz,#help,#mute,#settings' }"));
   assert.match(fs.readFileSync(path.join(dir, 'ui/view3d.js'), 'utf8'), /from '\.\.\/\.\.\/common\/vendor\/three\/three\.module\.min\.js'/);
-  for (const id of ['view3d', 'road', 'mirror', 'mirror-l', 'mirror-r', 'hint', 'note', 'note-show', 'minimap', 'wheel', 'horn', 'speedo', 'tacho', 'gate', 'park', 'engine', 'left', 'right', 'look', 'cockpit', 'lessons', 'end-test'])
+  for (const id of ['view3d', 'road', 'mirror', 'mirror-l', 'mirror-r', 'hint', 'note', 'note-show', 'minimap', 'wheel', 'horn', 'speedo', 'tacho', 'gate', 'park', 'engine', 'left', 'right', 'look', 'cockpit', 'lessons', 'end-test', 'odo-total', 'odo-trip', 'trip-reset'])
     assert.match(html, new RegExp('id="' + id + '"'), id);
 });
 test('map fallback runs; manual by default; dashboard follows the car', () => {
@@ -182,4 +182,87 @@ test('DS-4: lesson note fades after a few seconds and a tap brings it back', () 
   assert.match(css, /width:100vw;height:100vh;width:100dvw;height:100dvh/, 'driving view fills the screen with vw/vh fallbacks');
   assert.match(css, /html,body\{[^}]*overflow:hidden/, 'the page does not scroll while driving');
   assert.match(css, /\.lrn-head button\{font-size:11px;min-height:28px/, 'the in-app top bar is thinner');
+});
+
+test('DS-4a: Total and Trip odometers count movement, trip resets, values persist', () => {
+  const PRE = 'learn.driving-school.odo';
+  const { ctx, ids, frame } = boot();
+  frame(16);
+  assert.equal(ids['odo-total'].textContent, '0.0 km');
+  assert.equal(ids['odo-trip'].textContent, '0.0 km');
+  const t = ctx.drivingTest;
+  assert.equal(t.odo.total, 0); assert.equal(t.odo.trip, 0);
+  t.D.start(t.s.c); t.D.shift(t.s.c, 1); t.s.c.handbrake = false; t.s.c.clutch = 0;
+  t.s.c.v = 10;
+  for (let i = 0; i < 40; i++) t.update(0.05);
+  assert(t.s.c.distance > 10, 'car moved ' + t.s.c.distance);
+  assert(t.odo.total > 10 && t.odo.trip > 10);
+  assert.equal(t.odo.total, t.odo.trip);
+  assert.match(ids['odo-total'].textContent, / km$/);
+  assert.equal(ids['odo-total'].textContent, t.D.formatKm(t.odo.total));
+  assert.equal(ids['odo-trip'].textContent, t.D.formatKm(t.odo.trip));
+  const total = t.odo.total;
+  t.s.c.v = 0; t.s.c.handbrake = true;
+  ids['trip-reset'].click();
+  t.update(0);
+  assert.equal(t.odo.trip, 0); assert.equal(t.odo.total, total);
+  assert.equal(ids['odo-trip'].textContent, '0.0 km');
+  assert.equal(ids['odo-total'].textContent, t.D.formatKm(total));
+  // Throttled save: not every frame, but pagehide always writes.
+  t.s.c.v = 8;
+  for (let i = 0; i < 10; i++) t.update(0.05);
+  ctx.dispatchEvent(new ctx.Event('pagehide'));
+  const saved = JSON.parse(ctx.localStorage.getItem(PRE));
+  assert(saved.total > total); assert(saved.trip > 0); assert.equal(saved.total, t.odo.total);
+
+  const again = boot('?test', { [PRE]: JSON.stringify({ total: 12340, trip: 400 }) });
+  again.frame(16);
+  assert.equal(again.ctx.drivingTest.odo.total, 12340); assert.equal(again.ctx.drivingTest.odo.trip, 400);
+  assert.equal(again.ids['odo-total'].textContent, '12.3 km');
+  assert.equal(again.ids['odo-trip'].textContent, '0.4 km');
+
+  // Open road (endless) also feeds the same odometers.
+  const road = boot();
+  road.ids.lessons.value = 'endless'; road.ids.lessons.onchange();
+  const r = road.ctx.drivingTest;
+  assert(r.s.w && r.s.w.road);
+  r.D.start(r.s.c); r.s.c.handbrake = false; r.s.c.clutch = 0; r.D.shift(r.s.c, 1); r.s.c.v = 12;
+  for (let i = 0; i < 30; i++) r.update(0.05);
+  assert(r.s.c.distance > 8 && r.odo.total > 8, 'open road movement counts');
+});
+test('DS-4a: engine crank plays on start; fault beep is rate-limited', () => {
+  const { ctx, ids, frame } = boot();
+  let cranks = 0, beeps = 0;
+  const sound = ctx.DS.sound;
+  const crank = sound.crank.bind(sound), fault = sound.fault.bind(sound);
+  sound.crank = () => { cranks++; crank(); };
+  sound.fault = () => { beeps++; fault(); };
+  frame(16);
+  ids.engine.click();
+  assert.equal(ctx.drivingTest.s.c.engine, true);
+  assert.equal(cranks, 1);
+  ids.engine.click();
+  assert.equal(cranks, 1, 'already running does not crank again');
+  ctx.drivingTest.s.c.engine = false; ctx.drivingTest.s.c.v = 5; ctx.drivingTest.s.c.gear = 1; ctx.drivingTest.s.c.clutch = 0;
+  ids.engine.click();
+  assert.equal(ctx.drivingTest.s.c.engine, false);
+  assert.equal(cranks, 1, 'a failed start does not crank');
+
+  ctx.DS.penalize(ctx.drivingTest.s.l, 'x', 'reason', 1);
+  frame(32);
+  assert.equal(beeps, 1);
+  ctx.DS.penalize(ctx.drivingTest.s.l, 'y', 'reason', 1);
+  frame(48);
+  assert.equal(beeps, 1, 'a second fault inside the cooldown is silent');
+  ctx.DS.penalize(ctx.drivingTest.s.l, 'z', 'reason', 1);
+  frame(32 + 800);
+  assert.equal(beeps, 2);
+});
+test('DS-4a: dashboard is 25% shorter and the wheel keeps its DS-4 size', () => {
+  const css = require('node:fs').readFileSync(require('node:path').join(dir, 'ui/driving.css'), 'utf8');
+  assert.match(css, /height:clamp\(150px,34\.5vh,270px\)/, 'dash panel is 25% shorter than DS-4');
+  assert.match(css, /\.wheel-box\{[^}]*height:153\.33%/, 'wheel height is raised so its size stays the same');
+  assert.match(css, /max-height:128px/, 'dials are more compact');
+  const html = require('node:fs').readFileSync(require('node:path').join(dir, 'driving-school.html'), 'utf8');
+  assert.match(html, /id="odo-total"/); assert.match(html, /id="trip-reset"/);
 });

@@ -110,6 +110,30 @@
   // DS-4: engine button wording, mini-map preference (off unless explicitly on), floating lesson note fade.
   const NOTE_FADE_MS = 5000;
   function engineChrome(c) { return { text: c && c.engine ? 'Engine ON' : 'Engine OFF', running: !!(c && c.engine) }; }
+  // DS-4a: persisted Total / Trip odometers (metres) and a rate-limit for the fault beep.
+  const ODO_SAVE_MS = 4000, FAULT_BEEP_MS = 800;
+  function odometersFrom(stored) {
+    const src = stored && typeof stored === 'object' ? stored : {};
+    const n = v => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
+    return { total: n(src.total), trip: n(src.trip) };
+  }
+  function addDistance(odo, metres) {
+    const base = odometersFrom(odo), d = Number(metres), add = Number.isFinite(d) && d > 0 ? d : 0;
+    return { total: base.total + add, trip: base.trip + add };
+  }
+  function resetTrip(odo) { return { total: odometersFrom(odo).total, trip: 0 }; }
+  function formatKm(metres) {
+    const m = Number(metres);
+    return ((Number.isFinite(m) && m > 0 ? m : 0) / 1000).toFixed(1) + ' km';
+  }
+  // Convert a running car.distance reading into a non-negative delta (session reset does not subtract).
+  function takeDelta(prev, current) {
+    const n = v => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
+    const at = n(current), before = n(prev);
+    return { delta: at >= before ? at - before : 0, at };
+  }
+  function shouldSaveOdo(lastSavedAt, now, force, ms = ODO_SAVE_MS) { return !!force || (now - lastSavedAt) >= ms; }
+  function faultBeepDue(lastAt, now, ms = FAULT_BEEP_MS) { return !lastAt || (now - lastAt) >= ms; }
   function settingsFrom(stored) {
     const s = Object.assign({ auto: false, side: 'left', muted: false, route: 1, minimap: false }, stored || {});
     s.minimap = s.minimap === true;
@@ -117,8 +141,8 @@
   }
   function showMinimap(prefs, flat) { return !!flat || !!(prefs && prefs.minimap); }
   function noteFaded(shownAt, now, held, ms = NOTE_FADE_MS) { return !held && (now - shownAt) >= ms; }
-  return { WHEEL_MAX_DEG, SPEEDO_MAX, TACHO_MAX, NOTE_FADE_MS, wheelAngle, pointerAngle, angleDelta, dragSteer, nearHub,
+  return { WHEEL_MAX_DEG, SPEEDO_MAX, TACHO_MAX, NOTE_FADE_MS, ODO_SAVE_MS, FAULT_BEEP_MS, wheelAngle, pointerAngle, angleDelta, dragSteer, nearHub,
     needleAngle, speedKmh, gearLabel, gateSlots, gateSlotFor, toScene, axes, driverSide, driverCamera, rearMirrorCamera,
     sideMirrorCamera, cameraFrame, viewportFromRect, renderPixelRatio, isPortrait, lotLayout, townLayout, lessonMarkers, nextHint,
-    engineChrome, settingsFrom, showMinimap, noteFaded };
+    engineChrome, settingsFrom, showMinimap, noteFaded, odometersFrom, addDistance, resetTrip, formatKm, takeDelta, shouldSaveOdo, faultBeepDue };
 });
