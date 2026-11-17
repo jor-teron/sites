@@ -2,9 +2,10 @@
    FILE: modules/writer-export.js
    DF25: was modules/draftly-export.js (global Draftly is now Writer).
    PROJECT: Writer
-   ROLE: DOCX download (offline; real DOCX from writer-docxgen.js, html-docx as fallback) and Print dialog.
+   ROLE: DOCX download (offline; real DOCX from writer-docxgen.js, html-docx as fallback),
+         ODT download (DW8, writer-odtgen.js) and Print dialog.
          PDF download lives in writer-pdf.js.
-   DEPENDS: Writer.config, Writer.pages, Writer.ui, Writer.docxgen, htmlDocx (fallback)
+   DEPENDS: Writer.config, Writer.pages, Writer.ui, Writer.docxgen, Writer.odtgen, htmlDocx (fallback)
    ISOLATION: DOCX failure shows a toast and does not throw
               out to the click handler.
    ============================================================ */
@@ -225,10 +226,48 @@ Writer.export.exportDocx = function exportDocx() {
   });
 };
 
-/* File menu: Print / Export DOCX / Export PDF, and Ctrl+P. */
+/* DW8: write the open document as a LibreOffice .odt and download it. */
+Writer.export.exportOdt = function exportOdt() {
+  var cfg = Writer.config;
+  if (Writer.editor) Writer.editor.saveSelection();
+  function fail(e) {
+    var msg = (e && (e.userMessage || e.message)) || 'Failed to export ODT.';
+    if (Writer.dialog && Writer.dialog.alert) Writer.dialog.alert({ title: 'Could not export ODT', message: msg });
+    else if (Writer.ui) Writer.ui.showToast('Failed to export ODT');
+  }
+  try {
+    if (!Writer.odtgen || !Writer.odtgen.build) throw new Error('ODT export is not available');
+    var isLandscape = document.body.classList.contains(cfg.landscapeClass);
+    var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
+    var blob = Writer.odtgen.build(Writer.export.combinedHtml(), {
+      landscape: isLandscape,
+      pageWidthCm: isLandscape ? ps.heightCm : ps.widthCm,
+      pageHeightCm: isLandscape ? ps.widthCm : ps.heightCm,
+      margins: { top: cfg.marginTopCm, right: cfg.marginRightCm, bottom: cfg.marginBottomCm, left: cfg.marginLeftCm },
+      defaults: { font: cfg.fontCommandName, sizePt: cfg.fontSizePt, lineHeight: cfg.lineHeight, paraAfterPt: cfg.paragraphSpacingPt }
+    });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (Writer.storage && Writer.storage.currentName()) || (cfg.docxFileName || 'document').replace(/\.docx$/, '');
+    if (a.download.indexOf('.odt') !== a.download.length - 4) a.download += '.odt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, cfg.docxUrlRevokeMs);
+    if (Writer.ui) Writer.ui.showToast('ODT exported successfully');
+  } catch (e) {
+    fail(e);
+  }
+  if (Writer.editor) Writer.editor.restoreSelection();
+};
+
+/* File menu: Print / Export DOCX / Export ODT / Export PDF, and Ctrl+P. */
+/* (before DW8) File menu: Print / Export DOCX / Export PDF, and Ctrl+P. */
 Writer.export.bind = function bind() {
   Writer.ui.onClick('printBtn', function () { Writer.export.printDocument(); });
   Writer.ui.onClick('exportDocxBtn', function () { Writer.export.exportDocx(); });
+  Writer.ui.onClick('exportOdtBtn', function () { Writer.export.exportOdt(); });
   /* Legacy (before MM4): image PDF only.
   Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); }); */
   Writer.ui.onClick('exportPdfBtn', function () { if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download(); });   /* MM4 / DF14 real-text PDF */

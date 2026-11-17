@@ -104,7 +104,8 @@ var cfg = read('apps/office/writer/modules/writer-config.js');
   "storageKeyPageNumberPos: 'writer_page_number_pos'",
   "version: '0.8'",
   /* (before DW7) "release: 'DF25'" */
-  "release: 'DW7'"
+  /* (before DW8) "release: 'DW7'" */
+  "release: 'DW8'"
 ].forEach(function (bit) {
   ok('config still has ' + bit, cfg.indexOf(bit) !== -1);
 });

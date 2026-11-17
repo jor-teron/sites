@@ -55,8 +55,9 @@ Writer.config = {
   /* App version (not shown in the UI). */
   version: '0.8',
   /* (before DW7) release: 'DF25', */
-  /* DW7: release id (also in the page title, Writer DW7). */
-  release: 'DW7',
+  /* (before DW8) release: 'DW7', */
+  /* DW8: release id (also in the page title, Writer DW8). */
+  release: 'DW8',
 
   /* ----- Margins (cm) ----- */
   /* Top page margin. */
