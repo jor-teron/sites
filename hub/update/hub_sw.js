@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261117a';
-const CACHE = 'hub-shell-v175';  // 2026-11-17a: Flyout skips the section step when a category has one section
+const V = '20261117b';
+const CACHE = 'hub-shell-v176';  // 2026-11-17b: Live wallpaper animates on the desktop
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -48,7 +48,7 @@ const SHELL = [
   'hub/core/hub_main.css', 'desktop/controller/hub_controller.css', 'desktop/notify/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'desktop/panels/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css   (H129b: hub/wm, hub/menu → desktop/)   (H129c: → desktop/)
   // (before H64) 'hub/core/hub_role.js', ... 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js
   // (before H129b) 'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js
-  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'desktop/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js   (H129b: hub/wm, hub/menu → desktop/)
+  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/drives/hub_live_wallpaper.js', 'desktop/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js   (H129b: hub/wm, hub/menu → desktop/)   // H158: + hub_live_wallpaper.js (was missing from the shell cache, so a stale desktop.html / first load could run without the engine)
  
   // (before H129b) 'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
   'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js', 'desktop/wm/wm_workspaces.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/

@@ -17,6 +17,12 @@ window.SettingsStore = (function () {
     try { const v = localStorage.getItem(P + k); return v == null || v === '' ? (d == null ? '' : d) : v; } catch (_) { return d == null ? '' : d; }
   }
   function set(k, v) {
+    // H158: no-op when the stored value is already this, so opening a Settings section
+    // (or calling set with the same value) does not re-apply Hub prefs / reset live wallpaper.
+    const next = (v == null || v === '') ? '' : String(v);
+    let prev = '';
+    try { prev = localStorage.getItem(P + k) || ''; } catch (_) { prev = ''; }
+    if (prev === next) return;
     try {
       if (v == null || v === '') localStorage.removeItem(P + k);
       else localStorage.setItem(P + k, String(v));
