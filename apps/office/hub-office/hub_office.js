@@ -11,12 +11,7 @@
       icon: '../writer/writer_icon.png',
       url: 'apps/office/writer/',
       formats: ['.how', '.docx', '.odt', '.txt', '.pdf'],
-      templates: [
-        { label: 'Blank Document', hash: '' },
-        { label: 'Meeting Notes', hash: 'template=notes' },
-        { label: 'Project Proposal', hash: 'template=proposal' },
-        { label: 'Business Letter', hash: 'template=letter' }
-      ]
+      btnLabel: 'Open Writer'
     },
     {
       id: 'spreadsheet',
@@ -26,12 +21,7 @@
       icon: '../spreadsheet/spreadsheet_icon.png',
       url: 'apps/office/spreadsheet/',
       formats: ['.hos', '.xlsx', '.csv', '.tsv'],
-      templates: [
-        { label: 'Blank Workbook', hash: '' },
-        { label: 'Monthly Budget', hash: 'template=budget' },
-        { label: 'Invoice Sheet', hash: 'template=invoice' },
-        { label: 'Expense Tracker', hash: 'template=expenses' }
-      ]
+      btnLabel: 'Open Spreadsheet'
     },
     {
       id: 'slides',
@@ -41,11 +31,7 @@
       icon: '../slides/slides_icon.png',
       url: 'apps/office/slides/',
       formats: ['.hslides', '.pptx'],
-      templates: [
-        { label: 'Blank Presentation', hash: '' },
-        { label: 'Pitch Deck', hash: 'template=pitch' },
-        { label: 'Project Review', hash: 'template=review' }
-      ]
+      btnLabel: 'Open Slides'
     },
     {
       id: 'base',
@@ -55,11 +41,7 @@
       icon: '../base/base_icon.png',
       url: 'apps/office/base/',
       formats: ['Tables', 'Forms', 'Queries'],
-      templates: [
-        { label: 'Blank Database', hash: '' },
-        { label: 'Contacts Database', hash: 'sample=contacts' },
-        { label: 'Inventory System', hash: 'sample=inventory' }
-      ]
+      btnLabel: 'Open Base'
     },
     {
       id: 'tables',
@@ -69,11 +51,7 @@
       icon: '../tables/tables_icon.png',
       url: 'apps/office/tables/',
       formats: ['.hot', '.csv'],
-      templates: [
-        { label: 'Blank Table', hash: '' },
-        { label: 'Task Tracker', hash: 'template=tasks' },
-        { label: 'Product Catalog', hash: 'template=products' }
-      ]
+      btnLabel: 'Open Tables'
     }
   ];
 
@@ -100,46 +78,158 @@
 
   const RECENT_KEY = 'sites-hub.recent-office-docs';
 
-  // Launcher helper: inside Hub OS uses window.parent.__hubOpenApp or postMessage; standalone opens tab/window
-  function openApp(appId, options) {
-    options = options || {};
-    const app = SUITES.find((s) => s.id === appId);
-    if (!app) return;
-    const hash = options.hash ? String(options.hash).replace(/^#/, '') : '';
-    const fullUrl = app.url + (hash ? '#' + hash : '');
-    const absUrl = new URL('../../' + fullUrl, location.href).href;
+  // State: Tab tracking
+  let tabSeq = 0;
+  const appCounters = Object.create(null);
+  const openTabs = [
+    { id: 'start', title: 'Start Page', type: 'start', icon: '🏠' }
+  ];
+  let activeTabId = 'start';
 
-    try {
-      const p = window.parent;
-      if (p && p !== window && typeof p.__hubOpenApp === 'function') {
-        p.__hubOpenApp(app.url, { hash: hash, newInstance: true });
-        return;
-      }
-    } catch (_) {}
-
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'hub-open-app',
-          url: absUrl,
-          name: app.name,
-          newInstance: true
-        }, location.origin === 'null' ? '*' : location.origin);
-        return;
-      }
-    } catch (_) {}
-
-    // Standalone fallback
-    window.open(absUrl, '_blank', 'noopener');
-  }
-
-  // File extension extractor
   function getExt(filename) {
     const m = /\.([^./\\]+)$/.exec(String(filename || ''));
     return m ? m[1].toLowerCase() : '';
   }
 
-  // Route file to corresponding suite app
+  function getAppIcon(appId) {
+    switch (appId) {
+      case 'writer': return '📝';
+      case 'spreadsheet': return '📊';
+      case 'slides': return '📽️';
+      case 'base': return '🗄️';
+      case 'tables': return '📋';
+      default: return '📄';
+    }
+  }
+
+  // Switch between tabs
+  function switchTab(tabId) {
+    if (!openTabs.some((t) => t.id === tabId)) return;
+    activeTabId = tabId;
+
+    if (typeof document !== 'undefined') {
+      const allTabs = document.querySelectorAll('.ho-tab');
+      allTabs.forEach((tab) => {
+        const match = tab.dataset.tabId === tabId;
+        tab.classList.toggle('active', match);
+        tab.setAttribute('aria-selected', match ? 'true' : 'false');
+      });
+
+      const allViews = document.querySelectorAll('.ho-view');
+      allViews.forEach((view) => {
+        const match = view.id === 'view-' + tabId;
+        view.classList.toggle('active', match);
+      });
+    }
+  }
+
+  // Close an active or background document tab
+  function closeTab(tabId) {
+    if (tabId === 'start') return; // Start page is persistent
+
+    const idx = openTabs.findIndex((t) => t.id === tabId);
+    if (idx < 0) return;
+
+    openTabs.splice(idx, 1);
+
+    if (typeof document !== 'undefined') {
+      const tabEl = document.getElementById('tab-btn-' + tabId);
+      if (tabEl) tabEl.remove();
+
+      const viewEl = document.getElementById('view-' + tabId);
+      if (viewEl) viewEl.remove();
+    }
+
+    // If closing the active tab, switch to adjacent or fallback to start
+    if (activeTabId === tabId) {
+      const nextTab = openTabs[Math.max(0, idx - 1)] || openTabs[0];
+      switchTab(nextTab.id);
+    }
+  }
+
+  // Create and mount a new document tab running the suite app
+  function createDocTab(appId, options) {
+    options = options || {};
+    const app = SUITES.find((s) => s.id === appId);
+    if (!app) return null;
+
+    tabSeq++;
+    const tabId = 'doc-' + tabSeq;
+    appCounters[appId] = (appCounters[appId] || 0) + 1;
+
+    const title = options.title || (app.name + ' ' + appCounters[appId]);
+    const hash = options.hash ? ('#' + String(options.hash).replace(/^#/, '')) : '';
+    const icon = getAppIcon(appId);
+
+    const tabRecord = {
+      id: tabId,
+      appId: appId,
+      title: title,
+      icon: icon,
+      url: app.url + hash,
+      type: 'doc'
+    };
+    openTabs.push(tabRecord);
+
+    if (typeof document !== 'undefined') {
+      const tabsList = document.getElementById('ho-tabs-list');
+      const viewsContainer = document.getElementById('ho-views-container');
+
+      if (tabsList && viewsContainer) {
+        // Tab button
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ho-tab';
+        btn.id = 'tab-btn-' + tabId;
+        btn.dataset.tabId = tabId;
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', 'false');
+
+        const ico = document.createElement('span');
+        ico.className = 'ho-tab-icon';
+        ico.textContent = icon;
+
+        const lbl = document.createElement('span');
+        lbl.className = 'ho-tab-title';
+        lbl.textContent = title;
+        lbl.title = title;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'ho-tab-close';
+        closeBtn.setAttribute('aria-label', 'Close ' + title);
+        closeBtn.innerHTML = '&times;';
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTab(tabId);
+        });
+
+        btn.append(ico, lbl, closeBtn);
+        btn.addEventListener('click', () => switchTab(tabId));
+        tabsList.appendChild(btn);
+
+        // View panel with iframe
+        const view = document.createElement('div');
+        view.className = 'ho-view';
+        view.id = 'view-' + tabId;
+        view.setAttribute('role', 'tabpanel');
+        view.setAttribute('aria-labelledby', 'tab-btn-' + tabId);
+
+        const iframe = document.createElement('iframe');
+        iframe.className = 'ho-doc-frame';
+        iframe.title = title;
+        iframe.src = '../../' + app.url + hash;
+
+        view.appendChild(iframe);
+        viewsContainer.appendChild(view);
+      }
+    }
+
+    switchTab(tabId);
+    return tabRecord;
+  }
+
+  // Open file routing: creates a new tab with that file
   function routeFile(file) {
     if (!file) return;
     const ext = getExt(file.name);
@@ -153,7 +243,6 @@
       return;
     }
 
-    const app = SUITES.find((s) => s.id === appId);
     trackRecent({
       name: file.name,
       appId: appId,
@@ -162,11 +251,13 @@
     });
 
     if (window.OfficeNotify) {
-      window.OfficeNotify.show('Opening ' + file.name + ' in ' + app.name + '…');
+      window.OfficeNotify.show('Opening ' + file.name + ' in a new tab…');
     }
 
-    // Launch app
-    openApp(appId, { hash: 'file=' + encodeURIComponent(file.name) });
+    createDocTab(appId, {
+      title: file.name,
+      hash: 'file=' + encodeURIComponent(file.name)
+    });
   }
 
   // Recent files tracking
@@ -229,7 +320,6 @@
     }
   }
 
-  // Format relative time
   function formatTime(ts) {
     if (!ts) return '';
     const diff = Date.now() - ts;
@@ -243,7 +333,6 @@
     return new Date(ts).toLocaleDateString();
   }
 
-  // Format file size
   function formatSize(bytes) {
     if (!bytes || bytes <= 0) return '';
     if (bytes < 1024) return bytes + ' B';
@@ -251,7 +340,7 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  // UI rendering
+  // Filter & Search states for the Start Page
   let currentFilter = 'all';
   let searchQuery = '';
 
@@ -273,11 +362,9 @@
       return true;
     });
 
-    if (currentFilter === 'recent') {
-      document.getElementById('section-suites').style.display = 'none';
-      return;
-    } else {
-      document.getElementById('section-suites').style.display = '';
+    const secSuites = document.getElementById('section-suites');
+    if (secSuites) {
+      secSuites.style.display = currentFilter === 'recent' ? 'none' : '';
     }
 
     filtered.forEach((app) => {
@@ -324,44 +411,17 @@
         fmts.appendChild(b);
       });
 
-      // Actions
+      // Single Clean Action button (templates removed per user direction)
       const actions = document.createElement('div');
       actions.className = 'ho-card-actions';
 
       const btnNew = document.createElement('button');
+      btnNew.type = 'button';
       btnNew.className = 'ho-btn-new';
-      btnNew.innerHTML = '<span>➕</span> <span>New ' + (app.id === 'spreadsheet' ? 'Sheet' : app.name) + '</span>';
-      btnNew.addEventListener('click', () => openApp(app.id));
+      btnNew.innerHTML = '<span>➕</span> <span>' + app.btnLabel + '</span>';
+      btnNew.addEventListener('click', () => createDocTab(app.id));
 
-      const btnTpl = document.createElement('button');
-      btnTpl.className = 'ho-btn-tpl';
-      btnTpl.innerHTML = '<span>▾</span>';
-      btnTpl.title = 'Templates & Starters';
-
-      const tplMenu = document.createElement('div');
-      tplMenu.className = 'ho-tpl-menu';
-      tplMenu.hidden = true;
-
-      app.templates.forEach((tpl) => {
-        const item = document.createElement('button');
-        item.className = 'ho-tpl-item';
-        item.textContent = tpl.label;
-        item.addEventListener('click', (e) => {
-          e.stopPropagation();
-          tplMenu.hidden = true;
-          openApp(app.id, { hash: tpl.hash });
-        });
-        tplMenu.appendChild(item);
-      });
-
-      btnTpl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Close other menus
-        document.querySelectorAll('.ho-tpl-menu').forEach((m) => { if (m !== tplMenu) m.hidden = true; });
-        tplMenu.hidden = !tplMenu.hidden;
-      });
-
-      actions.append(btnNew, btnTpl, tplMenu);
+      actions.appendChild(btnNew);
       card.append(header, desc, fmts, actions);
       grid.appendChild(card);
     });
@@ -405,17 +465,14 @@
       row.className = 'ho-recent-row';
       row.tabIndex = 0;
       row.setAttribute('role', 'button');
-      row.setAttribute('aria-label', 'Open ' + item.name + ' in ' + app.name);
+      row.setAttribute('aria-label', 'Open ' + item.name + ' in a new tab');
 
       const left = document.createElement('div');
       left.className = 'ho-recent-left';
 
       const icon = document.createElement('span');
       icon.className = 'ho-recent-icon';
-      icon.textContent = item.appId === 'writer' ? '📝' :
-                         item.appId === 'spreadsheet' ? '📊' :
-                         item.appId === 'slides' ? '📽️' :
-                         item.appId === 'base' ? '🗄️' : '📋';
+      icon.textContent = getAppIcon(item.appId);
 
       const info = document.createElement('div');
       info.className = 'ho-recent-info';
@@ -441,11 +498,14 @@
       row.append(left, badge);
 
       const launch = () => {
-        if (item.driveRef && window.FsRef && window.FsRef.openIn) {
-          window.FsRef.openIn(app.url, item.driveRef);
-        } else {
-          openApp(item.appId, { hash: 'file=' + encodeURIComponent(item.name) });
+        let hash = 'file=' + encodeURIComponent(item.name);
+        if (item.driveRef && window.FsRef && window.FsRef.hash) {
+          hash = window.FsRef.hash(item.driveRef);
         }
+        createDocTab(item.appId, {
+          title: item.name,
+          hash: hash
+        });
       };
 
       row.addEventListener('click', launch);
@@ -548,15 +608,19 @@
       });
     }
 
-    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
-      document.addEventListener('click', () => {
-        document.querySelectorAll('.ho-tpl-menu').forEach((m) => { m.hidden = true; });
-      });
-    }
-
     const btnRefresh = document.getElementById('btn-refresh-recent');
     if (btnRefresh) {
       btnRefresh.addEventListener('click', () => renderRecents());
+    }
+
+    const btnStart = document.getElementById('tab-btn-start');
+    if (btnStart) {
+      btnStart.addEventListener('click', () => switchTab('start'));
+    }
+
+    const btnAddTab = document.getElementById('btn-add-tab');
+    if (btnAddTab) {
+      btnAddTab.addEventListener('click', () => createDocTab('writer'));
     }
   }
 
@@ -581,7 +645,11 @@
   root.HubOffice = {
     SUITES,
     EXT_MAP,
-    openApp,
+    openTabs,
+    getActiveTabId: () => activeTabId,
+    createDocTab,
+    switchTab,
+    closeTab,
     routeFile,
     getExt,
     formatTime,
