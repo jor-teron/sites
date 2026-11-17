@@ -26,12 +26,16 @@
      that init so the notes pane is restored and the slide is fitted once the canvas is ready. A guard in doFit
      also returns early if the stage is missing, so a similar call cannot abort the ribbon, File menu, slide list
      or deck boot.
-   HOP1: the app is now Presentation; files save as .hop (old .hslides files still open). No JSON format bump. */
+   HOP1: the app is now Presentation; files save as .hop (old .hslides files still open). No JSON format bump.
+   SL11: File → Save / Save As and Ctrl+S (and the Quick Access Save button) flush the localStorage
+     working copy and write or update the bound .hop file through slides_hop.js (OfficeNative).
+     Export .hop and the in-browser deck list stay as they are. No JSON format bump. */
 (function () {
   'use strict';
   /* (before SL10) var VERSION = 'SL9'; */
   /* (before HOP1) var VERSION = 'SL10'; */
-  var VERSION = 'HOP1';   /* legacy: 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  /* (before SL11) var VERSION = 'HOP1'; */
+  var VERSION = 'SL11';   /* legacy: 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -94,6 +98,39 @@
   function askName(title, value, okLabel) {
     return dialog({ title: title, input: { value: value, placeholder: 'Deck name' }, buttons: [{ label: 'Cancel', v: false }, { label: okLabel || 'OK', v: true, cls: 'acc', ok: true }] })
       .then(function (r) { return r && r.v ? (r.text || '').slice(0, 80) : null; });
+  }
+
+  /* SL11: write the bound .hop (or create one). Flush localStorage first. Autosave of the
+     .hop is only for an already-bound file, so it never downloads on each edit. */
+  function detachHop() { if (window.SLHop && SLHop.detach) SLHop.detach(); }
+  function saveHop(opts) {
+    opts = opts || {};
+    if (!deck) return Promise.resolve(false);
+    flushNotes(true);
+    SLSave.saveDeck(deck);
+    var localOk = SLSave.flush() !== false && !SLSave.memOnly;
+    if (!window.SLHop || typeof SLHop.save !== 'function') return Promise.resolve(localOk);
+    function write() {
+      return SLHop.save(opts).then(function (res) {
+        if (res && res.cancelled) return false;
+        if (res && res.wrote && (opts.explicit || opts.saveAs) && window.SlidesHop) {
+          var verb = res.verb || 'Saved';
+          var f = SlidesHop.fileName(res.name || (deck && deck.name));
+          toast((verb === 'Downloaded' ? 'Downloaded ' : (verb + ' ')) + f);
+        }
+        return !!(res && res.wrote) || localOk;
+      }, function () { return false; });
+    }
+    if (window.SLPics && typeof SLPics.hydrate === 'function') {
+      return SLPics.hydrate(deck).then(write, write);
+    }
+    return write();
+  }
+  function autosaveHop() {
+    if (!window.SLHop || !SLHop.dest) return;
+    if (window.SLPics && typeof SLPics.hydrate === 'function') {
+      SLPics.hydrate(deck).then(function () { SLHop.autosave(); }, function () { SLHop.autosave(); });
+    } else SLHop.autosave();
   }
 
   /* ---------- menus ---------- */
@@ -225,7 +262,7 @@
   function newDeck() {
     askName('New deck', uniqueName('Untitled deck'), 'Create').then(function (n) {
       if (n === null) return;
-      SLSave.flush(); showDeck(SLSave.newDeck(n || 'Untitled deck')); status('Saved'); toast('New deck'); SLEdit.focusTitle();
+      SLSave.flush(); detachHop(); showDeck(SLSave.newDeck(n || 'Untitled deck')); status('Saved'); toast('New deck'); SLEdit.focusTitle();
     });
   }
   function fmtDate(ms) { try { return new Date(ms).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (_) { return ''; } }
@@ -238,7 +275,7 @@
       if (!v || v === deck.id) return;
       var d = SLSave.load(v);
       if (!d) { toast('That deck could not be opened'); return; }
-      showDeck(d); toast('Opened “' + d.name + '”');
+      detachHop(); showDeck(d); toast('Opened “' + d.name + '”');
     });
   }
   function renameDeck() {
@@ -254,7 +291,7 @@
       if (!ok) return;
       var id = deck.id, name = deck.name; SLSave.deleteDeck(id);
       var next = SLSave.list()[0], d = next && SLSave.load(next.id);
-      showDeck(d || SLSave.newDeck('Untitled deck'));
+      detachHop(); showDeck(d || SLSave.newDeck('Untitled deck'));
       toast('Deleted “' + name + '”');
     });
   }
@@ -300,7 +337,7 @@
   /* SL3: pictures are written into the file, so wait for them to be loaded from IndexedDB first */
   function exportDeck() { SLSave.flush(); var d = deck; SLPics.hydrate(d).then(function () { var f = SLFile.download(d); toast('Exported ' + f); }); }
   function importParsed(r) {
-    SLSave.flush();
+    SLSave.flush(); detachHop();
     /* pictures go to IndexedDB first, so the deck record stays small */
     return SLPics.storeAll(r.deck.slides).then(function () {
       var d = SLSave.newDeck(uniqueName(r.deck.name), r.deck.slides, r.deck.theme, { master: r.deck.master, sections: r.deck.sections });
@@ -816,6 +853,8 @@
     var b = e.target.closest('button'); if (!b) return; closeMenus();
     var a = b.dataset.a;
     if (a === 'new') newDeck(); else if (a === 'open') openDeck(); else if (a === 'rename') renameDeck();
+    else if (a === 'save') saveHop({ explicit: true });
+    else if (a === 'saveas') saveHop({ explicit: true, saveAs: true });
     else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); }
     else if (a === 'importpptx') { $('pptx-in').value = ''; $('pptx-in').click(); }
     else if (a === 'export') exportDeck(); else if (a === 'pptx') exportPptx(); else if (a === 'png') exportPng();
@@ -1215,7 +1254,8 @@
     app: 'Presentation',
     undo: function () { if (!blocked()) swap(undo, redo, 'Undo'); }, redo: function () { if (!blocked()) swap(redo, undo, 'Redo'); },
     canUndo: function () { return !!deck && undo.length > 0; }, canRedo: function () { return !!deck && redo.length > 0; },
-    save: function () { if (!deck) return false; SLSave.saveDeck(deck); return SLSave.flush() !== false && !SLSave.memOnly; },
+    /* (before SL11) Save / Ctrl+S only flushed localStorage: SLSave.saveDeck(deck); return SLSave.flush() !== false && !SLSave.memOnly; */
+    save: function () { return saveHop({ explicit: true }); },
     canSave: function () { return !!deck; },
     print: function () { if (!blocked()) printWithHidden(false, false); },
     /* Ctrl+Z / Y: the app undo outside the text boxes; inside them (and in dialogs) the browser's own text undo */
@@ -1252,6 +1292,50 @@
     if (!d) { var f = SLSave.list()[0]; d = f && SLSave.load(f.id); }
     if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Presentation', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);   /* (before HOP1) title: 'Welcome to Slides' · legacy (SL1 – SL3): …Add slides with ＋ Slide */
     showDeck(d); if (!SLSave.memOnly) status('Saved');
+    if (window.SlidesHop && !window.SLHop) {
+      SlidesHop.install({
+        capture: function () { return deck; },
+        apply: function (doc) {
+          if (window.SLHop) SLHop.skipWrite = true;
+          var r = { deck: doc, cut: doc && doc.cut };
+          var done = function (opened) {
+            if (window.SLHop) {
+              SLHop.skipWrite = false;
+              if (opened && opened.name && SLHop.noteStem) SLHop.noteStem(opened.name);
+            }
+          };
+          importParsed(r).then(done, function () { done(); });
+        },
+        toast: function (msg) { toast(msg); },
+        currentName: function () { return deck ? deck.name : ''; },
+        setName: function (name) {
+          /* skip while a hash / File open is still applying (the new deck already has its name) */
+          if (window.SLHop && SLHop.skipWrite) return;
+          if (!deck || !name || name === deck.name) return;
+          deck.name = name;
+          $('deck-name').textContent = name;
+          document.title = name + ' · Presentation ' + VERSION;
+          if (window.SLHub) SLHub.title();
+        },
+        noteSaved: function (res) {
+          var verb = res && res.verb ? res.verb : 'Saved';
+          if (!SLSave.memOnly) status(verb === 'Downloaded' ? 'Downloaded' : 'Saved');
+        },
+        noteFailed: function (err) {
+          status('Not saved', true);
+          toast((err && (err.userMessage || err.message)) || 'Could not save');
+        },
+        promptName: function (cur) { return askName('Save as', cur || (deck && deck.name) || '', 'Save'); }
+      });
+    }
+    if (window.SLHop) {
+      SLHop.bind();
+      SLHop.openFromHash();
+      addEventListener('pagehide', autosaveHop);
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') autosaveHop();
+      });
+    }
     /* SL3: a few seconds after start, drop stored pictures that no deck uses any more */
     if (!SLSave.memOnly) setTimeout(function () { var keep = SLSave.picKeys(); deck.slides.forEach(function (s) { (s.pics || []).forEach(function (p) { if (p.key) keep[p.key] = 1; }); }); SLPics.gc(keep); }, 4000);
   })();
