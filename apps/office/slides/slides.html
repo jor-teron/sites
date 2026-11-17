@@ -12,8 +12,12 @@
   Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
   body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
   browser's print window; PDF = "Save as PDF" there, with an in-app hint).
-  HOP1 (this release): the app is now Presentation; files save as .hop (old .hslides files still open).
-  The JSON format is unchanged (hub-slides version 6). Cache tags are ?v=HOP1.
+  SL11 (this release): File → Save / Save As and Ctrl+S write the .hop file to the device (Hub
+  Documents, the save picker, or a download on phones), through ../shared/office-native.js. Export .hop
+  and the in-browser deck list stay as they are. The JSON format is unchanged (hub-slides version 6).
+  Cache tags are ?v=SL11.
+  Legacy (HOP1): the app is now Presentation; files save as .hop (old .hslides files still open).
+  The JSON format is unchanged (hub-slides version 6). Cache tags were ?v=HOP1.
   Legacy (SL10): the editor no longer crashes at start when the notes pane is restored before the canvas is
   ready. The Office ribbon, File menu, slide list and deck all initialise, and the 16:9 slide is fitted once the
   canvas exists. The .hslides format is unchanged.
@@ -40,12 +44,15 @@
   <meta name="color-scheme" content="light dark">
   <!-- (before SL10) <title>Slides SL9</title> -->
   <!-- (before HOP1) <title>Slides SL10</title> -->
-  <title>Presentation HOP1</title><!-- legacy: <title>Slides SL10</title> · <title>Slides SL9</title> · <title>Slides SL8</title> · <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
+  <!-- (before SL11) <title>Presentation HOP1</title> -->
+  <title>Presentation SL11</title><!-- legacy: <title>Presentation HOP1</title> · <title>Slides SL10</title> · <title>Slides SL9</title> · <title>Slides SL8</title> · <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
+  <link rel="stylesheet" href="../shared/office-dialog.css">
   <!-- (before HOP1) slides.css?v=SL9 and every script ?v=SL9 -->
-  <link rel="stylesheet" href="slides.css?v=HOP1">
+  <!-- (before SL11) slides.css?v=HOP1 and every script ?v=HOP1 -->
+  <link rel="stylesheet" href="slides.css?v=SL11">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -53,7 +60,7 @@
   <!-- SL4: Office top row (shared ../shared/office-ribbon.*): Quick Access (HO1, ../shared/office-quick.js) | File | tabs | deck name | ⚙.
        Legacy (SL1 - SL3): <header id="top"> with the deck button (#b-deck ▾ deck menu), ＋ Slide ▾, Layout, Picture, Theme, ▲▼, ⋯, ▶ Present, ⚙. -->
   <header id="top" class="of-topbar">
-    <button type="button" id="b-deck" class="of-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-deck" title="File: decks, import, export, print, PDF">File</button>
+    <button type="button" id="b-deck" class="of-file-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-deck" title="File: save, decks, import, export, print, PDF">File</button>
     <div class="of-tabs" id="of-tabs" role="tablist" aria-label="Ribbon"></div>
     <button type="button" id="b-name" class="deck-btn" title="Rename deck"><span id="deck-name">Presentation</span></button><!-- (before HOP1) deck-name: Slides -->
     <span id="saved" class="mut" aria-live="polite"></span>
@@ -256,6 +263,10 @@
     <button type="button" role="menuitem" data-a="open">📂 Open deck…</button>
     <button type="button" role="menuitem" data-a="rename">✎ Rename deck…</button>
     <div class="sep"></div>
+    <!-- (before SL11) no Save / Save As; a .hop file was Export only -->
+    <button type="button" role="menuitem" id="btn-save" data-a="save">💾 Save <small>Ctrl+S</small></button>
+    <button type="button" role="menuitem" id="btn-save-as" data-a="saveas">💾 Save As…</button>
+    <div class="sep"></div>
     <!-- (before HOP1) Import .hslides… / Export .hslides -->
     <button type="button" role="menuitem" data-a="import">⬆ Import .hop…</button>
     <button type="button" role="menuitem" data-a="importpptx">⬆ Import .pptx…</button>
@@ -322,7 +333,7 @@
         <span><kbd>Ctrl</kbd>+<kbd>L</kbd> <kbd>E</kbd> <kbd>R</kbd> Align left / centre / right</span>
         <span><kbd>↑</kbd> <kbd>↓</kbd> Previous / next slide (in the slide list)</span>
         <span><kbd>Alt</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> Move the slide</span>
-        <span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save now (✓ Saved)</span>
+        <span><kbd>Ctrl</kbd>+<kbd>S</kbd> Save now (the .hop file, and the copy in this browser; ✓ Saved)</span>
         <span><kbd>Ctrl</kbd>+<kbd>P</kbd> Print (one 16:9 page per slide; also Save as PDF)</span>
         <span><kbd>Esc</kbd> Close a menu or dialog</span>
       </div>
@@ -356,9 +367,10 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Presentation</b><!-- (before HOP1) <b>Hub Office Slides</b> --> <!-- (before SL10) <span id="ver">SL9</span> --><span id="ver">HOP1</span><!-- legacy: SL10 · SL9 · SL8 · SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
+        <div><b>Hub Office Presentation</b><!-- (before HOP1) <b>Hub Office Slides</b> --> <!-- (before SL10) <span id="ver">SL9</span> --><!-- (before SL11) <span id="ver">HOP1</span> --><span id="ver">SL11</span><!-- legacy: HOP1 · SL10 · SL9 · SL8 · SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
-            Export a deck as a .hop file (open JSON, pictures inside) to back it up or move it to another device. Old .hslides files still open. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
+            File → Save / Save As and Ctrl+S write a .hop file (open JSON, pictures inside) to Documents in the Hub, a folder you choose, or a download on phones. Export .hop still downloads a fresh copy. Old .hslides files still open. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
+          <p>SL11: Save and Save As write the .hop file to the device (and Hub Documents). Ctrl+S updates that file and the copy in this browser. Export .hop is unchanged. The JSON format is unchanged (hub-slides version 6).</p>
           <p>HOP1: the app is now Presentation. Decks save and export as .hop files; existing .hslides files still open. The JSON format is unchanged (hub-slides version 6).</p>
           <p>SL10: the editor starts even when the notes pane is restored before the canvas is ready. The ribbon, File menu, slide list and deck all load, and the slide is fitted once the canvas exists.</p>
           <p>SL9: export and import a PowerPoint (.pptx) file (best-effort), and export this slide or all slides as PNG (all in a zip). The .hslides format is unchanged.</p>
@@ -467,24 +479,29 @@
 <div id="pop-table" class="fmt-pop table-pop" hidden role="dialog" aria-label="Insert a table"></div>
 <!-- SL4 print view: filled just before printing (slides_print.js), one 16:9 page per slide; empty on screen -->
 <div id="print" aria-hidden="true"></div>
+<script src="../../../shared/fs/fs_drives.js"></script>
+<script src="../../../shared/fs/fs_ops.js"></script>
+<script src="../../../shared/fs/fs_ref.js"></script>
+<script src="../shared/office-native.js"></script>
 <script src="../shared/office-ribbon.js"></script>
 <script src="../shared/office-hubbar.js"></script>
 <script src="../shared/office-quick.js"></script>
-<script src="slides_pics.js?v=HOP1"></script>
-<script src="slides_text.js?v=HOP1"></script>
-<script src="slides_draw.js?v=HOP1"></script>
-<script src="slides_present.js?v=HOP1"></script>
-<script src="slides_master.js?v=HOP1"></script>
-<script src="slides_save.js?v=HOP1"></script>
-<script src="slides_file.js?v=HOP1"></script>
-<script src="slides_edit.js?v=HOP1"></script>
-<script src="slides_show.js?v=HOP1"></script>
-<script src="slides_list.js?v=HOP1"></script>
-<script src="slides_print.js?v=HOP1"></script>
-<script src="slides_zip.js?v=HOP1"></script>
-<script src="slides_pptx.js?v=HOP1"></script>
-<script src="slides_png.js?v=HOP1"></script>
-<script src="slides_hub.js?v=HOP1"></script>
-<script src="slides_app.js?v=HOP1"></script>
+<script src="slides_pics.js?v=SL11"></script>
+<script src="slides_text.js?v=SL11"></script>
+<script src="slides_draw.js?v=SL11"></script>
+<script src="slides_present.js?v=SL11"></script>
+<script src="slides_master.js?v=SL11"></script>
+<script src="slides_save.js?v=SL11"></script>
+<script src="slides_file.js?v=SL11"></script>
+<script src="slides_hop.js?v=SL11"></script>
+<script src="slides_edit.js?v=SL11"></script>
+<script src="slides_show.js?v=SL11"></script>
+<script src="slides_list.js?v=SL11"></script>
+<script src="slides_print.js?v=SL11"></script>
+<script src="slides_zip.js?v=SL11"></script>
+<script src="slides_pptx.js?v=SL11"></script>
+<script src="slides_png.js?v=SL11"></script>
+<script src="slides_hub.js?v=SL11"></script>
+<script src="slides_app.js?v=SL11"></script>
 </body>
 </html>
