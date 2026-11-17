@@ -108,6 +108,7 @@ test('createDocTab opens new tab and switches active view', () => {
   assert.ok(tab);
   assert.equal(tab.title, 'Draft Notes');
   assert.equal(tab.appId, 'writer');
+  assert.equal(tab.url, '../writer/');
   assert.equal(HO.openTabs.length, 2);
   assert.equal(HO.getActiveTabId(), tab.id);
 

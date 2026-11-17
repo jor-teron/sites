@@ -9,7 +9,8 @@
       tagline: 'Word Processor & Documents',
       desc: 'Full-featured word processor with A4 page layout, rich typography, tables, and native .how file support.',
       icon: '../writer/writer_icon.png',
-      url: 'apps/office/writer/',
+      url: '../writer/',
+      rootUrl: 'apps/office/writer/',
       formats: ['.how', '.docx', '.odt', '.txt', '.pdf'],
       btnLabel: 'Open Writer'
     },
@@ -19,7 +20,8 @@
       tagline: 'Calculations & Analysis',
       desc: 'Formulas, multi-sheet calculation, cell styling, CSV/XLSX import and export with native .hos files.',
       icon: '../spreadsheet/spreadsheet_icon.png',
-      url: 'apps/office/spreadsheet/',
+      url: '../spreadsheet/',
+      rootUrl: 'apps/office/spreadsheet/',
       formats: ['.hos', '.xlsx', '.csv', '.tsv'],
       btnLabel: 'Open Spreadsheet'
     },
@@ -29,7 +31,8 @@
       tagline: 'Presentations & Slide Decks',
       desc: 'Create 16:9 slide decks with rich formatting, full-screen presentation mode, and .hslides export.',
       icon: '../slides/slides_icon.png',
-      url: 'apps/office/slides/',
+      url: '../slides/',
+      rootUrl: 'apps/office/slides/',
       formats: ['.hslides', '.pptx'],
       btnLabel: 'Open Slides'
     },
@@ -39,7 +42,8 @@
       tagline: 'Relational Database',
       desc: 'Structured database application: tables, forms, and queries with relationships like Microsoft Access.',
       icon: '../base/base_icon.png',
-      url: 'apps/office/base/',
+      url: '../base/',
+      rootUrl: 'apps/office/base/',
       formats: ['Tables', 'Forms', 'Queries'],
       btnLabel: 'Open Base'
     },
@@ -49,7 +53,8 @@
       tagline: 'Structured Data Grid',
       desc: 'Lightweight spreadsheet-style database with typed columns, sorting, filtering, and native .hot files.',
       icon: '../tables/tables_icon.png',
-      url: 'apps/office/tables/',
+      url: '../tables/',
+      rootUrl: 'apps/office/tables/',
       formats: ['.hot', '.csv'],
       btnLabel: 'Open Tables'
     }
@@ -218,7 +223,7 @@
         const iframe = document.createElement('iframe');
         iframe.className = 'ho-doc-frame';
         iframe.title = title;
-        iframe.src = '../../' + app.url + hash;
+        iframe.src = app.url + hash;
 
         view.appendChild(iframe);
         viewsContainer.appendChild(view);
@@ -237,8 +242,10 @@
     if (!appId) {
       if (window.OfficeNotify) {
         window.OfficeNotify.show('Unrecognized office file format: .' + ext);
+      } else if (window.OfficeDialog && window.OfficeDialog.alert) {
+        window.OfficeDialog.alert({ message: 'Unrecognized office file format: .' + ext });
       } else {
-        alert('Unrecognized office file format: .' + ext);
+        console.warn('Unrecognized office file format: .' + ext);
       }
       return;
     }
