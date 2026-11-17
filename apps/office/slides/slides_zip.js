@@ -1,7 +1,11 @@
 /* Hub Office Slides SL9 — tiny ZIP helper (SLZip). No DOM, safe to load in Node.
    Store (method 0) pack / unpack, used for .pptx export and PNG zip. PPTX files from
    PowerPoint are usually deflated: unpack() reports needsInflate, and loadJSZip() lazy-loads
-   a JSZip already vendored in this repo (no CDN, no copy). */
+   a JSZip already vendored in this repo (no CDN, no copy).
+   PN2: pack() also accepts { path: { data, flags } } or [{ name, data, flags }].
+   flags defaults to 0x0800 (UTF-8 names). Pass 0 for an ODF mimetype entry
+   (stored, no extra field, first in the archive). A file named mimetype
+   defaults to flags 0. */
 (function (root) {
   'use strict';
   var JSPATHS = ['../../../shared/vendor/jszip.min.js', '../ocr/vendor/jszip.min.js'];
@@ -50,18 +54,39 @@
       date: ((year - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()
     };
   }
-  /* files: { path: string|Uint8Array } → Uint8Array (store only) */
+  function isBytes(x) {
+    if (x == null || typeof x === 'string') return true;
+    if (x instanceof Uint8Array || x instanceof ArrayBuffer) return true;
+    return false;
+  }
+  function asEntry(name, v) {
+    if (v && typeof v === 'object' && !isBytes(v) && Object.prototype.hasOwnProperty.call(v, 'data')) {
+      return { name: name, data: v.data, flags: v.flags };
+    }
+    return { name: name, data: v };
+  }
+  /* files: { path: string|Uint8Array|{ data, flags } } or [{ name, data, flags }] → Uint8Array (store only) */
   function pack(files) {
-    var names = Object.keys(files || {}), parts = [], central = [], offset = 0, stamp = dosStamp(), i;
-    if (names.length > 65535) throw new Error('Too many files for a ZIP');
-    for (i = 0; i < names.length; i++) {
-      var name = names[i].replace(/^\/+/, '').replace(/\\/g, '/');
-      var data = u8(files[names[i]]);
+    var entries, parts = [], central = [], offset = 0, stamp = dosStamp(), i;
+    if (Array.isArray(files)) {
+      entries = [];
+      for (i = 0; i < files.length; i++) entries.push({ name: files[i].name, data: files[i].data, flags: files[i].flags });
+    } else {
+      entries = Object.keys(files || {}).map(function (n) { return asEntry(n, files[n]); });
+    }
+    if (entries.length > 65535) throw new Error('Too many files for a ZIP');
+    for (i = 0; i < entries.length; i++) {
+      var name = String(entries[i].name || '').replace(/^\/+/, '').replace(/\\/g, '/');
+      var data = u8(entries[i].data);
       var nb = u8(name), crc = crc32(data);
+      /* (before PN2) var flags = 0x0800; */
+      /* PN2: mimetype in an .odp must be stored with flags 0 and no extra field. */
+      var flags = entries[i].flags != null ? entries[i].flags : (name === 'mimetype' ? 0 : 0x0800);
       var lh = new DataView(new ArrayBuffer(30));
       lh.setUint32(0, 0x04034b50, true);
       lh.setUint16(4, 20, true);
-      lh.setUint16(6, 0x0800, true);
+      /* (before PN2) lh.setUint16(6, 0x0800, true); */
+      lh.setUint16(6, flags, true);
       lh.setUint16(8, 0, true);
       lh.setUint16(10, stamp.time, true);
       lh.setUint16(12, stamp.date, true);
@@ -75,7 +100,8 @@
       ch.setUint32(0, 0x02014b50, true);
       ch.setUint16(4, 20, true);
       ch.setUint16(6, 20, true);
-      ch.setUint16(8, 0x0800, true);
+      /* (before PN2) ch.setUint16(8, 0x0800, true); */
+      ch.setUint16(8, flags, true);
       ch.setUint16(10, 0, true);
       ch.setUint16(12, stamp.time, true);
       ch.setUint16(14, stamp.date, true);
@@ -91,8 +117,8 @@
     for (i = 0; i < central.length; i++) cdSize += central[i].length;
     var end = new DataView(new ArrayBuffer(22));
     end.setUint32(0, 0x06054b50, true);
-    end.setUint16(8, names.length, true);
-    end.setUint16(10, names.length, true);
+    end.setUint16(8, entries.length, true);
+    end.setUint16(10, entries.length, true);
     end.setUint32(12, cdSize, true);
     end.setUint32(16, offset, true);
     parts = parts.concat(central, [new Uint8Array(end.buffer)]);

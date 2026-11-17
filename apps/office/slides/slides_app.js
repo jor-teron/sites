@@ -32,14 +32,17 @@
      Export .hop and the in-browser deck list stay as they are. No JSON format bump.
    PN1: File → Import .pptx / .odp… (or drop a .odp, or a Hub #drive=&file= link ending .odp)
      opens a LibreOffice presentation through slides_odp.js (SLOdp + SLZip). Saving stays .hop.
-     No JSON format bump. */
+     No JSON format bump.
+   PN2: File → Export .odp… writes a LibreOffice presentation through slides_odpgen.js
+     (SLOdpgen + SLZip). Saving stays .hop. No JSON format bump. */
 (function () {
   'use strict';
   /* (before SL10) var VERSION = 'SL9'; */
   /* (before HOP1) var VERSION = 'SL10'; */
   /* (before SL11) var VERSION = 'HOP1'; */
+  /* (before PN2) var VERSION = 'PN1'; */
   /* (before PN1) var VERSION = 'SL11'; */
-  var VERSION = 'PN1';   /* legacy: 'SL11' · 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  var VERSION = 'PN2';   /* legacy: 'SL11' · 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -404,6 +407,22 @@
       toast('Exported ' + name);
     }).catch(function (e) {
       dialog({ title: 'Could not export PowerPoint', msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+    });
+  }
+  function exportOdp() {
+    SLSave.flush();
+    var d = deck;
+    return SLPics.hydrate(d).then(function () {
+      var built = SLOdpgen.build(d);
+      var bytes = SLZip.pack(built.files);
+      var name = (SLFile.safeName(d.name) || 'slides') + '.odp';
+      downloadBlob(name, new Blob([bytes], { type: 'application/vnd.oasis.opendocument.presentation' }));
+      if (built.warnings && built.warnings.length) {
+        return warnMsg('Exported ' + name, 'The LibreOffice file was saved. Some parts were left out:', built.warnings);
+      }
+      toast('Exported ' + name);
+    }).catch(function (e) {
+      dialog({ title: 'Could not export LibreOffice presentation', msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
     });
   }
   function importPptxFile(file) {
@@ -891,7 +910,7 @@
     else if (a === 'saveas') saveHop({ explicit: true, saveAs: true });
     else if (a === 'import') { $('file-in').value = ''; $('file-in').click(); }
     else if (a === 'importpptx') { $('pptx-in').value = ''; $('pptx-in').click(); }
-    else if (a === 'export') exportDeck(); else if (a === 'pptx') exportPptx(); else if (a === 'png') exportPng();
+    else if (a === 'export') exportDeck(); else if (a === 'pptx') exportPptx(); else if (a === 'odp') exportOdp(); else if (a === 'png') exportPng();
     else if (a === 'deldeck') deleteDeck();
     else if (a === 'show0') present(true); else if (a === 'showcur') present(false);
     else if (a === 'print') printWithHidden(false, false); else if (a === 'printnotes') printNotes(); else if (a === 'pdf') exportPdf(); else if (a === 'settings') openSettings();
@@ -912,7 +931,7 @@
     else if (a === 'addlay') openPick('add'); else if (a === 'lay') openPick('layout'); else if (a === 'theme') openPick('theme'); else if (a === 'pic') pickPicture(); else if (a === 'tbox') addTextBox();
     else if (a === 'shape') openShapePop($('b-shape') || $('b-more')); else if (a === 'table') openTablePop($('b-table') || $('b-more'));
     else if (a === 'undo') swap(undo, redo, 'Undo'); else if (a === 'redo') swap(redo, undo, 'Redo');
-    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pv') presentView(false); else if (a === 'notes') toggleNotes(); else if (a === 'master') openMaster(); else if (a === 'hide') toggleHide(); else if (a === 'sec') addSectionAt(); else if (a === 'pptx') exportPptx(); else if (a === 'png') exportPng(); else if (a === 'pdf') exportPdf(); else if (a === 'printnotes') printNotes();
+    else if (a === 'show0') present(true); else if (a === 'showcur') present(false); else if (a === 'pv') presentView(false); else if (a === 'notes') toggleNotes(); else if (a === 'master') openMaster(); else if (a === 'hide') toggleHide(); else if (a === 'sec') addSectionAt(); else if (a === 'pptx') exportPptx(); else if (a === 'odp') exportOdp(); else if (a === 'png') exportPng(); else if (a === 'pdf') exportPdf(); else if (a === 'printnotes') printNotes();
   });
   /* SL4 ribbon buttons (the rest keep their SL1 - SL3 ids and handlers above) */
   $('b-name').onclick = renameDeck;
