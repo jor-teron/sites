@@ -23,7 +23,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261118c';
+  const V = '20261118d';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',

@@ -143,6 +143,16 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 .gb-qbtn:focus-visible { outline: 2px solid var(--accent, #4c8dff); outline-offset: -2px; }
 .gb-qbtn:disabled, .gb-qbtn.gb-qbtn-off { opacity: 0.35; cursor: default; }
 .gb-qlabel { font-size: calc(var(--wm-title-h) * 0.44); }
+/* H162: plain title-bar text (status). Normal contrast, no click, ellipsis when tight. */
+.gb-qtext {
+  flex: 0 1 auto; min-width: 0; max-width: calc(var(--wm-title-h) * 12);
+  height: 100%; display: inline-flex; align-items: center;
+  padding: 0 calc(var(--wm-title-h) * 0.28);
+  color: inherit; opacity: 1;
+  font: inherit; font-size: calc(var(--wm-title-h) * 0.44); line-height: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: default; pointer-events: none;
+}
 /* H110 align:'left': buttons right after the title, spare space after them (still drags) */
 .wm-win:has(.wm-gb.gb-qa-left) .wm-title { flex: 0 1 auto; min-width: 0; max-width: 40%; }
 .wm-gb.gb-qa-left { flex: 1 1 auto; }
