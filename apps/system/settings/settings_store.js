@@ -7,6 +7,7 @@
  *   hoverFocus (wm_windows.js), snapEdges + snapMagnet (wm_snap.js, hub/osk/osk_drag.js), workspaces (wm_workspaces.js), filesClick + filesThumbs (Files app), netThumbs (H122: Files on network drives),
  *   H52: bar* (Hub bar switches, hub_prefs.js; sec_hubbar.js) and updEvery (Auto update every N days, hub_update.js; sec_about.js),
  *   H144: askClose + showFsBtn (default on, '0' = off; sec_desktop.js; wm_taskbar.js HubCloseGuard / #wm-fs).
+ *   H160: deskClock ('1' = on, default off), deskClockSize, deskClockPos (sec_desktop.js; hub_clock.js).
  * Also paints this app's own accent / theme so Settings matches the Hub.
  */
 window.SettingsStore = (function () {
