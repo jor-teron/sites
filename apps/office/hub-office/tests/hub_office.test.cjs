@@ -46,7 +46,7 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('SUITES definitions cover all 5 office applications', () => {
+test('SUITES definitions cover all 5 office applications with clean action labels', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
   assert.equal(HO.SUITES.length, 5);
@@ -58,8 +58,8 @@ test('SUITES definitions cover all 5 office applications', () => {
     assert.ok(suite.name, 'suite has name');
     assert.ok(suite.url, 'suite has url');
     assert.ok(suite.icon, 'suite has icon');
+    assert.ok(suite.btnLabel, 'suite has clean button label');
     assert.ok(Array.isArray(suite.formats) && suite.formats.length > 0, 'suite has formats');
-    assert.ok(Array.isArray(suite.templates) && suite.templates.length > 0, 'suite has templates');
   });
 });
 
@@ -93,43 +93,54 @@ test('getExt extracts lowercase extension', () => {
   assert.equal(HO.getExt('noext'), '');
 });
 
-test('openApp routes through window.parent.__hubOpenApp inside Hub', () => {
-  let calledUrl = null;
-  let calledOpts = null;
-  const parent = {
-    __hubOpenApp: (url, opts) => {
-      calledUrl = url;
-      calledOpts = opts;
-    }
-  };
-
-  const HO = loadScript({
-    parent: parent
-  });
-
-  HO.openApp('writer', { hash: 'template=notes' });
-  assert.equal(calledUrl, 'apps/office/writer/');
-  assert.equal(calledOpts.hash, 'template=notes');
-  assert.equal(calledOpts.newInstance, true);
+test('Persistent Start Page tab is initialized by default', () => {
+  const HO = loadScript();
+  assert.equal(HO.openTabs.length, 1);
+  assert.equal(HO.openTabs[0].id, 'start');
+  assert.equal(HO.openTabs[0].title, 'Start Page');
+  assert.equal(HO.getActiveTabId(), 'start');
 });
 
-test('openApp falls back to window.parent.postMessage when __hubOpenApp missing', () => {
-  const messages = [];
-  const parent = {
-    postMessage: (msg, origin) => {
-      messages.push({ msg, origin });
-    }
-  };
+test('createDocTab opens new tab and switches active view', () => {
+  const HO = loadScript();
+  const tab = HO.createDocTab('writer', { title: 'Draft Notes' });
 
-  const HO = loadScript({
-    parent: parent
-  });
+  assert.ok(tab);
+  assert.equal(tab.title, 'Draft Notes');
+  assert.equal(tab.appId, 'writer');
+  assert.equal(HO.openTabs.length, 2);
+  assert.equal(HO.getActiveTabId(), tab.id);
 
-  HO.openApp('spreadsheet');
-  assert.equal(messages.length, 1);
-  assert.equal(messages[0].msg.type, 'hub-open-app');
-  assert.equal(messages[0].msg.name, 'Spreadsheet');
-  assert.equal(messages[0].msg.newInstance, true);
+  // Switch back to start page
+  HO.switchTab('start');
+  assert.equal(HO.getActiveTabId(), 'start');
+
+  // Switch back to writer tab
+  HO.switchTab(tab.id);
+  assert.equal(HO.getActiveTabId(), tab.id);
+});
+
+test('closeTab closes document tab and refuses to close Start tab', () => {
+  const HO = loadScript();
+  const tab1 = HO.createDocTab('writer');
+  const tab2 = HO.createDocTab('spreadsheet');
+  assert.equal(HO.openTabs.length, 3);
+  assert.equal(HO.getActiveTabId(), tab2.id);
+
+  // Close tab2 -> should activate previous tab1
+  HO.closeTab(tab2.id);
+  assert.equal(HO.openTabs.length, 2);
+  assert.equal(HO.getActiveTabId(), tab1.id);
+
+  // Close tab1 -> should fallback to 'start'
+  HO.closeTab(tab1.id);
+  assert.equal(HO.openTabs.length, 1);
+  assert.equal(HO.getActiveTabId(), 'start');
+
+  // Attempting to close 'start' tab does nothing (pinned)
+  HO.closeTab('start');
+  assert.equal(HO.openTabs.length, 1);
+  assert.equal(HO.getActiveTabId(), 'start');
 });
 
 test('formatTime and formatSize return expected readable strings', () => {
