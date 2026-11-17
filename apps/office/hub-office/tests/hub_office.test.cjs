@@ -71,7 +71,7 @@ test('SUITES definitions cover all 5 office applications with clean action label
   assert.deepEqual(JSON.parse(JSON.stringify(slides.formats)), ['.hop', '.hslides', '.pptx', '.odp']);
 
   const base = HO.SUITES.find((s) => s.id === 'base');
-  assert.deepEqual(JSON.parse(JSON.stringify(base.formats)), ['.hob', 'Tables', 'Forms', 'Queries']);
+  assert.deepEqual(JSON.parse(JSON.stringify(base.formats)), ['.hob', '.odb', 'Tables', 'Forms', 'Queries']);
 });
 
 test('EXT_MAP routes all expected extensions to matching suites', () => {
@@ -95,6 +95,7 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
 
   assert.equal(HO.EXT_MAP.hob, 'base');
   assert.equal(HO.EXT_MAP.hbase, 'base');
+  assert.equal(HO.EXT_MAP.odb, 'base');
   assert.equal(HO.EXT_MAP.db, 'base');
   assert.equal(HO.EXT_MAP.base, 'base');
 });

@@ -12,6 +12,7 @@
  *   Restore can replace everything (not undoable) or add a remapped copy (undoable).
  *   SheetJS: ../spreadsheet/vendor/sheetjs/xlsx.full.min.js
  *   sql.js (already in the repo, not copied): ../../tools/db-browser/vendor/sqljs/
+ *   BS11: LibreOffice .odb import (tables and rows from HSQLDB database/script, via modules/base_odb.js; JSZip from shared/vendor).
  *
  * Pure helpers (pack, parse, remap, tablesFromJson / FromAoA / FromSql) have no DOM
  * and are safe to load in Node. Caps: 20 imported tables, 5 000 rows each.
@@ -26,7 +27,8 @@
   var CAPS = { tables: 20, rows: 5000 };
   var XLSX_SRC = "../spreadsheet/vendor/sheetjs/xlsx.full.min.js";
   var SQL_DIR = "../../tools/db-browser/vendor/sqljs/";
-  var xlsxLoading = null, sqlLoading = null;
+  var xlsxLoading = null, sqlLoading = null, zipLoading = null;
+  var JSZIP_SRC = ["../../../shared/vendor/jszip.min.js", "../ocr/vendor/jszip.min.js"];
 
   function toast(m, ms) { try { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(m, ms || 3500); } catch (e) {} }
   function copy(x) { return JSON.parse(JSON.stringify(x)); }
@@ -221,6 +223,30 @@
     });
     return tablesFromAoA(sheets);
   }
+  /* BS11: BaseOdb.parse result → the same { tables, notes } shape applyTables uses. */
+  function tablesFromOdb(parsed) {
+    var notes = { cutRows: 0, cutSheets: 0, warnings: [] };
+    var out = [];
+    ((parsed && parsed.tables) || []).forEach(function (t, i) {
+      if (out.length >= CAPS.tables) { notes.cutSheets++; return; }
+      var cols = t.columns || [];
+      var fields = cols.map(function (c) { return [c.name || "Field", c.type || "text"]; });
+      var body = capRows(t.rows || [], notes).rows;
+      var data = body.map(function (r) {
+        var o = [], c, typ, raw;
+        for (c = 0; c < fields.length; c++) {
+          typ = fields[c][1];
+          raw = r && r[c];
+          if (raw === null || raw === undefined) o.push(typ === "bool" ? false : "");
+          else o.push(cast(raw, typ));
+        }
+        return o;
+      });
+      out.push({ name: ((t.name || ("Table " + (i + 1))).trim() || "Table"), fields: fields, rows: data });
+    });
+    if (parsed && parsed.warnings && parsed.warnings.length) notes.warnings = parsed.warnings.slice();
+    return { tables: out, notes: notes };
+  }
 
   function cellText(t, f, row) {
     var v = row.v ? row.v[f.id] : "";
@@ -273,6 +299,69 @@
       .catch(function (e) { sqlLoading = null; throw e; });
     return sqlLoading;
   }
+  function loadJSZip() {
+    if (typeof JSZip !== "undefined") return Promise.resolve(JSZip);
+    if (zipLoading) return zipLoading;
+    if (typeof document === "undefined" || !document.createElement) {
+      return Promise.reject(new Error("JSZip is not available here."));
+    }
+    zipLoading = new Promise(function (ok, fail) {
+      var i = 0;
+      function next() {
+        if (typeof JSZip !== "undefined") { ok(JSZip); return; }
+        if (i >= JSZIP_SRC.length) { zipLoading = null; fail(new Error("Could not load the zip library.")); return; }
+        loadScript(JSZIP_SRC[i++]).then(function () {
+          if (typeof JSZip !== "undefined") ok(JSZip); else next();
+        }).catch(function () { next(); });
+      }
+      next();
+    }).catch(function (e) { zipLoading = null; throw e; });
+    return zipLoading;
+  }
+  function unzipOdb(buf) {
+    return loadJSZip().then(function (Z) {
+      return Z.loadAsync(buf).then(function (zip) {
+        var names = Object.keys(zip.files), jobs = [];
+        names.forEach(function (n) {
+          if (zip.files[n].dir) return;
+          jobs.push(zip.files[n].async("uint8array").then(function (data) { return [n.replace(/\\/g, "/"), data]; }));
+        });
+        return Promise.all(jobs).then(function (pairs) {
+          var files = {};
+          pairs.forEach(function (p) { files[p[0]] = p[1]; });
+          return files;
+        });
+      });
+    });
+  }
+  function importOdb(file) {
+    toast("Opening " + ((file && file.name) || "the file") + "…");
+    var src = file && file.arrayBuffer ? file.arrayBuffer() : Promise.reject(new Error("Could not read that file"));
+    src.then(function (buf) { return unzipOdb(buf); }).then(function (files) {
+      if (typeof BaseOdb === "undefined" || typeof BaseOdb.parse !== "function") {
+        note("Could not import LibreOffice Base", "The .odb reader did not load.");
+        return;
+      }
+      var parsed;
+      try { parsed = BaseOdb.parse(files); }
+      catch (e) {
+        note("Could not import LibreOffice Base", (e && (e.userMessage || e.message)) || String(e));
+        return;
+      }
+      var built = tablesFromOdb(parsed);
+      if (!built.tables.length) {
+        if (built.notes && built.notes.warnings && built.notes.warnings.length) {
+          note("Could not import LibreOffice Base", built.notes.warnings.join("\n"));
+        } else {
+          toast("No tables were found in that .odb file.");
+        }
+        return;
+      }
+      applyTables(built, "Import LibreOffice Base");
+    }).catch(function (e) {
+      note("Could not import LibreOffice Base", (e && (e.userMessage || e.message)) || "This .odb could not be opened. The zip library may have failed to load.");
+    });
+  }
 
   function stampName() {
     var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
@@ -322,7 +411,12 @@
     var msg = "Imported " + names.length + " table" + (names.length === 1 ? "" : "s") + " (“" + names.slice(0, 3).join("”, “") + (names.length > 3 ? "”…" : "”") + ")";
     if (built.notes && built.notes.cutRows) msg += ". Stopped at " + CAPS.rows + " rows per table.";
     if (built.notes && built.notes.cutSheets) msg += " Extra sheets were skipped.";
-    toast(msg, 5000);
+    /* (before BS11) toast(msg, 5000); */
+    if (built.notes && built.notes.warnings && built.notes.warnings.length) {
+      note(label || "Import", msg + "\n\n" + built.notes.warnings.join("\n"));
+    } else {
+      toast(msg, 5000);
+    }
     return first;
   }
 
@@ -470,6 +564,7 @@
     if (!file) return;
     var n = (file.name || "").toLowerCase();
     if (isBackupName(n)) return restoreFile(file);  /* (before HOB1) /\.hbase$/ */
+    if (/\.odb$/.test(n) || (typeof BaseOdb !== "undefined" && BaseOdb.isOdb(file))) return importOdb(file);  /* (before BS11) no .odb */
     if (/\.xlsx?$/.test(n)) return importXlsx(file);
     if (/\.json$/.test(n)) return importJson(file);
     if (/\.(sqlite3?|db)$/.test(n)) return importSqlite(file);
@@ -496,7 +591,8 @@
       try { head = String.fromCharCode.apply(null, new Uint8Array(buf)); } catch (e) {}
       if (looksSqlite(file, buf)) return importSqlite(file);
       if (/^\s*\{/.test(head) || /^\s*\[/.test(head)) return importJson(file);
-      toast("This file type is not supported. Try .hob, .xlsx, .csv, .json or .sqlite.");  /* (before HOB1) Try .hbase */
+      /* (before BS11) toast("This file type is not supported. Try .hob, .xlsx, .csv, .json or .sqlite.");  (before HOB1) Try .hbase */
+      toast("This file type is not supported. Try .hob, .odb, .xlsx, .csv, .json or .sqlite.");
     };
     fr.readAsArrayBuffer(peek);
   }
@@ -545,7 +641,7 @@
   var api = {
     MAGIC: MAGIC, VERSION: VERSION, CAPS: CAPS, XLSX_SRC: XLSX_SRC, SQL_DIR: SQL_DIR,
     pack: pack, parse: parse, remapCopy: remapCopy, listPicKeys: listPicKeys, uniqueName: uniqueName,
-    tablesFromJson: tablesFromJson, tablesFromAoA: tablesFromAoA, tablesFromSql: tablesFromSql,
+    tablesFromJson: tablesFromJson, tablesFromAoA: tablesFromAoA, tablesFromSql: tablesFromSql, tablesFromOdb: tablesFromOdb,
     sheetAoA: sheetAoA, cellText: cellText,
     backupName: backupName, isBackupName: isBackupName, stampName: stampName,
     backup: backup, restoreDialog: restoreDialog, restoreFile: restoreFile, pickRestore: pickRestore, open: open,

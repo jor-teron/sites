@@ -15,6 +15,8 @@
          a .hob file was Backup / Restore only. HOB1's readme
          claimed drag-and-drop of .hob / .hbase, but it was not
          implemented.
+         BS11: a dropped .odb, or a Hub #drive=…&file=… link ending
+         .odb, is imported (tables and rows) through BaseFiles.open.
    ============================================================ */
 (function (root) {
   'use strict';
@@ -252,9 +254,68 @@
       var prior = (session.dest && !opts.skipSave) ? session.saveWithPics({}) : Promise.resolve();
       return prior.catch(function () {}).then(readAndRestore);
     };
+    function parseAnyHash(hash) {
+      var ref = null;
+      if (typeof window !== 'undefined' && window.FsRef && typeof window.FsRef.parse === 'function') {
+        ref = window.FsRef.parse(hash || (window.location && window.location.hash) || '');
+      }
+      if (!ref) {
+        /* Reuse parseHash's field reading, but don't require .hob. */
+        var raw = String(hash || '').replace(/^#/, ''), drive = '', name = '', path = '', q, got;
+        if (!raw) return null;
+        if (typeof URLSearchParams === 'function') {
+          q = new URLSearchParams(raw);
+          drive = q.get('drive') || '';
+          name = q.get('file') || '';
+          path = q.get('path') || '';
+        } else {
+          got = {};
+          raw.split('&').forEach(function (part) {
+            var i = part.indexOf('='), k, v;
+            if (i < 0) return;
+            k = decodeURIComponent(part.slice(0, i).replace(/\+/g, ' '));
+            v = decodeURIComponent(part.slice(i + 1).replace(/\+/g, ' '));
+            got[k] = v;
+          });
+          drive = got.drive || '';
+          name = got.file || '';
+          path = got.path || '';
+        }
+        if (!drive || !name) return null;
+        ref = { drive: drive, path: path, name: name };
+      }
+      return ref;
+    }
+    function openOdbFromHash(ref) {
+      var key = (window.FsRef && window.FsRef.hash) ? window.FsRef.hash(ref) : (ref.drive + '|' + (ref.path || '') + '|' + ref.name);
+      if (key === session.lastHash) return Promise.resolve(false);
+      session.lastHash = key;
+      if (!window.FsRef || typeof window.FsRef.resolve !== 'function') {
+        session.lastHash = '';
+        return Promise.resolve(false);
+      }
+      return window.FsRef.resolve(ref).then(function (got) {
+        var handle = got && (got.file || got.handle || got);
+        if (!handle || typeof handle.getFile !== 'function') return false;
+        return handle.getFile().then(function (file) {
+          if (root && root.BaseFiles && typeof root.BaseFiles.open === 'function') root.BaseFiles.open(file);
+          return true;
+        });
+      }).then(function (ok) {
+        if (!ok) session.lastHash = '';
+        return !!ok;
+      }).catch(function (e) {
+        session.lastHash = '';
+        toast((e && (e.userMessage || e.message)) || 'Could not open that .odb file.');
+        return false;
+      });
+    }
+    /* (before BS11) session.openFromHash only accepted .hob / .hbase */
     session.openFromHash = function openFromHash() {
       if (typeof window === 'undefined' || !window.location) return Promise.resolve(false);
-      var ref = Hob.parseHash(window.location.hash);
+      var ref = parseAnyHash(window.location.hash);
+      if (ref && ref.name && /\.odb$/i.test(ref.name)) return openOdbFromHash(ref);
+      ref = Hob.parseHash(window.location.hash);
       if (!ref) return Promise.resolve(false);
       if (window.FsRef && typeof window.FsRef.parse === 'function') {
         var parsed = window.FsRef.parse(window.location.hash);
@@ -276,10 +337,22 @@
     session.bindDrop = function bindDrop() {
       if (typeof document === 'undefined' || session._dropBound) return;
       session._dropBound = true;
+      function odbOf(list) {
+        if (root && root.BaseOdb && typeof root.BaseOdb.dropFile === 'function') return root.BaseOdb.dropFile(list);
+        var files = !list ? [] : (list.files || list), i, f;
+        if (!files || typeof files.length !== 'number') return null;
+        for (i = 0; i < files.length; i++) {
+          f = files[i];
+          if (f && /\.odb$/i.test(f.name || '')) return f;
+        }
+        return null;
+      }
       function fromEvent(e) {
         var dt = e && e.dataTransfer;
         if (!dt) return null;
         var hit = Hob.dropFile(dt.files);
+        if (hit) return hit;
+        hit = odbOf(dt.files);
         if (hit) return hit;
         var items = dt.items, i, it, f, ent;
         if (!items || !items.length) return null;
@@ -288,26 +361,33 @@
           if (!it || it.kind !== 'file') continue;
           try { f = it.getAsFile && it.getAsFile(); } catch (err) { f = null; }
           if (f && Hob.acceptsName(f)) return f;
+          if (f && /\.odb$/i.test(f.name || '')) return f;
           try { ent = it.webkitGetAsEntry && it.webkitGetAsEntry(); } catch (err2) { ent = null; }
           if (ent && ent.name && Hob.acceptsName(ent)) return { name: ent.name, _entry: ent };
+          if (ent && ent.name && /\.odb$/i.test(ent.name)) return { name: ent.name, _entry: ent, _odb: true };
         }
         return null;
       }
       document.addEventListener('dragover', function (e) {
-        if (fromEvent(e)) {
+        if (fromEvent(e) || odbOf(e.dataTransfer && e.dataTransfer.files)) {
           e.preventDefault();
           try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
         }
       });
+      /* (before BS11) drop only restored .hob / .hbase */
       document.addEventListener('drop', function (e) {
         var f = fromEvent(e);
         if (!f || f._entry) {
           if (f && f._entry) return;
-          f = Hob.dropFile(e.dataTransfer && e.dataTransfer.files);
+          f = Hob.dropFile(e.dataTransfer && e.dataTransfer.files) || odbOf(e.dataTransfer && e.dataTransfer.files);
         }
         if (!f) return;
         e.preventDefault();
         e.stopPropagation();
+        if (/\.odb$/i.test(f.name || '') || f._odb) {
+          if (root && root.BaseFiles && typeof root.BaseFiles.open === 'function') root.BaseFiles.open(f);
+          return;
+        }
         if (root && root.BaseFiles && typeof root.BaseFiles.restoreFile === 'function') root.BaseFiles.restoreFile(f);
       });
     };

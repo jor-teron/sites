@@ -104,7 +104,7 @@ Backup now saves `base-backup-<date>.hob`. Restore and Import still accept old `
 
 File → **Save**, **Save As…** and **Ctrl+S** (and the Quick Access Save button) flush IndexedDB as before, then write or update a bound `.hob` file through `modules/base_hob.js` and `../shared/office-native.js`. In the Hub with a local drive, Save writes `Documents/<name>.hob` on Hub Local. Standalone uses the save picker, or a download on phones. Save As asks for a name in-app in the Hub. Autosave of an already-bound file runs when the page is hidden or closed; it never downloads on each edit.
 
-Opening a `.hob` or old `.hbase` from Hub Files (`#drive=…&file=…`) uses the existing Restore dialog (Replace everything, with the same confirm, or Add as a copy). After Replace, Save is bound to that file (a `.hbase` name is saved on as `.hob`). Drag-and-drop of a `.hob` / `.hbase` file onto Base also opens the Restore dialog. File → Backup… (the dated one-click download) and Restore / Import are unchanged. Pictures are packed into the `.hob` the same way Backup does. The JSON format is unchanged (`magic: "hbase"`, version 1). Cache tags are `?v=BS10`.
+Opening a `.hob` or old `.hbase` from Hub Files (`#drive=…&file=…`) uses the existing Restore dialog (Replace everything, with the same confirm, or Add as a copy). After Replace, Save is bound to that file (a `.hbase` name is saved on as `.hob`). Drag-and-drop of a `.hob` / `.hbase` file onto Base also opens the Restore dialog. File → Backup… (the dated one-click download) and Restore / Import are unchanged. Pictures are packed into the `.hob` the same way Backup does. The JSON format is unchanged (`magic: "hbase"`, version 1). Cache tags were `?v=BS10`.
 
 ## HO2
 
@@ -112,3 +112,10 @@ Settings → Theme → Auto follows the Hub when Base is open inside the Hub (da
 
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
+
+
+## BS11 (LibreOffice .odb import)
+
+File → **Open / Import…**, dropping a `.odb` on Base, or a Hub Files link ending `.odb` (`#drive=…&file=…`) imports tables and rows from a LibreOffice Base file. The reader (`modules/base_odb.js`) unzips with the vendored JSZip and reads the classic HSQLDB `database/script`. Headings, column types (text, number, yes/no, date), and rows come in. Forms, queries, reports and macros are left out. Saving is still `.hob`.
+
+CACHED tables often keep their rows in a binary `database/data` file. Those tables are still created with their columns, and the import summary says how many tables had unreadable rows. Newer `.odb` files that use the Firebird engine, files that only link to an external database, and password-protected files get a clear in-app message (export each table to CSV in LibreOffice and import that). Cache tags are `?v=BS11`. The `.hob` JSON format is unchanged (`magic: "hbase"`, version 1).
