@@ -1,0 +1,150 @@
+#!/usr/bin/env node
+/* Hub Office Start Center tests.
+ * Run with: node --test apps/office/hub-office/tests/hub_office.test.cjs
+ */
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+const cp = require('child_process');
+
+const ROOT = path.resolve(__dirname, '../../../..');
+const SCRIPT_PATH = path.join(ROOT, 'apps/office/hub-office/hub_office.js');
+
+test('node --check on hub_office.js', () => {
+  cp.execFileSync(process.execPath, ['--check', SCRIPT_PATH]);
+});
+
+function loadScript(customWindow = {}) {
+  const code = fs.readFileSync(SCRIPT_PATH, 'utf8');
+  const context = {
+    window: customWindow,
+    document: customWindow.document || {
+      readyState: 'complete',
+      getElementById: () => null,
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    },
+    location: { href: 'https://hub.test/apps/office/hub-office/hub_office.html', origin: 'https://hub.test' },
+    URL: URL,
+    localStorage: {
+      getItem: () => null,
+      setItem: () => {}
+    },
+    addEventListener: () => {},
+    alert: () => {},
+    ...customWindow
+  };
+  context.window = context;
+  context.globalThis = context;
+  if (!context.addEventListener) context.addEventListener = () => {};
+  vm.createContext(context);
+  vm.runInContext(code, context);
+  return context.HubOffice;
+}
+
+test('SUITES definitions cover all 5 office applications', () => {
+  const HO = loadScript();
+  assert.ok(HO, 'HubOffice exported');
+  assert.equal(HO.SUITES.length, 5);
+
+  const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
+  assert.deepEqual(ids, ['writer', 'spreadsheet', 'slides', 'base', 'tables']);
+
+  HO.SUITES.forEach((suite) => {
+    assert.ok(suite.name, 'suite has name');
+    assert.ok(suite.url, 'suite has url');
+    assert.ok(suite.icon, 'suite has icon');
+    assert.ok(Array.isArray(suite.formats) && suite.formats.length > 0, 'suite has formats');
+    assert.ok(Array.isArray(suite.templates) && suite.templates.length > 0, 'suite has templates');
+  });
+});
+
+test('EXT_MAP routes all expected extensions to matching suites', () => {
+  const HO = loadScript();
+  assert.equal(HO.EXT_MAP.how, 'writer');
+  assert.equal(HO.EXT_MAP.docx, 'writer');
+  assert.equal(HO.EXT_MAP.odt, 'writer');
+  assert.equal(HO.EXT_MAP.txt, 'writer');
+  assert.equal(HO.EXT_MAP.md, 'writer');
+
+  assert.equal(HO.EXT_MAP.hos, 'spreadsheet');
+  assert.equal(HO.EXT_MAP.xlsx, 'spreadsheet');
+  assert.equal(HO.EXT_MAP.csv, 'spreadsheet');
+
+  assert.equal(HO.EXT_MAP.hslides, 'slides');
+  assert.equal(HO.EXT_MAP.pptx, 'slides');
+
+  assert.equal(HO.EXT_MAP.hot, 'tables');
+
+  assert.equal(HO.EXT_MAP.db, 'base');
+  assert.equal(HO.EXT_MAP.base, 'base');
+});
+
+test('getExt extracts lowercase extension', () => {
+  const HO = loadScript();
+  assert.equal(HO.getExt('Report.HOW'), 'how');
+  assert.equal(HO.getExt('budget.2026.hos'), 'hos');
+  assert.equal(HO.getExt('presentation.hslides'), 'hslides');
+  assert.equal(HO.getExt('inventory.HOT'), 'hot');
+  assert.equal(HO.getExt('noext'), '');
+});
+
+test('openApp routes through window.parent.__hubOpenApp inside Hub', () => {
+  let calledUrl = null;
+  let calledOpts = null;
+  const parent = {
+    __hubOpenApp: (url, opts) => {
+      calledUrl = url;
+      calledOpts = opts;
+    }
+  };
+
+  const HO = loadScript({
+    parent: parent
+  });
+
+  HO.openApp('writer', { hash: 'template=notes' });
+  assert.equal(calledUrl, 'apps/office/writer/');
+  assert.equal(calledOpts.hash, 'template=notes');
+  assert.equal(calledOpts.newInstance, true);
+});
+
+test('openApp falls back to window.parent.postMessage when __hubOpenApp missing', () => {
+  const messages = [];
+  const parent = {
+    postMessage: (msg, origin) => {
+      messages.push({ msg, origin });
+    }
+  };
+
+  const HO = loadScript({
+    parent: parent
+  });
+
+  HO.openApp('spreadsheet');
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].msg.type, 'hub-open-app');
+  assert.equal(messages[0].msg.name, 'Spreadsheet');
+  assert.equal(messages[0].msg.newInstance, true);
+});
+
+test('formatTime and formatSize return expected readable strings', () => {
+  const HO = loadScript();
+  assert.equal(HO.formatSize(500), '500 B');
+  assert.equal(HO.formatSize(2048), '2.0 KB');
+  assert.equal(HO.formatSize(1048576 * 3.5), '3.5 MB');
+
+  const now = Date.now();
+  assert.equal(HO.formatTime(now - 10000), 'Just now');
+  assert.equal(HO.formatTime(now - 120000), '2m ago');
+  assert.equal(HO.formatTime(now - 3600000 * 2), '2h ago');
+});
+
+test('index.html redirects to hub_office.html', () => {
+  const html = fs.readFileSync(path.join(ROOT, 'apps/office/hub-office/index.html'), 'utf8');
+  assert.ok(html.includes('hub_office.html'), 'contains redirect target hub_office.html');
+});

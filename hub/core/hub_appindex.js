@@ -83,6 +83,7 @@ window.HUB_APP_INDEX = {
   /* (before DF24) "draftly": ["Office", "apps/office/draftly/", "Draftly", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
   /* (before HOW1) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: write documents offline - save as PDF or DOCX"], */
   /* (before DF25) "draftly": ["Office", "apps/office/draftly/", "Writer", "apps/office/draftly/draftly_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"], */
+  "hub-office": ["Office", "apps/office/hub-office/", "Hub Office", "apps/office/hub-office/hub-office_icon.png", 0, "Start Center: open and launch Writer Spreadsheet Slides Base and Tables"],
   "writer": ["Office", "apps/office/writer/", "Writer", "apps/office/writer/writer_icon.png", 0, "Word processor with A4 pages: native .how files - PDF or DOCX"],
   /* (before HOS1) "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Offline spreadsheet with formulas and styles - CSV import/export and print"], */
   "spreadsheet": ["Office", "apps/office/spreadsheet/", "Spreadsheet", "apps/office/spreadsheet/spreadsheet_icon.png", 0, "Spreadsheet with formulas and styles: native .hos files - CSV or XLSX"],

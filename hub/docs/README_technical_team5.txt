@@ -22,8 +22,16 @@ CURRENT STATUS & RECENT DELIVERIES
    - Occlusion pausing: auto-pauses when a desktop window is maximized (.wm-max:not(.wm-min)).
    - Known limitation recorded: desktop background canvas remains static in browser compositing environments (Won't Fix).
 
+2. Office Suite Start Center (apps/office/hub-office/):
+   - Created unified LibreOffice-style Start Center for Hub Office suite apps (Writer, Spreadsheet, Slides, Base, Tables).
+   - Smart file routing for drag-and-drop and file picking (.how, .hos, .hslides, .hot, .docx, .xlsx, .pptx, etc.).
+   - Quick launch for new documents and templates across all 5 apps.
+   - Hub Local drive (Documents/) scanning via FsDrives and recent documents tracker.
+   - Unit tests: 8/8 tests passing in apps/office/hub-office/tests/hub_office.test.cjs.
+   - Registered in apps/office/office-apps.csv and hub/core/hub_appindex.js.
+
 UPCOMING HANDOVER TO TEAM 2 (21:00 IST)
 ---------------------------------------
 - Repository clean and synced on main.
-- Unit test suite: 7/7 live wallpaper tests passing in hub/tests/hub_live_wallpapers.test.cjs.
+- Unit test suite: 17/17 tests passing (live wallpapers, notely, hub office).
 - Handover notes and open items for Team 2 will be recorded here prior to 21:00 IST.
