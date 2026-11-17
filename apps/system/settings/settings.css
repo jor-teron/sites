@@ -74,8 +74,8 @@ body.in-section .pane-body { animation: pane-in .28s ease-out; }
 .wp-preview { position: relative; height: 170px; border-radius: 16px; margin-top: 8px; overflow: hidden;
   border: 1px solid var(--line); transition: background-color .3s; }
 .wp-preview-win { position: absolute; left: 14%; top: 18%; width: 46%; height: 48%; border-radius: 8px;
-  background: rgba(30,34,44,.85); box-shadow: 0 6px 18px rgba(0,0,0,.35); border-top: 10px solid rgba(60,66,80,.95); }
-.wp-preview-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: rgba(12,14,20,.8); }
+  background: rgba(30,34,44,.85); box-shadow: 0 6px 18px rgba(0,0,0,.35); border-top: 10px solid rgba(60,66,80,.95); z-index: 1; }
+.wp-preview-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 18px; background: rgba(12,14,20,.8); z-index: 1; }
 .wp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
 .wp-thumb { display: flex; flex-direction: column; gap: 4px; padding: 6px; border-radius: 14px;
   border: 2px solid transparent; background: var(--card); cursor: pointer; }
