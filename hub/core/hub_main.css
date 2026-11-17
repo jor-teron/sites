@@ -212,6 +212,18 @@ body.hub-menu-open #app-frame { pointer-events: none; }
 }
 /* An app is open: no home, no animation running */
 #empty.hidden { display: none; animation: none; }
+.hub-live-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  display: none;
+}
+.hub-live-canvas.active {
+  display: block;
+}
 @media (prefers-reduced-motion: reduce) {
   #empty {
     animation: none;
@@ -225,7 +237,7 @@ body.hub-menu-open #app-frame { pointer-events: none; }
 
 /* Home screen quick-access tiles (hub_tiles.js): 4 tiles in a 2 x 2 grid, centred;
    one row of 4 on a short landscape phone. Heights use dvh with a vh fallback. */
-.home { width: min(520px, 100%); }
+.home { width: min(520px, 100%); position: relative; z-index: 1; }
 .tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -33,6 +33,7 @@
       preview.appendChild(ui.el('div', 'wp-preview-win'));
       preview.appendChild(ui.el('div', 'wp-preview-bar'));
       const grid = ui.el('div', 'wp-grid');
+      const liveGrid = ui.el('div', 'wp-grid wp-live');
       const pics = ui.el('div', 'wp-grid wp-pics');
       const idOf = (v) => (/^mine/.test(v) ? 'mine' : v);
       const pick = (v) => {
@@ -47,7 +48,7 @@
         const t = ui.el('button', 'wp-thumb');
         t.type = 'button';
         t.dataset.id = w.id;
-        t.title = w.name;
+        t.title = w.name + (w.desc ? ' \u2014 ' + w.desc : '');
         let sw;
         if (w.thumb) {
           sw = ui.el('span', 'wp-swatch wp-pic');
@@ -56,12 +57,20 @@
           if (w.small) img.onerror = () => { img.onerror = null; img.src = w.thumb; };   // R36: thumb missing → full image
           img.src = w.small || w.thumb;
           sw.appendChild(img);
-        } else { sw = ui.el('span', 'wp-swatch'); paint(sw, w); }
+        } else if (w.live) {
+          sw = ui.el('span', 'wp-swatch wp-live-sw');
+          paint(sw, w);
+          sw.appendChild(ui.el('span', 'wp-live-badge', '\u26A1 Live'));
+        } else {
+          sw = ui.el('span', 'wp-swatch');
+          paint(sw, w);
+        }
         t.append(sw, ui.el('span', 'wp-name', w.name));
         t.addEventListener('click', () => pick(w.id));
         into.appendChild(t);
       };
       window.HUB_WALLPAPERS.forEach((w) => thumb(w, w.picture ? pics : grid));
+      (window.HUB_LIVE_WALLPAPERS || []).forEach((w) => thumb(w, liveGrid));
       // custom colour
       const custom = ui.el('label', 'wp-thumb wp-custom');
       const picker = document.createElement('input');
@@ -102,8 +111,8 @@
         pics.appendChild(mine);
       }
 
-      pane.append(preview, ui.title('Colours & gradients'), grid, ui.title('Pictures'), pics,
-        ui.note('Applies to the Hub home / desktop right away. Your picture stays in this browser (Files \u2192 Local \u2192 Wallpapers).'));
+      pane.append(preview, ui.title('Colours & gradients'), grid, ui.title('Live wallpapers'), liveGrid, ui.title('Pictures'), pics,
+        ui.note('Applies to the Hub home / desktop right away. Live wallpapers use procedural canvas rendering paused when windows are maximised. Your picture stays in this browser (Files \u2192 Local \u2192 Wallpapers).'));
       pick(cur());
     }
   });

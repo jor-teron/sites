@@ -150,21 +150,32 @@
       // const v = get('wallpaper'), w = window.hubWallpaper(v);   (before H104)
       const v = get('wallpaper') || (window.hubWallpaperDefault ? window.hubWallpaperDefault() : ''), w = window.hubWallpaper(v);   // H104: XP's own default
       const s = empty.style;
-      s.backgroundColor = w.color || '#000';
-      // s.backgroundImage = w.image || 'none';   (before H132b)
-      // H132b: XP in Dark shows its own default (Green hills) dimmed, so the night desktop is not bright
-      const xpDim = xp && !get('wallpaper') && !root.classList.contains('hub-light') && !!w.image;
-      s.backgroundImage = xpDim ? 'linear-gradient(rgba(6, 14, 42, 0.5), rgba(6, 14, 42, 0.5)), ' + w.image : (w.image || 'none');
-      if (w.mine && window.hubWallpaperMine) {   // Your picture: Local drive file → object URL
-        window.hubWallpaperMine(v !== lastMine).then((u) => {
-          if (get('wallpaper') === v && u) { s.backgroundImage = 'url("' + u + '")'; s.backgroundSize = 'cover'; }
-        });
+      const isLive = !!(w && w.live) || (typeof v === 'string' && v.startsWith('live:'));
+      if (isLive && window.HubLiveWallpaper) {
+        window.HubLiveWallpaper.set(v);
+        s.backgroundColor = w.color || '#081426';
+        s.backgroundImage = 'none';
+        s.animationName = 'none';
+        lastMine = '';
+      } else {
+        if (window.HubLiveWallpaper) window.HubLiveWallpaper.stop();
+        s.backgroundColor = w.color || '#000';
+        // s.backgroundImage = w.image || 'none';   (before H132b)
+        // H132b: XP in Dark shows its own default (Green hills) dimmed, so the night desktop is not bright
+        const xpDim = xp && !get('wallpaper') && !root.classList.contains('hub-light') && !!w.image;
+        s.backgroundImage = xpDim ? 'linear-gradient(rgba(6, 14, 42, 0.5), rgba(6, 14, 42, 0.5)), ' + w.image : (w.image || 'none');
+        if (w.mine && window.hubWallpaperMine) {   // Your picture: Local drive file → object URL
+          window.hubWallpaperMine(v !== lastMine).then((u) => {
+            if (get('wallpaper') === v && u) { s.backgroundImage = 'url("' + u + '")'; s.backgroundSize = 'cover'; }
+          });
+        }
+        lastMine = w.mine ? v : '';
+        s.backgroundSize = w.slide ? '100% 300%' : (w.image ? 'cover' : '');
+        s.backgroundPosition = w.slide ? '' : 'center';
+        s.animationName = w.slide ? '' : 'none';
       }
-      lastMine = w.mine ? v : '';
-      s.backgroundSize = w.slide ? '100% 300%' : (w.image ? 'cover' : '');
-      s.backgroundPosition = w.slide ? '' : 'center';
-      s.animationName = w.slide ? '' : 'none';
       empty.classList.toggle('wp-light', !!w.light);
+      if (window.HubLiveWallpaper && isLive) window.HubLiveWallpaper.checkState();
     }
     // AH1-F1: Phone mode Home button target (hub.js __hubHome reads the key on every click; H6-B1: not the Desktop Show desktop button)
     const hb = document.getElementById('home-btn');

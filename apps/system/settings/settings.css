@@ -85,6 +85,21 @@ body.in-section .pane-body { animation: pane-in .28s ease-out; }
 .wp-custom-sw { position: relative; overflow: hidden;
   background: conic-gradient(#f43f5e, #f59e0b, #facc15, #22c55e, #06b6d4, #6366f1, #d946ef, #f43f5e); }
 .wp-custom-sw input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; }
+.wp-live-sw { position: relative; overflow: hidden; background-size: cover; background-position: center; }
+.wp-live-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 2px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #5ce1e6;
+  backdrop-filter: blur(4px);
+  letter-spacing: 0.3px;
+}
 
 /* accents */
 .accents { display: flex; flex-wrap: wrap; gap: 12px; }

@@ -35,6 +35,16 @@ window.HUB_WALLPAPERS = [
   { id: 'paper', name: 'Off-white', color: '#CCCCCC', light: true }
 ];
 
+// Live wallpapers: procedural canvas animations rendered on desktop background with static CSS fallbacks
+window.HUB_LIVE_WALLPAPERS = [
+  { id: 'live:aurora', name: 'Aurora waves', desc: 'Flowing harmonic color ribbons', live: true,
+    color: '#081426', image: 'linear-gradient(135deg, #050d1a 0%, #0d3b4c 35%, #188977 70%, #081426 100%)' },
+  { id: 'live:constellation', name: 'Constellation', desc: 'Floating stars with proximity line links', live: true,
+    color: '#0a0d14', image: 'radial-gradient(circle at 60% 30%, #1a233a 0%, #0c101a 70%, #05070a 100%)' },
+  { id: 'live:circadian', name: 'Circadian sky', desc: '24-hour dynamic time-of-day sky', live: true,
+    color: '#091226', image: 'linear-gradient(180deg, #091226 0%, #1e335a 50%, #3a5078 100%)' }
+];
+
 // Picture wallpapers: URLs are made absolute from this script's own address, so the Hub (site
 // root) and the Settings app (apps/system/settings/) point at the same files.
 (function () {
@@ -93,6 +103,8 @@ window.hubWallpaper = function (v) {
   const list = window.HUB_WALLPAPERS;
   const hit = list.find((w) => w.id === v);
   if (hit) return hit;
+  const liveHit = (window.HUB_LIVE_WALLPAPERS || []).find((w) => w.id === v);
+  if (liveHit) return liveHit;
   if (/^mine/.test(String(v || ''))) return { id: 'mine', name: 'Your picture', mine: true, color: '#1b2230' };
   if (/^#[0-9a-f]{6}$/i.test(String(v || ''))) {
     const n = parseInt(v.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
