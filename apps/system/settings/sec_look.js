@@ -346,6 +346,13 @@
         ui.note('Mode makes the Hub Light or Dark. Auto is Light by day and Dark at night, from the Sunrise and Sunset times above (no location used). Theme sets the look of the Hub menu, taskbar and windows. Every theme (Hub, XP and Glass) works in Light and Dark. Apps that follow the Hub switch with it (System apps follow Glass and XP too). XP brings its own Green hills wallpaper until you pick another one (dimmed in Dark).'),
         ui.title('Animations'), motion,
         ui.note('Live wallpapers still animate'),   // H158a: Hub Motion Off / Reduced does not freeze live wallpapers
+        ui.title('Boot splash'),
+        (function () {
+          const sw = ui.switch('Show boot splash', 'Covers the desktop at start while it restores the windows left open last time. It does not load extra apps.',
+            S.get('bootSplash') !== '0', (on) => S.set('bootSplash', on ? '' : '0'));
+          sw.id = 'look-boot-splash';
+          return sw;
+        })(),
         eyeTitle, wRow, when, times, st,
         ui.note('A warm, orange tint over the whole Hub and its apps, easier on the eyes at night (like Night Light). It fades in and out over a few seconds. The \uD83C\uDF19 button (Settings \u203A Hub bar) turns it on or off until the next scheduled change. A web page cannot change the real screen colour, so the phone status bar and other apps stay as they are.'));
       if (sub === 'eye') setTimeout(() => eyeTitle.scrollIntoView({ block: 'start' }), 50);   // H63: #look/eye

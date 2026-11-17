@@ -405,7 +405,7 @@
     });
     el.addEventListener('pointerleave', () => clearTimeout(hoverT));
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
-    frame.addEventListener('load', () => { el.classList.remove('has-settings', 'hover-tabs'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); });
+    frame.addEventListener('load', () => { el.classList.remove('has-settings', 'hover-tabs'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); try { window.dispatchEvent(new CustomEvent('hub-wm-frame-load', { detail: { id: w.id } })); } catch (_) { /* H159 splash */ } });
 
     // Move by the title bar. A maximised / snapped window gets its old size back under the
     // pointer once it really moves (a plain click on the bar keeps it as it is).
@@ -530,6 +530,7 @@
       const f = wins.find((x) => x.key === data.focused && x.inst === (+data.focusedInst || 1) && !x.min && onWs(x));
       if (f) focus(f); else setActive(null);
       saveNow();
+      try { window.dispatchEvent(new CustomEvent('hub-wm-session-restored', { detail: { count: wins.length } })); } catch (_) { /* H159 splash */ }
       return wins.length > 0;
     }
   };
