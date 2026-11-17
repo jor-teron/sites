@@ -6,6 +6,7 @@ Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, noti
 Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 8, 'pics' store),
 `base-types.js` (field types, validation, conversion, auto-number), `base-history.js` (in-memory undo/redo),
 `base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard), `base-report.js` (BS7: group-by reports, summary, SVG charts, print), `base-view.js` (BS8: header filters, saved views, freeze, resize, colours, gallery, calendar), `base-files.js` (BS9 / HOB1: .hob backup/restore, old .hbase still opens, Excel, JSON, Send to Spreadsheet),
+`base_hob.js` (BS10: native Save / Save As of the `.hob` file through `../shared/office-native.js`),
 `base-fields.js` (Fields / Add field dialogs and edit commit),
 `base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view),
 `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs),
@@ -83,7 +84,7 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 - Existing BS7 databases load unchanged. Schema becomes 8; the first BS8 open writes a backup and migrates in place. The current layout is stored on the table itself, so filters, widths and freeze survive a reload.
 
 ## BS9 (files and backup)
-- **Backup / Restore** (File menu) writes or reads a backup file: every table, query, report, view, link and picture (pictures as Base64 next to the data). Restore asks first: **Replace everything** (typed confirm, cannot be undone) or **Add as a copy** (new ids so links still work, undoable). (before HOB1) the file was `.hbase`; since HOB1 it is `.hob` (see below).
+- **Backup / Restore** (File menu) writes or reads a backup file: every table, query, report, view, link and picture (pictures as Base64 next to the data). Restore asks first: **Replace everything** (typed confirm, cannot be undone) or **Add as a copy** (new ids so links still work, undoable). (before HOB1) the file was `.hbase`; since HOB1 it is `.hob` (see below). BS10 adds File → **Save** / **Save As…** and Ctrl+S, which write the same `.hob` to the device or Hub Documents (see BS10 below). Drag-and-drop of a `.hob` / `.hbase` onto the window also opens Restore.
 - **Excel:** File > Export Excel and File > Open / Import… for `.xlsx` / `.xls`. SheetJS is lazy-loaded from the Spreadsheet app (`../spreadsheet/vendor/sheetjs/xlsx.full.min.js`) and is not copied into Base. Import makes a new table per sheet (up to 20 sheets, 5 000 rows each). Export (and **Send to Spreadsheet**) writes the current view's rows — the same rows the grid would show after a query and header filters, pictures left out, links as display text.
 - **Send to Spreadsheet:** there is no in-app hand-off (Spreadsheet only opens a file you choose). Base saves a workbook and tells you to open it with File > Open in Spreadsheet. If SheetJS cannot load, a CSV is saved instead.
 - **JSON import** (read-only): an array of objects, `{ rows: [...] }`, or a named list of arrays becomes new table(s). A `.hob` or `.hbase` JSON file still goes through Restore.
@@ -95,7 +96,15 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 
 ## HOB1 (.hob backup files)
 
-Backup now saves `base-backup-<date>.hob`. Restore, Import and drag-and-drop still accept old `.hbase` files. The JSON inside is unchanged (`magic: "hbase"`, version 1) — a `.hob` file is just a renamed `.hbase`. Data still lives in IndexedDB; `.hob` is only the Backup / Restore file. Cache tags are `?v=HOB1`.
+Backup now saves `base-backup-<date>.hob`. Restore and Import still accept old `.hbase` files. The JSON inside is unchanged (`magic: "hbase"`, version 1) — a `.hob` file is just a renamed `.hbase`. Data still lives in IndexedDB; `.hob` is the Backup / Restore file. Cache tags were `?v=HOB1`. (before BS10) this section also claimed drag-and-drop of `.hob` / `.hbase`, but that was not implemented until BS10.
+
+
+
+## BS10 (Save / Save As of the .hob file)
+
+File → **Save**, **Save As…** and **Ctrl+S** (and the Quick Access Save button) flush IndexedDB as before, then write or update a bound `.hob` file through `modules/base_hob.js` and `../shared/office-native.js`. In the Hub with a local drive, Save writes `Documents/<name>.hob` on Hub Local. Standalone uses the save picker, or a download on phones. Save As asks for a name in-app in the Hub. Autosave of an already-bound file runs when the page is hidden or closed; it never downloads on each edit.
+
+Opening a `.hob` or old `.hbase` from Hub Files (`#drive=…&file=…`) uses the existing Restore dialog (Replace everything, with the same confirm, or Add as a copy). After Replace, Save is bound to that file (a `.hbase` name is saved on as `.hob`). Drag-and-drop of a `.hob` / `.hbase` file onto Base also opens the Restore dialog. File → Backup… (the dated one-click download) and Restore / Import are unchanged. Pictures are packed into the `.hob` the same way Backup does. The JSON format is unchanged (`magic: "hbase"`, version 1). Cache tags are `?v=BS10`.
 
 ## HO2
 

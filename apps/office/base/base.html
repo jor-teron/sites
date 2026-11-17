@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Base HOB1</title>
+  <!-- (before BS10) <title>Base HOB1</title> -->
+  <title>Base BS10</title><!-- legacy: <title>Base HOB1</title> -->
   <!-- BS1-BS9 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
@@ -14,7 +15,8 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
-  <link rel="stylesheet" href="base.css?v=HOB1">
+  <!-- (before BS10) base.css?v=HOB1 and every script ?v=HOB1 -->
+  <link rel="stylesheet" href="base.css?v=BS10">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -30,6 +32,10 @@
     <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import…</span>
       <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
     </label>
+    <!-- (before BS10) no Save / Save As; a .hob file was Backup only -->
+    <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-save-as"><span>Save As…</span></button>
+    <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-backup"><span>Backup…</span></button>
     <label class="file-item" role="menuitem"><span>Restore backup…</span>
       <input id="file-restore" type="file" accept=".hob,.hbase,.json,application/json" hidden>
@@ -148,32 +154,37 @@
     <div id="related-wrap" class="base-related-wrap" hidden></div>
   </main>
 
+  <script src="../../../shared/fs/fs_drives.js"></script>
+  <script src="../../../shared/fs/fs_ops.js"></script>
+  <script src="../../../shared/fs/fs_ref.js"></script>
+  <script src="../shared/office-native.js"></script>
   <script src="../shared/office-icons.js"></script>
   <script src="../shared/office-dialog.js"></script>
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=HOB1"></script>
+  <script src="modules/base-quick.js?v=BS10"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=HOB1"></script>
-  <script src="modules/base-history.js?v=HOB1"></script>
-  <script src="modules/base-store.js?v=HOB1"></script>
-  <script src="modules/base-links.js?v=HOB1"></script>
-  <script src="modules/base-pics.js?v=HOB1"></script>
-  <script src="modules/base-csv.js?v=HOB1"></script>
-  <script src="modules/base-files.js?v=HOB1"></script>
-  <script src="modules/base-grid.js?v=HOB1"></script>
-  <script src="modules/base-form.js?v=HOB1"></script>
-  <script src="modules/base-fields.js?v=HOB1"></script>
-  <script src="modules/base-query.js?v=HOB1"></script>
-  <script src="modules/base-view.js?v=HOB1"></script>
-  <script src="modules/base-report.js?v=HOB1"></script>
-  <script src="modules/base-delete.js?v=HOB1"></script>
-  <script src="modules/base-ui.js?v=HOB1"></script>
-  <script src="modules/base_hub.js?v=HOB1"></script>
+  <script src="modules/base-types.js?v=BS10"></script>
+  <script src="modules/base-history.js?v=BS10"></script>
+  <script src="modules/base-store.js?v=BS10"></script>
+  <script src="modules/base-links.js?v=BS10"></script>
+  <script src="modules/base-pics.js?v=BS10"></script>
+  <script src="modules/base-csv.js?v=BS10"></script>
+  <script src="modules/base-files.js?v=BS10"></script>
+  <script src="modules/base_hob.js?v=BS10"></script>
+  <script src="modules/base-grid.js?v=BS10"></script>
+  <script src="modules/base-form.js?v=BS10"></script>
+  <script src="modules/base-fields.js?v=BS10"></script>
+  <script src="modules/base-query.js?v=BS10"></script>
+  <script src="modules/base-view.js?v=BS10"></script>
+  <script src="modules/base-report.js?v=BS10"></script>
+  <script src="modules/base-delete.js?v=BS10"></script>
+  <script src="modules/base-ui.js?v=BS10"></script>
+  <script src="modules/base_hub.js?v=BS10"></script>
 </body>
 </html>

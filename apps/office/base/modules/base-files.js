@@ -19,7 +19,7 @@
  * API: BaseFiles.MAGIC, .CAPS, .pack, .parse, .remapCopy, .listPicKeys,
  *      .tablesFromJson, .tablesFromAoA, .tablesFromSql, .sheetAoA,
  *      .backupName, .isBackupName,
- *      .backup, .restoreFile, .open, .exportXlsx, .sendToSpreadsheet, .loadXlsx
+ *      .backup, .restoreDialog, .restoreFile, .open, .exportXlsx, .sendToSpreadsheet, .loadXlsx
  */
 (function (root) {
   var MAGIC = "hbase", VERSION = 1;
@@ -364,7 +364,10 @@
     if (typeof BasePics !== "undefined" && BasePics.importAll) BasePics.importAll(mapped.pics || {}, finish);
     else finish();
   }
-  function restoreDialog(pk) {
+  /* opts.done(how): "replace" | "copy" | false. Used by BS10 hash / File open to bind Save. */
+  function restoreDialog(pk, opts) {
+    opts = opts || {};
+    function done(how) { if (opts.done) opts.done(how); }
     var n = (pk.db.tables || []).length, pics = Object.keys(pk.pics || {}).length;
     var back = el("div", "dlg-backdrop base-v-back");
     var box = el("div", "dlg base-v-dlg"); box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
@@ -376,24 +379,24 @@
     box.appendChild(msg);
     var act = el("div", "dlg-actions");
     function btn(lab, cls, fn) { var b = el("button", "dlg-btn " + cls, lab); b.type = "button"; b.addEventListener("click", fn); act.appendChild(b); return b; }
-    btn("Cancel", "", function () { back.remove(); });
-    btn("Add as a copy", "dlg-ok", function () { back.remove(); restoreCopy(pk); });
+    btn("Cancel", "", function () { back.remove(); done(false); });
+    btn("Add as a copy", "dlg-ok", function () { back.remove(); restoreCopy(pk); done("copy"); });
     var rep = btn("Replace everything", "dlg-ok dlg-danger", function () {
       back.remove();
       OfficeDialog.confirm({
         title: "Replace everything?",
         message: "This deletes your current tables, queries, reports, views and pictures, then loads the backup. This cannot be undone.",
         okLabel: "Replace", danger: true
-      }).then(function (ok) { if (ok) restoreReplace(pk); });
+      }).then(function (ok) { if (ok) { restoreReplace(pk); done("replace"); } else done(false); });
     });
     box.appendChild(act); back.appendChild(box); document.body.appendChild(back); rep.focus();
   }
-  function restoreFile(file) {
+  function restoreFile(file, opts) {
     var rd = new FileReader();
     rd.onload = function () {
       var res = parse(String(rd.result || ""));
       if (!res.ok) return toast(res.error);
-      restoreDialog(res.pack);
+      restoreDialog(res.pack, opts);
     };
     rd.onerror = function () { toast("Could not read that file"); };
     rd.readAsText(file);
@@ -545,7 +548,7 @@
     tablesFromJson: tablesFromJson, tablesFromAoA: tablesFromAoA, tablesFromSql: tablesFromSql,
     sheetAoA: sheetAoA, cellText: cellText,
     backupName: backupName, isBackupName: isBackupName, stampName: stampName,
-    backup: backup, restoreFile: restoreFile, pickRestore: pickRestore, open: open,
+    backup: backup, restoreDialog: restoreDialog, restoreFile: restoreFile, pickRestore: pickRestore, open: open,
     exportXlsx: exportXlsx, sendToSpreadsheet: sendToSpreadsheet, loadXlsx: loadXlsx
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
