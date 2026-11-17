@@ -3,13 +3,14 @@
  * Procedural HTML5 Canvas desktop background engine.
  *
  * Presets:
- *   - live:aurora        Harmonic flowing gradient ribbons (sine wave ribbons)
- *   - live:constellation Floating starry nodes with proximity line links
- *   - live:circadian     24-hour diurnal dynamic sky
+ *   - live:aurora        Harmonic flowing gradient ribbons with drifting luminous shimmer
+ *   - live:constellation Floating starry nodes with proximity line links and pulse glow
+ *   - live:circadian     24-hour diurnal dynamic sky with drifting atmospheric clouds
  *
  * Governance & Performance:
  *   - 30 FPS cap via timestamp delta in requestAnimationFrame
- *   - Auto-pause on occlusion (fullscreen, maximised window, screen lock, break lock, hidden tab)
+ *   - Auto-pause on tab hidden, screen locked (hub-locked), or break locked (hub-break)
+ *   - Settings live preview attachment via attachPreview(canvasEl, id)
  *   - Accessibility: respects prefers-reduced-motion and sites-hub.motion ('reduced' / 'off')
  *     by drawing a single static frame and stopping animation
  */
@@ -25,17 +26,28 @@
       color: '#081426',
       init(state, w, h) {
         state.t = 0;
+        state.stars = [];
+        for (let i = 0; i < 35; i++) {
+          state.stars.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() * 0.4 + 0.15),
+            r: Math.random() * 1.5 + 0.6,
+            alpha: Math.random() * 0.6 + 0.25
+          });
+        }
       },
       render(ctx, w, h, state) {
-        state.t += 0.008;
+        state.t += 0.022; // smooth, clearly visible undulating flow
         ctx.fillStyle = '#050c18';
         ctx.fillRect(0, 0, w, h);
 
         const ribbons = [
-          { color: 'rgba(14, 165, 233, 0.18)', yBase: h * 0.45, amp: h * 0.12, freq: 0.003, speed: 1.0 },
-          { color: 'rgba(16, 185, 129, 0.16)', yBase: h * 0.55, amp: h * 0.14, freq: 0.0025, speed: 0.8 },
-          { color: 'rgba(99, 102, 241, 0.14)', yBase: h * 0.65, amp: h * 0.10, freq: 0.0035, speed: 1.2 },
-          { color: 'rgba(236, 72, 153, 0.12)', yBase: h * 0.50, amp: h * 0.08, freq: 0.004, speed: 0.6 }
+          { color: 'rgba(14, 165, 233, 0.22)', yBase: h * 0.42, amp: h * 0.14, freq: 0.003, speed: 1.0 },
+          { color: 'rgba(16, 185, 129, 0.20)', yBase: h * 0.52, amp: h * 0.16, freq: 0.0025, speed: 0.8 },
+          { color: 'rgba(99, 102, 241, 0.18)', yBase: h * 0.62, amp: h * 0.12, freq: 0.0035, speed: 1.2 },
+          { color: 'rgba(236, 72, 153, 0.14)', yBase: h * 0.48, amp: h * 0.10, freq: 0.004, speed: 0.6 }
         ];
 
         ctx.save();
@@ -44,15 +56,30 @@
           const rib = ribbons[r];
           ctx.beginPath();
           ctx.moveTo(0, h);
-          for (let x = 0; x <= w; x += 12) {
+          for (let x = 0; x <= w; x += 10) {
             const y = rib.yBase + Math.sin(x * rib.freq + state.t * rib.speed) * rib.amp
-                                + Math.sin(x * rib.freq * 0.5 + state.t * rib.speed * 0.7) * (rib.amp * 0.5);
+                                + Math.sin(x * rib.freq * 0.6 + state.t * rib.speed * 0.7) * (rib.amp * 0.5);
             ctx.lineTo(x, y);
           }
           ctx.lineTo(w, h);
           ctx.closePath();
           ctx.fillStyle = rib.color;
           ctx.fill();
+        }
+
+        // Drifting shimmer dust
+        if (state.stars) {
+          for (let i = 0; i < state.stars.length; i++) {
+            const s = state.stars[i];
+            s.x += s.vx;
+            s.y -= s.vy;
+            if (s.x < 0) s.x = w; else if (s.x > w) s.x = 0;
+            if (s.y < 0) s.y = h;
+            ctx.fillStyle = 'rgba(180, 240, 255, ' + s.alpha.toFixed(2) + ')';
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
         ctx.restore();
       }
@@ -65,16 +92,16 @@
       color: '#0a0d14',
       init(state, w, h) {
         state.stars = [];
-        const count = Math.max(30, Math.min(60, Math.round((w * h) / 25000)));
+        const count = Math.max(35, Math.min(65, Math.round((w * h) / 22000)));
         for (let i = 0; i < count; i++) {
           state.stars.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.45,
-            vy: (Math.random() - 0.5) * 0.45,
-            r: Math.random() * 1.5 + 1,
+            vx: (Math.random() - 0.5) * 0.85,
+            vy: (Math.random() - 0.5) * 0.85,
+            r: Math.random() * 1.6 + 1.2,
             baseAlpha: Math.random() * 0.5 + 0.4,
-            pulseSpeed: Math.random() * 0.02 + 0.01
+            pulseSpeed: Math.random() * 0.04 + 0.02
           });
         }
         state.t = 0;
@@ -92,14 +119,12 @@
           const s = stars[i];
           s.x += s.vx;
           s.y += s.vy;
-          if (s.x < 0) s.x = w;
-          else if (s.x > w) s.x = 0;
-          if (s.y < 0) s.y = h;
-          else if (s.y > h) s.y = 0;
+          if (s.x < 0) s.x = w; else if (s.x > w) s.x = 0;
+          if (s.y < 0) s.y = h; else if (s.y > h) s.y = 0;
         }
 
         // Proximity lines
-        const maxDist = 110;
+        const maxDist = 120;
         ctx.lineWidth = 1;
         for (let i = 0; i < stars.length; i++) {
           const s1 = stars[i];
@@ -109,7 +134,7 @@
             const dy = s1.y - s2.y;
             const d = Math.sqrt(dx * dx + dy * dy);
             if (d < maxDist) {
-              const alpha = (1 - d / maxDist) * 0.22;
+              const alpha = (1 - d / maxDist) * 0.28;
               ctx.strokeStyle = 'rgba(165, 215, 255, ' + alpha.toFixed(3) + ')';
               ctx.beginPath();
               ctx.moveTo(s1.x, s1.y);
@@ -122,8 +147,8 @@
         // Star points
         for (let i = 0; i < stars.length; i++) {
           const s = stars[i];
-          const a = s.baseAlpha + Math.sin(state.t * s.pulseSpeed) * 0.2;
-          ctx.fillStyle = 'rgba(210, 235, 255, ' + Math.max(0.1, Math.min(1, a)).toFixed(2) + ')';
+          const a = s.baseAlpha + Math.sin(state.t * s.pulseSpeed) * 0.25;
+          ctx.fillStyle = 'rgba(215, 240, 255, ' + Math.max(0.1, Math.min(1, a)).toFixed(2) + ')';
           ctx.beginPath();
           ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
           ctx.fill();
@@ -144,7 +169,18 @@
             x: Math.random() * w,
             y: Math.random() * (h * 0.7),
             r: Math.random() * 1.2 + 0.8,
-            twinkle: Math.random() * 0.03 + 0.01
+            twinkle: Math.random() * 0.05 + 0.02
+          });
+        }
+        state.clouds = [];
+        for (let i = 0; i < 5; i++) {
+          state.clouds.push({
+            x: Math.random() * w,
+            y: (h * 0.15) + (i * (h * 0.12)),
+            w: Math.random() * 200 + 150,
+            h: Math.random() * 40 + 25,
+            speed: Math.random() * 0.4 + 0.2,
+            alpha: Math.random() * 0.08 + 0.06
           });
         }
       },
@@ -156,30 +192,35 @@
           hour = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
         }
 
-        let topColor, bottomColor, starAlpha = 0;
+        let topColor, bottomColor, starAlpha = 0, cloudColor = 'rgba(255,255,255,';
         if (hour < 5 || hour >= 21.5) {
           topColor = '#040711';
           bottomColor = '#0d172e';
           starAlpha = 0.85;
+          cloudColor = 'rgba(100,120,160,';
         } else if (hour < 7) {
           const p = (hour - 5) / 2;
           topColor = '#121832';
           bottomColor = p < 0.5 ? '#61324c' : '#c85a53';
           starAlpha = (1 - p) * 0.8;
+          cloudColor = 'rgba(255,180,160,';
         } else if (hour < 17) {
           topColor = '#1e4877';
           bottomColor = '#4b79a1';
           starAlpha = 0;
+          cloudColor = 'rgba(255,255,255,';
         } else if (hour < 19.5) {
           const p = (hour - 17) / 2.5;
           topColor = p < 0.5 ? '#241b3d' : '#1a132b';
           bottomColor = p < 0.5 ? '#b83b5e' : '#6f2249';
           starAlpha = p * 0.4;
+          cloudColor = 'rgba(255,160,140,';
         } else {
           const p = (hour - 19.5) / 2;
           topColor = '#111528';
           bottomColor = '#1d2138';
           starAlpha = 0.4 + p * 0.45;
+          cloudColor = 'rgba(120,130,170,';
         }
 
         const grad = ctx.createLinearGradient(0, 0, 0, h);
@@ -187,6 +228,23 @@
         grad.addColorStop(1, bottomColor);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
+
+        // Drifting clouds for live daytime and atmospheric movement
+        if (state.clouds) {
+          for (let i = 0; i < state.clouds.length; i++) {
+            const c = state.clouds[i];
+            c.x += c.speed;
+            if (c.x > w + c.w) c.x = -c.w;
+            ctx.fillStyle = cloudColor + c.alpha.toFixed(3) + ')';
+            ctx.beginPath();
+            if (ctx.ellipse) {
+              ctx.ellipse(c.x, c.y, c.w * 0.5, c.h * 0.5, 0, 0, Math.PI * 2);
+            } else {
+              ctx.arc(c.x, c.y, c.h * 0.5, 0, Math.PI * 2);
+            }
+            ctx.fill();
+          }
+        }
 
         if (starAlpha > 0.05 && state.stars) {
           for (let i = 0; i < state.stars.length; i++) {
@@ -209,8 +267,8 @@
   let lastFrameTime = 0;
   let state = {};
   let isPaused = false;
-  let resizeObserver = null;
   let mutationObserver = null;
+  const previewInstances = new Map();
 
   function isReducedMotion() {
     if (typeof document === 'undefined') return false;
@@ -228,14 +286,12 @@
   function shouldPause() {
     if (typeof document === 'undefined') return false;
     if (document.hidden) return true;
-    if (document.fullscreenElement || document.webkitFullscreenElement) return true;
     const root = document.documentElement;
     if (root && (root.classList.contains('hub-locked') || root.classList.contains('hub-break'))) return true;
     const body = document.body;
     const isDesktop = body && body.classList.contains('wm-desktop');
     const empty = document.getElementById('empty');
     if (!isDesktop && empty && empty.classList.contains('hidden')) return true;
-    if (document.querySelector('.wm-max:not(.wm-min)')) return true;
     return false;
   }
 
@@ -378,6 +434,74 @@
     state = {};
   }
 
+  // Settings & preview attachment
+  function attachPreview(canvasEl, id) {
+    if (!canvasEl) return;
+    detachPreview(canvasEl);
+    if (!id || !PRESETS[id]) return;
+
+    const pCtx = canvasEl.getContext ? canvasEl.getContext('2d') : null;
+    if (!pCtx) return;
+
+    const pState = {};
+    const w = canvasEl.clientWidth || canvasEl.width || 300;
+    const h = canvasEl.clientHeight || canvasEl.height || 170;
+    canvasEl.width = w;
+    canvasEl.height = h;
+
+    if (PRESETS[id].init) PRESETS[id].init(pState, w, h);
+
+    let lastTime = performance.now ? performance.now() : Date.now();
+    let loopId = null;
+
+    function renderLoop(now) {
+      if (!previewInstances.has(canvasEl)) return;
+      if (document.hidden) {
+        loopId = requestAnimationFrame(renderLoop);
+        return;
+      }
+      const delta = now - lastTime;
+      if (delta >= 32) {
+        lastTime = now;
+        const curW = canvasEl.clientWidth || w;
+        const curH = canvasEl.clientHeight || h;
+        if (canvasEl.width !== curW || canvasEl.height !== curH) {
+          canvasEl.width = curW;
+          canvasEl.height = curH;
+        }
+        PRESETS[id].render(pCtx, canvasEl.width, canvasEl.height, pState);
+      }
+      if (!isReducedMotion()) {
+        loopId = requestAnimationFrame(renderLoop);
+      }
+    }
+
+    previewInstances.set(canvasEl, {
+      stop() {
+        if (loopId) cancelAnimationFrame(loopId);
+        if (pCtx) pCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      }
+    });
+
+    PRESETS[id].render(pCtx, w, h, pState);
+    if (!isReducedMotion()) {
+      loopId = requestAnimationFrame(renderLoop);
+    }
+  }
+
+  function detachPreview(canvasEl) {
+    if (!canvasEl) {
+      for (const inst of previewInstances.values()) inst.stop();
+      previewInstances.clear();
+      return;
+    }
+    const inst = previewInstances.get(canvasEl);
+    if (inst) {
+      inst.stop();
+      previewInstances.delete(canvasEl);
+    }
+  }
+
   // Lifecycle listeners
   if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     window.addEventListener('resize', () => {
@@ -385,16 +509,10 @@
       if (currentId) tick();
     });
     document.addEventListener('visibilitychange', checkState);
-    document.addEventListener('fullscreenchange', checkState);
-    document.addEventListener('webkitfullscreenchange', checkState);
 
-    // Watch for window maximization or lock classes
     try {
       mutationObserver = new MutationObserver(() => checkState());
       mutationObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-      if (document.body) {
-        mutationObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
-      }
     } catch (_) { /* environment without MutationObserver */ }
   }
 
@@ -407,6 +525,8 @@
     checkState,
     shouldPause,
     isReducedMotion,
+    attachPreview,
+    detachPreview,
     current: () => currentId,
     isRunning: () => !!currentId && !isPaused,
     isPaused: () => isPaused,

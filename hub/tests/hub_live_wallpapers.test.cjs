@@ -233,34 +233,39 @@ test('HubLiveWallpaper occlusion detection and auto-pausing', () => {
   engine.checkState();
   assert.equal(engine.isPaused(), false);
 
-  // 2. Fullscreen active
-  doc.fullscreenElement = doc.documentElement;
-  assert.equal(engine.shouldPause(), true);
-  doc.fullscreenElement = null;
-  assert.equal(engine.shouldPause(), false);
-
-  // 3. Maximized window
-  const winEl = makeEl('div', 'win-1', ['wm-window', 'wm-max']);
-  elements.set('win-1', winEl);
-  doc.body.appendChild(winEl);
-  assert.equal(engine.shouldPause(), true);
-
-  // When window is minimized, occlusion ceases
-  winEl.classList.add('wm-min');
-  assert.equal(engine.shouldPause(), false);
-
-  // 4. Screen lock active
+  // 2. Screen lock active
   doc.documentElement.classList.add('hub-locked');
   assert.equal(engine.shouldPause(), true);
   doc.documentElement.classList.remove('hub-locked');
 
-  // 5. Break lock active
+  // 3. Break lock active
   doc.documentElement.classList.add('hub-break');
   assert.equal(engine.shouldPause(), true);
   doc.documentElement.classList.remove('hub-break');
   assert.equal(engine.shouldPause(), false);
 
+  // 4. Phone mode with open app (empty hidden)
+  doc.body.classList.remove('wm-desktop');
+  const empty = doc.getElementById('empty');
+  empty.classList.add('hidden');
+  assert.equal(engine.shouldPause(), true);
+  empty.classList.remove('hidden');
+  doc.body.classList.add('wm-desktop');
+  assert.equal(engine.shouldPause(), false);
+
   engine.stop();
+});
+
+test('HubLiveWallpaper attachPreview and detachPreview for Settings', () => {
+  const { win, makeEl } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+
+  const engine = win.HubLiveWallpaper;
+  const pCanvas = makeEl('canvas', 'p-canvas');
+
+  assert.doesNotThrow(() => engine.attachPreview(pCanvas, 'live:aurora'));
+  assert.doesNotThrow(() => engine.detachPreview(pCanvas));
 });
 
 test('HubLiveWallpaper reduced motion support', () => {

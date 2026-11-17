@@ -14,6 +14,18 @@
   'use strict';
   const S = window.SettingsStore, ui = window.Settings.ui;
   function paint(el, w) {
+    const liveCanvas = el.querySelector ? el.querySelector('.wp-preview-live') : null;
+    if (w && w.live && liveCanvas && window.HubLiveWallpaper) {
+      liveCanvas.style.display = 'block';
+      window.HubLiveWallpaper.attachPreview(liveCanvas, w.id);
+      el.style.backgroundColor = w.color || '#000';
+      el.style.backgroundImage = 'none';
+      return;
+    }
+    if (liveCanvas && window.HubLiveWallpaper) {
+      liveCanvas.style.display = 'none';
+      window.HubLiveWallpaper.detachPreview(liveCanvas);
+    }
     el.style.backgroundColor = w.color || '#000';
     el.style.backgroundImage = w.image || 'none';
     el.style.backgroundSize = w.slide ? '100% 300%' : 'cover';
@@ -30,8 +42,9 @@
       const def = () => (window.hubWallpaperDefault ? window.hubWallpaperDefault() : 'night');
       const cur = () => S.get('wallpaper') || def();
       const preview = ui.el('div', 'wp-preview');
-      preview.appendChild(ui.el('div', 'wp-preview-win'));
-      preview.appendChild(ui.el('div', 'wp-preview-bar'));
+      const previewCanvas = ui.el('canvas', 'wp-preview-live');
+      previewCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border-radius:16px;pointer-events:none;z-index:0;display:none;';
+      preview.append(previewCanvas, ui.el('div', 'wp-preview-win'), ui.el('div', 'wp-preview-bar'));
       const grid = ui.el('div', 'wp-grid');
       const liveGrid = ui.el('div', 'wp-grid wp-live');
       const pics = ui.el('div', 'wp-grid wp-pics');
