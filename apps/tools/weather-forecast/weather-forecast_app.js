@@ -1,7 +1,7 @@
 /*
- * Weather Forecast — page logic (WX1d).
+ * Weather Forecast — page logic (WX1e).
  * Paints current conditions, the 7-day forecast, today's curve, the next 12 hours and detail chips;
- * handles loading, error, offline and refresh. WX1e adds units and the place picker.
+ * handles °C/°F, the place picker, loading, error, offline and refresh. WX1f finishes the app.
  */
 var WXApp = (function () {
   "use strict";
@@ -12,6 +12,7 @@ var WXApp = (function () {
   var busy = false;
   var last = null;
   var prefs = {};
+  var unit = "c";
 
   function $(id) { return document.getElementById(id); }
 
@@ -21,6 +22,19 @@ var WXApp = (function () {
 
   function writePrefs() {
     try { localStorage.setItem(CFG.prefs.key, JSON.stringify(prefs)); } catch (e) { /* optional */ }
+  }
+
+  // Temperature and wind in the chosen unit
+  function t(v) { return WXFormat.tempText(v, unit); }
+
+  function wind(v, dir) {
+    return WXFormat.windText(unit === "f" ? WXFormat.toMph(v) : v, dir, unit === "f" ? "mph" : "km/h");
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
   }
 
   /* ---- inline SVG icons (no external files, no network) ---- */
@@ -226,7 +240,7 @@ var WXApp = (function () {
     var rows = "", k, hh, label, tw, left, cx, lastRight = -1e9;
     for (k = 0; k < pts.length; k++) {
       hh = parseInt(pts[k].time.slice(11, 13), 10);
-      rows += "<tr><td>" + WXFormat.hourLabel(pts[k].time) + "</td><td>" + WXFormat.fmtTemp(pts[k].temp) + "</td></tr>";
+      rows += "<tr><td>" + WXFormat.hourLabel(pts[k].time) + "</td><td>" + t(pts[k].temp) + "</td></tr>";
       if (hh % C.labelEvery !== 0) continue;
 
       label = WXFormat.hourLabel(pts[k].time);
@@ -243,7 +257,7 @@ var WXApp = (function () {
       // keep the temperature clear of the "now" line
       if (nx === null || Math.abs(cx - nx) > 16) {
         ctx.textAlign = "center";
-        ctx.fillText(WXFormat.fmtTemp(pts[k].temp), cx, y(pts[k].temp) - 8);
+        ctx.fillText(t(pts[k].temp), cx, y(pts[k].temp) - 8);
       }
     }
     el.chartTable.innerHTML = rows;
@@ -286,7 +300,7 @@ var WXApp = (function () {
         '<span class="d">' + (i === 0 ? T.today : WXFormat.weekday(d.date)) + '</span>' +
         '<span class="i">' + iconSvg(w[1]) + '<span class="sr">' + w[0] + '</span></span>' +
         '<span class="r">' + (typeof d.rain === "number" ? WXFormat.pct(d.rain) : "") + '</span>' +
-        '<span class="t"><b>' + WXFormat.fmtTemp(d.hi) + '</b><i>' + WXFormat.fmtTemp(d.lo) + '</i></span>' +
+        '<span class="t"><b>' + t(d.hi) + '</b><i>' + t(d.lo) + '</i></span>' +
         '</li>';
     }
     el.dayList.innerHTML = html;
@@ -313,7 +327,7 @@ var WXApp = (function () {
       html += '<li class="wx-hour">' +
         '<span class="h">' + (i === 0 ? "Now" : WXFormat.hourLabel(pts[i].time)) + '</span>' +
         '<span class="i">' + iconSvg(w[1]) + '<span class="sr">' + w[0] + '</span></span>' +
-        '<span class="t">' + WXFormat.fmtTemp(pts[i].temp) + '</span>' +
+        '<span class="t">' + t(pts[i].temp) + '</span>' +
         '<span class="r">' + (typeof pts[i].rain === "number" ? WXFormat.pct(pts[i].rain) : "") + '</span>' +
         '</li>';
     }
@@ -326,9 +340,7 @@ var WXApp = (function () {
     var today = (data.days && data.days[0]) || {};
     var next = WXData.nextHours(data.hours, data.at, 1);
 
-    el.gust.textContent = typeof now.gust === "number"
-      ? Math.round(now.gust) + " " + data.units.wind
-      : "\u2013";
+    el.gust.textContent = typeof now.gust === "number" ? wind(now.gust, null) : "\u2013";
     el.rainNow.textContent = next.length && typeof next[0].rain === "number"
       ? WXFormat.pct(next[0].rain)
       : "\u2013";
@@ -347,15 +359,15 @@ var WXApp = (function () {
 
     el.place.textContent = d.place;
     el.stamp.textContent = WXFormat.fmtDay(d.at) + " \u00B7 " + WXFormat.fmtClock(d.at) + " local";
-    el.temp.textContent = WXFormat.roundTemp(now.temp);
-    el.unit.textContent = d.units.temp;
+    el.temp.textContent = WXFormat.roundTemp(WXFormat.toDisplayTemp(now.temp, unit));
+    el.unit.textContent = unit === "f" ? "\u00B0F" : "\u00B0C";
     el.cond.textContent = w[0];
     el.icon.innerHTML = iconSvg(w[1]);
-    el.feels.textContent = T.feels + " " + WXFormat.fmtTemp(now.feels);
-    el.hi.textContent = WXFormat.fmtTemp(d.today.hi);
-    el.lo.textContent = WXFormat.fmtTemp(d.today.lo);
+    el.feels.textContent = T.feels + " " + t(now.feels);
+    el.hi.textContent = t(d.today.hi);
+    el.lo.textContent = t(d.today.lo);
     el.hum.textContent = typeof now.humidity === "number" ? Math.round(now.humidity) + "%" : "\u2013";
-    el.wind.textContent = WXFormat.windText(now.wind, now.dir, d.units.wind);
+    el.wind.textContent = wind(now.wind, now.dir);
 
     renderDays(d.days);
     drawChart();
@@ -385,6 +397,86 @@ var WXApp = (function () {
       .then(function () {
         setBusy(false);
       });
+  }
+
+  /* ---- place picker ---- */
+
+  var searchTimer = null;
+  var searchSeq = 0;
+
+  function openPlaceDialog() {
+    if (el.dlg.showModal) el.dlg.showModal();
+    else el.dlg.setAttribute("open", "");
+    el.placeQuery.value = "";
+    el.placeResults.innerHTML = "";
+    el.placeResults.dataset.json = "[]";
+    el.placeMsg.textContent = "";
+    setTimeout(function () { el.placeQuery.focus(); }, 30);
+  }
+
+  function closePlaceDialog() {
+    if (el.dlg.close) el.dlg.close();
+    else el.dlg.removeAttribute("open");
+  }
+
+  function choosePlace(p) {
+    CFG.location = { name: p.name, region: p.region, latitude: p.latitude, longitude: p.longitude };
+    prefs.place = p;
+    writePrefs();
+    closePlaceDialog();
+    last = null;
+    el.place.textContent = p.name;
+    el.daysCard.hidden = true;
+    el.chartCard.hidden = true;
+    el.hoursCard.hidden = true;
+    el.chipsCard.hidden = true;
+    refresh(true);
+  }
+
+  function runPlaceSearch(q) {
+    var seq = ++searchSeq;
+    WXData.searchPlaces(q).then(function (list) {
+      if (seq !== searchSeq) return;
+      el.placeMsg.textContent = list.length ? "" : T.noPlaces;
+      el.placeResults.dataset.json = JSON.stringify(list.map(function (p) {
+        return {
+          name: p.name,
+          region: [p.admin1, p.country].filter(Boolean).join(", "),
+          latitude: p.latitude,
+          longitude: p.longitude,
+        };
+      }));
+      el.placeResults.innerHTML = list.map(function (p, i) {
+        var region = [p.admin1, p.country].filter(Boolean).join(", ");
+        return '<li><button type="button" class="wx-result" data-i="' + i + '">' +
+          '<span class="n">' + esc(p.name) + '</span>' +
+          '<span class="s">' + esc(region) + '</span></button></li>';
+      }).join("");
+    }).catch(function () {
+      if (seq !== searchSeq) return;
+      el.placeMsg.textContent = T.placeError;
+    });
+  }
+
+  function onPlaceInput() {
+    var q = el.placeQuery.value.trim();
+    if (searchTimer) clearTimeout(searchTimer);
+    if (q.length < 2) {
+      el.placeResults.innerHTML = "";
+      el.placeMsg.textContent = "";
+      return;
+    }
+    el.placeMsg.textContent = T.searching;
+    searchTimer = setTimeout(function () { runPlaceSearch(q); }, 350);
+  }
+
+  function setUnit(u) {
+    unit = u === "f" ? "f" : "c";
+    prefs.unit = unit;
+    writePrefs();
+    el.unitBtn.textContent = unit === "f" ? "\u00B0F" : "\u00B0C";
+    el.unitBtn.setAttribute("aria-label", unit === "f" ? "Switch to Celsius" : "Switch to Fahrenheit");
+    if (last) paint(last);
   }
 
   function init() {
@@ -418,11 +510,39 @@ var WXApp = (function () {
     el.errorText = $("errorText");
     el.refresh = $("refresh");
     el.retry = $("retry");
+    el.placeBtn = $("placeBtn");
+    el.unitBtn = $("unitBtn");
+    el.dlg = $("placeDlg");
+    el.placeQuery = $("placeQuery");
+    el.placeResults = $("placeResults");
+    el.placeMsg = $("placeMsg");
 
     prefs = readPrefs();
+    unit = prefs.unit === "f" ? "f" : "c";
+    if (prefs.place && typeof prefs.place.latitude === "number") {
+      CFG.location = {
+        name: prefs.place.name,
+        region: prefs.place.region,
+        latitude: prefs.place.latitude,
+        longitude: prefs.place.longitude,
+      };
+    }
+    el.place.textContent = CFG.location.name;
+    el.unitBtn.textContent = unit === "f" ? "\u00B0F" : "\u00B0C";
+    el.unitBtn.setAttribute("aria-label", unit === "f" ? "Switch to Celsius" : "Switch to Fahrenheit");
 
     el.refresh.addEventListener("click", function () { refresh(true); });
     el.retry.addEventListener("click", function () { refresh(true); });
+    el.placeBtn.addEventListener("click", openPlaceDialog);
+    el.unitBtn.addEventListener("click", function () { setUnit(unit === "f" ? "c" : "f"); });
+    el.placeQuery.addEventListener("input", onPlaceInput);
+    el.placeResults.addEventListener("click", function (ev) {
+      var btn = ev.target.closest ? ev.target.closest(".wx-result") : null;
+      if (!btn) return;
+      var list = JSON.parse(el.placeResults.dataset.json || "[]");
+      var p = list[parseInt(btn.dataset.i, 10)];
+      if (p) choosePlace(p);
+    });
     el.moreDays.addEventListener("click", function () {
       prefs.showAllDays = !prefs.showAllDays;
       writePrefs();

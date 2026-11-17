@@ -15,6 +15,7 @@ const WEATHER_FORECAST_CONFIG = {
 
   api: {
     url: "https://api.open-meteo.com/v1/forecast",
+    geocode: "https://geocoding-api.open-meteo.com/v1/search",
     // Current conditions (and today's high/low from daily)
     current: [
       "temperature_2m",
@@ -77,6 +78,12 @@ const WEATHER_FORECAST_CONFIG = {
     rainNow: "Rain now",
     sunrise: "Sunrise",
     sunset: "Sunset",
+    changePlace: "Change place",
+    placeTitle: "Choose a place",
+    placeHint: "City or town",
+    searching: "Searching\u2026",
+    noPlaces: "No place found. Try another spelling.",
+    placeError: "Could not search places. Check the connection.",
   },
 
   // Today's curve
