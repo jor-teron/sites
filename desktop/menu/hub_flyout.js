@@ -2,6 +2,10 @@
  * Hub menu flyout (desktop/menu/hub_flyout.js) — GNOME 2 style cascading menu, DESKTOP MOUSE ONLY.
  *
  * H150 (sections step): category → sections → apps.
+ * H156: when a category has only one section (e.g. Favourites, whose CSV section cells are
+ *   all empty so everything lands in a single "Other"), skip the section column and show
+ *   that category's apps directly in the next column, as before H150. Two or more sections
+ *   are unchanged.
  * Hovering a category row in the open Hub menu (~100 ms) opens a second column beside the
  * menu with ONLY that category's sections (one row each: "Puzzle (12)" ›), read from its own CSV
  * (window.HUB_CAT_CSV in hub_config.js, parsed by window.TilesCsv from shared/tiles/tiles.js).
@@ -53,7 +57,12 @@
     }
     return out;
   }
-  window.HubFlyout = { sectionsOf };
+  /** H156: one section only → skip the section column and show those apps directly. */
+  function skipSectionStep(groups) {
+    return !!(groups && groups.length === 1);
+  }
+  // (before H156) window.HubFlyout = { sectionsOf };
+  window.HubFlyout = { sectionsOf, skipSectionStep };
 
   const menu = document.getElementById('menu');
   const host = menu && menu.parentElement;           // .header-left (menu scrolls, so the flyout is its sibling)
@@ -313,7 +322,14 @@
         fly.appendChild(msg);
       } else {
         // (before H150) window.TilesCsv.groups(list).forEach((g) => { if (g.section) fly.appendChild(<div.fly-sec>g.section); g.apps.forEach((a) => fly.appendChild(item(cat, a))); });
-        sectionsOf(list).forEach((g) => fly.appendChild(secRow(cat, g)));
+        // (before H156) sectionsOf(list).forEach((g) => fly.appendChild(secRow(cat, g)));
+        const groups = sectionsOf(list);
+        if (skipSectionStep(groups)) {
+          // H156: one section only — apps go in this column, no section rows
+          groups[0].apps.forEach((a) => fly.appendChild(item(cat, a)));
+        } else {
+          groups.forEach((g) => fly.appendChild(secRow(cat, g)));
+        }
       }
       const again = !fly.hidden;
       fly.hidden = false;

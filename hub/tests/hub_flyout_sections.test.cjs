@@ -24,12 +24,13 @@ function tilesCsv() {
   return w.TilesCsv;
 }
 
-/** Only the pure helper: no #menu, so the rest of the file returns at once. */
-function pureHelper() {
+/** Only the pure helpers: no #menu, so the rest of the file returns at once. */
+function hubFlyout() {
   const w = { matchMedia: () => ({ matches: true }), fetch() {} };
   vm.runInNewContext(SRC, { window: w, document: { getElementById: () => null } });
-  return w.HubFlyout.sectionsOf;
+  return w.HubFlyout;
 }
+function pureHelper() { return hubFlyout().sectionsOf; }
 
 const app = (name, section) => ({ name, entryUrl: name + '/', section });
 const shape = (out) => out.map((g) => g.section + ':' + g.apps.map((a) => a.name).join('|'));
@@ -119,7 +120,8 @@ function load(opts) {
   host.appendChild(menu);
   menu.rect = { left: 0, right: 200, top: 50, bottom: 600 };
   const rows = {};
-  ['Games', 'Favorite'].forEach((cat, i) => {
+  const catNames = ['Games', 'Favorite'].concat(o.extraCats || []);
+  catNames.forEach((cat, i) => {
     const r = new El('button'); r.className = 'menu-cat'; r.dataset.cat = cat;
     r.rect = { left: 0, right: 200, top: 60 + i * 46, bottom: 106 + i * 46 };
     menu.appendChild(r); rows[cat] = r;
@@ -128,11 +130,18 @@ function load(opts) {
   const opened = [];
   const window = {
     matchMedia: () => ({ matches: true }),
-    fetch: (u) => Promise.resolve({ ok: true, text: () => Promise.resolve(u.includes('favorite') ? 'Tetris,../games/tetris/,,,Watch\n' : GAMES_CSV) }),
-    HUB_CAT_CSV: { Games: 'apps/games/games-apps.csv', Favorite: 'apps/favorite/favorite-apps.csv' },
+    fetch: (u) => Promise.resolve({ ok: true, text: () => {
+      const texts = Object.assign({
+        'apps/games/games-apps.csv': GAMES_CSV,
+        'apps/favorite/favorite-apps.csv': (o.favCsv !== undefined ? o.favCsv : 'Tetris,../games/tetris/,,,Watch\n')
+      }, o.csvTexts || {});
+      const hit = Object.keys(texts).find((p) => u === p || u.endsWith(p) || u.includes(p));
+      return Promise.resolve(hit ? texts[hit] : (u.includes('favorite') ? texts['apps/favorite/favorite-apps.csv'] : GAMES_CSV));
+    } }),
+    HUB_CAT_CSV: Object.assign({ Games: 'apps/games/games-apps.csv', Favorite: 'apps/favorite/favorite-apps.csv' }, o.HUB_CAT_CSV || {}),
     HUB_APPS_CSV: 'x',
     TilesCsv: tilesCsv(),
-    HubFavorites: { list: () => [{ name: 'Mine', path: 'apps/tools/mine/' }] },
+    HubFavorites: { list: () => (o.favs !== undefined ? o.favs : [{ name: 'Mine', path: 'apps/tools/mine/' }]) },
     __hubFly: { openFromCat: (...a) => opened.push(a) },
     innerHeight: 800, innerWidth: 1200,
     addEventListener() {}, dispatchEvent() {}
@@ -253,6 +262,87 @@ test('leaving menu + both columns closes after the close delay', async () => {
   h.advance(349);
   assert.equal(h.appsCol.hidden, false);
   h.advance(1);
+  assert.equal(h.fly.hidden, true);
+  assert.equal(h.appsCol.hidden, true);
+});
+
+// ---------- H156: skip the section step when a category has only one section ----------
+test('H156 skipSectionStep: one section skips, two or more and empty do not', () => {
+  const F = hubFlyout();
+  assert.equal(F.skipSectionStep(F.sectionsOf([app('x'), app('y')])), true);
+  assert.equal(F.skipSectionStep(F.sectionsOf([app('a', 'Puzzle'), app('b', 'Puzzle')])), true);
+  assert.equal(F.skipSectionStep(F.sectionsOf([app('a', 'Puzzle'), app('b', 'Arcade')])), false);
+  assert.equal(F.skipSectionStep(F.sectionsOf([])), false);
+  assert.equal(F.skipSectionStep(F.sectionsOf(null)), false);
+  assert.equal(F.skipSectionStep(null), false);
+});
+
+test('H156: one-section category shows apps directly; no section rows; click opens', async () => {
+  const h = load({
+    extraCats: ['Tools'],
+    HUB_CAT_CSV: { Tools: 'apps/tools/tools-apps.csv' },
+    csvTexts: { 'apps/tools/tools-apps.csv': 'Calc,../tools/calc/,,,\nClock,../tools/clock/,,,\n' }
+  });
+  h.mouse(h.menu, h.rows.Tools, 100, 160);
+  h.advance(100); await h.tick(); await h.tick(); await h.tick();
+  assert.equal(h.fly.hidden, false);
+  assert.equal(h.fly.querySelectorAll('.fly-row').length, 0, 'no section rows');
+  const apps = h.fly.querySelectorAll('.fly-app');
+  assert.equal(apps.length, 2);
+  same(apps.map((a) => a.textContent.replace(/\s+/g, ' ').trim()), ['Calc', 'Clock']);
+  assert.equal(h.appsCol.hidden, true, 'apps stay in the first column');
+  apps[0].fire('click', {});
+  assert.equal(h.opened.length, 1);
+  assert.equal(h.opened[0][0], 'Tools');
+  assert.match(h.opened[0][1], /tools\/calc/);
+  assert.equal(h.opened[0][2], 'Calc');
+  assert.equal(h.fly.hidden, true);
+  assert.equal(h.appsCol.hidden, true);
+});
+
+test('H156: Favourites with empty sections and no personal favs shows apps directly', async () => {
+  const h = load({ favCsv: 'TV,../../tv/,,,\nNews,../media/news/,,,\n', favs: [] });
+  h.mouse(h.menu, h.rows.Favorite, 100, 120);
+  h.advance(100); await h.tick(); await h.tick(); await h.tick();
+  assert.equal(h.fly.hidden, false);
+  assert.equal(h.fly.querySelectorAll('.fly-row').length, 0, 'no lone Other row');
+  const apps = h.fly.querySelectorAll('.fly-app');
+  assert.equal(apps.length, 2);
+  same(apps.map((a) => a.textContent.replace(/\s+/g, ' ').trim()), ['TV', 'News']);
+  assert.equal(h.appsCol.hidden, true);
+  // keyboard still hides the flyout
+  h.document.events.keydown.forEach((f) => f({ key: 'ArrowDown' }));
+  assert.equal(h.fly.hidden, true);
+  assert.equal(h.appsCol.hidden, true);
+});
+
+test('H156: Favourites with personal favs and unsectioned CSV still uses two sections', async () => {
+  const h = load({ favCsv: 'TV,../../tv/,,,\n' });
+  h.mouse(h.menu, h.rows.Favorite, 100, 120);
+  h.advance(100); await h.tick(); await h.tick(); await h.tick();
+  same(h.fly.querySelectorAll('.fly-row').map((r) => r.dataset.sec), ['My favorites', 'Other']);
+  assert.equal(h.fly.querySelectorAll('.fly-app').length, 0, 'apps stay in the third column');
+  assert.equal(h.appsCol.hidden, true);
+});
+
+test('H156: Games (many sections) still opens the section column, not apps', async () => {
+  const h = load();
+  h.mouse(h.menu, h.rows.Games, 100, 80);
+  h.advance(100); await h.tick(); await h.tick(); await h.tick();
+  assert.equal(h.fly.hidden, false);
+  assert.ok(h.fly.querySelectorAll('.fly-row').length >= 2);
+  assert.equal(h.fly.querySelectorAll('.fly-app').length, 0);
+  assert.equal(h.appsCol.hidden, true);
+});
+
+test('H156: touch / pen still does nothing on a one-section category', async () => {
+  const h = load({
+    extraCats: ['Tools'],
+    HUB_CAT_CSV: { Tools: 'apps/tools/tools-apps.csv' },
+    csvTexts: { 'apps/tools/tools-apps.csv': 'Calc,../tools/calc/,,,\n' }
+  });
+  h.mouse(h.menu, h.rows.Tools, 100, 160, { pointerType: 'touch' });
+  h.advance(500); await h.tick();
   assert.equal(h.fly.hidden, true);
   assert.equal(h.appsCol.hidden, true);
 });
