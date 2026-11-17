@@ -12,6 +12,7 @@ Sun Position,          sun-position/,    sun-position/sun-position_icon.svg, , T
 My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
 Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
 Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
+Weather Forecast,      weather-forecast/, , , Weather, Live current conditions and today's high and low for Diphu - Open-Meteo
 NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionary: look up words in local languages
 Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
 Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type

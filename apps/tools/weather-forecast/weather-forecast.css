@@ -1,0 +1,246 @@
+/* Weather Forecast — styles (WX1a).
+   Colours follow the Hub theme (shared/theme/hub_theme.js sets html[data-theme] and --accent).
+   Phone first; no red; slate and blue with an amber sun. */
+
+:root {
+  --bg: #f2f5f9;
+  --card: #ffffff;
+  --ink: #16202e;
+  --muted: #5d6b7d;
+  --line: #dde4ee;
+  --accent: #2f6fed;
+  --wx-cloud: #8b98ab;
+  --shadow: 0 10px 28px rgba(22, 32, 46, 0.08);
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --bg: #0e131c;
+  --card: #161d29;
+  --ink: #eef2f7;
+  --muted: #9aa7b8;
+  --line: #26303f;
+  --wx-cloud: #93a1b5;
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.wx {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 18px 16px 30px;
+}
+
+/* header */
+
+.wx-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 14px;
+}
+
+.wx-place h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+.wx-place p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.wx-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  min-width: 42px;
+  height: 42px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.wx-btn:hover { border-color: var(--accent); }
+.wx-btn[disabled] { opacity: 0.55; cursor: default; }
+
+.wx-btn.spin .ic-refresh { animation: wx-spin 1s linear infinite; }
+
+@keyframes wx-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-btn.spin .ic-refresh { animation: none; }
+}
+
+/* status line */
+
+.wx-status {
+  margin: 0 0 10px;
+  min-height: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.wx-status[data-tone="warn"] { color: #8a5a1f; }
+.wx-status[data-tone="error"] { color: #8a5a1f; }
+
+html[data-theme="dark"] .wx-status[data-tone="warn"],
+html[data-theme="dark"] .wx-status[data-tone="error"] { color: #d8a45a; }
+
+/* current conditions card */
+
+.wx-now {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow);
+}
+
+.wx-now-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wx-icon {
+  flex: 0 0 auto;
+  width: 78px;
+  height: 78px;
+}
+
+.wx-icon svg { display: block; width: 100%; height: 100%; }
+
+.wx-temp {
+  margin: 0;
+  font-size: clamp(52px, 16vw, 74px);
+  line-height: 0.95;
+  font-weight: 600;
+  letter-spacing: -2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wx-temp .u {
+  margin-left: 2px;
+  font-size: 0.34em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+  vertical-align: 0.6em;
+}
+
+.wx-cond {
+  margin: 6px 0 0;
+  font-size: 17px;
+  font-weight: 550;
+}
+
+.wx-feels {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.wx-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 10px;
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.wx-facts div { min-width: 0; }
+
+.wx-facts dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.wx-facts dd {
+  margin: 3px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 520px) {
+  .wx-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* error card */
+
+.wx-error {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 20px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.wx-error h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.wx-error p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.wx-error .wx-btn {
+  height: 40px;
+  padding: 0 16px;
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* footer note */
+
+.wx-foot {
+  margin: 18px 0 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* keyboard focus */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
