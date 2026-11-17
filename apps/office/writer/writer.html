@@ -21,7 +21,8 @@
   <!-- (before DF21) <title>Writer</title> -->
   <!-- (before DF25) <title>Writer DF21</title> -->
   <!-- (before DW7) <title>Writer DF25</title> -->
-  <title>Writer DW7</title>
+  <!-- (before DW8) <title>Writer DW7</title> -->
+  <title>Writer DW8</title>
   <meta name="theme-color" content="#5b5bf0">
   <!-- (before DF25) <link rel="icon" href="draftly_icon.png"> -->
   <link rel="icon" href="writer_icon.png">
@@ -96,6 +97,7 @@
       <button type="button" class="file-item" role="menuitem" id="saveAsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save As</span></button>
       <button type="button" class="file-item" role="menuitem" id="printBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg><span>Print <kbd>Ctrl+P</kbd></span></button>
       <button type="button" class="file-item" role="menuitem" id="exportDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export DOCX</span></button>
+      <button type="button" class="file-item" role="menuitem" id="exportOdtBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export ODT</span></button>
       <button type="button" class="file-item" role="menuitem" id="exportPdfBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export PDF</span></button>
       <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
       <div class="file-sep" role="separator"></div>
@@ -451,6 +453,8 @@
   <script src="modules/writer-xlsx.js"></script>
   <script src="modules/writer-hos.js"></script><!-- MM8: Spreadsheet .hos reader for Merge -->
   <script src="modules/writer-zip.js"></script>
+  <!-- DW8 LibreOffice .odt writer; uses writer-zip.js -->
+  <script src="modules/writer-odtgen.js"></script>
   <!-- MM6 real DOCX writer (WordprocessingML); uses writer-zip.js -->
   <script src="modules/writer-docxgen.js"></script>
   <script src="modules/writer-docxread.js"></script>

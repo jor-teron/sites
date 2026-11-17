@@ -4,7 +4,8 @@
    PROJECT: Writer
    ROLE: Tiny ZIP writer (method 0 = stored, no compression) for "Export all".
          DOCX files are already compressed, so storing them costs nothing.
-   API:  Writer.zip.build([{ name, data: Uint8Array | ArrayBuffer }]) → Blob
+   API:  Writer.zip.build([{ name, data: Uint8Array | ArrayBuffer, flags? }]) → Blob
+         flags defaults to 0x0800 (UTF-8 names). Pass 0 for an ODT mimetype entry.
          Writer.zip.crc32(Uint8Array) → unsigned int
    Names are written as UTF-8 (flag bit 11). Up to 65535 files, < 4 GB.
    No DOM, no storage. Works from file://.
@@ -52,7 +53,10 @@ Writer.zip.build = function build(entries) {
     var lh = new DataView(new ArrayBuffer(30));
     lh.setUint32(0, 0x04034b50, true);
     lh.setUint16(4, 20, true);              /* version needed */
-    lh.setUint16(6, 0x0800, true);          /* UTF-8 names */
+    /* (before DW8) lh.setUint16(6, 0x0800, true); */
+    /* DW8: mimetype in an .odt must be stored with flags 0 and no extra field. */
+    var flags = e.flags != null ? e.flags : 0x0800;   /* default: UTF-8 names */
+    lh.setUint16(6, flags, true);
     lh.setUint16(8, 0, true);               /* stored */
     lh.setUint16(10, stamp.time, true);
     lh.setUint16(12, stamp.date, true);
@@ -66,7 +70,8 @@ Writer.zip.build = function build(entries) {
     ch.setUint32(0, 0x02014b50, true);
     ch.setUint16(4, 20, true);              /* version made by */
     ch.setUint16(6, 20, true);
-    ch.setUint16(8, 0x0800, true);
+    /* (before DW8) ch.setUint16(8, 0x0800, true); */
+    ch.setUint16(8, flags, true);
     ch.setUint16(10, 0, true);
     ch.setUint16(12, stamp.time, true);
     ch.setUint16(14, stamp.date, true);

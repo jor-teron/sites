@@ -2,11 +2,16 @@
 # Writer
 
 <!-- (before DF25) Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage keys, message types, ids and URLs are unchanged, so saved documents and Hub links keep working. -->
-Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). The page title and `Writer.config.release` are `DW7`.
+Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. -->
+The page title and `Writer.config.release` are `DW8`.
+
+## DW8 — export LibreOffice .odt
+
+File → **Export ODT** writes the open document as a LibreOffice/OpenDocument text file (`.odt`). Headings 1–6, paragraphs (alignment and indents where easy), bold, italic, underline, strike, font size and colour, highlight, super and subscript, nested bullet and numbered lists, tables (including merged cells), pictures (data URLs written to `Pictures/`), page breaks, and the current page size and margins carry over. Headers, footers and anything else Writer cannot represent are dropped quietly. Saving still writes `.how`. LibreOffice opens the file cleanly, and File → Open .docx / .odt reads it back (DW7). Writer: `modules/writer-odtgen.js` (DOM-free; packed with `writer-zip.js`, `mimetype` first and stored). Test: `node --test apps/office/writer/test/test-dw8-odt-export.js`.
 
 ## DW7 — open LibreOffice .odt
 
-File → **Open .docx / .odt** opens a LibreOffice/OpenDocument text file (`.odt`). Headings, paragraphs, bold, italic, underline, strike, bullet and numbered lists, tables, and embedded pictures (as data URLs) come across, best effort. Anything Writer cannot show is dropped quietly. The file lands in the editor the same way an opened `.docx` does. Saving still writes `.how`; Export DOCX, Export PDF and Print are unchanged. You can also drop a `.odt` on the page, or open a Hub `#drive=…&file=…` link that ends in `.odt`. Parser: `modules/writer-odtread.js` (DOM-free). Test: `node --test apps/office/writer/test/test-dw7-odt.js`.
+File → **Open .docx / .odt** opens a LibreOffice/OpenDocument text file (`.odt`). Headings, paragraphs, bold, italic, underline, strike, bullet and numbered lists, tables, and embedded pictures (as data URLs) come across, best effort. Anything Writer cannot show is dropped quietly. The file lands in the editor the same way an opened `.docx` does. Saving still writes `.how`; <!-- (before DW8) Export DOCX, Export PDF and Print are unchanged. --> Export DOCX, Export ODT (DW8), Export PDF and Print are unchanged. You can also drop a `.odt` on the page, or open a Hub `#drive=…&file=…` link that ends in `.odt`. Parser: `modules/writer-odtread.js` (DOM-free). Test: `node --test apps/office/writer/test/test-dw7-odt.js`.
 
 ## DF25 — full rename
 
@@ -35,7 +40,7 @@ The name on screen is Writer: the page title, the header next to the icon, Setti
 | `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. |
 | `page` | Size (`A4` or `Legal`), orientation, margin preset, custom centimetres, page numbers on/off and position |
 
-File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). <!-- (before DW7) **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged. --> **Open .docx / .odt** (DW7), **Export DOCX**, **Export PDF** and **Print** are unchanged.
+File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). <!-- (before DW7) **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged. --> <!-- (before DW8) **Open .docx / .odt** (DW7), **Export DOCX**, **Export PDF** and **Print** are unchanged. --> **Open .docx / .odt** (DW7), **Export DOCX**, **Export ODT** (DW8), **Export PDF** and **Print** are unchanged.
 
 **In the Hub**, Save, Save As and autosave write the browser's Local drive, folder **Documents**. That is the same disk the Files app shows. Documents is created the first time a file is saved. Writer reopens the newest `.how` in Documents when it starts inside the Hub. Recent lists those files. A double-click on a `.how` in Files opens Writer on that file (the Hub id is still `draftly`).
 
@@ -79,7 +84,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/writer-flow.js`: flow across pages (push / pull, caret, reflow, joined HTML)
 - `modules/writer-flow-blocks.js`: block helpers for flow (measure, join, text map, split a block)
 - `modules/writer-marks.js`: ¶ / ↵ format marks overlay
-- `modules/writer-export.js`: DOCX download, Print, File-menu export buttons, Ctrl+P
+- `modules/writer-export.js`: DOCX / ODT download, Print, File-menu export buttons, Ctrl+P
+- `modules/writer-odtgen.js`: DW8 LibreOffice .odt writer (editor HTML to OpenDocument, packed with `writer-zip.js`)
 - `modules/writer-docxgen.js`: MM6 real DOCX writer (editor HTML to WordprocessingML, packed with `writer-zip.js`)
 - `modules/writer-pdf.js`: PDF download (image PDF; since MM4 only the fallback for non-Latin text or errors)
 - `modules/writer-pdfgen.js`: MM4/DF14 real-text PDF (selectable text, jsPDF standard fonts) and Merge to PDF
