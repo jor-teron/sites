@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Settings app (apps/system/settings/index.html) — Hub settings: Wallpaper, Desktop, Hub bar (H52), Do Not Disturb (H82), Screen lock (H142), Windows, Sizes, Look, API Keys (H28), Devices (H29.2b), How-to, About (H56: How-to and Devices swapped; was ... How-to, Devices, About).
+  Settings app (apps/system/settings/index.html) — Hub settings: Desktop, Look, Hub bar, Sizes, Windows, Wallpaper, Screen lock, API Keys, Network drives, Devices, Do Not Disturb, How-to, About.
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
   (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
@@ -52,41 +52,25 @@
   <script src="../../../shared/search/search_bar.js"></script>
   <script src="../search/search_items.js"></script>
   <script src="settings.js"></script>
-  <script src="sec_wallpaper.js"></script>
-  <!-- <script src="sec_desktop.js"></script> -->
-  <!-- <script src="sec_desktop.js"></script> -->
   <script src="sec_desktop.js"></script><!-- H53: Screen mode note for a joined device -->
-  <!-- <script src="sec_hubbar.js"></script> -->
-  <!-- <script src="sec_hubbar.js"></script> -->
-  <!-- <script src="sec_hubbar.js"></script> -->
-  <!-- <script src="sec_hubbar.js"></script> -->
-  <script src="sec_hubbar.js"></script><!-- H63: + Eye comfort 🌙 --><!-- H52c: Update off = no dot --><!-- H52b: same switches in Phone mode, Desktop only tags --><!-- H52: Hub bar (taskbar items on / off), right after Desktop; H53: Devices note --><!-- H52: Hub bar (taskbar items on / off), right after Desktop -->
-  <script src="sec_dnd.js"></script><!-- H82: Do Not Disturb, after Hub bar -->
-  <script src="../../../hub/core/hub_lock_core.js"></script><!-- H142: PIN record + hash when Settings runs on its own -->
-  <script src="sec_lock.js"></script><!-- H142: Screen lock (PIN, Activate, Lock now), after Do Not Disturb -->
-  <script src="sec_windows.js"></script>
-  <script src="sec_sizes.js"></script>
-  <!-- <script src="sec_look.js"></script> -->
   <script src="../../../hub/core/hub_daynight.js"></script><!-- H63: day / night times -->
-  <!-- <script src="sec_look.js"></script> --><!-- H63: + Eye comfort -->
   <script src="../../../hub/core/hub_autotheme.js"></script><!-- H64: Auto theme -->
   <script src="sec_look.js"></script><!-- H64: Auto / Light / Dark / Glass --><!-- H63: + Eye comfort -->
+  <script src="sec_hubbar.js"></script><!-- H63: + Eye comfort 🌙 --><!-- H52c: Update off = no dot --><!-- H52b: same switches in Phone mode, Desktop only tags --><!-- H52: Hub bar (taskbar items on / off) -->
+  <script src="sec_sizes.js"></script>
+  <script src="sec_windows.js"></script>
+  <script src="sec_wallpaper.js"></script>
+  <script src="../../../hub/core/hub_lock_core.js"></script><!-- H142: PIN record + hash when Settings runs on its own -->
+  <script src="sec_lock.js"></script><!-- H142: Screen lock (PIN, Activate, Lock now) -->
   <script src="sec_keys.js"></script>
   <script src="../../../shared/fs/webdav_fs.js"></script>
   <script src="../../../shared/fs/webdav_accounts.js"></script>
   <script src="../../../shared/fs/sftp_fs.js"></script><!-- H119: SFTP drives -->
   <script src="../../../shared/fs/sftp_accounts.js"></script>
   <script src="sec_drives.js"></script><!-- H117: Network drives, after API Keys -->
-  <!-- H56: old order was ... sec_keys.js, sec_howto.js, sec_devices.js, sec_about.js; now Devices sits above How-to -->
-  <!-- <script src="sec_devices.js"></script> -->
-  <!-- <script src="sec_devices.js"></script> -->
-  <!-- <script src="sec_devices.js"></script> -->
-  <!-- <script src="sec_devices.js"></script> -->
-  <!-- <script src="sec_devices.js"></script> -->
   <script src="sec_devices.js"></script><!-- H57: 🎲 random name;  H29.2b: before About, so Devices sits above it; H50: + Hub mesh roster; H55: + Public mesh; H55b: real link state + Retry -->
-  <script src="sec_howto.js"></script><!-- H56: after Devices (was before it) -->
-  <!-- <script src="sec_about.js"></script> -->
-  <!-- <script src="sec_about.js"></script> -->
+  <script src="sec_dnd.js"></script><!-- H82: Do Not Disturb -->
+  <script src="sec_howto.js"></script>
   <script src="sec_about.js"></script><!-- H52: + Auto update card; H52c: no dot in the note -->
   <script>Settings.start();</script>
 </body>
