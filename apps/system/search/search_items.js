@@ -45,7 +45,9 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Files: open items with', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'click double files thumbnails' },
     { name: 'Notification timeout', hash: 'windows', icon: '\uD83E\uDE9F', where: 'Settings \u203A Windows', words: 'toast notify cards' },
     { name: 'Sizes', hash: 'sizes', icon: '\uD83D\uDCCF', where: 'Settings', words: 'settings taskbar position taskbar size title bar height bottom top' },
-    { name: 'Look', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings', words: 'settings theme dark light accent colour color animations motion' },
+    /* (before H159) { name: 'Look', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings', words: 'settings theme dark light accent colour color animations motion' }, */
+    { name: 'Look', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings', words: 'settings theme dark light accent colour color animations motion boot splash' },
+    { name: 'Show boot splash', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'boot splash startup loading restore windows' },
     { name: 'Theme (Dark / Light)', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'dark mode light mode' },
     { name: 'Accent colour', hash: 'look', icon: '\uD83C\uDFA8', where: 'Settings \u203A Look', words: 'color accent' },
     { name: 'API Keys', hash: 'keys', icon: '\uD83D\uDD11', where: 'System app (Settings shortcut)', words: 'settings api key keys services providers tavily gemini ollama vision token secret custom' },

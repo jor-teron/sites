@@ -38,6 +38,8 @@
  *   sites-hub.showFiles  '0' = no Files icons on the Desktop home (H7; default on) → html.hub-files-off, HubDrives.sync()
  *   sites-hub.showTiles  '1' = QR / link tiles on the home (H72; default off, Desktop + Phone) → html.hub-tiles-off
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
+ *   sites-hub.bootSplash H159: '' / missing = show the desktop boot splash (default) | '0' = off
+ *                        (Settings › Look › Show boot splash). Read by the inline <head> script and hub_splash.js.
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
  *   sites-hub.snapEdges  '0' = no snapping to screen edges (default on)  → html.hub-snap-off
  *                        (window drag to edge: wm_snap.js; floating keyboard: hub/osk/osk_drag.js)

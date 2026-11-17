@@ -623,6 +623,15 @@
   function applyHash(fromStart) {
     const id = hashId();
     const restored = fromStart && wmOn() && restoreWm();   // Desktop mode: saved windows first
+    // H159: tell the boot splash the desktop shell is ready and how many windows were re-opened
+    if (fromStart) {
+      try {
+        const n = (window.HubWM && wmOn()) ? window.HubWM.list().length : 0;
+        const d = { restored: !!restored, total: n };
+        window.dispatchEvent(new CustomEvent('hub-desktop-started', { detail: d }));
+        if (window.HubSplash && typeof window.HubSplash.onDesktopStarted === 'function') window.HubSplash.onDesktopStarted(d);
+      } catch (_) { /* splash optional */ }
+    }
     let app = id ? appForId(id) : null;
     if (!id && fromStart) {
       if (restored) return;   // the session already focused its window

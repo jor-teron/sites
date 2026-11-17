@@ -25,7 +25,7 @@
        file below carries ?v=HUB_VERSION. When you change hub_main.css / hub_controller.css / hub_notification.css /
        hub*.js / hub_apps.js / hub_tiles.js (or vendor/),
        bump the version with: python3 hub/tools/hub_bump.py --release NAME (README_technical section 13).
-       It replaces every "?v=20261117d" in this file (and the other 7 build places, H129a) with today's IST date
+       It replaces every "?v=20261118a" in this file (and the other 7 build places, H129a) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
   <link rel="stylesheet" href="hub/core/hub_main.css" />
   <!-- <link rel="stylesheet" href="hub/controller/hub_controller.css" />   (before H129c) -->
@@ -59,6 +59,13 @@
        exists, html.hub-locked hides the page before the first paint; hub_lock.js then draws the lock (or drops the class). -->
   <link rel="stylesheet" href="hub/core/hub_lock.css" />
   <script>try { if (localStorage.getItem('hub-lock.on') === '1' && localStorage.getItem('hub-lock.pin')) document.documentElement.classList.add('hub-locked'); } catch (_) { /* blocked */ }</script>
+  <!-- H159: Boot splash covers the desk while last-session windows restore. Tiny inline so there is
+       no flash of the desktop; hub_splash.js fills the layer and dismisses it. Off when
+       Settings › Look › Show boot splash is off (sites-hub.bootSplash = '0'). Not for ?join=. -->
+  <link rel="stylesheet" href="hub/core/hub_splash.css?v=20261118a" />
+  <style>html.hub-splash{background:#121418}html.hub-splash.hub-splash-light{background:#e9ecf1}html.hub-splash>body{visibility:hidden!important}#hub-splash{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;visibility:visible;background:inherit}</style>
+  <script>try { if (window === top && !/[?&]join=/.test(location.search) && localStorage.getItem('sites-hub.bootSplash') !== '0') { var r = document.documentElement; r.classList.add('hub-splash'); if (localStorage.getItem('sites-hub.theme') !== 'dark') r.classList.add('hub-splash-light'); var d = document.createElement('div'); d.id = 'hub-splash'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Hub'); d.setAttribute('aria-busy', 'true'); r.appendChild(d); } } catch (_) { /* blocked */ }</script>
+  <script src="hub/core/hub_splash.js?v=20261118a"></script>
 </head>
 <body>
   <header id="header">
@@ -149,9 +156,9 @@
   <!-- Settings app choices (wallpaper, sizes, accent, theme, motion) applied live -->
   <script src="shared/wallpaper/wallpapers.js"></script>
   <script src="hub/drives/hub_wallpapers.js"></script>
-  <script src="hub/drives/hub_live_wallpaper.js?v=20261117d"></script>
-  <!-- <script src="hub/core/hub_prefs.js?v=20261117d"></script> -->
-  <!-- <script src="hub/core/hub_daynight.js?v=20261117d"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
+  <script src="hub/drives/hub_live_wallpaper.js?v=20261118a"></script>
+  <!-- <script src="hub/core/hub_prefs.js?v=20261118a"></script> -->
+  <!-- <script src="hub/core/hub_daynight.js?v=20261118a"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
   <!-- H64: hub_daynight.js + hub_autotheme.js now load before hub_prefs.js, so the first paint has the Auto theme -->
   <!-- <script src="hub/core/hub_daynight.js"></script> --><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme)   (before H127) -->
   <!-- <script src="hub/core/hub_autotheme.js"></script> --><!-- H64: Auto theme (Light by day, Dark by night)   (before H127) -->
@@ -187,7 +194,7 @@
   <script src="hub/core/hub_apps.js"></script>
   <!-- <script src="hub/menu/hub_tiles.js"></script>   (before H129b) -->
   <script src="desktop/menu/hub_tiles.js"></script>
-  <script src="hub/core/hub.js?v=20261117d"></script>
+  <script src="hub/core/hub.js?v=20261118a"></script>
   <!-- Desktop mouse only: GNOME 2 style category flyout (CSV parser shared with the category pages) -->
   <script src="shared/tiles/tiles.js"></script>
   <script src="shared/favorites/favorites.js"></script>
