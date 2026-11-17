@@ -110,7 +110,7 @@
         ? 'Your API keys are saved in hub.json and in exported files as plain text. Anyone who can open the folder or the file can use them.'
         : 'API keys stay only in this browser. Sign-ins are never saved.';
     };
-    const keysSw = ui.switch('Include keys in profile', 'Also save your API keys (Settings \u2192 API Keys) in the profile',
+    const keysSw = ui.switch('Include keys in profile', 'Also save your API keys (API Keys) in the profile',
       HP.includeKeys(), (on) => { paintKeyNote(on); HP.setIncludeKeys(on).then(draw); });
     keysSw.id = 'profile-keys';
     paintKeyNote(HP.includeKeys());

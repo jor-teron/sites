@@ -45,7 +45,7 @@ test('the new H152 items are found by their words', () => {
   has('pin', 'Lock PIN (set / change)');
   has('fingerprint', 'Unlock with PIN / Fingerprint / Both');
   has('fingerprint', 'Fingerprint phones (Add phone)');
-  has('drives', 'Network drives');
+  has('drives', 'Network drive thumbnails');
   has('disturb', 'Do Not Disturb');
   has('close', 'Ask before closing the Hub');
   has('fullscreen', 'Show fullscreen button in taskbar');

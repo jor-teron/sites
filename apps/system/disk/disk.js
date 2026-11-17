@@ -11,12 +11,11 @@
  *   clean-up   ThumbStore.stats() / clear() (shared/fs/thumbs_store.js, IndexedDB 'sites-thumbs');
  *              "Empty Local" removes every entry of the OPFS root after a danger confirm, then
  *              posts {type:'drives'} on 'sites-fs' so Files and the Hub redraw.
- *   WebDAV     H133 (was Settings › Network drives): window.WebDavAccounts (shared/fs/webdav_accounts.js,
- *              localStorage 'hub-webdav-accounts', same list as before, so Files / Viewer / phone are unchanged)
- *              for Add / Edit / Remove; WebDavFs.test(account) for "Test connection" and the status on each row
- *              (checked once when the page opens and after every change: Checking… / Connected / the error).
- *              Form: Name, URL, User, Password (+ Show), Test connection, Add / Save, Cancel. Deep links:
- *              #add-webdav, #edit=webdav:<n> (Files' ⚙ on a WebDAV drive opens that).
+ *   Network    WebDAV and SFTP network drives (was Settings › Network drives):
+ *              window.WebDavAccounts (shared/fs/webdav_accounts.js) + WebDavFs.test (shared/fs/webdav_fs.js)
+ *              and window.SftpAccounts (shared/fs/sftp_accounts.js) + SftpFs.test (shared/fs/sftp_fs.js)
+ *              for Add / Edit / Remove / Test connection + status on each row.
+ *              Deep links: #add-webdav, #add-sftp, #edit=webdav:<n>, #edit=sftp:<n>.
  * Theme: shared/theme/hub_theme.js: html.light / --accent follow the Hub theme (H22, no picker).
  */
 (function () {
@@ -102,14 +101,19 @@
     rows.forEach(([d, st]) => {
       const r = el('div', 'drive'); r.setAttribute('role', 'listitem'); r.dataset.drive = d.id;
       // (before H133) r.appendChild(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : '\uD83D\uDCC2'));
-      r.appendChild(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : '\uD83D\uDCC2'));   // H133: 🌐 WebDAV
+      r.appendChild(el('span', 'drive-ico', d.kind === 'local' ? '\uD83D\uDCBE' : d.kind === 'gdrive' ? '\u2601\uFE0F' : d.kind === 'webdav' ? '\uD83C\uDF10' : d.kind === 'sftp' ? '\uD83D\uDD10' : '\uD83D\uDCC2'));   // 🌐 WebDAV / 🔐 SFTP
       const m = el('div', 'drive-main'); m.appendChild(el('div', 'drive-name', d.name));
       let stText, ok = false, bad = false;
-      if (d.kind === 'webdav') {   // H133: status from the last connection check
+      if (d.kind === 'webdav') {   // status from the last connection check
         const w = wdState.get(d.id);
         if (!w) checkWd(d.id);
         ok = !!(w && w.ok); bad = !!(w && w.state === 'done' && !w.ok);
         stText = 'Network drive (WebDAV) \u00B7 ' + (!w || w.state === 'checking' ? 'Checking\u2026' : w.ok ? 'Connected' : 'Error: ' + w.text);
+      } else if (d.kind === 'sftp') {
+        const s = sftpState.get(d.id);
+        if (!s) checkSftp(d.id);
+        ok = !!(s && s.ok); bad = !!(s && s.state === 'done' && !s.ok);
+        stText = 'Network drive (SFTP) \u00B7 ' + (!s || s.state === 'checking' ? 'Checking\u2026' : s.ok ? 'Connected' : 'Error: ' + s.text);
       } else if (d.kind === 'gdrive') {
         ok = st === 'ok';
         const u = ok && window.GoogleAuth && window.GoogleAuth.user ? window.GoogleAuth.user() : null;
@@ -121,16 +125,33 @@
       // (before H133) const s = el('div', 'drive-st' + (ok ? ' ok' : ''), stText);
       const s = el('div', 'drive-st' + (ok ? ' ok' : '') + (bad ? ' bad' : ''), stText);
       if (d.kind === 'webdav') { const acc = WA && WA.get(d.id); if (acc) m.appendChild(el('div', 'drive-url', acc.url + (acc.user ? ' \u00B7 ' + acc.user : ''))); }
+      else if (d.kind === 'sftp') {
+        const acc = SA && SA.get(d.id);
+        if (acc) {
+          const where = 'sftp://' + (acc.user ? acc.user + '@' : '') + acc.host + (+acc.port && +acc.port !== 22 ? ':' + acc.port : '') + '/' + (acc.folder || '').replace(/^\/+/, '') + ' \u00B7 via ' + acc.relay;
+          m.appendChild(el('div', 'drive-url', where));
+        }
+      }
       if (d.kind !== 'gdrive' && sizes.has(d.id)) s.append(' \u00B7 ', el('b', 'drive-size', sizes.get(d.id)));
       m.appendChild(s); r.appendChild(m);
       const a = el('div', 'drive-acts');
-      if (d.kind === 'webdav') {   // H133
+      if (d.kind === 'webdav') {
         a.appendChild(btn('Test connection', '', () => checkWd(d.id, true)));
         a.appendChild(btn('Edit', '', () => wdForm(d.id)));
         a.appendChild(btn('Remove', 'danger', async () => {
           if (!(await Dlg.confirm('Remove \u201C' + d.name + '\u201D?', 'Only the saved connection is removed. No files on the server are touched.', 'Remove', true))) return;
           WA.remove(d.id); wdState.delete(d.id);
           if (wdEditing === d.id) wdForm(null, true);
+          say('Removed \u201C' + d.name + '\u201D.'); draw();
+        }));
+      } else if (d.kind === 'sftp') {
+        a.appendChild(btn('Test connection', '', () => checkSftp(d.id, true)));
+        a.appendChild(btn('Edit', '', () => sftpForm(d.id)));
+        a.appendChild(btn('Remove', 'danger', async () => {
+          if (!(await Dlg.confirm('Remove \u201C' + d.name + '\u201D?', 'Only the saved connection is removed. No files on the server are touched.', 'Remove', true))) return;
+          if (SF) SF.close(SA.get(d.id) || {});
+          SA.remove(d.id); sftpState.delete(d.id);
+          if (sftpEditing === d.id) sftpForm(null, true);
           say('Removed \u201C' + d.name + '\u201D.'); draw();
         }));
       } else if (d.kind === 'gdrive') {
@@ -181,6 +202,7 @@
     const box = $('wd-form');
     wdEditing = null;
     if (close || !WA) { box.hidden = true; box.textContent = ''; $('add-wd').hidden = !WA; return; }
+    if (sftpForm) sftpForm(null, true);
     const acc = id ? WA.get(id) : null;
     if (id && !acc) { say('That drive is not saved any more.'); return; }
     wdEditing = acc ? acc.id : null;
@@ -222,13 +244,124 @@
   }
   if (!WA || !WF) $('add-wd').hidden = true;
   $('add-wd').addEventListener('click', () => wdForm(null));
+
+  /* ---- SFTP drives (was Settings › Network drives, sec_drives.js) ---- */
+  const SA = window.SftpAccounts, SF = window.SftpFs;
+  const sftpState = new Map();   // id → { state: 'checking' | 'done', ok, text }
+  /** Plain words for an SftpFs.test result (codes from hub/relay/sftp_relay.py via shared/fs/sftp_fs.js). */
+  function sftpExplain(r) {
+    if (r.ok) return 'Connected';
+    const c = r.code || '';
+    if (c === 'token') return 'the relay refused the token (see sftp_token.txt next to it)';
+    if (c === 'auth') return 'wrong user or password (the server refused it)';
+    if (c === 'allow') return 'the relay doesn\u2019t allow this host:port (add it to relay allowlist)';
+    if (c === 'hostkey') return 'the server key changed, so the relay refused it (remove its line from sftp_known_hosts next to the relay)';
+    if (c === 'notfound') return 'folder not found on the server';
+    if (c === 'reach') return (r.error || '').replace(/^SFTP: /, '') + '. Start it with: python3 hub/relay/sftp_relay.py';
+    return (r.error || 'failed').replace(/^SFTP: /, '');
+  }
+  async function checkSftp(id, loud) {
+    const acc = SA && SA.get(id);
+    if (!acc || !SF) return;
+    const cur = sftpState.get(id);
+    if (cur && cur.state === 'checking') return;
+    sftpState.set(id, { state: 'checking' });
+    if (loud) draw();
+    const r = await SF.test(acc);
+    sftpState.set(id, { state: 'done', ok: r.ok, text: sftpExplain(r) });
+    if (loud) say(r.ok ? '\u201C' + acc.name + '\u201D is connected.' : '\u201C' + acc.name + '\u201D: ' + sftpExplain(r));
+    draw();
+  }
+  let sftpEditing = null;
+  /** The add / edit form for SFTP under the list (id = edit that drive, null = add; close = hide it). */
+  function sftpForm(id, close) {
+    const box = $('sftp-form');
+    sftpEditing = null;
+    if (close || !SA) { box.hidden = true; box.textContent = ''; $('add-sftp').hidden = !SA; return; }
+    wdForm(null, true);
+    const acc = id ? SA.get(id) : null;
+    if (id && !acc) { say('That drive is not saved any more.'); return; }
+    sftpEditing = acc ? acc.id : null;
+    box.textContent = '';
+    const inp = (ph, type, label, v) => { const i = el('input', 'wd-in'); Object.assign(i, { type, placeholder: ph, autocomplete: 'off', spellcheck: false, value: v || '' }); i.setAttribute('aria-label', label); i.setAttribute('autocapitalize', 'off'); return i; };
+    const title = el('b', 'wd-title', acc ? 'Edit \u201C' + acc.name + '\u201D' : 'Add SFTP drive');
+    const hint = el('p', 'muted small', 'Works with SFTP / SSH servers through the local relay (hub/relay/sftp_relay.py). On https, the relay must use wss://. The drive shows in Files. Passwords and tokens stay only in this browser.');
+    const name = inp('Name, e.g. Linux box', 'text', 'Name', acc && acc.name);
+    const relay = inp('Relay URL, e.g. ws://127.0.0.1:8765', 'url', 'Relay WebSocket URL', acc && acc.relay);
+    const token = inp('Relay token', 'password', 'Relay token', acc && acc.token);
+    const eyeT = btn('Show', 'wd-eye', () => { token.type = token.type === 'password' ? 'text' : 'password'; eyeT.textContent = token.type === 'password' ? 'Show' : 'Hide'; }, 'Show or hide the relay token');
+    const host = inp('Host / IP, e.g. 192.168.1.20', 'text', 'Host', acc && acc.host);
+    const port = inp('Port (22)', 'number', 'Port', acc && acc.port ? String(acc.port) : '22');
+    const user = inp('User', 'text', 'User', acc && acc.user);
+    const pass = inp('Password', 'password', 'Password', acc && acc.pass);
+    const eyeP = btn('Show', 'wd-eye', () => { pass.type = pass.type === 'password' ? 'text' : 'password'; eyeP.textContent = pass.type === 'password' ? 'Show' : 'Hide'; }, 'Show or hide the password');
+    const folder = inp('Folder (optional, e.g. /home/user or leave blank)', 'text', 'Folder', acc && acc.folder);
+    const out = el('p', 'wd-out', '');
+    const tell = (t, c) => { out.textContent = t || ''; out.className = 'wd-out' + (c ? ' ' + c : ''); };
+    const vals = () => ({
+      name: name.value.trim(),
+      relay: relay.value.trim(),
+      token: token.value.trim(),
+      host: host.value.trim(),
+      port: parseInt(port.value, 10) || 22,
+      user: user.value.trim(),
+      pass: pass.value,
+      folder: folder.value.trim()
+    });
+    const valid = (v) => {
+      if (!v.name) { tell('Enter a name for the drive', 'bad'); return false; }
+      try {
+        const u = new URL(v.relay);
+        if (!/^(ws|wss):$/.test(u.protocol)) throw 0;
+        if (location.protocol === 'https:' && u.protocol === 'ws:') {
+          tell('On https, the relay URL must start with wss:// (secure WebSocket). Use wss:// or install a cert on the relay.', 'bad');
+          return false;
+        }
+      } catch (_) { tell('Enter the relay URL, e.g. ws://127.0.0.1:8765', 'bad'); return false; }
+      if (!v.host) { tell('Enter the host or IP, e.g. 192.168.1.20', 'bad'); return false; }
+      if (!v.user) { tell('Enter the user', 'bad'); return false; }
+      return true;
+    };
+    const test = btn('Test connection', '', async () => {
+      const v = vals(); if (!valid(v)) return;
+      test.disabled = true; tell('Testing\u2026');
+      const r = await SF.test(v); tell(r.ok ? '\u2713 Connected' : sftpExplain(r), r.ok ? 'ok' : 'bad');
+      test.disabled = false;
+    });
+    const save = btn(acc ? 'Save' : 'Add', 'primary', () => {
+      const v = vals(); if (!valid(v)) return;
+      let sid = sftpEditing;
+      if (sid) { SF.close(SA.get(sid) || {}); SA.update(sid, v); } else sid = SA.add(v);
+      sftpState.delete(sid);
+      say(acc ? 'Saved.' : 'Added \u201C' + (SA.get(sid) || {}).name + '\u201D. It shows in Files.');
+      sftpForm(null, true); draw();
+    });
+    const cancel = btn('Cancel', '', () => sftpForm(null, true));
+    const l1 = el('div', 'wd-line'), l2 = el('div', 'wd-line'), l3 = el('div', 'wd-line'), l4 = el('div', 'wd-line'), l5 = el('div', 'wd-line'), l6 = el('div', 'wd-line');
+    l1.append(name);
+    l2.append(relay, token, eyeT);
+    l3.append(host, port);
+    l4.append(user, pass, eyeP);
+    l5.append(folder);
+    l6.append(test, save, cancel);
+    [name, relay, token, host, port, user, pass, folder].forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save.click(); } }));
+    box.append(title, hint, l1, l2, l3, l4, l5, l6, out);
+    box.hidden = false; $('add-sftp').hidden = true;
+    name.focus();
+    box.scrollIntoView({ block: 'nearest' });
+  }
+  if (!SA || !SF) $('add-sftp').hidden = true;
+  $('add-sftp').addEventListener('click', () => sftpForm(null));
+
   function fromHash() {
     const h = location.hash.slice(1);
     if (h === 'add-webdav') wdForm(null);
+    else if (h === 'add-sftp') sftpForm(null);
     else if (/^edit=webdav%3A\d+$|^edit=webdav:\d+$/.test(h)) wdForm(decodeURIComponent(h.slice(5)));
+    else if (/^edit=sftp%3A\d+$|^edit=sftp:\d+$/.test(h)) sftpForm(decodeURIComponent(h.slice(5)));
   }
   window.addEventListener('hashchange', fromHash);
-  window.addEventListener('storage', (e) => { if (e.key === 'hub-webdav-accounts') draw(); });
+  window.addEventListener('storage', (e) => { if (e.key === 'hub-webdav-accounts' || e.key === 'hub-sftp-accounts') draw(); });
 
   if (!D.canAddFolder) { $('add').hidden = true; $('add-note').hidden = false; }
   $('add').addEventListener('click', async () => { const f = await D.addFolder().catch(() => null); if (f) { say('Added \u201C' + f.name + '\u201D.'); draw(); } });
