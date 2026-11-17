@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!-- WX1a Weather Forecast: live current conditions for Diphu from Open-Meteo, with a 10-minute cache
+     and loading / error / offline states. The 7-day outlook (WX1b) and hourly curve (WX1c) come next. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Weather Forecast · WX1a</title>
+  <link rel="stylesheet" href="weather-forecast.css">
+  <script src="../../../shared/theme/hub_theme.js"></script>
+</head>
+<body>
+<main class="wx">
+
+  <header class="wx-head">
+    <div class="wx-place">
+      <h1 id="place">Diphu</h1>
+      <p id="stamp">Assam, India</p>
+    </div>
+    <button type="button" class="wx-btn" id="refresh" aria-label="Refresh weather" title="Refresh">
+      <svg class="ic-refresh" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+        <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </header>
+
+  <p id="status" class="wx-status" role="status" aria-live="polite"></p>
+
+  <section class="wx-now" id="nowCard" aria-busy="true" aria-label="Current conditions">
+    <div class="wx-now-main">
+      <div class="wx-icon" id="icon" aria-hidden="true"></div>
+      <div>
+        <p class="wx-temp"><span id="temp">–</span><span class="u" id="unit">°C</span></p>
+        <p class="wx-cond" id="cond">Loading…</p>
+        <p class="wx-feels" id="feels"></p>
+      </div>
+    </div>
+    <dl class="wx-facts">
+      <div><dt>High</dt><dd id="hi">–</dd></div>
+      <div><dt>Low</dt><dd id="lo">–</dd></div>
+      <div><dt>Humidity</dt><dd id="hum">–</dd></div>
+      <div><dt>Wind</dt><dd id="wind">–</dd></div>
+    </dl>
+  </section>
+
+  <section class="wx-error" id="errorCard" hidden aria-label="Weather error">
+    <h2>Weather unavailable</h2>
+    <p id="errorText">Could not reach Open-Meteo.</p>
+    <button type="button" class="wx-btn" id="retry">Try again</button>
+  </section>
+
+  <p class="wx-foot">7-day outlook comes next.</p>
+
+  <noscript><p class="wx-status">Weather Forecast needs JavaScript.</p></noscript>
+</main>
+
+<script src="weather-forecast_config.js"></script>
+<script src="weather-forecast_format.js"></script>
+<script src="weather-forecast_data.js"></script>
+<script src="weather-forecast_app.js"></script>
+</body>
+</html>
