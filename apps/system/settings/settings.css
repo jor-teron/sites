@@ -99,6 +99,8 @@ body.in-section .pane-body { animation: pane-in .28s ease-out; }
   color: #5ce1e6;
   backdrop-filter: blur(4px);
   letter-spacing: 0.3px;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* accents */

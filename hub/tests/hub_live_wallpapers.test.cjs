@@ -199,6 +199,18 @@ test('HubLiveWallpaper engine presets and lifecycle', () => {
   // Tick execution
   assert.doesNotThrow(() => engine.tick());
 
+  // Verify state.t increments and is preserved across size changes
+  const tBefore = engine.getState().t;
+  assert.ok(tBefore > 0, 't must advance on tick');
+
+  // Simulate resize
+  canvas.parentElement.clientWidth = 1024;
+  canvas.parentElement.clientHeight = 768;
+  engine.tick();
+  assert.equal(canvas.width, 1024);
+  assert.equal(canvas.height, 768);
+  assert.ok(engine.getState().t > tBefore, 't must continue advancing and not reset to 0 on resize');
+
   // Pause & Resume
   engine.pause();
   assert.equal(engine.isPaused(), true);
@@ -252,6 +264,16 @@ test('HubLiveWallpaper occlusion detection and auto-pausing', () => {
   empty.classList.remove('hidden');
   doc.body.classList.add('wm-desktop');
   assert.equal(engine.shouldPause(), false);
+
+  // 5. Maximized window in desktop mode
+  const maxWin = makeEl('div', 'win-max', ['wm-win', 'wm-max']);
+  elements.set('win-max', maxWin);
+  doc.body.appendChild(maxWin);
+  assert.equal(engine.shouldPause(), true, 'Must pause when a desktop window is maximized');
+
+  // When minimized, occlusion ceases
+  maxWin.classList.add('wm-min');
+  assert.equal(engine.shouldPause(), false, 'Must resume when maximized window is minimized');
 
   engine.stop();
 });
@@ -321,4 +343,5 @@ test('Search items and settings UI structure', () => {
   assert.ok(SETTINGS_SEC_SRC.includes("ui.title('Live wallpapers')"), 'sec_wallpaper.js must add Live wallpapers title');
   assert.ok(SETTINGS_SEC_SRC.includes("wp-live"), 'sec_wallpaper.js must define wp-live grid');
   assert.ok(SETTINGS_SEC_SRC.includes("HUB_LIVE_WALLPAPERS"), 'sec_wallpaper.js must iterate over HUB_LIVE_WALLPAPERS');
+  assert.ok(SETTINGS_SEC_SRC.includes("wp-preview-live"), 'sec_wallpaper.js must include live preview canvas in swatches');
 });
