@@ -76,3 +76,11 @@ test("weekday and pct", () => {
   assert.strictEqual(F.pct(0.4), "40%");
   assert.strictEqual(F.pct(null), "");
 });
+
+test("hourLabel", () => {
+  assert.strictEqual(F.hourLabel("2026-11-17T00:00"), "12 AM");
+  assert.strictEqual(F.hourLabel("2026-11-17T03:00"), "3 AM");
+  assert.strictEqual(F.hourLabel("2026-11-17T12:00"), "12 PM");
+  assert.strictEqual(F.hourLabel("2026-11-17T15:00"), "3 PM");
+  assert.strictEqual(F.hourLabel(""), "");
+});

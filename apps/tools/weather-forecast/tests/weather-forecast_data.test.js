@@ -16,6 +16,7 @@ for (const f of ["weather-forecast_config.js", "weather-forecast_format.js", "we
 }
 
 function payload(dayCount) {
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const time = [], codes = [], hi = [], lo = [], rain = [], sunrise = [], sunset = [];
   for (let i = 0; i < dayCount; i++) {
     const day = String(17 + i).padStart(2, "0");
@@ -41,6 +42,12 @@ function payload(dayCount) {
       is_day: 1,
     },
     current_units: { temperature_2m: "\u00B0C", wind_speed_10m: "km/h" },
+    hourly: {
+      time: hours.map((h) => `2026-11-17T${h}:00`),
+      temperature_2m: hours.map((h) => 17 + Math.sin((h / 24) * Math.PI) * 8),
+      weather_code: hours.map(() => 3),
+      precipitation_probability: hours.map(() => 5),
+    },
     daily: {
       time,
       weather_code: codes,
@@ -83,6 +90,25 @@ test("normalize builds seven days with code, high/low, rain and sun times", () =
 test("normalize caps the list at seven days", () => {
   const d = ctx.WXData.normalize(payload(10));
   assert.strictEqual(d.days.length, 7);
+});
+
+test("buildUrl asks for current, hourly and daily", () => {
+  const u = ctx.WXData.buildUrl();
+  assert.match(u, /latitude=25\.8436/);
+  assert.match(u, /&current=temperature_2m/);
+  assert.match(u, /&hourly=temperature_2m,weather_code,precipitation_probability/);
+  assert.match(u, /&daily=weather_code/);
+  assert.match(u, /timezone=auto/);
+});
+
+test("normalize keeps the hourly series for today's curve", () => {
+  const d = ctx.WXData.normalize(payload(7));
+  assert.strictEqual(d.hours.length, 24);
+  assert.strictEqual(d.hours[0].time, "2026-11-17T00:00");
+  assert.strictEqual(d.hours[15].time, "2026-11-17T15:00");
+  assert.strictEqual(d.hours[0].code, 3);
+  assert.strictEqual(d.hours[0].rain, 5);
+  assert.ok(typeof d.hours[0].temp === "number");
 });
 
 test("normalize rejects a response without a current temperature", () => {

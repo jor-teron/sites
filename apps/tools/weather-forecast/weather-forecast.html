@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- WX1b Weather Forecast: live current conditions and a 7-day outlook for Diphu from Open-Meteo,
-     with a 10-minute cache and loading / error / offline states. The hourly curve (WX1c) comes next. -->
+<!-- WX1c Weather Forecast: live current conditions, a 7-day outlook and today's hourly curve for Diphu
+     from Open-Meteo, with a 10-minute cache and loading / error / offline states. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Weather Forecast · WX1b</title>
+  <title>Weather Forecast · WX1c</title>
   <link rel="stylesheet" href="weather-forecast.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
 </head>
@@ -49,6 +49,12 @@
     <h2 class="wx-h2" id="daysTitle">7-day forecast</h2>
     <ul class="wx-days-list" id="dayList"></ul>
     <button type="button" class="wx-link" id="moreDays" aria-controls="dayList" aria-expanded="false">Show all 7 days</button>
+  </section>
+
+  <section class="wx-chart" id="chartCard" hidden aria-labelledby="chartTitle">
+    <h2 class="wx-h2" id="chartTitle">Today, hour by hour</h2>
+    <canvas id="tempChart" role="img" aria-label="Temperature through today"></canvas>
+    <table class="sr" id="chartTable"><caption>Hourly temperature</caption></table>
   </section>
 
   <section class="wx-error" id="errorCard" hidden aria-label="Weather error">

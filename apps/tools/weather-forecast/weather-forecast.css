@@ -302,6 +302,19 @@ html[data-theme="dark"] .wx-status[data-tone="error"] { color: #d8a45a; }
   .wx-link { display: none; }
 }
 
+/* today's curve */
+
+.wx-chart {
+  margin-top: 14px;
+  padding: 14px 16px 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+.wx-chart canvas { display: block; width: 100%; }
+
 /* error card */
 
 .wx-error {
