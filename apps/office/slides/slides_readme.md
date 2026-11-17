@@ -1,4 +1,5 @@
-# Hub Office Presentation (Office → Hub Office) — release PN1
+# Hub Office Presentation (Office → Hub Office) — release PN2
+<!-- (before PN2) # Hub Office Presentation (Office → Hub Office) — release PN1 -->
 <!-- (before PN1) # Hub Office Presentation (Office → Hub Office) — release SL11 -->
 <!-- (before SL11) # Hub Office Presentation (Office → Hub Office) — release HOP1 -->
 <!-- (before HOP1) # Hub Office Slides (Office → Hub Office) — release SL9 -->
@@ -8,7 +9,7 @@ A basic slide editor. Static, no build step, no libraries, works from `file://`.
 laptop: only the slide being edited is live (contenteditable title and body, plus any free text boxes, shapes and table
 cells), thumbnails are the same slide design scaled down (up to 9 bullets each), saving is debounced (400 ms) and one
 deck is one localStorage record. Pictures (SL3) are kept in IndexedDB, so the deck record stays small. SL5 stores
-formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). HOP1 renames the app to Presentation and saves decks as `.hop` files (old `.hslides` files still open). SL11 adds File → Save / Save As and Ctrl+S, which write the `.hop` file to the device (Hub Documents, the save picker, or a download on phones) through `../shared/office-native.js`. Export `.hop` and the in-browser deck list stay as they are. PN1 adds best-effort import of LibreOffice / OpenDocument presentations (`.odp`): File → Import .pptx / .odp…, dropping a `.odp` file, or a Hub link ending `.odp`. Saving stays `.hop`. The JSON format is unchanged (`hub-slides` version 6). A tiny store-only zip helper lives in the app; deflated .pptx / .odp imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency).
+formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). HOP1 renames the app to Presentation and saves decks as `.hop` files (old `.hslides` files still open). SL11 adds File → Save / Save As and Ctrl+S, which write the `.hop` file to the device (Hub Documents, the save picker, or a download on phones) through `../shared/office-native.js`. Export `.hop` and the in-browser deck list stay as they are. PN1 adds best-effort import of LibreOffice / OpenDocument presentations (`.odp`): File → Import .pptx / .odp…, dropping a `.odp` file, or a Hub link ending `.odp`. PN2 adds File → Export .odp…, which writes a 16:9 LibreOffice presentation (slides, text, pictures, simple shapes, tables, notes, a solid background) that LibreOffice and the PN1 importer can open. Saving stays `.hop`. The JSON format is unchanged (`hub-slides` version 6). A tiny store-only zip helper lives in the app; deflated .pptx / .odp imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency).
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -122,6 +123,12 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
   simple rect and ellipse shapes (including a `custom-shape` that is clearly a rect or ellipse), with fill and line colour;
   a solid slide background; speaker notes; and tables. Positions are scaled from the `.odp` page size onto the 16:9
   canvas. Animations, transitions, charts, OLE objects and master-page decorations are skipped. Saving stays `.hop`.
+- **LibreOffice export (PN2)**: File or ⋯ → Export .odp… writes a 16:9 `.odp` (28 cm × 15.75 cm) with every slide,
+  text boxes (paragraphs, bold / italic / underline, size and colour, alignment, bullets), pictures (`Pictures/*`),
+  rect and ellipse shapes and lines (fill and stroke), tables, a solid slide background and speaker notes. Named
+  sections, transitions, pen ink, gradients, animations and unusual shapes are left out (an in-app summary lists
+  what was skipped). The package is a store-only zip with `mimetype` first and uncompressed. The same file reopens
+  in Presentation through the PN1 importer, and in LibreOffice.
 - **PNG export (SL9)**: File or ⋯ → Export PNG… asks This slide (one PNG) or All slides (ZIP). Pictures are drawn from
   the slide model as SVG and rasterised at 1920 × 1080, one after another — not a screenshot of the editor.
 - **Layouts (SL3)**: seven layouts: Title, Title + Content (the default, the SL1 / SL2 slide), Two Columns, Section Header,
@@ -278,9 +285,10 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_draw.js` (`SLDraw`, SL6): shape and table records, SVG paths, table row/column helpers, align / distribute / z-order / snap. No DOM (safe to test in Node).
 - `slides_present.js` (`SLPresent`, SL7): notes / transition / ink cleaning, timer format, BroadcastChannel envelope, presenter URL helpers. No DOM (safe to test in Node).
 - `slides_master.js` (`SLMaster`, SL8): master / footer / date / hide / section helpers. No DOM (safe to test in Node).
-- `slides_zip.js` (`SLZip`, SL9): tiny store-only ZIP pack / unpack (no deflate). `unpackSmart()` uses unpack first, then lazy-loads vendored JSZip for deflated packages. No DOM (safe to test in Node).
+- `slides_zip.js` (`SLZip`, SL9, extended in PN2): tiny store-only ZIP pack / unpack (no deflate). `unpackSmart()` uses unpack first, then lazy-loads vendored JSZip for deflated packages. PN2: `pack()` accepts optional `flags` (0 for an ODF `mimetype` entry). No DOM (safe to test in Node).
 - `slides_pptx.js` (`SLPptx`, SL9): build a {files} map from a deck and parse one back (regex / string XML, no DOM). Zip packing is left to SLZip.
 - `slides_odp.js` (`SLOdp`, PN1): parse a {files} map from a LibreOffice `.odp` (content.xml + styles.xml + Pictures) into the same deck shape as SLPptx (regex / string XML, no DOM). Zip packing is left to SLZip.
+- `slides_odpgen.js` (`SLOdpgen`, PN2): build a {files} map from a deck into a LibreOffice `.odp` (mimetype, manifest, content.xml, styles.xml, meta.xml, Pictures). Zip packing is left to SLZip (mimetype first, flags 0).
 - `slides_png.js` (`SLPng`, SL9): `svgFor()` builds an SVG string from the model (Node-testable); `toPngBlob()` rasterises in a browser canvas.
 - `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load; SL6 fmt 5; SL7 fmt 6; SL8 fmt 7 and eight deck themes
 - `slides_file.js` (`SLFile`): .hop export / import and checks (writes v6, reads v1–v6; old .hslides files still open). `fileName` / `isDeckName` added in HOP1.
@@ -294,7 +302,7 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_print.js` (`SLPrint`, SL4, extended in SL7 / SL8): the print view (#print, one 16:9 page per slide, or A4 notes pages) and print / PDF; SL8 can include or skip hidden slides
 - `slides_hub.js` (`SLHub`, SL4): Hub app-bar bridge (tabs, deck name, File, Settings)
 - `slides_app.js`: top bar, ribbon, Format group + mini toolbar, Arrange group, Design (themes, master, hide, sections), Slide Show (Presenter view, notes, transitions), Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture, text-box, shape and table insert
-  (file / paste / drop), undo / redo, SL9 File export / import .pptx and Export PNG, SL11 Save / Save As / Ctrl+S of the `.hop` file, PN1 import of `.odp`; `window.Slides` (helpers for tests)
+  (file / paste / drop), undo / redo, SL9 File export / import .pptx and Export PNG, SL11 Save / Save As / Ctrl+S of the `.hop` file, PN1 import of `.odp`, PN2 export of `.odp`; `window.Slides` (helpers for tests)
 
 ## Limits (SL1 – SL9)
 - Long text can run past the bottom of the slide; it scrolls
@@ -314,9 +322,12 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
   is best-effort: charts, SmartArt, video, animations, WordArt, grouped shapes and unusual geometry are skipped (a
   summary lists them). A deflated .pptx needs the vendored JSZip (if it cannot load, import stops with a message).
   Export is an uncompressed zip, which PowerPoint and LibreOffice accept.
-- LibreOffice .odp (PN1): import is best-effort and open-only (saving stays `.hop`). Master-page decorations, animations,
+- LibreOffice .odp (PN1 / PN2): import is best-effort (saving stays `.hop`). Master-page decorations, animations,
   transitions, charts, OLE objects and unusual custom shapes are skipped. Fonts, gradients, connectors and exact
   typography will not match LibreOffice. A deflated `.odp` uses the same vendored JSZip as a deflated `.pptx`.
+  Export (PN2) writes a 16:9 store-only package; unusual shapes are written as rectangles, and sections, transitions
+  and ink are skipped (a summary lists them). An exported file holds what Presentation supports — LibreOffice-only
+  parts dropped on import will not come back on export.
 - PNG (SL9): the picture is an SVG approximation of the slide (estimated wrapping, not a pixel-perfect editor
   screenshot). Rasterising needs a browser canvas (the helper is tested in Node only as SVG). Hidden slides are included
   in “all slides”. Not tried in every PowerPoint version or on a real phone.

@@ -12,9 +12,12 @@
   Ctrl+Z / Y / S / P, ✓ Saved; in the Hub title bar after hubTitleBarHello), the Hub bar bridge (slides_hub.js: hub-hello ->
   body.in-hub, tabs + deck name) and Print / Export PDF (slides_print.js: @page 10in x 5.625in, one slide per page, the
   browser's print window; PDF = "Save as PDF" there, with an in-app hint).
-  PN1 (this release): File → Import .pptx / .odp… (or drop a .odp file, or a Hub link ending .odp)
+  PN2 (this release): File → Export .odp… writes a LibreOffice / OpenDocument presentation
+  (slides, text, pictures, simple shapes, tables, notes, a solid background). Saving is still
+  .hop. Cache tags are ?v=PN2.
+  Legacy (PN1): File → Import .pptx / .odp… (or drop a .odp file, or a Hub link ending .odp)
   opens a LibreOffice / OpenDocument presentation, best-effort (slides, text, pictures, simple
-  shapes, tables, notes, a solid background). Saving is still .hop. Cache tags are ?v=PN1.
+  shapes, tables, notes, a solid background). Saving is still .hop. Cache tags were ?v=PN1.
   Legacy (SL11): File → Save / Save As and Ctrl+S write the .hop file to the device (Hub
   Documents, the save picker, or a download on phones), through ../shared/office-native.js. Export .hop
   and the in-browser deck list stay as they are. The JSON format is unchanged (hub-slides version 6).
@@ -48,16 +51,18 @@
   <!-- (before SL10) <title>Slides SL9</title> -->
   <!-- (before HOP1) <title>Slides SL10</title> -->
   <!-- (before SL11) <title>Presentation HOP1</title> -->
+  <!-- (before PN2) <title>Presentation PN1</title> -->
   <!-- (before PN1) <title>Presentation SL11</title> -->
-  <title>Presentation PN1</title><!-- legacy: <title>Presentation SL11</title> · <title>Presentation HOP1</title> · <title>Slides SL10</title> · <title>Slides SL9</title> · <title>Slides SL8</title> · <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
+  <title>Presentation PN2</title><!-- legacy: <title>Presentation SL11</title> · <title>Presentation HOP1</title> · <title>Slides SL10</title> · <title>Slides SL9</title> · <title>Slides SL8</title> · <title>Slides SL7</title> · <title>Slides SL6</title> · <title>Slides SL5</title> · <title>Slides SL4</title> · <title>Slides SL3</title> · <title>Slides SL2</title> -->
   <link rel="icon" href="slides_icon.png">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
   <!-- (before HOP1) slides.css?v=SL9 and every script ?v=SL9 -->
   <!-- (before SL11) slides.css?v=HOP1 and every script ?v=HOP1 -->
+  <!-- (before PN2) slides.css?v=PN1 and every script ?v=PN1 -->
   <!-- (before PN1) slides.css?v=SL11 and every script ?v=SL11 -->
-  <link rel="stylesheet" href="slides.css?v=PN1">
+  <link rel="stylesheet" href="slides.css?v=PN2">
   <script>try{var s=JSON.parse(localStorage.getItem('slides-settings-v1')||'{}'),m=s.theme||'dark',t=localStorage.getItem('sites-hub.theme');if(m==='dark'||(m==='system'&&(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))))document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}</script>
 </head>
 <body>
@@ -278,6 +283,7 @@
     <button type="button" role="menuitem" data-a="importpptx">⬆ Import .pptx / .odp…</button>
     <button type="button" role="menuitem" data-a="export">⬇ Export .hop</button>
     <button type="button" role="menuitem" data-a="pptx">⬇ Export .pptx…</button>
+    <button type="button" role="menuitem" data-a="odp">⬇ Export .odp…</button>
     <button type="button" role="menuitem" data-a="png">🖼 Export PNG…</button>
     <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
     <button type="button" role="menuitem" data-a="print">🖨 Print… <small>Ctrl+P</small></button>
@@ -311,6 +317,7 @@
     <button type="button" role="menuitem" data-a="pv">🖥 Presenter view</button>
     <button type="button" role="menuitem" data-a="notes">📝 Speaker notes</button>
     <button type="button" role="menuitem" data-a="pptx">⬇ Export .pptx…</button>
+    <button type="button" role="menuitem" data-a="odp">⬇ Export .odp…</button>
     <button type="button" role="menuitem" data-a="png">🖼 Export PNG…</button>
     <button type="button" role="menuitem" data-a="pdf">📄 Export PDF…</button>
     <button type="button" role="menuitem" data-a="printnotes">🖨 Print notes pages…</button>
@@ -374,9 +381,10 @@
       <h3>About</h3>
       <div class="about">
         <img src="slides_icon.png" alt="" width="40" height="40">
-        <div><b>Hub Office Presentation</b><!-- (before HOP1) <b>Hub Office Slides</b> --> <!-- (before SL10) <span id="ver">SL9</span> --><!-- (before SL11) <span id="ver">HOP1</span> --><!-- (before PN1) <span id="ver">SL11</span> --><span id="ver">PN1</span><!-- legacy: SL11 · HOP1 · SL10 · SL9 · SL8 · SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
+        <div><b>Hub Office Presentation</b><!-- (before HOP1) <b>Hub Office Slides</b> --> <!-- (before SL10) <span id="ver">SL9</span> --><!-- (before SL11) <span id="ver">HOP1</span> --><!-- (before PN2) <span id="ver">PN1</span> --><!-- (before PN1) <span id="ver">SL11</span> --><span id="ver">PN2</span><!-- legacy: SL11 · HOP1 · SL10 · SL9 · SL8 · SL7 · SL6 · SL5 · SL4 · SL3 · SL2 -->
           <p>Make simple slide decks: pick a layout for each slide, add titles, bullets and pictures, and give the deck a theme. Decks save on this device as you type, and you can keep several.
             File → Save / Save As and Ctrl+S write a .hop file (open JSON, pictures inside) to Documents in the Hub, a folder you choose, or a download on phones. Export .hop still downloads a fresh copy. Old .hslides files still open. Press ▶ Present to show it full screen. Nothing is uploaded.</p>
+          <p>PN2: File → Export .odp… writes a LibreOffice presentation (slides, text, pictures, simple shapes, tables, notes, a solid background). Saving is still .hop. The JSON format is unchanged (hub-slides version 6).</p>
           <p>PN1: File → Import .pptx / .odp… (or drop a .odp file, or a Hub link ending .odp) opens a LibreOffice presentation, best-effort. Saving is still .hop. The JSON format is unchanged (hub-slides version 6).</p>
           <p>SL11: Save and Save As write the .hop file to the device (and Hub Documents). Ctrl+S updates that file and the copy in this browser. Export .hop is unchanged. The JSON format is unchanged (hub-slides version 6).</p>
           <p>HOP1: the app is now Presentation. Decks save and export as .hop files; existing .hslides files still open. The JSON format is unchanged (hub-slides version 6).</p>
@@ -494,23 +502,24 @@
 <script src="../shared/office-ribbon.js"></script>
 <script src="../shared/office-hubbar.js"></script>
 <script src="../shared/office-quick.js"></script>
-<script src="slides_pics.js?v=PN1"></script>
-<script src="slides_text.js?v=PN1"></script>
-<script src="slides_draw.js?v=PN1"></script>
-<script src="slides_present.js?v=PN1"></script>
-<script src="slides_master.js?v=PN1"></script>
-<script src="slides_save.js?v=PN1"></script>
-<script src="slides_file.js?v=PN1"></script>
-<script src="slides_hop.js?v=PN1"></script>
-<script src="slides_edit.js?v=PN1"></script>
-<script src="slides_show.js?v=PN1"></script>
-<script src="slides_list.js?v=PN1"></script>
-<script src="slides_print.js?v=PN1"></script>
-<script src="slides_zip.js?v=PN1"></script>
-<script src="slides_pptx.js?v=PN1"></script>
-<script src="slides_odp.js?v=PN1"></script>
-<script src="slides_png.js?v=PN1"></script>
-<script src="slides_hub.js?v=PN1"></script>
-<script src="slides_app.js?v=PN1"></script>
+<script src="slides_pics.js?v=PN2"></script>
+<script src="slides_text.js?v=PN2"></script>
+<script src="slides_draw.js?v=PN2"></script>
+<script src="slides_present.js?v=PN2"></script>
+<script src="slides_master.js?v=PN2"></script>
+<script src="slides_save.js?v=PN2"></script>
+<script src="slides_file.js?v=PN2"></script>
+<script src="slides_hop.js?v=PN2"></script>
+<script src="slides_edit.js?v=PN2"></script>
+<script src="slides_show.js?v=PN2"></script>
+<script src="slides_list.js?v=PN2"></script>
+<script src="slides_print.js?v=PN2"></script>
+<script src="slides_zip.js?v=PN2"></script>
+<script src="slides_pptx.js?v=PN2"></script>
+<script src="slides_odp.js?v=PN2"></script>
+<script src="slides_odpgen.js?v=PN2"></script>
+<script src="slides_png.js?v=PN2"></script>
+<script src="slides_hub.js?v=PN2"></script>
+<script src="slides_app.js?v=PN2"></script>
 </body>
 </html>
