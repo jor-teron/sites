@@ -72,6 +72,11 @@
           sw.appendChild(img);
         } else if (w.live) {
           sw = ui.el('span', 'wp-swatch wp-live-sw');
+          sw.style.position = 'relative';
+          sw.style.overflow = 'hidden';
+          const swCanvas = ui.el('canvas', 'wp-preview-live');
+          swCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border-radius:10px;pointer-events:none;z-index:0;display:block;';
+          sw.appendChild(swCanvas);
           paint(sw, w);
           sw.appendChild(ui.el('span', 'wp-live-badge', '\u26A1 Live'));
         } else {

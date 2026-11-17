@@ -27,27 +27,29 @@
       init(state, w, h) {
         state.t = 0;
         state.stars = [];
-        for (let i = 0; i < 35; i++) {
+        const isSmall = Math.min(w, h) < 150;
+        const count = isSmall ? 15 : 45;
+        for (let i = 0; i < count; i++) {
           state.stars.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() * 0.4 + 0.15),
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() * 0.5 + 0.25),
             r: Math.random() * 1.5 + 0.6,
-            alpha: Math.random() * 0.6 + 0.25
+            alpha: Math.random() * 0.6 + 0.3
           });
         }
       },
       render(ctx, w, h, state) {
-        state.t += 0.022; // smooth, clearly visible undulating flow
+        state.t += 0.035; // smooth, vibrant undulating flow
         ctx.fillStyle = '#050c18';
         ctx.fillRect(0, 0, w, h);
 
         const ribbons = [
-          { color: 'rgba(14, 165, 233, 0.22)', yBase: h * 0.42, amp: h * 0.14, freq: 0.003, speed: 1.0 },
-          { color: 'rgba(16, 185, 129, 0.20)', yBase: h * 0.52, amp: h * 0.16, freq: 0.0025, speed: 0.8 },
-          { color: 'rgba(99, 102, 241, 0.18)', yBase: h * 0.62, amp: h * 0.12, freq: 0.0035, speed: 1.2 },
-          { color: 'rgba(236, 72, 153, 0.14)', yBase: h * 0.48, amp: h * 0.10, freq: 0.004, speed: 0.6 }
+          { color: 'rgba(14, 165, 233, 0.26)', yBase: h * 0.42, amp: h * 0.15, freq: 0.003, speed: 1.2 },
+          { color: 'rgba(16, 185, 129, 0.24)', yBase: h * 0.52, amp: h * 0.18, freq: 0.0025, speed: 1.0 },
+          { color: 'rgba(99, 102, 241, 0.22)', yBase: h * 0.62, amp: h * 0.14, freq: 0.0035, speed: 1.4 },
+          { color: 'rgba(236, 72, 153, 0.18)', yBase: h * 0.48, amp: h * 0.12, freq: 0.004, speed: 0.8 }
         ];
 
         ctx.save();
@@ -56,7 +58,8 @@
           const rib = ribbons[r];
           ctx.beginPath();
           ctx.moveTo(0, h);
-          for (let x = 0; x <= w; x += 10) {
+          const step = Math.min(w, h) < 150 ? 6 : 10;
+          for (let x = 0; x <= w; x += step) {
             const y = rib.yBase + Math.sin(x * rib.freq + state.t * rib.speed) * rib.amp
                                 + Math.sin(x * rib.freq * 0.6 + state.t * rib.speed * 0.7) * (rib.amp * 0.5);
             ctx.lineTo(x, y);
@@ -67,15 +70,16 @@
           ctx.fill();
         }
 
-        // Drifting shimmer dust
+        // Drifting shimmer dust with swaying drift
         if (state.stars) {
           for (let i = 0; i < state.stars.length; i++) {
             const s = state.stars[i];
-            s.x += s.vx;
+            s.x += s.vx + Math.sin(state.t * 1.5 + i) * 0.25;
             s.y -= s.vy;
             if (s.x < 0) s.x = w; else if (s.x > w) s.x = 0;
             if (s.y < 0) s.y = h;
-            ctx.fillStyle = 'rgba(180, 240, 255, ' + s.alpha.toFixed(2) + ')';
+            const a = s.alpha * (0.65 + Math.sin(state.t * 2.5 + i) * 0.35);
+            ctx.fillStyle = 'rgba(180, 240, 255, ' + Math.max(0.1, Math.min(1, a)).toFixed(2) + ')';
             ctx.beginPath();
             ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
             ctx.fill();
@@ -92,16 +96,17 @@
       color: '#0a0d14',
       init(state, w, h) {
         state.stars = [];
-        const count = Math.max(35, Math.min(65, Math.round((w * h) / 22000)));
+        const isSmall = Math.min(w, h) < 150;
+        const count = isSmall ? 18 : Math.max(45, Math.min(95, Math.round((w * h) / 18000)));
         for (let i = 0; i < count; i++) {
           state.stars.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.85,
-            vy: (Math.random() - 0.5) * 0.85,
+            vx: (Math.random() - 0.5) * (isSmall ? 0.6 : 0.95),
+            vy: (Math.random() - 0.5) * (isSmall ? 0.6 : 0.95),
             r: Math.random() * 1.6 + 1.2,
-            baseAlpha: Math.random() * 0.5 + 0.4,
-            pulseSpeed: Math.random() * 0.04 + 0.02
+            baseAlpha: Math.random() * 0.5 + 0.45,
+            pulseSpeed: Math.random() * 0.05 + 0.025
           });
         }
         state.t = 0;
@@ -114,6 +119,7 @@
         const stars = state.stars;
         if (!stars || !stars.length) return;
 
+        const isSmall = Math.min(w, h) < 150;
         // Position update
         for (let i = 0; i < stars.length; i++) {
           const s = stars[i];
@@ -124,8 +130,8 @@
         }
 
         // Proximity lines
-        const maxDist = 120;
-        ctx.lineWidth = 1;
+        const maxDist = isSmall ? 40 : Math.max(110, Math.min(160, Math.round(Math.sqrt(w * h) * 0.11)));
+        ctx.lineWidth = isSmall ? 0.8 : 1;
         for (let i = 0; i < stars.length; i++) {
           const s1 = stars[i];
           for (let j = i + 1; j < stars.length; j++) {
@@ -134,7 +140,7 @@
             const dy = s1.y - s2.y;
             const d = Math.sqrt(dx * dx + dy * dy);
             if (d < maxDist) {
-              const alpha = (1 - d / maxDist) * 0.28;
+              const alpha = (1 - d / maxDist) * 0.35;
               ctx.strokeStyle = 'rgba(165, 215, 255, ' + alpha.toFixed(3) + ')';
               ctx.beginPath();
               ctx.moveTo(s1.x, s1.y);
@@ -144,11 +150,12 @@
           }
         }
 
-        // Star points
+        // Star points with soft pulse
         for (let i = 0; i < stars.length; i++) {
           const s = stars[i];
-          const a = s.baseAlpha + Math.sin(state.t * s.pulseSpeed) * 0.25;
-          ctx.fillStyle = 'rgba(215, 240, 255, ' + Math.max(0.1, Math.min(1, a)).toFixed(2) + ')';
+          const a = s.baseAlpha + Math.sin(state.t * s.pulseSpeed) * 0.3;
+          const clampedAlpha = Math.max(0.15, Math.min(1, a));
+          ctx.fillStyle = 'rgba(215, 240, 255, ' + clampedAlpha.toFixed(2) + ')';
           ctx.beginPath();
           ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
           ctx.fill();
@@ -164,23 +171,26 @@
       init(state, w, h) {
         state.t = 0;
         state.stars = [];
-        for (let i = 0; i < 40; i++) {
+        const isSmall = Math.min(w, h) < 150;
+        const count = isSmall ? 15 : 45;
+        for (let i = 0; i < count; i++) {
           state.stars.push({
             x: Math.random() * w,
-            y: Math.random() * (h * 0.7),
-            r: Math.random() * 1.2 + 0.8,
-            twinkle: Math.random() * 0.05 + 0.02
+            y: Math.random() * (h * 0.72),
+            r: Math.random() * 1.3 + 0.8,
+            twinkle: Math.random() * 0.06 + 0.03
           });
         }
         state.clouds = [];
-        for (let i = 0; i < 5; i++) {
+        const cloudCount = isSmall ? 4 : 7;
+        for (let i = 0; i < cloudCount; i++) {
           state.clouds.push({
             x: Math.random() * w,
-            y: (h * 0.15) + (i * (h * 0.12)),
-            w: Math.random() * 200 + 150,
-            h: Math.random() * 40 + 25,
-            speed: Math.random() * 0.4 + 0.2,
-            alpha: Math.random() * 0.08 + 0.06
+            y: (h * 0.12) + (i * (h * (isSmall ? 0.16 : 0.10))),
+            w: (Math.random() * 120 + 120) * (isSmall ? 0.45 : 1),
+            h: (Math.random() * 30 + 20) * (isSmall ? 0.45 : 1),
+            speed: Math.random() * 0.5 + 0.25,
+            alpha: Math.random() * 0.12 + 0.18
           });
         }
       },
@@ -229,6 +239,14 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
 
+        // Horizon subtle atmospheric breathing aura
+        const horizonPulse = Math.sin(state.t * 0.02) * (h * 0.02);
+        const hGrad = ctx.createLinearGradient(0, h * 0.65, 0, h);
+        hGrad.addColorStop(0, 'rgba(255,255,255,0)');
+        hGrad.addColorStop(1, bottomColor === '#4b79a1' ? 'rgba(255,255,255,0.08)' : 'rgba(255,180,140,0.06)');
+        ctx.fillStyle = hGrad;
+        ctx.fillRect(0, h * 0.65 + horizonPulse, w, h * 0.35);
+
         // Drifting clouds for live daytime and atmospheric movement
         if (state.clouds) {
           for (let i = 0; i < state.clouds.length; i++) {
@@ -249,7 +267,7 @@
         if (starAlpha > 0.05 && state.stars) {
           for (let i = 0; i < state.stars.length; i++) {
             const s = state.stars[i];
-            const a = starAlpha * (0.5 + Math.sin(state.t * s.twinkle) * 0.5);
+            const a = starAlpha * (0.45 + Math.sin(state.t * s.twinkle) * 0.55);
             ctx.fillStyle = 'rgba(230, 240, 255, ' + a.toFixed(3) + ')';
             ctx.beginPath();
             ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
@@ -292,6 +310,7 @@
     const isDesktop = body && body.classList.contains('wm-desktop');
     const empty = document.getElementById('empty');
     if (!isDesktop && empty && empty.classList.contains('hidden')) return true;
+    if (isDesktop && document.querySelector && document.querySelector('.wm-max:not(.wm-min)')) return true;
     return false;
   }
 
@@ -322,8 +341,12 @@
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = Math.max(1, w);
       canvas.height = Math.max(1, h);
-      if (currentId && PRESETS[currentId] && PRESETS[currentId].init) {
-        PRESETS[currentId].init(state, canvas.width, canvas.height);
+      if (state.stars && state.stars.length) {
+        for (let i = 0; i < state.stars.length; i++) {
+          const s = state.stars[i];
+          if (s.x > canvas.width) s.x = Math.random() * canvas.width;
+          if (s.y > canvas.height) s.y = Math.random() * canvas.height;
+        }
       }
     }
   }
@@ -455,7 +478,10 @@
     let loopId = null;
 
     function renderLoop(now) {
-      if (!previewInstances.has(canvasEl)) return;
+      if (!previewInstances.has(canvasEl) || (typeof canvasEl.isConnected === 'boolean' && !canvasEl.isConnected)) {
+        detachPreview(canvasEl);
+        return;
+      }
       if (document.hidden) {
         loopId = requestAnimationFrame(renderLoop);
         return;
@@ -513,6 +539,9 @@
     try {
       mutationObserver = new MutationObserver(() => checkState());
       mutationObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+      if (document.body) {
+        mutationObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+      }
     } catch (_) { /* environment without MutationObserver */ }
   }
 
