@@ -51,6 +51,12 @@
  * one ▾ button (active tab label) with a drop-down list. Disabled buttons are greyed out and do
  * nothing. Keys stay in the app (the Hub adds no shortcuts); focus goes back to the iframe after
  * a click. Cleared on a new document / src change in the iframe, on op:'clear', and in Phone mode.
+ * H162: buttons may include {id, kind:'text', label, title}. A text item is not a button: it
+ *   is non-clickable, drawn at normal contrast (not faded), truncates with ellipsis, and can
+ *   be patched with op:'update' by id (label / title). kind is fixed after set. No kind, or
+ *   any kind other than 'text', stays a button (existing items unchanged). Helpers live in
+ *   hub/core/hub_titlebar.js (window.HubTitleBarItems). Text labels cap at 48 characters
+ *   (buttons stay at 24); the tooltip (title) stays at 60.
  */
 (function () {
   const V = 1;
@@ -184,6 +190,7 @@
     function deskOn() { return document.body.classList.contains('wm-desktop'); }
     function backToApp(b) { if (b) b.blur(); try { frame.focus(); } catch (_) { /* ignore */ } }
     function tbClick(kind, id) { postRaw({ hubTitleBarClick: { v: V, kind, id } }); }
+    /* (before H162) button-only normaliser; HubTitleBarItems.normalizeItem now covers kind:'text' too
     function tbButton(src, full) {
       const o = { id: str(src.id, 32) };
       if (full || src.label != null) o.label = str(src.label != null ? src.label : src.id, 24);
@@ -192,6 +199,15 @@
       if (full || src.title != null) o.title = str(src.title, 60);
       if (full || src.showLabel != null) o.showLabel = src.showLabel === true;   // H110
       return o;
+    }
+    */
+    function tbItems() {
+      return (typeof HubTitleBarItems !== 'undefined') ? HubTitleBarItems : null;
+    }
+    function paintTbText(node, b) {
+      node.textContent = b.label || '';
+      node.title = b.title || b.label || '';
+      node.setAttribute('aria-label', b.label || '');
     }
     function paintTbButton(btn, b) {
       btn.textContent = '';
@@ -212,6 +228,15 @@
       const grp = el('div', tb.align === 'left' ? 'gb-qa gb-qa-left' : 'gb-qa');
       grp.setAttribute('role', 'toolbar');
       tb.buttons.forEach((b) => {
+        if (b.kind === 'text') {   // H162: plain status text, not a button
+          const node = el('span', 'gb-qtext');
+          node.dataset.id = b.id;
+          node.setAttribute('role', 'status');
+          paintTbText(node, b);
+          tbBtnEls.set(b.id, node);
+          grp.appendChild(node);
+          return;
+        }
         const btn = el('button', 'gb-qbtn');
         btn.type = 'button';
         btn.dataset.id = b.id;
@@ -219,7 +244,7 @@
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           const cur = tb && tb.buttons.find((x) => x.id === b.id);
-          if (cur && cur.enabled) tbClick('button', b.id);
+          if (cur && cur.kind !== 'text' && cur.enabled) tbClick('button', b.id);   // H162: text never clicks
           backToApp(btn);
         });
         btn.addEventListener('dblclick', (e) => e.stopPropagation());
@@ -314,13 +339,18 @@
       if (!m || typeof m !== 'object' || m.v !== V) return;
       if (!deskOn()) { if (tb) { tb = null; draw(); } return; }   // Desktop mode only
       if (m.op === 'set') {
+        /* (before H162)
         const buttons = (Array.isArray(m.buttons) ? m.buttons : []).filter((b) => b && b.id != null).slice(0, TB_MAX_BUTTONS).map((b) => tbButton(b, true));
         const tabs = (Array.isArray(m.tabs) ? m.tabs : []).filter((t) => t && t.id != null).slice(0, TB_MAX_TABS)
           .map((t) => ({ id: str(t.id, 32), label: str(t.label != null ? t.label : t.id, 20) }));
         tb = { buttons, tabs, align: m.align === 'left' ? 'left' : 'right', activeTab: m.activeTab != null ? str(m.activeTab, 32) : (tabs[0] ? tabs[0].id : '') };
+        */
+        const items = tbItems();
+        tb = items ? items.normalizeSet(m) : { buttons: [], tabs: [], align: 'right', activeTab: '' };
         clearRetries();
         draw();
       } else if (m.op === 'update' && tb) {
+        /* (before H162)
         (Array.isArray(m.buttons) ? m.buttons : []).slice(0, TB_MAX_BUTTONS).forEach((p) => {
           if (!p || p.id == null) return;
           const cur = tb.buttons.find((x) => x.id === str(p.id, 32));
@@ -330,6 +360,16 @@
           if (btn) paintTbButton(btn, cur);
         });
         if (m.activeTab != null) { tb.activeTab = str(m.activeTab, 32); setActiveTab(tb.activeTab); foldLabel(); }
+        */
+        const items = tbItems();
+        const changed = items ? items.applyUpdate(tb, m) : [];
+        changed.forEach((cur) => {
+          const node = tbBtnEls.get(cur.id);
+          if (!node) return;
+          if (cur.kind === 'text') paintTbText(node, cur);
+          else paintTbButton(node, cur);
+        });
+        if (m.activeTab != null) { setActiveTab(tb.activeTab); foldLabel(); }
       } else if (m.op === 'clear') {
         if (tb) { tb = null; draw(); }
       }

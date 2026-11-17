@@ -1073,3 +1073,35 @@ Current main is b88cff9a. Hub build 20261112b / hub-shell-v167 / H148.
 No open PRs at handover. No unpushed Hub work on /workspace/sites_h46
 (main matches origin/main; only the pre-existing vendor deletions are
 dirty).
+
+H162 — Title bar: plain text item for app status (2026-11-18 IST)
+-----------------------------------------------------------------
+The H49 hubTitleBar contract (desktop/gamebar/hub-gamebar.js, helpers in
+hub/core/hub_titlebar.js as window.HubTitleBarItems) now accepts a text
+kind, so an app can show a readable status in the window title bar
+(for example Notely's word / note count) instead of a faded disabled
+button (the NL5 gap). Existing button and tab items are unchanged.
+
+  app → hub  {hubTitleBar:{v:1, op:'set', buttons:[
+    {id:'count', kind:'text', label:'42 words', title:'42 words · 120 characters'},
+    {id:'open', label:'Open'}
+  ]}}
+  app → hub  {hubTitleBar:{v:1, op:'update', buttons:[{id:'count', label:'43 words'}]}}
+
+A text item is non-clickable (no hubTitleBarClick), drawn at normal
+contrast, truncates with an ellipsis (label cap 48 characters; tooltip
+title still 60), and is patched by id. kind is fixed after set: an
+update cannot turn a button into text or the other way around. Only
+kind:'text' is special; any other kind (or no kind) stays a button.
+At most 8 items in the buttons array, as before, text included. Desktop
+mode window bars only, same origin rules as H49.
+
+Apps call, after hubTitleBarHello:
+
+  HubTitleBar.set({ buttons: [{ id: 'count', kind: 'text', label: '42 words', title: '42 words · 120 characters' }, { id: 'open', label: 'Open' }] });
+  HubTitleBar.update({ buttons: [{ id: 'count', label: '43 words' }] });
+
+office-hubbar.js (Apps / Office shared helper) currently strips unknown
+fields, including kind, so the Apps owner needs to pass kind through
+when switching Notely (and any other app) over. This release does not
+edit apps/** outside apps/system. Tests: hub/tests/h162_titlebar_text.test.cjs.
