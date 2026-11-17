@@ -381,31 +381,50 @@ th.frozen-cell, td.row-num.frozen-cell { background: var(--head); }
 }
 .sheet-stats:not([hidden]) + .status { margin-left: 0; }
 .sheet-footer .sheet-stats:not([hidden]) { margin-left: auto; }
-.sheet-tab-menu {
+.sheet-tab-menu,
+.sheet-context-menu {
   position: fixed;
   z-index: 40;
-  min-width: 160px;
+  min-width: 170px;
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: 0 8px 24px var(--shadow);
   padding: 4px 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.sheet-tab-item {
-  display: block;
+.sheet-tab-item,
+.sheet-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   text-align: left;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border: 0;
   background: transparent;
   color: inherit;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+  box-sizing: border-box;
 }
-.sheet-tab-item:hover { background: var(--hover); }
-.sheet-tab-item:disabled { opacity: 0.4; cursor: default; }
+.sheet-tab-item:hover,
+.sheet-menu-item:hover { background: var(--hover); }
+.sheet-tab-item:disabled,
+.sheet-menu-item:disabled { opacity: 0.4; cursor: default; }
+.sheet-menu-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+.sheet-menu-shortcut {
+  margin-left: 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
 
 .of-ribbon .of-group-label { color: var(--muted); font-size: 11px; padding: 0 4px; }
 

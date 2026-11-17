@@ -453,6 +453,7 @@ function closeSheetMenu() {
 
 function openSheetMenu(idx, x, y) {
   closeSheetMenu();
+  if (typeof closeGridContextMenu === "function") closeGridContextMenu();
   var menu = document.createElement("div");
   menu.id = "sheet-tab-menu";
   menu.className = "sheet-tab-menu";
