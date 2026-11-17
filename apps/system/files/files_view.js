@@ -64,8 +64,17 @@
   }
 
   /* H109: a small coloured type label (TXT, PDF, PNG ...) on the file icon in grid view.
-     H148: .how / .hos / .hot get their own Writer / Spreadsheet / Tables colours (Base and Slides are not in this release). */
+     H148: .how / .hos / .hot get their own Writer / Spreadsheet / Tables colours (Base and Slides are not in this release).
+     H161: Base (.hob / .hbase / .odb) and Presentation (.hop / .hslides / .odp) get their own colours; .odp leaves the generic Office group. */
   /* (before H148) const BADGE = [
+    [/^(txt|log|rtf)$/, 'doc'], [/^(md|markdown)$/, 'md'], [/^(csv|tsv|xlsx?|ods)$/, 'sheet'], [/^pdf$/, 'pdf'],
+    [/^(png|jpe?g|gif|webp|bmp|ico|avif|svg|heic)$/, 'img'], [/^(mp3|wav|ogg|m4a|flac|aac|opus)$/, 'audio'],
+    [/^(mp4|webm|mkv|mov|avi|m4v)$/, 'video'], [/^(zip|7z|rar|gz|tgz|tar|bz2|xz)$/, 'zip'],
+    [/^(js|mjs|cjs|ts|py|sh|c|h|cpp|java|rs|go|sql|css)$/, 'code'], [/^(html?|xml)$/, 'web'], [/^(json|ya?ml|toml|ini|cfg|conf)$/, 'data'],
+    [/^(docx?|odt|pptx?|odp)$/, 'office']
+  ]; */
+  /* (before H161) const BADGE = [
+    [/^how$/, 'how'], [/^hos$/, 'hos'], [/^hot$/, 'hot'],   // H148
     [/^(txt|log|rtf)$/, 'doc'], [/^(md|markdown)$/, 'md'], [/^(csv|tsv|xlsx?|ods)$/, 'sheet'], [/^pdf$/, 'pdf'],
     [/^(png|jpe?g|gif|webp|bmp|ico|avif|svg|heic)$/, 'img'], [/^(mp3|wav|ogg|m4a|flac|aac|opus)$/, 'audio'],
     [/^(mp4|webm|mkv|mov|avi|m4v)$/, 'video'], [/^(zip|7z|rar|gz|tgz|tar|bz2|xz)$/, 'zip'],
@@ -74,18 +83,23 @@
   ]; */
   const BADGE = [
     [/^how$/, 'how'], [/^hos$/, 'hos'], [/^hot$/, 'hot'],   // H148
+    [/^(hob|hbase|odb)$/, 'hob'], [/^(hop|hslides|odp)$/, 'hop'],   // H161
     [/^(txt|log|rtf)$/, 'doc'], [/^(md|markdown)$/, 'md'], [/^(csv|tsv|xlsx?|ods)$/, 'sheet'], [/^pdf$/, 'pdf'],
     [/^(png|jpe?g|gif|webp|bmp|ico|avif|svg|heic)$/, 'img'], [/^(mp3|wav|ogg|m4a|flac|aac|opus)$/, 'audio'],
     [/^(mp4|webm|mkv|mov|avi|m4v)$/, 'video'], [/^(zip|7z|rar|gz|tgz|tar|bz2|xz)$/, 'zip'],
     [/^(js|mjs|cjs|ts|py|sh|c|h|cpp|java|rs|go|sql|css)$/, 'code'], [/^(html?|xml)$/, 'web'], [/^(json|ya?ml|toml|ini|cfg|conf)$/, 'data'],
-    [/^(docx?|odt|pptx?|odp)$/, 'office']
+    [/^(docx?|odt|pptx?)$/, 'office']
   ];
   function badge(name) {
-    const m = /\.([a-z0-9]{1,5})$/i.exec(name);
+    // (before H161) const m = /\.([a-z0-9]{1,5})$/i.exec(name);
+    const m = /\.([a-z0-9]{1,5})$/i.exec(name)
+      || (/\.hslides$/i.test(name) ? ['.hslides', 'hslides'] : null);   // H161: .hslides is 7 chars, past the H109 5-char cap
     if (!m) return null;
     const ext = m[1].toLowerCase();
     const hit = BADGE.find((b) => b[0].test(ext));
-    const b = el('span', 'badge b-' + (hit ? hit[1] : 'other'), ext === 'jpeg' ? 'JPG' : ext.slice(0, 4).toUpperCase());
+    // (before H161) const b = el('span', 'badge b-' + (hit ? hit[1] : 'other'), ext === 'jpeg' ? 'JPG' : ext.slice(0, 4).toUpperCase());
+    const label = ext === 'jpeg' ? 'JPG' : ext === 'hbase' ? 'BASE' : ext === 'hslides' ? 'SLID' : ext.slice(0, 4).toUpperCase();
+    const b = el('span', 'badge b-' + (hit ? hit[1] : 'other'), label);
     b.setAttribute('aria-hidden', 'true');
     return b;
   }

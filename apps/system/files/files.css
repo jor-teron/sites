@@ -177,6 +177,8 @@ html.hub-xp .marquee { --marq: #316ac5; border-radius: 0; }   /* XP selection bl
 .b-web { background: #e2541f !important; } .b-data { background: #0891b2 !important; } .b-office { background: #2563eb !important; }
 /* H148: Writer / Spreadsheet / Tables type badges (white label text) */
 .b-how { background: #2563eb !important; } .b-hos { background: #16a34a !important; } .b-hot { background: #0d9488 !important; }
+/* H161: Base (purple, from the Base mark) / Presentation (orange, from the Slides mark) */
+.b-hob { background: #7c4dff !important; } .b-hop { background: #ea6a14 !important; }
 .list.v-list .item { min-height: 48px; padding: 4px 10px 4px 12px; }   /* H123: was 40px left (room for the tick) */
 .list.v-list .item-ico { font-size: 1.4rem; width: 30px; }
 /* H148: Office format icons (.how / .hos / .hot) sized to the 48 px grid / 30 px list slot */
