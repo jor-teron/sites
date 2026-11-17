@@ -39,6 +39,9 @@
  *   sites-hub.showTiles  '1' = QR / link tiles on the home (H72; default off, Desktop + Phone) → html.hub-tiles-off
  *   sites-hub.motion     'on' (default) | 'reduced' (no jelly) | 'off'        → html.hub-motion-*
  *   sites-hub.bootSplash H159: '' / missing = show the desktop boot splash (default) | '0' = off
+ *   sites-hub.deskClock  H160: '1' = analog clock on the Desktop (default off) → HubClock.apply()
+ *   sites-hub.deskClockSize  H160: '' / 'm' = medium (default) | 's' | 'l'
+ *   sites-hub.deskClockPos   H160: 'x,y' last drag position (pixels on #wm-desk)
  *                        (Settings › Look › Show boot splash). Read by the inline <head> script and hub_splash.js.
  *   sites-hub.hoverFocus '1' = Focus window on hover (default off)       → html.hub-hover-focus
  *   sites-hub.snapEdges  '0' = no snapping to screen edges (default on)  → html.hub-snap-off
@@ -199,6 +202,8 @@
     // H144: fullscreen button visibility (wm_taskbar.js; default on). The close prompt reads its key live.
     root.classList.toggle('hub-fsbtn-off', get('showFsBtn') === '0');
     if (window.__hubSyncFsBtn) window.__hubSyncFsBtn();
+    // H160: desktop analog clock (hub_clock.js, loaded after this file on the desktop shell)
+    if (window.HubClock) window.HubClock.apply();
   }
 
   window.HubPrefs = { get, apply, BAR, barOn };   // H52: + BAR, barOn

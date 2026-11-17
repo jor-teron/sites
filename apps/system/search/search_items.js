@@ -70,6 +70,7 @@ window.HUB_SEARCH_ITEMS = {
     { name: 'Ask before closing the Hub', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'close confirm quit leave tab window warning askclose' },
     { name: 'Show fullscreen button in taskbar', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'fullscreen full screen button taskbar hide window bar esc' },
     { name: 'Show tiles on the home screen', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'tiles qr link home screen' },
+    { name: 'Show analog clock on the desktop', hash: 'desktop/clock', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'analog clock widget desktop hide size deskClock', find: 'Show analog clock on the desktop' },
     { name: 'Computer break', hash: 'desktop/break', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'break timer work rest pause countdown pomodoro lock' },
     { name: 'Hub bar: Eye comfort button', hash: 'hubbar/barEye', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray moon night warm hide show', find: 'Eye comfort' },
     { name: 'Hub bar: Notifications button', hash: 'hubbar/barNotif', icon: '\uD83C\uDF9A\uFE0F', where: 'Settings \u203A Hub bar', words: 'taskbar tray bell notification centre hide show', find: 'Notifications' },

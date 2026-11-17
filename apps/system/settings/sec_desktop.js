@@ -21,6 +21,8 @@
  * H144: "Ask before closing the Hub" (key 'askClose', default on, '0' = off; wm_taskbar.js HubCloseGuard, Desktop only,
  *   not for a joined / ?join device) and "Show fullscreen button in taskbar" (key 'showFsBtn', default on, '0' = off;
  *   #wm-fs, live via HubPrefs.apply).
+ * H160: "Show analog clock on the desktop" (key 'deskClock', '1' = on, default off; hub/core/hub_clock.js).
+ *   Size and place are stored in deskClockSize / deskClockPos (right-click on the clock).
  */
 (function () {
   'use strict';
@@ -113,6 +115,10 @@
       // H72: the QR / link tiles on the home screen (default off; Desktop and Phone mode)
       const showTiles = ui.switch('Show tiles on the home screen', 'QR / link tiles on the home screen (Desktop and Phone)',
         S.get('showTiles') === '1', (on) => S.set('showTiles', on ? '1' : ''));
+      // H160: Desktop-only analog clock, off by default (hub/core/hub_clock.js)
+      const deskClock = ui.switch('Show analog clock on the desktop', 'A small analog clock on the Desktop. Drag it to move; right-click for size or to hide. Off by default',
+        S.get('deskClock') === '1', (on) => S.set('deskClock', on ? '1' : ''));
+      deskClock.id = 'desktop-desk-clock';
       /* H52: moved to Settings → Hub bar (sec_hubbar.js)
       const meter = ui.switch('Busy meter in the taskbar', 'A small graph by the clock: how busy the Hub is (an estimate). Click it for System Monitor',
         S.get('trayMeter') === '1', (on) => S.set('trayMeter', on ? '1' : ''));
@@ -245,12 +251,18 @@
       //   homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), barLink,
       //   ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
       //   brTitle, brSwitch, brWork, brLen, brStatus);   // H65: + Computer break; H129d: + Switch to Phone | Touch, Choose mode…   (before H144)
-      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, askClose, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      // pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, askClose, ui.title('Home screen'), showFiles, showTiles, ui.title('Home button (Phone mode)'), home,
+      // homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), showFs, barLink,
+      // ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
+      // brTitle, brSwitch, brWork, brLen, brStatus);   // H144: + ask before closing, fullscreen button   (before H160)
+      pane.append(ui.title('Screen mode'), mode, note, osSwitch, osChoose, osAbout, openMax, askClose, ui.title('Home screen'), showFiles, showTiles, deskClock, ui.title('Home button (Phone mode)'), home,
         homeNote, ui.title('Start menu'), hover, ui.title('Taskbar'), showFs, barLink,
         ui.title('Screen saver'), saver, ui.note('Second hand'), secPick, prev,
-        brTitle, brSwitch, brWork, brLen, brStatus);   // H144: + ask before closing, fullscreen button
+        brTitle, brSwitch, brWork, brLen, brStatus);   // H160: + desktop analog clock
       showNow();
+      // if (sub === 'break') setTimeout(() => brTitle.scrollIntoView({ block: 'start' }), 50);   // H65: #desktop/break   (before H160)
       if (sub === 'break') setTimeout(() => brTitle.scrollIntoView({ block: 'start' }), 50);   // H65: #desktop/break
+      if (sub === 'clock') setTimeout(() => deskClock.scrollIntoView({ block: 'start' }), 50);   // H160: #desktop/clock
     }
   });
 })();
