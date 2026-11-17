@@ -47,10 +47,10 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO6 and SUITES cover all 5 office applications', () => {
+test('VERSION is HO7 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO6');
+  assert.equal(HO.VERSION, 'HO7');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -60,6 +60,7 @@ test('VERSION is HO6 and SUITES cover all 5 office applications', () => {
     assert.ok(suite.name, 'suite has name');
     assert.ok(suite.url, 'suite has url');
     assert.ok(suite.icon, 'suite has icon');
+    assert.ok(suite.desc, 'suite has a short description');
   });
 
   const slides = HO.SUITES.find((s) => s.id === 'slides');
@@ -95,6 +96,27 @@ test('FORMAT_TABLE lists truthful open, save and export formats', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(byId.tables.open)), ['.hot', '.csv']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.tables.save)), ['.hot']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.tables.export)), ['.csv']);
+});
+
+
+test('formatChipGroups builds Open, Save and Export groups and marks native', () => {
+  const HO = loadScript();
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+  const writer = HO.FORMAT_TABLE.find((row) => row.id === 'writer');
+  const groups = clone(HO.formatChipGroups(writer));
+  assert.deepEqual(groups.map((g) => g.label), ['Open', 'Save', 'Export']);
+  assert.deepEqual(groups[0].formats, ['.how', '.docx', '.odt']);
+  assert.deepEqual(groups[1].formats, ['.how']);
+  assert.deepEqual(groups[2].formats, ['.docx', '.odt', '.pdf']);
+  groups.forEach((g) => {
+    assert.equal(g.native, '.how');
+  });
+
+  assert.deepEqual(clone(HO.formatChipGroups({})), []);
+  const saveOnly = clone(HO.formatChipGroups({ save: ['.hot'] }));
+  assert.equal(saveOnly.length, 1);
+  assert.equal(saveOnly[0].label, 'Save');
+  assert.equal(saveOnly[0].native, '.hot');
 });
 
 test('EXT_MAP routes all expected extensions to matching suites', () => {
@@ -241,20 +263,30 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
 });
 
-test('Start Page HTML is the HO6 layout and keeps cache tokens', () => {
+test('Start Page HTML is the HO7 layout and keeps cache tokens', () => {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  assert.ok(html.includes('Hub Office HO6'), 'title includes HO6');
-  assert.ok(html.includes('content="HO6"'), 'version meta is HO6');
-  assert.ok(html.includes('hub_office.css?v=HO6'), 'css cache token is HO6');
-  assert.ok(html.includes('hub_office.js?v=HO6'), 'js cache token is HO6');
+  assert.ok(html.includes('Hub Office HO7'), 'title includes HO7');
+  assert.ok(html.includes('content="HO7"'), 'version meta is HO7');
+  assert.ok(html.includes('hub_office.css?v=HO7'), 'css cache token is HO7');
+  assert.ok(html.includes('hub_office.js?v=HO7'), 'js cache token is HO7');
+  assert.ok(html.includes('Hub Office</h1>') || html.includes('>Hub Office</h1>'), 'has Hub Office heading');
+  assert.ok(html.includes('Write, calculate, present and organise. Files save on this device.'), 'has the one-line description');
+  assert.ok(html.includes('id="suites-grid"'), 'has suite cards grid');
   assert.ok(html.includes('id="btn-open-file"'), 'has Open file button');
   assert.ok(/Open file/.test(html), 'Open file label is present');
-  assert.ok(html.includes('id="btn-formats"'), 'has Supported formats link');
-  assert.ok(html.includes('id="new-row"'), 'has New row');
+  assert.ok(html.includes('id="section-open"'), 'Open/drop sits in its own section');
+  const openAt = html.indexOf('id="section-open"');
+  const suitesAt = html.indexOf('id="suites-grid"');
+  const recentAt = html.indexOf('id="section-recent"');
+  assert.ok(suitesAt > 0 && openAt > suitesAt, 'Open/drop comes after the suite cards');
+  assert.ok(recentAt > openAt, 'Recent comes after Open/drop');
   assert.ok(html.includes('id="recent-list"'), 'has recent list');
+  assert.ok(!html.includes('id="btn-formats"'), 'Supported formats link is gone');
+  assert.ok(!html.includes('id="formats-backdrop"'), 'formats panel is gone');
+  assert.ok(!html.includes('id="new-row"'), 'HO6 New row is gone');
   assert.ok(!/Supported:\s*\.how/.test(html), 'long Supported: line is gone');
-  assert.ok(!html.includes('id="suites-grid"'), 'suite cards grid is gone');
   assert.ok(!html.includes('id="ho-sidebar"'), 'sidebar is gone');
+  assert.ok(!html.includes('id="ho-search"'), 'search box is gone');
 });
 
 test('index.html redirects to hub_office.html', () => {

@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#181b21">
   <!-- (before HO6) <title>Hub Office</title> -->
-  <title>Hub Office HO6</title>
+  <!-- (before HO7) <title>Hub Office HO6</title> -->
+  <title>Hub Office HO7</title>
   <!-- (before HO6) <meta name="version" content="HO-SC2"> -->
-  <meta name="version" content="HO6">
+  <!-- (before HO7) <meta name="version" content="HO6"> -->
+  <meta name="version" content="HO7">
   <link rel="icon" href="hub_office_icon.png">
-  <link rel="stylesheet" href="hub_office.css?v=HO6">
+  <link rel="stylesheet" href="hub_office.css?v=HO7">
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
@@ -34,24 +36,34 @@
       <div class="ho-view active" id="view-start" role="tabpanel" aria-labelledby="tab-btn-start">
         <!-- (before HO6) Start Page was a sidebar (brand, Open File, suite filter nav,
              search) plus a drop zone with a long Supported: line, description cards
-             with taglines and format chips, and a recent list with a Refresh button.
-             That markup was removed; the layout below replaces it. -->
+             with taglines and format chips, and a recent list with a Refresh button. -->
+        <!-- (before HO7) HO6 was a single column: Open file on top, a New row of five
+             icons, a Recent list, and a Supported formats link and panel. Suite cards
+             were removed. The layout below restores the cards under a Hub Office
+             header, with Open/drop below them. -->
         <div class="ho-start" id="ho-start">
-          <div class="ho-start-top">
-            <button type="button" class="ho-btn-primary" id="btn-open-file" title="Open an existing document (Ctrl+O)">Open file</button>
-            <!-- (before HOP1) accept=".how,.hos,.hslides,.hot,..." -->
-            <!-- (before HOB1) accept=".how,.hos,.hop,.hslides,.hot,.docx,..." -->
-            <!-- (before PN1) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.docx,.xlsx,.pptx,.odt,.csv,.tsv,.txt,.md,.json" -->
-            <!-- (before BS11) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.docx,.xlsx,.pptx,.odp,.odt,.csv,.tsv,.txt,.md,.json" -->
-            <!-- (before SH27) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.odb,.docx,.xlsx,.pptx,.odp,.odt,.csv,.tsv,.txt,.md,.json" -->
-            <!-- (before HO6) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.odb,.docx,.xlsx,.ods,.pptx,.odp,.odt,.csv,.tsv,.txt,.md,.json" -->
-            <input type="file" id="file-input" hidden accept=".how,.docx,.odt,.hos,.xlsx,.xls,.ods,.csv,.hop,.hslides,.pptx,.odp,.hob,.hbase,.odb,.tsv,.txt,.json,.sqlite,.sqlite3,.db,.hot">
-          </div>
+          <header class="ho-start-header">
+            <h1 class="ho-heading">Hub Office</h1>
+            <p class="ho-subheading">Write, calculate, present and organise. Files save on this device.</p>
+          </header>
 
-          <section class="ho-section" id="section-new" aria-label="New document">
-            <h2 class="ho-sec-title">New</h2>
-            <div class="ho-new-row" id="new-row">
+          <section class="ho-section" id="section-suites" aria-label="Office suites">
+            <div class="ho-cards-grid" id="suites-grid">
               <!-- Dynamically populated -->
+            </div>
+          </section>
+
+          <section class="ho-section" id="section-open" aria-label="Open a file">
+            <div class="ho-open-box">
+              <button type="button" class="ho-btn-primary" id="btn-open-file" title="Open an existing document (Ctrl+O)">Open file</button>
+              <p class="ho-open-hint">or drop a file anywhere on this page</p>
+              <!-- (before HOP1) accept=".how,.hos,.hslides,.hot,..." -->
+              <!-- (before HOB1) accept=".how,.hos,.hop,.hslides,.hot,.docx,..." -->
+              <!-- (before PN1) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.docx,.xlsx,.pptx,.odt,.csv,.tsv,.txt,.md,.json" -->
+              <!-- (before BS11) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.docx,.xlsx,.pptx,.odp,.odt,.csv,.tsv,.txt,.md,.json" -->
+              <!-- (before SH27) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.odb,.docx,.xlsx,.pptx,.odp,.odt,.csv,.tsv,.txt,.md,.json" -->
+              <!-- (before HO6) accept=".how,.hos,.hop,.hslides,.hot,.hob,.hbase,.odb,.docx,.xlsx,.ods,.pptx,.odp,.odt,.csv,.tsv,.txt,.md,.json" -->
+              <input type="file" id="file-input" hidden accept=".how,.docx,.odt,.hos,.xlsx,.xls,.ods,.csv,.hop,.hslides,.pptx,.odp,.hob,.hbase,.odb,.tsv,.txt,.json,.sqlite,.sqlite3,.db,.hot">
             </div>
           </section>
 
@@ -61,10 +73,6 @@
               <!-- Dynamically populated -->
             </div>
           </section>
-
-          <p class="ho-formats-link-wrap">
-            <button type="button" class="ho-formats-link" id="btn-formats">Supported formats</button>
-          </p>
         </div>
       </div>
       <!-- Dynamic document views inserted here -->
@@ -75,21 +83,11 @@
     <div class="ho-drop-overlay-inner">Drop a file to open it</div>
   </div>
 
-  <div class="ho-formats-backdrop" id="formats-backdrop" hidden>
-    <div class="ho-formats-panel" id="formats-panel" role="dialog" aria-modal="true" aria-labelledby="formats-title">
-      <div class="ho-formats-head">
-        <h2 id="formats-title">Supported formats</h2>
-        <button type="button" class="ho-formats-close" id="btn-formats-close" aria-label="Close">×</button>
-      </div>
-      <div class="ho-formats-body" id="formats-body"></div>
-    </div>
-  </div>
-
   <script src="../../../shared/fs/fs_drives.js"></script>
   <script src="../../../shared/fs/filetypes.js"></script>
   <script src="../../../shared/fs/fs_ref.js"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-dialog.js"></script>
-  <script src="hub_office.js?v=HO6"></script>
+  <script src="hub_office.js?v=HO7"></script>
 </body>
 </html>

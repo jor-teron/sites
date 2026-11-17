@@ -1,18 +1,23 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO6: minimalist Start Page. Suite cards, sidebar filters, search and
-   the drop-zone Supported: line were removed (before HO6). Tabbed
-   document iframes are unchanged. */
+/* HO7: suite cards return under a Hub Office header, with Open/drop
+   below them. The HO6 New row and Supported formats panel were removed
+   (before HO7). Sidebar, search and the long Supported: line stay gone
+   (before HO6). Tabbed document iframes are unchanged. */
 (function (root) {
   'use strict';
 
   /* (before HO6) const was implicit; Start Center was unversioned as HO-SC2 in HTML only. */
-  const VERSION = 'HO6';
+  /* (before HO7) const VERSION = 'HO6'; */
+  const VERSION = 'HO7';
 
   const SUITES = [
     {
       id: 'writer',
       name: 'Writer',
-      /* (before HO6) tagline, desc, formats, btnLabel used by suite cards */
+      /* (before HO6) tagline: 'Word Processor & Documents',
+         desc: 'Full-featured word processor with A4 page layout, rich typography, tables, and native .how file support.',
+         formats and btnLabel listed on the card. */
+      desc: 'Word processor with page layout, typography and tables.',
       icon: '../writer/writer_icon.png',
       url: '../writer/',
       rootUrl: 'apps/office/writer/'
@@ -20,6 +25,8 @@
     {
       id: 'spreadsheet',
       name: 'Spreadsheet',
+      /* (before HO6) tagline: 'Calculations & Analysis' */
+      desc: 'Formulas, multi-sheet calculation, and CSV/XLSX import and export.',
       icon: '../spreadsheet/spreadsheet_icon.png',
       url: '../spreadsheet/',
       rootUrl: 'apps/office/spreadsheet/'
@@ -27,6 +34,8 @@
     {
       id: 'slides',
       name: 'Presentation',
+      /* (before HO6) tagline: 'Presentations & Slide Decks' */
+      desc: '16:9 slide decks with formatting and full-screen presentation.',
       icon: '../slides/slides_icon.png',
       url: '../slides/',
       rootUrl: 'apps/office/slides/'
@@ -34,6 +43,8 @@
     {
       id: 'base',
       name: 'Base',
+      /* (before HO6) tagline: 'Relational Database' */
+      desc: 'Relational database with tables, forms and queries.',
       icon: '../base/base_icon.png',
       url: '../base/',
       rootUrl: 'apps/office/base/'
@@ -41,6 +52,8 @@
     {
       id: 'tables',
       name: 'Tables',
+      /* (before HO6) tagline: 'Structured Data Grid' */
+      desc: 'Lightweight data grid with typed columns, sorting and filtering.',
       icon: '../tables/tables_icon.png',
       url: '../tables/',
       rootUrl: 'apps/office/tables/'
@@ -126,6 +139,23 @@
       });
     });
     return out;
+  }
+
+  /* Pure helper: group FORMAT_TABLE open/save/export lists into labelled
+     chip rows. The first save format is the native format. */
+  function formatChipGroups(row) {
+    row = row || {};
+    const native = (row.save && row.save[0]) || '';
+    const groups = [];
+    function add(label, list) {
+      const formats = Array.isArray(list) ? list.slice() : [];
+      if (!formats.length) return;
+      groups.push({ label: label, formats: formats, native: native });
+    }
+    add('Open', row.open);
+    add('Save', row.save);
+    add('Export', row.export);
+    return groups;
   }
 
   function getSuite(appId) {
@@ -440,29 +470,92 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
-  function renderNewRow() {
-    const row = document.getElementById('new-row');
-    if (!row) return;
-    row.innerHTML = '';
+  /* (before HO7) renderNewRow drew the HO6 New icon row. Cards open the apps now. */
+  function renderSuites() {
+    const grid = document.getElementById('suites-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const tableById = Object.create(null);
+    FORMAT_TABLE.forEach((row) => { tableById[row.id] = row; });
+
     SUITES.forEach((app) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'ho-new-app';
-      btn.dataset.id = app.id;
-      btn.setAttribute('aria-label', 'New ' + app.name + ' document');
+      const card = document.createElement('div');
+      card.className = 'ho-card';
+      card.dataset.id = app.id;
+      card.setAttribute('role', 'button');
+      card.tabIndex = 0;
+      card.setAttribute('aria-label', 'Open ' + app.name);
+
+      function openApp() {
+        createDocTab(app.id);
+      }
+      card.addEventListener('click', openApp);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openApp();
+        }
+      });
+
+      const header = document.createElement('div');
+      header.className = 'ho-card-header';
 
       const icon = document.createElement('img');
-      icon.className = 'ho-new-icon';
+      icon.className = 'ho-card-icon';
       icon.src = app.icon;
       icon.alt = '';
       icon.onerror = () => { icon.style.display = 'none'; };
 
-      const label = document.createElement('span');
-      label.textContent = app.name;
+      const info = document.createElement('div');
+      info.className = 'ho-card-info';
 
-      btn.append(icon, label);
-      btn.addEventListener('click', () => createDocTab(app.id));
-      row.appendChild(btn);
+      const name = document.createElement('span');
+      name.className = 'ho-card-name';
+      name.textContent = app.name;
+      info.appendChild(name);
+      header.append(icon, info);
+
+      const desc = document.createElement('p');
+      desc.className = 'ho-card-desc';
+      desc.textContent = app.desc || '';
+
+      const fmts = document.createElement('div');
+      fmts.className = 'ho-card-formats';
+      formatChipGroups(tableById[app.id] || {}).forEach((group) => {
+        const g = document.createElement('div');
+        g.className = 'ho-fmt-group';
+        const label = document.createElement('span');
+        label.className = 'ho-fmt-label';
+        label.textContent = group.label;
+        g.appendChild(label);
+        group.formats.forEach((fmt) => {
+          const b = document.createElement('span');
+          b.className = 'ho-fmt-badge' + (fmt === group.native ? ' ho-fmt-native' : '');
+          b.textContent = fmt;
+          g.appendChild(b);
+        });
+        fmts.appendChild(g);
+      });
+
+      const actions = document.createElement('div');
+      actions.className = 'ho-card-actions';
+
+      const btnNew = document.createElement('button');
+      btnNew.type = 'button';
+      btnNew.className = 'ho-btn-new';
+      const plus = document.createElement('span');
+      plus.textContent = '➕';
+      const btnLabel = document.createElement('span');
+      btnLabel.textContent = 'Open ' + app.name;
+      btnNew.append(plus, btnLabel);
+      btnNew.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openApp();
+      });
+      actions.appendChild(btnNew);
+
+      card.append(header, desc, fmts, actions);
+      grid.appendChild(card);
     });
   }
 
@@ -522,70 +615,8 @@
     });
   }
 
-  function renderFormatsPanel() {
-    const body = document.getElementById('formats-body');
-    if (!body) return;
-    body.innerHTML = '';
-    FORMAT_TABLE.forEach((row) => {
-      const app = getSuite(row.id);
-      const block = document.createElement('div');
-      block.className = 'ho-formats-suite';
-
-      const title = document.createElement('div');
-      title.className = 'ho-formats-suite-name';
-      if (app && app.icon) {
-        const img = document.createElement('img');
-        img.src = app.icon;
-        img.alt = '';
-        title.appendChild(img);
-      }
-      const nm = document.createElement('span');
-      nm.textContent = app ? app.name : row.id;
-      title.appendChild(nm);
-
-      function line(label, list) {
-        const p = document.createElement('div');
-        p.className = 'ho-formats-row';
-        const strong = document.createElement('strong');
-        strong.textContent = label + ': ';
-        p.appendChild(strong);
-        p.appendChild(document.createTextNode((list || []).join('  ')));
-        return p;
-      }
-
-      block.append(title, line('Open', row.open), line('Save', row.save), line('Export', row.export));
-      body.appendChild(block);
-    });
-  }
-
-  function setFormatsOpen(open) {
-    const backdrop = document.getElementById('formats-backdrop');
-    if (!backdrop) return;
-    backdrop.hidden = !open;
-    if (open) {
-      const closeBtn = document.getElementById('btn-formats-close');
-      if (closeBtn) closeBtn.focus();
-    }
-  }
-
-  function initFormatsPanel() {
-    const btn = document.getElementById('btn-formats');
-    const closeBtn = document.getElementById('btn-formats-close');
-    const backdrop = document.getElementById('formats-backdrop');
-    renderFormatsPanel();
-    if (btn) btn.addEventListener('click', () => setFormatsOpen(true));
-    if (closeBtn) closeBtn.addEventListener('click', () => setFormatsOpen(false));
-    if (backdrop) {
-      backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) setFormatsOpen(false);
-      });
-    }
-    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') setFormatsOpen(false);
-      });
-    }
-  }
+  /* (before HO7) renderFormatsPanel / initFormatsPanel drew the Supported
+     formats link and in-app panel. Cards show the format chips now. */
 
   function initOpenFile() {
     const input = document.getElementById('file-input');
@@ -681,9 +712,8 @@
   function init() {
     initOpenFile();
     initDropOverlay();
-    initFormatsPanel();
     initShortcuts();
-    renderNewRow();
+    renderSuites();
     renderRecents();
   }
 
@@ -712,7 +742,8 @@
     getExt,
     formatTime,
     formatSize,
-    openAcceptList
+    openAcceptList,
+    formatChipGroups
   };
 
 })(typeof window !== 'undefined' ? window : this);

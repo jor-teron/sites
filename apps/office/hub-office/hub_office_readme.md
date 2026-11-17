@@ -14,23 +14,24 @@ The unified Start Center and multi-document tabbed container for the **Hub Offic
 - **Workspace Navigation**: Switch instantly between open documents and the Start Page without opening multiple desktop windows.
 - **Tab Closing**: Closing a document tab (`✕`) returns focus to the previous active document or the Start Page.
 
-## 3. HO6 Start Page
-HO6 is a minimalist Start Page (it also absorbs the former HO4 open-file / New work and HO5 honest format lists):
-- A single **Open file** button at the top (Ctrl+O). Drop a file anywhere on the Start Page; a subtle overlay appears while dragging.
-- **New**: one row of five small app icons (Writer, Spreadsheet, Presentation, Base, Tables). One click opens a blank document in a new tab.
+## 3. HO7 Start Page
+<!-- (before HO7) HO6 was a minimalist Start Page: Open file on top, a New row of five icons, a Recent list, and a Supported formats link. Suite cards were removed. -->
+HO7 brings the suite cards back under a Hub Office header:
+- A **Hub Office** heading and the line "Write, calculate, present and organise. Files save on this device."
+- One card per suite (Writer, Spreadsheet, Presentation, Base, Tables), with the icon, name, a short description, and format chips grouped as Open, Save and Export. The native save format is marked. Clicking a card, or its Open button, opens a blank document in a new tab.
+- **Open file** (Ctrl+O) and a drop hint sit under the cards. Drop a file anywhere on the Start Page; a subtle overlay appears while dragging.
 - **Recent**: a plain list of up to 8 files, with the app icon, name and a relative time. An empty list shows one quiet line.
-- A **Supported formats** link opens an in-app panel with each suite's real open, save and export lists.
-- The old sidebar, description cards, taglines, format chips and long "Supported:" line are gone.
+- The HO6 New row and Supported formats panel are gone, because the cards cover both. The old sidebar, search box and long "Supported:" line stay gone.
 
 Files already on the Hub local drive (Documents) open through `#drive=…&file=…`, which each suite already reads. A file dropped or picked on a standalone page cannot be handed into the iframe, so the matching app opens and a short in-app note asks you to use File → Open there. Unknown extensions get an in-app message and do not open a tab.
 
 ## 4. Files
 - `index.html`: Entry point with theme pre-sync, redirects to `hub_office.html`.
 - `hub_office.html`: Top tab bar, Start Page view, dynamic document view container.
-- `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO6 Start Page.
-- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), FORMAT_TABLE, extension router, and recent files loader. Version constant: `HO6`.
+- `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO7 Start Page cards and Open/drop area.
+- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), FORMAT_TABLE, formatChipGroups, extension router, and recent files loader. Version constant: `HO7`.
 - `hub_office_icon.png`: 128x128 RGBA suite icon.
-- `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, tab creation/switching/closing, and extension routing.
+- `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, formatChipGroups, tab creation/switching/closing, and extension routing.
 
 ## 5. Supported File Types & Routing
 Files dropped or selected automatically open in a dedicated tab running the matching suite app. Lists below match each app's file pickers and export menus (verified in HO6):

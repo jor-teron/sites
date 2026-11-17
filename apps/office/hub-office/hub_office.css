@@ -1,7 +1,9 @@
 /* Hub Office Suite Start Center — hub_office.css */
-/* HO6: minimalist Start Page. Sidebar, suite cards, drop-zone and
-   format-chip styles were removed (before HO6). Tab bar and document
-   iframe styles are unchanged. */
+/* HO7: suite cards return under a Hub Office header, with Open/drop
+   below them and the HO6 Recent list kept. HO6 New-row and Supported
+   formats panel styles were removed (before HO7). Sidebar, search and
+   the long Supported: line stay gone (before HO6). Tab bar and
+   document iframe styles are unchanged. */
 :root {
   --ho-bg: #121418;
   --ho-sidebar-bg: #181b21;
@@ -199,12 +201,12 @@ html, body {
   background: var(--ho-bg);
 }
 
-/* HO6 Start Page */
+/* HO7 Start Page */
 .ho-start {
   flex: 1;
   overflow-y: auto;
   padding: 28px 24px 40px;
-  max-width: 640px;
+  max-width: 1080px;
   width: 100%;
   margin: 0 auto;
   display: flex;
@@ -213,9 +215,36 @@ html, body {
   background: var(--ho-bg);
 }
 
-.ho-start-top {
+.ho-start-header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ho-heading {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.ho-subheading {
+  font-size: 13.5px;
+  color: var(--ho-muted);
+  line-height: 1.4;
+}
+
+.ho-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ho-sec-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ho-muted);
 }
 
 .ho-btn-primary {
@@ -238,63 +267,163 @@ html, body {
 }
 
 .ho-btn-primary:focus-visible,
-.ho-new-app:focus-visible,
-.ho-recent-row:focus-visible,
-.ho-formats-link:focus-visible,
-.ho-formats-close:focus-visible {
+.ho-card:focus-visible,
+.ho-btn-new:focus-visible,
+.ho-recent-row:focus-visible {
   outline: 2px solid var(--ho-focus);
   outline-offset: 2px;
 }
 
-.ho-section {
+/* Suite cards — restored from the pre-HO6 card look, without hover
+   lift, shadow or motion. */
+.ho-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.ho-card {
+  background: var(--ho-surface);
+  border: 1px solid var(--ho-border);
+  border-radius: 12px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  position: relative;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+}
+
+.ho-card:hover {
+  border-color: var(--ho-accent);
+  background: var(--ho-surface-hover);
+}
+
+.ho-card-header {
+  display: flex;
+  align-items: flex-start;
   gap: 12px;
 }
 
-.ho-sec-title {
-  font-size: 13px;
-  font-weight: 600;
+.ho-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  flex: none;
+  object-fit: contain;
+}
+
+.ho-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ho-card-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ho-card-desc {
+  font-size: 12.5px;
+  color: var(--ho-text);
+  line-height: 1.4;
+  opacity: 0.9;
+  flex: 1;
+}
+
+.ho-card-formats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ho-fmt-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.ho-fmt-label {
+  font-size: 10px;
+  font-weight: 650;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ho-muted);
+  margin-right: 2px;
+  flex: none;
 }
 
-.ho-new-row {
+.ho-fmt-badge {
+  font-size: 11px;
+  background: var(--ho-bg);
+  border: 1px solid var(--ho-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--ho-muted);
+  font-family: ui-monospace, monospace;
+}
+
+.ho-fmt-native {
+  color: var(--ho-accent);
+  border-color: var(--ho-accent);
+  font-weight: 700;
+}
+
+.ho-card-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--ho-border);
+}
+
+.ho-btn-new {
+  width: 100%;
+  padding: 9px 14px;
+  background: var(--ho-bg);
+  border: 1px solid var(--ho-border);
+  color: var(--ho-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
-.ho-new-app {
+.ho-btn-new:hover {
+  background: var(--ho-accent);
+  color: var(--ho-accent-ink);
+  border-color: var(--ho-accent);
+}
+
+/* Open file / drop area under the cards */
+.ho-open-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 104px;
-  padding: 14px 8px 12px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: var(--ho-text);
-  font-family: inherit;
+  gap: 10px;
+  padding: 20px 16px;
+  background: var(--ho-surface);
+  border: 1px dashed var(--ho-border);
+  border-radius: 12px;
+}
+
+.ho-open-hint {
   font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
+  color: var(--ho-muted);
 }
 
-.ho-new-app:hover {
-  background: var(--ho-surface-hover);
-  border-color: var(--ho-border);
-}
-
-.ho-new-icon {
-  width: 32px;
-  height: 32px;
-  object-fit: contain;
-  border-radius: 6px;
-}
-
+/* Recent list (kept from HO6) */
 .ho-recent-list {
   display: flex;
   flex-direction: column;
@@ -350,25 +479,6 @@ html, body {
   font-size: 13px;
 }
 
-.ho-formats-link-wrap {
-  margin-top: 4px;
-}
-
-.ho-formats-link {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--ho-accent);
-  font-family: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.ho-formats-link:hover {
-  text-decoration: underline;
-}
-
 /* Subtle full-page drop overlay (no blur) */
 .ho-drop-overlay {
   position: fixed;
@@ -396,103 +506,18 @@ html, body {
   padding: 12px 18px;
 }
 
-/* Supported formats panel */
-.ho-formats-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+@media (max-width: 900px) {
+  .ho-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.ho-formats-backdrop[hidden] {
-  display: none;
-}
-
-.ho-formats-panel {
-  background: var(--ho-surface);
-  color: var(--ho-text);
-  border: 1px solid var(--ho-border);
-  border-radius: 10px;
-  width: 100%;
-  max-width: 480px;
-  max-height: min(80vh, 640px);
-  overflow: auto;
-  padding: 16px 18px 20px;
-}
-
-.ho-formats-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.ho-formats-head h2 {
-  font-size: 16px;
-  font-weight: 650;
-}
-
-.ho-formats-close {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--ho-muted);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.ho-formats-close:hover {
-  background: var(--ho-surface-hover);
-  color: var(--ho-text);
-}
-
-.ho-formats-suite {
-  padding: 10px 0;
-  border-top: 1px solid var(--ho-border);
-}
-
-.ho-formats-suite-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 650;
-  margin-bottom: 6px;
-}
-
-.ho-formats-suite-name img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  border-radius: 4px;
-}
-
-.ho-formats-row {
-  font-size: 13px;
-  color: var(--ho-muted);
-  line-height: 1.45;
-}
-
-.ho-formats-row strong {
-  color: var(--ho-text);
-  font-weight: 550;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .ho-start {
     padding: 20px 16px 32px;
     gap: 22px;
   }
-  .ho-new-app {
-    width: calc(20% - 8px);
-    min-width: 72px;
+  .ho-cards-grid {
+    grid-template-columns: 1fr;
   }
 }
