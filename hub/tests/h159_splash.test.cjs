@@ -23,6 +23,7 @@ test('H159: shouldShow is false for Join links, iframes, or a turned-off pref', 
   assert.equal(S.shouldShow({ pref: '', isJoin: false, isTop: false }), false);
 });
 
+/* (before H159a)
 test('H159: canDismiss — ready fades even before 10s; not ready needs 10s (no auto)', () => {
   assert.equal(S.canDismiss(0, true), true);
   assert.equal(S.canDismiss(5000, true), true);
@@ -33,6 +34,33 @@ test('H159: canDismiss — ready fades even before 10s; not ready needs 10s (no 
   assert.equal(S.canDismiss(500, false, 400), true);
   assert.equal(S.canDismiss(100, false, 400), false);
 });
+*/
+test('H159a: canDismiss — ready waits 3 s; not ready needs 10 s (no auto, no skip before 10 s)', () => {
+  assert.equal(S.SHOW_MIN_MS, 3000);
+  assert.equal(S.canDismiss(0, true), false);
+  assert.equal(S.canDismiss(2999, true), false);
+  assert.equal(S.canDismiss(3000, true), true);
+  assert.equal(S.canDismiss(5000, true), true);
+  assert.equal(S.canDismiss(0, false), false);
+  assert.equal(S.canDismiss(9999, false), false);
+  assert.equal(S.canDismiss(10000, false), true);
+  assert.equal(S.canDismiss(15000, false), true);
+  assert.equal(S.canDismiss(500, false, 400), true);
+  assert.equal(S.canDismiss(100, false, 400), false);
+  assert.equal(S.canDismiss(200, true, 10000, 400), false);
+  assert.equal(S.canDismiss(400, true, 10000, 400), true);
+});
+
+test('H159a: about:blank is not an app document; cross-origin load is', () => {
+  assert.equal(S.isAppDocument('about:blank', false), false);
+  assert.equal(S.isAppDocument('about:blank#', false), false);
+  assert.equal(S.isAppDocument('about:srcdoc', false), false);
+  assert.equal(S.isAppDocument('', false), false);
+  assert.equal(S.isAppDocument(null, false), false);
+  assert.equal(S.isAppDocument('http://127.0.0.1/apps/system/settings/', false), true);
+  assert.equal(S.isAppDocument('', true), true);
+  assert.equal(S.isAppDocument('about:blank', true), true);
+});
 
 test('H159: still-loading hint only after 10s while not ready', () => {
   assert.equal(S.showStillLoading(0, false), false);
@@ -42,6 +70,7 @@ test('H159: still-loading hint only after 10s while not ready', () => {
   assert.equal(S.showStillLoading(0, true), false);
   assert.equal(S.STILL_MSG.includes('Still loading'), true);
   assert.equal(S.MIN_MS, 10000);
+  assert.equal(S.SHOW_MIN_MS, 3000);
 });
 
 test('H159: progress fraction is core ready plus N of M windows', () => {
