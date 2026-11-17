@@ -25,11 +25,13 @@
    SL10: do not size the canvas until SLEdit.init has assigned the stage; setNotesOpen(notesWanted()) runs after
      that init so the notes pane is restored and the slide is fitted once the canvas is ready. A guard in doFit
      also returns early if the stage is missing, so a similar call cannot abort the ribbon, File menu, slide list
-     or deck boot. */
+     or deck boot.
+   HOP1: the app is now Presentation; files save as .hop (old .hslides files still open). No JSON format bump. */
 (function () {
   'use strict';
   /* (before SL10) var VERSION = 'SL9'; */
-  var VERSION = 'SL10';   /* legacy: 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  /* (before HOP1) var VERSION = 'SL10'; */
+  var VERSION = 'HOP1';   /* legacy: 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -142,7 +144,8 @@
   /* ---------- deck + slides ---------- */
   function showDeck(d) {
     deck = d; SLSave.setCurrent(d.id);
-    $('deck-name').textContent = d.name; document.title = d.name + ' · Slides ' + VERSION;
+    /* (before HOP1) document.title = d.name + ' · Slides ' + VERSION; */
+    $('deck-name').textContent = d.name; document.title = d.name + ' · Presentation ' + VERSION;
     undo = []; redo = [];
     renderAll(); SLHub.title();
     /* pictures come from IndexedDB a moment later; draw again once they are there */
@@ -241,7 +244,8 @@
   function renameDeck() {
     askName('Rename deck', deck.name, 'Rename').then(function (n) {
       if (!n || n === deck.name) return;
-      deck.name = n; $('deck-name').textContent = n; document.title = n + ' · Slides ' + VERSION; dirty(); SLSave.flush(); toast('Renamed'); SLHub.title();
+      /* (before HOP1) document.title = n + ' · Slides ' + VERSION; */
+      deck.name = n; $('deck-name').textContent = n; document.title = n + ' · Presentation ' + VERSION; dirty(); SLSave.flush(); toast('Renamed'); SLHub.title();
     });
   }
   function deleteDeck() {
@@ -633,7 +637,8 @@
       var v = String(SLSave.get(sg.dataset.key));
       [].forEach.call(sg.children, function (b) { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-pressed', b.dataset.v === v ? 'true' : 'false'); });
     });
-    $('set-store').textContent = SLSave.memOnly ? 'Memory only: changes are lost when Slides closes. Use Export.' : 'Saved on this device as you type (' + SLSave.list().length + ' decks)';
+    /* (before HOP1) '…when Slides closes…' */
+    $('set-store').textContent = SLSave.memOnly ? 'Memory only: changes are lost when Presentation closes. Use Export.' : 'Saved on this device as you type (' + SLSave.list().length + ' decks)';
   }
   function openSettings() { closeMenus(); syncSettings(); $('settings').hidden = false; $('set-x').focus(); }
   function closeSettings() { $('settings').hidden = true; try { $('b-set').focus({ preventScroll: true }); } catch (_) { /* */ } }
@@ -1110,7 +1115,8 @@
   menuKeys($('menu-deck')); menuKeys($('menu-slide'));
   $('file-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importFile(f); });
   $('pptx-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importPptxFile(f); });
-  /* drop a .hslides file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
+  /* (before HOP1) drop a .hslides file anywhere; last line was importFile(f); */
+  /* drop a .hop or .hslides file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
   addEventListener('dragover', function (e) { if (e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) e.preventDefault(); });
   addEventListener('drop', function (e) {
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
@@ -1120,7 +1126,7 @@
       if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) at = { x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc };
       insertPicture(f, at); return;
     }
-    importFile(f);
+    if (isPptx(f) || SLFile.isDeckName(f.name)) importFile(f);
   });
   addEventListener('keydown', function (e) {
     if (SLShow.on()) return;
@@ -1205,7 +1211,8 @@
   $('b-deck').addEventListener('click', function () { if (!$('menu-deck').hidden) { $('menu-slide').hidden = true; var f = $('menu-deck').querySelector('button'); if (f) f.focus(); } });
   function blocked() { return SLShow.on() || !$('dialog').hidden || !$('settings').hidden || !$('pick').hidden || ($('master') && !$('master').hidden); }
   OfficeQuick.register({
-    app: 'Slides',
+    /* (before HOP1) app: 'Slides', */
+    app: 'Presentation',
     undo: function () { if (!blocked()) swap(undo, redo, 'Undo'); }, redo: function () { if (!blocked()) swap(redo, undo, 'Redo'); },
     canUndo: function () { return !!deck && undo.length > 0; }, canRedo: function () { return !!deck && redo.length > 0; },
     save: function () { if (!deck) return false; SLSave.saveDeck(deck); return SLSave.flush() !== false && !SLSave.memOnly; },
@@ -1219,7 +1226,7 @@
     mount: $('top'), before: $('b-deck'), fallback: $('of-ribbon')
   });
   SLHub.init({ tabs: TABS, activeTab: activeTab, selectTab: selectTab, openFile: openFile, openSettings: openSettings,
-    title: function () { return deck ? deck.name : 'Slides'; } });
+    title: function () { return deck ? deck.name : 'Presentation'; } });   /* (before HOP1) fallback 'Slides' */
   wireFmt();
 
   /* ---------- start: the last deck, else the newest, else a first deck ---------- */
@@ -1243,7 +1250,7 @@
     }
     var id = SLSave.currentId(), d = id && SLSave.load(id);
     if (!d) { var f = SLSave.list()[0]; d = f && SLSave.load(f.id); }
-    if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Slides', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);   /* legacy (SL1 – SL3): …Add slides with ＋ Slide */
+    if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Presentation', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);   /* (before HOP1) title: 'Welcome to Slides' · legacy (SL1 – SL3): …Add slides with ＋ Slide */
     showDeck(d); if (!SLSave.memOnly) status('Saved');
     /* SL3: a few seconds after start, drop stored pictures that no deck uses any more */
     if (!SLSave.memOnly) setTimeout(function () { var keep = SLSave.picKeys(); deck.slides.forEach(function (s) { (s.pics || []).forEach(function (p) { if (p.key) keep[p.key] = 1; }); }); SLPics.gc(keep); }, 4000);

@@ -18,7 +18,7 @@
   function tabs() { return [{ id: 'file', label: 'File', menu: true }].concat(A.tabs.map(function (t) { return { id: t.id, label: t.label }; })); }
   function sendApp() {
     lastTab = A.activeTab(); lastTitle = A.title();
-    post({ type: 'hub-app', app: 'Slides', tabs: tabs(), activeTab: lastTab, title: lastTitle });
+    post({ type: 'hub-app', app: 'Presentation', tabs: tabs(), activeTab: lastTab, title: lastTitle });   /* (before HOP1) app: 'Slides' */
     post({ type: 'hub-app-caps', settings: true });
   }
   var H = {

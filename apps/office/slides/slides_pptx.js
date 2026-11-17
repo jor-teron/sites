@@ -349,11 +349,12 @@
     files['_rels/.rels'] = relsRoot();
     files['docProps/core.xml'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
       '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
-      '<dc:title>' + esc(deck.name || 'Slides') + '</dc:title><dc:creator>Hub Office Slides</dc:creator>' +
+      '<dc:title>' + esc(deck.name || 'Presentation') + '</dc:title><dc:creator>Hub Office Presentation</dc:creator>' +   /* (before HOP1) 'Slides' / 'Hub Office Slides' */
       '<dcterms:created xsi:type="dcterms:W3CDTF">' + iso(deck.created) + '</dcterms:created>' +
       '<dcterms:modified xsi:type="dcterms:W3CDTF">' + iso(deck.updated) + '</dcterms:modified></cp:coreProperties>';
     files['docProps/app.xml'] = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
-      '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Hub Office Slides</Application><Slides>' + slides.length + '</Slides><PresentationFormat>On-screen Show (16:9)</PresentationFormat></Properties>';
+      /* (before HOP1) Application: Hub Office Slides. <Slides> is the OOXML slide-count tag and stays. */
+      '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Hub Office Presentation</Application><Slides>' + slides.length + '</Slides><PresentationFormat>On-screen Show (16:9)</PresentationFormat></Properties>';
     files['ppt/theme/theme1.xml'] = themeXml(deck.theme);
     files['ppt/slideMasters/slideMaster1.xml'] = masterXml(deck.theme);
     files['ppt/slideMasters/_rels/slideMaster1.xml.rels'] = rels([
@@ -379,7 +380,7 @@
       (s.pics || []).forEach(function (p) {
         var med = mediaFromSrc(p.src);
         if (!med) {
-          if (p.src || p.key) warnings.push('Slide ' + n + ': a picture had no bitmap in memory and was skipped (export after pictures have loaded, or use Export .hslides).');
+          if (p.src || p.key) warnings.push('Slide ' + n + ': a picture had no bitmap in memory and was skipped (export after pictures have loaded, or use Export .hop).');   /* (before HOP1) Export .hslides */
           return;
         }
         if (med.ext === 'webp') {
