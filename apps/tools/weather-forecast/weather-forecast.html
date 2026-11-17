@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- WX1c Weather Forecast: live current conditions, a 7-day outlook and today's hourly curve for Diphu
-     from Open-Meteo, with a 10-minute cache and loading / error / offline states. -->
+<!-- WX1d Weather Forecast: live current conditions, a 7-day outlook, today's curve, the next 12 hours
+     and detail chips for Diphu from Open-Meteo, with a 10-minute cache and loading / error / offline states. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Weather Forecast · WX1c</title>
+  <title>Weather Forecast · WX1d</title>
   <link rel="stylesheet" href="weather-forecast.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
 </head>
@@ -55,6 +55,21 @@
     <h2 class="wx-h2" id="chartTitle">Today, hour by hour</h2>
     <canvas id="tempChart" role="img" aria-label="Temperature through today"></canvas>
     <table class="sr" id="chartTable"><caption>Hourly temperature</caption></table>
+  </section>
+
+  <section class="wx-hours" id="hoursCard" hidden aria-labelledby="hoursTitle">
+    <h2 class="wx-h2" id="hoursTitle">Next 12 hours</h2>
+    <ul class="wx-hours-list" id="hourList"></ul>
+  </section>
+
+  <section class="wx-chips" id="chipsCard" hidden aria-labelledby="chipsTitle">
+    <h2 class="wx-h2" id="chipsTitle">Details</h2>
+    <dl class="wx-chipgrid">
+      <div><dt>Gusts</dt><dd id="gust">–</dd></div>
+      <div><dt>Rain now</dt><dd id="rainNow">–</dd></div>
+      <div><dt>Sunrise</dt><dd id="sunrise">–</dd></div>
+      <div><dt>Sunset</dt><dd id="sunset">–</dd></div>
+    </dl>
   </section>
 
   <section class="wx-error" id="errorCard" hidden aria-label="Weather error">

@@ -101,6 +101,26 @@ test("buildUrl asks for current, hourly and daily", () => {
   assert.match(u, /timezone=auto/);
 });
 
+test("nextHours starts at the current hour and can cross midnight", () => {
+  const hours = [];
+  for (let d = 0; d < 2; d++) {
+    for (let h = 0; h < 24; h++) {
+      hours.push({
+        time: `2026-11-${17 + d}T${String(h).padStart(2, "0")}:00`,
+        temp: 20, code: 0, rain: 0,
+      });
+    }
+  }
+  const out = ctx.WXData.nextHours(hours, "2026-11-17T20:15", 12);
+  assert.strictEqual(out.length, 12);
+  assert.strictEqual(out[0].time, "2026-11-17T20:00");
+  assert.strictEqual(out[11].time, "2026-11-18T07:00");
+});
+
+test("nextHours is empty when no hour matches today", () => {
+  assert.strictEqual(ctx.WXData.nextHours([], "2026-11-17T08:00", 12).length, 0);
+});
+
 test("normalize keeps the hourly series for today's curve", () => {
   const d = ctx.WXData.normalize(payload(7));
   assert.strictEqual(d.hours.length, 24);

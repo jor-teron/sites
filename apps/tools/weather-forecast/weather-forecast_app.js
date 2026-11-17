@@ -1,7 +1,7 @@
 /*
- * Weather Forecast — page logic (WX1c).
- * Paints current conditions, the 7-day forecast and today's hourly curve; handles loading,
- * error, offline and refresh. WX1d adds the 12-hour strip and detail chips.
+ * Weather Forecast — page logic (WX1d).
+ * Paints current conditions, the 7-day forecast, today's curve, the next 12 hours and detail chips;
+ * handles loading, error, offline and refresh. WX1e adds units and the place picker.
  */
 var WXApp = (function () {
   "use strict";
@@ -266,6 +266,8 @@ var WXApp = (function () {
     el.nowCard.hidden = true;
     el.daysCard.hidden = true;
     el.chartCard.hidden = true;
+    el.hoursCard.hidden = true;
+    el.chipsCard.hidden = true;
     el.errorCard.hidden = false;
     el.errorText.textContent = msg;
     setStatus("", "");
@@ -299,6 +301,42 @@ var WXApp = (function () {
     el.moreDays.setAttribute("aria-expanded", open ? "true" : "false");
   }
 
+  function renderHours(data) {
+    var pts = WXData.nextHours(data.hours, data.at, 12);
+    if (pts.length < 2) {
+      el.hoursCard.hidden = true;
+      return;
+    }
+    var html = "", i, w;
+    for (i = 0; i < pts.length; i++) {
+      w = WXFormat.wmo(pts[i].code);
+      html += '<li class="wx-hour">' +
+        '<span class="h">' + (i === 0 ? "Now" : WXFormat.hourLabel(pts[i].time)) + '</span>' +
+        '<span class="i">' + iconSvg(w[1]) + '<span class="sr">' + w[0] + '</span></span>' +
+        '<span class="t">' + WXFormat.fmtTemp(pts[i].temp) + '</span>' +
+        '<span class="r">' + (typeof pts[i].rain === "number" ? WXFormat.pct(pts[i].rain) : "") + '</span>' +
+        '</li>';
+    }
+    el.hourList.innerHTML = html;
+    el.hoursCard.hidden = false;
+  }
+
+  function renderChips(data) {
+    var now = data.now;
+    var today = (data.days && data.days[0]) || {};
+    var next = WXData.nextHours(data.hours, data.at, 1);
+
+    el.gust.textContent = typeof now.gust === "number"
+      ? Math.round(now.gust) + " " + data.units.wind
+      : "\u2013";
+    el.rainNow.textContent = next.length && typeof next[0].rain === "number"
+      ? WXFormat.pct(next[0].rain)
+      : "\u2013";
+    el.sunrise.textContent = today.sunrise ? WXFormat.fmtClock(today.sunrise) : "\u2013";
+    el.sunset.textContent = today.sunset ? WXFormat.fmtClock(today.sunset) : "\u2013";
+    el.chipsCard.hidden = false;
+  }
+
   function paint(res) {
     var d = res.data, now = d.now;
     var w = WXFormat.wmo(now.code);
@@ -321,6 +359,8 @@ var WXApp = (function () {
 
     renderDays(d.days);
     drawChart();
+    renderHours(d);
+    renderChips(d);
 
     if (res.stale) {
       setStatus(T.offline + " " + WXFormat.freshness(Date.now() - res.savedAt) + ".", "warn");
@@ -367,6 +407,13 @@ var WXApp = (function () {
     el.chartCard = $("chartCard");
     el.canvas = $("tempChart");
     el.chartTable = $("chartTable");
+    el.hoursCard = $("hoursCard");
+    el.hourList = $("hourList");
+    el.chipsCard = $("chipsCard");
+    el.gust = $("gust");
+    el.rainNow = $("rainNow");
+    el.sunrise = $("sunrise");
+    el.sunset = $("sunset");
     el.errorCard = $("errorCard");
     el.errorText = $("errorText");
     el.refresh = $("refresh");
