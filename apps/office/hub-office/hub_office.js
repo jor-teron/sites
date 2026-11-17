@@ -35,7 +35,8 @@
       icon: '../slides/slides_icon.png',
       url: '../slides/',
       rootUrl: 'apps/office/slides/',
-      formats: ['.hop', '.hslides', '.pptx'],
+      /* (before PN1) formats: ['.hop', '.hslides', '.pptx'], */
+      formats: ['.hop', '.hslides', '.pptx', '.odp'],
       btnLabel: 'Open Presentation'
     },
     {
@@ -78,6 +79,8 @@
     hop: 'slides',
     hslides: 'slides',
     pptx: 'slides',
+    /* (before PN1) no odp */
+    odp: 'slides',
     ppt: 'slides',
     hot: 'tables',
     hob: 'base',

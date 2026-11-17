@@ -30,25 +30,30 @@ var html = read('slides.html');
 var appLive = live(app);
 var htmlLive = live(html);
 
-/* ---------- release id (SL11 bumped the live id; SL10 start-up checks below still apply) ---------- */
+/* ---------- release id (PN1 bumped the live id; SL10 start-up checks below still apply) ---------- */
 /* (before HOP1) ok('VERSION is SL10', /var VERSION = 'SL10'/.test(appLive)); */
 /* (before SL11) ok('VERSION is HOP1', /var VERSION = 'HOP1'/.test(appLive)); */
-ok('VERSION is SL11', /var VERSION = 'SL11'/.test(appLive));
-ok('old VERSION kept as (before SL11) comment',
+/* (before PN1) ok('VERSION is SL11', /var VERSION = 'SL11'/.test(appLive)); */
+ok('VERSION is PN1', /var VERSION = 'PN1'/.test(appLive));
+ok('old VERSION kept as (before PN1) comment',
+  app.indexOf("/* (before PN1) var VERSION = 'SL11'; */") !== -1);
+ok('SL11 VERSION comment is still present',
   app.indexOf("/* (before SL11) var VERSION = 'HOP1'; */") !== -1);
 ok('HOP1 VERSION comment is still present',
   app.indexOf("/* (before HOP1) var VERSION = 'SL10'; */") !== -1);
 ok('SL10 VERSION comment is still present',
   app.indexOf("/* (before SL10) var VERSION = 'SL9'; */") !== -1);
 var title = htmlLive.match(/<title>([^<]*)<\/title>/);
-ok('page title is Presentation SL11', title && title[1] === 'Presentation SL11', title && title[1]);
-ok('old title kept as (before SL11) comment',
+ok('page title is Presentation PN1', title && title[1] === 'Presentation PN1', title && title[1]);
+ok('old title kept as (before PN1) comment',
+  html.indexOf('<!-- (before PN1) <title>Presentation SL11</title> -->') !== -1);
+ok('SL11 title comment is still present',
   html.indexOf('<!-- (before SL11) <title>Presentation HOP1</title> -->') !== -1);
 ok('HOP1 title comment is still present',
   html.indexOf('<!-- (before HOP1) <title>Slides SL10</title> -->') !== -1);
 ok('SL10 title comment is still present',
   html.indexOf('<!-- (before SL10) <title>Slides SL9</title> -->') !== -1);
-ok('About version is SL11', /<span id="ver">SL11<\/span>/.test(htmlLive));
+ok('About version is PN1', /<span id="ver">PN1<\/span>/.test(htmlLive));
 ok('About mentions the start-up fix', /SL10: the editor starts even when the notes pane/.test(htmlLive));
 
 /* ---------- source order: setNotesOpen after SLEdit.init ---------- */
