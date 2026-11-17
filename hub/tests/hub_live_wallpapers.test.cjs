@@ -376,12 +376,20 @@ test('HubLiveWallpaper reduced motion support', () => {
   const engine = win.HubLiveWallpaper;
   assert.equal(engine.isReducedMotion(), false);
 
+  // doc.documentElement.classList.add('hub-motion-reduced');
+  // assert.equal(engine.isReducedMotion(), true);
+  // doc.documentElement.classList.remove('hub-motion-reduced');
+  // doc.documentElement.classList.add('hub-motion-off');
+  // assert.equal(engine.isReducedMotion(), true);   (before H158a)
+  // H158a: Hub Motion Off / Reduced must not freeze live wallpapers; only the OS media query does.
   doc.documentElement.classList.add('hub-motion-reduced');
-  assert.equal(engine.isReducedMotion(), true);
-
+  assert.equal(engine.isReducedMotion(), false, 'hub-motion-reduced must not count as reduced for live wallpaper');
   doc.documentElement.classList.remove('hub-motion-reduced');
   doc.documentElement.classList.add('hub-motion-off');
-  assert.equal(engine.isReducedMotion(), true);
+  assert.equal(engine.isReducedMotion(), false, 'hub-motion-off must not count as reduced for live wallpaper');
+
+  win.matchMedia = (q) => ({ matches: /prefers-reduced-motion:\s*reduce/.test(q) });
+  assert.equal(engine.isReducedMotion(), true, 'OS prefers-reduced-motion: reduce must still freeze live wallpaper');
 });
 
 test('Circadian preset solar hours simulation', () => {
