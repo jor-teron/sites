@@ -15,7 +15,8 @@
 window.HUB_SEARCH_ITEMS = {
   settings: [
     { name: 'Wallpaper', hash: 'wallpaper', icon: '\uD83D\uDDBC\uFE0F', where: 'Settings', words: 'settings background picture colours gradients desktop image' },
-    { name: 'Live wallpapers', hash: 'wallpaper', icon: '\u26A1', where: 'Settings \u203A Wallpaper', words: 'live wallpaper animated canvas aurora constellation circadian dynamic background' },
+    // { name: 'Live wallpapers', hash: 'wallpaper', icon: '\u26A1', where: 'Settings \u203A Wallpaper', words: 'live wallpaper animated canvas aurora constellation circadian dynamic background' },   (before H158b)
+    { name: 'Live wallpapers', hash: 'wallpaper', icon: '\u26A1', where: 'Settings \u203A Wallpaper', words: 'live wallpaper animated canvas aurora constellation rain lava geo geometric dynamic background' },
     { name: 'Desktop', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings', words: 'settings screen mode phone home screen home button start menu taskbar screen saver' },
     { name: 'Screen mode (Desktop / Phone)', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'phone mode desktop mode auto' },
     { name: 'Open windows maximised', hash: 'desktop', icon: '\uD83D\uDDA5\uFE0F', where: 'Settings \u203A Desktop', words: 'maximize fullscreen new windows' },

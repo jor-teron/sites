@@ -68,7 +68,13 @@ function mockDOM(initialClasses = []) {
             restore() {},
             createLinearGradient() {
               return { addColorStop() {} };
-            }
+            },
+            createRadialGradient() {
+              return { addColorStop() {} };
+            },
+            drawImage() {},
+            setTransform() {},
+            ellipse() {}
           };
         }
         return null;
@@ -152,10 +158,12 @@ test('HUB_LIVE_WALLPAPERS registry in hub_wallpapers.js', () => {
   vm.runInNewContext(WALLPAPERS_SRC, win);
 
   assert.ok(Array.isArray(win.HUB_LIVE_WALLPAPERS), 'HUB_LIVE_WALLPAPERS must be an array');
-  assert.equal(win.HUB_LIVE_WALLPAPERS.length, 3, 'Must define 3 procedural live wallpapers');
+  // assert.equal(win.HUB_LIVE_WALLPAPERS.length, 3, 'Must define 3 procedural live wallpapers');   (before H158b)
+  assert.equal(win.HUB_LIVE_WALLPAPERS.length, 5, 'Must define 5 procedural live wallpapers');
 
   const ids = Array.from(win.HUB_LIVE_WALLPAPERS.map((w) => w.id));
-  assert.deepEqual(JSON.parse(JSON.stringify(ids)), ['live:aurora', 'live:constellation', 'live:circadian']);
+  // assert.deepEqual(JSON.parse(JSON.stringify(ids)), ['live:aurora', 'live:constellation', 'live:circadian']);   (before H158b)
+  assert.deepEqual(JSON.parse(JSON.stringify(ids)), ['live:aurora', 'live:constellation', 'live:rain', 'live:lava', 'live:geo']);
 
   win.HUB_LIVE_WALLPAPERS.forEach((w) => {
     assert.equal(w.live, true, `${w.id} must have live: true`);
@@ -170,9 +178,12 @@ test('HUB_LIVE_WALLPAPERS registry in hub_wallpapers.js', () => {
   assert.equal(hit.id, 'live:aurora');
   assert.equal(hit.name, 'Aurora waves');
 
+  // const hitCircadian = win.hubWallpaper('live:circadian');
+  // assert.equal(hitCircadian.id, 'live:circadian');
+  // assert.equal(hitCircadian.name, 'Circadian sky');   (before H158b)
   const hitCircadian = win.hubWallpaper('live:circadian');
-  assert.equal(hitCircadian.id, 'live:circadian');
-  assert.equal(hitCircadian.name, 'Circadian sky');
+  assert.equal(hitCircadian.id, 'live:aurora', 'H158b: stored live:circadian maps to Aurora');
+  assert.equal(hitCircadian.name, 'Aurora waves');
 
   const missing = win.hubWallpaper('unknown_wp');
   assert.equal(missing.id, 'night', 'Falls back to default wallpaper');
@@ -185,7 +196,8 @@ test('HubLiveWallpaper engine presets and lifecycle', () => {
 
   const engine = win.HubLiveWallpaper;
   assert.ok(engine, 'HubLiveWallpaper must be exported on window');
-  assert.deepEqual(JSON.parse(JSON.stringify(engine.presets())), ['live:aurora', 'live:constellation', 'live:circadian']);
+  // assert.deepEqual(JSON.parse(JSON.stringify(engine.presets())), ['live:aurora', 'live:constellation', 'live:circadian']);   (before H158b)
+  assert.deepEqual(JSON.parse(JSON.stringify(engine.presets())), ['live:aurora', 'live:constellation', 'live:rain', 'live:lava', 'live:geo']);
 
   assert.equal(engine.current(), '');
   assert.equal(engine.isRunning(), false);
@@ -392,6 +404,7 @@ test('HubLiveWallpaper reduced motion support', () => {
   assert.equal(engine.isReducedMotion(), true, 'OS prefers-reduced-motion: reduce must still freeze live wallpaper');
 });
 
+/* (before H158b)
 test('Circadian preset solar hours simulation', () => {
   const { win } = mockDOM();
   vm.runInNewContext(WALLPAPERS_SRC, win);
@@ -412,6 +425,34 @@ test('Circadian preset solar hours simulation', () => {
 
   engine.stop();
 });
+*/
+
+test('H158b: each live preset init/render runs on a stub ctx', () => {
+  const { win } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+  const engine = win.HubLiveWallpaper;
+  const ids = ['live:aurora', 'live:constellation', 'live:rain', 'live:lava', 'live:geo'];
+  ids.forEach((id) => {
+    assert.equal(engine.set(id), true, id + ' must set');
+    assert.equal(engine.current(), id);
+    assert.doesNotThrow(() => engine.tick(), id + ' render must not throw');
+    assert.ok(engine.getState(), id + ' has state');
+    engine.stop();
+  });
+});
+
+test('H158b: live:circadian maps to live:aurora', () => {
+  const { win } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+  const engine = win.HubLiveWallpaper;
+  assert.equal(engine.set('live:circadian'), true);
+  assert.equal(engine.current(), 'live:aurora');
+  assert.doesNotThrow(() => engine.tick());
+  engine.stop();
+});
+
 
 test('Search items and settings UI structure', () => {
   const { win } = mockDOM();
@@ -422,8 +463,11 @@ test('Search items and settings UI structure', () => {
   assert.ok(liveRow, 'Search items must include "Live wallpapers"');
   assert.equal(liveRow.hash, 'wallpaper');
   assert.ok(liveRow.words.includes('aurora'));
-  assert.ok(liveRow.words.includes('circadian'));
+  // assert.ok(liveRow.words.includes('circadian'));   (before H158b)
   assert.ok(liveRow.words.includes('constellation'));
+  assert.ok(liveRow.words.includes('rain'));
+  assert.ok(liveRow.words.includes('lava'));
+  assert.ok(liveRow.words.includes('geo'));
 
   // Verify Settings sec_wallpaper.js creates Live wallpapers section
   assert.ok(SETTINGS_SEC_SRC.includes("ui.title('Live wallpapers')"), 'sec_wallpaper.js must add Live wallpapers title');
