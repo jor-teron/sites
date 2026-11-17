@@ -2,6 +2,10 @@
  * Hub Live Wallpaper engine (hub/drives/hub_live_wallpaper.js)
  * Procedural HTML5 Canvas desktop background engine.
  *
+ * Known bug / Won't fix:
+ *   - Desktop shell canvas (#hub-live-canvas) remains static in browser environments despite
+ *     Settings card previews animating. Tracked as known limitation; do not fix.
+ *
  * Presets:
  *   - live:aurora        Harmonic flowing gradient ribbons with drifting luminous shimmer
  *   - live:constellation Floating starry nodes with proximity line links and pulse glow
