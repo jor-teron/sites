@@ -18,8 +18,10 @@
  *   - 30 FPS cap via timestamp delta in requestAnimationFrame
  *   - Auto-pause on tab hidden, screen locked (hub-locked), or break locked (hub-break)
  *   - Settings live preview attachment via attachPreview(canvasEl, id)
- *   - Accessibility: respects prefers-reduced-motion and sites-hub.motion ('reduced' / 'off')
- *     by drawing a single static frame and stopping animation
+ *   // - Accessibility: respects prefers-reduced-motion and sites-hub.motion ('reduced' / 'off')
+ *   //   by drawing a single static frame and stopping animation   (before H158a)
+ *   - Accessibility: only the OS setting prefers-reduced-motion: reduce draws a still frame.
+ *     Hub Motion Off / Reduced (html.hub-motion-off / hub-motion-reduced) does not freeze live wallpapers (H158a).
  */
 (function () {
   'use strict';
@@ -297,10 +299,11 @@
 
   function isReducedMotion() {
     if (typeof document === 'undefined') return false;
-    const root = document.documentElement;
-    if (root && (root.classList.contains('hub-motion-reduced') || root.classList.contains('hub-motion-off'))) {
-      return true;
-    }
+    // const root = document.documentElement;
+    // if (root && (root.classList.contains('hub-motion-reduced') || root.classList.contains('hub-motion-off'))) {
+    //   return true;
+    // }   (before H158a)
+    // H158a: Hub Motion Off / Reduced stills UI chrome only; live wallpapers (desktop + Settings previews) keep running.
     try {
       return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     } catch (_) {
