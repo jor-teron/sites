@@ -11,7 +11,8 @@
       icon: '../writer/writer_icon.png',
       url: '../writer/',
       rootUrl: 'apps/office/writer/',
-      formats: ['.how', '.docx', '.odt', '.txt', '.pdf'],
+      /* (before DW7) formats: ['.how', '.docx', '.odt', '.txt', '.pdf'], */
+      formats: ['.how', '.docx', '.odt', '.txt'],
       btnLabel: 'Open Writer'
     },
     {

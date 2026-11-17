@@ -54,8 +54,9 @@ Writer.config = {
   storageKeyMarginCustom: 'writer_margin_custom',   /* (before DF25) storageKeyMarginCustom: 'draftly_margin_custom' */
   /* App version (not shown in the UI). */
   version: '0.8',
-  /* DF25: release id (also in the page title, Writer DF25). */
-  release: 'DF25',
+  /* (before DW7) release: 'DF25', */
+  /* DW7: release id (also in the page title, Writer DW7). */
+  release: 'DW7',
 
   /* ----- Margins (cm) ----- */
   /* Top page margin. */

@@ -2,7 +2,11 @@
 # Writer
 
 <!-- (before DF25) Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage keys, message types, ids and URLs are unchanged, so saved documents and Hub links keep working. -->
-Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below).
+Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). The page title and `Writer.config.release` are `DW7`.
+
+## DW7 — open LibreOffice .odt
+
+File → **Open .docx / .odt** opens a LibreOffice/OpenDocument text file (`.odt`). Headings, paragraphs, bold, italic, underline, strike, bullet and numbered lists, tables, and embedded pictures (as data URLs) come across, best effort. Anything Writer cannot show is dropped quietly. The file lands in the editor the same way an opened `.docx` does. Saving still writes `.how`; Export DOCX, Export PDF and Print are unchanged. You can also drop a `.odt` on the page, or open a Hub `#drive=…&file=…` link that ends in `.odt`. Parser: `modules/writer-odtread.js` (DOM-free). Test: `node --test apps/office/writer/test/test-dw7-odt.js`.
 
 ## DF25 — full rename
 
@@ -31,7 +35,7 @@ The name on screen is Writer: the page title, the header next to the icon, Setti
 | `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. |
 | `page` | Size (`A4` or `Legal`), orientation, margin preset, custom centimetres, page numbers on/off and position |
 
-File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged.
+File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). <!-- (before DW7) **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged. --> **Open .docx / .odt** (DW7), **Export DOCX**, **Export PDF** and **Print** are unchanged.
 
 **In the Hub**, Save, Save As and autosave write the browser's Local drive, folder **Documents**. That is the same disk the Files app shows. Documents is created the first time a file is saved. Writer reopens the newest `.how` in Documents when it starts inside the Hub. Recent lists those files. A double-click on a `.how` in Files opens Writer on that file (the Hub id is still `draftly`).
 

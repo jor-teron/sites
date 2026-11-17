@@ -62,6 +62,9 @@ test('SUITES definitions cover all 5 office applications with clean action label
     assert.ok(Array.isArray(suite.formats) && suite.formats.length > 0, 'suite has formats');
   });
 
+  const writer = HO.SUITES.find((s) => s.id === 'writer');
+  assert.deepEqual(JSON.parse(JSON.stringify(writer.formats)), ['.how', '.docx', '.odt', '.txt']);
+
   const slides = HO.SUITES.find((s) => s.id === 'slides');
   assert.equal(slides.name, 'Presentation');
   assert.equal(slides.btnLabel, 'Open Presentation');
