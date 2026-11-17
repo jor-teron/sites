@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Settings app (apps/system/settings/index.html) — Hub settings: Desktop, Look, Hub bar, Sizes, Windows, Wallpaper, Screen lock, API Keys, Network drives, Devices, Do Not Disturb, How-to, About.
+  Settings app (apps/system/settings/index.html) — Hub settings: Desktop, Look, Hub bar, Sizes, Windows, Wallpaper, Screen lock, Devices, Do Not Disturb, How-to, About.
   Sections list left, options right (phone: list first, tap into a section, ‹ Back).
   Choices are saved in localStorage (settings_store.js) and the Hub applies them live
   (hub/core/hub_prefs.js, storage event + postMessage). Deep link: index.html#about etc.
@@ -62,12 +62,6 @@
   <script src="sec_wallpaper.js"></script>
   <script src="../../../hub/core/hub_lock_core.js"></script><!-- H142: PIN record + hash when Settings runs on its own -->
   <script src="sec_lock.js"></script><!-- H142: Screen lock (PIN, Activate, Lock now) -->
-  <script src="sec_keys.js"></script>
-  <script src="../../../shared/fs/webdav_fs.js"></script>
-  <script src="../../../shared/fs/webdav_accounts.js"></script>
-  <script src="../../../shared/fs/sftp_fs.js"></script><!-- H119: SFTP drives -->
-  <script src="../../../shared/fs/sftp_accounts.js"></script>
-  <script src="sec_drives.js"></script><!-- H117: Network drives, after API Keys -->
   <script src="sec_devices.js"></script><!-- H57: 🎲 random name;  H29.2b: before About, so Devices sits above it; H50: + Hub mesh roster; H55: + Public mesh; H55b: real link state + Retry -->
   <script src="sec_dnd.js"></script><!-- H82: Do Not Disturb -->
   <script src="sec_howto.js"></script>

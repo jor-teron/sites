@@ -48,7 +48,7 @@
   /* H119: why an SFTP drive didn't open (codes from hub/relay/sftp_relay.py via shared/fs/sftp_fs.js). */
   function sftpMsg(e, name) {
     const c = (e && e.sftp) || '', q = '\u201c' + name + '\u201d';
-    const fix = ' Check it in Settings \u203A Network drives.';
+    const fix = ' Check it in Disk \u203A Drives.';
     if (c === 'token') return 'The relay refused the token for ' + q + '.' + fix;
     if (c === 'auth' || c === 'denied') return 'Wrong user or password for ' + q + '.' + fix;
     if (c === 'allow') return 'The relay doesn\u2019t allow ' + q + ': add its host:port to the relay allowlist.';
@@ -82,25 +82,24 @@
       r.appendChild(open);
       // (before H119) if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
       // (before H133) if (d.kind === 'webdav' || d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));   // H119: + SFTP
-      if (d.kind === 'webdav') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': change it in Disk', () => openDisk('edit=' + d.id)));   // H133: WebDAV → Disk
-      if (d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': settings (Settings \u203A Network drives)', openNetSettings));
+      if (d.kind === 'webdav' || d.kind === 'sftp') r.appendChild(btn('drive-x drive-set', '\u2699', d.name + ': change it in Disk', () => openDisk('edit=' + d.id)));   // WebDAV & SFTP → Disk
       if (lock) r.appendChild(btn('drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)));
       else FX.view.dropTarget(open, () => D.handle(d.id), d.id);
       rows.push(r);
     }
     // (before H119) if (!list.some((d) => d.kind === 'webdav') && window.WebDavAccounts) {   // H118
     if (!list.some((d) => d.kind === 'webdav' || d.kind === 'sftp') && (window.WebDavAccounts || window.SftpAccounts)) {   // H118, H119: + SFTP
-      const a = el('a', 'drive-addnet', '\uFF0B Add network drive'); a.href = '../settings/#drives';
+      const a = el('a', 'drive-addnet', '\uFF0B Add network drive'); a.href = DISK + '#add-webdav';
       // (before H119) a.title = 'Add a WebDAV server in Settings \u203A Network drives';
       // (before H133) a.title = 'Add a WebDAV or SFTP server in Settings \u203A Network drives';
       // (before H133) a.addEventListener('click', (e) => { e.preventDefault(); openNetSettings(); });
-      a.href = DISK + '#add-webdav'; a.title = 'Add a WebDAV drive in Disk (SFTP: Settings \u203A Network drives)';   // H133
+      a.title = 'Add a WebDAV or SFTP drive in Disk';
       a.addEventListener('click', (e) => { e.preventDefault(); openDisk('add-webdav'); });
       rows.push(a);
     }
     if (!list.length) rows.unshift(el('p', 'drive-none', 'This browser has no file storage for web pages.'));
     // H109: "Manage drives" is a small icon row in the sidebar footer (above the storage meter)
-    const m = el('a', 'drive-manage'); m.href = DISK; m.id = 'manage-drives'; m.title = 'Add, change or remove drives (also WebDAV) in Disk';   // H133: was 'Add or remove drives in Disk'
+    const m = el('a', 'drive-manage'); m.href = DISK; m.id = 'manage-drives'; m.title = 'Add, change or remove drives (also network drives) in Disk';
     // (before H133) m.innerHTML = svg(GEAR); m.append(el('span', '', 'Manage drives'));
     m.innerHTML = svg(GEAR); m.append(el('span', '', 'Manage drives\u2026'));
     m.addEventListener('click', (e) => { e.preventDefault(); openDisk(); });
@@ -179,10 +178,7 @@
   function notConnected(text, d, net) {
     const p = $('gd-panel');
     $('list').hidden = true;
-    // (before H133) const b = net ? btn('tb drive-allow', 'Open Settings', 'Settings \u203A Network drives', openNetSettings)   // H118
-    const wd = net && /^webdav:/.test(st.driveId);   // H133: WebDAV drives are fixed in Disk
-    const b = wd ? btn('tb drive-allow', 'Open Disk', 'Change this drive in Disk', () => openDisk('edit=' + st.driveId))
-      : net ? btn('tb drive-allow', 'Open Settings', 'Settings \u203A Network drives', openNetSettings)   // H118
+    const b = net ? btn('tb drive-allow', 'Open Disk', 'Change this drive in Disk', () => openDisk('edit=' + st.driveId))
       : btn('tb drive-allow', 'Open Disk', 'Manage drives in Disk', openDisk);
     const a = d ? btn('tb drive-allow', 'Allow access', 'Allow access to ' + d.name, () => allowDrive(d)) : null;
     p.replaceChildren(el('p', 'nc-text', text), ...(a ? [a, b] : [b]));

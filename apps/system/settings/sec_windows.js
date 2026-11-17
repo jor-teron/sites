@@ -18,6 +18,7 @@
  *   'filesClick'   Files app: open items with a 'single' click or a double click (default).
  *   'filesThumbs'  Files app: '0' = icons only (default: picture / video thumbnails, R12b).
  *                  "Clear thumbnail cache" empties shared/fs/thumbs_store.js (IndexedDB).
+ *   'netThumbs'    Network drive thumbnails: '0' = off (default on). Pictures on network drives show previews in Files.
  *   'notifyTimeout' H26: notification cards close after this many ms: 10000 / 30000 / '' (60000, default) /
  *                  300000 / '0' (never). Read by hub/viewer/hub_notify.js whenever a card's timer starts (live).
  * All keys 'sites-hub.<key>' (settings_store.js); the Hub and Files apply them at once.
@@ -64,6 +65,8 @@
       files.classList.add('seg-col');
       const thumbs = ui.switch('Show thumbnails', 'Pictures and videos show a small preview instead of an icon',
         S.get('filesThumbs') !== '0', (on) => S.set('filesThumbs', on ? '' : '0'));
+      const netThumbs = ui.switch('Network drive thumbnails', 'Pictures on network drives show a small preview in Files (downloads each picture once, up to 15 MB). Turn off on slow connections.',
+        S.get('netThumbs') !== '0', (on) => S.set('netThumbs', on ? '' : '0'));
       const clr = ui.el('button', 'big-btn', 'Clear thumbnail cache');
       clr.type = 'button';
       const clrOut = ui.el('p', 'opt-note', '');
@@ -78,7 +81,7 @@
       ], (() => { const v = S.get('notifyTimeout'); return v === '' || v == null ? 60000 : +v; })(),
       (v) => S.set('notifyTimeout', v === 60000 ? '' : String(v)));
       pane.append(ui.title('Focus'), hover, ui.title('Snapping'), snap, magnet, strength, ui.title('Workspaces'), ws, ui.title('Title bar'), title,
-        ui.title('Files: open items with'), files, ui.title('Files: thumbnails'), thumbs, clr, clrOut,
+        ui.title('Files: open items with'), files, ui.title('Files: thumbnails'), thumbs, netThumbs, clr, clrOut,
         ui.title('Notification timeout'), nt,
         ui.note('Window options work in Desktop mode. Changes show at once. Snap a window by dragging it to a screen edge, or Ctrl+Alt+arrows.'));
     }

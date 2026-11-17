@@ -1,7 +1,7 @@
 # Settings (apps/system/settings/)
 
 Hub settings app. Opens from the Hub menu's **Settings** row (a window in Desktop mode,
-full screen on phone). Deep links: `apps/system/settings/#desktop`, `#look`, `#hubbar` (H52; `#hubbar/<key>` scrolls to that switch), `#sizes`, `#windows`, `#wallpaper`, `#lock` (H142), `#keys` (H28; `#keys/<name>` jumps to that key's row), `#drives` (H117), `#devices` (H29.2b; `#devices/device`, `#devices/profile`, `#devices/sync`), `#dnd` (H82), `#howto`, `#about` (`#about/autoupdate` H52).
+full screen on phone). Deep links: `apps/system/settings/#desktop`, `#look`, `#hubbar` (H52; `#hubbar/<key>` scrolls to that switch), `#sizes`, `#windows`, `#wallpaper`, `#lock` (H142), `#devices` (H29.2b; `#devices/device`, `#devices/profile`, `#devices/sync`), `#dnd` (H82), `#howto`, `#about` (`#about/autoupdate` H52). Old `#keys` and `#drives` redirect to their apps.
 
 | File | What |
 |---|---|
@@ -16,8 +16,6 @@ full screen on phone). Deep links: `apps/system/settings/#desktop`, `#look`, `#h
 | sec_windows.js | Desktop-mode window options: hoverFocus, snapEdges, snapMagnet, snapMagnetPx, workspaces, title bar size, Files click and thumbnails, notification timeout |
 | sec_wallpaper.js | Wallpapers (from `hub/drives/hub_wallpapers.js`) + custom colour. R36: the picture grid shows the 320 px WebP thumbs (`shared/wallpaper/thumbs/`, made by `hub/core/hub_wallthumbs_gen.py`), lazy, full image as fallback; only the chosen wallpaper loads at full size |
 | sec_lock.js | H142 Screen lock: PIN (set / change / remove), unlock method (PIN / Fingerprint / Both), Activate toggle, Lock now button |
-| sec_keys.js | H28 API Keys: one row per key from `hub/core/hub_keys.js` (`HubKeys.KNOWN`: tavily, gemini, openai_base, openai_key, ollama_url; H28.1: groq, openrouter, deepseek, xai) + custom keys; masked input + reveal, Save, Test (Tavily /usage, Gemini model list, Ollama /api/tags, OpenAI-compatible /models; Groq / DeepSeek / xAI /models, OpenRouter /api/v1/key), Delete; Add custom key; the keys guide `hub/keys.readme.md` folded at the bottom. Stored in `sites-hub.keys` (JSON), only in this browser |
-| sec_drives.js | H117 Network drives: WebDAV and SFTP accounts, connect, mount, and manage |
 | sec_devices.js | H29.2b Devices: Device name card (`shared-link-device-name`, dice 🎲 roll), Connected devices mesh roster, Public mesh toggle, Send profile |
 | sec_dnd.js | H82 Do Not Disturb: silence notification pop-ups and call alerts; favourites still ring switch |
 | sec_howto.js | How-to: plain help on the Hub, desktop, windows, taskbar, copies, modes, phone, updates, privacy / tech |

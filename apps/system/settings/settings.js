@@ -32,6 +32,26 @@ window.Settings = (function () {
     const was = full;
     full = alias(full);   // H29.2b
     if (fromHash && full !== was) fromHash = false;   // H29.2b: rewrite the old hash to the new anchor
+    if (full === 'drives' || (typeof full === 'string' && full.startsWith('drives/'))) {
+      let hub = null;
+      try { hub = window.parent !== window && window.parent.__hubOpenApp ? window.parent : null; } catch (_) { hub = null; }
+      if (!(hub && hub.__hubOpenApp('apps/system/disk/') !== false)) {
+        try { location.replace('../disk/'); } catch (_) { location.href = '../disk/'; }
+      }
+      return;
+    }
+    if (full === 'keys' || (typeof full === 'string' && full.startsWith('keys/'))) {
+      const cut = full.indexOf('/');
+      const sub = cut < 0 ? '' : full.slice(cut + 1);
+      const hash = 'keys' + (sub ? '/' + encodeURIComponent(String(sub).trim().toLowerCase()) : '');
+      let hub = null;
+      try { hub = (window.top && window.top.__hubOpenApp) ? window.top : (window.parent !== window && window.parent.__hubOpenApp ? window.parent : null); } catch (_) { hub = null; }
+      if (!(hub && hub.__hubOpenApp('apps/system/api-keys/', { hash }) !== false)) {
+        const target = '../api-keys/#' + hash;
+        try { location.replace(target); } catch (_) { location.href = target; }
+      }
+      return;
+    }
     const cut = String(full || '').indexOf('/');
     const id = cut < 0 ? full : full.slice(0, cut);
     let sub = cut < 0 ? '' : full.slice(cut + 1);
@@ -68,10 +88,17 @@ window.Settings = (function () {
     startSearch();   // H152: before the first open(), so the box is there whatever the hash does
     back.addEventListener('click', showList);
     // window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && id !== current) open(id, true); });   // (before H29.2b)
-    window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && alias(id) !== current) open(id, true); });   // H29.2b
+    window.addEventListener('hashchange', () => {
+      const id = location.hash.slice(1);
+      if (id && (alias(id) === 'drives' || alias(id).startsWith('drives/'))) open(id, true);
+      else if (id && (alias(id) === 'keys' || alias(id).startsWith('keys/'))) open(id, true);
+      else if (id && alias(id) !== current) open(id, true);
+    });   // H29.2b
     // const id = location.hash.slice(1);   // (before H29.2b)
     const id = alias(location.hash.slice(1));   // H29.2b: old #about/device etc.
-    if (id && sections.some((s) => s.id === id.split('/')[0])) open(location.hash.slice(1), true);   // H29.2b: raw hash, so open() rewrites an old one
+    if (id && (id === 'drives' || id.startsWith('drives/'))) open(location.hash.slice(1), true);
+    else if (id && (id === 'keys' || id.startsWith('keys/'))) open(location.hash.slice(1), true);
+    else if (id && sections.some((s) => s.id === id.split('/')[0])) open(location.hash.slice(1), true);   // H29.2b: raw hash, so open() rewrites an old one
     else showList();
   }
 
