@@ -45,7 +45,8 @@
       icon: '../base/base_icon.png',
       url: '../base/',
       rootUrl: 'apps/office/base/',
-      formats: ['Tables', 'Forms', 'Queries'],
+      /* (before HOB1) formats: ['Tables', 'Forms', 'Queries'] */
+      formats: ['.hob', 'Tables', 'Forms', 'Queries'],
       btnLabel: 'Open Base'
     },
     {
@@ -78,6 +79,8 @@
     pptx: 'slides',
     ppt: 'slides',
     hot: 'tables',
+    hob: 'base',
+    hbase: 'base',
     db: 'base',
     sqlite: 'base',
     base: 'base'

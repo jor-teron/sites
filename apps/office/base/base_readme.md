@@ -5,7 +5,7 @@ Uses the shared Office files in `../shared/` (ribbon, tools, icons, dialog, noti
 
 Files: `base.html`, `base.css`, `base_icon.svg/.png`, `modules/base-store.js` (data + IndexedDB 'office-base', schema 8, 'pics' store),
 `base-types.js` (field types, validation, conversion, auto-number), `base-history.js` (in-memory undo/redo),
-`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard), `base-report.js` (BS7: group-by reports, summary, SVG charts, print), `base-view.js` (BS8: header filters, saved views, freeze, resize, colours, gallery, calendar), `base-files.js` (BS9: .hbase backup/restore, Excel, JSON, Send to Spreadsheet),
+`base-pics.js` (picture resize + blob store), `base-links.js` (BS6: Link to record, Lookup, related panel, delete guard), `base-report.js` (BS7: group-by reports, summary, SVG charts, print), `base-view.js` (BS8: header filters, saved views, freeze, resize, colours, gallery, calendar), `base-files.js` (BS9 / HOB1: .hob backup/restore, old .hbase still opens, Excel, JSON, Send to Spreadsheet),
 `base-fields.js` (Fields / Add field dialogs and edit commit),
 `base-csv.js` (import/export), `base-grid.js` (grid view), `base-form.js` (form view),
 `base-query.js` (BS2 query builder, saved queries, SQL view), `base-delete.js` (BS4 delete safety: ⋯ menus + typed-confirm dialogs),
@@ -83,14 +83,19 @@ WHERE = which records, ORDER BY = sort. Base writes this for you; you never have
 - Existing BS7 databases load unchanged. Schema becomes 8; the first BS8 open writes a backup and migrates in place. The current layout is stored on the table itself, so filters, widths and freeze survive a reload.
 
 ## BS9 (files and backup)
-- **Backup / Restore** (File menu) writes or reads a `.hbase` file: every table, query, report, view, link and picture (pictures as Base64 next to the data). Restore asks first: **Replace everything** (typed confirm, cannot be undone) or **Add as a copy** (new ids so links still work, undoable).
+- **Backup / Restore** (File menu) writes or reads a backup file: every table, query, report, view, link and picture (pictures as Base64 next to the data). Restore asks first: **Replace everything** (typed confirm, cannot be undone) or **Add as a copy** (new ids so links still work, undoable). (before HOB1) the file was `.hbase`; since HOB1 it is `.hob` (see below).
 - **Excel:** File > Export Excel and File > Open / Import… for `.xlsx` / `.xls`. SheetJS is lazy-loaded from the Spreadsheet app (`../spreadsheet/vendor/sheetjs/xlsx.full.min.js`) and is not copied into Base. Import makes a new table per sheet (up to 20 sheets, 5 000 rows each). Export (and **Send to Spreadsheet**) writes the current view's rows — the same rows the grid would show after a query and header filters, pictures left out, links as display text.
 - **Send to Spreadsheet:** there is no in-app hand-off (Spreadsheet only opens a file you choose). Base saves a workbook and tells you to open it with File > Open in Spreadsheet. If SheetJS cannot load, a CSV is saved instead.
-- **JSON import** (read-only): an array of objects, `{ rows: [...] }`, or a named list of arrays becomes new table(s). A `.hbase` JSON file still goes through Restore.
+- **JSON import** (read-only): an array of objects, `{ rows: [...] }`, or a named list of arrays becomes new table(s). A `.hob` or `.hbase` JSON file still goes through Restore.
 - **SQLite import** (read-only): if you open a `.sqlite` / `.db` file, Base lazy-loads sql.js already vendored in DB Browser (`../../tools/db-browser/vendor/sqljs/`, not copied). Each user table becomes a Base table. This needs the whole site to be served (a lone `file://` page may not load the wasm). The SQLite file is never written back.
 - The IndexedDB schema stays at 8 — this release is about files, not a new data shape. Existing BS8 databases load unchanged.
 
 **Limits:** undo is not saved across reloads; if you forget a unique/required fix, the cell stays marked; scanned or huge pictures are resized, not stored at original size; opening a URL-type Link that is not a real URL is refused (no `javascript:`); WebP may fall back to JPEG in older browsers. A Link to record whose table (or record) was removed shows as “(missing)” until you clear or repick it. Lookups only follow one link (they don't chain). CSV import still creates a new table and cannot rebuild links from names. A report that groups by a multi-link field counts the row in each linked group. Charts have no animation and cap the number of bars or slices. Print quality depends on the browser's print window. The grid draws at most 200 rows and the gallery at most 80 cards (narrow the filter to see the rest); a calendar day shows 8 records and then “+N more”. A header value list shows at most 50 values. Shared Office files were not edited in BS9.
+
+
+## HOB1 (.hob backup files)
+
+Backup now saves `base-backup-<date>.hob`. Restore, Import and drag-and-drop still accept old `.hbase` files. The JSON inside is unchanged (`magic: "hbase"`, version 1) — a `.hob` file is just a renamed `.hbase`. Data still lives in IndexedDB; `.hob` is only the Backup / Restore file. Cache tags are `?v=HOB1`.
 
 ## HO2
 

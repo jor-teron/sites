@@ -66,6 +66,9 @@ test('SUITES definitions cover all 5 office applications with clean action label
   assert.equal(slides.name, 'Presentation');
   assert.equal(slides.btnLabel, 'Open Presentation');
   assert.deepEqual(JSON.parse(JSON.stringify(slides.formats)), ['.hop', '.hslides', '.pptx']);
+
+  const base = HO.SUITES.find((s) => s.id === 'base');
+  assert.deepEqual(JSON.parse(JSON.stringify(base.formats)), ['.hob', 'Tables', 'Forms', 'Queries']);
 });
 
 test('EXT_MAP routes all expected extensions to matching suites', () => {
@@ -86,6 +89,8 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
 
   assert.equal(HO.EXT_MAP.hot, 'tables');
 
+  assert.equal(HO.EXT_MAP.hob, 'base');
+  assert.equal(HO.EXT_MAP.hbase, 'base');
   assert.equal(HO.EXT_MAP.db, 'base');
   assert.equal(HO.EXT_MAP.base, 'base');
 });
@@ -97,6 +102,8 @@ test('getExt extracts lowercase extension', () => {
   assert.equal(HO.getExt('talk.hop'), 'hop');
   assert.equal(HO.getExt('presentation.hslides'), 'hslides');
   assert.equal(HO.getExt('inventory.HOT'), 'hot');
+  assert.equal(HO.getExt('backup.hob'), 'hob');
+  assert.equal(HO.getExt('old.hbase'), 'hbase');
   assert.equal(HO.getExt('noext'), '');
 });
 
