@@ -13,6 +13,8 @@
  *   SheetJS: ../spreadsheet/vendor/sheetjs/xlsx.full.min.js
  *   sql.js (already in the repo, not copied): ../../tools/db-browser/vendor/sqljs/
  *   BS11: LibreOffice .odb import (tables and rows from HSQLDB database/script, via modules/base_odb.js; JSZip from shared/vendor).
+ *   BS12: LibreOffice .odb export of every table and its rows as an embedded-HSQLDB
+ *         package (modules/base_odbgen.js). Forms, queries and reports are not written.
  *
  * Pure helpers (pack, parse, remap, tablesFromJson / FromAoA / FromSql) have no DOM
  * and are safe to load in Node. Caps: 20 imported tables, 5 000 rows each.
@@ -20,7 +22,7 @@
  * API: BaseFiles.MAGIC, .CAPS, .pack, .parse, .remapCopy, .listPicKeys,
  *      .tablesFromJson, .tablesFromAoA, .tablesFromSql, .sheetAoA,
  *      .backupName, .isBackupName,
- *      .backup, .restoreDialog, .restoreFile, .open, .exportXlsx, .sendToSpreadsheet, .loadXlsx
+ *      .backup, .restoreDialog, .restoreFile, .open, .exportXlsx, .exportOdb, .sendToSpreadsheet, .loadXlsx
  */
 (function (root) {
   var MAGIC = "hbase", VERSION = 1;
@@ -609,6 +611,47 @@
     var out = X.write(wb, { bookType: "xlsx", type: "array" });
     downloadBlob(new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filename);
   }
+
+  function odbFileName() {
+    var stem = "base";
+    try {
+      if (typeof BaseHob !== "undefined" && BaseHob.stemName) stem = BaseHob.stemName() || stem;
+    } catch (e) {}
+    stem = String(stem || "base").replace(/\.(hob|hbase|odb)$/i, "") || "base";
+    return stem + ".odb";
+  }
+  function exportOdb() {
+    var db = typeof BASE !== "undefined" ? BASE.db : null;
+    if (!db || !db.tables || !db.tables.length) return toast("Nothing to export yet — make a table first");
+    if (typeof BaseOdbgen === "undefined" || typeof BaseOdbgen.build !== "function") {
+      return note("Could not export LibreOffice Base", "The .odb writer did not load.");
+    }
+    try { if (typeof BaseStore !== "undefined" && BaseStore.saveNow) BaseStore.saveNow(); } catch (e) {}
+    var helpers = {};
+    if (typeof BaseLinks !== "undefined") {
+      helpers.refText = function (f, v) { return BaseLinks.displayText(f, v) || ""; };
+      helpers.lookupText = function (t, f, row) { return BaseLinks.lookupText(t, f, row) || ""; };
+    }
+    var built, packed, blob, fname, rows, i;
+    try {
+      built = BaseOdbgen.tablesFromDb(db, helpers);
+      if (!built.tables.length) return toast("No tables to export");
+      var gen = BaseOdbgen.build(built.tables);
+      packed = BaseOdbgen.pack(gen.entries);
+      fname = odbFileName();
+      blob = new Blob([packed], { type: "application/vnd.oasis.opendocument.base" });
+      downloadBlob(blob, fname);
+    } catch (e) {
+      note("Could not export LibreOffice Base", (e && (e.userMessage || e.message)) || "The .odb file could not be written.");
+      return;
+    }
+    rows = 0;
+    for (i = 0; i < built.tables.length; i++) rows += (built.tables[i].rows || []).length;
+    toast("LibreOffice Base file saved — " + built.tables.length + " table" + (built.tables.length === 1 ? "" : "s") +
+      ", " + rows + " row" + (rows === 1 ? "" : "s") +
+      (built.skippedPics ? " (picture columns left out)" : ""));
+  }
+
   function exportXlsx() {
     var t = typeof BaseStore !== "undefined" && BaseStore.table();
     if (!t) return toast("Make a table first");
@@ -645,7 +688,7 @@
     sheetAoA: sheetAoA, cellText: cellText,
     backupName: backupName, isBackupName: isBackupName, stampName: stampName,
     backup: backup, restoreDialog: restoreDialog, restoreFile: restoreFile, pickRestore: pickRestore, open: open,
-    exportXlsx: exportXlsx, sendToSpreadsheet: sendToSpreadsheet, loadXlsx: loadXlsx
+    exportXlsx: exportXlsx, exportOdb: exportOdb, sendToSpreadsheet: sendToSpreadsheet, loadXlsx: loadXlsx
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.BaseFiles = api;
