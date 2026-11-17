@@ -166,11 +166,21 @@ var WXData = (function () {
       });
   }
 
+  function searchPlaces(query) {
+    var url = CFG.api.geocode +
+      "?name=" + encodeURIComponent(query) +
+      "&count=6&language=en&format=json";
+    return fetchJson(url, CFG.api.timeoutMs).then(function (j) {
+      return (j && j.results) || [];
+    });
+  }
+
   return {
     load: load,
     readCache: readCache,
     buildUrl: buildUrl,
     normalize: normalize,
     nextHours: nextHours,
+    searchPlaces: searchPlaces,
   };
 })();

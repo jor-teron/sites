@@ -84,3 +84,12 @@ test("hourLabel", () => {
   assert.strictEqual(F.hourLabel("2026-11-17T15:00"), "3 PM");
   assert.strictEqual(F.hourLabel(""), "");
 });
+
+test("unit conversion", () => {
+  assert.strictEqual(F.tempText(0, "f"), "32\u00B0");
+  assert.strictEqual(F.tempText(100, "f"), "212\u00B0");
+  assert.strictEqual(F.tempText(21.4, "c"), "21\u00B0");
+  assert.strictEqual(F.tempText(null, "f"), "\u2013");
+  assert.strictEqual(Math.round(F.toMph(10)), 6);
+  assert.strictEqual(F.toMph(null), null);
+});

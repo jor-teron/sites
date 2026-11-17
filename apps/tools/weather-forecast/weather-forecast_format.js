@@ -109,13 +109,27 @@ var WXFormat = (function () {
   }
 
   // "2026-11-17T15:00" -> "3 PM"
-  function hourLabel(iso) {
-    if (typeof iso !== "string" || iso.length < 13) return "";
+  function hourLabel(iso) {    if (typeof iso !== "string" || iso.length < 13) return "";
     var h = parseInt(iso.slice(11, 13), 10);
     if (isNaN(h)) return "";
     var ap = h < 12 ? "AM" : "PM";
     var h12 = h % 12 === 0 ? 12 : h % 12;
     return h12 + " " + ap;
+  }
+
+  // Temperature in the user's unit ("c" or "f")
+  function toDisplayTemp(c, unit) {
+    if (typeof c !== "number" || !isFinite(c)) return null;
+    return unit === "f" ? c * 9 / 5 + 32 : c;
+  }
+
+  function tempText(c, unit) {
+    var n = roundTemp(toDisplayTemp(c, unit));
+    return n === null ? "\u2013" : n + "\u00B0";
+  }
+
+  function toMph(kmh) {
+    return typeof kmh === "number" && isFinite(kmh) ? kmh * 0.621371 : null;
   }
 
   return {
@@ -131,6 +145,9 @@ var WXFormat = (function () {
     weekday: weekday,
     pct: pct,
     hourLabel: hourLabel,
+    toDisplayTemp: toDisplayTemp,
+    tempText: tempText,
+    toMph: toMph,
   };
 })();
 

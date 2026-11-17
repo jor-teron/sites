@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<!-- WX1d Weather Forecast: live current conditions, a 7-day outlook, today's curve, the next 12 hours
-     and detail chips for Diphu from Open-Meteo, with a 10-minute cache and loading / error / offline states. -->
+<!-- WX1e Weather Forecast: live current conditions, a 7-day outlook, today's curve, the next 12 hours
+     and detail chips for any place, from Open-Meteo, with °C/°F, a 10-minute cache and
+     loading / error / offline states. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Weather Forecast · WX1d</title>
+  <title>Weather Forecast · WX1e</title>
   <link rel="stylesheet" href="weather-forecast.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
 </head>
@@ -15,15 +16,18 @@
 
   <header class="wx-head">
     <div class="wx-place">
-      <h1 id="place">Diphu</h1>
+      <h1><button type="button" class="wx-place-name" id="placeBtn" aria-haspopup="dialog" aria-label="Change place"><span id="place">Diphu</span></button></h1>
       <p id="stamp">Assam, India</p>
     </div>
-    <button type="button" class="wx-btn" id="refresh" aria-label="Refresh weather" title="Refresh">
-      <svg class="ic-refresh" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-        <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+    <div class="wx-actions">
+      <button type="button" class="wx-btn unit" id="unitBtn" aria-label="Switch to Fahrenheit">°C</button>
+      <button type="button" class="wx-btn" id="refresh" aria-label="Refresh weather" title="Refresh">
+        <svg class="ic-refresh" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <path d="M20 12a8 8 0 1 1-2.34-5.66" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <p id="status" class="wx-status" role="status" aria-live="polite"></p>
@@ -81,6 +85,19 @@
   <p class="wx-foot">Weather by Open-Meteo.</p>
 
   <noscript><p class="wx-status">Weather Forecast needs JavaScript.</p></noscript>
+
+  <dialog id="placeDlg" class="wx-dlg" aria-labelledby="dlgTitle">
+    <form method="dialog" class="wx-dlg-head">
+      <h2 id="dlgTitle">Choose a place</h2>
+      <button class="wx-dlg-x" value="cancel" aria-label="Close">✕</button>
+    </form>
+    <div class="wx-dlg-body">
+      <label class="sr" for="placeQuery">Place name</label>
+      <input id="placeQuery" type="search" placeholder="City or town" autocomplete="off" enterkeyhint="search">
+      <p id="placeMsg" class="wx-status" role="status" aria-live="polite"></p>
+      <ul id="placeResults" class="wx-results"></ul>
+    </div>
+  </dialog>
 </main>
 
 <script src="weather-forecast_config.js"></script>
