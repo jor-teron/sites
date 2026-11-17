@@ -6,7 +6,8 @@ name, path, icon, newtab, section, description
 # (before DF24) Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 # (before HOW1) Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 # (before DF25) Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: native .how files - PDF or DOCX
-Hub Office,   hub-office/,          , , Hub Office, Start Center: open and launch Writer Spreadsheet Slides Base and Tables
+# (before HOP1) Hub Office,   hub-office/,          , , Hub Office, Start Center: open and launch Writer Spreadsheet Slides Base and Tables
+Hub Office,   hub-office/,          , , Hub Office, Start Center: open and launch Writer Spreadsheet Presentation Base and Tables
 Writer,       writer/,              , , Hub Office, Word processor with A4 pages: native .how files - PDF or DOCX
 # (before HOS1) Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Spreadsheet,  spreadsheet/,         , , Hub Office, Spreadsheet with formulas and styles: native .hos files - CSV or XLSX
@@ -15,7 +16,8 @@ Base,         base/,                , , Hub Office, Small database app: tables -
 # (before HOT1) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database with typed columns - saved on this device
 # (before IC6) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
 Tables,       tables/,              tables/tables_icon.png, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
-Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
+# (before HOP1) Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
+Presentation, slides/,              , , Hub Office, Make 16:9 presentations: native .hop files - present full screen - PPTX import or export
 # (before MV1) Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 Sketchbook,   sketchbook/,          sketchbook/sketchbook_icon.png, , Write, Paper sketchbook with 50 pages: draw with finger mouse or pen

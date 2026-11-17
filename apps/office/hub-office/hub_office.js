@@ -27,14 +27,15 @@
     },
     {
       id: 'slides',
-      name: 'Slides',
+      /* (before HOP1) name: 'Slides', formats: ['.hslides', '.pptx'], btnLabel: 'Open Slides', desc used .hslides */
+      name: 'Presentation',
       tagline: 'Presentations & Slide Decks',
-      desc: 'Create 16:9 slide decks with rich formatting, full-screen presentation mode, and .hslides export.',
+      desc: 'Create 16:9 slide decks with rich formatting, full-screen presentation mode, and .hop export.',
       icon: '../slides/slides_icon.png',
       url: '../slides/',
       rootUrl: 'apps/office/slides/',
-      formats: ['.hslides', '.pptx'],
-      btnLabel: 'Open Slides'
+      formats: ['.hop', '.hslides', '.pptx'],
+      btnLabel: 'Open Presentation'
     },
     {
       id: 'base',
@@ -72,6 +73,7 @@
     xls: 'spreadsheet',
     csv: 'spreadsheet',
     tsv: 'spreadsheet',
+    hop: 'slides',
     hslides: 'slides',
     pptx: 'slides',
     ppt: 'slides',

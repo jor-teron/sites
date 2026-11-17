@@ -4,14 +4,14 @@
 The unified Start Center and multi-document tabbed container for the **Hub Office** suite (inspired by LibreOffice Start Center). It brings together all 5 primary office suite applications:
 - **Writer** (Word processor & document editor)
 - **Spreadsheet** (Calculations, formulas & analysis)
-- **Slides** (16:9 presentations & slide decks)
+- **Presentation** (16:9 presentations & slide decks; was Slides before HOP1)
 - **Base** (Relational database with tables, forms & queries)
 - **Tables** (Structured lightweight data grid)
 
 ## 2. Tabbed Container Architecture
 - **Persistent Start Page Tab**: Pinned to the top-left (`[ 🏠 Start Page ]`). It never closes, so the user can always switch back to browse suites, drop files, or view recent documents.
 - **Dynamic Document Tabs**: Clicking "Open Writer", "Open Spreadsheet", or opening any recent or dropped document launches a new tab in the top tab bar (e.g. `[ 📝 Writer 1 ✕ ]`, `[ 📊 Budget.hos ✕ ]`).
-- **Clean Single-Action Cards**: Each suite tile features a clean primary launch button ("Open Writer", "Open Spreadsheet", "Open Slides", "Open Base", "Open Tables") with no clutter or extra dropdowns.
+- **Clean Single-Action Cards**: Each suite tile features a clean primary launch button ("Open Writer", "Open Spreadsheet", "Open Presentation", "Open Base", "Open Tables") with no clutter or extra dropdowns.
 - **Workspace Navigation**: Switch instantly between open documents and the Start Page without opening multiple desktop windows.
 - **Tab Closing**: Closing a document tab (`✕`) returns focus to the previous active document or the Start Page.
 
@@ -27,7 +27,7 @@ The unified Start Center and multi-document tabbed container for the **Hub Offic
 Files dropped or selected automatically open in a dedicated tab running the matching suite app:
 - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`, `.pdf`
 - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.csv`, `.tsv`
-- **Slides**: `.hslides` (native), `.pptx`, `.ppt`
+- **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.ppt`
 - **Base**: `.base`, `.db`, `.sqlite`
 - **Tables**: `.hot` (native), `.csv`
 

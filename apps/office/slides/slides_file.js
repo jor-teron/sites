@@ -1,4 +1,6 @@
-/* Hub Office Slides SL1 — .hslides import / export (SLFile). Open, documented JSON (see slides_readme.md):
+/* Hub Office Presentation HOP1 — .hop import / export (SLFile). Old .hslides files still open. The JSON
+   format is unchanged: "hub-slides" version 6 (reads 1–6). (before HOP1) Hub Office Slides SL1 — .hslides.
+   Open, documented JSON (see slides_readme.md):
      { "format": "hub-slides", "version": 1, "name": "My talk", "created": "<ISO>", "updated": "<ISO>",
        "slides": [ { "title": "Hello", "bullets": [ { "text": "First point", "level": 0 }, { "text": "Detail", "level": 1 } ] } ] }
    level 0 = top bullet, 1 = indented once. Unknown keys are ignored, so later releases (layouts, pictures) can add fields.
@@ -105,10 +107,11 @@
   function parse(text) {
     if (typeof text !== 'string') return { error: 'Could not read the file.' };
     if (text.length > MAX_BYTES) return { error: 'The file is too big (over 40 MB).' };
-    var j; try { j = JSON.parse(text.replace(/^\uFEFF/, '')); } catch (_) { return { error: 'This is not a Slides file (not valid JSON).' }; }
-    if (!j || typeof j !== 'object' || Array.isArray(j)) return { error: 'This is not a Slides file.' };
-    if (j.format !== 'hub-slides') return { error: 'This is not a Slides file (format is not "hub-slides").' };
-    if ((+j.version || 0) > 6) return { error: 'This file was made by a newer Slides (version ' + j.version + '). Update the Hub and try again.' };
+    /* (before HOP1) error text said "Slides file" / "newer Slides" */
+    var j; try { j = JSON.parse(text.replace(/^\uFEFF/, '')); } catch (_) { return { error: 'This is not a Presentation file (not valid JSON).' }; }
+    if (!j || typeof j !== 'object' || Array.isArray(j)) return { error: 'This is not a Presentation file.' };
+    if (j.format !== 'hub-slides') return { error: 'This is not a Presentation file (format is not "hub-slides").' };
+    if ((+j.version || 0) > 6) return { error: 'This file was made by a newer Presentation (version ' + j.version + '). Update the Hub and try again.' };
     if (!Array.isArray(j.slides)) return { error: 'The file has no slides list.' };
     var slides = j.slides.slice(0, MAX_SLIDES).map(function (s) {
       s = s && typeof s === 'object' ? s : {};
@@ -152,10 +155,18 @@
       master: j.master, sections: j.sections },
       cut: j.slides.length > MAX_SLIDES };
   }
-  function safeName(n) { return (String(n || 'slides').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').trim() || 'slides').slice(0, 60); }
+  function safeName(n) { return (String(n || 'presentation').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').trim() || 'presentation').slice(0, 60); }   /* (before HOP1) default 'slides' */
+  function isDeckName(name) {
+    var n = typeof name === 'string' ? name : (name && name.name) || '';
+    return /\.(hop|hslides)$/i.test(n);
+  }
+  function fileName(name) {
+    var s = String(name || '').replace(/\.(hop|hslides)$/i, '');
+    return safeName(s) + '.hop';
+  }
   function download(deck) {
     var blob = new Blob([JSON.stringify(toJSON(deck), null, 1)], { type: 'application/json' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = safeName(deck.name) + '.hslides';
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName(deck.name);
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
     return a.download;
@@ -170,5 +181,5 @@
       r.readAsText(file);
     });
   }
-  window.SLFile = { toJSON: toJSON, parse: parse, download: download, read: read, toBullets: toBullets, fromBullets: fromBullets, safeName: safeName };
+  window.SLFile = { toJSON: toJSON, parse: parse, download: download, read: read, toBullets: toBullets, fromBullets: fromBullets, safeName: safeName, isDeckName: isDeckName, fileName: fileName };
 })();

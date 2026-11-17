@@ -1,11 +1,12 @@
-# Hub Office Slides (Office → Hub Office) — release SL9
-<!-- legacy: release SL7 · release SL6 · release SL5 · release SL4 · release SL3 · release SL2 -->
+# Hub Office Presentation (Office → Hub Office) — release HOP1
+<!-- (before HOP1) # Hub Office Slides (Office → Hub Office) — release SL9 -->
+<!-- legacy: release SL9 · release SL7 · release SL6 · release SL5 · release SL4 · release SL3 · release SL2 -->
 
 A basic slide editor. Static, no build step, no libraries, works from `file://`. Built to stay light on a Celeron / 4 GB
 laptop: only the slide being edited is live (contenteditable title and body, plus any free text boxes, shapes and table
 cells), thumbnails are the same slide design scaled down (up to 9 bullets each), saving is debounced (400 ms) and one
 deck is one localStorage record. Pictures (SL3) are kept in IndexedDB, so the deck record stays small. SL5 stores
-formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). The .hslides format is unchanged. A tiny store-only zip helper lives in the app; deflated .pptx imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency).
+formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). HOP1 renames the app to Presentation and saves decks as `.hop` files (old `.hslides` files still open). The JSON format is unchanged (`hub-slides` version 6). A tiny store-only zip helper lives in the app; deflated .pptx imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency).
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -47,10 +48,10 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
   text. Ctrl+B / I / U work while typing. Paste is sanitised (plain text, or a strict allowlist of tags mapped to the
   model); pasting a picture still works as in SL3.
 - **Decks**: the deck name (top left) opens the deck menu: New deck, Open deck… (list of decks on this device),
-  Rename deck…, Import .hslides…, Export .hslides, Delete deck… (red, in-app confirm). Slides reopens the last deck.
-  Dropping a .hslides file on the window imports it too.
+  Rename deck…, Import .hop…, Export .hop, Delete deck… (red, in-app confirm). Presentation reopens the last deck.
+  Dropping a .hop or .hslides file on the window imports it too.
 - **Auto-save**: every change saves 400 ms later and right away when you switch slide or deck, or the page is hidden or closed.
-  The top bar shows Saving… / Saved. If storage is missing, full or blocked, Slides keeps working in memory and shows a
+  The top bar shows Saving… / Saved. If storage is missing, full or blocked, Presentation keeps working in memory and shows a
   warning banner (like Base BS3a); then use Export before closing.
 - **Present (SL2)**: ▶ Present in the top bar shows the deck full screen from the current slide; the deck menu has
   **Present from start** and **Present from this slide**. Keys: **F5** = from the start, **Shift+F5** or **P** (when not
@@ -148,7 +149,7 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
 - **Present** shows layouts, themes, backgrounds, pictures, SL5 styling / text boxes, and SL6 shapes and tables exactly as
   the editor (the same CSS and the same placement; one renderer).
 - **Ribbon (SL4, SL5, SL6)**: the shared Office ribbon (`../shared/office-ribbon.js`, like Draftly and Spreadsheet). **File** = the
-  deck menu (New, Open, Rename, Import, Export .hslides, **Export PDF…**, **Print…**, Settings, Delete deck). Tabs:
+  deck menu (New, Open, Rename, Import, Export .hop, **Export PDF…**, **Print…**, Settings, Delete deck). Tabs:
   - **Home**: ＋ New slide | ▾ (with a layout), ▦ Layout, **Format** (SL5: bold / italic / underline / strikethrough, size,
     colour, highlight, align, lists, clear), Duplicate, Delete slide (asks), ▲ / ▼, **Arrange** (SL6: front / back, align,
     distribute), Undo, Redo
@@ -170,7 +171,8 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
 - **Settings (⚙)**: Theme System / Light / Dark (dark is the default; System follows the Hub's `sites-hub.theme`, then the
   device), storage state, keyboard list (with the Present keys) and About. In-app dialogs only. SL2 adds no new setting.
 
-## The .hslides file (open format, version 4 since SL6)
+## The .hop file (open format, still `hub-slides` version 6; `.hslides` still opens)
+<!-- (before HOP1) ## The .hslides file (open format, version 4 since SL6) -->
 SL6 writes version 4 and reads versions 1, 2, 3 and 4. A file with a higher version than the app knows is refused with a message.
 Version 3 keeps the version-2 shape so a plain (unstyled) deck still has a string `title` and `{ text, level }` bullets, and
 adds the rich-text and free-box fields, all optional (a missing field = plain text / no boxes):
@@ -271,7 +273,7 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_pptx.js` (`SLPptx`, SL9): build a {files} map from a deck and parse one back (regex / string XML, no DOM). Zip packing is left to SLZip.
 - `slides_png.js` (`SLPng`, SL9): `svgFor()` builds an SVG string from the model (Node-testable); `toPngBlob()` rasterises in a browser canvas.
 - `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load; SL6 fmt 5; SL7 fmt 6; SL8 fmt 7 and eight deck themes
-- `slides_file.js` (`SLFile`): .hslides export / import and checks (writes v6, reads v1–v6; unchanged in SL9)
+- `slides_file.js` (`SLFile`): .hop export / import and checks (writes v6, reads v1–v6; old .hslides files still open). `fileName` / `isDeckName` added in HOP1.
 - `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, contenteditable title / body / text boxes / shape text / table cells, Tab / Shift+Tab, layouts (placeholders),
   picture, text-box, shape and table select / move / resize / crop / arrange, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
   the thumbnails, the pickers, Present and Print

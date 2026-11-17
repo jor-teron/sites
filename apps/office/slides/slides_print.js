@@ -37,7 +37,7 @@
       b.innerHTML = html;
       [].forEach.call(b.querySelectorAll('.pp.notes'), function (pg, i) {
         var s = list[i];
-        pg.querySelector('.np-meta').textContent = (deck.name || 'Slides') + '  ·  Slide ' + (i + 1) + ' of ' + list.length;
+        pg.querySelector('.np-meta').textContent = (deck.name || 'Presentation') + '  ·  Slide ' + (i + 1) + ' of ' + list.length;   /* (before HOP1) fallback 'Slides' */
         var slide = pg.querySelector('.np-slide .slide');
         SLEdit.paint(slide, s, i, { show: true, deck: ctx }, th, 'slide sv pv');
         slide.style.transform = 'scale(' + (160 * 3.779527559 / 960) + ')'; /* 160mm at 96dpi ≈ 3.78 px/mm */
@@ -77,7 +77,8 @@
       build(deck, o);
       return ready();
     }).then(function () {
-      if (o.pdf) { oldTitle = document.title; document.title = String(deck.name || 'Slides').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Slides'; }
+      /* (before HOP1) fallback title 'Slides' */
+      if (o.pdf) { oldTitle = document.title; document.title = String(deck.name || 'Presentation').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Presentation'; }
       /* print in the next frame so the view is laid out; afterprint clears it */
       return new Promise(function (r) { requestAnimationFrame(function () { try { window.print(); } catch (_) { /* no print here */ } r(true); }); });
     });

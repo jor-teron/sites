@@ -61,6 +61,11 @@ test('SUITES definitions cover all 5 office applications with clean action label
     assert.ok(suite.btnLabel, 'suite has clean button label');
     assert.ok(Array.isArray(suite.formats) && suite.formats.length > 0, 'suite has formats');
   });
+
+  const slides = HO.SUITES.find((s) => s.id === 'slides');
+  assert.equal(slides.name, 'Presentation');
+  assert.equal(slides.btnLabel, 'Open Presentation');
+  assert.deepEqual(JSON.parse(JSON.stringify(slides.formats)), ['.hop', '.hslides', '.pptx']);
 });
 
 test('EXT_MAP routes all expected extensions to matching suites', () => {
@@ -75,6 +80,7 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.xlsx, 'spreadsheet');
   assert.equal(HO.EXT_MAP.csv, 'spreadsheet');
 
+  assert.equal(HO.EXT_MAP.hop, 'slides');
   assert.equal(HO.EXT_MAP.hslides, 'slides');
   assert.equal(HO.EXT_MAP.pptx, 'slides');
 
@@ -88,6 +94,7 @@ test('getExt extracts lowercase extension', () => {
   const HO = loadScript();
   assert.equal(HO.getExt('Report.HOW'), 'how');
   assert.equal(HO.getExt('budget.2026.hos'), 'hos');
+  assert.equal(HO.getExt('talk.hop'), 'hop');
   assert.equal(HO.getExt('presentation.hslides'), 'hslides');
   assert.equal(HO.getExt('inventory.HOT'), 'hot');
   assert.equal(HO.getExt('noext'), '');

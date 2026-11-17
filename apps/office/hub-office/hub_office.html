@@ -46,7 +46,8 @@
                 <span class="ho-btn-icon">📂</span>
                 <span class="ho-btn-text">Open File...</span>
               </button>
-              <input type="file" id="file-input" hidden accept=".how,.hos,.hslides,.hot,.docx,.xlsx,.pptx,.odt,.csv,.tsv,.txt,.md,.json">
+              <!-- (before HOP1) accept=".how,.hos,.hslides,.hot,..." -->
+              <input type="file" id="file-input" hidden accept=".how,.hos,.hop,.hslides,.hot,.docx,.xlsx,.pptx,.odt,.csv,.tsv,.txt,.md,.json">
             </div>
 
             <nav class="ho-nav" aria-label="Suite navigation">
@@ -64,7 +65,7 @@
               </button>
               <button type="button" class="ho-nav-item" data-filter="slides">
                 <span class="ho-nav-icon">📽️</span>
-                <span>Slides</span>
+                <span>Presentation</span><!-- (before HOP1) Slides -->
               </button>
               <button type="button" class="ho-nav-item" data-filter="base">
                 <span class="ho-nav-icon">🗄️</span>
@@ -107,7 +108,8 @@
                 <span class="ho-drop-icon">📥</span>
                 <div class="ho-drop-text">
                   <strong>Drop any office file here</strong> to open directly in a new tab.
-                  <div class="ho-drop-formats">Supported: .how, .hos, .hslides, .hot, .docx, .xlsx, .pptx, .csv, .txt</div>
+                  <!-- (before HOP1) Supported: .how, .hos, .hslides, .hot, ... -->
+                  <div class="ho-drop-formats">Supported: .how, .hos, .hop, .hslides, .hot, .docx, .xlsx, .pptx, .csv, .txt</div>
                 </div>
               </div>
             </section>
