@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- WX1a Weather Forecast: live current conditions for Diphu from Open-Meteo, with a 10-minute cache
-     and loading / error / offline states. The 7-day outlook (WX1b) and hourly curve (WX1c) come next. -->
+<!-- WX1b Weather Forecast: live current conditions and a 7-day outlook for Diphu from Open-Meteo,
+     with a 10-minute cache and loading / error / offline states. The hourly curve (WX1c) comes next. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Weather Forecast · WX1a</title>
+  <title>Weather Forecast · WX1b</title>
   <link rel="stylesheet" href="weather-forecast.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
 </head>
@@ -45,13 +45,19 @@
     </dl>
   </section>
 
+  <section class="wx-days" id="daysCard" hidden aria-labelledby="daysTitle">
+    <h2 class="wx-h2" id="daysTitle">7-day forecast</h2>
+    <ul class="wx-days-list" id="dayList"></ul>
+    <button type="button" class="wx-link" id="moreDays" aria-controls="dayList" aria-expanded="false">Show all 7 days</button>
+  </section>
+
   <section class="wx-error" id="errorCard" hidden aria-label="Weather error">
     <h2>Weather unavailable</h2>
     <p id="errorText">Could not reach Open-Meteo.</p>
     <button type="button" class="wx-btn" id="retry">Try again</button>
   </section>
 
-  <p class="wx-foot">7-day outlook comes next.</p>
+  <p class="wx-foot">Weather by Open-Meteo.</p>
 
   <noscript><p class="wx-status">Weather Forecast needs JavaScript.</p></noscript>
 </main>

@@ -1,7 +1,7 @@
 /*
- * Weather Forecast — page logic (WX1a).
- * Paints the current-conditions card and handles loading, error, offline and refresh.
- * WX1b adds the 7-day outlook, WX1c the hourly curve.
+ * Weather Forecast — page logic (WX1b).
+ * Paints current conditions and the 7-day forecast; handles loading, error, offline and refresh.
+ * WX1c adds the hourly curve, WX1d the 12-hour strip and detail chips.
  */
 var WXApp = (function () {
   "use strict";
@@ -11,8 +11,17 @@ var WXApp = (function () {
   var el = {};
   var busy = false;
   var last = null;
+  var prefs = {};
 
   function $(id) { return document.getElementById(id); }
+
+  function readPrefs() {
+    try { return JSON.parse(localStorage.getItem(CFG.prefs.key) || "{}") || {}; } catch (e) { return {}; }
+  }
+
+  function writePrefs() {
+    try { localStorage.setItem(CFG.prefs.key, JSON.stringify(prefs)); } catch (e) { /* optional */ }
+  }
 
   /* ---- inline SVG icons (no external files, no network) ---- */
 
@@ -95,9 +104,38 @@ var WXApp = (function () {
 
   function showError(msg) {
     el.nowCard.hidden = true;
+    el.daysCard.hidden = true;
     el.errorCard.hidden = false;
     el.errorText.textContent = msg;
     setStatus("", "");
+  }
+
+  function renderDays(days) {
+    if (!days || !days.length) {
+      el.daysCard.hidden = true;
+      return;
+    }
+    var html = "", i, d, w;
+    for (i = 0; i < days.length; i++) {
+      d = days[i];
+      w = WXFormat.wmo(d.code);
+      html += '<li class="wx-day">' +
+        '<span class="d">' + (i === 0 ? T.today : WXFormat.weekday(d.date)) + '</span>' +
+        '<span class="i">' + iconSvg(w[1]) + '<span class="sr">' + w[0] + '</span></span>' +
+        '<span class="r">' + (typeof d.rain === "number" ? WXFormat.pct(d.rain) : "") + '</span>' +
+        '<span class="t"><b>' + WXFormat.fmtTemp(d.hi) + '</b><i>' + WXFormat.fmtTemp(d.lo) + '</i></span>' +
+        '</li>';
+    }
+    el.dayList.innerHTML = html;
+    el.daysCard.hidden = false;
+    applyDaysExpanded();
+  }
+
+  function applyDaysExpanded() {
+    var open = !!prefs.showAllDays;
+    el.dayList.classList.toggle("expanded", open);
+    el.moreDays.textContent = open ? T.showLess : T.showAll;
+    el.moreDays.setAttribute("aria-expanded", open ? "true" : "false");
   }
 
   function paint(res) {
@@ -119,6 +157,8 @@ var WXApp = (function () {
     el.lo.textContent = WXFormat.fmtTemp(d.today.lo);
     el.hum.textContent = typeof now.humidity === "number" ? Math.round(now.humidity) + "%" : "\u2013";
     el.wind.textContent = WXFormat.windText(now.wind, now.dir, d.units.wind);
+
+    renderDays(d.days);
 
     if (res.stale) {
       setStatus(T.offline + " " + WXFormat.freshness(Date.now() - res.savedAt) + ".", "warn");
@@ -159,13 +199,23 @@ var WXApp = (function () {
     el.lo = $("lo");
     el.hum = $("hum");
     el.wind = $("wind");
+    el.daysCard = $("daysCard");
+    el.dayList = $("dayList");
+    el.moreDays = $("moreDays");
     el.errorCard = $("errorCard");
     el.errorText = $("errorText");
     el.refresh = $("refresh");
     el.retry = $("retry");
 
+    prefs = readPrefs();
+
     el.refresh.addEventListener("click", function () { refresh(true); });
     el.retry.addEventListener("click", function () { refresh(true); });
+    el.moreDays.addEventListener("click", function () {
+      prefs.showAllDays = !prefs.showAllDays;
+      writePrefs();
+      applyDaysExpanded();
+    });
 
     window.addEventListener("offline", function () {
       if (last) setStatus(T.offline + " " + WXFormat.freshness(Date.now() - last.savedAt) + ".", "warn");

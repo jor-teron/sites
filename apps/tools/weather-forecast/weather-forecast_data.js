@@ -73,7 +73,25 @@ var WXData = (function () {
     var codes = d.weather_code || [];
     var hi = d.temperature_2m_max || [];
     var lo = d.temperature_2m_min || [];
+    var rain = d.precipitation_probability_max || [];
+    var sunrise = d.sunrise || [];
+    var sunset = d.sunset || [];
     var cu = (raw && raw.current_units) || {};
+
+    // Up to 7 days, each with its own code, high/low, rain chance and sun times
+    var days = [];
+    var n = Math.min(7, (d.time || []).length);
+    for (var i = 0; i < n; i++) {
+      days.push({
+        date: d.time[i],
+        code: codes[i],
+        hi: hi[i],
+        lo: lo[i],
+        rain: rain[i],
+        sunrise: sunrise[i],
+        sunset: sunset[i],
+      });
+    }
 
     return {
       place: CFG.location.name,
@@ -90,6 +108,7 @@ var WXData = (function () {
         isDay: c.is_day,
       },
       today: { code: codes[0], hi: hi[0], lo: lo[0] },
+      days: days,
       units: {
         temp: cu.temperature_2m || CFG.units.temp,
         wind: cu.wind_speed_10m || CFG.units.wind,

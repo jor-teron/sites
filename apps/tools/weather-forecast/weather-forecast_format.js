@@ -94,6 +94,20 @@ var WXFormat = (function () {
     return d ? out + " " + d : out;
   }
 
+  // "2026-11-17" -> "Tue"
+  function weekday(iso) {
+    if (typeof iso !== "string" || iso.length < 10) return "\u2013";
+    var d = new Date(iso.length === 10 ? iso + "T12:00" : iso);
+    if (isNaN(d.getTime())) return "\u2013";
+    return DAYS[d.getDay()];
+  }
+
+  // 0.4 -> "40%" (probability or fraction)
+  function pct(v) {
+    if (typeof v !== "number" || !isFinite(v)) return "";
+    return Math.round(v <= 1 ? v * 100 : v) + "%";
+  }
+
   return {
     wmo: wmo,
     roundTemp: roundTemp,
@@ -104,6 +118,8 @@ var WXFormat = (function () {
     isStale: isStale,
     direction: direction,
     windText: windText,
+    weekday: weekday,
+    pct: pct,
   };
 })();
 

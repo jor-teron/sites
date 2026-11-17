@@ -56,8 +56,7 @@ test("isStale", () => {
   assert.strictEqual(F.isStale(0, now, 10 * 60e3), true);
 });
 
-test("direction and windText", () => {
-  assert.strictEqual(F.direction(0), "N");
+test("direction and windText", () => {  assert.strictEqual(F.direction(0), "N");
   assert.strictEqual(F.direction(45), "NE");
   assert.strictEqual(F.direction(90), "E");
   assert.strictEqual(F.direction(180), "S");
@@ -67,4 +66,13 @@ test("direction and windText", () => {
   assert.strictEqual(F.windText(12.4, 45, "km/h"), "12 km/h NE");
   assert.strictEqual(F.windText(8, null, "km/h"), "8 km/h");
   assert.strictEqual(F.windText(null, 90, "km/h"), "\u2013");
+});
+
+test("weekday and pct", () => {
+  assert.strictEqual(F.weekday("2026-11-17"), "Tue");
+  assert.strictEqual(F.weekday("2026-11-22"), "Sun");
+  assert.strictEqual(F.weekday("bad"), "\u2013");
+  assert.strictEqual(F.pct(20), "20%");
+  assert.strictEqual(F.pct(0.4), "40%");
+  assert.strictEqual(F.pct(null), "");
 });
