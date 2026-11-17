@@ -3,7 +3,9 @@
  * Registers Base with ../../shared/office-quick.js (bar before File; Hub title bar through
  * ../../shared/office-hubbar.js).
  *   Undo / Redo: BaseHistory (BS5, in-memory, ~100 steps). Disabled when the stack is empty.
- *   Save = BaseStore.saveNow() now + ✓ Saved tick (fails when storage is memory-only).
+ *   Save = BaseStore.saveNow() now, then write or update the bound .hob (BS10), + ✓ Saved tick
+ *   (fails when storage is memory-only and the .hob was not written).
+ *   (before BS10) Save = BaseStore.saveNow() now + ✓ Saved tick (fails when storage is memory-only).
  *   Print = BaseReport.print() when a report is open (browser print window, Save as PDF there), else window.print().
  *   Ctrl/Cmd+S and Ctrl/Cmd+P go through OfficeQuick; Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z go to
  *   BaseHistory except inside a text field, where the browser's own undo still runs.
@@ -21,7 +23,12 @@
     }
     OfficeQuick.register({
       app: "Base",
-      save: function () { BaseStore.saveNow(); return !BASE.memOnly; },
+      /* (before BS10) save: function () { BaseStore.saveNow(); return !BASE.memOnly; }, */
+      save: function () {
+        if (typeof BaseUI !== "undefined" && typeof BaseUI.saveHob === "function") return BaseUI.saveHob({ explicit: true });
+        if (typeof BaseStore !== "undefined") BaseStore.saveNow();
+        return typeof BASE === "undefined" || !BASE.memOnly;
+      },
       print: function () { ribbonSetFile(false); if (typeof BaseReport !== "undefined") BaseReport.print(); else window.print(); },
       undo: function () { if (typeof BaseHistory !== "undefined") BaseHistory.undo(); },
       redo: function () { if (typeof BaseHistory !== "undefined") BaseHistory.redo(); },

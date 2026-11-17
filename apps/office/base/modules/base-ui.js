@@ -7,9 +7,12 @@
  * BS3: boot wraps the first render in try/catch; on failure BaseUI.recover(err) shows an in-app dialog
  *   (office-dialog look, no alert/confirm): "Download raw data" (JSON file of what was loaded) and
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
+ * BS10: File → Save / Save As and Ctrl+S flush IndexedDB and write or update the bound .hob
+ *   file through modules/base_hob.js (OfficeNative). Backup / Restore stay as they are.
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
-var BASE_VERSION = "HOB1";  /* (before HOB1) "BS9" */
+/* (before BS10) var BASE_VERSION = "HOB1"; */
+var BASE_VERSION = "BS10";  /* legacy: "HOB1" · "BS9" */
 var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };
@@ -214,8 +217,29 @@ function initBaseSettings() {
   initBaseSettings();
   initBaseRibbon();
   function menu(id, fn) { $(id).addEventListener("click", function () { ribbonSetFile(false); fn(); }); }
+  function saveHob(opts) {
+    opts = opts || {};
+    if (!window.BaseHob || typeof BaseHob.saveWithPics !== "function") {
+      if (typeof BaseStore !== "undefined") BaseStore.saveNow();
+      return Promise.resolve(typeof BASE === "undefined" || !BASE.memOnly);
+    }
+    return BaseHob.saveWithPics(opts).then(function (res) {
+      if (res && res.cancelled) return false;
+      if (res && res.wrote && (opts.explicit || opts.saveAs) && window.BaseHop) {
+        var verb = res.verb || "Saved";
+        var f = BaseHop.fileName(res.name);
+        if (typeof OfficeNotify !== "undefined") OfficeNotify.show((verb === "Downloaded" ? "Downloaded " : (verb + " ")) + f, 2500);
+      }
+      var localOk = typeof BASE === "undefined" || !BASE.memOnly;
+      return !!(res && res.wrote) || localOk;
+    }, function () { return false; });
+  }
+  BaseUI.saveHob = saveHob;
   menu("btn-new-table", BaseUI.newTable);
   menu("btn-export", function () { var t = BaseStore.table(); if (t) BaseCsv.exportTable(t); });
+  /* (before BS10) no File → Save / Save As */
+  menu("btn-save", function () { saveHob({ explicit: true }); });
+  menu("btn-save-as", function () { saveHob({ explicit: true, saveAs: true }); });
   menu("btn-backup", function () { BaseFiles.backup(); });
   menu("btn-export-xlsx", function () { BaseFiles.exportXlsx(); });
   menu("btn-send-sheet", function () { BaseFiles.sendToSpreadsheet(); });
@@ -272,7 +296,11 @@ function initBaseSettings() {
   });
   var st = null;
   $("search").addEventListener("input", function (e) { clearTimeout(st); st = setTimeout(function () { BASE.search = e.target.value; BaseUI.render(); }, 150); });
-  window.addEventListener("pagehide", BaseStore.saveNow);
+  /* (before BS10) window.addEventListener("pagehide", BaseStore.saveNow); */
+  window.addEventListener("pagehide", function () {
+    BaseStore.saveNow();
+    if (window.BaseHob && BaseHob.dest && typeof BaseHob.autosaveWithPics === "function") BaseHob.autosaveWithPics();
+  });
   BaseStore.load(function () {
     try {
       var t0 = BaseStore.table();
@@ -283,5 +311,24 @@ function initBaseSettings() {
       }
       BaseUI.render();
     } catch (e) { BaseUI.recover(e); }
+    if (typeof BaseHop !== "undefined" && !window.BaseHob) {
+      BaseHop.install({
+        toast: function (msg) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(msg, 3500); },
+        currentName: function () { return (window.BaseHob && BaseHob.stemName) ? BaseHob.stemName() : "base"; },
+        noteFailed: function (err) {
+          if (typeof OfficeNotify !== "undefined") OfficeNotify.show((err && (err.userMessage || err.message)) || "Could not save", 3500);
+        }
+      });
+    }
+    if (window.BaseHob) {
+      BaseHob.bind();
+      BaseHob.openFromHash();
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "hidden") {
+          BaseStore.saveNow();
+          if (BaseHob.dest && typeof BaseHob.autosaveWithPics === "function") BaseHob.autosaveWithPics();
+        }
+      });
+    }
     if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start(); });
 })();
