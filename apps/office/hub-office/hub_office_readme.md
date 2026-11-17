@@ -27,7 +27,8 @@ The unified Start Center and multi-document tabbed container for the **Hub Offic
 Files dropped or selected automatically open in a dedicated tab running the matching suite app:
 <!-- (before DW7) - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`, `.pdf` -->
 - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`
-- **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.csv`, `.tsv`
+<!-- (before SH27) - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.csv`, `.tsv` -->
+- **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.ods`, `.csv`, `.tsv`
 <!-- (before PN1) - **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.ppt` -->
 - **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.odp`
 <!-- (before BS11) - **Base**: `.hob` (native backup; `.hbase` still opens), `.base`, `.db`, `.sqlite` -->

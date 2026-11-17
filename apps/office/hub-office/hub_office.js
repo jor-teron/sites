@@ -23,7 +23,8 @@
       icon: '../spreadsheet/spreadsheet_icon.png',
       url: '../spreadsheet/',
       rootUrl: 'apps/office/spreadsheet/',
-      formats: ['.hos', '.xlsx', '.csv', '.tsv'],
+      /* (before SH27) formats: ['.hos', '.xlsx', '.csv', '.tsv'], */
+      formats: ['.hos', '.xlsx', '.ods', '.csv', '.tsv'],
       btnLabel: 'Open Spreadsheet'
     },
     {
@@ -75,6 +76,8 @@
     hos: 'spreadsheet',
     xlsx: 'spreadsheet',
     xls: 'spreadsheet',
+    /* (before SH27) no ods */
+    ods: 'spreadsheet',
     csv: 'spreadsheet',
     tsv: 'spreadsheet',
     hop: 'slides',

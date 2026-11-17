@@ -12,7 +12,8 @@
   <!-- (before SH22) <title>Spreadsheet SH19</title> -->
   <!-- (before SH23) <title>Spreadsheet SH22</title> -->
   <!-- (before SH24) <title>Spreadsheet SH23</title> -->
-  <title>Spreadsheet SH24</title>
+  <!-- (before SH27) <title>Spreadsheet SH24</title> -->
+  <title>Spreadsheet SH27</title>
   <!-- (before HO3) every local cache token (?v=) on this page was SH18; HO3 bumps them for the 12pt default. Title stays SH18. -->
   <link rel="icon" href="spreadsheet_icon.png">
   <link rel="stylesheet" href="spreadsheet.css?v=HO3">
@@ -45,14 +46,19 @@
     <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-open-hos" data-icon="fileOpen"><span>Open .hos</span></button>
     <input id="hos-file" type="file" accept=".hos,application/json" hidden>
-    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / CSV)</span>
+    <!-- (before SH27) <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / CSV)</span>
       <input id="file-import" type="file" accept=".xlsx,.xls,.csv,text/csv,text/plain" hidden>
+    </label> -->
+    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / ODS / CSV)</span>
+      <input id="file-import" type="file" accept=".xlsx,.xls,.ods,.csv,text/csv,text/plain,application/vnd.oasis.opendocument.spreadsheet" hidden>
     </label>
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-save-as" data-icon="fileSave"><span>Save As</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx" data-icon="fileExport"><span>Export XLSX</span></button>
+    <!-- (before SH27) Export ODS was not in the File menu -->
+    <button type="button" class="file-item" role="menuitem" id="btn-export-ods" data-icon="fileExport"><span>Export ODS</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button>
     <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <div class="file-sep" role="separator"></div>
@@ -302,8 +308,10 @@
   <script src="spreadsheet_fx.js?v=HO3"></script>
   <script src="spreadsheet_point.js?v=HO3"></script>
   <script src="spreadsheet_fill.js?v=HO3"></script>
-  <script src="spreadsheet_toolbar.js?v=HO3"></script>
-  <script src="spreadsheet_settings.js?v=HO3"></script>
+  <!-- (before SH27) <script src="spreadsheet_toolbar.js?v=HO3"></script> -->
+  <script src="spreadsheet_toolbar.js?v=SH27"></script>
+  <!-- (before SH27) <script src="spreadsheet_settings.js?v=HO3"></script> -->
+  <script src="spreadsheet_settings.js?v=SH27"></script>
   <script src="spreadsheet_page.js?v=HO3"></script>
   <script src="spreadsheet_ribbon.js?v=HO3"></script>
   <script src="spreadsheet_logic.js?v=HO3"></script>
@@ -319,7 +327,8 @@
   <script src="spreadsheet_data.js?v=HO3"></script>
   <script src="spreadsheet_resize.js?v=HO3"></script>
   <script src="spreadsheet_keys.js?v=HO3"></script>
-  <script src="spreadsheet_xlsx.js?v=HO3"></script>
+  <!-- (before SH27) <script src="spreadsheet_xlsx.js?v=HO3"></script> -->
+  <script src="spreadsheet_xlsx.js?v=SH27"></script>
   <script src="spreadsheet_hub.js?v=HO3"></script>
   <script src="spreadsheet_quick.js?v=HO3"></script>
   <script src="../../../shared/fs/fs_drives.js"></script>

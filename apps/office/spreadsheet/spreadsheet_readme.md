@@ -393,5 +393,15 @@ Right-clicking on the grid now opens a context menu tailored to the clicked targ
 - **Code:** `spreadsheet_rows.js` (`gridContextMenuItems`, `openGridContextMenu`, `onGridContextMenu`). Styles in `spreadsheet.css` (`.sheet-context-menu`, `.sheet-menu-item`, `.sheet-menu-sep`).
 - **Tests:** `node apps/office/spreadsheet/test-sh25-context-menu.js`.
 
+## SH27 — Open and export LibreOffice .ods
+
+Spreadsheet opens LibreOffice `.ods` files the same way it opens `.xlsx`, and can export the workbook as `.ods`. Saving is still the native `.hos` file.
+
+- **Open:** File → Open (XLSX / ODS / CSV), drop a `.ods` on the page, or a Hub `#drive=&file=` link ending `.ods`. Every sheet comes in (up to 20), with values and formulas. Cell styles are skipped, as they are on `.xlsx` (SheetJS Community Edition does not read them). Opening a `.ods` starts a new `.hos`, so it does not replace the file that was already open.
+- **Export:** File → Export ODS writes `<name>.ods` through the same SheetJS path as Export XLSX (`bookType: 'ods'`). Values, formulas, sheet names and merges are written. Font, fill and border styles usually are not (same limit as `.xlsx`). Charts, validation, conditional formats, hidden rows, freeze panes, pictures and macros are not exported.
+- **Bonus:** a `.xlsx` or `.xls` in Hub Documents now also opens from its Hub link, and dropping one on the page opens it too.
+- **Release id:** title and `SHEET_VERSION` are SH27. `?v=` on `spreadsheet_xlsx.js`, `spreadsheet_toolbar.js` and `spreadsheet_settings.js` is `SH27`. Other tokens stay `HO3`. The `.hos` format stays version 1. Storage stays `sheet-v4`.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh27.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

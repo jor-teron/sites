@@ -200,7 +200,7 @@ test("CSS fallbacks: Spreadsheet 12pt; Tables sheet text 12pt, chrome 13px", fun
   if (th.indexOf("?v=") >= 0) throw new Error("tables.html should have no ?v= (NV2)");
 });
 
-test("cache tokens stay HO3, title and SHEET_VERSION are SH23; Writer still 12pt", function () {
+test("cache tokens keep HO3 on untouched files, title and SHEET_VERSION are SH27; Writer still 12pt", function () {
   var html = read("spreadsheet.html");
   if (html.indexOf("?v=SH18") >= 0) throw new Error("stale ?v=SH18 left");
   if (html.indexOf("?v=HO3") < 0) throw new Error("?v=HO3 missing");
@@ -209,13 +209,15 @@ test("cache tokens stay HO3, title and SHEET_VERSION are SH23; Writer still 12pt
   /* (before SH22) if (html.indexOf("<title>Spreadsheet SH19</title>") < 0) throw new Error("title is not SH19"); */
   /* (before SH23) if (html.indexOf("<title>Spreadsheet SH22</title>") < 0) throw new Error("title is not SH22"); */
   /* (before SH24) if (html.indexOf("<title>Spreadsheet SH23</title>") < 0) throw new Error("title is not SH23"); */
-  if (html.indexOf("<title>Spreadsheet SH24</title>") < 0) throw new Error("title is not SH24");
+  /* (before SH27) if (html.indexOf("<title>Spreadsheet SH24</title>") < 0) throw new Error("title is not SH24"); */
+  if (html.indexOf("<title>Spreadsheet SH27</title>") < 0) throw new Error("title is not SH27");
   /* (before SH21) if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH18";') < 0) throw new Error("SHEET_VERSION changed"); */
   /* (before SH19) if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH21";') < 0) throw new Error("SHEET_VERSION is not SH21"); */
   /* (before SH22) if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH19";') < 0) throw new Error("SHEET_VERSION is not SH19"); */
   /* (before SH23) if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH22";') < 0) throw new Error("SHEET_VERSION is not SH22"); */
   /* (before SH24) if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH23";') < 0) throw new Error("SHEET_VERSION is not SH23"); */
-  if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH24";') < 0) throw new Error("SHEET_VERSION is not SH24");
+  /* (before SH27) if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH24";') < 0) throw new Error("SHEET_VERSION is not SH24"); */
+  if (read("spreadsheet_settings.js").indexOf('var SHEET_VERSION = "SH27";') < 0) throw new Error("SHEET_VERSION is not SH27");
   var wsrc = fs.readFileSync(path.join(dir, "../writer/modules/writer-config.js"), "utf8");
   if (!/fontSizePt:\s*12\b/.test(wsrc)) throw new Error("Writer fontSizePt 12 not found");
 });

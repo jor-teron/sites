@@ -78,13 +78,14 @@ test("other-sheet ranges use the typed-ref quoting rule", function () {
   eq(ctx.pointRangeText("Sheet2", 3, 3, 3, 3), ctx.pointRefText("Sheet2", 3, 3), "matches the SH22 single ref");
 });
 
-test("SH23 wiring: drag listener, no same-sheet auto-commit, version SH23", function () {
+test("SH23 wiring: drag listener, no same-sheet auto-commit, version SH27", function () {
   var src = fs.readFileSync(path.join(dir, "spreadsheet_point.js"), "utf8");
   if (src.indexOf('addEventListener("mouseover", pointOnCellOver, true)') < 0) throw new Error("drag listener missing");
   if (src.indexOf("pointCaretAllowsRef(el.value") < 0) throw new Error("cell click does not check the caret");
   var settings = fs.readFileSync(path.join(dir, "spreadsheet_settings.js"), "utf8");
   /* (before SH24) if (settings.indexOf('var SHEET_VERSION = "SH23";') < 0) throw new Error("SHEET_VERSION is not SH23"); */
-  if (settings.indexOf('var SHEET_VERSION = "SH24";') < 0) throw new Error("SHEET_VERSION is not SH24");
+  /* (before SH27) if (settings.indexOf('var SHEET_VERSION = "SH24";') < 0) throw new Error("SHEET_VERSION is not SH24"); */
+  if (settings.indexOf('var SHEET_VERSION = "SH27";') < 0) throw new Error("SHEET_VERSION is not SH27");
 });
 
 console.log("passed", passed, "failed", failed);
