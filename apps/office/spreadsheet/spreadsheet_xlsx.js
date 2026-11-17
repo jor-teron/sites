@@ -1,8 +1,11 @@
 /*
- * spreadsheet_xlsx.js  (SH6, SH8)
+ * spreadsheet_xlsx.js  (SH6, SH8, SH27)
  * Open / save .xlsx (and open .xls) with SheetJS Community Edition (Apache-2.0),
  * vendored in vendor/sheetjs/. The 950 KB library is lazy-loaded only on the
- * first XLSX open or export, so normal use stays light.
+ * first XLSX / ODS open or export, so normal use stays light.
+ * SH27: the same path opens and exports LibreOffice .ods (XLSX.read / write
+ * with bookType 'ods'). File → Open (XLSX / ODS / CSV), drop, or a Hub
+ * #drive=&file= link ending .ods / .xlsx / .xls. File → Export ODS.
  * Import: every worksheet, up to CFG.sheets.max (20), each clipped to A-Z x 100;
  * a toast names how many were loaded and how many were cut. Values and
  * formulas (SheetJS cell .f -> "=" + f). Styles are skipped (the community
@@ -109,26 +112,52 @@ function xlsxFillGrid(XLSX, ws, grid) {
   return dropped;
 }
 
+function xlsxIsWorkbookName(name) {
+  return /\.(xlsx|xls|ods)$/i.test(String(name || ""));
+}
+
+function xlsxIsWorkbookFile(file) {
+  if (!file) return false;
+  if (xlsxIsWorkbookName(file.name)) return true;
+  var t = String(file.type || "").toLowerCase();
+  return t.indexOf("spreadsheetml") >= 0 || t.indexOf("opendocument.spreadsheet") >= 0 || t === "application/vnd.ms-excel";
+}
+
+/* Build sheet objects from a SheetJS workbook (pure). */
+function xlsxSheetsFromBook(XLSX, wb) {
+  var cap = (CFG.sheets && CFG.sheets.max) || 20;
+  var names = wb.SheetNames || [];
+  var take = names.slice(0, cap);
+  var used = {}, sheets = [], dropped = 0, i, name, sh;
+  for (i = 0; i < take.length; i++) {
+    name = String(take[i] || ("Sheet" + (i + 1))).slice(0, CFG.sheets.nameMax);
+    name = uniqueName(name, used);
+    sh = makeSheet(name);
+    dropped += xlsxFillGrid(XLSX, wb.Sheets[take[i]], sh.cells);
+    sheets.push(sh);
+  }
+  return { sheets: sheets, cutSheets: names.length - take.length, dropped: dropped };
+}
+
+/* Write the live workbook through SheetJS (pure; type defaults to array). */
+function xlsxWriteBook(XLSX, bookType, typ) {
+  return XLSX.write(xlsxBuildBook(XLSX), { bookType: bookType || "xlsx", type: typ || "array" });
+}
+
 function importXlsxFile(file) {
   xlsxToast("Opening " + file.name + "…");
+  if (file && file.name && window.SHEET_HUB && SHEET_HUB.setTitle) {
+    SHEET_HUB.setTitle(String(file.name).replace(/\.[^.]+$/, ""));
+  }
   Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) {
     var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true });
-    var cap = (CFG.sheets && CFG.sheets.max) || 20;
-    var names = wb.SheetNames || [];
-    var take = names.slice(0, cap);
-    var cutSheets = names.length - take.length;
+    var loaded = xlsxSheetsFromBook(XLSX, wb);
+    var sheets = loaded.sheets, cutSheets = loaded.cutSheets, dropped = loaded.dropped;
     undoRecord("import");
     stashSheetView();
-    var used = {}, sheets = [], dropped = 0, i, name, sh;
-    for (i = 0; i < take.length; i++) {
-      name = String(take[i] || ("Sheet" + (i + 1))).slice(0, CFG.sheets.nameMax);
-      name = uniqueName(name, used);
-      sh = makeSheet(name);
-      dropped += xlsxFillGrid(XLSX, wb.Sheets[take[i]], sh.cells);
-      sheets.push(sh);
-    }
     if (!sheets.length) sheets.push(makeSheet("Sheet1"));
     workbook = { sheets: sheets, active: 0 };
+
     bindActiveSheet();
     selR = selC = extR = extC = 0; selMode = "cell";
     /* HOS1: Open XLSX replaces the workbook, so it becomes its own .hos file
@@ -149,7 +178,7 @@ function importXlsxFile(file) {
     if (typeof renderSheetTabs === "function") renderSheetTabs();
     highlightSel();
     var msg = "Loaded " + sheets.length + " sheet" + (sheets.length === 1 ? "" : "s");
-    if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + cap + ")";
+    if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + ((CFG.sheets && CFG.sheets.max) || 20) + ")";
     /* (before SH24) if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped"; */
     if (dropped) msg += ", " + dropped + " cells outside A–FZ × " + ROWS + " skipped";
     saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
@@ -218,14 +247,70 @@ function xlsxBuildBook(XLSX) {
   return wb;
 }
 
-function exportXlsx() {
+function exportXlsxKind(bookType, ext) {
   xlsxLoad().then(function (XLSX) {
     var t = xlsxTitle();
-    XLSX.writeFile(xlsxBuildBook(XLSX), t.replace(/[\\\/:*?"<>|]/g, "_") + ".xlsx");
+    XLSX.writeFile(xlsxBuildBook(XLSX), t.replace(/[\\\/:*?"<>|]/g, "_") + "." + ext, { bookType: bookType });
   }).catch(function (e) { xlsxToast("Export failed: " + e.message); });
+}
+
+/* (before SH27) function exportXlsx() { xlsxLoad().then(function (XLSX) { XLSX.writeFile(xlsxBuildBook(XLSX), name + ".xlsx"); }); } */
+function exportXlsx() { exportXlsxKind("xlsx", "xlsx"); }
+function exportOds() { exportXlsxKind("ods", "ods"); }
+
+var xlsxHashKey = "";
+function openXlsxFromHash() {
+  if (typeof window === "undefined" || !window.FsRef || typeof window.FsRef.parse !== "function" || !window.location) {
+    return Promise.resolve(false);
+  }
+  var ref = window.FsRef.parse(window.location.hash);
+  if (!ref || !ref.name || !xlsxIsWorkbookName(ref.name)) return Promise.resolve(false);
+  if (typeof window.FsRef.resolve !== "function") return Promise.resolve(false);
+  var key = (window.FsRef.hash ? window.FsRef.hash(ref) : (ref.drive + "|" + (ref.path || "") + "|" + ref.name));
+  if (key === xlsxHashKey) return Promise.resolve(false);
+  xlsxHashKey = key;
+  return window.FsRef.resolve(ref).then(function (got) {
+    var handle = got && (got.file || got.handle || got);
+    if (!handle || typeof handle.getFile !== "function") { xlsxHashKey = ""; return false; }
+    return handle.getFile().then(function (file) {
+      importXlsxFile(file);
+      return true;
+    });
+  }).catch(function (e) {
+    xlsxHashKey = "";
+    xlsxToast("Could not open file: " + ((e && (e.userMessage || e.message)) || String(e)));
+    return false;
+  });
+}
+
+if (typeof SHEET_INIT !== "undefined") {
+  SHEET_INIT.push(function () {
+    if (typeof SHEET_HOS !== "undefined" && SHEET_HOS && typeof SHEET_HOS.start === "function" && !SHEET_HOS._xlsxStartWrapped) {
+      var start = SHEET_HOS.start;
+      SHEET_HOS._xlsxStartWrapped = true;
+      SHEET_HOS.start = function () {
+        return openXlsxFromHash().then(function (ok) {
+          if (ok) return true;
+          return start.call(SHEET_HOS);
+        });
+      };
+    }
+    if (typeof window !== "undefined") window.addEventListener("hashchange", function () { openXlsxFromHash(); });
+  });
 }
 
 if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded", function () {
   var b = document.getElementById("btn-export-xlsx");
   if (b) b.addEventListener("click", exportXlsx);
+  var o = document.getElementById("btn-export-ods");
+  if (o) o.addEventListener("click", exportOds);
+  document.addEventListener("dragover", function (e) {
+    if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1) e.preventDefault();
+  });
+  document.addEventListener("drop", function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!xlsxIsWorkbookFile(f)) return;
+    e.preventDefault();
+    importXlsxFile(f);
+  });
 });

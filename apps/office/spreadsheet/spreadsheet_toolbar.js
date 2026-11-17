@@ -69,7 +69,8 @@ function wireUi() {
       ev.target.value = "";
       return;
     }
-    if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
+    /* (before SH27) if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; } */
+    if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
     var reader = new FileReader();
     reader.onload = function () { importCsvText(String(reader.result)); };
     reader.readAsText(file);
