@@ -277,10 +277,15 @@ test('keys stay out of profile / sync, and the SW shell lists the new files with
   const sw = read('hub/update/hub_sw.js');
   const V = sw.match(/^const V = '(\d{8}[a-z]?)';/m)[1];
   const cache = +sw.match(/^const CACHE = 'hub-shell-v(\d+)';/m)[1];
-  assert.equal(cache, 163);   // H144
+  // (before H157) assert.equal(cache, 163);   // H144
+  const build = read('hub/build.txt').split('\n');
+  assert.equal(V, build[0].trim(), 'hub_sw.js V matches build.txt');
+  assert.equal('hub-shell-v' + cache, build[1].trim(), 'hub_sw.js CACHE matches build.txt');
+  assert.ok(cache >= 163, 'cache was bumped for H144 lock files and has not gone backwards');
   assert.match(read('sw.js'), new RegExp("importScripts\\('hub/update/hub_sw\\.js\\?v=" + V + "'\\);"));
   const shell = sw.slice(sw.indexOf('const SHELL = ['), sw.indexOf('];', sw.indexOf('const SHELL = [')));
-  const listed = Array.from(shell.replace(/\/\/.*$/gm, '').matchAll(/'([^']+)'/g), (m) => m[1]);
+  // (before H157) const listed = Array.from(shell.replace(/\/\/.*$/gm, '').matchAll(/'([^']+)'/g), (m) => m[1]);
+  const listed = Array.from(shell.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '').matchAll(/'([^']+)'/g), (m) => m[1]);
   ['hub/core/hub_lock_core.js', 'hub/core/hub_lock.js', 'hub/core/hub_lock.css', 'shared/vendor/peerjs.min.js', 'unlock.html', 'hub/core/hub_unlock.js'].forEach((f) => {
     assert.ok(listed.includes(f), f + ' in SHELL');
     assert.ok(fs.existsSync(path.join(ROOT, f)), f + ' exists');
