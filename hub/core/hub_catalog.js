@@ -11,7 +11,14 @@ window.SITES_CSV = Object.assign(window.SITES_CSV || {}, {
 # section (optional group heading for this category only; first appearance sets the order; empty = "Other", shown last)
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
-TV,              ../../tv/,                 , , Watch, Live TV player for free IPTV channels from M3U playlists - remote and touch
+# (before H155) TV,              ../../tv/,                 , , Watch, Live TV player for free IPTV channels from M3U playlists - remote and touch
+# H155: one flat list (no section headings); TV + My Day - News - Agent - Globe - LandCraft (rows copied from their own category CSVs)
+TV,              ../../tv/,                 , , , Live TV player for free IPTV channels from M3U playlists - remote and touch
+My Day,          ../tools/dashboard/,       , , , Personal dashboard: clock - weather - todo - notes - schedule and links
+News,            ../media/news/,            , , , Latest headlines from Google News India in story cards
+Agent,           ../lab/agent/,             , , , Browser AI agent with tools: local Ollama - OpenAI-compatible API or Gemini
+Globe,           ../lab/globe/,             , , , Interactive 3D globe with a 2D OpenStreetMap view at high zoom
+LandCraft,       ../games/landcraft/,       , , , Voxel block world in Minecraft style: explore - break and place blocks - swim
 `,
   "Games": `# Games — one per line. Paths are relative to this folder. Lines starting with # are comments.
 # icon empty = <folder>/<folder>_icon.png or a letter tile; newtab 1 = own tab on desktop;
@@ -108,15 +115,19 @@ name, path, icon, newtab, section, description
 # (before DF24) Draftly,      draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 # (before HOW1) Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: write documents offline - save as PDF or DOCX
 # (before DF25) Writer,       draftly/,             , , Hub Office, Word processor with A4 pages: native .how files - PDF or DOCX
+# (before HOP1) Hub Office,   hub-office/,          , , Hub Office, Start Center: open and launch Writer Spreadsheet Slides Base and Tables
+Hub Office,   hub-office/,          , , Hub Office, Start Center: open and launch Writer Spreadsheet Presentation Base and Tables
 Writer,       writer/,              , , Hub Office, Word processor with A4 pages: native .how files - PDF or DOCX
 # (before HOS1) Spreadsheet,  spreadsheet/,         , , Hub Office, Offline spreadsheet with formulas and styles - CSV import/export and print
 Spreadsheet,  spreadsheet/,         , , Hub Office, Spreadsheet with formulas and styles: native .hos files - CSV or XLSX
 # (before MV1) Invoice Maker, invoice-maker/,         , , Hub Office, GST invoices quotes and receipts - saved on this device and printed as PDF
-Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+# (before HOB1) Base,         base/,                , , Hub Office, Small database app: tables - forms and queries like Access
+Base,         base/,                , , Hub Office, Small database app: native .hob files - tables forms and queries like Access
 # (before HOT1) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database with typed columns - saved on this device
 # (before IC6) Tables,       tables/,              tables/tables_icon.svg, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
 Tables,       tables/,              tables/tables_icon.png, , Hub Office, Simple spreadsheet-style database: native .hot files - CSV import or export
-Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
+# (before HOP1) Slides,       slides/,              , , Hub Office, Make slide decks: a title and bullets on 16:9 slides - present full screen - auto-save and .hslides export
+Presentation, slides/,              , , Hub Office, Make 16:9 presentations: native .hop files - present full screen - PPTX import or export
 # (before MV1) Expense Tracker, expense-tracker/, expense-tracker/expense-tracker_icon.svg, , Hub Office, Track daily spending and income with budgets and charts - all offline
 Notely,       notely/,              , , Write, Plain-text notes that save as you type - open and download .txt
 Sketchbook,   sketchbook/,          sketchbook/sketchbook_icon.png, , Write, Paper sketchbook with 50 pages: draw with finger mouse or pen
@@ -133,24 +144,32 @@ Mail,         mail/,                , , Mail, Simple Gmail client: read and send
 # description (H48c, optional LAST column: one short line under ~90 chars, NO commas; used by Search and hub_appindex.js; empty = none)
 name, path, icon, newtab, section, description
 File Drop,  filedrop/,   , , Share, Send files and photos device to device: scan a QR or type a 4-digit code
-Torrent,   torrent/,   , , Share, Download magnets and .torrent files: save to a folder you pick
+# (before IC9a) Torrent,   torrent/,   , , Share, Download magnets and .torrent files: save to a folder you pick
+Torrent,   torrent/,   torrent/torrent_icon.png, , Share, Download magnets and .torrent files: save to a folder you pick
 QR Scanner, qr-scanner/, , , Share, Scan QR codes and barcodes with the camera or from a photo
 Code Maker, code-maker/, code-maker/code-maker_icon.png, , Share, Make QR codes and barcodes: Wi-Fi - contact - UPI - links - EAN - Code 128
 Whiteboard, whiteboard/, whiteboard/whiteboard_icon.png, , Share, Draw together live on a shared whiteboard with every connected device
 Shared Clipboard, shared-clipboard/, shared-clipboard/clipboard_icon.png, , Share, Copy on one device and paste on another: text links and images
 Multi-Screen Wall, screen-wall/, screen-wall/screenwall_icon.png, , Share, Join phones tablets and PCs into one big screen: picture - clock - scrolling text
 Pooh Chat,  pooh-chat/,  , , Chat, Group text chat for every device on the Hub Connect Code
-Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
+# (before IC9b) Video Chat, video-chat/, , , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
+Video Chat, video-chat/, video-chat/video-chat_icon.png, , Chat, Video and audio calls: one-to-one or groups of up to 4 with screen sharing
 Screen Share, screen-share/, screen-share/screenshare_icon.png, , Chat, Share your computer screen window or tab with phones and other devices
 Intercom, intercom/, intercom/intercom_icon.png, , Chat, Tap-to-talk live voice or video to all devices or one - trusted devices can look in
 Telephone, telephone/, telephone/telephone_icon.png, , Chat, Phone calls between your devices: own numbers - contacts - missed-call badge - Do Not Disturb - video calls
 Messages,  messages/,  messages/messages_icon.png, , Chat, Private one-to-one messages between devices by Hub number - sent directly - history on this device
-Contacts,  contacts/,  contacts/contacts_icon.svg, , Chat, One contact list for Telephone and Messages: search - favourites - call - message - video call
-Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
-Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
+# (before IC9b) Contacts,  contacts/,  contacts/contacts_icon.svg, , Chat, One contact list for Telephone and Messages: search - favourites - call - message - video call
+Contacts,  contacts/,  contacts/contacts_icon.png, , Chat, One contact list for Telephone and Messages: search - favourites - call - message - video call
+# (before IC9a) Live Location, live-location/, live-location/live-location_icon.svg, , Share, See where your devices are on a live map - sharing only while you choose - private code only
+Live Location, live-location/, live-location/live-location_icon.png, , Share, See where your devices are on a live map - sharing only while you choose - private code only
+# (before IC9a) Find My Device, find-device/, find-device/find-device_icon.svg, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
+Find My Device, find-device/, find-device/find-device_icon.png, , Share, Ring or locate a device on the open Hub mesh - needs the app open on that device
+Web Browser, browser/,    browser/browser_icon.png, , Web, Browse the web in tabs: search - bookmarks - history - opens blocked sites in a new tab
 SSH,        ssh/,        , , Remote, SSH terminal in the browser: password login - saved hosts - auto-reconnect
-VNC,        vnc/,        vnc/vnc_icon.svg, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
-Remote,      remote/,        remote/rm_icon.svg, , Remote, One list for all your remote connections: SSH - VNC - SFTP - FTP
+# (before IC9c) VNC,        vnc/,        vnc/vnc_icon.svg, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
+VNC,        vnc/,        vnc/vnc_icon.png, , Remote, Remote desktop in the browser: saved hosts - fit or 1:1 - view only - Ctrl-Alt-Del
+# (before IC9c) Remote,      remote/,        remote/rm_icon.svg, , Remote, One list for all your remote connections: SSH - VNC - SFTP - FTP
+Remote,      remote/,        remote/remote_icon.png, , Remote, One list for all your remote connections: SSH - VNC - SFTP - FTP
 `,
   "Tools": `# Tools — tiles page + Hub menu flyout. This CSV is the source of truth; hub_apps.js is the legacy list (see hub/core/hub_apps.js header).
 # name, path (relative to this folder), icon (empty = <folder>/<folder>_icon.png or a letter tile), newtab (1 = own tab on desktop),
@@ -166,10 +185,12 @@ Sun Position,          sun-position/,    sun-position/sun-position_icon.svg, , T
 My Day,                dashboard/,       , , Time, Personal dashboard: clock - weather - todo - notes - schedule and links
 Weather,               weather-chart/,   , , Weather, Today's hourly temperature chart for Diphu from Open-Meteo
 Weather Hourly,        weather-hourly/,  , , Weather, Hourly weather forecast for Diphu Assam
+Weather Forecast,      weather-forecast/, , , Weather, Live conditions and 7-day outlook plus hourly chart for any place - Open-Meteo
 NE-India Dictionary,   nei-dict/,        , , Language, Northeast India dictionary: look up words in local languages
 Caption for NEI,       caption-for-nei/, , , Language, Live captions for English - Assamese - Hindi - Bengali and Nepali
 Learning HTML (Basic), learning-html/,   , , Learn, Try HTML: type code and see the result live as you type
 Speed Test,            speedtest/,       , , Network, Test your internet speed: ping and download from this site
+Relay,                 relay/,           relay/relay_icon.svg, , Network, Set up and test the Hub relay for Web MCP - SSH - VNC and fetch
 Device Benchmark,      devbench/,        , , Device, Quick speed tests for phones TVs and PCs: CPU GPU memory and AI
 Zip,                   zip/,             , , Files, Make and open zip files offline - optional password and folder extract
 DB Browser,            db-browser/,    , , Files, Browse and query SQLite .db files offline - export CSV and save a copy
@@ -239,7 +260,7 @@ LLM Calculator,     llm-calc/,                    , , Legacy, Plan a tiny LLM: p
 name, path, icon, newtab, section, description
 First Aid,               first-aid/,                 , , Health, First aid basics: CPR - choking - burns - cuts - sprains - fainting and nosebleeds
 Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
-Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian meal plates and see live nutrients with a balanced-plate guide
+Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian and Assam meal plates and plan a week with personal portions and live nutrients with a balanced-plate guide
 Nutrition Calculator,    nutrition-calculator/,      nutrition-calculator/nutrition-calculator_icon.png, , Health, Work out calories and nutrients for your meals
 
 Knife Skills,            knife-skills/,              knife-skills/knife-skills_icon.png, , Cooking, Kitchen knife skills 101: basic cuts and safety tips
@@ -248,6 +269,8 @@ Water Kingdom, 	water-kingdom/, , , Planet, Picture book about water: meet Dropp
 Animal Kingdom, 	animal-kingdom/, , , Planet, Animal picture book: mammals - birds and reptiles with facts and search
 
 Hindi Letters,           hindi-letters/,             , , Language, Hindi alphabet: trace letters - matras - picture words and gentle practice games
+Assamese Letters,        assamese-letters/,          , , Language, Assamese alphabet: trace letters - matras - joined letters - numbers - picture words and gentle practice games
+English Letters,         english-letters/,           , , Language, English alphabet: trace letters - phonics - picture words and gentle practice games
 English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
@@ -260,11 +283,13 @@ Learning HTML (Basic),   ../tools/learning-html/,    , , Coding, Try HTML: type 
 Code School,             code-school/,               , , Coding, Code playground: HTML - CSS - JavaScript with live preview and SQL with a sample database
 Survival and Outdoors,   survival-outdoors/,         , , Outdoors, Outdoor survival basics: making fire and finding safe drinking water
 Camping Checklist,       camping-checklist/,        , , Outdoors, Camping gear lists with weights - trip planner - packing tips and print
+CampCraft School,        campcraft-school/,          campcraft-school/icon.svg, , Outdoors, Camp skills school: tent basics and pitching a tent step by step with progress saved
 Piano Basics,            piano-basics/,              , , Music, Learn piano: play songs step by step or with falling notes - sargam - record
 Guitar Chords,           guitar-chords/,             , , Music, Learn guitar chords: finger charts - strum sound - chord change practice and quiz
 Tuner & Metronome,       tuner-metronome/,           , , Music, Microphone tuner for guitar and voice plus a metronome with tap tempo
 Periodic Table,          periodic-table/,            , , Science, All 118 chemical elements: search - element facts - colour by category and quizzes
 Weather Simulator,       weather-sim/,               weather-sim/weather-sim_icon.png, , Science, Animated weather scene: sky - clouds - rain - snow and fog
+Physics Lab,             physics-lab/,               physics-lab/physics-lab_icon.png, , Science, Physics lab: falling - ramps - bounce - collisions and launch angles with live meters
 Road Safety,             road-safety/,               , , Life Skills, Indian road signs - traffic lights - safe crossing game - road rules and quiz
 History Timeline,       history-timeline/,          , , History, Explore world and Indian history: zoomable timeline - facts - tours and quizzes
 
