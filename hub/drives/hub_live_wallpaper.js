@@ -2,9 +2,12 @@
  * Hub Live Wallpaper engine (hub/drives/hub_live_wallpaper.js)
  * Procedural HTML5 Canvas desktop background engine.
  *
- * Known bug / Won't fix:
- *   - Desktop shell canvas (#hub-live-canvas) remains static in browser environments despite
- *     Settings card previews animating. Tracked as known limitation; do not fix.
+ * // Known bug / Won't fix:   (before H158)
+ * //   - Desktop shell canvas (#hub-live-canvas) remains static in browser environments despite
+ * //     Settings card previews animating. Tracked as known limitation; do not fix.
+ * H158: desktop live wallpaper keeps animating on an empty desktop (same-id set() no longer
+ *   resets state; the loop marks itself paused when it should stop, so checkState can resume;
+ *   maximised windows still pause, except on the other workspace).
  *
  * Presets:
  *   - live:aurora        Harmonic flowing gradient ribbons with drifting luminous shimmer
@@ -314,7 +317,9 @@
     const isDesktop = body && body.classList.contains('wm-desktop');
     const empty = document.getElementById('empty');
     if (!isDesktop && empty && empty.classList.contains('hidden')) return true;
-    if (isDesktop && document.querySelector && document.querySelector('.wm-max:not(.wm-min)')) return true;
+    // if (isDesktop && document.querySelector && document.querySelector('.wm-max:not(.wm-min)')) return true;   (before H158)
+    // H158: a maximised window on the other workspace (.wm-off) must not freeze this one
+    if (isDesktop && document.querySelector && document.querySelector('.wm-max:not(.wm-min):not(.wm-off)')) return true;
     return false;
   }
 
@@ -393,12 +398,24 @@
       cancelAnimationFrame(rafId);
       rafId = null;
     }
-    isPaused = false;
+    // isPaused = false;   (before H158)
     lastFrameTime = performance.now ? performance.now() : Date.now();
     tick();
-    if (!isReducedMotion() && !shouldPause()) {
-      rafId = requestAnimationFrame(frame);
+    // if (!isReducedMotion() && !shouldPause()) {
+    //   rafId = requestAnimationFrame(frame);
+    // }   (before H158)
+    // H158: if we should pause (hidden tab, lock, a maximised window), mark isPaused so
+    // checkState() can resume later. Leaving isPaused false with no rAF froze the first frame.
+    if (isReducedMotion()) {
+      isPaused = false;
+      return;
     }
+    if (shouldPause()) {
+      isPaused = true;
+      return;
+    }
+    isPaused = false;
+    rafId = requestAnimationFrame(frame);
   }
 
   function checkState() {
@@ -430,6 +447,13 @@
     if (!id || !PRESETS[id]) {
       stop();
       return false;
+    }
+    // H158: same preset already on — keep state.t and the running loop (HubPrefs.apply
+    // used to call set() on every prefs change and reset the animation to frame 0).
+    if (id === currentId && canvas && canvas.classList.contains('active')) {
+      canvas.style.display = 'block';
+      checkState();
+      return true;
     }
     currentId = id;
     state = {};
@@ -544,7 +568,9 @@
       mutationObserver = new MutationObserver(() => checkState());
       mutationObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
       if (document.body) {
-        mutationObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        // mutationObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'] });   (before H158)
+        // H158: also watch childList — closing a maximised window is el.remove(), not a class change
+        mutationObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'], childList: true });
       }
     } catch (_) { /* environment without MutationObserver */ }
   }

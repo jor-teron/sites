@@ -101,9 +101,13 @@ function mockDOM(initialClasses = []) {
     getElementById(id) { return elements.get(id) || null; },
     createElement(tag) { return makeEl(tag); },
     querySelector(sel) {
-      if (sel === '.wm-max:not(.wm-min)') {
+      // if (sel === '.wm-max:not(.wm-min)') {   (before H158)
+      if (sel === '.wm-max:not(.wm-min)' || sel === '.wm-max:not(.wm-min):not(.wm-off)') {
         for (const el of elements.values()) {
-          if (el.classList.contains('wm-max') && !el.classList.contains('wm-min')) return el;
+          if (el.classList.contains('wm-max') && !el.classList.contains('wm-min')) {
+            if (sel.indexOf('wm-off') >= 0 && el.classList.contains('wm-off')) continue;
+            return el;
+          }
         }
       }
       return null;
@@ -275,6 +279,80 @@ test('HubLiveWallpaper occlusion detection and auto-pausing', () => {
   maxWin.classList.add('wm-min');
   assert.equal(engine.shouldPause(), false, 'Must resume when maximized window is minimized');
 
+  engine.stop();
+});
+
+test('H158: same-id set() keeps state.t', () => {
+  const { win } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+  const engine = win.HubLiveWallpaper;
+  engine.set('live:aurora');
+  engine.tick();
+  engine.tick();
+  const t = engine.getState().t;
+  assert.ok(t > 0, 't must have advanced before the second set');
+  const ok = engine.set('live:aurora');
+  assert.equal(ok, true);
+  assert.equal(engine.current(), 'live:aurora');
+  assert.equal(engine.getState().t, t, 'same-id set() must not wipe state.t');
+  engine.tick();
+  assert.ok(engine.getState().t > t, 'loop must keep advancing after same-id set()');
+  engine.stop();
+});
+
+test('H158: checkState resumes after a maximised window is removed', () => {
+  const { win, doc, elements, makeEl } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+  const engine = win.HubLiveWallpaper;
+  engine.set('live:aurora');
+  assert.equal(engine.isPaused(), false);
+
+  const maxWin = makeEl('div', 'win-max', ['wm-win', 'wm-max']);
+  elements.set('win-max', maxWin);
+  doc.body.appendChild(maxWin);
+  engine.checkState();
+  assert.equal(engine.shouldPause(), true);
+  assert.equal(engine.isPaused(), true);
+
+  // Close: element is removed (wm_windows.js close() uses el.remove()), not class-toggled
+  const i = doc.body.children.indexOf(maxWin);
+  if (i >= 0) doc.body.children.splice(i, 1);
+  elements.delete('win-max');
+  assert.equal(engine.shouldPause(), false);
+  engine.checkState();
+  assert.equal(engine.isPaused(), false, 'checkState must resume once the maximised window is gone');
+  assert.equal(engine.isRunning(), true);
+
+  engine.stop();
+});
+
+test('H158: startLoop marks isPaused when it should pause, so checkState can resume', () => {
+  const { win, doc } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+  const engine = win.HubLiveWallpaper;
+  doc.hidden = true;
+  engine.set('live:aurora');
+  assert.equal(engine.isPaused(), true, 'boot while hidden must leave isPaused true (not a dead loop)');
+  doc.hidden = false;
+  engine.checkState();
+  assert.equal(engine.isPaused(), false);
+  assert.equal(engine.isRunning(), true);
+  engine.stop();
+});
+
+test('H158: a maximised window on the other workspace does not pause', () => {
+  const { win, doc, elements, makeEl } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+  const engine = win.HubLiveWallpaper;
+  engine.set('live:aurora');
+  const maxWin = makeEl('div', 'win-max', ['wm-win', 'wm-max', 'wm-off']);
+  elements.set('win-max', maxWin);
+  doc.body.appendChild(maxWin);
+  assert.equal(engine.shouldPause(), false, 'wm-off maximised window must be ignored');
   engine.stop();
 });
 

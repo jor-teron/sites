@@ -51,7 +51,11 @@
       const idOf = (v) => (/^mine/.test(v) ? 'mine' : v);
       const pick = (v) => {
         // S.set('wallpaper', v === 'night' ? '' : v);   (before H104)
-        S.set('wallpaper', v === def() ? '' : v);   // H104: the theme's default is saved as '' (so Night under XP is kept)
+        // S.set('wallpaper', v === def() ? '' : v);   // H104: the theme's default is saved as '' (so Night under XP is kept)   (before H158)
+        // H158: opening the Wallpaper section called pick(cur()) and re-wrote the same key,
+        // which re-applied prefs and reset the desktop live wallpaper to the first frame.
+        const save = v === def() ? '' : v;
+        if (S.get('wallpaper') !== save) S.set('wallpaper', save);
         paint(preview, window.hubWallpaper(v));
         pane.querySelectorAll('.wp-thumb').forEach((t) => t.classList.toggle('on', t.dataset.id === idOf(v)));
         custom.classList.toggle('on', /^#/.test(v));
