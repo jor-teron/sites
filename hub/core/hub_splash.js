@@ -20,13 +20,16 @@
  * Pref: sites-hub.bootSplash, on by default; '0' = off (Settings › Look › Show boot splash).
  *
  * API: window.HubSplash (also module.exports in Node): shouldShow, canDismiss,
- *   showStillLoading, progressFraction, isReady, prefEnabled, sessionTotal, MIN_MS,
- *   STILL_MSG, onDesktopStarted, state.
+ *   showStillLoading, progressFraction, isReady, prefEnabled, sessionTotal, isAppDocument,
+ *   MIN_MS, SHOW_MIN_MS, STILL_MSG, onDesktopStarted, state.
+ * H159a: a window counts only once its iframe has the app document (not about:blank).
+ *   The splash stays at least 3 s even if ready earlier.
  */
 (function (global) {
   'use strict';
 
   const MIN_MS = 10000;
+  const SHOW_MIN_MS = 3000; // H159a: never fade before 3 s, even if ready earlier
   const STILL_MSG = 'Still loading\u2026 press any key to continue';
 
   function prefEnabled(v) {
@@ -43,13 +46,27 @@
   }
 
   /**
-   * Ready → may go (auto fade, even before minMs).
-   * Not ready → only after minMs (user key/click); never auto.
+   * Ready → auto fade only after showMinMs (H159a: 3 s; was immediate before H159a).
+   * Not ready → only after minMs (10 s, user key/click); never auto.
    */
-  function canDismiss(elapsedMs, ready, minMs) {
-    const min = minMs == null ? MIN_MS : minMs;
-    if (ready) return true;
-    return elapsedMs >= min;
+  // function canDismiss(elapsedMs, ready, minMs) {
+  //   const min = minMs == null ? MIN_MS : minMs;
+  //   if (ready) return true;
+  //   return elapsedMs >= min;
+  // }   (before H159a)
+  function canDismiss(elapsedMs, ready, minMs, showMinMs) {
+    const skip = minMs == null ? MIN_MS : minMs;
+    const show = showMinMs == null ? SHOW_MIN_MS : showMinMs;
+    if (ready) return elapsedMs >= show;
+    return elapsedMs >= skip;
+  }
+
+  /** href of the iframe document: about:blank is not the app. crossOrigin (load event, unreadable) = loaded. */
+  function isAppDocument(href, crossOrigin) {
+    if (crossOrigin) return true;
+    if (!href) return false;
+    const h = String(href);
+    return h !== 'about:blank' && h !== 'about:srcdoc' && h.indexOf('about:blank') !== 0;
   }
 
   function showStillLoading(elapsedMs, ready, minMs) {
@@ -80,7 +97,9 @@
 
   const api = {
     MIN_MS: MIN_MS,
+    SHOW_MIN_MS: SHOW_MIN_MS,
     STILL_MSG: STILL_MSG,
+    isAppDocument: isAppDocument,
     prefEnabled: prefEnabled,
     shouldShow: shouldShow,
     canDismiss: canDismiss,
@@ -261,14 +280,30 @@
         if (loaded.has(w.id)) continue;
         const f = w.frame;
         if (!f) continue;
-        let complete = false;
+        // let complete = false;
+        // try {
+        //   complete = !!(f.src && f.src !== 'about:blank' && f.contentDocument && f.contentDocument.readyState === 'complete');
+        // } catch (_) { complete = false; }
+        // if (complete) { noteLoaded(w.id); continue; }
+        // f.addEventListener('load', function () { noteLoaded(w.id); }, { once: true });   (before H159a)
+        // H159a: the initial about:blank document is already complete; only the app document counts.
+        // A cross-origin load event means it is loaded (we cannot read location.href).
+        let hasApp = false;
         try {
-          complete = !!(f.src && f.src !== 'about:blank' && f.contentDocument && f.contentDocument.readyState === 'complete');
-        } catch (_) { complete = false; }
-        if (complete) { noteLoaded(w.id); continue; }
+          const href = (f.contentWindow && f.contentWindow.location && f.contentWindow.location.href) || '';
+          hasApp = isAppDocument(href, false);
+        } catch (_) { hasApp = false; }   // not yet a load event — do not count CORS until 'load'
+        if (hasApp) { noteLoaded(w.id); continue; }
         if (f.getAttribute && f.getAttribute('data-hub-splash-watch') === '1') continue;
         if (f.setAttribute) f.setAttribute('data-hub-splash-watch', '1');
-        f.addEventListener('load', function () { noteLoaded(w.id); }, { once: true });
+        f.addEventListener('load', function onLoad() {
+          let ok = false;
+          try {
+            const href = (f.contentWindow && f.contentWindow.location && f.contentWindow.location.href) || '';
+            ok = isAppDocument(href, false);
+          } catch (_) { ok = isAppDocument('', true); }   // cross-origin load event = loaded
+          if (ok) { f.removeEventListener('load', onLoad); noteLoaded(w.id); }
+        });
       }
       // A window closed mid-restore (gone app) must not hold the bar open
       if (coreReady) {
