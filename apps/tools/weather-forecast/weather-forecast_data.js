@@ -129,6 +129,21 @@ var WXData = (function () {
     };
   }
 
+  function nextHours(hours, at, count) {
+    var today = (at || "").slice(0, 10);
+    var nowH = parseInt((at || "").slice(11, 13), 10);
+    var start = -1, i;
+    for (i = 0; i < (hours || []).length; i++) {
+      if (hours[i].time.slice(0, 10) === today &&
+          parseInt(hours[i].time.slice(11, 13), 10) >= nowH) {
+        start = i;
+        break;
+      }
+    }
+    if (start < 0) return [];
+    return hours.slice(start, start + count);
+  }
+
   function load(force) {
     var cached = readCache();
     var fresh = cached && !WXFormat.isStale(cached.savedAt, Date.now(), CFG.cache.maxAge);
@@ -156,5 +171,6 @@ var WXData = (function () {
     readCache: readCache,
     buildUrl: buildUrl,
     normalize: normalize,
+    nextHours: nextHours,
   };
 })();

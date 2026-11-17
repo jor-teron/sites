@@ -72,6 +72,11 @@ const WEATHER_FORECAST_CONFIG = {
     today: "Today",
     chartTitle: "Today, hour by hour",
     chartAlt: "Temperature through today",
+    hoursTitle: "Next 12 hours",
+    gusts: "Gusts",
+    rainNow: "Rain now",
+    sunrise: "Sunrise",
+    sunset: "Sunset",
   },
 
   // Today's curve
