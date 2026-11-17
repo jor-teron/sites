@@ -17,6 +17,7 @@ var WXData = (function () {
       "?latitude=" + CFG.location.latitude +
       "&longitude=" + CFG.location.longitude +
       "&current=" + CFG.api.current.join(",") +
+      "&hourly=" + CFG.api.hourly.join(",") +
       "&daily=" + CFG.api.daily.join(",") +
       "&timezone=" + encodeURIComponent(CFG.api.timezone);
   }
@@ -93,6 +94,17 @@ var WXData = (function () {
       });
     }
 
+    // Hourly series for today's curve (time, temperature, code, rain chance)
+    var hr = (raw && raw.hourly) || {};
+    var hTimes = hr.time || [];
+    var hTemp = hr.temperature_2m || [];
+    var hCode = hr.weather_code || [];
+    var hRain = hr.precipitation_probability || [];
+    var hours = [];
+    for (var j = 0; j < hTimes.length; j++) {
+      hours.push({ time: hTimes[j], temp: hTemp[j], code: hCode[j], rain: hRain[j] });
+    }
+
     return {
       place: CFG.location.name,
       timezone: raw.timezone || "",
@@ -109,6 +121,7 @@ var WXData = (function () {
       },
       today: { code: codes[0], hi: hi[0], lo: lo[0] },
       days: days,
+      hours: hours,
       units: {
         temp: cu.temperature_2m || CFG.units.temp,
         wind: cu.wind_speed_10m || CFG.units.wind,

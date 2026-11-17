@@ -26,6 +26,7 @@ const WEATHER_FORECAST_CONFIG = {
       "wind_direction_10m",
       "is_day",
     ],
+    hourly: ["temperature_2m", "weather_code", "precipitation_probability"],
     daily: [
       "weather_code",
       "temperature_2m_max",
@@ -39,9 +40,9 @@ const WEATHER_FORECAST_CONFIG = {
   },
 
   // Cache: shows the last reading instantly and offline. 10 minutes is "fresh".
-  // v2: adds the daily array; the key bump drops the WX1a shape.
+  // v3: adds the hourly array.
   cache: {
-    key: "sites-hub.weather-forecast.v2",
+    key: "sites-hub.weather-forecast.v3",
     maxAge: 10 * 60 * 1000,
   },
 
@@ -69,5 +70,18 @@ const WEATHER_FORECAST_CONFIG = {
     showAll: "Show all 7 days",
     showLess: "Show fewer days",
     today: "Today",
+    chartTitle: "Today, hour by hour",
+    chartAlt: "Temperature through today",
+  },
+
+  // Today's curve
+  chart: {
+    height: 190,
+    padTop: 26,
+    padRight: 14,
+    padBottom: 26,
+    padLeft: 14,
+    labelEvery: 3,      // hours between axis labels
+    tempMargin: 1.5,    // degrees above/below the curve
   },
 };

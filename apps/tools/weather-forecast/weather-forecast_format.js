@@ -108,6 +108,16 @@ var WXFormat = (function () {
     return Math.round(v <= 1 ? v * 100 : v) + "%";
   }
 
+  // "2026-11-17T15:00" -> "3 PM"
+  function hourLabel(iso) {
+    if (typeof iso !== "string" || iso.length < 13) return "";
+    var h = parseInt(iso.slice(11, 13), 10);
+    if (isNaN(h)) return "";
+    var ap = h < 12 ? "AM" : "PM";
+    var h12 = h % 12 === 0 ? 12 : h % 12;
+    return h12 + " " + ap;
+  }
+
   return {
     wmo: wmo,
     roundTemp: roundTemp,
@@ -120,6 +130,7 @@ var WXFormat = (function () {
     windText: windText,
     weekday: weekday,
     pct: pct,
+    hourLabel: hourLabel,
   };
 })();
 

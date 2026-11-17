@@ -1,7 +1,7 @@
 /*
- * Weather Forecast — page logic (WX1b).
- * Paints current conditions and the 7-day forecast; handles loading, error, offline and refresh.
- * WX1c adds the hourly curve, WX1d the 12-hour strip and detail chips.
+ * Weather Forecast — page logic (WX1c).
+ * Paints current conditions, the 7-day forecast and today's hourly curve; handles loading,
+ * error, offline and refresh. WX1d adds the 12-hour strip and detail chips.
  */
 var WXApp = (function () {
   "use strict";
@@ -89,6 +89,166 @@ var WXApp = (function () {
     return head + CLOUD + "</svg>";
   }
 
+  /* ---- today's curve ---- */
+
+  var drawQueued = false;
+
+  function scheduleDraw() {
+    if (drawQueued) return;
+    drawQueued = true;
+    window.requestAnimationFrame(function () {
+      drawQueued = false;
+      drawChart();
+    });
+  }
+
+  function hexA(hex, a) {
+    var h = (hex || "").replace("#", "");
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) return "rgba(47, 111, 237, " + a + ")";
+    var n = parseInt(h, 16);
+    return "rgba(" + ((n >> 16) & 255) + ", " + ((n >> 8) & 255) + ", " + (n & 255) + ", " + a + ")";
+  }
+
+  function chartHours(data) {
+    var today = (data.at || "").slice(0, 10);
+    var out = [], i, h;
+    for (i = 0; i < (data.hours || []).length; i++) {
+      h = data.hours[i];
+      if (typeof h.temp === "number" && h.time.slice(0, 10) === today) out.push(h);
+    }
+    return out;
+  }
+
+  function drawChart() {
+    var data = last && last.data;
+    if (!data) return;
+    var pts = chartHours(data);
+    if (pts.length < 2) {
+      el.chartCard.hidden = true;
+      return;
+    }
+    el.chartCard.hidden = false;
+
+    var C = CFG.chart;
+    var canvas = el.canvas;
+    var ctx = canvas.getContext("2d");
+    var cssW = canvas.clientWidth || el.chartCard.clientWidth;
+    var cssH = C.height;
+    if (!cssW) {
+      window.requestAnimationFrame(drawChart);
+      return;
+    }
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.height = cssH + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    var root = getComputedStyle(document.documentElement);
+    var accent = root.getPropertyValue("--accent").trim() || "#2f6fed";
+    var ink = root.getPropertyValue("--muted").trim() || "#5d6b7d";
+    var lineCol = root.getPropertyValue("--line").trim() || "#dde4ee";
+
+    var plotW = cssW - C.padLeft - C.padRight;
+    var plotH = cssH - C.padTop - C.padBottom;
+    var temps = pts.map(function (p) { return p.temp; });
+    var lo = Math.min.apply(null, temps) - C.tempMargin;
+    var hi = Math.max.apply(null, temps) + C.tempMargin;
+    var span = Math.max(hi - lo, 1);
+    var x = function (i) { return C.padLeft + (i / (pts.length - 1)) * plotW; };
+    var y = function (t) { return C.padTop + ((hi - t) / span) * plotH; };
+
+    function trace() {
+      ctx.beginPath();
+      ctx.moveTo(x(0), y(pts[0].temp));
+      for (var i = 0; i < pts.length - 1; i++) {
+        var xc = (x(i) + x(i + 1)) / 2;
+        var yc = (y(pts[i].temp) + y(pts[i + 1].temp)) / 2;
+        ctx.quadraticCurveTo(x(i), y(pts[i].temp), xc, yc);
+      }
+      ctx.lineTo(x(pts.length - 1), y(pts[pts.length - 1].temp));
+    }
+
+    // baseline
+    ctx.strokeStyle = lineCol;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(C.padLeft, cssH - C.padBottom + 0.5);
+    ctx.lineTo(cssW - C.padRight, cssH - C.padBottom + 0.5);
+    ctx.stroke();
+
+    // soft fill under the curve
+    trace();
+    ctx.lineTo(x(pts.length - 1), cssH - C.padBottom);
+    ctx.lineTo(x(0), cssH - C.padBottom);
+    ctx.closePath();
+    var grad = ctx.createLinearGradient(0, C.padTop, 0, cssH - C.padBottom);
+    grad.addColorStop(0, hexA(accent, 0.3));
+    grad.addColorStop(1, hexA(accent, 0.02));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // curve
+    trace();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.stroke();
+
+    // "now" marker
+    var nowH = parseFloat((data.at || "").slice(11, 13)) + parseFloat((data.at || "").slice(14, 16)) / 60;
+    var firstH = parseFloat(pts[0].time.slice(11, 13));
+    var lastH = parseFloat(pts[pts.length - 1].time.slice(11, 13));
+    var nx = null;
+    if (isFinite(nowH) && lastH > firstH) {
+      nx = C.padLeft + ((nowH - firstH) / (lastH - firstH)) * plotW;
+      if (nx < C.padLeft || nx > cssW - C.padRight) nx = null;
+      if (nx !== null) {
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = accent;
+        ctx.beginPath();
+        ctx.moveTo(nx, C.padTop - 8);
+        ctx.lineTo(nx, cssH - C.padBottom);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // hour and temperature labels every few hours, skipping any that would overlap
+    ctx.font = '11px system-ui, -apple-system, "Segoe UI", sans-serif';
+    ctx.textBaseline = "alphabetic";
+    var rows = "", k, hh, label, tw, left, cx, lastRight = -1e9;
+    for (k = 0; k < pts.length; k++) {
+      hh = parseInt(pts[k].time.slice(11, 13), 10);
+      rows += "<tr><td>" + WXFormat.hourLabel(pts[k].time) + "</td><td>" + WXFormat.fmtTemp(pts[k].temp) + "</td></tr>";
+      if (hh % C.labelEvery !== 0) continue;
+
+      label = WXFormat.hourLabel(pts[k].time);
+      tw = ctx.measureText(label).width;
+      cx = x(k);
+      left = Math.max(cx - tw / 2, 2);
+      if (left < lastRight + 6) continue;
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = ink;
+      ctx.fillText(label, left, cssH - C.padBottom + 16);
+      lastRight = left + tw;
+
+      // keep the temperature clear of the "now" line
+      if (nx === null || Math.abs(cx - nx) > 16) {
+        ctx.textAlign = "center";
+        ctx.fillText(WXFormat.fmtTemp(pts[k].temp), cx, y(pts[k].temp) - 8);
+      }
+    }
+    el.chartTable.innerHTML = rows;
+  }
+
   /* ---- state ---- */
 
   function setBusy(on) {
@@ -105,6 +265,7 @@ var WXApp = (function () {
   function showError(msg) {
     el.nowCard.hidden = true;
     el.daysCard.hidden = true;
+    el.chartCard.hidden = true;
     el.errorCard.hidden = false;
     el.errorText.textContent = msg;
     setStatus("", "");
@@ -159,6 +320,7 @@ var WXApp = (function () {
     el.wind.textContent = WXFormat.windText(now.wind, now.dir, d.units.wind);
 
     renderDays(d.days);
+    drawChart();
 
     if (res.stale) {
       setStatus(T.offline + " " + WXFormat.freshness(Date.now() - res.savedAt) + ".", "warn");
@@ -202,6 +364,9 @@ var WXApp = (function () {
     el.daysCard = $("daysCard");
     el.dayList = $("dayList");
     el.moreDays = $("moreDays");
+    el.chartCard = $("chartCard");
+    el.canvas = $("tempChart");
+    el.chartTable = $("chartTable");
     el.errorCard = $("errorCard");
     el.errorText = $("errorText");
     el.refresh = $("refresh");
@@ -228,6 +393,10 @@ var WXApp = (function () {
         refresh(true);
       }
     });
+
+    window.addEventListener("resize", scheduleDraw);
+    if (window.ResizeObserver) new ResizeObserver(scheduleDraw).observe(el.chartCard);
+    if (window.HubTheme && HubTheme.onChange) HubTheme.onChange(scheduleDraw);
 
     refresh(false);
   }
