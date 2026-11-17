@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- (before BS12) <title>Base BS11</title> -->
   <!-- (before BS11) <title>Base BS10</title> -->
   <!-- (before BS10) <title>Base HOB1</title> -->
-  <title>Base BS11</title><!-- legacy: <title>Base BS10</title> -->
+  <title>Base BS12</title><!-- legacy: <title>Base BS11</title> -->
   <!-- BS1-BS9 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
@@ -16,9 +17,10 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
+  <!-- (before BS12) base.css?v=BS11 and every script ?v=BS11 -->
   <!-- (before BS11) base.css?v=BS10 and every script ?v=BS10 -->
   <!-- (before BS10) base.css?v=HOB1 and every script ?v=HOB1 -->
-  <link rel="stylesheet" href="base.css?v=BS11">
+  <link rel="stylesheet" href="base.css?v=BS12">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -46,6 +48,8 @@
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx"><span>Export Excel…</span></button>
+    <!-- (before BS12) no Export .odb -->
+    <button type="button" class="file-item" role="menuitem" id="btn-export-odb"><span>Export .odb…</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-send-sheet"><span>Send to Spreadsheet</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
     <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
@@ -166,29 +170,30 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=BS11"></script>
+  <script src="modules/base-quick.js?v=BS12"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=BS11"></script>
-  <script src="modules/base-history.js?v=BS11"></script>
-  <script src="modules/base-store.js?v=BS11"></script>
-  <script src="modules/base-links.js?v=BS11"></script>
-  <script src="modules/base-pics.js?v=BS11"></script>
-  <script src="modules/base-csv.js?v=BS11"></script>
-  <script src="modules/base_odb.js?v=BS11"></script>
-  <script src="modules/base-files.js?v=BS11"></script>
-  <script src="modules/base_hob.js?v=BS11"></script>
-  <script src="modules/base-grid.js?v=BS11"></script>
-  <script src="modules/base-form.js?v=BS11"></script>
-  <script src="modules/base-fields.js?v=BS11"></script>
-  <script src="modules/base-query.js?v=BS11"></script>
-  <script src="modules/base-view.js?v=BS11"></script>
-  <script src="modules/base-report.js?v=BS11"></script>
-  <script src="modules/base-delete.js?v=BS11"></script>
-  <script src="modules/base-ui.js?v=BS11"></script>
-  <script src="modules/base_hub.js?v=BS11"></script>
+  <script src="modules/base-types.js?v=BS12"></script>
+  <script src="modules/base-history.js?v=BS12"></script>
+  <script src="modules/base-store.js?v=BS12"></script>
+  <script src="modules/base-links.js?v=BS12"></script>
+  <script src="modules/base-pics.js?v=BS12"></script>
+  <script src="modules/base-csv.js?v=BS12"></script>
+  <script src="modules/base_odb.js?v=BS12"></script>
+  <script src="modules/base_odbgen.js?v=BS12"></script>
+  <script src="modules/base-files.js?v=BS12"></script>
+  <script src="modules/base_hob.js?v=BS12"></script>
+  <script src="modules/base-grid.js?v=BS12"></script>
+  <script src="modules/base-form.js?v=BS12"></script>
+  <script src="modules/base-fields.js?v=BS12"></script>
+  <script src="modules/base-query.js?v=BS12"></script>
+  <script src="modules/base-view.js?v=BS12"></script>
+  <script src="modules/base-report.js?v=BS12"></script>
+  <script src="modules/base-delete.js?v=BS12"></script>
+  <script src="modules/base-ui.js?v=BS12"></script>
+  <script src="modules/base_hub.js?v=BS12"></script>
 </body>
 </html>
