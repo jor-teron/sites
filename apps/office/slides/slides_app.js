@@ -29,13 +29,17 @@
    HOP1: the app is now Presentation; files save as .hop (old .hslides files still open). No JSON format bump.
    SL11: File → Save / Save As and Ctrl+S (and the Quick Access Save button) flush the localStorage
      working copy and write or update the bound .hop file through slides_hop.js (OfficeNative).
-     Export .hop and the in-browser deck list stay as they are. No JSON format bump. */
+     Export .hop and the in-browser deck list stay as they are. No JSON format bump.
+   PN1: File → Import .pptx / .odp… (or drop a .odp, or a Hub #drive=&file= link ending .odp)
+     opens a LibreOffice presentation through slides_odp.js (SLOdp + SLZip). Saving stays .hop.
+     No JSON format bump. */
 (function () {
   'use strict';
   /* (before SL10) var VERSION = 'SL9'; */
   /* (before HOP1) var VERSION = 'SL10'; */
   /* (before SL11) var VERSION = 'HOP1'; */
-  var VERSION = 'SL11';   /* legacy: 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  /* (before PN1) var VERSION = 'SL11'; */
+  var VERSION = 'PN1';   /* legacy: 'SL11' · 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -346,7 +350,8 @@
     });
   }
   function importFile(file) {
-    if (isPptx(file)) { importPptxFile(file); return; }
+    /* (before PN1) if (isPptx(file)) { importPptxFile(file); return; } */
+    if (isPptx(file) || isOdp(file)) { importPptxFile(file); return; }
     SLFile.read(file).then(function (r) {
       if (r.error) { dialog({ title: 'Could not import', msg: r.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] }); return; }
       importParsed(r).then(function (d) { toast('Imported “' + d.name + '” (' + d.slides.length + (d.slides.length === 1 ? ' slide)' : ' slides)') + (r.cut ? ', first 500 kept' : ''), 2600); });
@@ -356,6 +361,11 @@
     var n = ((file && file.name) || '').toLowerCase();
     var t = ((file && file.type) || '').toLowerCase();
     return /\.pptx$/.test(n) || t.indexOf('presentationml') >= 0;
+  }
+  function isOdp(file) {
+    var n = ((file && file.name) || '').toLowerCase();
+    var t = ((file && file.type) || '').toLowerCase();
+    return /\.odp$/.test(n) || t.indexOf('opendocument.presentation') >= 0;
   }
   function readBuf(file) {
     if (file && file.arrayBuffer) return file.arrayBuffer().then(function (b) { return new Uint8Array(b); });
@@ -397,16 +407,23 @@
     });
   }
   function importPptxFile(file) {
+    var odp = isOdp(file);
+    var kind = odp ? 'LibreOffice presentation' : 'PowerPoint';
     return readBuf(file).then(function (buf) {
       return SLZip.unpackSmart(buf);
     }).then(function (un) {
       if (un.error) {
-        dialog({ title: 'Could not import PowerPoint', msg: un.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+        var msg = un.error;
+        if (odp && /PowerPoint file is compressed/.test(msg)) {
+          msg = 'This presentation is compressed and the zip library could not be loaded.';
+        }
+        dialog({ title: 'Could not import ' + kind, msg: msg, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
         return;
       }
-      var parsed = SLPptx.parse(un.files);
+      /* (before PN1) var parsed = SLPptx.parse(un.files); */
+      var parsed = odp ? SLOdp.parse(un.files) : SLPptx.parse(un.files);
       if (parsed.error) {
-        dialog({ title: 'Could not import PowerPoint', msg: parsed.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+        dialog({ title: 'Could not import ' + kind, msg: parsed.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
         return;
       }
       var r = { deck: parsed.deck };
@@ -418,7 +435,24 @@
         toast(lead, 2600);
       });
     }).catch(function (e) {
-      dialog({ title: 'Could not import PowerPoint', msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+      dialog({ title: 'Could not import ' + kind, msg: (e && e.message) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+    });
+  }
+  function openImportFromHash() {
+    if (!window.FsRef || typeof window.FsRef.parse !== 'function' || !window.location) return Promise.resolve(false);
+    var ref = window.FsRef.parse(window.location.hash);
+    if (!ref || !ref.name || !/\.(odp|pptx)$/i.test(ref.name)) return Promise.resolve(false);
+    if (typeof window.FsRef.resolve !== 'function') return Promise.resolve(false);
+    return window.FsRef.resolve(ref).then(function (got) {
+      var handle = got && (got.file || got.handle || got);
+      if (!handle || typeof handle.getFile !== 'function') return false;
+      return handle.getFile().then(function (file) {
+        return importPptxFile(file).then(function () { return true; });
+      });
+    }).catch(function (e) {
+      var odp = /\.odp$/i.test(ref.name);
+      dialog({ title: 'Could not import ' + (odp ? 'LibreOffice presentation' : 'PowerPoint'), msg: (e && (e.userMessage || e.message)) || String(e), buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+      return false;
     });
   }
   function exportPng() {
@@ -1165,7 +1199,8 @@
       if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) at = { x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc };
       insertPicture(f, at); return;
     }
-    if (isPptx(f) || SLFile.isDeckName(f.name)) importFile(f);
+    /* (before PN1) if (isPptx(f) || SLFile.isDeckName(f.name)) importFile(f); */
+    if (isPptx(f) || isOdp(f) || SLFile.isDeckName(f.name)) importFile(f);
   });
   addEventListener('keydown', function (e) {
     if (SLShow.on()) return;
@@ -1330,7 +1365,8 @@
     }
     if (window.SLHop) {
       SLHop.bind();
-      SLHop.openFromHash();
+      /* (before PN1) SLHop.openFromHash(); */
+      SLHop.openFromHash().then(function (ok) { if (!ok) return openImportFromHash(); });
       addEventListener('pagehide', autosaveHop);
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') autosaveHop();

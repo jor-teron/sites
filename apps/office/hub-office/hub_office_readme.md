@@ -28,7 +28,8 @@ Files dropped or selected automatically open in a dedicated tab running the matc
 <!-- (before DW7) - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`, `.pdf` -->
 - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`
 - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.csv`, `.tsv`
-- **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.ppt`
+<!-- (before PN1) - **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.ppt` -->
+- **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.odp`
 - **Base**: `.hob` (native backup; `.hbase` still opens), `.base`, `.db`, `.sqlite`
 - **Tables**: `.hot` (native), `.csv`
 
