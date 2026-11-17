@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261118b';
-const CACHE = 'hub-shell-v180';  // 2026-11-18b: Boot splash waits for apps to load, minimum 3 s
+const V = '20261118c';
+const CACHE = 'hub-shell-v181';  // 2026-11-18c: Files: Base and Presentation file icons
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -78,7 +78,9 @@ const SHELL = [
   'shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css',   // H153: App Hub search box works offline too
   'apps/system/files/files_icon.png', 'apps/system/disk/disk_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
   /* (before DF25) 'apps/office/draftly/draftly_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg', */  // H148
-  'apps/office/writer/writer_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg',   // H148: Files Office format thumbnails (.how / .hos / .hot)
+  /* (before H161) 'apps/office/writer/writer_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg',   // H148: Files Office format thumbnails (.how / .hos / .hot) */
+  'apps/office/writer/writer_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg',   // H148
+  'apps/office/base/base_icon.png', 'apps/office/slides/slides_icon.png',   // H161: Files Base / Presentation file icons
   'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
   'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'apps/learn/learn-apps.csv', 'apps/system/system-apps.csv', 'hub/version.txt',
   'hub/update/hub_offline.html',

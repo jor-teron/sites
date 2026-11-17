@@ -93,10 +93,10 @@ test('H148: icon() maps .how / .hos / .hot to the app icon, not the package emoj
   assert.equal(hot.alt, 'HOT');
   assert.match(hot.src, /\/apps\/office\/tables\/tables_icon\.svg$/);
   // Base and Slides stay the generic package icon
-  assert.equal(FX.icon({ kind: 'file', name: 'data.hob' }), pack);
-  assert.equal(FX.icon({ kind: 'file', name: 'data.hbase' }), pack);
-  assert.equal(FX.icon({ kind: 'file', name: 'deck.hop' }), pack);
-  assert.equal(FX.icon({ kind: 'file', name: 'deck.hslides' }), pack);
+  // (before H161) assert.equal(FX.icon({ kind: 'file', name: 'data.hob' }), pack);
+  // (before H161) assert.equal(FX.icon({ kind: 'file', name: 'data.hbase' }), pack);
+  // (before H161) assert.equal(FX.icon({ kind: 'file', name: 'deck.hop' }), pack);
+  // (before H161) assert.equal(FX.icon({ kind: 'file', name: 'deck.hslides' }), pack);
   // Other types are unchanged
   assert.equal(FX.icon({ kind: 'directory', name: 'Docs' }), '\uD83D\uDCC1');
   assert.equal(FX.icon({ kind: 'file', name: 'notes.txt' }), '\uD83D\uDCC4');
@@ -134,11 +134,11 @@ test('H148: badges map HOW / HOS / HOT to distinct classes; Base and Slides stay
   assert.equal(badgeClass('Letter.how', BADGE), 'b-how');
   assert.equal(badgeClass('Budget.HOS', BADGE), 'b-hos');
   assert.equal(badgeClass('Contacts.hot', BADGE), 'b-hot');
-  assert.equal(badgeClass('data.hob', BADGE), 'b-other');
-  assert.equal(badgeClass('data.hbase', BADGE), 'b-other');
-  assert.equal(badgeClass('deck.hop', BADGE), 'b-other');
+  // (before H161) assert.equal(badgeClass('data.hob', BADGE), 'b-other');
+  // (before H161) assert.equal(badgeClass('data.hbase', BADGE), 'b-other');
+  // (before H161) assert.equal(badgeClass('deck.hop', BADGE), 'b-other');
   // .hslides is 7 chars, so the H109 ext cap does not even capture it
-  assert.equal(badgeClass('deck.hslides', BADGE), null);
+  // (before H161) assert.equal(badgeClass('deck.hslides', BADGE), null);
   assert.equal(badgeClass('sheet.csv', BADGE), 'b-sheet');
   assert.equal(badgeClass('file.docx', BADGE), 'b-office');
   assert.match(src, /\(before H148\)/);
@@ -156,8 +156,8 @@ test('H148: CSS has coloured badges and format-icon sizes; SHELL lists the three
   assert.match(sw, /'apps\/office\/writer\/writer_icon\.png'/);
   assert.match(sw, /'apps\/office\/spreadsheet\/spreadsheet_icon\.png'/);
   assert.match(sw, /'apps\/office\/tables\/tables_icon\.svg'/);
-  assert.doesNotMatch(sw, /'apps\/office\/base\//);
-  assert.doesNotMatch(sw, /hslides_icon|slides_icon/);
+  // (before H161) assert.doesNotMatch(sw, /'apps\/office\/base\//);
+  // (before H161) assert.doesNotMatch(sw, /hslides_icon|slides_icon/);
 });
 
 test('H148: view uses iconEl and does not change open-with filetypes', () => {

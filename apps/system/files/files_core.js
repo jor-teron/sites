@@ -55,12 +55,19 @@ window.FX = (function () {
     return '';
   }
   // H148: Writer / Spreadsheet / Tables native files use the app icon (<img>), not the package emoji.
+  // H161: Base (.hob / .hbase / .odb) and Presentation (.hop / .hslides / .odp) use their app icons too.
   // Paths are site-root relative, resolved from Files (apps/system/files/, no <base href>).
   const OFFICE_ICON = {
     /* (before DF25) how: 'apps/office/draftly/draftly_icon.png', */
     how: 'apps/office/writer/writer_icon.png',
     hos: 'apps/office/spreadsheet/spreadsheet_icon.png',
-    hot: 'apps/office/tables/tables_icon.svg'
+    hot: 'apps/office/tables/tables_icon.svg',
+    hob: 'apps/office/base/base_icon.png',
+    hbase: 'apps/office/base/base_icon.png',
+    odb: 'apps/office/base/base_icon.png',
+    hop: 'apps/office/slides/slides_icon.png',
+    hslides: 'apps/office/slides/slides_icon.png',
+    odp: 'apps/office/slides/slides_icon.png'
   };
   function officeIconUrl(rel) {
     try { return new URL('../../../' + rel, (typeof document !== 'undefined' && document.baseURI) || location.href).href; }
@@ -76,7 +83,8 @@ window.FX = (function () {
     if (/\.(zip|7z|rar|gz|tar)$/i.test(e.name)) return '\uD83D\uDDDC\uFE0F';
     if (/\.pdf$/i.test(e.name)) return '\uD83D\uDCD5';
     // (before H148) return '\uD83D\uDCE6';
-    const m = /\.(how|hos|hot)$/i.exec(e.name || '');
+    // (before H161) const m = /\.(how|hos|hot)$/i.exec(e.name || '');
+    const m = /\.(how|hos|hot|hob|hbase|odb|hop|hslides|odp)$/i.exec(e.name || '');
     if (m) {
       const ext = m[1].toLowerCase();
       return { src: officeIconUrl(OFFICE_ICON[ext]), alt: ext.toUpperCase(), rel: OFFICE_ICON[ext] };
