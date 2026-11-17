@@ -1,0 +1,319 @@
+// Offline Node checks for Hub Live Wallpapers engine & settings integration.
+// Run: node --test hub/tests/hub_live_wallpapers.test.cjs
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const ROOT = path.join(__dirname, '..', '..');
+const WALLPAPERS_SRC = fs.readFileSync(path.join(ROOT, 'hub/drives/hub_wallpapers.js'), 'utf8');
+const ENGINE_SRC = fs.readFileSync(path.join(ROOT, 'hub/drives/hub_live_wallpaper.js'), 'utf8');
+const SEARCH_SRC = fs.readFileSync(path.join(ROOT, 'apps/system/search/search_items.js'), 'utf8');
+const SETTINGS_SEC_SRC = fs.readFileSync(path.join(ROOT, 'apps/system/settings/sec_wallpaper.js'), 'utf8');
+
+function mockDOM(initialClasses = []) {
+  class ClassList {
+    constructor(init = []) { this.s = new Set(init); }
+    add(c) { this.s.add(c); }
+    remove(c) { this.s.delete(c); }
+    contains(c) { return this.s.has(c); }
+    toggle(c, v) {
+      if (v === undefined) v = !this.s.has(c);
+      if (v) this.s.add(c); else this.s.delete(c);
+      return v;
+    }
+  }
+
+  const elements = new Map();
+  function makeEl(tag = 'div', initialId = '', classes = []) {
+    let currentId = initialId;
+    const e = {
+      tagName: tag.toUpperCase(),
+      className: classes.join(' '),
+      classList: new ClassList(classes),
+      style: {},
+      attrs: new Map(),
+      children: [],
+      parentElement: null,
+      clientWidth: 800,
+      clientHeight: 600,
+      setAttribute(k, v) { e.attrs.set(k, String(v)); },
+      getAttribute(k) { return e.attrs.get(k) || null; },
+      appendChild(child) {
+        child.parentElement = e;
+        e.children.push(child);
+        return child;
+      },
+      insertBefore(child, before) {
+        child.parentElement = e;
+        const idx = e.children.indexOf(before);
+        if (idx >= 0) e.children.splice(idx, 0, child);
+        else e.children.push(child);
+        return child;
+      },
+      getContext(type) {
+        if (type === '2d') {
+          return {
+            fillRect() {},
+            clearRect() {},
+            beginPath() {},
+            moveTo() {},
+            lineTo() {},
+            closePath() {},
+            arc() {},
+            fill() {},
+            stroke() {},
+            save() {},
+            restore() {},
+            createLinearGradient() {
+              return { addColorStop() {} };
+            }
+          };
+        }
+        return null;
+      }
+    };
+    Object.defineProperty(e, 'id', {
+      get() { return currentId; },
+      set(v) {
+        if (currentId) elements.delete(currentId);
+        currentId = v;
+        if (v) elements.set(v, e);
+      }
+    });
+    if (initialId) elements.set(initialId, e);
+    return e;
+  }
+
+  const docEl = makeEl('html', '', initialClasses);
+  const body = makeEl('body', '', ['wm-desktop']);
+  docEl.appendChild(body);
+  const empty = makeEl('div', 'empty', []);
+  body.appendChild(empty);
+
+  const listeners = new Map();
+  const doc = {
+    documentElement: docEl,
+    body: body,
+    hidden: false,
+    fullscreenElement: null,
+    getElementById(id) { return elements.get(id) || null; },
+    createElement(tag) { return makeEl(tag); },
+    querySelector(sel) {
+      if (sel === '.wm-max:not(.wm-min)') {
+        for (const el of elements.values()) {
+          if (el.classList.contains('wm-max') && !el.classList.contains('wm-min')) return el;
+        }
+      }
+      return null;
+    },
+    addEventListener(k, f) {
+      if (!listeners.has(k)) listeners.set(k, []);
+      listeners.get(k).push(f);
+    },
+    removeEventListener(k, f) {
+      const a = listeners.get(k) || [];
+      const i = a.indexOf(f);
+      if (i >= 0) a.splice(i, 1);
+    },
+    _fire(k, ev = {}) {
+      (listeners.get(k) || []).forEach((f) => f(ev));
+    }
+  };
+
+  const win = {
+    document: doc,
+    innerWidth: 800,
+    innerHeight: 600,
+    addEventListener(k, f) { doc.addEventListener(k, f); },
+    removeEventListener(k, f) { doc.removeEventListener(k, f); },
+    matchMedia: (q) => ({ matches: false }),
+    requestAnimationFrame: (f) => setTimeout(f, 16),
+    cancelAnimationFrame: (id) => clearTimeout(id),
+    performance: { now: () => Date.now() },
+    MutationObserver: class {
+      constructor(cb) { this.cb = cb; }
+      observe() {}
+      disconnect() {}
+    }
+  };
+  win.window = win;
+
+  return { doc, win, makeEl, elements };
+}
+
+test('HUB_LIVE_WALLPAPERS registry in hub_wallpapers.js', () => {
+  const { win } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+
+  assert.ok(Array.isArray(win.HUB_LIVE_WALLPAPERS), 'HUB_LIVE_WALLPAPERS must be an array');
+  assert.equal(win.HUB_LIVE_WALLPAPERS.length, 3, 'Must define 3 procedural live wallpapers');
+
+  const ids = Array.from(win.HUB_LIVE_WALLPAPERS.map((w) => w.id));
+  assert.deepEqual(JSON.parse(JSON.stringify(ids)), ['live:aurora', 'live:constellation', 'live:circadian']);
+
+  win.HUB_LIVE_WALLPAPERS.forEach((w) => {
+    assert.equal(w.live, true, `${w.id} must have live: true`);
+    assert.ok(w.name, `${w.id} must have name`);
+    assert.ok(w.desc, `${w.id} must have desc`);
+    assert.ok(w.color, `${w.id} must have color fallback`);
+    assert.ok(w.image, `${w.id} must have image CSS gradient preview`);
+  });
+
+  // Test hubWallpaper lookup
+  const hit = win.hubWallpaper('live:aurora');
+  assert.equal(hit.id, 'live:aurora');
+  assert.equal(hit.name, 'Aurora waves');
+
+  const hitCircadian = win.hubWallpaper('live:circadian');
+  assert.equal(hitCircadian.id, 'live:circadian');
+  assert.equal(hitCircadian.name, 'Circadian sky');
+
+  const missing = win.hubWallpaper('unknown_wp');
+  assert.equal(missing.id, 'night', 'Falls back to default wallpaper');
+});
+
+test('HubLiveWallpaper engine presets and lifecycle', () => {
+  const { win, doc } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+
+  const engine = win.HubLiveWallpaper;
+  assert.ok(engine, 'HubLiveWallpaper must be exported on window');
+  assert.deepEqual(JSON.parse(JSON.stringify(engine.presets())), ['live:aurora', 'live:constellation', 'live:circadian']);
+
+  assert.equal(engine.current(), '');
+  assert.equal(engine.isRunning(), false);
+
+  // Set live:aurora
+  const ok = engine.set('live:aurora');
+  assert.equal(ok, true);
+  assert.equal(engine.current(), 'live:aurora');
+  assert.equal(engine.isRunning(), true);
+
+  const canvas = doc.getElementById('hub-live-canvas');
+  assert.ok(canvas, 'Canvas element #hub-live-canvas must be created and inserted');
+  assert.equal(canvas.classList.contains('active'), true);
+
+  // Tick execution
+  assert.doesNotThrow(() => engine.tick());
+
+  // Pause & Resume
+  engine.pause();
+  assert.equal(engine.isPaused(), true);
+  assert.equal(engine.isRunning(), false);
+
+  engine.resume();
+  assert.equal(engine.isPaused(), false);
+  assert.equal(engine.isRunning(), true);
+
+  // Stop
+  engine.stop();
+  assert.equal(engine.current(), '');
+  assert.equal(engine.isRunning(), false);
+  assert.equal(canvas.classList.contains('active'), false);
+});
+
+test('HubLiveWallpaper occlusion detection and auto-pausing', () => {
+  const { win, doc, elements, makeEl } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+
+  const engine = win.HubLiveWallpaper;
+  engine.set('live:constellation');
+  assert.equal(engine.shouldPause(), false);
+
+  // 1. Hidden tab
+  doc.hidden = true;
+  assert.equal(engine.shouldPause(), true);
+  engine.checkState();
+  assert.equal(engine.isPaused(), true);
+  doc.hidden = false;
+  engine.checkState();
+  assert.equal(engine.isPaused(), false);
+
+  // 2. Fullscreen active
+  doc.fullscreenElement = doc.documentElement;
+  assert.equal(engine.shouldPause(), true);
+  doc.fullscreenElement = null;
+  assert.equal(engine.shouldPause(), false);
+
+  // 3. Maximized window
+  const winEl = makeEl('div', 'win-1', ['wm-window', 'wm-max']);
+  elements.set('win-1', winEl);
+  doc.body.appendChild(winEl);
+  assert.equal(engine.shouldPause(), true);
+
+  // When window is minimized, occlusion ceases
+  winEl.classList.add('wm-min');
+  assert.equal(engine.shouldPause(), false);
+
+  // 4. Screen lock active
+  doc.documentElement.classList.add('hub-locked');
+  assert.equal(engine.shouldPause(), true);
+  doc.documentElement.classList.remove('hub-locked');
+
+  // 5. Break lock active
+  doc.documentElement.classList.add('hub-break');
+  assert.equal(engine.shouldPause(), true);
+  doc.documentElement.classList.remove('hub-break');
+  assert.equal(engine.shouldPause(), false);
+
+  engine.stop();
+});
+
+test('HubLiveWallpaper reduced motion support', () => {
+  const { win, doc } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+
+  const engine = win.HubLiveWallpaper;
+  assert.equal(engine.isReducedMotion(), false);
+
+  doc.documentElement.classList.add('hub-motion-reduced');
+  assert.equal(engine.isReducedMotion(), true);
+
+  doc.documentElement.classList.remove('hub-motion-reduced');
+  doc.documentElement.classList.add('hub-motion-off');
+  assert.equal(engine.isReducedMotion(), true);
+});
+
+test('Circadian preset solar hours simulation', () => {
+  const { win } = mockDOM();
+  vm.runInNewContext(WALLPAPERS_SRC, win);
+  vm.runInNewContext(ENGINE_SRC, win);
+
+  const engine = win.HubLiveWallpaper;
+  engine.set('live:circadian');
+
+  const canvas = win.document.getElementById('hub-live-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Mock specific hours and verify no exceptions thrown
+  const hours = [2, 6, 12, 18, 20.5, 23];
+  hours.forEach((h) => {
+    engine.setState({ mockHour: h });
+    assert.doesNotThrow(() => engine.tick(), `Circadian sky must render without error for hour ${h}`);
+  });
+
+  engine.stop();
+});
+
+test('Search items and settings UI structure', () => {
+  const { win } = mockDOM();
+  vm.runInNewContext(SEARCH_SRC, win);
+
+  const items = win.HUB_SEARCH_ITEMS.settings;
+  const liveRow = items.find((item) => item.name === 'Live wallpapers');
+  assert.ok(liveRow, 'Search items must include "Live wallpapers"');
+  assert.equal(liveRow.hash, 'wallpaper');
+  assert.ok(liveRow.words.includes('aurora'));
+  assert.ok(liveRow.words.includes('circadian'));
+  assert.ok(liveRow.words.includes('constellation'));
+
+  // Verify Settings sec_wallpaper.js creates Live wallpapers section
+  assert.ok(SETTINGS_SEC_SRC.includes("ui.title('Live wallpapers')"), 'sec_wallpaper.js must add Live wallpapers title');
+  assert.ok(SETTINGS_SEC_SRC.includes("wp-live"), 'sec_wallpaper.js must define wp-live grid');
+  assert.ok(SETTINGS_SEC_SRC.includes("HUB_LIVE_WALLPAPERS"), 'sec_wallpaper.js must iterate over HUB_LIVE_WALLPAPERS');
+});

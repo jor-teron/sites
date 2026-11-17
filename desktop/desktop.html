@@ -126,6 +126,7 @@
     <!-- Home screen: hint + quick-access tiles (hub_tiles.js); hidden once an app opens.
          Desktop mode: Files pane (hub_drives.js, "Drives" until R54b) left 60%, tiles right 40% (hub_drives.css). -->
     <div id="empty">
+      <canvas id="hub-live-canvas" class="hub-live-canvas" aria-hidden="true"></canvas>
       <div class="home">
         <section id="desk-drives" class="desk-drives" aria-label="Files" hidden></section>
         <div id="empty-text" hidden>Open 'Home' and pick an App</div>
@@ -148,6 +149,7 @@
   <!-- Settings app choices (wallpaper, sizes, accent, theme, motion) applied live -->
   <script src="shared/wallpaper/wallpapers.js"></script>
   <script src="hub/drives/hub_wallpapers.js"></script>
+  <script src="hub/drives/hub_live_wallpaper.js"></script>
   <!-- <script src="hub/core/hub_prefs.js?v=20261116b"></script> -->
   <!-- <script src="hub/core/hub_daynight.js?v=20261116b"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
   <!-- H64: hub_daynight.js + hub_autotheme.js now load before hub_prefs.js, so the first paint has the Auto theme -->
