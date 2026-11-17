@@ -9,7 +9,7 @@
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
-var BASE_VERSION = "BS9";
+var BASE_VERSION = "HOB1";  /* (before HOB1) "BS9" */
 var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };

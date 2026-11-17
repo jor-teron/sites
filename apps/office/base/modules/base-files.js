@@ -1,11 +1,13 @@
 /*
- * base-files.js  (BS9)
- * Full .hbase backup/restore (tables, queries, reports, views, links, pictures),
+ * base-files.js  (HOB1; was BS9)
+ * Full .hob backup/restore (tables, queries, reports, views, links, pictures).
+ * Old .hbase files still open. The JSON format is unchanged: magic "hbase" version 1.
+ * (before HOB1) Full .hbase backup/restore.
  * Excel import/export through the Spreadsheet app's vendored SheetJS (lazy relative
  * load, not copied), read-only JSON and SQLite import, and "Send to Spreadsheet"
  * (downloads a workbook — Spreadsheet has no in-app hand-off).
  *
- *   .hbase file = JSON { magic: "hbase", version: 1, schema, exported, db, pics:
+ *   .hob / .hbase file = JSON { magic: "hbase", version: 1, schema, exported, db, pics:
  *                 { key: { type, data: "<base64>" } } }
  *   Restore can replace everything (not undoable) or add a remapped copy (undoable).
  *   SheetJS: ../spreadsheet/vendor/sheetjs/xlsx.full.min.js
@@ -16,6 +18,7 @@
  *
  * API: BaseFiles.MAGIC, .CAPS, .pack, .parse, .remapCopy, .listPicKeys,
  *      .tablesFromJson, .tablesFromAoA, .tablesFromSql, .sheetAoA,
+ *      .backupName, .isBackupName,
  *      .backup, .restoreFile, .open, .exportXlsx, .sendToSpreadsheet, .loadXlsx
  */
 (function (root) {
@@ -67,7 +70,7 @@
       try { obj = JSON.parse(raw); } catch (e) { return { ok: false, error: "That file is not valid JSON." }; }
     }
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) return { ok: false, error: "That is not a Base backup." };
-    if (obj.magic !== MAGIC) return { ok: false, error: "That file is not a .hbase backup (missing “hbase” marker)." };
+    if (obj.magic !== MAGIC) return { ok: false, error: "That file is not a .hob backup (missing “hbase” marker)." };  /* (before HOB1) “.hbase backup” */
     if (!obj.db || typeof obj.db !== "object" || !Array.isArray(obj.db.tables)) {
       return { ok: false, error: "That backup has no tables list." };
     }
@@ -151,7 +154,7 @@
     });
     return { tables: out, notes: notes };
   }
-  /* Flexible JSON → table specs. Does not treat a .hbase pack as a loose table list. */
+  /* Flexible JSON → table specs. Does not treat a .hob / .hbase pack as a loose table list. */
   function tablesFromJson(obj) {
     if (obj && obj.magic === MAGIC) return { tables: [], notes: { hbase: true } };
     if (typeof obj === "string") {
@@ -275,6 +278,13 @@
     var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
   }
+  function backupName(stamp) {
+    return "base-backup-" + stamp + ".hob";
+  }
+  function isBackupName(name) {
+    var n = typeof name === "string" ? name : (name && name.name) || "";
+    return /\.(hob|hbase)$/i.test(n);
+  }
   function currentRows(t) {
     return (typeof BaseGrid !== "undefined") ? BaseGrid.visibleRows(t, true) : (t.rows || []).slice();
   }
@@ -284,7 +294,7 @@
     if (!db || !db.tables || !db.tables.length) return toast("Nothing to back up yet — make a table first");
     function done(pics) {
       var body = JSON.stringify(pack(db, pics || {}));
-      downloadBlob(new Blob([body], { type: "application/json" }), "base-backup-" + stampName() + ".hbase");
+      downloadBlob(new Blob([body], { type: "application/json" }), backupName(stampName()));  /* (before HOB1) "... .hbase" */
       var n = Object.keys(pics || {}).length;
       toast("Backup saved" + (n ? " (with " + n + " picture" + (n === 1 ? "" : "s") + ")" : ""));
     }
@@ -442,7 +452,7 @@
       list.forEach(function (t) { if ((t.values || []).length > CAPS.rows) { t.values = t.values.slice(0, CAPS.rows); built.notes.cutRows += 1; } });
       applyTables(built, "Import SQLite");
     }).catch(function () {
-      toast("SQLite could not be opened. sql.js is loaded from the DB Browser app in this site; serve the whole site (not a lone file:// page) and try again. JSON and .hbase still work.", 6000);
+      toast("SQLite could not be opened. sql.js is loaded from the DB Browser app in this site; serve the whole site (not a lone file:// page) and try again. JSON and .hob still work.", 6000);  /* (before HOB1) “JSON and .hbase” */
     });
   }
 
@@ -456,7 +466,7 @@
   function open(file) {
     if (!file) return;
     var n = (file.name || "").toLowerCase();
-    if (/\.hbase$/.test(n)) return restoreFile(file);
+    if (isBackupName(n)) return restoreFile(file);  /* (before HOB1) /\.hbase$/ */
     if (/\.xlsx?$/.test(n)) return importXlsx(file);
     if (/\.json$/.test(n)) return importJson(file);
     if (/\.(sqlite3?|db)$/.test(n)) return importSqlite(file);
@@ -475,7 +485,7 @@
       };
       return rd.readAsText(file);
     }
-    /* Peek at the first bytes for JSON / sqlite / hbase without an extension. */
+    /* Peek at the first bytes for JSON / sqlite / a .hob backup without an extension. */
     var peek = file.slice(0, 32);
     var fr = new FileReader();
     fr.onload = function () {
@@ -483,7 +493,7 @@
       try { head = String.fromCharCode.apply(null, new Uint8Array(buf)); } catch (e) {}
       if (looksSqlite(file, buf)) return importSqlite(file);
       if (/^\s*\{/.test(head) || /^\s*\[/.test(head)) return importJson(file);
-      toast("This file type is not supported. Try .hbase, .xlsx, .csv, .json or .sqlite.");
+      toast("This file type is not supported. Try .hob, .xlsx, .csv, .json or .sqlite.");  /* (before HOB1) Try .hbase */
     };
     fr.readAsArrayBuffer(peek);
   }
@@ -534,6 +544,7 @@
     pack: pack, parse: parse, remapCopy: remapCopy, listPicKeys: listPicKeys, uniqueName: uniqueName,
     tablesFromJson: tablesFromJson, tablesFromAoA: tablesFromAoA, tablesFromSql: tablesFromSql,
     sheetAoA: sheetAoA, cellText: cellText,
+    backupName: backupName, isBackupName: isBackupName, stampName: stampName,
     backup: backup, restoreFile: restoreFile, pickRestore: pickRestore, open: open,
     exportXlsx: exportXlsx, sendToSpreadsheet: sendToSpreadsheet, loadXlsx: loadXlsx
   };
