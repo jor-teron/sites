@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#181b21">
+  <title>Hub Office</title>
+  <meta name="version" content="HO-SC1">
+  <link rel="icon" href="hub_office_icon.png">
+  <link rel="stylesheet" href="hub_office.css">
+  <link rel="stylesheet" href="../shared/office-notify.css">
+  <link rel="stylesheet" href="../shared/office-dialog.css">
+  <script src="../../../shared/theme/hub_theme.js"></script>
+</head>
+<body>
+  <div class="ho-shell" id="ho-shell">
+    <!-- Left Sidebar -->
+    <aside class="ho-sidebar" id="ho-sidebar">
+      <div class="ho-brand">
+        <img class="ho-logo" src="hub_office_icon.png" alt="Hub Office">
+        <div class="ho-brand-text">
+          <span class="ho-title">Hub Office</span>
+          <span class="ho-badge">Start Center</span>
+        </div>
+      </div>
+
+      <div class="ho-action-box">
+        <button type="button" class="ho-btn-primary" id="btn-open-file" title="Open an existing document (Ctrl+O)">
+          <span class="ho-btn-icon">📂</span>
+          <span class="ho-btn-text">Open File...</span>
+        </button>
+        <input type="file" id="file-input" hidden accept=".how,.hos,.hslides,.hot,.docx,.xlsx,.pptx,.odt,.csv,.tsv,.txt,.md,.json">
+      </div>
+
+      <nav class="ho-nav" aria-label="Suite navigation">
+        <button type="button" class="ho-nav-item active" data-filter="all">
+          <span class="ho-nav-icon">▦</span>
+          <span>All Suites</span>
+        </button>
+        <button type="button" class="ho-nav-item" data-filter="writer">
+          <span class="ho-nav-icon">📝</span>
+          <span>Writer</span>
+        </button>
+        <button type="button" class="ho-nav-item" data-filter="spreadsheet">
+          <span class="ho-nav-icon">📊</span>
+          <span>Spreadsheet</span>
+        </button>
+        <button type="button" class="ho-nav-item" data-filter="slides">
+          <span class="ho-nav-icon">📽️</span>
+          <span>Slides</span>
+        </button>
+        <button type="button" class="ho-nav-item" data-filter="base">
+          <span class="ho-nav-icon">🗄️</span>
+          <span>Base</span>
+        </button>
+        <button type="button" class="ho-nav-item" data-filter="tables">
+          <span class="ho-nav-icon">📋</span>
+          <span>Tables</span>
+        </button>
+        <button type="button" class="ho-nav-item" data-filter="recent">
+          <span class="ho-nav-icon">🕒</span>
+          <span>Recent Documents</span>
+        </button>
+      </nav>
+
+      <div class="ho-sidebar-footer">
+        <span class="ho-footer-text">Hub Office Suite · Offline ready</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Stage -->
+    <main class="ho-main" id="ho-main">
+      <!-- Header Banner -->
+      <header class="ho-header">
+        <div class="ho-header-left">
+          <h1 class="ho-heading">Welcome to Hub Office</h1>
+          <p class="ho-subheading">One place to start your office documents, spreadsheets, presentations, and databases.</p>
+        </div>
+        <div class="ho-header-right">
+          <div class="ho-search-box">
+            <span class="ho-search-icon">🔍</span>
+            <input type="search" id="ho-search" placeholder="Search templates or recent files…" aria-label="Search templates or recent files">
+          </div>
+        </div>
+      </header>
+
+      <!-- Drag & Drop Zone -->
+      <section class="ho-dropzone" id="ho-dropzone" aria-label="File drop area">
+        <div class="ho-dropzone-inner">
+          <span class="ho-drop-icon">📥</span>
+          <div class="ho-drop-text">
+            <strong>Drop any office file here</strong> to open directly in its matching app.
+            <div class="ho-drop-formats">Supported: .how, .hos, .hslides, .hot, .docx, .xlsx, .pptx, .csv, .txt</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Suites Grid Section -->
+      <section class="ho-section" id="section-suites">
+        <h2 class="ho-sec-title">Office Applications</h2>
+        <div class="ho-cards-grid" id="suites-grid">
+          <!-- Dynamically populated or rendered -->
+        </div>
+      </section>
+
+      <!-- Recent Documents Section -->
+      <section class="ho-section" id="section-recent">
+        <div class="ho-sec-header">
+          <h2 class="ho-sec-title">Recent & Saved Documents</h2>
+          <button type="button" class="ho-btn-ghost" id="btn-refresh-recent" title="Refresh recent documents">↻ Refresh</button>
+        </div>
+        <div class="ho-recent-list" id="recent-list">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../../../shared/fs/fs_drives.js"></script>
+  <script src="../../../shared/fs/filetypes.js"></script>
+  <script src="../../../shared/fs/fs_ref.js"></script>
+  <script src="../shared/office-notify.js"></script>
+  <script src="../shared/office-dialog.js"></script>
+  <script src="hub_office.js"></script>
+</body>
+</html>
