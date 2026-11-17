@@ -3,7 +3,9 @@
    DF25: was modules/draftly-docxopen.js (global Draftly is now Writer).
    PROJECT: Writer
    ROLE: DF6 File > Open .docx (picker) and drag-and-drop of a
-         .docx onto the page. Reads it with Writer.docxread,
+         .docx onto the page. DW7 also opens .odt (Writer.odtread)
+         from the same menu item, drop, and Hub #drive=&file= links.
+         Reads .docx with Writer.docxread and .odt with Writer.odtread,
          saves the current doc, opens the result as a NEW document
          named after the file (unique), applies its page size /
          orientation / margins (global page prefs, like the Page
@@ -19,6 +21,10 @@ Writer.docxopen = {};
 
 Writer.docxopen.isDocx = function isDocx(f) {
   return !!f && (/\.docx$/i.test(f.name || '') || f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+};
+
+Writer.docxopen.isOdt = function isOdt(f) {
+  return !!f && (/\.odt$/i.test(f.name || '') || f.type === 'application/vnd.oasis.opendocument.text');
 };
 
 /* (before HOW1) IndexedDB save and listDocs around a .docx open:
@@ -64,11 +70,14 @@ Draftly.docxopen.open = function open(file) {
 };
 */
 Writer.docxopen.open = function open(file) {
-  var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.docx$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document';
+  /* (before DW7) var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.docx$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document'; */
+  var odt = Writer.docxopen.isOdt(file);
+  var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.(docx|odt)$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document';
   ui.showToast('Opening ' + file.name + '\u2026');
   if (Writer.app) clearTimeout(Writer.app.inputTimer);
   return file.arrayBuffer().then(function (buf) {
-    return Writer.docxread.read(buf);
+    /* (before DW7) return Writer.docxread.read(buf); */
+    return odt ? Writer.odtread.read(buf) : Writer.docxread.read(buf);
   }).then(function (res) {
     var prev = Writer.how ? Writer.how.autosave() : Promise.resolve();
     return prev.catch(function () {}).then(function () { return res; });
@@ -96,8 +105,12 @@ Writer.docxopen.open = function open(file) {
       return Writer.storage.currentName();
     });
   }).catch(function (e) {
-    console.warn('writer: docx open failed', e);
-    ui.showToast(e && e.userMessage ? e.userMessage : 'Could not open this .docx');
+    /* (before DW7) console.warn('writer: docx open failed', e);
+    ui.showToast(e && e.userMessage ? e.userMessage : 'Could not open this .docx'); */
+    console.warn('writer: ' + (odt ? 'odt' : 'docx') + ' open failed', e);
+    var msg = e && e.userMessage ? e.userMessage : (odt ? 'Could not open this .odt' : 'Could not open this .docx');
+    if (odt && Writer.dialog && Writer.dialog.alert) Writer.dialog.alert({ title: 'Could not open file', message: msg });
+    else ui.showToast(msg);
   });
 };
 
@@ -115,9 +128,12 @@ Writer.docxopen.bind = function bind() {
   document.addEventListener('drop', function (e) {
     if (!hasFile(e)) return;
     var f = e.dataTransfer.files[0];
-    if (D.isDocx(f)) { e.preventDefault(); D.open(f); }
+    /* (before DW7) if (D.isDocx(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
-    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how or .docx file to open it'); }
+    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how or .docx file to open it'); } */
+    if (D.isDocx(f) || D.isOdt(f)) { e.preventDefault(); D.open(f); }
+    else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
+    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx or .odt file to open it'); }
   });
 };
 

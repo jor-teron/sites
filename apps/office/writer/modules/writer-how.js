@@ -475,9 +475,25 @@
   How.openFromHash = function openFromHash() {
     if (typeof window === 'undefined' || !window.FsRef || !window.location) return Promise.resolve(false);
     var ref = window.FsRef.parse(window.location.hash);
-    if (!ref || !/\.how$/i.test(ref.name || '')) return Promise.resolve(false);
+    /* (before DW7) if (!ref || !/\.how$/i.test(ref.name || '')) return Promise.resolve(false); */
+    if (!ref || !ref.name) return Promise.resolve(false);
     var key = window.FsRef.hash(ref);
     if (key === How.lastHash) return Promise.resolve(false);
+    if (/\.(docx|odt)$/i.test(ref.name) && D().docxopen && D().docxopen.open) {
+      How.lastHash = key;
+      return window.FsRef.resolve(ref).then(function (got) {
+        return got.file.getFile().then(function (file) {
+          return D().docxopen.open(file).then(function (name) { return !!name; });
+        });
+      }).then(function (ok) {
+        if (!ok) How.lastHash = '';
+        return !!ok;
+      }).catch(function () {
+        How.lastHash = '';
+        return false;
+      });
+    }
+    if (!/\.how$/i.test(ref.name)) return Promise.resolve(false);
     How.lastHash = key;
     return How.openRef(ref).then(function (ok) {
       if (!ok) How.lastHash = '';

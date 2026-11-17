@@ -20,7 +20,8 @@
   <!-- (before DF24) <title>Draftly</title> -->
   <!-- (before DF21) <title>Writer</title> -->
   <!-- (before DF25) <title>Writer DF21</title> -->
-  <title>Writer DF25</title>
+  <!-- (before DW7) <title>Writer DF25</title> -->
+  <title>Writer DW7</title>
   <meta name="theme-color" content="#5b5bf0">
   <!-- (before DF25) <link rel="icon" href="draftly_icon.png"> -->
   <link rel="icon" href="writer_icon.png">
@@ -86,8 +87,10 @@
       <button type="button" class="file-item" role="menuitem" id="deleteCurrentBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><span>Delete document</span></button>
       <button type="button" class="file-item" role="menuitem" id="openHowBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .how</span></button>
       <input type="file" id="howFile" accept=".how,application/json" hidden>
-      <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx</span></button>
-      <input type="file" id="docxFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <!-- (before DW7) <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx</span></button> -->
+      <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx / .odt</span></button>
+      <!-- (before DW7) <input type="file" id="docxFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden> -->
+      <input type="file" id="docxFile" accept=".docx,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text" hidden>
       <div class="file-sep" role="separator"></div>
       <button type="button" class="file-item" role="menuitem" id="saveBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save <kbd>Ctrl+S</kbd></span></button>
       <button type="button" class="file-item" role="menuitem" id="saveAsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save As</span></button>
@@ -451,6 +454,7 @@
   <!-- MM6 real DOCX writer (WordprocessingML); uses writer-zip.js -->
   <script src="modules/writer-docxgen.js"></script>
   <script src="modules/writer-docxread.js"></script>
+  <script src="modules/writer-odtread.js"></script>
   <script src="modules/writer-docxopen.js"></script>
   <script src="modules/writer-merge.js"></script>
   <script src="modules/writer-merge-ui.js"></script>

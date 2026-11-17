@@ -103,7 +103,8 @@ var cfg = read('apps/office/writer/modules/writer-config.js');
   /* (before DF25) "storageKeyPageNumberPos: 'draftly_page_number_pos'", */
   "storageKeyPageNumberPos: 'writer_page_number_pos'",
   "version: '0.8'",
-  "release: 'DF25'"
+  /* (before DW7) "release: 'DF25'" */
+  "release: 'DW7'"
 ].forEach(function (bit) {
   ok('config still has ' + bit, cfg.indexOf(bit) !== -1);
 });
