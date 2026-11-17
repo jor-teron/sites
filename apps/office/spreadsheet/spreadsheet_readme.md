@@ -381,5 +381,17 @@ The sheet is 182 columns (A–FZ) by 1000 rows. Empty cells are not created up f
 - **Limits:** the grid does not grow past FZ × 1000. A merge much taller than the screen can clip until its top-left cell is in view. Selecting every cell and copying it still walks that block. Formatting a whole empty column stores a cell for each selected cell. Print of a sheet that is full to FZ1000 is heavy. `?v=` is not bumped, so the name-box rules are also injected when the page loads.
 - **Tests:** `node apps/office/spreadsheet/test-sh24-grid.js`.
 
+## SH25 — Grid context menu with row and column insert and delete
+
+Right-clicking on the grid now opens a context menu tailored to the clicked target:
+
+- **Row header:** "Insert row above" (+ Row), "Delete row" (− Row), "Clear contents", "Hide row", "Unhide rows".
+- **Column header:** "Insert column left" (+ Col), "Delete column" (− Col), "Clear contents", "Hide column", "Unhide columns".
+- **Data cell:** "Cut" (Ctrl+X), "Copy" (Ctrl+C), "Paste" (Ctrl+V), "Insert row above", "Delete row", "Insert column left", "Delete column", "Clear contents".
+- **Corner header:** "Cut", "Copy", "Paste", "Clear contents".
+- **Dismissal:** closes on click outside, Escape, sheet scroll, window resize, or sheet tab menu open.
+- **Code:** `spreadsheet_rows.js` (`gridContextMenuItems`, `openGridContextMenu`, `onGridContextMenu`). Styles in `spreadsheet.css` (`.sheet-context-menu`, `.sheet-menu-item`, `.sheet-menu-sep`).
+- **Tests:** `node apps/office/spreadsheet/test-sh25-context-menu.js`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
