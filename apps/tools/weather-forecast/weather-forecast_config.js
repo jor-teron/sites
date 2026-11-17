@@ -26,15 +26,28 @@ const WEATHER_FORECAST_CONFIG = {
       "wind_direction_10m",
       "is_day",
     ],
-    daily: ["weather_code", "temperature_2m_max", "temperature_2m_min"],
+    daily: [
+      "weather_code",
+      "temperature_2m_max",
+      "temperature_2m_min",
+      "precipitation_probability_max",
+      "sunrise",
+      "sunset",
+    ],
     timezone: "auto",
     timeoutMs: 12000,
   },
 
   // Cache: shows the last reading instantly and offline. 10 minutes is "fresh".
+  // v2: adds the daily array; the key bump drops the WX1a shape.
   cache: {
-    key: "sites-hub.weather-forecast.v1",
+    key: "sites-hub.weather-forecast.v2",
     maxAge: 10 * 60 * 1000,
+  },
+
+  // Small UI preferences (WX1b: the 7-day list expanded on phones)
+  prefs: {
+    key: "sites-hub.weather-forecast.prefs",
   },
 
   // Shown when the API omits units
@@ -52,5 +65,9 @@ const WEATHER_FORECAST_CONFIG = {
     updated: "Updated",
     offline: "Offline \u2014 showing weather from",
     source: "Open-Meteo",
+    daysTitle: "7-day forecast",
+    showAll: "Show all 7 days",
+    showLess: "Show fewer days",
+    today: "Today",
   },
 };
