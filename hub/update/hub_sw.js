@@ -28,8 +28,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261117c';
-const CACHE = 'hub-shell-v177';  // 2026-11-17c: Live wallpaper animates even with Motion off
+const V = '20261117d';
+const CACHE = 'hub-shell-v178';  // 2026-11-17d: Live wallpapers: 5 styles, Constellation and Aurora restyled
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
