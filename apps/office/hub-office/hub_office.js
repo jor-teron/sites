@@ -48,7 +48,8 @@
       url: '../base/',
       rootUrl: 'apps/office/base/',
       /* (before HOB1) formats: ['Tables', 'Forms', 'Queries'] */
-      formats: ['.hob', 'Tables', 'Forms', 'Queries'],
+      /* (before BS11) formats: ['.hob', 'Tables', 'Forms', 'Queries'], */
+      formats: ['.hob', '.odb', 'Tables', 'Forms', 'Queries'],
       btnLabel: 'Open Base'
     },
     {
@@ -85,6 +86,8 @@
     hot: 'tables',
     hob: 'base',
     hbase: 'base',
+    /* (before BS11) no odb */
+    odb: 'base',
     db: 'base',
     sqlite: 'base',
     base: 'base'

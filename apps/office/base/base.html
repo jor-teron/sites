@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- (before BS11) <title>Base BS10</title> -->
   <!-- (before BS10) <title>Base HOB1</title> -->
-  <title>Base BS10</title><!-- legacy: <title>Base HOB1</title> -->
+  <title>Base BS11</title><!-- legacy: <title>Base BS10</title> -->
   <!-- BS1-BS9 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
@@ -15,8 +16,9 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
+  <!-- (before BS11) base.css?v=BS10 and every script ?v=BS10 -->
   <!-- (before BS10) base.css?v=HOB1 and every script ?v=HOB1 -->
-  <link rel="stylesheet" href="base.css?v=BS10">
+  <link rel="stylesheet" href="base.css?v=BS11">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -30,7 +32,8 @@
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
     <button type="button" class="file-item" role="menuitem" id="btn-new-table" data-icon="fileNew"><span>New table</span></button>
     <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import…</span>
-      <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+      <!-- (before BS11) accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.sqlite,.sqlite3,.db,..." -->
+      <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.odb,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.database" hidden>
     </label>
     <!-- (before BS10) no Save / Save As; a .hob file was Backup only -->
     <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
@@ -163,28 +166,29 @@
   <script src="../shared/office-ribbon.js"></script>
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=BS10"></script>
+  <script src="modules/base-quick.js?v=BS11"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=BS10"></script>
-  <script src="modules/base-history.js?v=BS10"></script>
-  <script src="modules/base-store.js?v=BS10"></script>
-  <script src="modules/base-links.js?v=BS10"></script>
-  <script src="modules/base-pics.js?v=BS10"></script>
-  <script src="modules/base-csv.js?v=BS10"></script>
-  <script src="modules/base-files.js?v=BS10"></script>
-  <script src="modules/base_hob.js?v=BS10"></script>
-  <script src="modules/base-grid.js?v=BS10"></script>
-  <script src="modules/base-form.js?v=BS10"></script>
-  <script src="modules/base-fields.js?v=BS10"></script>
-  <script src="modules/base-query.js?v=BS10"></script>
-  <script src="modules/base-view.js?v=BS10"></script>
-  <script src="modules/base-report.js?v=BS10"></script>
-  <script src="modules/base-delete.js?v=BS10"></script>
-  <script src="modules/base-ui.js?v=BS10"></script>
-  <script src="modules/base_hub.js?v=BS10"></script>
+  <script src="modules/base-types.js?v=BS11"></script>
+  <script src="modules/base-history.js?v=BS11"></script>
+  <script src="modules/base-store.js?v=BS11"></script>
+  <script src="modules/base-links.js?v=BS11"></script>
+  <script src="modules/base-pics.js?v=BS11"></script>
+  <script src="modules/base-csv.js?v=BS11"></script>
+  <script src="modules/base_odb.js?v=BS11"></script>
+  <script src="modules/base-files.js?v=BS11"></script>
+  <script src="modules/base_hob.js?v=BS11"></script>
+  <script src="modules/base-grid.js?v=BS11"></script>
+  <script src="modules/base-form.js?v=BS11"></script>
+  <script src="modules/base-fields.js?v=BS11"></script>
+  <script src="modules/base-query.js?v=BS11"></script>
+  <script src="modules/base-view.js?v=BS11"></script>
+  <script src="modules/base-report.js?v=BS11"></script>
+  <script src="modules/base-delete.js?v=BS11"></script>
+  <script src="modules/base-ui.js?v=BS11"></script>
+  <script src="modules/base_hub.js?v=BS11"></script>
 </body>
 </html>
