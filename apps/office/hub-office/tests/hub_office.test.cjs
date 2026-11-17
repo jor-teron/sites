@@ -13,6 +13,7 @@ const cp = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../../../..');
 const SCRIPT_PATH = path.join(ROOT, 'apps/office/hub-office/hub_office.js');
+const HTML_PATH = path.join(ROOT, 'apps/office/hub-office/hub_office.html');
 
 test('node --check on hub_office.js', () => {
   cp.execFileSync(process.execPath, ['--check', SCRIPT_PATH]);
@@ -46,9 +47,10 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('SUITES definitions cover all 5 office applications with clean action labels', () => {
+test('VERSION is HO6 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
+  assert.equal(HO.VERSION, 'HO6');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -58,24 +60,41 @@ test('SUITES definitions cover all 5 office applications with clean action label
     assert.ok(suite.name, 'suite has name');
     assert.ok(suite.url, 'suite has url');
     assert.ok(suite.icon, 'suite has icon');
-    assert.ok(suite.btnLabel, 'suite has clean button label');
-    assert.ok(Array.isArray(suite.formats) && suite.formats.length > 0, 'suite has formats');
   });
-
-  const writer = HO.SUITES.find((s) => s.id === 'writer');
-  assert.deepEqual(JSON.parse(JSON.stringify(writer.formats)), ['.how', '.docx', '.odt', '.txt']);
-
-  const spreadsheet = HO.SUITES.find((s) => s.id === 'spreadsheet');
-  /* (before SH27) formats: ['.hos', '.xlsx', '.csv', '.tsv'] */
-  assert.deepEqual(JSON.parse(JSON.stringify(spreadsheet.formats)), ['.hos', '.xlsx', '.ods', '.csv', '.tsv']);
 
   const slides = HO.SUITES.find((s) => s.id === 'slides');
   assert.equal(slides.name, 'Presentation');
-  assert.equal(slides.btnLabel, 'Open Presentation');
-  assert.deepEqual(JSON.parse(JSON.stringify(slides.formats)), ['.hop', '.hslides', '.pptx', '.odp']);
+});
 
-  const base = HO.SUITES.find((s) => s.id === 'base');
-  assert.deepEqual(JSON.parse(JSON.stringify(base.formats)), ['.hob', '.odb', 'Tables', 'Forms', 'Queries']);
+test('FORMAT_TABLE lists truthful open, save and export formats', () => {
+  const HO = loadScript();
+  assert.ok(Array.isArray(HO.FORMAT_TABLE));
+  assert.equal(HO.FORMAT_TABLE.length, 5);
+
+  const byId = Object.fromEntries(HO.FORMAT_TABLE.map((row) => [row.id, row]));
+
+  /* (before HO6) Writer formats: ['.how', '.docx', '.odt', '.txt'] — .txt/.md are not opened */
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.open)), ['.how', '.docx', '.odt']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.save)), ['.how']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.export)), ['.docx', '.odt', '.pdf']);
+
+  /* (before HO6 / SH27) Spreadsheet open included .tsv, which the file picker does not accept */
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.spreadsheet.open)), ['.hos', '.xlsx', '.xls', '.ods', '.csv']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.spreadsheet.save)), ['.hos']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.spreadsheet.export)), ['.xlsx', '.ods', '.csv']);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.open)), ['.hop', '.hslides', '.pptx', '.odp']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.save)), ['.hop']);
+  /* .pdf added after verifying File → Export PDF */
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.export)), ['.pptx', '.odp', '.png', '.pdf']);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.base.open)), ['.hob', '.hbase', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.base.save)), ['.hob']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.base.export)), ['.odb', '.xlsx', '.csv']);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.tables.open)), ['.hot', '.csv']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.tables.save)), ['.hot']);
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.tables.export)), ['.csv']);
 });
 
 test('EXT_MAP routes all expected extensions to matching suites', () => {
@@ -83,11 +102,10 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.how, 'writer');
   assert.equal(HO.EXT_MAP.docx, 'writer');
   assert.equal(HO.EXT_MAP.odt, 'writer');
-  assert.equal(HO.EXT_MAP.txt, 'writer');
-  assert.equal(HO.EXT_MAP.md, 'writer');
 
   assert.equal(HO.EXT_MAP.hos, 'spreadsheet');
   assert.equal(HO.EXT_MAP.xlsx, 'spreadsheet');
+  assert.equal(HO.EXT_MAP.xls, 'spreadsheet');
   assert.equal(HO.EXT_MAP.ods, 'spreadsheet');
   assert.equal(HO.EXT_MAP.csv, 'spreadsheet');
 
@@ -95,6 +113,7 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.hslides, 'slides');
   assert.equal(HO.EXT_MAP.pptx, 'slides');
   assert.equal(HO.EXT_MAP.odp, 'slides');
+  assert.equal(HO.EXT_MAP.ppt, undefined);
 
   assert.equal(HO.EXT_MAP.hot, 'tables');
 
@@ -102,7 +121,51 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.hbase, 'base');
   assert.equal(HO.EXT_MAP.odb, 'base');
   assert.equal(HO.EXT_MAP.db, 'base');
-  assert.equal(HO.EXT_MAP.base, 'base');
+  assert.equal(HO.EXT_MAP.sqlite, 'base');
+  assert.equal(HO.EXT_MAP.sqlite3, 'base');
+  assert.equal(HO.EXT_MAP.json, 'base');
+  assert.equal(HO.EXT_MAP.tsv, 'base');
+  assert.equal(HO.EXT_MAP.txt, 'base');
+  assert.equal(HO.EXT_MAP.md, undefined);
+});
+
+test('routeByFilename maps known names and rejects unknown extensions', () => {
+  const HO = loadScript();
+  assert.equal(HO.routeByFilename('Letter.odt'), 'writer');
+  assert.equal(HO.routeByFilename('Sales.ods'), 'spreadsheet');
+  assert.equal(HO.routeByFilename('Talk.odp'), 'slides');
+  assert.equal(HO.routeByFilename('Contacts.odb'), 'base');
+  assert.equal(HO.routeByFilename('Notes.how'), 'writer');
+  assert.equal(HO.routeByFilename('budget.HOS'), 'spreadsheet');
+  assert.equal(HO.routeByFilename('deck.ppt'), null);
+  assert.equal(HO.routeByFilename('readme.md'), null);
+  assert.equal(HO.routeByFilename('noext'), null);
+});
+
+test('EXT_MAP stays in sync with FORMAT_TABLE open lists', () => {
+  const HO = loadScript();
+  const openExts = new Set();
+  HO.FORMAT_TABLE.forEach((row) => {
+    row.open.forEach((fmt) => openExts.add(fmt.replace(/^\./, '')));
+  });
+
+  Object.keys(HO.EXT_MAP).forEach((ext) => {
+    assert.ok(openExts.has(ext), 'EXT_MAP.' + ext + ' is in some FORMAT_TABLE open list');
+  });
+
+  openExts.forEach((ext) => {
+    assert.ok(HO.EXT_MAP[ext], 'open format .' + ext + ' has an EXT_MAP entry');
+  });
+});
+
+test('file-input accept list matches FORMAT_TABLE open formats', () => {
+  const HO = loadScript();
+  const html = fs.readFileSync(HTML_PATH, 'utf8');
+  const m = /id="file-input"[^>]*accept="([^"]+)"/.exec(html) || /accept="([^"]+)"[^>]*id="file-input"/.exec(html);
+  assert.ok(m, 'file-input has an accept attribute');
+  const fromHtml = m[1].split(',').map((s) => s.trim()).filter(Boolean).sort();
+  const fromTable = JSON.parse(JSON.stringify(HO.openAcceptList())).sort();
+  assert.deepEqual(fromHtml, fromTable);
 });
 
 test('getExt extracts lowercase extension', () => {
@@ -115,6 +178,7 @@ test('getExt extracts lowercase extension', () => {
   assert.equal(HO.getExt('inventory.HOT'), 'hot');
   assert.equal(HO.getExt('backup.hob'), 'hob');
   assert.equal(HO.getExt('old.hbase'), 'hbase');
+  assert.equal(HO.getExt('data.odb'), 'odb');
   assert.equal(HO.getExt('noext'), '');
 });
 
@@ -137,11 +201,9 @@ test('createDocTab opens new tab and switches active view', () => {
   assert.equal(HO.openTabs.length, 2);
   assert.equal(HO.getActiveTabId(), tab.id);
 
-  // Switch back to start page
   HO.switchTab('start');
   assert.equal(HO.getActiveTabId(), 'start');
 
-  // Switch back to writer tab
   HO.switchTab(tab.id);
   assert.equal(HO.getActiveTabId(), tab.id);
 });
@@ -153,17 +215,14 @@ test('closeTab closes document tab and refuses to close Start tab', () => {
   assert.equal(HO.openTabs.length, 3);
   assert.equal(HO.getActiveTabId(), tab2.id);
 
-  // Close tab2 -> should activate previous tab1
   HO.closeTab(tab2.id);
   assert.equal(HO.openTabs.length, 2);
   assert.equal(HO.getActiveTabId(), tab1.id);
 
-  // Close tab1 -> should fallback to 'start'
   HO.closeTab(tab1.id);
   assert.equal(HO.openTabs.length, 1);
   assert.equal(HO.getActiveTabId(), 'start');
 
-  // Attempting to close 'start' tab does nothing (pinned)
   HO.closeTab('start');
   assert.equal(HO.openTabs.length, 1);
   assert.equal(HO.getActiveTabId(), 'start');
@@ -176,9 +235,26 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatSize(1048576 * 3.5), '3.5 MB');
 
   const now = Date.now();
-  assert.equal(HO.formatTime(now - 10000), 'Just now');
-  assert.equal(HO.formatTime(now - 120000), '2m ago');
-  assert.equal(HO.formatTime(now - 3600000 * 2), '2h ago');
+  assert.equal(HO.formatTime(now - 10000, now), 'Just now');
+  /* (before HO6) '2m ago' / '2h ago' */
+  assert.equal(HO.formatTime(now - 120000, now), '2 m ago');
+  assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
+});
+
+test('Start Page HTML is the HO6 layout and keeps cache tokens', () => {
+  const html = fs.readFileSync(HTML_PATH, 'utf8');
+  assert.ok(html.includes('Hub Office HO6'), 'title includes HO6');
+  assert.ok(html.includes('content="HO6"'), 'version meta is HO6');
+  assert.ok(html.includes('hub_office.css?v=HO6'), 'css cache token is HO6');
+  assert.ok(html.includes('hub_office.js?v=HO6'), 'js cache token is HO6');
+  assert.ok(html.includes('id="btn-open-file"'), 'has Open file button');
+  assert.ok(/Open file/.test(html), 'Open file label is present');
+  assert.ok(html.includes('id="btn-formats"'), 'has Supported formats link');
+  assert.ok(html.includes('id="new-row"'), 'has New row');
+  assert.ok(html.includes('id="recent-list"'), 'has recent list');
+  assert.ok(!/Supported:\s*\.how/.test(html), 'long Supported: line is gone');
+  assert.ok(!html.includes('id="suites-grid"'), 'suite cards grid is gone');
+  assert.ok(!html.includes('id="ho-sidebar"'), 'sidebar is gone');
 });
 
 test('index.html redirects to hub_office.html', () => {

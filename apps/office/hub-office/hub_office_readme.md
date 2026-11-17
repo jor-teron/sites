@@ -10,32 +10,47 @@ The unified Start Center and multi-document tabbed container for the **Hub Offic
 
 ## 2. Tabbed Container Architecture
 - **Persistent Start Page Tab**: Pinned to the top-left (`[ 🏠 Start Page ]`). It never closes, so the user can always switch back to browse suites, drop files, or view recent documents.
-- **Dynamic Document Tabs**: Clicking "Open Writer", "Open Spreadsheet", or opening any recent or dropped document launches a new tab in the top tab bar (e.g. `[ 📝 Writer 1 ✕ ]`, `[ 📊 Budget.hos ✕ ]`).
-- **Clean Single-Action Cards**: Each suite tile features a clean primary launch button ("Open Writer", "Open Spreadsheet", "Open Presentation", "Open Base", "Open Tables") with no clutter or extra dropdowns.
+- **Dynamic Document Tabs**: Opening a suite from New, or opening any recent or dropped document, launches a new tab in the top tab bar (e.g. `[ 📝 Writer 1 ✕ ]`, `[ 📊 Budget.hos ✕ ]`).
 - **Workspace Navigation**: Switch instantly between open documents and the Start Page without opening multiple desktop windows.
 - **Tab Closing**: Closing a document tab (`✕`) returns focus to the previous active document or the Start Page.
 
-## 3. Files
+## 3. HO6 Start Page
+HO6 is a minimalist Start Page (it also absorbs the former HO4 open-file / New work and HO5 honest format lists):
+- A single **Open file** button at the top (Ctrl+O). Drop a file anywhere on the Start Page; a subtle overlay appears while dragging.
+- **New**: one row of five small app icons (Writer, Spreadsheet, Presentation, Base, Tables). One click opens a blank document in a new tab.
+- **Recent**: a plain list of up to 8 files, with the app icon, name and a relative time. An empty list shows one quiet line.
+- A **Supported formats** link opens an in-app panel with each suite's real open, save and export lists.
+- The old sidebar, description cards, taglines, format chips and long "Supported:" line are gone.
+
+Files already on the Hub local drive (Documents) open through `#drive=…&file=…`, which each suite already reads. A file dropped or picked on a standalone page cannot be handed into the iframe, so the matching app opens and a short in-app note asks you to use File → Open there. Unknown extensions get an in-app message and do not open a tab.
+
+## 4. Files
 - `index.html`: Entry point with theme pre-sync, redirects to `hub_office.html`.
 - `hub_office.html`: Top tab bar, Start Page view, dynamic document view container.
-- `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, clean single-action card layout.
-- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), suite launchpad, extension router, and recent files loader.
+- `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO6 Start Page.
+- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), FORMAT_TABLE, extension router, and recent files loader. Version constant: `HO6`.
 - `hub_office_icon.png`: 128x128 RGBA suite icon.
-- `tests/hub_office.test.cjs`: Test suite verifying suite coverage, tab creation/switching/closing, and extension routing.
+- `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, tab creation/switching/closing, and extension routing.
 
-## 4. Supported File Types & Routing
-Files dropped or selected automatically open in a dedicated tab running the matching suite app:
+## 5. Supported File Types & Routing
+Files dropped or selected automatically open in a dedicated tab running the matching suite app. Lists below match each app's file pickers and export menus (verified in HO6):
 <!-- (before DW7) - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`, `.pdf` -->
-- **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`
+<!-- (before HO6) - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md` -->
+- **Writer**: open `.how` (native), `.docx`, `.odt`; save `.how`; export `.docx`, `.odt`, `.pdf`
 <!-- (before SH27) - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.csv`, `.tsv` -->
-- **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.ods`, `.csv`, `.tsv`
+<!-- (before HO6) - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.ods`, `.csv`, `.tsv` -->
+- **Spreadsheet**: open `.hos` (native), `.xlsx`, `.xls`, `.ods`, `.csv`; save `.hos`; export `.xlsx`, `.ods`, `.csv`
 <!-- (before PN1) - **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.ppt` -->
-- **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.odp`
+<!-- (before HO6) - **Presentation**: `.hop` (native; `.hslides` still opens), `.pptx`, `.odp` -->
+- **Presentation**: open `.hop` (native; `.hslides` still opens), `.pptx`, `.odp`; save `.hop`; export `.pptx`, `.odp`, `.png`, `.pdf`
 <!-- (before BS11) - **Base**: `.hob` (native backup; `.hbase` still opens), `.base`, `.db`, `.sqlite` -->
-- **Base**: `.hob` (native backup; `.hbase` still opens), `.odb`, `.base`, `.db`, `.sqlite`
-- **Tables**: `.hot` (native), `.csv`
+<!-- (before HO6) - **Base**: `.hob` (native backup; `.hbase` still opens), `.odb`, `.base`, `.db`, `.sqlite` -->
+- **Base**: open `.hob` (native; `.hbase` still opens), `.odb`, `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`, `.json`, `.sqlite`, `.sqlite3`, `.db`; save `.hob`; export `.odb`, `.xlsx`, `.csv`
+- **Tables**: open `.hot` (native), `.csv`; save `.hot`; export `.csv`
 
-## 5. Tests
+`.csv` files route to Spreadsheet. `.ppt` and `.md` are not opened. Presentation does not open legacy `.ppt`.
+
+## 6. Tests
 Run test suite:
 ```bash
 node --test apps/office/hub-office/tests/hub_office.test.cjs
