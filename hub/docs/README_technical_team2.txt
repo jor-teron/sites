@@ -7327,3 +7327,11 @@ Open and parked
   Older parked lists are also in the wrap-ups above, and in Team 1
   and Team 3 week notes. Nothing in this notes branch has been
   pushed.
+
+
+Addendum (18 Nov, late): Hub Office
+- SH35 Spreadsheet ADDRESS function; a "Not supported yet: ..." note on open; unknown functions show #NAME?; fix for joining text with & ("a"&"b"). PR #686
+- Planned: none. Nothing pending.
+- Newly parked: SH34 Spreadsheet full redraw at startup and the stale-cell/spill redraw fix (since SH24's partial drawing). DW13a still parked. DW14 dropped (Writer Mail Merge already reads .xlsm).
+- New ideas: Hub Files / Hub Office routing should list .xlsm -> Spreadsheet (files_view.js is Hub Builder's; hub_office.js is Hub Office's but paused). Spreadsheet grid is limited to A-FZ x 1000 rows.
+- Office total for 17-18 Nov is now 39 PRs; main at end of 18 Nov: e05595c9.
