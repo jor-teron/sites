@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Orbital Core 3D</title>
+  <link rel="stylesheet" href="ui/style.css" />
+</head>
+<body>
+  <!-- 3D WebGL Canvas Viewport -->
+  <div id="canvas-container"></div>
+
+  <!-- Floating HUD Interface -->
+  <div id="hud">
+    <!-- Top Status Bar -->
+    <header class="top-bar">
+      <div class="stats-group">
+        <div class="stat-item shield">
+          <span class="stat-label">Core Shield</span>
+          <span id="stat-shield">100%</span>
+        </div>
+        <div class="stat-item energy">
+          <span class="stat-label">Energy</span>
+          <span id="stat-energy">$400</span>
+        </div>
+        <div class="stat-item wave">
+          <span class="stat-label">Wave</span>
+          <span id="stat-wave">WAVE 0/5</span>
+        </div>
+        <div class="stat-item score">
+          <span class="stat-label">Score</span>
+          <span id="stat-score">0</span>
+        </div>
+      </div>
+
+      <div class="controls-group">
+        <!-- Speed Selector (0 = Pause, 1x, 2x, 3x, 4x, 5x) -->
+        <div class="speed-dock">
+          <button class="btn-speed" data-speed="0">⏸</button>
+          <button class="btn-speed active" data-speed="1">1×</button>
+          <button class="btn-speed" data-speed="2">2×</button>
+          <button class="btn-speed" data-speed="3">3×</button>
+          <button class="btn-speed" data-speed="4">4×</button>
+          <button class="btn-speed" data-speed="5">5×</button>
+        </div>
+
+        <!-- Level / Seed Quick Jump (1 - 999) -->
+        <div class="seed-jump">
+          <span class="stat-label" id="stat-level">LEVEL 1</span>
+          <input type="number" id="seed-input" class="seed-input" min="1" max="999" value="1" title="Enter Seed (1-999)" />
+          <button id="btn-jump" class="btn-action">Jump</button>
+        </div>
+
+        <!-- Settings Toggles -->
+        <button id="btn-shadows" class="btn-action">☀️ Shadows: OFF</button>
+        <button id="btn-audio" class="btn-action">🔊 Audio: ON</button>
+        <button id="btn-shockwave" class="btn-shockwave">⚡ Shockwave READY</button>
+        <button id="btn-wave" class="btn-action" style="background:#059669; border-color:#10b981;">▶ Start Wave</button>
+      </div>
+    </header>
+
+    <!-- Bottom Interface Bar -->
+    <footer class="bottom-bar">
+      <!-- Tower Inspector Popup Card (Selected Tower) -->
+      <div id="tower-inspector" class="inspector-card">
+        <div id="insp-title" class="inspector-title">Pulse Laser (Rank 1)</div>
+        <div id="insp-stats" class="inspector-stats">Damage: 28 | Range: 9m<br>Cadence: 0.25s</div>
+        <div class="inspector-actions">
+          <button id="btn-upgrade" class="btn-upgrade">Upgrade ($75)</button>
+          <button id="btn-scrap" class="btn-scrap">Scrap (+$75)</button>
+        </div>
+      </div>
+
+      <!-- Tower Selection Dock (8 Weapons) -->
+      <nav id="tower-dock" class="tower-dock" aria-label="Select Tower to Build"></nav>
+    </footer>
+  </div>
+
+  <!-- Victory / Game Over Modal -->
+  <div id="game-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2 id="modal-title" class="modal-title">ASTEROID DEFENDED!</h2>
+      <p id="modal-desc" class="modal-desc">All waves neutralized. Asteroid core preserved.</p>
+      <button id="modal-btn" class="modal-btn">Next Level</button>
+    </div>
+  </div>
+
+  <!-- Main Game ES Module -->
+  <script type="module" src="core/main.js"></script>
+</body>
+</html>
