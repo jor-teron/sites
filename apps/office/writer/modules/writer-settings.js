@@ -168,7 +168,8 @@ Writer.settings.startBackup = function startBackup() {
   clearInterval(S.timer); S.timer = null;
   if (S.s.backupSec > 0) S.timer = setInterval(function () {
     /* (before HOW1) if (Draftly.app.ready) Draftly.storage.writeBackup(); */
-    if (Writer.app.ready && Writer.how) Writer.how.autosave();
+    /* (before DW12) if (Writer.app.ready && Writer.how) Writer.how.autosave(); */
+    if (Writer.app.ready && Writer.how) Writer.how.autosave({ timer: true });   /* DW12: timer, see writer-how.js saveNow */
   }, S.s.backupSec * 1000);
 };
 

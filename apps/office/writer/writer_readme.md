@@ -4,7 +4,21 @@
 <!-- (before DF25) Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage keys, message types, ids and URLs are unchanged, so saved documents and Hub links keep working. -->
 Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. --> <!-- (before DW9) The page title and `Writer.config.release` are `DW8`. --> <!-- (before DW11) The page title and `Writer.config.release` are `DW9`. -->
 <!-- (before DW11a) The page title and `Writer.config.release` are `DW11` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW11a` (DW10 is kept for a later release).
+<!-- (before DW12) The page title and `Writer.config.release` are `DW11a` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW12` (DW10 is kept for a later release).
+
+## DW12 — Save writes .docx and .odt directly
+
+Writer works like LibreOffice: a `.docx` or `.odt` you open is saved back to that same file, in that same format. No `.how` copy is made any more.
+
+- **Save** (Ctrl+S, the Save button, File → Save) writes the open document in its format (`Writer.how.format`): `.how` for new documents and `.how` / `.txt` files, `.docx` or `.odt` for a file opened in those formats. The file is built by the same code as Export DOCX / Export ODT (`writer-export.js` → `writer-docxgen.js` / `writer-odtgen.js`).
+- Where it goes: a file opened from Hub Files (`#drive=…&file=….docx`) is written back to that drive and folder; outside the Hub, File → Open uses the browser's open picker (Chrome / Edge) and a dropped file keeps its handle, so Save writes back to the file on disk (the browser may ask once for permission to edit it). A file opened without a handle (Firefox, phones) asks where on the first Save (picker) or downloads, as `.how` did. In the Hub with no source file, the first Save goes to Documents.
+- **Save As** shows one in-app box with the name and a Format list: Writer document (.how), Word (.docx), OpenDocument Text (.odt). The chosen format is used by later Saves. Typing a known extension in the name (or in the browser's picker) picks that format.
+- **No warning** about a non-native format: no "Keep format?" box, no toast. It just saves.
+- **Autosave:** a `.how` document autosaves exactly as before. A `.docx` / `.odt` document is never rewritten by the typing timer or the periodic timer (that would rebuild the whole file every few seconds). It is written on Save, and also when you leave the page, start a New document, open another file, rename it in the name box or send it to Read Aloud — but only if it has a file to go to and its content changed since it was opened or saved.
+- The name and title stay the file name without its extension.
+- Limits: Writer writes what it can show. A `.docx` / `.odt` saved by Writer loses what the readers simplified on open (the "simplified" toast: e.g. comments, tracked changes, text boxes, fields other than page numbers, section-specific headers, complex styles). Recent / the Documents list shows `.how` files only.
+- Test: `node --test apps/office/writer/test/test-dw12-saveformat.cjs` (with LibreOffice installed it also converts a saved `.docx` and `.odt` to text and checks the words survive).
 
 ## DW11a — header and footer pictures in .docx and .odt
 

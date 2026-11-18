@@ -170,7 +170,8 @@ test('writer.html wires DW11: title, scripts, picture tools; no browser dialogs'
   const html = fs.readFileSync(path.join(DIR, 'writer.html'), 'utf8');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
   /* (before DW11a) assert.ok(live.indexOf('<title>Writer DW11</title>') !== -1); */
-  assert.ok(live.indexOf('<title>Writer DW11a</title>') !== -1);
+  /* (before DW12) assert.ok(live.indexOf('<title>Writer DW11a</title>') !== -1); */
+  assert.ok(/<title>Writer DW1(1a|2)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW11) <title>Writer DW9</title> -->') !== -1);
   assert.ok(live.indexOf('src="modules/writer-hfimg.js"') !== -1);
   assert.ok(live.indexOf('src="modules/writer-hfimg.js"') < live.indexOf('src="modules/writer-headerfooter.js"'));
@@ -179,7 +180,8 @@ test('writer.html wires DW11: title, scripts, picture tools; no browser dialogs'
     .forEach((s) => assert.ok(live.indexOf(s) !== -1, s));
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW11a) assert.ok(/release:\s*'DW11'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW11a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW12) assert.ok(/release:\s*'DW11a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   ['modules/writer-hfimg.js', 'modules/writer-headerfooter.js', 'modules/writer-pdfgen.js'].forEach((f) => {
     const src = fs.readFileSync(path.join(DIR, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(src), 'no browser dialogs in ' + f);

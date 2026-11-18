@@ -13,7 +13,11 @@
          orientation / margins (global page prefs, like the Page
          tab), header / footer text, repaginates and stores it.
          A short toast says when something was simplified.
-   DEPENDS: docxread, storage, pages, editor, hf, history, ui
+         DW12: a .docx / .odt is no longer copied to a .how. Save writes
+         back to the same file in the same format (Writer.how.opened):
+         a Hub #drive=&file= link, a file from the browser's open picker
+         or a dropped file handle (Chromium). A .txt still makes a .how.
+   DEPENDS: docxread, storage, pages, editor, hf, history, ui, how
    ============================================================ */
 /* (before DF25) var Draftly = window.Draftly || {}; window.Draftly = Draftly; */
 var Writer = window.Writer || {};
@@ -75,7 +79,10 @@ Draftly.docxopen.open = function open(file) {
   });
 };
 */
-Writer.docxopen.open = function open(file) {
+/* (before DW12) Writer.docxopen.open = function open(file) { */
+/* DW12: o.dest = Hub file { kind:'hub', drive, path, name }, o.handle = a FileSystemFileHandle. */
+Writer.docxopen.open = function open(file, o) {
+  o = o || {};
   /* (before DW7) var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.docx$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document'; */
   /* (before DW9) var odt = Writer.docxopen.isOdt(file);
   var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.(docx|odt)$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document'; */
@@ -103,7 +110,7 @@ Writer.docxopen.open = function open(file) {
       if (pg.margins) ui.setPage(pg.size, 'custom', pg.margins); else ui.setPage(pg.size, Writer.config.marginPreset, Writer.config.marginCustom);
       ui.setOrientation(pg.orient);
     }
-    if (Writer.how) { Writer.how.dest = null; Writer.how.created = 0; }
+    if (Writer.how) { Writer.how.dest = null; Writer.how.created = 0; Writer.how.format = 'how'; }
     Writer.storage.loadedName = '';
     Writer.storage.setCurrentName(base, false);
     Writer.pages.rebuildSinglePage();
@@ -113,7 +120,15 @@ Writer.docxopen.open = function open(file) {
     if (Writer.hf) Writer.hf.set(res.hf);
     Writer.pages.layoutAll();
     Writer.history.reset();
-    var stored = Writer.how ? Writer.how.save({ unique: true }) : Promise.resolve();
+    /* (before DW12) var stored = Writer.how ? Writer.how.save({ unique: true }) : Promise.resolve(); */
+    var stored;
+    if (Writer.how && !txt && Writer.how.opened) {
+      var dest = o.dest || (o.handle ? { kind: 'handle', handle: o.handle, name: o.handle.name || file.name } : null);
+      Writer.how.opened(odt ? 'odt' : 'docx', dest);
+      stored = Promise.resolve();
+    } else {
+      stored = Writer.how ? Writer.how.save({ unique: true }) : Promise.resolve();   /* DW9 .txt: a .how copy as before */
+    }
     return stored.catch(function () {}).then(function () {
       var msg = 'Opened ' + (Writer.storage.currentName() || base);
       if (res.notes && res.notes.length) msg += ' (simplified: ' + res.notes.slice(0, 2).join('; ') + (res.notes.length > 2 ? '\u2026' : '') + ')';
@@ -133,11 +148,39 @@ Writer.docxopen.open = function open(file) {
   });
 };
 
+/* DW12: the browser's open picker (with file handles) is used only outside the Hub. */
+Writer.docxopen.canPick = function canPick() {
+  return typeof window.showOpenFilePicker === 'function' && !(Writer.how && Writer.how.inHub && Writer.how.inHub());
+};
+Writer.docxopen.pickTypes = function pickTypes() {
+  return [{
+    description: 'Documents (.docx, .odt, .txt)',
+    accept: {
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.oasis.opendocument.text': ['.odt'],
+      'text/plain': ['.txt']
+    }
+  }];
+};
+
 Writer.docxopen.bind = function bind() {
   var D = Writer.docxopen, btn = document.getElementById('openDocxBtn'), inp = document.getElementById('docxFile');
   if (btn && inp) {
     btn.addEventListener('click', function () {
       if (Writer.ribbon && Writer.ribbon.setFile) Writer.ribbon.setFile(false);
+      /* (before DW12) inp.value = ''; inp.click(); */
+      /* DW12: outside the Hub, the browser's open picker gives a file handle, so Save can write back to it. */
+      if (D.canPick()) {
+        window.showOpenFilePicker({ types: D.pickTypes(), multiple: false }).then(function (hs) {
+          var h = hs && hs[0];
+          if (!h) return;
+          return h.getFile().then(function (f) { return D.open(f, { handle: h }); });
+        }).catch(function (e) {
+          if (e && e.name === 'AbortError') return;
+          inp.value = ''; inp.click();
+        });
+        return;
+      }
       inp.value = ''; inp.click();
     });
     inp.addEventListener('change', function () { if (inp.files[0]) D.open(inp.files[0]); });
@@ -147,13 +190,26 @@ Writer.docxopen.bind = function bind() {
   document.addEventListener('drop', function (e) {
     if (!hasFile(e)) return;
     var f = e.dataTransfer.files[0];
+    /* DW12: a dropped .docx / .odt keeps its file handle (Chromium, outside the Hub) so Save writes back to it. */
+    var item = e.dataTransfer.items && e.dataTransfer.items[0];
+    var hp = null;
+    if ((D.isDocx(f) || D.isOdt(f)) && item && item.getAsFileSystemHandle && !(Writer.how && Writer.how.inHub && Writer.how.inHub())) {
+      try { hp = item.getAsFileSystemHandle(); } catch (err) { hp = null; }
+    }
     /* (before DW7) if (D.isDocx(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
     else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how or .docx file to open it'); } */
     /* (before DW9) if (D.isDocx(f) || D.isOdt(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
     else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx or .odt file to open it'); } */
-    if (D.isDocx(f) || D.isOdt(f) || D.isTxt(f)) { e.preventDefault(); D.open(f); }
+    /* (before DW12) if (D.isDocx(f) || D.isOdt(f) || D.isTxt(f)) { e.preventDefault(); D.open(f); } */
+    if (hp) {
+      e.preventDefault();
+      Promise.resolve(hp).catch(function () { return null; }).then(function (h) {
+        D.open(f, { handle: h && h.kind === 'file' ? h : null });
+      });
+    }
+    else if (D.isDocx(f) || D.isOdt(f) || D.isTxt(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
     else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx, .odt or .txt file to open it'); }
   });
