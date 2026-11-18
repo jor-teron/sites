@@ -211,7 +211,13 @@ Writer.docxopen.bind = function bind() {
     }
     else if (D.isDocx(f) || D.isOdt(f) || D.isTxt(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
+    /* (before DW13b) else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx, .odt or .txt file to open it'); } */
+    /* DW13b: picture files go into the page or a header / footer slot (writer-imgdrop.js);
+       other image types are not opened by the browser either. */
+    else if (Writer.imgdrop && Writer.imgdrop.isImage(f)) { e.preventDefault(); Writer.imgdrop.drop(e); }
+    else if (Writer.imgdrop && Writer.imgdrop.isOtherImage(f)) { e.preventDefault(); Writer.ui.showToast('Drop a PNG, JPEG, GIF or WebP picture to insert it'); }
     else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx, .odt or .txt file to open it'); }
+    if (Writer.imgdrop) Writer.imgdrop.mark(null);   /* DW13b: drop-target outline off */
   });
 };
 

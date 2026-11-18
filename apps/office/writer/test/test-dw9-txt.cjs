@@ -75,7 +75,8 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   /* (before DW11a) assert.ok(live.indexOf('<title>Writer DW11</title>') !== -1); */
   /* (before DW12) assert.ok(live.indexOf('<title>Writer DW11a</title>') !== -1); */
   /* (before DW13) assert.ok(/<title>Writer DW1(1a|2)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW1(1a|2|3)<\/title>/.test(live));
+  /* (before DW13b) assert.ok(/<title>Writer DW1(1a|2|3)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW1(1a|2|3|3b)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
   assert.ok(live.indexOf('Open .docx / .odt / .txt') !== -1);
   assert.ok(live.indexOf('accept=".docx,.odt,.txt,') !== -1);
@@ -91,7 +92,8 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   /* (before DW11a) assert.ok(/release:\s*'DW11'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW12) assert.ok(/release:\s*'DW11a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13) assert.ok(/release:\s*'DW(11a|12)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW13b) assert.ok(/release:\s*'DW(11a|12|13)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 test('docxopen and how.js accept .txt from the picker, drop and Hub hash', () => {

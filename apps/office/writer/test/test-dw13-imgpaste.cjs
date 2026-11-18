@@ -217,10 +217,12 @@ test('dataBlob decodes a data URL; bigImgs finds only big pictures', () => {
 
 test('release is DW13; Writer picture keys in writer-image.js; no browser dialogs', () => {
   const html = fs.readFileSync(path.join(DIR, 'writer.html'), 'utf8');
-  assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13</title>') !== -1);
+  /* (before DW13b) assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13</title>') !== -1); */
+  assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13b</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before DW13) <title>Writer DW12</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
-  assert.ok(/release:\s*'DW13'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW13b) assert.ok(/release:\s*'DW13'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW13b?'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   const img = fs.readFileSync(path.join(DIR, 'modules/writer-image.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(/e\.ctrlKey \|\| e\.metaKey/.test(img) && /selectNode\(I\.sel\)/.test(img));
   ['modules/writer-paste.js', 'modules/writer-image.js'].forEach((f) => {

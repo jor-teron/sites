@@ -62,3 +62,7 @@ body.hf-editing .paper .hf-pic { cursor: pointer; outline: 1px dashed #8a8fd6; o
   .paper .hf-cell.hf-has-pic > .hf-slot:empty { display: none !important; }
   .paper .editor { opacity: 1 !important; }
 }
+
+/* DW13b: the slot under a dragged picture file (writer-imgdrop.js). Shown even
+   when the header / footer is empty (that box is hidden until it has content). */
+.paper .hf-cell.hf-drop { visibility: visible; outline: 2px dashed #5b5bf0; outline-offset: 2px; background: rgba(91, 91, 240, 0.06); }
