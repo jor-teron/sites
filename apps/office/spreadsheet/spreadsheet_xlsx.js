@@ -24,6 +24,9 @@
  * importXlsxFile(file, { dest | handle }) no longer makes a .hos copy of it.
  * .xls still becomes a .hos. A Hub link to a .csv opens it the same way.
  * A drop keeps the file handle (Chromium, outside the Hub).
+ * SH33: .xlsm (Excel with macros) opens like .xlsx (Open, drop, Hub link). Its
+ * macro parts are kept in memory (SHEET_XLSM.extract, spreadsheet_xlsm.js) and
+ * Save writes back to the same .xlsm with them. Macros are not run or shown.
  */
 function xlsxFmtZ(fmt) {
   if (fmt === "int") return "0";
@@ -117,14 +120,17 @@ function xlsxFillGrid(XLSX, ws, grid) {
 }
 
 function xlsxIsWorkbookName(name) {
-  return /\.(xlsx|xls|ods)$/i.test(String(name || ""));
+  /* (before SH33) return /\.(xlsx|xls|ods)$/i.test(String(name || "")); */
+  return /\.(xlsx|xlsm|xls|ods)$/i.test(String(name || ""));
 }
 
 function xlsxIsWorkbookFile(file) {
   if (!file) return false;
   if (xlsxIsWorkbookName(file.name)) return true;
   var t = String(file.type || "").toLowerCase();
-  return t.indexOf("spreadsheetml") >= 0 || t.indexOf("opendocument.spreadsheet") >= 0 || t === "application/vnd.ms-excel";
+  /* (before SH33) return t.indexOf("spreadsheetml") >= 0 || t.indexOf("opendocument.spreadsheet") >= 0 || t === "application/vnd.ms-excel"; */
+  return t.indexOf("spreadsheetml") >= 0 || t.indexOf("opendocument.spreadsheet") >= 0 || t === "application/vnd.ms-excel" ||
+    t.indexOf("ms-excel.sheet.macroenabled") >= 0;
 }
 
 /* Build sheet objects from a SheetJS workbook (pure). */
@@ -153,7 +159,8 @@ function importXlsxFile(file, o) {
   o = o || {};
   var SF = (typeof SHEET_SAVEFMT !== "undefined") ? SHEET_SAVEFMT : null;   /* SH32 */
   var direct = SF ? SF.formatOf(file && file.name) : "hos";
-  if (direct !== "xlsx" && direct !== "ods") direct = "";
+  /* (before SH33) if (direct !== "xlsx" && direct !== "ods") direct = ""; */
+  if (direct !== "xlsx" && direct !== "xlsm" && direct !== "ods") direct = "";
   if (SF) SF.flush();   /* SH32: an .xlsx / .ods / .csv being replaced is written first when changed */
   xlsxToast("Opening " + file.name + "…");
   if (file && file.name && window.SHEET_HUB && SHEET_HUB.setTitle) {
@@ -162,6 +169,11 @@ function importXlsxFile(file, o) {
   Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) {
     var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true });
     var loaded = xlsxSheetsFromBook(XLSX, wb);
+    /* SH33: an .xlsm keeps its macro parts (raw bytes, memory only) for Save. */
+    var macro = null;
+    if (direct === "xlsm" && typeof SHEET_XLSM !== "undefined") {
+      try { macro = SHEET_XLSM.extract(XLSX, res[1]); } catch (e) { macro = null; }
+    }
     var sheets = loaded.sheets, cutSheets = loaded.cutSheets, dropped = loaded.dropped;
     undoRecord("import");
     stashSheetView();
@@ -187,7 +199,8 @@ function importXlsxFile(file, o) {
     } */
     if (SF && direct) {
       /* SH32: Save writes back to this .xlsx / .ods; the .hos session stays held. */
-      SF.opened(direct, o.dest || (o.handle ? { kind: "handle", handle: o.handle, name: o.handle.name || file.name } : null), file.name);
+      /* (before SH33) SF.opened(direct, o.dest || (o.handle ? { kind: "handle", handle: o.handle, name: o.handle.name || file.name } : null), file.name); */
+      SF.opened(direct, o.dest || (o.handle ? { kind: "handle", handle: o.handle, name: o.handle.name || file.name } : null), file.name, macro);
     } else if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.detach) {
       if (SF) SF.reset();
       SHEET_HOS.skipWrite = false;
