@@ -1,17 +1,18 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO8: the Start Page moves to a Home button in the Hub title bar
-   (H49 HubTitleBar via office-hubbar.js). Document tabs stay in the
-   existing row. Standalone, a small Home button sits in that row. The
-   Start Page tab is gone from the strip, and the row hides when no
-   documents are open. HO7 Start Page cards, header and Open/drop are
-   unchanged. */
+/* HO8a: the Home button in the Hub title bar shows its label (🏠 Home)
+   and sits on the left. HO8 moved the Start Page out of the tab strip
+   into that button. Document tabs stay in the existing row. Standalone,
+   a small Home button sits in that row. The Start Page tab is gone from
+   the strip, and the row hides when no documents are open. HO7 Start
+   Page cards, header and Open/drop are unchanged. */
 (function (root) {
   'use strict';
 
   /* (before HO6) const was implicit; Start Center was unversioned as HO-SC2 in HTML only. */
   /* (before HO7) const VERSION = 'HO6'; */
   /* (before HO8) const VERSION = 'HO7'; */
-  const VERSION = 'HO8';
+  /* (before HO8a) const VERSION = 'HO8'; */
+  const VERSION = 'HO8a';
 
   const SUITES = [
     {
@@ -169,7 +170,8 @@
   }
 
   function homeTitleBarButton() {
-    return { id: 'home', icon: '🏠', label: 'Home', title: 'Start Page', enabled: true };
+    /* (before HO8a) return { id: 'home', icon: '🏠', label: 'Home', title: 'Start Page', enabled: true }; */
+    return { id: 'home', icon: '🏠', label: 'Home', title: 'Start Page', enabled: true, showLabel: true };
   }
 
   function syncChrome() {
@@ -747,7 +749,8 @@
     if (typeof HubTitleBar === 'undefined') return;
     function publish() {
       if (!HubTitleBar.linked) return;
-      HubTitleBar.set({ buttons: [homeTitleBarButton()] });
+      /* (before HO8a) HubTitleBar.set({ buttons: [homeTitleBarButton()] }); */
+      HubTitleBar.set({ buttons: [homeTitleBarButton()], align: 'left' });
     }
     HubTitleBar.onHello(publish);
     HubTitleBar.onClick(function (kind, id) {
