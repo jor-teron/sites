@@ -129,8 +129,9 @@ export class Simulation {
       }
     }
 
-    // A* algorithm
+    // A* algorithm with visited closedSet and iteration bound
     const openSet = [startNodeId];
+    const closedSet = new Set();
     const cameFrom = new Map();
     const gScore = new Map();
     const fScore = new Map();
@@ -138,9 +139,20 @@ export class Simulation {
     gScore.set(startNodeId, 0);
     fScore.set(startNodeId, nodes[startNodeId].pos.distanceTo(nodes[targetNodeId].pos));
 
-    while (openSet.length > 0) {
-      openSet.sort((a, b) => (fScore.get(a) || Infinity) - (fScore.get(b) || Infinity));
-      const current = openSet.shift();
+    let iterations = 0;
+    while (openSet.length > 0 && iterations++ < 1500) {
+      // Find lowest fScore in openSet
+      let bestIdx = 0;
+      let bestF = fScore.get(openSet[0]) || Infinity;
+      for (let i = 1; i < openSet.length; i++) {
+        const f = fScore.get(openSet[i]) || Infinity;
+        if (f < bestF) {
+          bestF = f;
+          bestIdx = i;
+        }
+      }
+      const current = openSet.splice(bestIdx, 1)[0];
+      closedSet.add(current);
 
       if (current === targetNodeId) {
         const path = [nodes[current]];
@@ -154,6 +166,7 @@ export class Simulation {
 
       const neighbors = nodes[current].neighbors;
       for (let nId of neighbors) {
+        if (closedSet.has(nId)) continue;
         const neighbor = nodes[nId];
 
         // Tower obstruction blocks pathing

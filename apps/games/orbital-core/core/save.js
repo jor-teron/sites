@@ -10,8 +10,23 @@ export class SaveManager {
     this.data = this.load();
   }
 
+  defaultData() {
+    return {
+      highestLevel: 1,
+      currentLevel: 1,
+      highScores: {},
+      settings: {
+        muted: false,
+        dayNightShadows: false,
+        simSpeed: 1
+      },
+      inProgress: null
+    };
+  }
+
   load() {
     try {
+      if (typeof localStorage === 'undefined') return this.defaultData();
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -45,6 +60,7 @@ export class SaveManager {
 
   save() {
     try {
+      if (typeof localStorage === 'undefined') return;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
     } catch (e) {
       console.warn('Orbital Core save error:', e);
