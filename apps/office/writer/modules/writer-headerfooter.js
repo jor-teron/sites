@@ -338,7 +338,7 @@ Writer.hf.syncPicTools = function syncPicTools() {
   }
 };
 
-/* .docx / .odt exports do not carry header pictures yet (DW11a): say so once. */
+/* (before DW11a) .docx / .odt exports did not carry header pictures, so this said so once:
 Writer.hf.warnedExport = false;
 Writer.hf.warnExport = function warnExport() {
   var H = Writer.hf;
@@ -346,6 +346,7 @@ Writer.hf.warnExport = function warnExport() {
   H.warnedExport = true;
   console.warn('writer: header / footer pictures are not exported to .docx / .odt yet (DW11a); the text is.');
 };
+   DW11a: writer-export.js writes the pictures into .docx and .odt. */
 
 Writer.hf.changed = function changed() {
   clearTimeout(Writer.hf.saveTimer);
