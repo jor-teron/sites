@@ -2,58 +2,133 @@
    (html.hub-splash + #hub-splash on <html>, same idea as html.hub-locked). Theme
    background colour, Hub mark, "Hub", thin real-progress bar. Chrome 109 safe
    (no color-mix, no nesting). */
-html.hub-splash { background: #121418; }
-html.hub-splash.hub-splash-light { background: #e9ecf1; }
-html.hub-light.hub-splash { background: #e9ecf1; }
+html.hub-splash { background: #070d18; }
+html.hub-splash.hub-splash-light { background: #f1f5f9; }
+html.hub-light.hub-splash { background: #f1f5f9; }
 html.hub-splash > body { visibility: hidden !important; }
+
 #hub-splash {
   position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 2147483647;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   box-sizing: border-box; padding: 24px;
-  background: #121418; color: #e8eaed;
+  background:
+    radial-gradient(1000px 600px at 50% 40%, rgba(37, 99, 235, 0.22) 0%, transparent 70%),
+    linear-gradient(160deg, #070d18 0%, #0b1322 50%, #030712 100%);
+  color: #e8eaed;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   text-align: center; cursor: default; user-select: none; -webkit-user-select: none;
   visibility: visible;
 }
+
 html.hub-splash-light #hub-splash,
-html.hub-light #hub-splash { background: #e9ecf1; color: #1d2330; }
+html.hub-light #hub-splash {
+  background:
+    radial-gradient(1000px 600px at 50% 40%, rgba(59, 130, 246, 0.16) 0%, transparent 70%),
+    linear-gradient(160deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
+  color: #0f172a;
+}
+
 #hub-splash .hub-splash-mark {
-  width: 96px; height: 96px; margin: 0 0 16px; display: block;
-  border-radius: 20px;
+  width: 96px; height: 96px; margin: 0 0 20px; display: block;
+  border-radius: 24px;
+  box-shadow:
+    0 0 35px rgba(59, 130, 246, 0.45),
+    0 16px 32px rgba(0, 0, 0, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  animation: hubSplashFloat 2.6s ease-in-out infinite alternate;
 }
+
+html.hub-splash-light #hub-splash .hub-splash-mark,
+html.hub-light #hub-splash .hub-splash-mark {
+  box-shadow:
+    0 0 25px rgba(37, 99, 235, 0.25),
+    0 12px 24px rgba(15, 23, 42, 0.18),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+@keyframes hubSplashFloat {
+  0% { transform: translateY(0px) scale(1); }
+  100% { transform: translateY(-7px) scale(1.02); }
+}
+
 #hub-splash .hub-splash-name {
-  margin: 0 0 28px; font-size: 28px; font-weight: 600; letter-spacing: 0.06em;
+  margin: 0 0 24px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
+
+html.hub-splash-light #hub-splash .hub-splash-name,
+html.hub-light #hub-splash .hub-splash-name {
+  background: linear-gradient(180deg, #0f172a 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
 #hub-splash .hub-splash-bar {
-  width: 180px; max-width: 60vw; height: 3px; border-radius: 2px;
-  background: rgba(255, 255, 255, 0.18); overflow: hidden;
+  width: 220px; max-width: 65vw; height: 4px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14); overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  position: relative;
 }
+
 html.hub-splash-light #hub-splash .hub-splash-bar,
-html.hub-light #hub-splash .hub-splash-bar { background: rgba(29, 35, 48, 0.16); }
+html.hub-light #hub-splash .hub-splash-bar {
+  background: rgba(15, 23, 42, 0.12);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 #hub-splash .hub-splash-bar > i {
   display: block; width: 100%; height: 100%;
-  background: var(--accent, #6ea8fe);
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.7);
   transform: scaleX(0); transform-origin: left center;
-  transition: transform 0.2s linear;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.4, 1);
 }
-html.hub-motion-off #hub-splash .hub-splash-bar > i,
-html.hub-motion-reduced #hub-splash .hub-splash-bar > i { transition: none; }
-@media (prefers-reduced-motion: reduce) {
-  #hub-splash .hub-splash-bar > i { transition: none; }
-}
+
 #hub-splash .hub-splash-count {
-  margin: 10px 0 0; font-size: 13px; opacity: 0.7; min-height: 1.2em;
+  margin: 12px 0 0; font-size: 13px; color: #94a3b8; letter-spacing: 0.04em;
+  font-weight: 500; min-height: 1.2em;
 }
+
+html.hub-splash-light #hub-splash .hub-splash-count,
+html.hub-light #hub-splash .hub-splash-count { color: #64748b; }
+
 #hub-splash .hub-splash-hint {
-  margin: 16px 0 0; font-size: 13px; opacity: 0.8; max-width: 22em;
+  margin: 16px 0 0; font-size: 13px; color: #cbd5e1; opacity: 0.85; max-width: 22em;
 }
+
+html.hub-splash-light #hub-splash .hub-splash-hint,
+html.hub-light #hub-splash .hub-splash-hint { color: #475569; }
+
 #hub-splash .hub-splash-hint[hidden] { display: none; }
+
 #hub-splash.hub-splash-out {
   opacity: 0; pointer-events: none;
-  transition: opacity 0.28s ease;
+  transition: opacity 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.hub-motion-off #hub-splash .hub-splash-mark,
+html.hub-motion-reduced #hub-splash .hub-splash-mark {
+  animation: none; transform: none;
+}
+html.hub-motion-off #hub-splash .hub-splash-bar > i,
+html.hub-motion-reduced #hub-splash .hub-splash-bar > i {
+  transition: none;
 }
 html.hub-motion-off #hub-splash.hub-splash-out,
-html.hub-motion-reduced #hub-splash.hub-splash-out { transition: none; }
+html.hub-motion-reduced #hub-splash.hub-splash-out {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  #hub-splash .hub-splash-mark { animation: none; transform: none; }
+  #hub-splash .hub-splash-bar > i { transition: none; }
   #hub-splash.hub-splash-out { transition: none; }
 }
