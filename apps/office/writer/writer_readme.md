@@ -6,7 +6,17 @@ Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are 
 <!-- (before DW11a) The page title and `Writer.config.release` are `DW11` (DW10 is kept for a later release). -->
 <!-- (before DW12) The page title and `Writer.config.release` are `DW11a` (DW10 is kept for a later release). -->
 <!-- (before DW13) The page title and `Writer.config.release` are `DW12` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW13` (DW10 is kept for a later release).
+<!-- (before DW13b) The page title and `Writer.config.release` are `DW13` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW13b` (DW10 is kept for a later release).
+
+## DW13b — drag and drop pictures onto the page and the header / footer
+
+- **Page:** drag one or more PNG, JPEG, GIF or WebP files from the desktop or a file manager onto a page. They go in where you let go (the caret under the pointer), each as its own picture block, in the order they were dropped, downscaled like Insert → Image (longest side 1600 px). The whole drop is **one undo step**. Dropped on a picture, they go after it. If the browser can't find a caret under the pointer (page margin, the grey area round the pages), they go at the current caret, else at the end of the document. A drop on the page while the header / footer is being edited leaves header / footer editing first.
+- **Header / footer:** drop a picture on a header or footer slot (left, centre or right) and it becomes that slot's picture at size **M**, like **Picture…** (DW11) and Ctrl+V (DW13): downscaled to 600 px, one header / footer undo step, saved, printed and exported. It works even when the header / footer is closed or still empty (drop in the top / bottom margin over the slot): header / footer editing opens on that slot. Only the first picture is used, since a slot holds one. While a picture is dragged over a slot the slot gets a dashed outline.
+- **Elsewhere** (ribbon, dialogs, status bar): nothing happens, and the browser does not open the picture in place of Writer.
+- Unchanged: dropping a `.how`, `.docx`, `.odt` or `.txt` opens it (the first file decides, as before); any other file shows "Drop a .how, .docx, .odt or .txt file to open it". New: an SVG, BMP or other picture type shows "Drop a PNG, JPEG, GIF or WebP picture to insert it" instead of the browser opening it.
+- Limits: dragging a picture that is already in the document (moving it) is not handled by Writer; the browser does what it does natively. Pictures dragged straight from a web page (not as files) are not inserted. A picture that can't be read is skipped with a short note.
+- Code: `modules/writer-imgdrop.js` (`isImage`, `slotAt`, `caretAt`, `where`, `toBody`, `toSlot`, `drop`, dragover outline), called from the drop handler in `modules/writer-docxopen.js`; outline style in `ui/headerfooter.css`. Test: `node --test apps/office/writer/test/test-dw13b-imgdrop.cjs`.
 
 ## DW13 — copy and paste pictures within Writer, and into the header / footer
 
