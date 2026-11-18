@@ -124,13 +124,9 @@ export class HUD {
 
     const towerIcons = {
       laser: '⚡',
-      railgun: '🎯',
       mortar: '💣',
-      missile: '🚀',
       cryo: '❄️',
-      tesla: '🌩️',
-      vortex: '🌀',
-      flak: '💥'
+      missile: '🚀'
     };
 
     Object.keys(TOWER_TYPES).forEach(key => {

@@ -1,6 +1,6 @@
 /**
  * Orbital Core 3D - Automated Test Suite
- * Tests planetary math, 8 tower definitions, 6 enemy archetypes, CSV registration, and save system.
+ * Tests planetary math, 4 tower definitions, 5 enemy archetypes, CSV registration, and save system.
  */
 
 const assert = require('assert');
@@ -83,23 +83,30 @@ test('Radius scale formula (10m to 50m)', () => {
 });
 
 // 4. Tower Weapon Definitions
-test('8 Defensive Towers Specification', () => {
+test('4 Defensive Towers Specification', () => {
   const towersCode = fs.readFileSync(path.resolve(__dirname, '../core/towers.js'), 'utf8');
-  const expectedTowers = ['laser', 'railgun', 'mortar', 'missile', 'cryo', 'tesla', 'vortex', 'flak'];
+  const expectedTowers = ['laser', 'mortar', 'cryo', 'missile'];
 
   expectedTowers.forEach(key => {
     assert.ok(towersCode.includes(`id: '${key}'`), `Missing tower type: ${key}`);
   });
+
+  const obsoleteTowers = ['railgun', 'tesla', 'vortex', 'flak'];
+  obsoleteTowers.forEach(key => {
+    assert.ok(!towersCode.includes(`id: '${key}'`), `Obsolete tower type still present: ${key}`);
+  });
 });
 
 // 5. Enemy Archetypes
-test('6 Enemy Archetypes Specification', () => {
+test('5 Enemy Archetypes Specification', () => {
   const enemiesCode = fs.readFileSync(path.resolve(__dirname, '../core/enemies.js'), 'utf8');
-  const expectedEnemies = ['scuttler', 'goliath', 'burrower', 'skimmer', 'roller', 'queen'];
+  const expectedEnemies = ['scuttler', 'goliath', 'burrower', 'skimmer', 'queen'];
 
   expectedEnemies.forEach(key => {
     assert.ok(enemiesCode.includes(`id: '${key}'`), `Missing enemy archetype: ${key}`);
   });
+
+  assert.ok(!enemiesCode.includes("id: 'roller'"), "Obsolete enemy archetype 'roller' still present");
 });
 
 // 6. Scrap Value Formula (75% refund)

@@ -1,5 +1,5 @@
 /**
- * Orbital Core - The 8 Defensive Tower Weapons
+ * Orbital Core - The 4 Defensive Tower Weapons
  * Handles tower geometries, range checks, firing logic, scrap refunds, and range indicators.
  */
 
@@ -20,20 +20,6 @@ export const TOWER_TYPES = {
     color: 0x00ffcc,
     desc: 'Rapid-fire directed energy beam against fast scouts.'
   },
-  railgun: {
-    id: 'railgun',
-    name: 'Tachyon Railgun',
-    cost: 200,
-    range: 16.0,
-    damage: 140,
-    fireRate: 1.2,
-    piercing: true,
-    hitsAir: false,
-    hitsGround: true,
-    aoe: 0,
-    color: 0x3388ff,
-    desc: 'High-caliber projectile puncturing rows of ground creeps.'
-  },
   mortar: {
     id: 'mortar',
     name: 'Plasma Mortar',
@@ -46,20 +32,6 @@ export const TOWER_TYPES = {
     aoe: 5.5,
     color: 0xff8800,
     desc: 'Lobs explosive shells over ridges into distant clusters.'
-  },
-  missile: {
-    id: 'missile',
-    name: 'Missile Silo',
-    cost: 300,
-    range: 20.0,
-    damage: 115,
-    fireRate: 1.5,
-    hitsAir: true,
-    hitsGround: true,
-    interceptsMeteor: true,
-    aoe: 3.5,
-    color: 0xff3344,
-    desc: 'Homing smart missiles targeting flyers and incoming meteorites.'
   },
   cryo: {
     id: 'cryo',
@@ -75,47 +47,19 @@ export const TOWER_TYPES = {
     color: 0x88eeff,
     desc: 'Emits a 360-degree sub-zero frost wave that slows creeps by 50%.'
   },
-  tesla: {
-    id: 'tesla',
-    name: 'Tesla Arc Coil',
-    cost: 220,
-    range: 12.0,
-    damage: 55,
-    fireRate: 0.85,
-    chainCount: 4,
+  missile: {
+    id: 'missile',
+    name: 'Missile Silo',
+    cost: 300,
+    range: 20.0,
+    damage: 115,
+    fireRate: 1.5,
     hitsAir: true,
     hitsGround: true,
-    aoe: 0,
-    color: 0xee00ff,
-    desc: 'Discharges high-voltage chain lightning across multiple enemies.'
-  },
-  vortex: {
-    id: 'vortex',
-    name: 'Vortex Graviton',
-    cost: 350,
-    range: 14.0,
-    damage: 0,
-    fireRate: 3.0,
-    pullForce: 4.5,
-    hitsAir: false,
-    hitsGround: true,
-    aoe: 8.0,
-    color: 0xaa22ff,
-    desc: 'Miniature black hole pulling nearby creeps into a tight clump.'
-  },
-  flak: {
-    id: 'flak',
-    name: 'Orbital Flak',
-    cost: 280,
-    range: 18.0,
-    damage: 90,
-    fireRate: 0.65,
-    hitsAir: true,
-    hitsGround: false,
     interceptsMeteor: true,
-    aoe: 4.0,
-    color: 0xffdd00,
-    desc: 'Specialized air-burst cannon shredding Void Skimmers and space debris.'
+    aoe: 3.5,
+    color: 0xff3344,
+    desc: 'Homing smart missiles targeting flyers and incoming meteorites.'
   }
 };
 
@@ -207,10 +151,6 @@ export class Tower {
       const turret = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.8, 8), accentMat);
       turret.position.y = 1.1;
       group.add(turret);
-    } else if (this.typeKey === 'railgun') {
-      const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.4, 0.4), accentMat);
-      barrel.position.y = 1.4;
-      group.add(barrel);
     } else if (this.typeKey === 'mortar') {
       const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.4, 1.4, 8), accentMat);
       barrel.position.y = 0.9;
@@ -227,24 +167,6 @@ export class Tower {
       const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.8), accentMat);
       crystal.position.y = 1.3;
       group.add(crystal);
-    } else if (this.typeKey === 'tesla') {
-      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.6, 6), baseMat);
-      post.position.y = 1.0;
-      const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), accentMat);
-      sphere.position.y = 1.8;
-      group.add(post);
-      group.add(sphere);
-    } else if (this.typeKey === 'vortex') {
-      const ring1 = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.1, 6, 12), accentMat);
-      ring1.position.y = 1.2;
-      group.add(ring1);
-    } else if (this.typeKey === 'flak') {
-      const b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.6, 6), accentMat);
-      b1.position.set(-0.25, 1.0, 0);
-      const b2 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.6, 6), accentMat);
-      b2.position.set(0.25, 1.0, 0);
-      group.add(b1);
-      group.add(b2);
     }
 
     return group;

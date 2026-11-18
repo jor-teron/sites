@@ -322,10 +322,9 @@ export class Simulation {
       let typeKey = 'scuttler';
       const r = Math.random();
 
-      if (waveNum >= 2 && r > 0.65) typeKey = 'skimmer';
-      if (waveNum >= 3 && r > 0.75) typeKey = 'burrower';
-      if (waveNum >= 4 && r > 0.85) typeKey = 'roller';
-      if (waveNum >= 3 && r < 0.15) typeKey = 'goliath';
+      if (waveNum >= 2 && r > 0.60) typeKey = 'skimmer';
+      if (waveNum >= 3 && r > 0.80) typeKey = 'burrower';
+      if (waveNum >= 3 && r < 0.20) typeKey = 'goliath';
       if (waveNum === this.maxWaves && i === Math.floor(baseCount / 2)) typeKey = 'queen';
 
       queue.push(typeKey);
@@ -542,21 +541,6 @@ export class Simulation {
       sound.laser();
       target.takeDamage(tower.damage);
       this.createBeamFX(tPos, target.mesh.position, tower.def.color, 0.08);
-    } else if (tower.typeKey === 'railgun') {
-      sound.railgun();
-      const fireDir = new THREE.Vector3().subVectors(target.mesh.position, tPos).normalize();
-      this.enemies.forEach(e => {
-        if (!e.def.isFlyer) {
-          const v = new THREE.Vector3().subVectors(e.mesh.position, tPos);
-          const proj = v.dot(fireDir);
-          if (proj > 0 && proj < tower.range) {
-            const perpDist = v.clone().sub(fireDir.clone().multiplyScalar(proj)).length();
-            if (perpDist < 1.8) e.takeDamage(tower.damage);
-          }
-        }
-      });
-      const endPos = tPos.clone().addScaledVector(fireDir, tower.range);
-      this.createBeamFX(tPos, endPos, tower.def.color, 0.15, 0.25);
     } else if (tower.typeKey === 'mortar') {
       sound.mortarLaunch();
       setTimeout(() => {
@@ -583,47 +567,6 @@ export class Simulation {
         }
       });
       this.createShockwaveFX(tPos, tower.def.aoe, tower.def.color);
-    } else if (tower.typeKey === 'tesla') {
-      sound.electric();
-      target.takeDamage(tower.damage);
-      let chainTarget = target;
-      for (let c = 0; c < tower.def.chainCount; c++) {
-        let nextTarget = null;
-        let nDistSq = Infinity;
-        for (let e of this.enemies) {
-          if (e !== chainTarget && !e.isBurrowed) {
-            const cd = e.mesh.position.distanceToSquared(chainTarget.mesh.position);
-            if (cd < Math.pow(6.0, 2) && cd < nDistSq) {
-              nDistSq = cd;
-              nextTarget = e;
-            }
-          }
-        }
-        if (nextTarget) {
-          nextTarget.takeDamage(tower.damage * 0.7);
-          this.createBeamFX(chainTarget.mesh.position, nextTarget.mesh.position, tower.def.color, 0.1);
-          chainTarget = nextTarget;
-        } else break;
-      }
-    } else if (tower.typeKey === 'vortex') {
-      sound.gravityPulse();
-      const aoeRadiusSq = Math.pow(tower.def.aoe, 2);
-      this.enemies.forEach(e => {
-        if (!e.def.isFlyer && e.mesh.position.distanceToSquared(tPos) < aoeRadiusSq) {
-          const pullDir = new THREE.Vector3().subVectors(tPos, e.mesh.position).normalize();
-          e.mesh.position.addScaledVector(pullDir, tower.def.pullForce * 0.5);
-        }
-      });
-      this.createShockwaveFX(tPos, tower.def.aoe, tower.def.color);
-    } else if (tower.typeKey === 'flak') {
-      sound.explosion(0.7);
-      const aoeRadiusSq = Math.pow(tower.def.aoe, 2);
-      this.enemies.forEach(e => {
-        if (e.def.isFlyer && e.mesh.position.distanceToSquared(target.mesh.position) < aoeRadiusSq) {
-          e.takeDamage(tower.damage);
-        }
-      });
-      this.createShockwaveFX(target.mesh.position, tower.def.aoe, tower.def.color);
     }
   }
 

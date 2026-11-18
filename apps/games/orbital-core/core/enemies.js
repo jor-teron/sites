@@ -1,5 +1,5 @@
 /**
- * Orbital Core - The 6 Procedural Enemy Archetypes
+ * Orbital Core - The 5 Procedural Enemy Archetypes
  * Manages low-poly 3D models, health bars, movement animations, and status effects.
  */
 
@@ -47,16 +47,6 @@ export const ENEMY_TYPES = {
     isFlyer: true,
     color: 0x00ffff,
     scale: 1.1
-  },
-  roller: {
-    id: 'roller',
-    name: 'Magma Roller',
-    hp: 240,
-    speed: 1.9,
-    reward: 35,
-    isFlyer: false,
-    color: 0xff2200,
-    scale: 1.2
   },
   queen: {
     id: 'queen',
@@ -134,10 +124,6 @@ export class Enemy {
       wing.rotation.x = Math.PI / 2;
       wing.scale.set(1.4, 0.3, 1.0);
       group.add(wing);
-    } else if (this.typeKey === 'roller') {
-      // Fiery rolling sphere
-      const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.7 * s, 1), glowMat);
-      group.add(orb);
     } else if (this.typeKey === 'queen') {
       // Rotating icosahedral cage with glowing core
       const cage = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2 * s, 0), new THREE.MeshBasicMaterial({ color, wireframe: true }));
