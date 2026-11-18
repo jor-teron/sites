@@ -33,7 +33,7 @@ Files already on the Hub local drive (Documents) open through `#drive=…&file=�
 - `index.html`: Entry point with theme pre-sync, redirects to `hub_office.html`.
 - `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent, Settings), dynamic document view container. Loads `../shared/office-hubbar.js`, `../shared/office-docname.js`, `../shared/office-newdoc.js` and `../shared/office-shared-settings.js`.
 - `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO7 Start Page cards and Open/drop area, HO8 Home button and empty-row hide, HO9 Settings rows, HO11 tab-title ellipsis.
-- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO12 new-blank-tab URLs (`?new=1` via `office-newdoc.js`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. Version constant: `HO12`.
+- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO12 new-blank-tab URLs (`?new=1` via `office-newdoc.js`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. Version constant: `HO12b`. (before HO12b) Version constant: `HO12`.
 - `hub_office_icon.png`: 128x128 RGBA suite icon.
 - `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, formatChipGroups, tab creation/switching/closing, Untitled/file-name labels, extension routing, and the Settings section.
 - `tests/ho10-titlebar.test.cjs`: Pure compose / prefix / cap / File-from-tabs / update-patch tests for the HO10 relay.
@@ -71,4 +71,14 @@ node --test apps/office/shared/tests/ho8a-hubbar.test.cjs
 node --test apps/office/shared/tests/ho9-shared-settings.test.cjs
 node --test apps/office/shared/tests/ho11-docname.test.cjs
 node --test apps/office/shared/tests/ho12-newdoc.test.cjs
+node --test apps/office/shared/tests/ho12b-untitled.test.cjs
+node --test apps/office/writer/test/test-ho12b-untitled.cjs
 ```
+
+## HO12b — Untitled N everywhere, names without extension, focus on tab switch
+
+- **New documents are `Untitled N` in every suite.** N is the lowest number not used by that suite's open tabs or its files seen in `Documents` (last Start Page scan). Hub Office passes it to the suite as `?new=1&untitled=N`; the suite uses that name when it is free among its saved files, otherwise the lowest free `Untitled N`. The name the suite sends always wins, so the tab's placeholder only changes when a saved file already has that number. Writer no longer names new documents `Doc_YYYY_MM_DD_HH-MM`; Spreadsheet no longer uses `Sheet`/`Sheet_2`, Tables `Tables (2)`, Presentation `Untitled deck`, Base `base`. Saved documents keep their names.
+- **No name-clash dialog for an auto-made name.** If two tabs both start as `Untitled 1`, the second one's first save quietly becomes `Untitled 2` (and its tab follows). A name you type yourself still gets the "Name already used" dialog.
+- **Tab labels show the name without its extension** (`Report`, not `Report.how`). `OfficeDocName.set` strips known office extensions; the tab tooltip still shows the file name when Hub Office opened the file.
+- **Switching to a document tab focuses its frame** (`iframe.contentWindow.focus()` and `iframe.focus()`, like the Hub title bar), so Ctrl+B / Ctrl+I / Ctrl+E reach the document right after a tab click. Switching to the Start Page does not move focus.
+- Limit: a suite cannot see other open Hub Office tabs, so two tabs can briefly share a name when their numbers come from different sources; the quiet save above settles it.

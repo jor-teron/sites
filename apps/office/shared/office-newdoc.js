@@ -6,7 +6,9 @@
  * and still restore.
  *
  *   OfficeNewDoc.isNewDocLaunch(search)  true when the query has new=1
- *   OfficeNewDoc.frameSrc(baseUrl, opts) opts.hash, opts.newBlank
+ *   OfficeNewDoc.frameSrc(baseUrl, opts) opts.hash, opts.newBlank,
+ *                                        opts.untitled (HO12b: &untitled=N
+ *                                        with new=1, the tab's "Untitled N")
  */
 (function (root) {
   'use strict';
@@ -32,6 +34,9 @@
     var addNew = opts.newBlank;
     if (addNew == null) addNew = !hash;
     if (addNew) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'new=1';
+    /* HO12b: pass the tab's Untitled number so the suite can use the same name. */
+    var un = Math.floor(Number(opts.untitled));
+    if (addNew && isFinite(un) && un >= 1) url += '&untitled=' + un;
     if (hash) url += '#' + hash;
     return url;
   }

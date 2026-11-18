@@ -287,7 +287,8 @@
   function install(hooks) {
     hooks = hooks || {};
     if (!root.OfficeNative) return null;
-    var stemName = 'Tables';
+    /* (before HO12b) var stemName = 'Tables'; */
+    var stemName = (root.OfficeDocName && root.OfficeDocName.initial) ? root.OfficeDocName.initial() : 'Tables';
     var session = root.OfficeNative.create({
       ext: 'hot',
       label: 'Hub Office Tables',
@@ -323,6 +324,8 @@
     });
     session.stemName = function () { return stemName; };
     session.noteStem = function (name) { stemName = Hot.stem(name); };
+    /* HO12b: the starting Untitled N is auto-made until a file opens or saves. */
+    if (session.isAutoName && /^Untitled \d+$/.test(stemName)) session.autoName = stemName;
     root.TABLES_HOT = session;
 
     if (typeof document === 'undefined') return session;

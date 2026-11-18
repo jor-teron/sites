@@ -332,6 +332,8 @@ function initBaseSettings() {
     if (window.BaseHob) {
       BaseHob.bind();
       BaseHob.openFromHash();
+      /* HO12b: a new tab's database is Untitled N (lowest free in Documents). */
+      if (isNew && typeof BaseHob.newName === "function" && !BaseHob.dest) BaseHob.newName().catch(function () {});
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") {
           BaseStore.saveNow();

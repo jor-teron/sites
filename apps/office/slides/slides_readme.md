@@ -357,5 +357,9 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - Decks live in this browser's localStorage (about 5 MB for everything); use Save or Export for a `.hop` file on the device, or to move a deck.
 - Touch drag was tested with emulated touch only, not yet on a real phone.
 
+## HO12b — new decks are Untitled N
+
+A new Hub Office tab and New deck propose `Untitled N`: the lowest N not used by decks on this device (and, for a new tab, `.hop` files in Documents), the tab's `?untitled=N` when free. (before HO12b) `Untitled deck`, `Untitled deck (2)`, …. An unchanged proposal is auto-made, so its first `.hop` save never opens the clash dialog. A name you type in the New deck box is yours and keeps the dialog.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

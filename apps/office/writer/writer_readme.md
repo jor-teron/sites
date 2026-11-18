@@ -143,7 +143,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - **Type:** Times New Roman (machine font), else the built-in Tinos, then Liberation Serif, then serif. Size list 8–36 (default 12 pt). Line height 1.6.
 - **Formatting:** bold, italic, underline, align left / centre / right, lists (• bullet, 1 2 3, a b c, A B C; suffix `.` `,` `)` or none for numbered lists, display only).
 - **Paste (DF16):** formatted. Bold, italic, underline, strike, sup/sub, colour, highlight, font size (nearest Draftly size), headings, lists, links, tables and pasted images are kept; everything else is cleaned out. Ctrl+Shift+V pastes plain text, and a **Paste as text** chip appears after a formatted paste.
-- **Saving (HOW1):** see the HOW1 section. Autosave is 0.8 s after typing stops. In the Hub the file is `Documents/<name>.how` on the Local drive. Outside the Hub, Save downloads or uses the save picker. An empty name box gets `Doc_YYYY_MM_DD_HH-MM`.
+- **Saving (HOW1):** see the HOW1 section. Autosave is 0.8 s after typing stops. In the Hub the file is `Documents/<name>.how` on the Local drive. Outside the Hub, Save downloads or uses the save picker. An empty name box gets `Untitled N` (HO12b; before HO12b it got `Doc_YYYY_MM_DD_HH-MM`).
 - **Recent:** in the Hub, lists `.how` files in Documents, newest first.
 - **Before HOW1:** documents were IndexedDB records. Those are not opened any more.
 - **PDF:** one image per page, true A4 in the current orientation, light colours, no marks. Named after the document. Text in the PDF isn't selectable.
@@ -304,3 +304,10 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
+
+## HO12b — new documents are Untitled N
+
+- `writer-storage.js` `makeName()` returns `Untitled N` (N from the Hub Office tab's `?untitled=N`, else 1). The old minute stamp is kept as `makeStampName()`. `autoName` / `isAutoName()` mark the auto-made name until the document is saved, opened or renamed by you.
+- `writer-how.js`: `untitledFor(rows, pref)` picks the lowest free `Untitled N` among the `.how` files in Documents; `nameNew()` runs for a new Hub Office tab (`?new=1`), and File → New (`fresh()`) uses it instead of `Doc_…_2`.
+- Two new documents in the same minute no longer share a name, and an auto-made name that is already taken is saved quietly as the next free `Untitled N`, so the "Name already used" dialog (whose backdrop blocked the ribbon) only appears for a name you typed.
+- Test: `node --test apps/office/writer/test/test-ho12b-untitled.cjs`.

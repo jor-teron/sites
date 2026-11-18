@@ -245,6 +245,7 @@
                   var bound = hobDest(dest);
                   session.dest = bound || null;
                   session.holdClash = '';
+                  session.autoName = ''; /* HO12b: an opened file keeps its own name */
                   var stem = Hob.stem((bound && bound.name) || file.name || Hob.FALLBACK);
                   if (session.noteStem) session.noteStem(stem);
                   resolve(true);
@@ -434,7 +435,9 @@
   Hob.install = function install(hooks) {
     hooks = hooks || {};
     if (!root || !root.OfficeNative) return null;
-    var stemName = Hob.FALLBACK;
+    /* (before HO12b) var stemName = Hob.FALLBACK; */
+    var isNew = !!(root.OfficeNewDoc && root.OfficeNewDoc.isNewDocLaunch && root.OfficeNewDoc.isNewDocLaunch());
+    var stemName = (isNew && root.OfficeDocName && root.OfficeDocName.initial) ? root.OfficeDocName.initial() : Hob.FALLBACK;
     var session = root.OfficeNative.create({
       ext: Hob.EXT,
       label: 'Hub Office Base',
@@ -482,6 +485,8 @@
     acceptLegacy(session, hooks);
     session.stemName = function () { return stemName; };
     session.noteStem = function (name) { stemName = Hob.stem(name); };
+    /* HO12b: a new Hub Office tab starts as Untitled N (auto-made until opened or saved). */
+    if (isNew && session.isAutoName) session.autoName = stemName;
     session.hobFileName = Hob.fileName;
     session.acceptsName = Hob.acceptsName;
     session.parseHash = Hob.parseHash;

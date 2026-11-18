@@ -2313,7 +2313,8 @@
   }
   function isUnsaved() { return rev !== savedRev; }
 
-  /* A free name for the new file in Hub Documents: Tables, Tables (2), ... */
+  /* A free name for the new file in Hub Documents: Tables, Tables (2), ...
+     (HO12b: no longer used by New; new files are Untitled N via TABLES_HOT.newName.) */
   function freeName() {
     var hot = window.TABLES_HOT;
     if (!hot || !hot.list) return Promise.resolve('Tables');
@@ -2349,7 +2350,9 @@
       dirty = false;
       var hot = window.TABLES_HOT;
       if (hot && hot.detach) hot.detach();
-      if (hot && hot.noteStem) hot.noteStem('Tables');
+      /* (before HO12b) if (hot && hot.noteStem) hot.noteStem('Tables'); */
+      if (hot && hot.noteStem) hot.noteStem(window.OfficeDocName && OfficeDocName.placeholder ? OfficeDocName.placeholder(1) : 'Untitled 1');
+      if (hot) hot.autoName = hot.stemName ? hot.stemName() : '';
       db = M.blankDb();
       st.viewMode = {};
       st.search = '';
@@ -2369,11 +2372,15 @@
       savedRev = rev;
       noteName();
       setStatus('New file');
+      /* (before HO12b) Tables, Tables (2), ... from freeName():
       if (hot && hot.inHub && hot.inHub() && hot.canLocal && hot.canLocal()) {
         freeName().then(function (name) {
           if (hot.noteStem) hot.noteStem(name);
           noteName();
         });
+      } */
+      if (hot && hot.newName && hot.inHub && hot.inHub() && hot.canLocal && hot.canLocal()) {
+        hot.newName(0).then(function () { noteName(); }, function () {});
       }
       return true;
     });

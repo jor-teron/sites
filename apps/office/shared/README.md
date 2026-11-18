@@ -66,6 +66,10 @@ Dialogs, save notices, and Auto theme (see above). No vendor file was moved or d
 
 `office-docname.js`: `OfficeDocName.set(name)` posts `{hubOfficeDocName:{v:1, name}}` to `window.parent` when the suite is in a frame, and is a no-op otherwise. It does not send `hub-hello` or add `body.in-hub`. `sanitize`, `displayLabel` (40-character cap with …), `placeholder` (`Untitled N`) and `parse` are the pure helpers Hub Office uses for tab labels.
 
+## HO12b — Untitled N and names without extension
+
+`office-docname.js` adds `stripExt` (known office extensions only, so `Report v1.2` stays), `untitledNumber`, `untitled(names, preferred)` (lowest free `Untitled N`, case and extension ignored; `preferred` when free), `preferred(search)` (`?untitled=N`) and `initial(search)`. `set(name)` now posts the name without its extension. `office-newdoc.js` `frameSrc(url, {untitled:N})` adds `&untitled=N` with `new=1`. `office-native.js` sessions get `newName()` (names a new document `Untitled N` and marks it auto-made), `autoName` / `isAutoName()`, and an autosave or Save of an auto-made name that is already taken quietly moves to the next free `Untitled N` instead of opening the clash dialog. `start()` names the blank document of a `?new=1` tab (or an empty Documents folder) this way.
+
 ## HO9 — shared Hub Office settings
 
 `office-shared-settings.js`: `OfficeSharedSettings` (`DEFAULTS`, `normalize`, `load`, `save`, `subscribe`) stores starting defaults for new documents in `hubOffice.settings` (font and size, paper and units, date and number format, autosave, save location, your name). Per-app settings still win and must not be copied into per-app keys. Already-open documents are not restyled. Suites do not read this key yet.

@@ -50,10 +50,11 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO12 and SUITES cover all 5 office applications', () => {
+test('VERSION is HO12b and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO12');
+  /* (before HO12b) assert.equal(HO.VERSION, 'HO12'); */
+  assert.equal(HO.VERSION, 'HO12b');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -232,6 +233,7 @@ test('createDocTab opens new tab and switches active view', () => {
   assert.equal(tab.title, 'Draft Notes');
   assert.equal(tab.appId, 'writer');
   /* (before HO12) assert.equal(tab.url, '../writer/'); */
+  /* (before HO12b) assert.equal(tab.url, '../writer/?new=1'); — a named tab has no Untitled number */
   assert.equal(tab.url, '../writer/?new=1');
   assert.equal(HO.openTabs.length, 2);
   assert.equal(HO.getActiveTabId(), tab.id);
@@ -254,9 +256,12 @@ test('createDocTab uses Untitled N per suite, or the opened file name', () => {
   const opened = HO.createDocTab('spreadsheet', { title: '  Documents/Budget.hos  ' });
   assert.equal(opened.title, 'Budget.hos');
   assert.equal(HO.untitledLabel(3), 'Untitled 3');
-  assert.equal(HO.displayTabLabel('Budget.hos'), 'Budget.hos');
+  /* (before HO12b) assert.equal(HO.displayTabLabel('Budget.hos'), 'Budget.hos');
   const long = 'Quarterly-financial-report-final-draft.hos';
-  assert.equal(HO.displayTabLabel(long), long.slice(0, 39) + '\u2026');
+  assert.equal(HO.displayTabLabel(long), long.slice(0, 39) + '\u2026'); */
+  assert.equal(HO.displayTabLabel('Budget.hos'), 'Budget');
+  const long = 'Quarterly-financial-report-final-draft-v2.hos';
+  assert.equal(HO.displayTabLabel(long), 'Quarterly-financial-report-final-draft-v2'.slice(0, 39) + '\u2026');
 });
 
 test('applyDocName updates a tab label and ignores empty or unknown sources', () => {
@@ -270,6 +275,61 @@ test('applyDocName updates a tab label and ignores empty or unknown sources', ()
   assert.equal(HO.applyDocName('start', 'Nope.how'), false);
   assert.equal(HO.parseDocNameMessage({ hubOfficeDocName: { v: 1, name: 'Letter.how' } }), 'Letter.how');
   assert.equal(HO.parseDocNameMessage({ type: 'hub-hello' }), null);
+});
+
+test('HO12b: switchTab focuses the document frame, not for the Start Page', () => {
+  const frames = {};
+  const focused = [];
+  function frame(id) {
+    if (!frames[id]) {
+      frames[id] = {
+        title: '',
+        contentWindow: { focus: () => focused.push('win:' + id) },
+        focus: () => focused.push('frame:' + id)
+      };
+    }
+    return frames[id];
+  }
+  const HO = loadScript({
+    document: {
+      readyState: 'complete',
+      getElementById: (id) => (id.indexOf('view-') === 0 ? { querySelector: () => frame(id.slice(5)) } : null),
+      querySelectorAll: () => [],
+      addEventListener: () => {}
+    }
+  });
+  const a = HO.createDocTab('writer');
+  const b = HO.createDocTab('writer');
+  assert.deepEqual(focused.slice(-2), ['win:' + b.id, 'frame:' + b.id], 'new tab gets focus');
+  focused.length = 0;
+  HO.switchTab(a.id);
+  assert.deepEqual(focused, ['win:' + a.id, 'frame:' + a.id]);
+  focused.length = 0;
+  HO.switchTab('start');
+  assert.deepEqual(focused, [], 'Start Page does not steal focus');
+  assert.equal(HO.focusTabFrame('start'), false);
+  /* a frame that throws on focus does not break the switch */
+  frames[a.id].contentWindow = { focus: () => { throw new Error('x'); } };
+  HO.switchTab(a.id);
+  assert.equal(HO.getActiveTabId(), a.id);
+});
+
+test('HO12b: Untitled N skips open tabs with that number and is passed as &untitled=N', () => {
+  const HO = loadScript();
+  const w1 = HO.createDocTab('writer');
+  const w2 = HO.createDocTab('writer');
+  assert.equal(w1.url, '../writer/?new=1&untitled=1');
+  assert.equal(w2.url, '../writer/?new=1&untitled=2');
+  HO.closeTab(w1.id);
+  const w3 = HO.createDocTab('writer');
+  assert.equal(w3.title, 'Untitled 1', 'a closed number is reused');
+  /* the suite renamed a tab: its number is now taken */
+  HO.applyDocName(w3.id, 'Untitled 4');
+  const w4 = HO.createDocTab('writer');
+  assert.equal(w4.title, 'Untitled 1');
+  assert.equal(HO.nextUntitledNumber('writer'), 3);
+  assert.equal(HO.nextUntitledNumber('tables'), 1);
+  assert.equal(HO.stripDocExt('Letter.how'), 'Letter');
 });
 
 test('closeTab closes document tab and refuses to close Start tab', () => {

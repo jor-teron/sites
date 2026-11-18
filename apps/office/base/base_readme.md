@@ -127,3 +127,7 @@ File → **Export .odb…** writes the current database as a LibreOffice Base `.
 ## BS14 (.hob only)
 
 `.hbase` no longer opens; old `.hbase` files are the same JSON, so rename to `.hob` to open. Only `.hob` is the native Base file. A `.hbase` file (picker, drop, or Hub hash) gets the in-app “This is not a Base file.” dialog. Import and export of `.odb`, `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`, `.json` and SQLite are unchanged. The JSON format is unchanged (`magic: "hbase"`, version 1). Cache tags are `?v=BS14`.
+
+## HO12b (new databases are Untitled N)
+
+A new Hub Office tab (`?new=1`) names the database `Untitled N` (lowest free among `.hob` files in Documents; the tab's `?untitled=N` when free) through `BaseHob.newName()`. (before HO12b) it was `base`. Saving that auto-made name when the file already exists quietly uses the next free `Untitled N` instead of the clash dialog. Base opened on its own still restores its last database under its old name.
