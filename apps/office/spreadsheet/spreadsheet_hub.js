@@ -67,7 +67,13 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
     sendCaps();
   }
   function sendTab() { if (!H.linked) return; var t = activeTab(); if (t !== lastTab) { lastTab = t; post({ type: "hub-tab", id: t }); } }
-  function sendTitle() { if (!H.linked) return; var v = H.title(); if (v !== lastTitle) { lastTitle = v; post({ type: "hub-title", value: v }); } }
+  /* (before HO11) function sendTitle() { if (!H.linked) return; var v = H.title(); if (v !== lastTitle) { lastTitle = v; post({ type: "hub-title", value: v }); } } */
+  function sendTitle() {
+    var v = H.title();
+    if (typeof OfficeDocName !== "undefined" && OfficeDocName.set) OfficeDocName.set(v);
+    if (!H.linked) return;
+    if (v !== lastTitle) { lastTitle = v; post({ type: "hub-title", value: v }); }
+  }
 
   /* Tab changes: wrap the ribbon's select (also catches clicks / hover / keys). */
   if (SHEET_RIBBON) {
@@ -138,5 +144,6 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
       H.menuLeave(d.delay);
     }
   });
+  sendTitle();
   post({ type: "hub-ready" });
 });

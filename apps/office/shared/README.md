@@ -62,6 +62,10 @@ Dialogs, save notices, and Auto theme (see above). No vendor file was moved or d
 
 `office-hubbar.js` passes `showLabel` and `kind:'text'` on buttons, and `align:'left'` on `set()`. Callers that omit them behave as before (icon-only buttons, right-aligned).
 
+## HO11 — document name for Hub Office tabs
+
+`office-docname.js`: `OfficeDocName.set(name)` posts `{hubOfficeDocName:{v:1, name}}` to `window.parent` when the suite is in a frame, and is a no-op otherwise. It does not send `hub-hello` or add `body.in-hub`. `sanitize`, `displayLabel` (40-character cap with …), `placeholder` (`Untitled N`) and `parse` are the pure helpers Hub Office uses for tab labels.
+
 ## HO9 — shared Hub Office settings
 
 `office-shared-settings.js`: `OfficeSharedSettings` (`DEFAULTS`, `normalize`, `load`, `save`, `subscribe`) stores starting defaults for new documents in `hubOffice.settings` (font and size, paper and units, date and number format, autosave, save location, your name). Per-app settings still win and must not be copied into per-app keys. Already-open documents are not restyled. Suites do not read this key yet.

@@ -12,12 +12,12 @@ The unified Start Center and multi-document tabbed container for the **Hub Offic
 <!-- (before HO8) the Start Page was a pinned tab at the top-left of the tab strip (`[ 🏠 Start Page ]`) and the row was always visible. -->
 - **Home**: In Hub, a 🏠 Home button (icon and label) sits on the left of the window title bar (H49 `HubTitleBar` via `office-hubbar.js`, `showLabel` and `align:'left'`) and shows the Start Page. Standalone, or before the Hub says hello, a small Home button sits in the document tab row instead. The Start Page still has the HO7 cards, Open/drop and Recent, plus the HO9 Settings section underneath.
 - **Quick buttons (HO10)**: Once Hub Office is linked to the Hub, it says hello to each suite iframe and relays the active document's Undo, Redo, Save, Print and File buttons into the title bar, just after Home (ids prefixed `d:` so they cannot collide; at most 8 buttons including Home). A click is forwarded to that suite, so its own code does the work. Ribbon tabs stay inside the suite and are not relayed. Switching tabs swaps the buttons; the Start Page shows Home only. Standalone, Hub Office does not say hello to the suites, so each keeps its own quick row. `../shared/office-quick.css` hides the in-app File button when `body.hub-titlebar` is set.
-- **Dynamic Document Tabs**: Opening a suite from a card, or opening any recent or dropped document, launches a new tab in the top tab bar (e.g. `[ 📝 Writer 1 ✕ ]`, `[ 📊 Budget.hos ✕ ]`). Document tabs stay in this row; they are not moved into the title bar.
+- **Dynamic Document Tabs**: Opening a suite from a card, or opening any recent or dropped document, launches a new tab in the top tab bar. A new unsaved document is `Untitled 1`, `Untitled 2`, … (counted per suite) until that suite reports its name; an opened or saved file shows its name (e.g. `[ 📊 Budget.hos ✕ ]`), with the suite's small icon in front. Rename and Save As update the tab. Long names are shortened with an ellipsis, and the full name is the tab's tooltip. Document tabs stay in this row; they are not moved into the title bar.
 - **Hidden row**: When no documents are open, the tab row hides, because it only existed for the Start Page tab.
 - **Workspace Navigation**: Switch instantly between open documents and the Start Page without opening multiple desktop windows.
 - **Tab Closing**: Closing a document tab (`✕`) returns focus to the previous active document or the Start Page. The Start Page cannot be closed.
 
-## 3. HO7 Start Page (cards unchanged in HO8 / HO8a / HO9 / HO10)
+## 3. HO7 Start Page (cards unchanged in HO8 / HO8a / HO9 / HO10 / HO11)
 <!-- (before HO7) HO6 was a minimalist Start Page: Open file on top, a New row of five icons, a Recent list, and a Supported formats link. Suite cards were removed. -->
 HO7 brings the suite cards back under a Hub Office header:
 - A **Hub Office** heading and the line "Write, calculate, present and organise. Files save on this device."
@@ -31,11 +31,11 @@ Files already on the Hub local drive (Documents) open through `#drive=…&file=�
 
 ## 4. Files
 - `index.html`: Entry point with theme pre-sync, redirects to `hub_office.html`.
-- `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent, Settings), dynamic document view container. Loads `../shared/office-hubbar.js` and `../shared/office-shared-settings.js`.
-- `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO7 Start Page cards and Open/drop area, HO8 Home button and empty-row hide, HO9 Settings rows.
-- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. Version constant: `HO10`.
+- `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent, Settings), dynamic document view container. Loads `../shared/office-hubbar.js`, `../shared/office-docname.js` and `../shared/office-shared-settings.js`.
+- `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO7 Start Page cards and Open/drop area, HO8 Home button and empty-row hide, HO9 Settings rows, HO11 tab-title ellipsis.
+- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. Version constant: `HO11`.
 - `hub_office_icon.png`: 128x128 RGBA suite icon.
-- `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, formatChipGroups, tab creation/switching/closing, extension routing, and the Settings section.
+- `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, formatChipGroups, tab creation/switching/closing, Untitled/file-name labels, extension routing, and the Settings section.
 - `tests/ho10-titlebar.test.cjs`: Pure compose / prefix / cap / File-from-tabs / update-patch tests for the HO10 relay.
 
 ## 5. Supported File Types & Routing
