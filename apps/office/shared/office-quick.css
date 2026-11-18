@@ -28,6 +28,13 @@
 /* In the Hub before the title bar takes over: first thing in the ribbon row */
 .of-quick.of-quick-fallback { margin-right: 4px; }
 body.hub-titlebar .of-quick { display: none !important; }
+/* HO10: File lives in the title bar once the suite has said hello, so
+   hide the in-app File button. Ribbon tabs stay. A hidden button's box
+   is 0,0, so the File menu opens at the top-left of the frame, as it
+   already does in the Hub (body.in-hub). Suites running alone in the
+   Hub already hide File with in-hub, so this does not change them. */
+body.hub-titlebar .of-file-btn,
+body.hub-titlebar #fileBtn { display: none; }
 
 /* Narrow: icons only; the ribbon tabs scroll sideways instead of pushing the row wider */
 @media (max-width: 820px) {
