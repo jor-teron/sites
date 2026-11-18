@@ -449,6 +449,21 @@ SPELLNUMBER no longer uses hyphens in any style ("forty five", not "forty-five")
 - **Release id:** title and `SHEET_VERSION` are SH31. `?v=` on `spreadsheet_spellnumber.js`, `spreadsheet_functions.js` and `spreadsheet_settings.js` is `SH31`. Other tokens stay as they were (HO3 or SH27).
 - **Tests:** `node --test apps/office/spreadsheet/test-sh31-spellnumber-wording.cjs`, `test-sh30-spellnumber-aliases.cjs` and `test-sh29-spellnumber.cjs`.
 
+## SH32 — Save straight to .xlsx, .ods and .csv
+
+Spreadsheet works like LibreOffice Calc: it saves directly in Excel, OpenDocument and CSV format, not only exports them. `.hos` stays the format of a new workbook. Code: `spreadsheet_saveformat.js` (wraps `SHEET_HOS` save, autosave, open and New); `csvText()` in `spreadsheet_files.js`; open paths in `spreadsheet_xlsx.js` and `spreadsheet_toolbar.js`.
+
+- **Save keeps the opened format.** An `.xlsx`, `.ods` or `.csv` opened from File → Open, a drop or a Hub `#drive=&file=` link is the Save target. Save (Ctrl+S, the Quick Access button, File → Save) writes back to that same file in that format through the export generators (SheetJS `xlsxWriteBook`, `csvText`). No `.hos` copy is made. A `.hos` or `.xls` still saves as `.hos` (an opened `.xls` becomes its own `.hos` as before).
+- **Save As** shows one in-app box with Name and Format (Hub Office Spreadsheet `.hos`, Excel `.xlsx`, OpenDocument `.ods`, CSV `.csv`). The current format is preselected. Typing an extension in the name (`Report.ods`) picks that format. Later Saves keep the chosen format, and the old file is kept. Choosing `.hos` uses the normal `.hos` path with the name from the box (no second question).
+- **Where it writes.** In the Hub: the opened file's own drive and folder (Save As uses that folder too), or Local → Documents when there is none. A rename writes the new name and removes the old one, as `.hos` does. A name that is already taken asks Replace / Use free name / Cancel (not a format question). Outside the Hub: the file handle from the browser's open picker or a drop (Chromium), otherwise the save picker (an extension typed there wins), otherwise a download.
+- **No warnings.** Saving in a non-native format never asks or warns, including CSV.
+- **Autosave.** The edit timer never writes `.xlsx`, `.ods` or `.csv`. Leaving the page, File → New / Clear and opening another file write the current target only when it has one and the content changed. An explicit Save always writes. A `.hos` workbook autosaves exactly as before.
+- **Open CSV.** A `.csv` now opens as its own one-sheet workbook named after the file. (before SH32) it replaced the active sheet of the open workbook.
+- **Name.** The name shows without the extension (the Hub Office tab and title bar).
+- **What other formats lose.** `.xlsx` / `.ods`: values, formulas, merges and number formats are kept. SheetJS Community Edition does not write cell styles (fonts, fills, borders, alignment), column widths, row heights, hidden rows and columns, frozen panes, filters, validation, conditional formatting, charts or page setup, so those are lost on the next open. Opened `.xlsx` / `.ods` styles are not read either. `.csv`: only the active sheet is saved, as its formulas (`=SUM(B2:B3)`, not the result) with no styles; other sheets are not written and nothing warns about it. Keep a `.hos` (Save As → `.hos`) for the full workbook.
+- **Release id:** title and `SHEET_VERSION` are SH32. `?v=SH32` on `spreadsheet_files.js`, `spreadsheet_toolbar.js`, `spreadsheet_settings.js`, `spreadsheet_xlsx.js`, `spreadsheet_hos.js` and the new `spreadsheet_saveformat.js`. Other tokens stay as they were.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh32-saveformat.cjs` (round-trips through `soffice --headless` when LibreOffice is installed).
+
 ## HO12b — new workbooks are Untitled N
 
 A new Hub Office tab, File → New / Clear, and an empty Documents folder name the workbook `Untitled N` (lowest free among `.hos` files; the tab's `?untitled=N` when free) through `SHEET_HOS.newName()`. (before HO12b) `Sheet`, `Sheet_2`, …. The first save of that auto-made name never opens the name-clash dialog; it moves to the next free `Untitled N`. The Hub Office tab shows the name without `.hos`.

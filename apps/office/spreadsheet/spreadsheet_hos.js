@@ -13,6 +13,9 @@
          Documents (shared/fs, the Files app disk) through
          ../shared/office-native.js. Outside the Hub, Save uses
          the save picker or a download.
+         SH32: an opened .xlsx / .ods / .csv saves back in its own format
+         (spreadsheet_saveformat.js wraps this session); .hos stays the
+         format of new workbooks.
          (before HOS1) the native copy was localStorage sheet-v4
          (and sheet-v4-page, spreadsheet-name). Those keys are
          not read and not migrated.
@@ -422,6 +425,8 @@
 
   /* Used by the .hos smoke test to restore a parsed file into the live workbook. */
   Hos.applyToWorkbook = applyDoc;
+  /* SH32: the live workbook as a logical document (spreadsheet_saveformat.js fingerprints it). */
+  Hos.capture = function capture() { return liveCapture(null); };
 
   function install() {
     if (!root.OfficeNative) return;
@@ -456,6 +461,9 @@
       },
       clash: function (name, free) { return root.OfficeNative.clashDialog(name, free); },
       promptName: function (cur) {
+        /* SH32: Save As already asked Name and Format in one box (spreadsheet_saveformat.js). */
+        var picked = root.SHEET_SAVEFMT && root.SHEET_SAVEFMT.takeName ? root.SHEET_SAVEFMT.takeName() : null;
+        if (picked != null) return Promise.resolve(picked);
         if (!root.OfficeDialog || !root.OfficeDialog.prompt) return Promise.resolve(cur);
         return root.OfficeDialog.prompt({ title: 'Save as', label: 'Name', value: cur, okLabel: 'Save' });
       },
@@ -490,7 +498,8 @@
 
     function flush() {
       if (typeof saveStore === 'function') clearTimeout(saveStore._t);
-      session.autosave();
+      /* (before SH32) session.autosave(); */
+      session.autosave({ flush: true });   /* SH32: page leave; an .xlsx / .ods / .csv target writes only when changed */
     }
     if (typeof SHEET_INIT !== 'undefined') {
       SHEET_INIT.push(function () {
