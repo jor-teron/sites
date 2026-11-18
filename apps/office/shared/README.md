@@ -58,6 +58,10 @@ Shared `../shared/office-tools.css` (tool groups, tool buttons, File menu items)
 
 Dialogs, save notices, and Auto theme (see above). No vendor file was moved or deleted.
 
+## HO8a — title-bar label and align
+
+`office-hubbar.js` passes `showLabel` and `kind:'text'` on buttons, and `align:'left'` on `set()`. Callers that omit them behave as before (icon-only buttons, right-aligned).
+
 Follow-up: these vendor files are byte-for-byte copies. A later release can point the apps at one copy.
 
 | bytes | copies |

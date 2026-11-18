@@ -47,10 +47,10 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO8 and SUITES cover all 5 office applications', () => {
+test('VERSION is HO8a and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO8');
+  assert.equal(HO.VERSION, 'HO8a');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -269,9 +269,10 @@ test('homeTitleBarButton is a single Home button and JS wires H49 without sendin
   assert.equal(btn.icon, '🏠');
   assert.equal(btn.title, 'Start Page');
   assert.equal(btn.enabled, true);
+  assert.equal(btn.showLabel, true);
 
   const js = fs.readFileSync(SCRIPT_PATH, 'utf8');
-  assert.ok(js.includes('HubTitleBar.set({ buttons: [homeTitleBarButton()] })'), 'set() sends only the Home button');
+  assert.ok(js.includes("HubTitleBar.set({ buttons: [homeTitleBarButton()], align: 'left' })"), 'set() sends Home on the left, without document tabs');
   assert.ok(js.includes("if (kind === 'button' && id === 'home') switchTab('start')"), 'title-bar Home click shows the Start Page');
   assert.ok(js.includes('HubTitleBar.onHello'), 'replies after hubTitleBarHello');
   assert.ok(!/HubTitleBar\.set\([^)]*tabs:/.test(js), 'document tabs are not sent to the title bar');
@@ -290,12 +291,12 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
 });
 
-test('Start Page HTML is the HO8 layout and keeps cache tokens', () => {
+test('Start Page HTML is the HO8a layout and keeps cache tokens', () => {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  assert.ok(html.includes('Hub Office HO8'), 'title includes HO8');
-  assert.ok(html.includes('content="HO8"'), 'version meta is HO8');
-  assert.ok(html.includes('hub_office.css?v=HO8'), 'css cache token is HO8');
-  assert.ok(html.includes('hub_office.js?v=HO8'), 'js cache token is HO8');
+  assert.ok(html.includes('Hub Office HO8a'), 'title includes HO8a');
+  assert.ok(html.includes('content="HO8a"'), 'version meta is HO8a');
+  assert.ok(html.includes('hub_office.css?v=HO8a'), 'css cache token is HO8a');
+  assert.ok(html.includes('hub_office.js?v=HO8a'), 'js cache token is HO8a');
   assert.ok(html.includes('Hub Office</h1>') || html.includes('>Hub Office</h1>'), 'has Hub Office heading');
   assert.ok(html.includes('Write, calculate, present and organise. Files save on this device.'), 'has the one-line description');
   assert.ok(html.includes('id="suites-grid"'), 'has suite cards grid');

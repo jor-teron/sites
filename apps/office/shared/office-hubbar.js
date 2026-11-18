@@ -1,8 +1,9 @@
 /*
  * apps/office/shared/office-hubbar.js  (HO1)
  * App side of the Hub title-bar contract (Hub side: H49, Hub Main Bot 2). Only active in a frame.
- *   HubTitleBar.set({buttons:[{id,label,icon,enabled,title}], tabs:[{id,label}], activeTab})
- *   HubTitleBar.update({buttons:[{id,enabled,label?}], activeTab})   partial patch by id
+ *   HubTitleBar.set({buttons:[{id,label,icon,enabled,title,showLabel,kind}], tabs:[{id,label}], activeTab, align})
+ *   HubTitleBar.update({buttons:[{id,enabled,label?,showLabel?,kind?}], activeTab})   partial patch by id
+ *   HO8a: showLabel (boolean) and kind:'text' pass through; set() sends align only when it is 'left'.
  *   HubTitleBar.clear()
  *   HubTitleBar.onClick(fn(kind, id))        kind 'button' | 'tab'
  *   HubTitleBar.onHello(fn())                 Hub said hello: reply with set()
@@ -31,6 +32,9 @@ var HubTitleBar = (function () {
       if (full || b.icon != null) o.icon = str(b.icon, 4);
       if (full || b.enabled != null) o.enabled = b.enabled !== false;
       if (full || b.title != null) o.title = str(b.title, 60);
+      /* (before HO8a) showLabel and kind were dropped */
+      if (full || b.showLabel != null) o.showLabel = b.showLabel === true;
+      if (b.kind === 'text') o.kind = 'text';
       return o;
     });
   }
@@ -43,6 +47,8 @@ var HubTitleBar = (function () {
     o = o || {};
     var m = { op: "set", buttons: cleanButtons(o.buttons, true), tabs: cleanTabs(o.tabs) };
     if (o.activeTab != null) m.activeTab = str(o.activeTab, 32);
+    /* (before HO8a) align was dropped */
+    if (o.align === 'left') m.align = 'left';
     post(m);
   };
   api.update = function (o) {
