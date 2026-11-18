@@ -1,10 +1,13 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO8a: the Home button in the Hub title bar shows its label (🏠 Home)
-   and sits on the left. HO8 moved the Start Page out of the tab strip
-   into that button. Document tabs stay in the existing row. Standalone,
-   a small Home button sits in that row. The Start Page tab is gone from
-   the strip, and the row hides when no documents are open. HO7 Start
-   Page cards, header and Open/drop are unchanged. */
+/* HO9: a Settings section on the Start Page stores shared defaults
+   (font, paper, date and number format, autosave, save location, name)
+   in office-shared-settings.js. Suites are not wired yet. HO8a: the
+   Home button in the Hub title bar shows its label (🏠 Home) and sits
+   on the left. HO8 moved the Start Page out of the tab strip into that
+   button. Document tabs stay in the existing row. Standalone, a small
+   Home button sits in that row. The Start Page tab is gone from the
+   strip, and the row hides when no documents are open. HO7 Start Page
+   cards, header and Open/drop are unchanged. */
 (function (root) {
   'use strict';
 
@@ -12,7 +15,8 @@
   /* (before HO7) const VERSION = 'HO6'; */
   /* (before HO8) const VERSION = 'HO7'; */
   /* (before HO8a) const VERSION = 'HO8'; */
-  const VERSION = 'HO8a';
+  /* (before HO9) const VERSION = 'HO8a'; */
+  const VERSION = 'HO9';
 
   const SUITES = [
     {
@@ -741,6 +745,84 @@
     }
   }
 
+  function settingsStore() {
+    try {
+      if (typeof localStorage !== 'undefined') return localStorage;
+    } catch (_) {}
+    return null;
+  }
+
+  function fillSettingsForm(s) {
+    if (!s || typeof document === 'undefined') return;
+    function setVal(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    }
+    setVal('set-font', s.font);
+    setVal('set-font-size', String(s.fontSize));
+    setVal('set-paper', s.paper);
+    setVal('set-units', s.units);
+    setVal('set-date-format', s.dateFormat);
+    setVal('set-number-locale', s.numberLocale);
+    setVal('set-save-location', s.saveLocation);
+    setVal('set-author', s.author);
+    const auto = document.getElementById('set-autosave');
+    if (auto) auto.checked = s.autosave === true;
+  }
+
+  /* Optional ping so an already-open suite iframe can notice a change.
+     Suites ignore this message until they are wired in later releases. */
+  function notifyOpenSuites() {
+    if (typeof document === 'undefined') return;
+    const frames = document.querySelectorAll('iframe.ho-doc-frame');
+    const target = (typeof location !== 'undefined' && location.origin && location.origin !== 'null')
+      ? location.origin
+      : '*';
+    frames.forEach((frame) => {
+      try {
+        if (frame.contentWindow) {
+          frame.contentWindow.postMessage({ hubOfficeSettings: { v: 1 } }, target);
+        }
+      } catch (_) {}
+    });
+  }
+
+  function initSettings() {
+    if (typeof OfficeSharedSettings === 'undefined' || typeof document === 'undefined') return;
+    if (!document.getElementById('ho-settings')) return;
+    const store = settingsStore();
+
+    function apply(s) {
+      fillSettingsForm(s);
+      notifyOpenSuites();
+    }
+
+    apply(OfficeSharedSettings.load(store));
+
+    OfficeSharedSettings.subscribe(apply);
+
+    function patch(partial) {
+      const cur = OfficeSharedSettings.load(store);
+      const next = OfficeSharedSettings.normalize(Object.assign({}, cur, partial));
+      OfficeSharedSettings.save(store, next);
+    }
+
+    function bind(id, ev, read) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(ev, () => { patch(read(el)); });
+    }
+    bind('set-font', 'change', (el) => ({ font: el.value }));
+    bind('set-font-size', 'change', (el) => ({ fontSize: Number(el.value) }));
+    bind('set-paper', 'change', (el) => ({ paper: el.value }));
+    bind('set-units', 'change', (el) => ({ units: el.value }));
+    bind('set-date-format', 'change', (el) => ({ dateFormat: el.value }));
+    bind('set-number-locale', 'change', (el) => ({ numberLocale: el.value }));
+    bind('set-autosave', 'change', (el) => ({ autosave: el.checked }));
+    bind('set-save-location', 'change', (el) => ({ saveLocation: el.value }));
+    bind('set-author', 'change', (el) => ({ author: el.value }));
+  }
+
   /* Reuse the H49 HubTitleBar hook (office-hubbar.js). After the Hub
      says hello, Home is a title-bar button. Document tabs are not sent
      up — they stay in the in-app tab row. Standalone, or a frame that
@@ -763,6 +845,7 @@
     initDropOverlay();
     initShortcuts();
     initHubHome();
+    initSettings();
     renderSuites();
     renderRecents();
     syncChrome();
