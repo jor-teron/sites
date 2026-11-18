@@ -12,6 +12,8 @@
  * SH15: TEXTSPLIT spills through the SH13 engine. CHAR(n) is the character
  * for a code from 1 to 255 (CHAR(10) is a line break). Delimiters are one
  * string each; this parser has no array constants and no CSV quotes.
+ * SH29: SPELLNUMBER(number, [style]) spells a number in words. Styles are
+ * WORLD (default), INR, USA and UK. INDIA is accepted as an alias for INR.
  */
 
 /**
@@ -474,6 +476,9 @@ function evalFunc(name, args, at) {
   /* SH15 */
   if (n === "CHAR") return fxChar(args);
   if (n === "TEXTSPLIT") return fxTextSplit(args);
+
+  /* SH29 */
+  if (n === "SPELLNUMBER") return fxSpellNumber(args);
 
   return ERR;
 }
@@ -1644,6 +1649,69 @@ function fxTextSplit(args) {
   return spillWrap(grid);
 }
 
+
+/* SH29: spell a number in words. A bare style name (WORLD, INR, USA, UK)
+   is accepted without quotes. A cell reference or quoted string is evaluated.
+   INDIA is accepted as an alias for INR by the wording module. */
+function fxSpellNumberStyle(raw) {
+  if (raw == null) return "";
+  var t = String(raw).trim();
+  var v;
+  if (t === "") return "";
+  if (/^"[^"]*"$/.test(t)) {
+    try { v = evalExpr(t); }
+    catch (e) {
+      if (e instanceof CellError) return e.value;
+      return ERR_VALUE;
+    }
+    if (isErrorValue(v)) return v;
+    return v == null ? "" : String(v).trim();
+  }
+  /* Bare word, not a cell ref such as A1. */
+  if (/^[A-Za-z]+$/.test(t) && !(typeof REF_LIKE !== "undefined" && REF_LIKE.test(t.toUpperCase()))) {
+    return t;
+  }
+  try { v = evalExpr(t); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR_VALUE;
+  }
+  if (isSpillArray(v)) return ERR_VALUE;
+  if (isErrorValue(v)) return v;
+  if (v == null) return "";
+  return String(v).trim();
+}
+
+function fxSpellNumber(args) {
+  var v, n, t, style;
+  if (!args || !args.length) return ERR_VALUE;
+  if (args[0] == null || String(args[0]).trim() === "") return ERR_VALUE;
+  try { v = evalExpr(args[0]); }
+  catch (e) {
+    if (e instanceof CellError) return e.value;
+    return ERR_VALUE;
+  }
+  if (isSpillArray(v)) return ERR_VALUE;
+  if (isErrorValue(v)) return v;
+  if (typeof v === "number") n = v;
+  else if (v == null || v === "") return ERR_VALUE;
+  else {
+    t = String(v).trim();
+    if (t === "" || /^(TRUE|FALSE)$/i.test(t)) return ERR_VALUE;
+    n = Number(t);
+    if (isNaN(n)) return ERR_VALUE;
+  }
+  style = "";
+  if (args.length > 1) {
+    style = fxSpellNumberStyle(args[1]);
+    if (isErrorValue(style)) return style;
+  }
+  if (typeof SPELLNUMBER === "undefined" || !SPELLNUMBER || typeof SPELLNUMBER.spell !== "function") {
+    return ERR;
+  }
+  return SPELLNUMBER.spell(n, style);
+}
+
 /* Catalog used by the formula hint and the function picker (SH9). */
 var FX_CATALOG = [
   /* (before SH19) { name: "SUM", cat: "Math", sig: "SUM(range, ...)", hint: "Add numbers." }, */
@@ -1711,6 +1779,7 @@ var FX_CATALOG = [
   { name: "TEXT", cat: "Text", sig: "TEXT(value, format)", hint: "Format a number or date as text. Examples: 0.00, 0%, yyyy-mm-dd, dd/mm/yyyy." },
   { name: "CHAR", cat: "Text", sig: "CHAR(number)", hint: "The character for a code from 1 to 255. CHAR(10) is a line break. CHAR(65) is A. A code outside that range is #VALUE!." },
   { name: "TEXTSPLIT", cat: "Text", sig: "TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])", hint: "Split text across columns and down rows. It spills. ignore_empty TRUE skips empty pieces. match_mode 1 ignores case. Short rows are padded (default #N/A). No delimiter, or a range, is #VALUE!." },
+  { name: "SPELLNUMBER", cat: "Text", sig: "SPELLNUMBER(number, [style])", hint: "Spell a number in words. Style is WORLD (default, no currency), INR (rupees and paise, lakh and crore), USA (dollars and cents) or UK (pounds and pence). A bare style word is accepted. Unknown style is #VALUE!. A number of 1e15 or more is #NUM!." },
   { name: "TODAY", cat: "Date", sig: "TODAY()", hint: "Today's date as YYYY-MM-DD." },
   /* (before SH19) { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and time." }, */
   { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and hours:minutes, with no seconds." },

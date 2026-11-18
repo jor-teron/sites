@@ -32,6 +32,17 @@ CELL / TEXT
                         {",",";"} are not accepted. Quotes are ordinary
                         characters (this is not a CSV parse). CHAR(10) works
                         as a row delimiter.
+  SPELLNUMBER(number, [style])
+                        spell a number in words. style is WORLD (default),
+                        INR, USA or UK, with or without quotes. WORLD uses
+                        the short scale and no currency (1250000.5 is
+                        "One million two hundred fifty thousand point five").
+                        Decimals are read digit by digit after "point".
+                        INR uses lakh and crore, rupees and paise, rounded
+                        to 2 decimals. USA uses dollars and cents. UK uses
+                        pounds and pence, with "and" inside hundreds.
+                        A value of 1e15 or more is #NUM!. A non-numeric
+                        number or an unknown style is #VALUE!.
 
 MATH
   +  -  *  /  ^
