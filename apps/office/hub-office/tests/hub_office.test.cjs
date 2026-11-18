@@ -87,7 +87,8 @@ test('FORMAT_TABLE lists truthful open, save and export formats', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(byId.spreadsheet.save)), ['.hos']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.spreadsheet.export)), ['.xlsx', '.ods', '.csv']);
 
-  assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.open)), ['.hop', '.hslides', '.pptx', '.odp']);
+  /* (before PN4) assert.deepEqual(..., ['.hop', '.hslides', '.pptx', '.odp']); */
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.open)), ['.hop', '.pptx', '.odp']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.save)), ['.hop']);
   /* .pdf added after verifying File → Export PDF */
   assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.export)), ['.pptx', '.odp', '.png', '.pdf']);
@@ -135,7 +136,8 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.csv, 'spreadsheet');
 
   assert.equal(HO.EXT_MAP.hop, 'slides');
-  assert.equal(HO.EXT_MAP.hslides, 'slides');
+  /* (before PN4) assert.equal(HO.EXT_MAP.hslides, 'slides'); */
+  assert.equal(HO.EXT_MAP.hslides, undefined);
   assert.equal(HO.EXT_MAP.pptx, 'slides');
   assert.equal(HO.EXT_MAP.odp, 'slides');
   assert.equal(HO.EXT_MAP.ppt, undefined);

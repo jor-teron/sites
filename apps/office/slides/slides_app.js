@@ -34,15 +34,20 @@
      opens a LibreOffice presentation through slides_odp.js (SLOdp + SLZip). Saving stays .hop.
      No JSON format bump.
    PN2: File → Export .odp… writes a LibreOffice presentation through slides_odpgen.js
-     (SLOdpgen + SLZip). Saving stays .hop. No JSON format bump. */
+     (SLOdpgen + SLZip). Saving stays .hop. No JSON format bump.
+   PN4: .hslides no longer opens. Only .hop is the native format (.pptx and .odp stay).
+     An old .hslides file is the same JSON — rename it to .hop to open it.
+     A .hslides file (picker, drop, or Hub hash) gets the in-app
+     "This is not a Presentation file." dialog. */
 (function () {
   'use strict';
   /* (before SL10) var VERSION = 'SL9'; */
   /* (before HOP1) var VERSION = 'SL10'; */
   /* (before SL11) var VERSION = 'HOP1'; */
+  /* (before PN4) var VERSION = 'PN2'; */
   /* (before PN2) var VERSION = 'PN1'; */
   /* (before PN1) var VERSION = 'SL11'; */
-  var VERSION = 'PN2';   /* legacy: 'SL11' · 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
+  var VERSION = 'PN4';   /* legacy: 'PN2' · 'PN1' · 'SL11' · 'HOP1' · 'SL10' · 'SL9' · 'SL8' · 'SL7' · 'SL6' · 'SL5' · 'SL4' · 'SL3' · 'SL2' */
   var $ = function (id) { return document.getElementById(id); };
   var deck = null;
 
@@ -361,6 +366,12 @@
   function importFile(file) {
     /* (before PN1) if (isPptx(file)) { importPptxFile(file); return; } */
     if (isPptx(file) || isOdp(file)) { importPptxFile(file); return; }
+    /* (before PN4) .hslides was accepted here and passed to SLFile.read (same JSON as .hop). */
+    var n = ((file && file.name) || '');
+    if (/\.hslides$/i.test(n)) {
+      dialog({ title: 'Could not import', msg: 'This is not a Presentation file.', buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+      return;
+    }
     SLFile.read(file).then(function (r) {
       if (r.error) { dialog({ title: 'Could not import', msg: r.error, buttons: [{ label: 'OK', v: true, cls: 'acc' }] }); return; }
       importParsed(r).then(function (d) { toast('Imported “' + d.name + '” (' + d.slides.length + (d.slides.length === 1 ? ' slide)' : ' slides)') + (r.cut ? ', first 500 kept' : ''), 2600); });
@@ -1214,7 +1225,8 @@
   $('file-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importFile(f); });
   $('pptx-in').addEventListener('change', function () { var f = this.files && this.files[0]; if (f) importPptxFile(f); });
   /* (before HOP1) drop a .hslides file anywhere; last line was importFile(f); */
-  /* drop a .hop or .hslides file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
+  /* (before PN4) drop a .hop or .hslides file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
+  /* drop a .hop file anywhere to import it; SL3: drop a picture to add it (where it lands on the slide) */
   addEventListener('dragover', function (e) { if (e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) e.preventDefault(); });
   addEventListener('drop', function (e) {
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (!f) return;
@@ -1225,7 +1237,8 @@
       insertPicture(f, at); return;
     }
     /* (before PN1) if (isPptx(f) || SLFile.isDeckName(f.name)) importFile(f); */
-    if (isPptx(f) || isOdp(f) || SLFile.isDeckName(f.name)) importFile(f);
+    /* (before PN4) if (isPptx(f) || isOdp(f) || SLFile.isDeckName(f.name)) importFile(f); */
+    if (isPptx(f) || isOdp(f) || SLFile.isDeckName(f.name) || /\.hslides$/i.test(f.name || '')) importFile(f);
   });
   addEventListener('keydown', function (e) {
     if (SLShow.on()) return;
@@ -1405,7 +1418,16 @@
     if (window.SLHop) {
       SLHop.bind();
       /* (before PN1) SLHop.openFromHash(); */
-      SLHop.openFromHash().then(function (ok) { if (!ok) return openImportFromHash(); });
+      /* (before PN4) SLHop.openFromHash().then(function (ok) { if (!ok) return openImportFromHash(); }); */
+      SLHop.openFromHash().then(function (ok) {
+        if (ok) return;
+        var ref = (window.FsRef && typeof window.FsRef.parse === 'function' && window.location) ? window.FsRef.parse(window.location.hash) : null;
+        if (ref && ref.name && /\.hslides$/i.test(ref.name)) {
+          dialog({ title: 'Could not import', msg: 'This is not a Presentation file.', buttons: [{ label: 'OK', v: true, cls: 'acc' }] });
+          return;
+        }
+        return openImportFromHash();
+      });
       addEventListener('pagehide', autosaveHop);
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') autosaveHop();

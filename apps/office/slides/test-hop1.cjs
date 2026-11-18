@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-/* HOP1: Presentation file names — export .hop, import .hop and .hslides.
+/* HOP1: Presentation file names — export .hop, import .hop.
+   PN4: .hslides is no longer accepted (before PN4: import .hop and .hslides).
    Run: node --test apps/office/slides/test-hop1.cjs
    No DOM, no browser, no network. Loads slides_file.js in a vm (same pattern as test-sl10-startup.js). */
 'use strict';
@@ -22,20 +23,24 @@ test('fileName writes a .hop export name', () => {
   const SLFile = loadSLFile();
   assert.equal(SLFile.fileName('My talk'), 'My talk.hop');
   assert.equal(SLFile.fileName('My talk.hop'), 'My talk.hop');
-  assert.equal(SLFile.fileName('My talk.hslides'), 'My talk.hop');
+  /* (before PN4) assert.equal(SLFile.fileName('My talk.hslides'), 'My talk.hop'); */
+  assert.equal(SLFile.fileName('My talk.hslides'), 'My talk.hslides.hop');
   assert.equal(SLFile.fileName('Q?.hop'), 'Q.hop');
   assert.ok(SLFile.fileName('Deck').endsWith('.hop'));
   assert.equal(SLFile.fileName(''), 'presentation.hop');
 });
 
-test('.hop and .hslides are accepted, other extensions are rejected', () => {
+test('.hop is accepted, .hslides and other extensions are rejected', () => {
   const SLFile = loadSLFile();
   assert.equal(SLFile.isDeckName('talk.hop'), true);
   assert.equal(SLFile.isDeckName('talk.HOP'), true);
-  assert.equal(SLFile.isDeckName('talk.hslides'), true);
-  assert.equal(SLFile.isDeckName('talk.HSLIDES'), true);
+  /* (before PN4) assert.equal(SLFile.isDeckName('talk.hslides'), true); */
+  /* (before PN4) assert.equal(SLFile.isDeckName('talk.HSLIDES'), true); */
+  assert.equal(SLFile.isDeckName('talk.hslides'), false);
+  assert.equal(SLFile.isDeckName('talk.HSLIDES'), false);
   assert.equal(SLFile.isDeckName({ name: 'talk.hop' }), true);
-  assert.equal(SLFile.isDeckName({ name: 'talk.hslides' }), true);
+  /* (before PN4) assert.equal(SLFile.isDeckName({ name: 'talk.hslides' }), true); */
+  assert.equal(SLFile.isDeckName({ name: 'talk.hslides' }), false);
   assert.equal(SLFile.isDeckName('talk.pptx'), false);
   assert.equal(SLFile.isDeckName('talk.json'), false);
   assert.equal(SLFile.isDeckName('talk.how'), false);

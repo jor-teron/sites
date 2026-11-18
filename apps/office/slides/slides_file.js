@@ -1,4 +1,5 @@
-/* Hub Office Presentation HOP1 — .hop import / export (SLFile). Old .hslides files still open. The JSON
+/* Hub Office Presentation PN4 — .hop import / export (SLFile). .hslides no longer opens.
+   (before PN4) Old .hslides files still open. The JSON
    format is unchanged: "hub-slides" version 6 (reads 1–6). (before HOP1) Hub Office Slides SL1 — .hslides.
    Open, documented JSON (see slides_readme.md):
      { "format": "hub-slides", "version": 1, "name": "My talk", "created": "<ISO>", "updated": "<ISO>",
@@ -158,10 +159,12 @@
   function safeName(n) { return (String(n || 'presentation').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').trim() || 'presentation').slice(0, 60); }   /* (before HOP1) default 'slides' */
   function isDeckName(name) {
     var n = typeof name === 'string' ? name : (name && name.name) || '';
-    return /\.(hop|hslides)$/i.test(n);
+    /* (before PN4) return /\.(hop|hslides)$/i.test(n); */
+    return /\.hop$/i.test(n);
   }
   function fileName(name) {
-    var s = String(name || '').replace(/\.(hop|hslides)$/i, '');
+    /* (before PN4) var s = String(name || '').replace(/\.(hop|hslides)$/i, ''); */
+    var s = String(name || '').replace(/\.hop$/i, '');
     return safeName(s) + '.hop';
   }
   function download(deck) {
