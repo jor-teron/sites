@@ -1,13 +1,16 @@
 /*
  * spreadsheet_files.js
  * Files: CSV export / import of the active sheet (parser), download helper, print (active sheet; hidden rows/cols skipped).
+ * SH32: csvText() builds the CSV text for Export CSV and for Save to .csv.
  */
 
 /**
  * Export formulas as CSV. Trailing empty rows and columns are left out
  * (blank cells inside the used area are kept).
  */
-function exportCsv() {
+/* (before SH32) function exportCsv() {  -- the CSV text is now built by csvText()
+   (also used by SH32 Save to .csv in spreadsheet_saveformat.js); exportCsv downloads it. */
+function csvText() {
   var r, c, row, f, lines = [], lastR = -1, lastC = -1;
   /* (before SH24) the scan read cells[r][c].formula for every slot.
   for (r = 0; r < ROWS; r++) {
@@ -39,9 +42,18 @@ function exportCsv() {
     }
     lines.push(row.join(","));
   }
+  /* (before SH32)
   var name = (workbook && workbook.sheets[workbook.active] && workbook.sheets[workbook.active].name) || "sheet";
   name = String(name).replace(/[\\\/:*?"<>|]/g, "_") + ".csv";
   downloadText(name || CFG.csv.exportName, lines.join("\n"));
+  */
+  return lines.join("\n");
+}
+
+function exportCsv() {
+  var name = (workbook && workbook.sheets[workbook.active] && workbook.sheets[workbook.active].name) || "sheet";
+  name = String(name).replace(/[\\\/:*?"<>|]/g, "_") + ".csv";
+  downloadText(name || CFG.csv.exportName, csvText());
 }
 
 /**

@@ -48,6 +48,8 @@ function wireUi() {
       ? "Clear every sheet and start a new workbook? This can be undone."
       : TXT.confirmClear;
     function go() {
+      /* SH32: an .xlsx / .ods / .csv target is written first when it changed (no question). */
+      if (typeof SHEET_SAVEFMT !== "undefined" && SHEET_SAVEFMT.flush) SHEET_SAVEFMT.flush();
       undoRecord("clear-all");
       emptyWorkbook();
       selR = selC = extR = extC = 0; selMode = "cell";
@@ -71,6 +73,17 @@ function wireUi() {
     }
     /* (before SH27) if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; } */
     if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
+    /* (before SH32) a .csv was read into the active sheet of the open workbook:
+    var reader = new FileReader();
+    reader.onload = function () { importCsvText(String(reader.result)); };
+    reader.readAsText(file);
+    ev.target.value = ""; */
+    if (typeof SHEET_SAVEFMT !== "undefined" && SHEET_SAVEFMT.openCsvFile) {
+      /* SH32: a .csv opens as its own workbook and Save writes back to it. */
+      SHEET_SAVEFMT.openCsvFile(file);
+      ev.target.value = "";
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function () { importCsvText(String(reader.result)); };
     reader.readAsText(file);

@@ -20,6 +20,10 @@
  * black (000000). Import still does not read cell styles. Merges are unchanged.
  * SH13: spill ghosts are not stored, so export writes the anchor formula only
  * (plus that cell's cached top-left value). Import still loads formulas and values.
+ * SH32: an opened .xlsx / .ods is the Save target (spreadsheet_saveformat.js):
+ * importXlsxFile(file, { dest | handle }) no longer makes a .hos copy of it.
+ * .xls still becomes a .hos. A Hub link to a .csv opens it the same way.
+ * A drop keeps the file handle (Chromium, outside the Hub).
  */
 function xlsxFmtZ(fmt) {
   if (fmt === "int") return "0";
@@ -144,7 +148,13 @@ function xlsxWriteBook(XLSX, bookType, typ) {
   return XLSX.write(xlsxBuildBook(XLSX), { bookType: bookType || "xlsx", type: typ || "array" });
 }
 
-function importXlsxFile(file) {
+/* (before SH32) function importXlsxFile(file) { */
+function importXlsxFile(file, o) {
+  o = o || {};
+  var SF = (typeof SHEET_SAVEFMT !== "undefined") ? SHEET_SAVEFMT : null;   /* SH32 */
+  var direct = SF ? SF.formatOf(file && file.name) : "hos";
+  if (direct !== "xlsx" && direct !== "ods") direct = "";
+  if (SF) SF.flush();   /* SH32: an .xlsx / .ods / .csv being replaced is written first when changed */
   xlsxToast("Opening " + file.name + "…");
   if (file && file.name && window.SHEET_HUB && SHEET_HUB.setTitle) {
     SHEET_HUB.setTitle(String(file.name).replace(/\.[^.]+$/, ""));
@@ -170,7 +180,16 @@ function importXlsxFile(file) {
     afterChange();
     if (typeof saveStore === "function") clearTimeout(saveStore._t);
     var saved = Promise.resolve();
+    /* (before SH32) every opened workbook became a .hos copy:
     if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.detach) {
+      SHEET_HOS.skipWrite = false;
+      saved = SHEET_HOS.save({ unique: true });
+    } */
+    if (SF && direct) {
+      /* SH32: Save writes back to this .xlsx / .ods; the .hos session stays held. */
+      SF.opened(direct, o.dest || (o.handle ? { kind: "handle", handle: o.handle, name: o.handle.name || file.name } : null), file.name);
+    } else if (typeof SHEET_HOS !== "undefined" && SHEET_HOS.detach) {
+      if (SF) SF.reset();
       SHEET_HOS.skipWrite = false;
       saved = SHEET_HOS.save({ unique: true });
     }
@@ -264,7 +283,9 @@ function openXlsxFromHash() {
     return Promise.resolve(false);
   }
   var ref = window.FsRef.parse(window.location.hash);
-  if (!ref || !ref.name || !xlsxIsWorkbookName(ref.name)) return Promise.resolve(false);
+  /* (before SH32) if (!ref || !ref.name || !xlsxIsWorkbookName(ref.name)) return Promise.resolve(false); */
+  var isCsv = !!(ref && ref.name && /\.csv$/i.test(ref.name) && typeof SHEET_SAVEFMT !== "undefined");
+  if (!ref || !ref.name || !(xlsxIsWorkbookName(ref.name) || isCsv)) return Promise.resolve(false);
   if (typeof window.FsRef.resolve !== "function") return Promise.resolve(false);
   var key = (window.FsRef.hash ? window.FsRef.hash(ref) : (ref.drive + "|" + (ref.path || "") + "|" + ref.name));
   if (key === xlsxHashKey) return Promise.resolve(false);
@@ -273,7 +294,10 @@ function openXlsxFromHash() {
     var handle = got && (got.file || got.handle || got);
     if (!handle || typeof handle.getFile !== "function") { xlsxHashKey = ""; return false; }
     return handle.getFile().then(function (file) {
-      importXlsxFile(file);
+      /* (before SH32) importXlsxFile(file); */
+      var dest = { kind: "hub", drive: ref.drive, path: ref.path || "", name: ref.name };   /* SH32: Save writes back here */
+      if (isCsv) return SHEET_SAVEFMT.openCsvFile(file, { dest: dest });
+      importXlsxFile(file, { dest: dest });
       return true;
     });
   }).catch(function (e) {
@@ -307,10 +331,26 @@ if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded
   document.addEventListener("dragover", function (e) {
     if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1) e.preventDefault();
   });
+  /* (before SH32)
   document.addEventListener("drop", function (e) {
     var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!xlsxIsWorkbookFile(f)) return;
     e.preventDefault();
     importXlsxFile(f);
+  }); */
+  document.addEventListener("drop", function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    var SF = (typeof SHEET_SAVEFMT !== "undefined") ? SHEET_SAVEFMT : null;
+    var csv = !!(SF && f && /\.csv$/i.test(f.name || ""));
+    if (!xlsxIsWorkbookFile(f) && !csv) return;
+    e.preventDefault();
+    /* SH32: keep the dropped file's handle (Chromium, outside the Hub) so Save writes back to it. */
+    var hp = SF ? SF.dropHandle(e, f) : null;
+    function go(h) {
+      if (csv) SF.openCsvFile(f, h ? { handle: h } : {});
+      else importXlsxFile(f, h ? { handle: h } : {});
+    }
+    if (hp && hp.then) hp.then(function (h) { go(h && h.kind === "file" ? h : null); }, function () { go(null); });
+    else go(null);
   });
 });
