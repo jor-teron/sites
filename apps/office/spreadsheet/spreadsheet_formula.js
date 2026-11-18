@@ -23,6 +23,8 @@
  * is #LOOP!). A bad address is #REF!.
  * SH15: TEXTSPLIT returns a 2D array and spills through the same engine. CHAR
  * is an ordinary text function. No new parser (no array constants, no CSV quotes).
+ * SH35: #NAME? for a function this app does not have. A whole expression is taken
+ * as one string only when it is one "literal", so "A"&"2" joins (it was A"&"2).
  */
 
 /* Formula error tokens shown in cells */
@@ -37,7 +39,10 @@ var ERR_SPILL = "#SPILL!";
 var ERR_CALC = "#CALC!";
 /* (before SH13): var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE]; */
 /* (before SH14): var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL]; */
-var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL, ERR_CALC];
+/* (before SH35): var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL, ERR_CALC]; */
+/* SH35: #NAME? is a function this app does not have (Excel's error for an unknown name). */
+var ERR_NAME = "#NAME?";
+var ALL_ERRORS = [ERR, ERR_DIV0, ERR_NUM, ERR_REF, ERR_LOOP, ERR_NA, ERR_VALUE, ERR_SPILL, ERR_CALC, ERR_NAME];
 
 /* Array placeholders (@@n@@) share one bag per formula. Not a cell ref (no letter+digit). */
 var evalArrays = [];
@@ -398,7 +403,11 @@ function evalExpr(expr) {
   /* A bare array token (a function result, or A1#) is the value. */
   if (arrayFromToken(s)) return arrayFromToken(s);
 
-  if (/^".*"$/.test(s)) return s.slice(1, -1);
+  /* (before SH35) if (/^".*"$/.test(s)) return s.slice(1, -1);
+     That also took "A"&"2" as one string (A"&"2), so ="a"&"b", and every function
+     argument built from strings, such as INDIRECT(SUBSTITUTE(ADDRESS(1,c,4),"1","")&"3")
+     where the inner results come back as quoted text, were wrong or #REF!. */
+  if (/^"(?:[^"]|"")*"$/.test(s)) return s.slice(1, -1);   /* SH35: one literal only */
   if (/^(TRUE|FALSE)$/i.test(s)) return s.toUpperCase();
 
   bag = [];
@@ -775,10 +784,12 @@ function evalFormula(f, row, col) {
   var s = String(f).trim();
   if (s.charAt(0) !== "=") return s;
   s = s.slice(1).trim();
+  /* (before SH35) any formula that began and ended with " was one string, so ="a"&"b" showed a"&"b:
   if (s.charAt(0) === '"') {
     var end = s.lastIndexOf('"');
     if (end > 0 && s.slice(end + 1).trim() === "") return s.slice(1, end);
-  }
+  } */
+  if (/^"(?:[^"]|"")*"$/.test(s)) return s.slice(1, -1);   /* SH35: one literal only */
   try {
     var v = evalExpr(s);
     if (isSpillArray(v)) return v;

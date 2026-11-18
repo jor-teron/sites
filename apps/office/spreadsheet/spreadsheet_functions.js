@@ -18,6 +18,10 @@
  * WORLD (default), INDIA or INR, USA or USD, UK or GBP.
  * SH31: no hyphens; currency styles drop the main currency word and keep
  * the small unit (paise, cents, pence).
+ * SH35: ADDRESS(row, column, [abs_num], [a1], [sheet_text]) builds address text
+ * like Excel ($A$1, A$1, $A1, A1, R1C1 style, 'My Sheet'!$A$1); INDIRECT reads it
+ * back. A name that is not a function here is #NAME? (it was #ERR).
+ * fxScanUnknown lists the functions an opened workbook uses that this app lacks.
  */
 
 /**
@@ -476,6 +480,8 @@ function evalFunc(name, args, at) {
   if (n === "ROW") return fxRow(args, at);
   if (n === "COLUMN") return fxColumn(args, at);
   if (n === "INDIRECT") return fxIndirect(args);
+  /* SH35 */
+  if (n === "ADDRESS") return fxAddress(args);
 
   /* SH15 */
   if (n === "CHAR") return fxChar(args);
@@ -484,7 +490,9 @@ function evalFunc(name, args, at) {
   /* SH29 */
   if (n === "SPELLNUMBER") return fxSpellNumber(args);
 
-  return ERR;
+  /* (before SH35) return ERR; */
+  /* SH35: a name this app does not have is #NAME?, like Excel. */
+  return fxFindName(n) ? ERR : ERR_NAME;
 }
 
 /* Numbers inside a scalar or a spilled array. An error inside an array fails the call. */
@@ -1516,6 +1524,133 @@ function fxIndirect(args) {
   return spillWrap(rows);
 }
 
+/* ---- SH35 ADDRESS ---- */
+
+var FX_MAX_ROW = 1048576;   /* Excel's limits; the address text may point past this grid */
+var FX_MAX_COL = 16384;
+
+function fxColName(n) {
+  var s = "";
+  while (n > 0) {
+    n--;
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26);
+  }
+  return s;
+}
+
+/* Sheet name as Excel writes it in an address: plain when it is a simple name,
+   otherwise in single quotes with inner quotes doubled ('My Sheet', 'Bob''s'). */
+function fxAddressSheet(name) {
+  name = String(name);
+  if (/^[A-Za-z_][A-Za-z0-9_.]*$/.test(name) && !/^[A-Za-z]{1,3}[0-9]+$/.test(name) &&
+      !/^(R[0-9]*C?[0-9]*|C[0-9]*)$/i.test(name)) return name;
+  return "'" + name.replace(/'/g, "''") + "'";
+}
+
+function fxReadInt(arg, missingOk, dflt) {
+  var n = fxReadNum(arg, missingOk, dflt);
+  if (isErrorValue(n)) return n;
+  return n < 0 ? Math.ceil(n) : Math.floor(n);
+}
+
+/* ADDRESS(row, column, [abs_num], [a1], [sheet_text]). Decimals are truncated.
+   Row / column below 1 or past 1048576 / 16384, abs_num outside 1-4, or text that
+   is not a number is #VALUE!. An error argument passes through. */
+function fxAddress(args) {
+  var row, col, abs, a1, sheet = "", v, out;
+  if (args.length < 2 || args.length > 5) return ERR_VALUE;
+  row = fxReadInt(args[0], false);
+  if (isErrorValue(row)) return row;
+  col = fxReadInt(args[1], false);
+  if (isErrorValue(col)) return col;
+  abs = fxReadInt(args[2], true, 1);
+  if (isErrorValue(abs)) return abs;
+  a1 = fxReadBool(args[3], true);
+  if (a1 === ERR_VALUE) {   /* any number works too: 0 is FALSE, the rest TRUE */
+    v = fxReadNum(args[3], true, 1);
+    a1 = isErrorValue(v) ? ERR_VALUE : v !== 0;
+  }
+  if (isErrorValue(a1)) return a1;
+  if (row < 1 || row > FX_MAX_ROW || col < 1 || col > FX_MAX_COL) return ERR_VALUE;
+  if (abs < 1 || abs > 4) return ERR_VALUE;
+  if (args.length > 4 && String(args[4] == null ? "" : args[4]).trim() !== "") {
+    try { v = evalExpr(args[4]); }
+    catch (e) {
+      if (e instanceof CellError) return e.value;
+      return ERR_VALUE;
+    }
+    if (isSpillArray(v)) return ERR_VALUE;
+    if (isErrorValue(v)) return v;
+    sheet = String(v == null ? "" : v);
+  }
+  if (a1) {
+    out = (abs === 1 || abs === 3 ? "$" : "") + fxColName(col) + (abs === 1 || abs === 2 ? "$" : "") + row;
+  } else {
+    out = (abs === 1 || abs === 2 ? "R" + row : "R[" + row + "]") + (abs === 1 || abs === 3 ? "C" + col : "C[" + col + "]");
+  }
+  return sheet ? fxAddressSheet(sheet) + "!" + out : out;
+}
+
+/* ---- SH35 imported formulas and the unsupported-functions note ---- */
+
+/* Function names used in a formula ("=..."), upper case, prefixes dropped. */
+function fxFormulaNames(f) {
+  var s = String(f == null ? "" : f), out = [], m, re, name;
+  if (s.charAt(0) !== "=" || s.indexOf("(") < 0) return out;
+  s = s.replace(/"[^"]*"/g, '""').replace(/'(?:[^']|'')*'!/g, "S!");
+  re = /(^|[^A-Za-z0-9_.$!])([A-Za-z_][A-Za-z0-9_.]*)\s*\(/g;
+  while ((m = re.exec(s))) {
+    name = m[2].toUpperCase().replace(/^(?:_XLFN\.|_XLWS\.|COM\.MICROSOFT\.)+/, "");
+    if (name && out.indexOf(name) < 0) out.push(name);
+  }
+  return out;
+}
+
+/* One pass over every stored formula in every sheet. Returns
+   { names: [unknown names, most used first], cells: formula cells with one }. */
+function fxScanUnknown(sheets) {
+  var count = {}, order = [], cellsHit = 0, si, grid, r, c, row, cell, names, k, hit;
+  function visit(f) {
+    if (typeof f !== "string" || f.charAt(0) !== "=") return;
+    names = fxFormulaNames(f);
+    hit = false;
+    for (k = 0; k < names.length; k++) {
+      if (fxFindName(names[k])) continue;
+      if (!count[names[k]]) { count[names[k]] = 0; order.push(names[k]); }
+      count[names[k]]++;
+      hit = true;
+    }
+    if (hit) cellsHit++;
+  }
+  for (si = 0; sheets && si < sheets.length; si++) {
+    grid = sheets[si] && sheets[si].cells;
+    if (!grid) continue;
+    if (typeof forEachReal === "function") {
+      forEachReal(grid, function (r2, c2, real) { visit(real && real.formula); });
+      continue;
+    }
+    for (r = 0; r < grid.length; r++) {
+      row = grid[r];
+      if (!row) continue;
+      for (c = 0; c < row.length; c++) {
+        cell = row[c];
+        if (cell) visit(cell.formula);
+      }
+    }
+  }
+  order.sort(function (a, b) { return count[b] - count[a]; });
+  return { names: order, cells: cellsHit };
+}
+
+/* Short note for a toast, or "" when every function is known. */
+function fxUnknownNote(sheets) {
+  var res = fxScanUnknown(sheets), shown;
+  if (!res.names.length) return "";
+  shown = res.names.slice(0, 6).join(", ") + (res.names.length > 6 ? " +" + (res.names.length - 6) + " more" : "");
+  return "Not supported yet: " + shown + " (" + res.cells + " cell" + (res.cells === 1 ? "" : "s") + ")";
+}
+
 /* ---- SH15 CHAR and TEXTSPLIT ---- */
 
 /* Character for a code from 1 to 255. CHAR(10) is a line break, CHAR(65) is A.
@@ -1759,6 +1894,7 @@ var FX_CATALOG = [
   { name: "ROW", cat: "Lookup", sig: "ROW([reference])", hint: "Row number of this cell, or of a reference. A range spills one number per row. A1# uses that spill." },
   { name: "COLUMN", cat: "Lookup", sig: "COLUMN([reference])", hint: "Column number of this cell (A is 1), or of a reference. A range spills one number per column." },
   { name: "INDIRECT", cat: "Lookup", sig: "INDIRECT(text)", hint: "The cell or range named by text, such as \"B2\" or \"B\"&2. A range spills and works inside SUM. A bad address is #REF!. Recalculates whenever any cell changes." },
+  { name: "ADDRESS", cat: "Lookup", sig: "ADDRESS(row, column, [abs_num], [a1], [sheet_text])", hint: "Cell address as text. abs_num 1 (default) is $A$1, 2 is A$1, 3 is $A1, 4 is A1. a1 FALSE gives R1C1 style. sheet_text adds Sheet!. Use INDIRECT(ADDRESS(...)) for the value." },
   { name: "MATCH", cat: "Lookup", sig: "MATCH(lookup_value, range, [match_type])", hint: "Relative position of a value. Type 0 is exact, 1 (default) is the largest less than or equal." },
   { name: "SUMIF", cat: "Lookup", sig: "SUMIF(range, criteria, [sum_range])", hint: "Sum cells that meet a condition." },
   { name: "SUMIFS", cat: "Lookup", sig: "SUMIFS(sum_range, criteria_range1, criteria1, ...)", hint: "Sum cells that meet every condition." },

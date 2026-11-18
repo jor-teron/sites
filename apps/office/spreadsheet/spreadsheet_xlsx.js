@@ -27,6 +27,8 @@
  * SH33: .xlsm (Excel with macros) opens like .xlsx (Open, drop, Hub link). Its
  * macro parts are kept in memory (SHEET_XLSM.extract, spreadsheet_xlsm.js) and
  * Save writes back to the same .xlsm with them. Macros are not run or shown.
+ * SH35: the open toast adds "Not supported yet: NAME, ... (n cells)" when a
+ * formula uses a function this app does not have.
  */
 function xlsxFmtZ(fmt) {
   if (fmt === "int") return "0";
@@ -213,6 +215,10 @@ function importXlsxFile(file, o) {
     if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + ((CFG.sheets && CFG.sheets.max) || 20) + ")";
     /* (before SH24) if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped"; */
     if (dropped) msg += ", " + dropped + " cells outside A–FZ × " + ROWS + " skipped";
+    /* SH35: one short note naming functions this app does not have */
+    var unknownNote = "";
+    try { unknownNote = typeof fxUnknownNote === "function" ? fxUnknownNote(sheets) : ""; } catch (e) { unknownNote = ""; }
+    if (unknownNote) msg += ". " + unknownNote;
     saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
   }).catch(function (e) { xlsxToast("Could not open file: " + e.message); });
 }
