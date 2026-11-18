@@ -328,14 +328,17 @@ export function generatePlanet(seed = 1) {
   const auroraRibbon = createAurora(baseRadius, biome.atmosphere);
   terrainMesh.add(auroraRibbon);
 
-  // Surface Navigation & Buildable Graph Nodes
+  // Surface Navigation & Buildable Graph Nodes (clean 2D spherical grid)
   const navNodes = [];
-  const nodeSpacing = 3.5; // meters between nodes
-  const latStep = Math.PI / 18;
-  const lonStep = (Math.PI * 2) / 36;
+  const latCount = 16;
+  const lonCount = 32;
+  const grid = [];
 
-  for (let lat = 0.15; lat < Math.PI - 0.15; lat += latStep) {
-    for (let lon = 0; lon < Math.PI * 2; lon += lonStep) {
+  for (let latIdx = 0; latIdx < latCount; latIdx++) {
+    grid[latIdx] = [];
+    const lat = 0.15 + (latIdx / (latCount - 1)) * (Math.PI - 0.3);
+    for (let lonIdx = 0; lonIdx < lonCount; lonIdx++) {
+      const lon = (lonIdx / lonCount) * (Math.PI * 2);
       const nx = Math.sin(lat) * Math.cos(lon);
       const ny = Math.cos(lat);
       const nz = Math.sin(lat) * Math.sin(lon);
@@ -348,12 +351,14 @@ export function generatePlanet(seed = 1) {
       // Check buildability: dry land, not too steep, not on spawner or core
       const isLiquid = r < seaLevel;
       const isPeak = r > baseRadius * 1.15;
-      const nearNorth = ny > 0.85;
-      const nearSouth = ny < -0.85;
+      const nearNorth = ny > 0.82;
+      const nearSouth = ny < -0.82;
       const buildable = !isLiquid && !isPeak && !nearNorth && !nearSouth;
 
-      navNodes.push({
+      const node = {
         id: navNodes.length,
+        latIdx,
+        lonIdx,
         lat,
         lon,
         pos,
@@ -364,17 +369,22 @@ export function generatePlanet(seed = 1) {
         isLiquid,
         tower: null,
         neighbors: []
-      });
+      };
+      grid[latIdx][lonIdx] = node.id;
+      navNodes.push(node);
     }
   }
 
-  // Connect graph neighbors (Euclidean distance threshold)
-  const connectDistSq = Math.pow(nodeSpacing * 2.2, 2);
-  for (let i = 0; i < navNodes.length; i++) {
-    for (let j = i + 1; j < navNodes.length; j++) {
-      if (navNodes[i].pos.distanceToSquared(navNodes[j].pos) < connectDistSq) {
-        navNodes[i].neighbors.push(navNodes[j].id);
-        navNodes[j].neighbors.push(navNodes[i].id);
+  // Connect immediate neighbors (up, down, left, right, and diagonals with wrap)
+  for (let n of navNodes) {
+    for (let dLat = -1; dLat <= 1; dLat++) {
+      for (let dLon = -1; dLon <= 1; dLon++) {
+        if (dLat === 0 && dLon === 0) continue;
+        const nLat = n.latIdx + dLat;
+        const nLon = (n.lonIdx + dLon + lonCount) % lonCount;
+        if (nLat >= 0 && nLat < latCount) {
+          n.neighbors.push(grid[nLat][nLon]);
+        }
       }
     }
   }

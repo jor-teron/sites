@@ -23,6 +23,9 @@ class OrbitalCoreApp {
     this.target = new THREE.Vector3(0, 0, 0);
     this.isDragging = false;
     this.previousPointer = { x: 0, y: 0 };
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.hasMoved = false;
     this.pinchDist = 0;
 
     // Lighting State
@@ -190,11 +193,17 @@ class OrbitalCoreApp {
     const onPointerDown = (x, y) => {
       sound.init(); // Initialize audio context on user interaction
       this.isDragging = true;
+      this.dragStartX = x;
+      this.dragStartY = y;
+      this.hasMoved = false;
       this.previousPointer = { x, y };
     };
 
     const onPointerMove = (x, y) => {
       if (!this.isDragging) return;
+      if (Math.hypot(x - this.dragStartX, y - this.dragStartY) > 6) {
+        this.hasMoved = true;
+      }
       const dx = x - this.previousPointer.x;
       const dy = y - this.previousPointer.y;
 
@@ -262,6 +271,12 @@ class OrbitalCoreApp {
 
     // Click / Tap on 3D Planet for Tower Placement or Selection
     el.addEventListener('click', (e) => {
+      // Ignore click if the gesture was a pan/drag
+      if (this.hasMoved) {
+        this.hasMoved = false;
+        return;
+      }
+
       // Calculate normalized device coordinates (-1 to +1)
       this.pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
       this.pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -325,14 +340,20 @@ class OrbitalCoreApp {
     const animate = (currentTime) => {
       requestAnimationFrame(animate);
 
-      const delta = currentTime - this.lastTime;
+      // Guard against frame lag spikes / Spiral of Death
+      const delta = Math.min(currentTime - this.lastTime, 100);
       this.lastTime = currentTime;
       this.accumulator += delta;
 
-      // Fixed 30 FPS tick updates
-      while (this.accumulator >= this.tickInterval) {
+      // Fixed 30 FPS tick updates (capped at max 3 catchup steps per frame)
+      let steps = 0;
+      while (this.accumulator >= this.tickInterval && steps < 3) {
         this.sim.update(this.tickInterval / 1000);
         this.accumulator -= this.tickInterval;
+        steps++;
+      }
+      if (this.accumulator >= this.tickInterval) {
+        this.accumulator = 0;
       }
 
       // Gentle orbital sun rotation when Day/Night shadows is ON
