@@ -2,6 +2,10 @@
    Pure checks: normalise old / missing / broken data, size mapping and
    margin fit, PDF placement math, .how round-trip with pictures, and the
    header / footer undo for adding, resizing and removing a picture.
+   DW13c: the 3-slot normaliser is now I.normalizeSlots (still used to read
+   old files); I.normalize returns the one-block shape (test-dw13c-hfblock.cjs).
+   The .how and Writer.hf checks below now expect the block shape: one
+   picture per header / footer { src, h, a } instead of per-slot { src, size }.
    No browser, no network.
    Run: node --test apps/office/writer/test/test-dw11-hfimg.cjs */
 'use strict';
@@ -19,7 +23,8 @@ const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
 const JPG = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==';
 
 test('normalize: old documents without pictures load with empty picture slots', () => {
-  const out = I.normalize({ head: ['Hub', '', 'Office'], foot: ['', '{page}', ''] });
+  /* (before DW13c) const out = I.normalize({ head: ['Hub', '', 'Office'], foot: ['', '{page}', ''] }); */
+  const out = I.normalizeSlots({ head: ['Hub', '', 'Office'], foot: ['', '{page}', ''] });
   assert.deepEqual(out.head, ['Hub', '', 'Office']);
   assert.deepEqual(out.foot, ['', '{page}', '']);
   assert.deepEqual(out.img, { head: [null, null, null], foot: [null, null, null] });
@@ -27,15 +32,21 @@ test('normalize: old documents without pictures load with empty picture slots', 
 
 test('normalize: missing or broken hf gives a blank header / footer', () => {
   const blank = { head: ['', '', ''], foot: ['', '', ''], img: { head: [null, null, null], foot: [null, null, null] } };
-  assert.deepEqual(I.normalize(undefined), blank);
-  assert.deepEqual(I.normalize(null), blank);
-  assert.deepEqual(I.normalize('nope'), blank);
-  assert.deepEqual(I.normalize({ head: 'x', foot: 5, img: 'y' }), blank);
-  assert.deepEqual(I.normalize({ head: ['a'], foot: [null, 2] }).foot, ['', '2', '']);
+  /* (before DW13c) assert.deepEqual(I.normalize(undefined), blank); */
+  assert.deepEqual(I.normalizeSlots(undefined), blank);
+  /* (before DW13c) assert.deepEqual(I.normalize(null), blank); */
+  assert.deepEqual(I.normalizeSlots(null), blank);
+  /* (before DW13c) assert.deepEqual(I.normalize('nope'), blank); */
+  assert.deepEqual(I.normalizeSlots('nope'), blank);
+  /* (before DW13c) assert.deepEqual(I.normalize({ head: 'x', foot: 5, img: 'y' }), blank); */
+  assert.deepEqual(I.normalizeSlots({ head: 'x', foot: 5, img: 'y' }), blank);
+  /* (before DW13c) assert.deepEqual(I.normalize({ head: ['a'], foot: [null, 2] }).foot, ['', '2', '']); */
+  assert.deepEqual(I.normalizeSlots({ head: ['a'], foot: [null, 2] }).foot, ['', '2', '']);
 });
 
 test('normalize: invalid pictures are dropped, sizes default to M', () => {
-  const out = I.normalize({ head: ['', '', ''], foot: ['', '', ''], img: {
+  /* (before DW13c) const out = I.normalize({ head: ['', '', ''], foot: ['', '', ''], img: { */
+  const out = I.normalizeSlots({ head: ['', '', ''], foot: ['', '', ''], img: {
     head: [{ src: PNG, size: 'S' }, { src: 'javascript:alert(1)', size: 'M' }, { src: JPG }],
     foot: [{ src: 'data:image/svg+xml;base64,PHN2Zz4=', size: 'L' }, 7, { src: PNG, size: 'xl' }]
   } });
@@ -100,24 +111,33 @@ test('scaleTo caps the longest side for header pictures', () => {
   assert.deepEqual(I.scaleTo(0, 50), { w: 0, h: 0 });
 });
 
+/* (before DW13c) the two .how tests expected the 3-slot shape back unchanged
+   (hf.img per slot, no img key without pictures). DW13c: old files come back
+   as the one-block shape, the first slot picture at its preset height. */
 test('.how round-trip keeps header / footer pictures', () => {
   const hf = { head: ['Acme Ltd', '', '{date}'], foot: ['', '{page}', ''],
     img: { head: [{ src: PNG, size: 'L' }, null, null], foot: [null, null, { src: JPG, size: 'S' }] } };
+  const want = { v: 2, head: ['Acme Ltd', '{date}'], foot: ['{page}'], al: { head: ['l', 'r'], foot: ['c'] },
+    pic: { head: { src: PNG, h: 20, a: 'l' }, foot: { src: JPG, h: 8, a: 'r' } } };
   const text = How.stringify({ name: 'Letter', html: '<p>Hi</p>', hf: hf });
   const back = How.parse(text);
-  assert.deepEqual(back.hf, hf);
-  assert.deepEqual(How.parse(How.stringify(back)).hf, hf);
+  assert.deepEqual(back.hf, want);
+  assert.deepEqual(How.parse(How.stringify(back)).hf, want);
 });
 
-test('.how without pictures is unchanged (no img key), broken pictures are dropped', () => {
+test('.how without pictures has no pic key, broken pictures are dropped', () => {
   const plain = How.parse(How.stringify({ name: 'A', html: '<p>x</p>', hf: { head: ['a', '', ''], foot: ['', '', ''] } }));
-  assert.deepEqual(plain.hf, { head: ['a', '', ''], foot: ['', '', ''] });
-  assert.ok(!('img' in plain.hf));
+  assert.deepEqual(plain.hf, { v: 2, head: ['a'], foot: [], al: { head: ['l'], foot: [] } });
+  assert.ok(!('img' in plain.hf) && !('pic' in plain.hf));
   const none = How.parse(How.stringify({ name: 'B', html: '', hf: { head: [], foot: [], img: { head: [null, null, null], foot: [null, null, null] } } }));
-  assert.ok(!('img' in none.hf));
+  assert.ok(!('pic' in none.hf));
   const bad = JSON.parse(How.stringify({ name: 'C', html: '' }));
   bad.hf.img = { head: [{ src: 'http://x/y.png', size: 'S' }], foot: 'x' };
-  assert.ok(!('img' in How.parse(JSON.stringify(bad)).hf));
+  delete bad.hf.v;
+  assert.ok(!('pic' in How.parse(JSON.stringify(bad)).hf));
+  const bad2 = JSON.parse(How.stringify({ name: 'D', html: '' }));
+  bad2.hf.pic = { head: { src: 'http://x/y.png', h: 9 }, foot: 'x' };
+  assert.ok(!('pic' in How.parse(JSON.stringify(bad2)).hf));
 });
 
 /* Writer.hf in a tiny DOM-less sandbox: picture undo / redo. */
@@ -133,36 +153,37 @@ function loadHf() {
   return win.Writer.hf;
 }
 
+/* (before DW13c) these two checked H.get().img rows and setPic(part, k, { src, size }) per slot. */
 test('Writer.hf: set() normalises, isEmpty() counts pictures', () => {
   const H = loadHf();
   H.set({ head: ['', '', ''], foot: ['', '', ''] });
   assert.equal(H.isEmpty(), true);
-  assert.deepEqual(H.get().img, { head: [null, null, null], foot: [null, null, null] });
+  assert.deepEqual(H.get().pic, { head: null, foot: null });
   H.set({ head: ['', '', ''], foot: ['', '', ''], img: { head: [null, { src: PNG, size: 'S' }, null] } });
   assert.equal(H.isEmpty(), false);
   assert.equal(H.partEmpty('head'), false);
   assert.equal(H.partEmpty('foot'), true);
-  assert.deepEqual(H.get().img.foot, [null, null, null]);
+  assert.deepEqual(H.get().pic.head, { src: PNG, h: 8, a: 'c' });
+  assert.equal(H.get().pic.foot, null);
 });
 
 test('Writer.hf: adding, resizing and removing a picture are undo steps', () => {
   const H = loadHf();
   H.set({ head: ['Acme', '', ''], foot: ['', '', ''] });
-  H.setPic('head', 0, { src: PNG, size: 'M' });
-  H.setPic('head', 0, { src: PNG, size: 'L' });
-  H.setPic('head', 0, null);
-  assert.equal(H.data.img.head[0], null);
+  H.setPic('head', 0, { src: PNG, size: 'M' });     /* old 3-argument form still works */
+  H.setPic('head', { src: PNG, h: 20 });            /* no alignment given: keeps the one it had */
+  H.setPic('head', null);
+  assert.equal(H.data.pic.head, null);
   H.restore(H.undoStack, H.redoStack);
-  assert.deepEqual(H.data.img.head[0], { src: PNG, size: 'L' });
+  assert.deepEqual(H.data.pic.head, { src: PNG, h: 20, a: 'c' });
   H.restore(H.undoStack, H.redoStack);
-  assert.deepEqual(H.data.img.head[0], { src: PNG, size: 'M' });
+  assert.deepEqual(H.data.pic.head, { src: PNG, h: 14, a: 'c' });
   H.restore(H.undoStack, H.redoStack);
-  assert.equal(H.data.img.head[0], null);
-  assert.deepEqual(H.data.head, ['Acme', '', '']);
+  assert.equal(H.data.pic.head, null);
+  assert.deepEqual(H.data.head, ['Acme']);
   H.restore(H.redoStack, H.undoStack);
-  assert.deepEqual(H.data.img.head[0], { src: PNG, size: 'M' });
-  H.setPic('head', 5, { src: PNG });               /* bad slot: ignored */
-  H.setPic('side', 0, { src: PNG });
+  assert.deepEqual(H.data.pic.head, { src: PNG, h: 14, a: 'c' });
+  H.setPic('side', { src: PNG });                   /* bad part: ignored */
   assert.equal(H.undoStack.length, 1);
 });
 
@@ -173,7 +194,8 @@ test('writer.html wires DW11: title, scripts, picture tools; no browser dialogs'
   /* (before DW12) assert.ok(live.indexOf('<title>Writer DW11a</title>') !== -1); */
   /* (before DW13) assert.ok(/<title>Writer DW1(1a|2)<\/title>/.test(live)); */
   /* (before DW13b) assert.ok(/<title>Writer DW1(1a|2|3)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW1(1a|2|3|3b)<\/title>/.test(live));
+  /* (before DW13c) assert.ok(/<title>Writer DW1(1a|2|3|3b)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW11) <title>Writer DW9</title> -->') !== -1);
   assert.ok(live.indexOf('src="modules/writer-hfimg.js"') !== -1);
   assert.ok(live.indexOf('src="modules/writer-hfimg.js"') < live.indexOf('src="modules/writer-headerfooter.js"'));
@@ -185,7 +207,8 @@ test('writer.html wires DW11: title, scripts, picture tools; no browser dialogs'
   /* (before DW12) assert.ok(/release:\s*'DW11a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13) assert.ok(/release:\s*'DW(11a|12)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13b) assert.ok(/release:\s*'DW(11a|12|13)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW13c) assert.ok(/release:\s*'DW(11a|12|13|13b)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   ['modules/writer-hfimg.js', 'modules/writer-headerfooter.js', 'modules/writer-pdfgen.js'].forEach((f) => {
     const src = fs.readFileSync(path.join(DIR, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(src), 'no browser dialogs in ' + f);

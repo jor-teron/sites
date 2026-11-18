@@ -22,8 +22,11 @@
   background: var(--bg-paper);
   box-shadow: var(--paper-shadow);
   border-radius: 3px;
-  padding-top: calc(var(--margin-top-cm) * 1cm);
-  padding-bottom: calc(var(--margin-bottom-cm) * 1cm);
+  /* (before DW13c) padding-top: calc(var(--margin-top-cm) * 1cm); */
+  /* (before DW13c) padding-bottom: calc(var(--margin-bottom-cm) * 1cm); */
+  /* DW13c: a grown header / footer block (writer-headerfooter.js layout) moves the body. */
+  padding-top: calc(var(--margin-top-cm) * 1cm + var(--hf-head-extra-mm, 0) * 1mm);
+  padding-bottom: calc(var(--margin-bottom-cm) * 1cm + var(--hf-foot-extra-mm, 0) * 1mm);
   padding-left: calc(var(--margin-left-cm) * 1cm);
   padding-right: calc(var(--margin-right-cm) * 1cm);
   transition: background 0.2s, box-shadow 0.2s;   /* no size transitions: flow measures at once */

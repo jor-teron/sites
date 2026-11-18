@@ -518,7 +518,9 @@ Writer.paste.onCopy = function onCopy(e) {
 };
 
 /* DW13: a picture pasted into a header / footer slot becomes that slot's picture
-   (size M, Writer.hf.setPic: one header / footer undo step). Text pastes as before. */
+   (size M, Writer.hf.setPic: one header / footer undo step). Text pastes as before.
+   DW13c: the header / footer is one block (.hf-text, still class hf-slot): the
+   picture becomes its one picture (14 mm, centred; a replaced one keeps its size). */
 Writer.paste.onHfPaste = function onHfPaste(e) {
   var P = Writer.paste, H = Writer.hf, t = e.target;
   var el = t && t.nodeType === 1 ? t : (t && t.parentElement);
@@ -537,8 +539,12 @@ Writer.paste.onHfPaste = function onHfPaste(e) {
   var blob = src ? P.dataBlob(src) : file;
   var max = Writer.hfimg ? Writer.hfimg.MAX_PX : 600;
   Writer.image.load(blob, max).then(function (url) {
-    H.setPic(a.part, a.k, { src: url, size: 'M' });
-    if (!H.pics()[a.part][a.k]) H.note('That picture could not be used.');
+    /* (before DW13c) H.setPic(a.part, a.k, { src: url, size: 'M' }); */
+    /* (before DW13c) if (!H.pics()[a.part][a.k]) H.note('That picture could not be used.'); */
+    /* DW13c: the one picture on top of the header / footer block; a replaced picture keeps its height and alignment */
+    var old = H.pic(a.part);
+    H.setPic(a.part, { src: url, h: old ? old.h : 14, a: old ? old.a : 'c' });
+    if (!H.pic(a.part)) H.note('That picture could not be used.');
     if (H.refocus) H.refocus();
   }).catch(function () { H.note('That picture could not be read.'); });
 };
