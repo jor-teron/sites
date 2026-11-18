@@ -421,6 +421,16 @@
     if (typeof updateStats === 'function') updateStats();
     if (typeof highlightSel === 'function') highlightSel();
     if (typeof syncStyleUi === 'function') syncStyleUi();
+    /* SH35: one short note naming functions this app does not have. Shown after the
+       open toast so that one does not cover it. */
+    var note = '';
+    try { note = typeof fxUnknownNote === 'function' ? fxUnknownNote(sheets) : ''; } catch (e) { note = ''; }
+    if (note) {
+      setTimeout(function () {
+        if (typeof setStatus === 'function') setStatus(note);
+        if (root.OfficeNotify && root.OfficeNotify.show) root.OfficeNotify.show(note);
+      }, 600);
+    }
   }
 
   /* Used by the .hos smoke test to restore a parsed file into the live workbook. */

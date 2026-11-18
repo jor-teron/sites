@@ -410,10 +410,12 @@ test('wiring: title, VERSION, ?v= tokens, script order, readme', function () {
   assert.ok(html.indexOf('<title>Spreadsheet SH33</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH33) <title>Spreadsheet SH32</title> -->') !== -1);
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
+  /* (before SH35) every file below was checked for ?v=SH33; SH35 bumps settings and xlsx. */
   for (const f of ['spreadsheet_toolbar.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js', 'spreadsheet_xlsm.js', 'spreadsheet_saveformat.js']) {
-    assert.ok(live.indexOf(f + '?v=SH33') !== -1, f);
+    assert.ok(live.indexOf(f + '?v=SH33') !== -1 || live.indexOf(f + '?v=SH35') !== -1, f);
   }
-  assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v=SH33'));
+  /* (before SH35) assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v=SH33')); */
+  assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v='));
   assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') < live.indexOf('spreadsheet_saveformat.js?v=SH33'));
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH33";') !== -1);
   const readme = read('spreadsheet_readme.md');

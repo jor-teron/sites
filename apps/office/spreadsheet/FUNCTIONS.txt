@@ -150,6 +150,12 @@ LOOKUP
                                 a bad or out-of-grid address is #REF!
                                 calculated again whenever any cell changes, like RAND / NOW
                                 a circular reference is #LOOP!
+  ADDRESS(row, col, [abs], [a1], [sheet])   (SH35) address text, like Excel
+                                abs 1 $A$1 (default), 2 A$1, 3 $A1, 4 A1
+                                a1 FALSE: R1C1, R1C[1], R[1]C1, R[1]C[1]
+                                sheet: Sheet2!$A$1, 'My Sheet'!$A$1
+                                row < 1 or > 1048576, col < 1 or > 16384: #VALUE!
+                                INDIRECT(ADDRESS(2,3)) is the value of C2
   MATCH(value, range, [type])          0 exact; 1 largest ≤ (default); -1 smallest ≥
   SUMIF(range, criteria, [sum_range])
   SUMIFS(sum_range, criteria_range1, criteria1, ...)
@@ -207,6 +213,7 @@ ERRORS
   #SPILL!   an array result cannot spill (a cell in the way, a merged cell, or past the grid)
   #CALC!    FILTER found no rows (and if_empty was left out), or UNIQUE
             with exactly_once found nothing
+  #NAME?    a function this app does not have (SH35; before SH35 it was #ERR)
   #ERR      formula not understood
 
 FORMULA HINT / PICKER (SH9)
