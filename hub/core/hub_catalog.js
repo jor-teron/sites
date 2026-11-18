@@ -272,6 +272,7 @@ Hindi Letters,           hindi-letters/,             , , Language, Hindi alphabe
 Assamese Letters,        assamese-letters/,          , , Language, Assamese alphabet: trace letters - matras - joined letters - numbers - picture words and gentle practice games
 English Letters,         english-letters/,           , , Language, English alphabet: trace letters - phonics - picture words and gentle practice games
 English Basic,           english-basic/,             , , Language, English basics: alphabet - words - spelling - phrases - sentences and questions
+Dictionary,              dictionary/,                , , Language, Offline English dictionary: meanings - examples - synonyms - hear it and word of the day
 NE-India Dictionary,     ../tools/nei-dict/,         , , Language, Dictionary for Northeast India languages: Karbi - Mizo - Khasi - Dimasa and more
 Caption for NEI,         ../tools/caption-for-nei/,  , , Language, Live speech captions for English - Assamese - Hindi - Bengali and Nepali
 Typing Tutor,            typing-tutor/,              , , Language, Learn touch typing on a computer keyboard with graded lessons

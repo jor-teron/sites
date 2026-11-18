@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Dictionary DC1 (Learn > Language): offline English dictionary from Open English WordNet (CC BY 4.0). Opens straight
+     into search: prefix suggestions, meanings by part of speech, examples, tappable synonyms, Hear it (device voice),
+     recent searches and a word of the day. Data shards in data/ load only when needed. Classic scripts, no build step. -->
+<title>Dictionary DC1</title>
+<meta name="theme-color" content="#14171c">
+<link rel="icon" href="dictionary_icon.png">
+<script src="../../../shared/theme/hub_theme.js"></script>
+<link rel="stylesheet" href="../common/ui/learn.css">
+<link rel="stylesheet" href="ui/dictionary.css">
+</head>
+<body>
+<div id="app" class="lrn"><p>Loading…</p></div>
+<noscript><p>Dictionary needs JavaScript. Look up English words offline: meanings, examples and synonyms.</p></noscript>
+<!-- load order: shared kit state (localStorage helpers), pure dictionary logic, Hub title bar helper, then the screens -->
+<script src="../common/core/state.js"></script>
+<script src="core/dict.js"></script>
+<script src="../shared/learn-hubbar.js"></script>
+<script src="ui/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+/* Dictionary DC-1 — look on top of the Learn kit (../common/ui/learn.css). Dark by default; html.light (set by
+   shared/theme/hub_theme.js from the Hub theme) switches to light colours. Plain CSS, no effects (weak laptops). */
+.dc { --accent: #6fb3e0; max-width: 820px; }
+html.light { --bg: #f6f7f9; --panel: #fff; --panel2: #eef1f5; --text: #1d2127; --muted: #5a6472; --line: #d6dbe2; --note: #eef4fa; }
+html.light .dc { --accent: #1f6fa8; }
+html.light :focus-visible { outline-color: #1f6fa8; }
+.dc-ver { flex: none; font-size: 0.75rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 99px; }
+.dc-main { display: flex; flex-direction: column; gap: 14px; }
+.dc-form { display: flex; gap: 8px; position: sticky; top: -14px; padding: 4px 0; background: var(--bg); z-index: 2; }
+.dc-box { position: relative; flex: 1; min-width: 0; }
+.dc-q { width: 100%; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-size: 1.1rem; }
+.dc-q:focus { border-color: var(--accent); outline: none; }
+.dc-go { flex: none; min-height: 48px; padding: 0 18px; border-radius: 12px; border: 0; background: var(--accent); color: var(--on); font-weight: 700; }
+html.light .dc-go { color: #fff; }
+.dc-sugg { position: absolute; left: 0; right: 0; top: 100%; margin: 4px 0 0; padding: 4px; list-style: none; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.dc-sugg li { padding: 10px 12px; border-radius: 8px; cursor: pointer; }
+.dc-sugg li:hover, .dc-sugg li[aria-selected="true"] { background: var(--panel2); color: var(--accent); }
+.dc-out { display: flex; flex-direction: column; gap: 12px; }
+.dc-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.dc-word { margin: 0; font-size: 2rem; line-height: 1.2; word-break: break-word; }
+.dc-word:focus { outline: none; }
+.dc-ipa { color: var(--muted); font-size: 1.1rem; }
+.dc-hear { align-self: center; }
+.dc-msg { margin: 0; color: var(--muted); }
+.dc-note { color: var(--text); }
+.dc-pos { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); }
+.dc-pos h3 { margin: 0 0 6px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+.dc-pos ol { margin: 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 10px; }
+.dc-def { font-size: 1.02rem; }
+.dc-ex { color: var(--muted); font-style: italic; margin-top: 2px; }
+.dc-rel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.dc-lab { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.dc-chip { min-height: 36px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel2); color: var(--accent); }
+.dc-chip:hover { border-color: var(--accent); }
+.dc-wod { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; text-align: left; border-radius: 16px; border: 1px solid var(--line); border-left: 6px solid var(--accent); background: var(--panel); }
+.dc-wod b { font-size: 1.6rem; } .dc-wod i { color: var(--muted); }
+.dc-row { display: flex; align-items: center; justify-content: space-between; }
+.dc-row h3 { margin: 0; font-size: 1rem; }
+.dc-clear { min-height: 36px; border: 0; background: none; color: var(--muted); text-decoration: underline; }
+.dc-main a { color: var(--accent); }
+@media (max-width: 480px) { .dc-go { padding: 0 12px; } .dc-word { font-size: 1.6rem; } .dc-pos { padding: 10px; } }
