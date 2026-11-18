@@ -3,6 +3,7 @@
    PROJECT: Writer
    ROLE: Header & Footer boxes inside the top / bottom margins.
          Absolute, so they never change the body layout.
+         DW11: slot cells with an optional picture (.hf-pic).
    ORDER: linked from writer.html; cascade order matters.
    ============================================================ */
 
@@ -35,8 +36,29 @@ body.hf-editing .paper .hf-slot:focus { outline: 1px solid #5b5bf0; background: 
 body.hf-editing .paper .editor { opacity: 0.55; }
 .hf-tools[hidden] { display: none; }
 
+/* DW11: a slot is a cell: optional picture, then the text. A cell with no
+   picture keeps the old full-width text slot. */
+.paper .hf-box { align-items: center; }
+.hf-cell { display: flex; align-items: center; gap: 1.5mm; min-width: 0; overflow: hidden; }
+.hf-cell-left { justify-content: flex-start; }
+.hf-cell-center { justify-content: center; }
+.hf-cell-right { justify-content: flex-end; }
+.hf-cell > .hf-slot { flex: 1 1 auto; min-width: 0; }
+.hf-cell.hf-has-pic > .hf-slot { flex: 0 1 auto; text-align: left; overflow: visible; }
+.hf-cell.hf-has-pic > .hf-slot:empty { display: none; }
+body.hf-editing .paper .hf-cell.hf-has-pic > .hf-slot { display: block; min-width: 2.5em; }
+/* The picture gives way first when text and picture do not both fit. */
+.hf-pic { display: block; flex: 0 100 auto; width: auto; min-width: 4mm; max-width: 90%; object-fit: contain; object-position: center; user-select: none; -webkit-user-drag: none; }
+.hf-pic[hidden] { display: none; }
+body.hf-editing .paper .hf-pic { cursor: pointer; outline: 1px dashed #8a8fd6; outline-offset: 1px; }
+.hf-tools .hf-pic-where { align-self: center; font-size: 12px; opacity: 0.75; padding: 0 2px 0 8px; white-space: nowrap; }
+.hf-tools .hf-pic-opts { display: inline-flex; gap: 2px; }
+.hf-tools .hf-pic-opts[hidden] { display: none; }
+
 @media print {
   .paper .hf-box { color: #000 !important; }
   .paper .hf-slot { outline: none !important; background: none !important; }
+  .paper .hf-pic { outline: none !important; }   /* DW11 */
+  .paper .hf-cell.hf-has-pic > .hf-slot:empty { display: none !important; }
   .paper .editor { opacity: 1 !important; }
 }

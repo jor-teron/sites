@@ -96,8 +96,21 @@
       return s.length > 8000 ? s.slice(0, 8000) : s;
     });
   }
+  /* DW11: header / footer pictures (hf.img) are kept only when there is one,
+     so files without pictures stay exactly as before. */
+  function hfImg() {
+    if (root && root.Writer && root.Writer.hfimg) return root.Writer.hfimg;
+    try { return typeof require === 'function' ? require('./writer-hfimg.js') : null; } catch (e) { return null; }
+  }
   How.hfOf = function hfOf(h) {
-    return { head: hfRow(h && h.head), foot: hfRow(h && h.foot) };
+    /* (before DW11) return { head: hfRow(h && h.head), foot: hfRow(h && h.foot) }; */
+    var out = { head: hfRow(h && h.head), foot: hfRow(h && h.foot) };
+    var I = hfImg();
+    if (I && h && h.img) {
+      var img = I.normPics(h.img);
+      if (I.hasAny(img)) out.img = img;
+    }
+    return out;
   };
 
   /* Build the on-disk object. Extra fields on doc are not kept. */

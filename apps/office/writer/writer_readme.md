@@ -2,8 +2,14 @@
 # Writer
 
 <!-- (before DF25) Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage keys, message types, ids and URLs are unchanged, so saved documents and Hub links keep working. -->
-Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. --> <!-- (before DW9) The page title and `Writer.config.release` are `DW8`. -->
-The page title and `Writer.config.release` are `DW9`.
+Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. --> <!-- (before DW9) The page title and `Writer.config.release` are `DW8`. --> <!-- (before DW11) The page title and `Writer.config.release` are `DW9`. -->
+The page title and `Writer.config.release` are `DW11` (DW10 is kept for a later release).
+
+## DW11 — pictures in the header and footer
+
+Each header / footer slot (left, centre, right) can hold one small picture, such as a logo, before its text. Open the header or footer (Insert → **Header & Footer**, or double-click the top / bottom margin) and click in the slot you want. The Header & Footer tools show which slot is active (for example "Header left:"), then **Picture…** picks an image file. Once the slot has a picture, **S / M / L** set its height (8 mm / 14 mm / 20 mm) and **Remove** takes it out. Click a picture while editing to make its slot active. Adding, resizing and removing a picture are undo steps (Ctrl/⌘+Z, Ctrl+Y) in the header / footer's own undo.
+
+The picture sits before the slot's text (left slot on the left, centre slot centred, right slot on the right), on every page, inside the margin, so it never moves the body text. The height is cut down to what fits in the margin (minimum 3 mm); with the default 0.5 cm top margin a picture stays small, and the tools say "(small margin)". Page → Margins → Custom… makes room. Pictures are downscaled when added (longest side 600 px) and saved inside the `.how` file as data URLs in `hf.img`; files without pictures are written exactly as before, and older files open with no pictures. Print and File → Export PDF show them. Export DOCX and Export ODT keep the header / footer text only for now (pictures come in DW11a; DOCX logs one console note). Pure logic: `modules/writer-hfimg.js`. Test: `node --test apps/office/writer/test/test-dw11-hfimg.cjs`.
 
 ## DW9 — open plain-text .txt
 
@@ -41,7 +47,8 @@ The name on screen is Writer: the page title, the header next to the icon, Setti
 | `version` | `1`. Any other version is refused. |
 | `name`, `created`, `updated` | Document name and times |
 | `html` | The document, including formatting. Images are embedded as `data:` URLs. |
-| `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. |
+<!-- (before DW11) | `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. | -->
+| `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. DW11: optional `img` = `{ head: [3], foot: [3] }`, each `null` or `{ src: data URL, size: 'S' \| 'M' \| 'L' }`, written only when there is a picture. |
 | `page` | Size (`A4` or `Legal`), orientation, margin preset, custom centimetres, page numbers on/off and position |
 
 File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). <!-- (before DW7) **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged. --> <!-- (before DW8) **Open .docx / .odt** (DW7), **Export DOCX**, **Export PDF** and **Print** are unchanged. --> <!-- (before DW9) **Open .docx / .odt** (DW7), **Export DOCX**, **Export ODT** (DW8), **Export PDF** and **Print** are unchanged. --> **Open .docx / .odt / .txt** (DW7, DW9), **Export DOCX**, **Export ODT** (DW8), **Export PDF** and **Print** are unchanged.
@@ -106,7 +113,8 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/writer-table.js`: tables
 - `modules/writer-spacing.js`: line spacing and indents
 - `modules/writer-zoom.js`: document zoom
-- `modules/writer-headerfooter.js`: Header & Footer (left / centre / right slots, fields {page} {pages} {date}, saved with each document; the Page-tab page-number buttons write {page} into the footer)
+- `modules/writer-headerfooter.js`: Header & Footer (left / centre / right slots, fields {page} {pages} {date}, saved with each document; the Page-tab page-number buttons write {page} into the footer; DW11 slot pictures: Picture…, S / M / L, Remove)
+- `modules/writer-hfimg.js`: DW11 header / footer picture logic without DOM (normalise, sizes, margin fit, PDF placement)
 - `modules/writer-margins.js`: Custom margins dialog (0.5–5 cm per side, "Same for all"; a global pref like Normal / Narrow)
 - `modules/writer-how.js` (HOW1): `.how` read/write, Hub Documents autosave, standalone picker or download
 - `modules/writer-docs.js`: load / open / new / delete / save, Recent list, autosave, Ctrl+S

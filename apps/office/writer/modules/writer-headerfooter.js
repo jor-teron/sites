@@ -11,7 +11,13 @@
    EDIT: Insert > Header & Footer, or double-click a page's top /
          bottom margin. Esc, Close, or a click in the body exits.
          Typing undo is the browser's own (plain-text slots).
-   DEPENDS: config, pages, storage, ui, view, ribbon (optional)
+   DW11: each slot may also hold one small picture (a logo) before
+         its text: Picture…, S / M / L and Remove in the Header &
+         Footer tools while editing. Pictures live in data.img
+         (see modules/writer-hfimg.js), sit inside the margin and
+         share the header / footer undo.
+   DEPENDS: config, pages, storage, ui, view, ribbon (optional),
+            hfimg (DW11), image (DW11, picture downscale)
    ============================================================ */
 
 /* (before DF25) var Draftly = window.Draftly || {}; window.Draftly = Draftly; */
@@ -19,7 +25,8 @@ var Writer = window.Writer || {};
 window.Writer = Writer;
 
 Writer.hf = {};
-Writer.hf.data = { head: ['', '', ''], foot: ['', '', ''] };
+/* (before DW11) Writer.hf.data = { head: ['', '', ''], foot: ['', '', ''] }; */
+Writer.hf.data = { head: ['', '', ''], foot: ['', '', ''], img: { head: [null, null, null], foot: [null, null, null] } };
 Writer.hf.editing = false;
 Writer.hf.lastSlot = null;
 Writer.hf.saveTimer = null;
@@ -31,16 +38,30 @@ Writer.hf.prev = null;
 Writer.hf.lastPush = 0;
 Writer.hf.stepMs = 450;
 
-Writer.hf.blank = function blank() { return { head: ['', '', ''], foot: ['', '', ''] }; };
+/* (before DW11) Writer.hf.blank = function blank() { return { head: ['', '', ''], foot: ['', '', ''] }; }; */
+Writer.hf.blank = function blank() {
+  return { head: ['', '', ''], foot: ['', '', ''], img: { head: [null, null, null], foot: [null, null, null] } };
+};
 
 Writer.hf.get = function get() {
   var d = Writer.hf.data;
-  return { head: d.head.slice(), foot: d.foot.slice() };
+  /* (before DW11) return { head: d.head.slice(), foot: d.foot.slice() }; */
+  var img = d.img || { head: [null, null, null], foot: [null, null, null] };
+  return { head: d.head.slice(), foot: d.foot.slice(), img: { head: img.head.slice(), foot: img.foot.slice() } };
 };
 
 Writer.hf.isEmpty = function isEmpty(d) {
   d = d || Writer.hf.data;
+  /* (before DW11) return !(d.head.join('') + d.foot.join('')).trim(); */
+  if (Writer.hfimg && Writer.hfimg.hasAny(d.img)) return false;
   return !(d.head.join('') + d.foot.join('')).trim();
+};
+
+/* DW11: one part (head / foot) has text or a picture. */
+Writer.hf.partEmpty = function partEmpty(part) {
+  var d = Writer.hf.data;
+  if (d.img && d.img[part] && (d.img[part][0] || d.img[part][1] || d.img[part][2])) return false;
+  return !d[part].join('').trim();
 };
 
 /* Load a document's header / footer. A document saved before this
@@ -53,6 +74,7 @@ Writer.hf.set = function set(saved) {
       d.head[k] = String(saved.head[k] || '');
       d.foot[k] = String(saved.foot[k] || '');
     }
+    if (Writer.hfimg) d.img = Writer.hfimg.normPics(saved.img);   /* DW11: missing / broken -> no pictures */
   } else if (Writer.breaks && Writer.breaks.loadNumbers) {
     var n = Writer.breaks.loadNumbers();
     if (n.on) d.foot[n.pos === 'right' ? 2 : 1] = '{page}';
@@ -85,7 +107,8 @@ Writer.hf.restore = function restore(from, to) {
   H.lastPush = 0;
   var a = document.activeElement;
   if (a && a.classList.contains('hf-slot')) {
-    a.textContent = H.data[a.parentNode.getAttribute('data-part')][+a.getAttribute('data-slot')];
+    /* (before DW11) a.textContent = H.data[a.parentNode.getAttribute('data-part')][+a.getAttribute('data-slot')]; */
+    a.textContent = H.data[a.closest('.hf-box').getAttribute('data-part')][+a.getAttribute('data-slot')];
     var sel = window.getSelection();
     sel.selectAllChildren(a);
     sel.collapseToEnd();
@@ -112,11 +135,20 @@ Writer.hf.box = function box(paper, part) {
   b.className = 'hf-box hf-' + part;
   b.setAttribute('data-part', part);
   for (var k = 0; k < 3; k++) {
+    /* DW11: each slot sits in a cell with its picture before the text. */
+    var cell = document.createElement('div');
+    cell.className = 'hf-cell hf-cell-' + ['left', 'center', 'right'][k];
+    var pic = document.createElement('img');
+    pic.className = 'hf-pic'; pic.alt = ''; pic.hidden = true; pic.draggable = false;
+    pic.setAttribute('data-slot', String(k));
+    cell.appendChild(pic);
     var s = document.createElement('div');
     s.className = 'hf-slot hf-slot-' + ['left', 'center', 'right'][k];
     s.setAttribute('data-slot', String(k));
     s.setAttribute('spellcheck', 'false');
-    b.appendChild(s);
+    /* (before DW11) b.appendChild(s); */
+    cell.appendChild(s);
+    b.appendChild(cell);
   }
   paper.appendChild(b);
   return b;
@@ -128,14 +160,19 @@ Writer.hf.render = function render() {
   var papers = document.querySelectorAll('.paper');
   var n = papers.length;
   var editable = 'plaintext-only';
+  var lay = { head: H.picLayout('head'), foot: H.picLayout('foot') };   /* DW11 */
   for (var i = 0; i < n; i++) {
     for (var p = 0; p < 2; p++) {
       var part = H.PARTS[p];
       var b = H.box(papers[i], part);
-      var empty = !H.data[part].join('').trim();
+      /* (before DW11) var empty = !H.data[part].join('').trim(); */
+      var empty = H.partEmpty(part);
       b.classList.toggle('hf-empty', empty);
+      H.drawPics(b, part, lay[part]);
+      var slots = b.querySelectorAll('.hf-slot');
       for (var k = 0; k < 3; k++) {
-        var s = b.children[k];
+        /* (before DW11) var s = b.children[k]; */
+        var s = slots[k];
         var want = H.editing ? H.data[part][k] : H.fill(H.data[part][k], i + 1, n);
         if (s !== document.activeElement && s.textContent !== want) s.textContent = want;
         if (H.editing) {
@@ -148,6 +185,166 @@ Writer.hf.render = function render() {
     }
   }
   if (Writer.breaks && Writer.breaks.syncNumbers) Writer.breaks.syncNumbers();
+  H.syncPicTools();
+};
+
+/* ----- DW11 pictures ---------------------------------------- */
+
+Writer.hf.pics = function pics() {
+  var d = Writer.hf.data;
+  if (!d.img) d.img = { head: [null, null, null], foot: [null, null, null] };
+  return d.img;
+};
+
+/* Heights (mm) of one part's pictures and where its box sits. */
+Writer.hf.picLayout = function picLayout(part) {
+  var I = Writer.hfimg, row = Writer.hf.pics()[part];
+  var cfg = Writer.config;
+  var margin = (part === 'head' ? cfg.marginTopCm : cfg.marginBottomCm) * 10;
+  var hs = [0, 0, 0], any = false, boxH = I ? I.TEXT_MM : 4.2;
+  for (var k = 0; k < 3; k++) {
+    if (!row[k] || !I) continue;
+    hs[k] = I.heightMm(row[k].size, margin);
+    boxH = Math.max(boxH, hs[k]);
+    any = true;
+  }
+  return { any: any, hs: hs, edge: any ? I.boxTop(margin, boxH) : 0 };
+};
+
+/* Show / hide each slot's picture in one box; place the box in the margin. */
+Writer.hf.drawPics = function drawPics(b, part, lay) {
+  var row = Writer.hf.pics()[part];
+  var side = part === 'head' ? 'top' : 'bottom';
+  var want = lay.any ? lay.edge.toFixed(2) + 'mm' : '';
+  if (b.style[side] !== want) b.style[side] = want;   /* '' keeps the CSS place (text only) */
+  b.classList.toggle('hf-has-pics', lay.any);
+  var imgs = b.querySelectorAll('.hf-pic');
+  for (var k = 0; k < 3; k++) {
+    var im = imgs[k], pic = row[k];
+    im.parentNode.classList.toggle('hf-has-pic', !!pic);
+    if (!pic) { if (!im.hidden) { im.hidden = true; im.removeAttribute('src'); } continue; }
+    if (im.getAttribute('src') !== pic.src) im.setAttribute('src', pic.src);
+    var h = lay.hs[k].toFixed(2) + 'mm';
+    if (im.style.height !== h) im.style.height = h;
+    im.hidden = false;
+  }
+};
+
+/* Part + slot of the slot being edited ({ part, k } or null). */
+Writer.hf.activeSlot = function activeSlot() {
+  var s = Writer.hf.lastSlot;
+  if (!s || !document.contains(s)) return null;
+  var b = s.closest('.hf-box');
+  return b ? { part: b.getAttribute('data-part'), k: +s.getAttribute('data-slot') } : null;
+};
+
+/* Put a picture (or null) in one slot as one undo step. */
+Writer.hf.setPic = function setPic(part, k, pic) {
+  var H = Writer.hf;
+  if (H.PARTS.indexOf(part) === -1 || !(k >= 0 && k < 3)) return;
+  H.record(true);
+  H.pics()[part][k] = pic ? (Writer.hfimg ? Writer.hfimg.normPic(pic) : pic) : null;
+  H.prev = H.get();
+  H.lastPush = 0;
+  H.render();
+  H.changed();
+};
+
+Writer.hf.sizePic = function sizePic(size) {
+  var H = Writer.hf, a = H.activeSlot();
+  if (!a) return;
+  var cur = H.pics()[a.part][a.k];
+  if (!cur || cur.size === size) return;
+  H.setPic(a.part, a.k, { src: cur.src, size: size });
+  H.refocus();
+};
+
+Writer.hf.removePic = function removePic() {
+  var H = Writer.hf, a = H.activeSlot();
+  if (!a || !H.pics()[a.part][a.k]) return;
+  H.setPic(a.part, a.k, null);
+  H.refocus();
+};
+
+/* Picture… : file picker, downscale, then into the slot that was active. */
+Writer.hf.pickPic = function pickPic() {
+  var H = Writer.hf;
+  if (!H.editing) H.enter({ name: 'head' }, 0);
+  var a = H.activeSlot(), file = document.getElementById('hfPicFile');
+  if (!a || !file) return;
+  H.pickFor = a;
+  file.value = '';
+  file.click();
+};
+
+Writer.hf.onPicFile = function onPicFile() {
+  var H = Writer.hf, file = document.getElementById('hfPicFile');
+  var f = file && file.files && file.files[0], a = H.pickFor;
+  H.pickFor = null;
+  if (!f || !a) return;
+  if (!/^image\//.test(f.type || '')) { H.note('That file is not a picture.'); return; }
+  var max = Writer.hfimg ? Writer.hfimg.MAX_PX : 600;
+  Writer.image.load(f, max).then(function (src) {
+    var old = H.pics()[a.part][a.k];
+    H.setPic(a.part, a.k, { src: src, size: old ? old.size : 'M' });
+    if (!H.pics()[a.part][a.k]) H.note('That picture could not be used.');
+    H.refocus();
+  }).catch(function (err) {
+    console.warn('writer: header picture failed', err);
+    H.note('That picture could not be read.');
+  });
+};
+
+Writer.hf.note = function note(msg) {
+  if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast(msg);
+};
+
+/* Back to the active slot's text after a tool click. */
+Writer.hf.refocus = function refocus() {
+  var s = Writer.hf.lastSlot;
+  if (!Writer.hf.editing || !s || !document.contains(s)) return;
+  if (document.activeElement !== s) {
+    s.focus();
+    var sel = window.getSelection();
+    sel.selectAllChildren(s);
+    sel.collapseToEnd();
+  }
+};
+
+/* Picture tools follow the active slot: S / M / L / Remove only when it has one. */
+Writer.hf.syncPicTools = function syncPicTools() {
+  var H = Writer.hf;
+  var opts = document.getElementById('hfPicOpts'), where = document.getElementById('hfPicWhere');
+  var btn = document.getElementById('hfPicBtn');
+  if (!opts) return;
+  var a = H.editing ? H.activeSlot() : null;
+  var pic = a ? H.pics()[a.part][a.k] : null;
+  opts.hidden = !pic;
+  var tight = false;   /* the margin is too small for the chosen size */
+  if (pic && Writer.hfimg) {
+    var m = (a.part === 'head' ? Writer.config.marginTopCm : Writer.config.marginBottomCm) * 10;
+    tight = Writer.hfimg.heightMm(pic.size, m) < Writer.hfimg.SIZES[pic.size];
+  }
+  if (where) {
+    where.textContent = a ? (a.part === 'head' ? 'Header ' : 'Footer ') + ['left', 'centre', 'right'][a.k] + (tight ? ' (small margin):' : ':') : '';
+    where.title = tight ? 'The page margin limits the picture size. Page \u203a Margins makes room.' : '';
+  }
+  if (btn) btn.title = pic ? 'Replace this slot\u2019s picture' : 'Add a picture (e.g. a logo) to this slot';
+  var sizes = opts.querySelectorAll('[data-hf-size]');
+  for (var i = 0; i < sizes.length; i++) {
+    var hit = !!pic && sizes[i].getAttribute('data-hf-size') === pic.size;
+    sizes[i].classList.toggle('active', hit);
+    sizes[i].setAttribute('aria-pressed', hit ? 'true' : 'false');
+  }
+};
+
+/* .docx / .odt exports do not carry header pictures yet (DW11a): say so once. */
+Writer.hf.warnedExport = false;
+Writer.hf.warnExport = function warnExport() {
+  var H = Writer.hf;
+  if (H.warnedExport || !Writer.hfimg || !Writer.hfimg.hasAny(H.data.img)) return;
+  H.warnedExport = true;
+  console.warn('writer: header / footer pictures are not exported to .docx / .odt yet (DW11a); the text is.');
 };
 
 Writer.hf.changed = function changed() {
@@ -179,6 +376,7 @@ Writer.hf.enter = function enter(part, slot) {
     sel.collapseToEnd();
     H.lastSlot = target;
   }
+  H.syncPicTools();   /* DW11 */
 };
 
 Writer.hf.exit = function exit() {
@@ -218,7 +416,8 @@ Writer.hf.insertField = function insertField(token) {
 Writer.hf.onInput = function onInput(e) {
   var s = e.target;
   if (!s || !s.classList || !s.classList.contains('hf-slot')) return;
-  var part = s.parentNode.getAttribute('data-part');
+  /* (before DW11) var part = s.parentNode.getAttribute('data-part'); */
+  var part = s.closest('.hf-box').getAttribute('data-part');
   var k = +s.getAttribute('data-slot');
   if (Writer.hf.fieldStep) { Writer.hf.fieldStep = false; Writer.hf.lastPush = 0; }
   else Writer.hf.record(false);
@@ -296,11 +495,36 @@ Writer.hf.bind = function bind() {
       b.addEventListener('click', function (e) { e.preventDefault(); H.insertField(b.getAttribute('data-hf-field')); });
     })(fields[i]);
   }
+  /* DW11: picture tools (in-app only). */
+  var picBtn = document.getElementById('hfPicBtn'), picFile = document.getElementById('hfPicFile');
+  if (picBtn && picFile) {
+    picBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    picBtn.addEventListener('click', function (e) { e.preventDefault(); H.pickPic(); });
+    picFile.addEventListener('change', H.onPicFile);
+  }
+  var picTools = document.querySelectorAll('#hfPicOpts [data-hf-size], #hfPicRemove');
+  for (var j = 0; j < picTools.length; j++) {
+    (function (b) {
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (b.id === 'hfPicRemove') H.removePic(); else H.sizePic(b.getAttribute('data-hf-size'));
+      });
+    })(picTools[j]);
+  }
   var ws = document.getElementById('workspace');
   if (ws) {
     ws.addEventListener('input', H.onInput);
     ws.addEventListener('focusin', function (e) {
-      if (e.target.classList && e.target.classList.contains('hf-slot')) H.lastSlot = e.target;
+      /* (before DW11) if (e.target.classList && e.target.classList.contains('hf-slot')) H.lastSlot = e.target; */
+      if (e.target.classList && e.target.classList.contains('hf-slot')) { H.lastSlot = e.target; H.syncPicTools(); }
+    });
+    /* DW11: a click on a picture while editing makes its slot the active one. */
+    ws.addEventListener('mousedown', function (e) {
+      if (!H.editing || !e.target.classList || !e.target.classList.contains('hf-pic')) return;
+      e.preventDefault();
+      var slot = e.target.parentNode.querySelector('.hf-slot');
+      if (slot) { H.lastSlot = slot; H.refocus(); H.syncPicTools(); }
     });
     ws.addEventListener('dblclick', function (e) {
       if (H.editing && e.target.closest('.hf-box')) return;

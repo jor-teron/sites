@@ -21,8 +21,10 @@ window.Writer = Writer;
 
 Writer.image = { MAX_W: 1600, Q: 0.85, PNG_MAX: 400 * 1024, sel: null };
 
-/* File -> downscaled data URL (Promise). */
-Writer.image.load = function load(file) {
+/* File -> downscaled data URL (Promise).
+   DW11: optional maxSide caps the longest side instead (header pictures). */
+/* (before DW11) Writer.image.load = function load(file) { */
+Writer.image.load = function load(file, maxSide) {
   var I = Writer.image;
   return new Promise(function (res, rej) {
     var url = URL.createObjectURL(file), im = new Image();
@@ -30,7 +32,11 @@ Writer.image.load = function load(file) {
       URL.revokeObjectURL(url);
       var w = im.naturalWidth, h = im.naturalHeight;
       if (!w || !h) return rej(new Error('bad image'));
-      if (w > I.MAX_W) { h = Math.round(h * I.MAX_W / w); w = I.MAX_W; }
+      /* (before DW11) if (w > I.MAX_W) { h = Math.round(h * I.MAX_W / w); w = I.MAX_W; } */
+      if (maxSide > 0) {
+        var sc = Math.min(1, maxSide / Math.max(w, h));
+        w = Math.max(1, Math.round(w * sc)); h = Math.max(1, Math.round(h * sc));
+      } else if (w > I.MAX_W) { h = Math.round(h * I.MAX_W / w); w = I.MAX_W; }
       var c = document.createElement('canvas'); c.width = w; c.height = h;
       var g = c.getContext('2d'); g.drawImage(im, 0, 0, w, h);
       var alpha = false;
