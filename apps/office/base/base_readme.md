@@ -123,3 +123,7 @@ CACHED tables often keep their rows in a binary `database/data` file. Those tabl
 ## BS12 (LibreOffice .odb export)
 
 File → **Export .odb…** writes the current database as a LibreOffice Base `.odb` with an embedded HSQLDB 1.8 engine (MEMORY tables, so the rows live in `database/script`). LibreOffice Base can open the file and show the tables with their data, and File → Open / Import… (BS11) can read it back. Tables, column types (text, number, yes/no, date) and rows carry over, including quotes, empty values and non-ASCII text. Auto-number ID fields become a primary key. Picture columns are left out (the same as Excel / CSV). Forms, queries, reports, macros and links-as-relationships are not exported (a Link to record or Lookup is written as text). The native save is still `.hob`. Cache tags are `?v=BS12`. The `.hob` JSON format is unchanged (`magic: "hbase"`, version 1).
+
+## BS14 (.hob only)
+
+`.hbase` no longer opens; old `.hbase` files are the same JSON, so rename to `.hob` to open. Only `.hob` is the native Base file. A `.hbase` file (picker, drop, or Hub hash) gets the in-app “This is not a Base file.” dialog. Import and export of `.odb`, `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`, `.json` and SQLite are unchanged. The JSON format is unchanged (`magic: "hbase"`, version 1). Cache tags are `?v=BS14`.

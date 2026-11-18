@@ -91,7 +91,8 @@
     { id: 'spreadsheet', open: ['.hos', '.xlsx', '.xls', '.ods', '.csv'], save: ['.hos'], export: ['.xlsx', '.ods', '.csv'] },
     /* (before PN4) { id: 'slides', open: ['.hop', '.hslides', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] }, */
     { id: 'slides', open: ['.hop', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] },
-    { id: 'base', open: ['.hob', '.hbase', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db'], save: ['.hob'], export: ['.odb', '.xlsx', '.csv'] },
+    /* (before BS14) { id: 'base', open: ['.hob', '.hbase', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db'], save: ['.hob'], export: ['.odb', '.xlsx', '.csv'] }, */
+    { id: 'base', open: ['.hob', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db'], save: ['.hob'], export: ['.odb', '.xlsx', '.csv'] },
     { id: 'tables', open: ['.hot', '.csv'], save: ['.hot'], export: ['.csv'] }
   ];
 
@@ -113,7 +114,7 @@
     /* (before HO6) ppt: 'slides' — Presentation does not open .ppt */
     hot: 'tables',
     hob: 'base',
-    hbase: 'base',
+    /* (before BS14) hbase: 'base', */
     odb: 'base',
     db: 'base',
     sqlite: 'base',

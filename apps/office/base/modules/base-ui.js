@@ -9,12 +9,15 @@
  *   "Reset Base" (second in-app confirm, then BaseStore.reset() and the templates screen).
  * BS10: File → Save / Save As and Ctrl+S flush IndexedDB and write or update the bound .hob
  *   file through modules/base_hob.js (OfficeNative). Backup / Restore stay as they are.
+ * BS14: .hbase no longer opens. Only .hob is the native file. A .hbase file gets the
+ *   in-app "This is not a Base file." dialog (rename it to .hob to open).
  */
 var BASE_RIBBON_TABS = [{ id: "home", label: "Home" }, { id: "query", label: "Query" }, { id: "report", label: "Report" }, { id: "view", label: "View" }];
+/* (before BS14) var BASE_VERSION = "BS12"; */
 /* (before BS12) var BASE_VERSION = "BS11"; */
 /* (before BS11) var BASE_VERSION = "BS10"; */
 /* (before BS10) var BASE_VERSION = "HOB1"; */
-var BASE_VERSION = "BS12";  /* legacy: "BS11" · "BS10" · "HOB1" · "BS9" */
+var BASE_VERSION = "BS14";  /* legacy: "BS12" · "BS11" · "BS10" · "HOB1" · "BS9" */
 var BASE_TYPE_OPTS = typeof BaseTypes !== "undefined" ? BaseTypes.opts() : [{ value: "text", label: "Text" }, { value: "number", label: "Number" }, { value: "date", label: "Date" }, { value: "bool", label: "Yes/No" }];
 var BASE_RIBBON = null, BASE_COLLAPSE = null, BASE_SETTINGS = null;
 var BASE_TYPES = { text: "Text", number: "Number", date: "Date", bool: "Yes/No", choice: "Choice", email: "Email", phone: "Phone", link: "Link", currency: "Currency (₹)", long: "Long text", picture: "Picture", id: "Auto-number ID", ref: "Link to record", lookup: "Lookup" };

@@ -53,10 +53,12 @@ Files dropped or selected automatically open in a dedicated tab running the matc
   PN4: `.hslides` no longer opens; old `.hslides` files are the same JSON — rename to `.hop` to open.
 <!-- (before BS11) - **Base**: `.hob` (native backup; `.hbase` still opens), `.base`, `.db`, `.sqlite` -->
 <!-- (before HO6) - **Base**: `.hob` (native backup; `.hbase` still opens), `.odb`, `.base`, `.db`, `.sqlite` -->
-- **Base**: open `.hob` (native; `.hbase` still opens), `.odb`, `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`, `.json`, `.sqlite`, `.sqlite3`, `.db`; save `.hob`; export `.odb`, `.xlsx`, `.csv`
+<!-- (before BS14) - **Base**: open `.hob` (native; `.hbase` still opens), `.odb`, `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`, `.json`, `.sqlite`, `.sqlite3`, `.db`; save `.hob`; export `.odb`, `.xlsx`, `.csv` -->
+- **Base**: open `.hob` (native), `.odb`, `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`, `.json`, `.sqlite`, `.sqlite3`, `.db`; save `.hob`; export `.odb`, `.xlsx`, `.csv`
+  BS14: `.hbase` no longer opens; old `.hbase` files are the same JSON — rename to `.hob` to open.
 - **Tables**: open `.hot` (native), `.csv`; save `.hot`; export `.csv`
 
-`.csv` files route to Spreadsheet. `.ppt`, `.md` and `.hslides` are not opened. Presentation does not open legacy `.ppt`. PN4: `.hslides` no longer opens; old `.hslides` files are the same JSON — rename to `.hop` to open.
+`.csv` files route to Spreadsheet. `.ppt`, `.md` and `.hslides` are not opened. Presentation does not open legacy `.ppt`. PN4: `.hslides` no longer opens; old `.hslides` files are the same JSON — rename to `.hop` to open. BS14: `.hbase` no longer opens; old `.hbase` files are the same JSON — rename to `.hob` to open.
 
 ## 6. Tests
 Run test suite:

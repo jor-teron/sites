@@ -93,7 +93,8 @@ test('FORMAT_TABLE lists truthful open, save and export formats', () => {
   /* .pdf added after verifying File → Export PDF */
   assert.deepEqual(JSON.parse(JSON.stringify(byId.slides.export)), ['.pptx', '.odp', '.png', '.pdf']);
 
-  assert.deepEqual(JSON.parse(JSON.stringify(byId.base.open)), ['.hob', '.hbase', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db']);
+  /* (before BS14) assert.deepEqual(..., ['.hob', '.hbase', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db']); */
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.base.open)), ['.hob', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.base.save)), ['.hob']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.base.export)), ['.odb', '.xlsx', '.csv']);
 
@@ -145,7 +146,8 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.hot, 'tables');
 
   assert.equal(HO.EXT_MAP.hob, 'base');
-  assert.equal(HO.EXT_MAP.hbase, 'base');
+  /* (before BS14) assert.equal(HO.EXT_MAP.hbase, 'base'); */
+  assert.equal(HO.EXT_MAP.hbase, undefined);
   assert.equal(HO.EXT_MAP.odb, 'base');
   assert.equal(HO.EXT_MAP.db, 'base');
   assert.equal(HO.EXT_MAP.sqlite, 'base');

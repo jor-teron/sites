@@ -27,24 +27,28 @@ function loadHob() {
 /* parseHash objects are created in the vm, so their Object prototype is not this realm's. */
 function plain(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
 
-test('fileName writes a .hob name and strips .hbase', () => {
+test('fileName writes a .hob name and only strips .hob', () => {
   const { Hop } = loadHob();
   assert.equal(Hop.fileName('Contacts'), 'Contacts.hob');
   assert.equal(Hop.fileName('Contacts.hob'), 'Contacts.hob');
-  assert.equal(Hop.fileName('Contacts.hbase'), 'Contacts.hob');
+  /* (before BS14) assert.equal(Hop.fileName('Contacts.hbase'), 'Contacts.hob'); */
+  assert.equal(Hop.fileName('Contacts.hbase'), 'Contacts.hbase.hob');
   assert.equal(Hop.fileName('Q?.hob'), 'Q.hob');
   assert.equal(Hop.fileName(''), 'base.hob');
   assert.ok(Hop.fileName('base-backup-2026-11-17').endsWith('.hob'));
 });
 
-test('.hob and .hbase are accepted, other extensions are rejected', () => {
+test('.hob is accepted, .hbase and other extensions are rejected', () => {
   const { Hop } = loadHob();
   assert.equal(Hop.acceptsName('data.hob'), true);
   assert.equal(Hop.acceptsName('data.HOB'), true);
-  assert.equal(Hop.acceptsName('data.hbase'), true);
-  assert.equal(Hop.acceptsName('data.HBASE'), true);
+  /* (before BS14) assert.equal(Hop.acceptsName('data.hbase'), true); */
+  /* (before BS14) assert.equal(Hop.acceptsName('data.HBASE'), true); */
+  assert.equal(Hop.acceptsName('data.hbase'), false);
+  assert.equal(Hop.acceptsName('data.HBASE'), false);
   assert.equal(Hop.acceptsName({ name: 'data.hob' }), true);
-  assert.equal(Hop.acceptsName({ name: 'data.hbase' }), true);
+  /* (before BS14) assert.equal(Hop.acceptsName({ name: 'data.hbase' }), true); */
+  assert.equal(Hop.acceptsName({ name: 'data.hbase' }), false);
   assert.equal(Hop.acceptsName('data.json'), false);
   assert.equal(Hop.acceptsName('data.xlsx'), false);
   assert.equal(Hop.acceptsName('data.csv'), false);
@@ -55,13 +59,14 @@ test('.hob and .hbase are accepted, other extensions are rejected', () => {
   assert.equal(Hop.acceptsName(''), false);
 });
 
-test('drop-file filter keeps .hob / .hbase and ignores other files', () => {
+test('drop-file filter keeps .hob and ignores .hbase and other files', () => {
   const { Hop } = loadHob();
   const hob = { name: 'Contacts.hob' };
   const old = { name: 'old.hbase' };
   const csv = { name: 'rows.csv' };
   assert.equal(Hop.dropFile([hob, csv]), hob);
-  assert.equal(Hop.dropFile([csv, old]), old);
+  /* (before BS14) assert.equal(Hop.dropFile([csv, old]), old); */
+  assert.equal(Hop.dropFile([csv, old]), null);
   assert.equal(Hop.dropFile({ files: [csv, hob] }), hob);
   assert.equal(Hop.dropFile([csv, { name: 'pic.png' }]), null);
   assert.equal(Hop.dropFile([]), null);
@@ -101,7 +106,8 @@ test('OfficeNative session is configured for .hob', () => {
   assert.ok(installed);
   assert.equal(installed.ext, 'hob');
   assert.equal(installed.isFile({ name: 'data.hob' }), true);
-  assert.equal(installed.isFile({ name: 'data.hbase' }), true);
+  /* (before BS14) assert.equal(installed.isFile({ name: 'data.hbase' }), true); */
+  assert.equal(installed.isFile({ name: 'data.hbase' }), false);
   assert.equal(installed.isFile({ name: 'data.csv' }), false);
 });
 
@@ -164,14 +170,13 @@ test('parse refuses a non hob / missing tables list', () => {
   assert.throws(() => Hop.parse(JSON.stringify({ magic: 'hbase', version: 1, db: {} })), { message: /no tables list/ });
 });
 
-test('parseHash accepts .hob and .hbase and rejects other files', () => {
+test('parseHash accepts .hob and rejects .hbase and other files', () => {
   const { Hop } = loadHob();
   assert.deepEqual(plain(Hop.parseHash('#drive=local&path=Documents&file=Contacts.hob')), {
     drive: 'local', path: 'Documents', name: 'Contacts.hob'
   });
-  assert.deepEqual(plain(Hop.parseHash('drive=local&file=old.hbase')), {
-    drive: 'local', path: '', name: 'old.hbase'
-  });
+  /* (before BS14) parseHash('drive=local&file=old.hbase') returned { drive: 'local', path: '', name: 'old.hbase' } */
+  assert.equal(Hop.parseHash('drive=local&file=old.hbase'), null);
   assert.deepEqual(plain(Hop.parseHash('#drive=local&path=A%2FB&file=Q.HOB')), {
     drive: 'local', path: 'A/B', name: 'Q.HOB'
   });
