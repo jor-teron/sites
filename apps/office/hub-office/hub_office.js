@@ -1,5 +1,8 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO11: document tabs show the document name (Untitled N until the
+/* HO12: a new blank document tab adds ?new=1 so the suite starts
+   fresh; opening a file still uses #drive=&file= and loads that file.
+   Standalone suites (no flag) still restore their last document.
+   HO11: document tabs show the document name (Untitled N until the
    suite reports one). Suites post {hubOfficeDocName:{v:1, name}}
    through office-docname.js; Hub Office does not send hub-hello, so
    the ribbon stays visible. HO10: when Hub Office is in the Hub, it
@@ -22,7 +25,8 @@
   /* (before HO9) const VERSION = 'HO8a'; */
   /* (before HO10) const VERSION = 'HO9'; */
   /* (before HO11) const VERSION = 'HO10'; */
-  const VERSION = 'HO11';
+  /* (before HO12) const VERSION = 'HO11'; */
+  const VERSION = 'HO12';
 
   const SUITES = [
     {
@@ -475,7 +479,11 @@
     /* (before HO11) const title = options.title || (app.name + ' ' + appCounters[appId]); */
     const title = sanitizeDocName(options.title) || untitledLabel(appCounters[appId]);
     const label = displayTabLabel(title);
-    const hash = options.hash ? ('#' + String(options.hash).replace(/^#/, '')) : '';
+    /* (before HO12) const hash = options.hash ? ('#' + String(options.hash).replace(/^#/, '')) : ''; */
+    const hashRaw = options.hash ? String(options.hash).replace(/^#/, '') : '';
+    const src = (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.frameSrc)
+      ? OfficeNewDoc.frameSrc(app.url, { hash: hashRaw, newBlank: !hashRaw })
+      : (app.url + (hashRaw ? ('#' + hashRaw) : ((app.url.indexOf('?') >= 0 ? '&' : '?') + 'new=1')));
     const icon = getAppIcon(appId);
 
     const tabRecord = {
@@ -483,7 +491,8 @@
       appId: appId,
       title: title,
       icon: icon,
-      url: app.url + hash,
+      /* (before HO12) url: app.url + hash, */
+      url: src,
       type: 'doc'
     };
     openTabs.push(tabRecord);
@@ -534,7 +543,8 @@
         const iframe = document.createElement('iframe');
         iframe.className = 'ho-doc-frame';
         iframe.title = title;
-        iframe.src = app.url + hash;
+        /* (before HO12) iframe.src = app.url + hash; */
+        iframe.src = src;
         /* (before HO10) the iframe was appended with no title-bar hello. */
         iframe.addEventListener('load', function () { helloSuiteFrame(iframe); });
 

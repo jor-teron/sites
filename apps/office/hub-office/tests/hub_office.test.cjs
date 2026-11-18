@@ -14,6 +14,7 @@ const cp = require('child_process');
 const ROOT = path.resolve(__dirname, '../../../..');
 const SCRIPT_PATH = path.join(ROOT, 'apps/office/hub-office/hub_office.js');
 const DOCNAME_PATH = path.join(ROOT, 'apps/office/shared/office-docname.js');
+const NEWDOC_PATH = path.join(ROOT, 'apps/office/shared/office-newdoc.js');
 const HTML_PATH = path.join(ROOT, 'apps/office/hub-office/hub_office.html');
 
 test('node --check on hub_office.js', () => {
@@ -44,14 +45,15 @@ function loadScript(customWindow = {}) {
   if (!context.addEventListener) context.addEventListener = () => {};
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(DOCNAME_PATH, 'utf8'), context, { filename: 'office-docname.js' });
+  vm.runInContext(fs.readFileSync(NEWDOC_PATH, 'utf8'), context, { filename: 'office-newdoc.js' });
   vm.runInContext(fs.readFileSync(SCRIPT_PATH, 'utf8'), context, { filename: 'hub_office.js' });
   return context.HubOffice;
 }
 
-test('VERSION is HO11 and SUITES cover all 5 office applications', () => {
+test('VERSION is HO12 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO11');
+  assert.equal(HO.VERSION, 'HO12');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -220,7 +222,8 @@ test('createDocTab opens new tab and switches active view', () => {
   assert.ok(tab);
   assert.equal(tab.title, 'Draft Notes');
   assert.equal(tab.appId, 'writer');
-  assert.equal(tab.url, '../writer/');
+  /* (before HO12) assert.equal(tab.url, '../writer/'); */
+  assert.equal(tab.url, '../writer/?new=1');
   assert.equal(HO.openTabs.length, 2);
   assert.equal(HO.getActiveTabId(), tab.id);
 
@@ -325,13 +328,14 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
 });
 
-test('Start Page HTML is the HO11 layout and keeps cache tokens', () => {
+test('Start Page HTML is the HO12 layout and keeps cache tokens', () => {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  assert.ok(html.includes('Hub Office HO11'), 'title includes HO11');
-  assert.ok(html.includes('content="HO11"'), 'version meta is HO11');
-  assert.ok(html.includes('hub_office.css?v=HO11'), 'css cache token is HO11');
-  assert.ok(html.includes('hub_office.js?v=HO11'), 'js cache token is HO11');
+  assert.ok(html.includes('Hub Office HO12'), 'title includes HO12');
+  assert.ok(html.includes('content="HO12"'), 'version meta is HO12');
+  assert.ok(html.includes('hub_office.css?v=HO12'), 'css cache token is HO12');
+  assert.ok(html.includes('hub_office.js?v=HO12'), 'js cache token is HO12');
   assert.ok(html.includes('../shared/office-docname.js'), 'loads the document-name helper');
+  assert.ok(html.includes('../shared/office-newdoc.js'), 'loads the new-document helper');
   assert.ok(html.includes('Hub Office</h1>') || html.includes('>Hub Office</h1>'), 'has Hub Office heading');
   assert.ok(html.includes('Write, calculate, present and organise. Files save on this device.'), 'has the one-line description');
   assert.ok(html.includes('id="suites-grid"'), 'has suite cards grid');
