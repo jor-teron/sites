@@ -8,6 +8,14 @@
    PLAIN: text/plain only, Ctrl+Shift+V, or HTML over MAX_HTML -> plain text.
    UNDO:  Writer.editor.onPaste is wrapped by writer-history.js, so the
           whole paste is one step. "Paste as text" chip swaps it for plain.
+   DW13:  pictures copied and pasted within Writer. The MAX_HTML cap skips
+          data: picture bytes (pictures have their own MAX_IMG cap), the
+          sanitizer keeps a picture's width, a picture selected with
+          Writer.image.select copies / cuts as <img> html (Ctrl+C / Ctrl+X),
+          Ctrl+V with a picture selected replaces it, very big pasted
+          pictures are downscaled (Writer.image.load), no "Paste as text"
+          chip for a picture-only paste, and a picture pasted while a
+          header / footer slot is being edited becomes that slot's picture.
    ========================================================================== */
 /* (before DF25) var Draftly = window.Draftly || {}; window.Draftly = Draftly; */
 var Writer = window.Writer || {};
@@ -22,6 +30,11 @@ Writer.paste.DROP = /^(SCRIPT|STYLE|META|LINK|IFRAME|FRAME|OBJECT|EMBED|SVG|MATH
 Writer.paste.INLINE = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', S: 's', STRIKE: 's', DEL: 's', SUP: 'sup', SUB: 'sub' };
 Writer.paste.BLOCK = /^(P|DIV|H[1-6]|LI|UL|OL|TABLE|TR|TD|TH|TBODY|THEAD|TFOOT|BLOCKQUOTE|PRE|SECTION|ARTICLE|HEADER|FOOTER|MAIN|NAV|ASIDE|FIGURE|DL|DT|DD|HR)$/;
 Writer.paste.IMG = /^data:image\/(png|jpe?g|gif|webp);base64,[a-z0-9+\/=\s]+$/i;
+/* DW13: picture payloads in clipboard html (not counted by MAX_HTML), their own cap,
+   and the size above which a pasted picture is downscaled first. */
+Writer.paste.DATA_RE = /data:image\/[a-z0-9.+-]+;base64,[a-z0-9+\/=]*/gi;
+Writer.paste.MAX_IMG = 20 * 1024 * 1024;
+Writer.paste.SHRINK = 1500 * 1024;
 
 Writer.paste.shiftUntil = 0;
 
@@ -114,7 +127,8 @@ Writer.paste.build = function build(doc, src, out, ctx) {
       if (ctx.cell || !P.IMG.test(srcv)) continue;               /* remote / file: images skipped */
       var bp = doc.createElement('p'); bp.className = 'dl-img-block';
       var im = doc.createElement('img'); im.setAttribute('src', srcv.replace(/\s+/g, '')); im.setAttribute('alt', '');
-      im.setAttribute('style', 'width:100%;max-width:100%;');
+      /* (before DW13) im.setAttribute('style', 'width:100%;max-width:100%;'); */
+      im.setAttribute('style', 'width:' + P.imgWidth(n.getAttribute('style')) + ';max-width:100%;');   /* DW13: keep the width */
       bp.appendChild(im); out.appendChild(bp); continue;
     }
     if (tag === 'A') {
@@ -293,7 +307,7 @@ Writer.paste.insertHtml = function insertHtml(safe) {
   else if (Writer.pages) Writer.pages.checkPagination();
 };
 
-/* Main entry (called by Writer.editor.onPaste, already one history step). */
+/* (before DW13) Writer.paste.handle was:
 Writer.paste.handle = function handle(e) {
   var P = Writer.paste;
   e.preventDefault();
@@ -321,6 +335,217 @@ Writer.paste.handle = function handle(e) {
   P.insertHtml(safe);
   P.showChip(text);
 };
+*/
+
+/* ----- DW13: pure helpers (node tests: test/test-dw13-imgpaste.cjs) ----- */
+
+/* Sizes of clipboard html: html = length without picture bytes, img = picture bytes. */
+Writer.paste.measure = function measure(html) {
+  var img = 0, count = 0;
+  var rest = String(html || '').replace(Writer.paste.DATA_RE, function (m) { img += m.length; count++; return 'data:'; });
+  return { html: rest.length, img: img, count: count };
+};
+
+/* Does clipboard html hold real text (not just pictures, spaces and markup)? */
+Writer.paste.hasText = function hasText(html) {
+  var s = String(html || '').replace(Writer.paste.DATA_RE, 'data:')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(script|style|title|head|xml|template|noscript)\b[\s\S]*?<\/\1\s*>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&(nbsp|#160|#xa0|#8203|#x200b|zwj|zwnj);/gi, '')
+    .replace(/[\s\u00a0\u200b-\u200d\ufeff]+/g, '');
+  return s.length > 0;
+};
+
+/* Picture width from a source style: a % width (5..100) is kept, else 100%. */
+Writer.paste.imgWidth = function imgWidth(style) {
+  var m = /(?:^|;)\s*width\s*:\s*([\d.]+)%/i.exec(String(style || ''));
+  var w = m ? parseFloat(m[1]) : 100;
+  if (!(w >= 5 && w <= 100)) w = 100;
+  return (Math.round(w * 10) / 10) + '%';
+};
+
+/* Clipboard html for one Writer picture (copy / cut of a selected picture). */
+Writer.paste.imageHtml = function imageHtml(src, width) {
+  var w = Writer.paste.imgWidth('width:' + (width || '100%'));
+  return '<p class="dl-img-block"><img src="' + String(src).replace(/["<>\s]/g, '') + '" alt="" style="width:' + w + ';max-width:100%;"></p>';
+};
+
+/* First data: picture of picture-only html (a Writer picture), else ''. */
+Writer.paste.firstDataImg = function firstDataImg(html) {
+  html = String(html || '');
+  if (!html || Writer.paste.hasText(html)) return '';
+  var m = /<img\b[^>]*?\bsrc\s*=\s*["']?(data:image\/[a-z0-9.+-]+;base64,[a-z0-9+\/=\s]+)/i.exec(html);
+  return m && Writer.paste.IMG.test(m[1]) ? m[1].replace(/\s+/g, '') : '';
+};
+
+/* What a paste does: 'image' (file only, as before DW13), 'none', 'plain',
+   'big' (html over MAX_HTML without picture bytes), 'bigimg' (pictures over
+   MAX_IMG) or 'html'. Pictures no longer push html over MAX_HTML. */
+Writer.paste.plan = function plan(o) {
+  var P = Writer.paste;
+  if (!o.html && !o.text) return o.hasFile ? 'image' : 'none';
+  if (!o.html || o.plainOnly) return 'plain';
+  var m = P.measure(o.html);
+  if (m.html > P.MAX_HTML) return 'big';
+  if (m.img > P.MAX_IMG) return 'bigimg';
+  return 'html';
+};
+
+/* Show the "Paste as text" chip only when the pasted html had real text. */
+Writer.paste.wantChip = function wantChip(plan, html) {
+  return plan === 'html' && Writer.paste.hasText(html);
+};
+
+/* data: URL -> Blob (for Writer.image.load downscaling), null when not one. */
+Writer.paste.dataBlob = function dataBlob(url) {
+  var m = /^data:([^;,]+);base64,([\s\S]*)$/i.exec(String(url || ''));
+  if (!m) return null;
+  var bin = atob(m[2].replace(/\s+/g, '')), n = bin.length, u = new Uint8Array(n);
+  for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], { type: m[1].toLowerCase() });
+};
+
+/* Pictures in sanitized html bigger than SHRINK (to downscale before insert). */
+Writer.paste.bigImgs = function bigImgs(safe) {
+  var out = [];
+  String(safe || '').replace(Writer.paste.DATA_RE, function (m) { if (m.length > Writer.paste.SHRINK) out.push(m); return m; });
+  return out;
+};
+
+/* Downscale big pictures in sanitized html one at a time (Promise of html). */
+Writer.paste.shrink = function shrink(safe) {
+  var P = Writer.paste, list = P.bigImgs(safe), chain = Promise.resolve(safe);
+  list.forEach(function (src) {
+    chain = chain.then(function (html) {
+      var b = P.dataBlob(src);
+      if (!b || !Writer.image || !Writer.image.load) return html;
+      return Writer.image.load(b).then(function (url) { return url && url.length < src.length ? html.split(src).join(url) : html; },
+        function () { return html; });
+    });
+  });
+  return chain;
+};
+
+/* The first image file on the clipboard (files, then items), or null. */
+Writer.paste.imageFile = function imageFile(cd) {
+  var f = cd && cd.files ? Array.prototype.find.call(cd.files, function (x) { return /^image\//.test(x.type); }) : null;
+  if (f) return f;
+  var items = cd && cd.items ? Array.prototype.slice.call(cd.items) : [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].kind === 'file' && /^image\//.test(items[i].type)) { var g = items[i].getAsFile(); if (g) return g; }
+  }
+  return null;
+};
+
+/* A picture selected with Writer.image.select (in the body), or null. */
+Writer.paste.selectedImg = function selectedImg() {
+  var I = Writer.image, img = I && I.sel;
+  return img && document.contains(img) && Writer.editor.isInEditor(img) ? img : null;
+};
+
+/* Ctrl+V with a picture selected: take it out and leave the caret where it was. */
+Writer.paste.replaceSel = function replaceSel() {
+  var img = Writer.paste.selectedImg();
+  if (!img) return false;
+  var p = img.parentElement, sel = window.getSelection(), r = document.createRange();
+  if (p && p.classList.contains('dl-img-block') && p.querySelectorAll('img').length === 1 && !p.textContent.trim()) {
+    var blank = document.createElement('p'); blank.innerHTML = '<br>';
+    p.parentNode.replaceChild(blank, p); r.setStart(blank, 0);
+  } else { r.setStartBefore(img); img.remove(); }
+  r.collapse(true); sel.removeAllRanges(); sel.addRange(r);
+  Writer.image.select(null);
+  return true;
+};
+
+/* Main entry (called by Writer.editor.onPaste, already one history step). */
+Writer.paste.handle = function handle(e) {
+  var P = Writer.paste;
+  e.preventDefault();
+  P.hideChip();
+  var cd = e.clipboardData || window.clipboardData;
+  if (!cd) return;
+  var html = cd.getData('text/html') || '';
+  var text = cd.getData('text/plain') || '';
+  var plainOnly = Date.now() < P.shiftUntil;
+  P.shiftUntil = 0;
+  var file = (!html && !text && cd.files && cd.files.length) ? P.imageFile(cd) : null;
+  var plan = P.plan({ html: html, text: text, hasFile: !!(cd.files && cd.files.length && Writer.image), plainOnly: plainOnly });
+  if (plan === 'image') {
+    if (file) {
+      Writer.image.load(file).then(function (url) {
+        Writer.history.checkpoint(); P.replaceSel(); Writer.image.insert(url); Writer.history.commit();
+      }).catch(function () { P.toast('Could not read the pasted image'); });
+    }
+    return;
+  }
+  if (plan === 'none') return;
+  if (plan === 'plain') { if (text) P.replaceSel(); Writer.editor.pastePlain(text); return; }
+  if (plan === 'big' || plan === 'bigimg') {
+    if (text) P.replaceSel();
+    Writer.editor.pastePlain(text);
+    P.toast(plan === 'big' ? 'Large paste: pasted as plain text' : 'Pictures too big to paste (over 20 MB): pasted as plain text');
+    return;
+  }
+  var safe;
+  try { safe = P.sanitize(html, P.inCell()); } catch (err) { safe = ''; }
+  if (!safe) { Writer.editor.pastePlain(text); return; }
+  var chip = P.wantChip(plan, html);
+  if (P.bigImgs(safe).length && Writer.image && Writer.image.load) {
+    /* very big pictures: downscale first, then insert as its own undo step */
+    P.shrink(safe).then(function (small) {
+      Writer.history.checkpoint(); P.replaceSel(); P.insertHtml(small); Writer.history.commit();
+      if (chip) P.showChip(text);
+    });
+    return;
+  }
+  P.replaceSel();
+  P.insertHtml(safe);
+  /* (before DW13) P.showChip(text); */
+  if (chip) P.showChip(text);
+};
+
+/* DW13: Ctrl+C / Ctrl+X on a selected picture puts it on the clipboard as <img> html. */
+Writer.paste.onCopy = function onCopy(e) {
+  var P = Writer.paste, img = P.selectedImg();
+  if (!img) return;
+  var src = img.getAttribute('src') || '';
+  var cd = e.clipboardData;
+  if (!cd || !P.IMG.test(src)) return;
+  e.preventDefault();
+  cd.setData('text/html', P.imageHtml(src, img.style.width));
+  if (e.type === 'cut') { Writer.history.checkpoint(); Writer.image.remove(img); Writer.history.commit(); }
+};
+
+/* DW13: a picture pasted into a header / footer slot becomes that slot's picture
+   (size M, Writer.hf.setPic: one header / footer undo step). Text pastes as before. */
+Writer.paste.onHfPaste = function onHfPaste(e) {
+  var P = Writer.paste, H = Writer.hf, t = e.target;
+  var el = t && t.nodeType === 1 ? t : (t && t.parentElement);
+  var slot = el && el.closest ? el.closest('.hf-slot') : null;
+  if (!slot || !H || !H.editing || !H.setPic || !Writer.image) return;
+  var cd = e.clipboardData;
+  if (!cd) return;
+  var html = cd.getData('text/html') || '';
+  var src = P.firstDataImg(html);
+  var file = src || P.hasText(html) ? null : P.imageFile(cd);
+  if (!src && !file) return;
+  e.preventDefault(); e.stopPropagation();
+  H.lastSlot = slot;
+  var a = H.activeSlot();
+  if (!a) return;
+  var blob = src ? P.dataBlob(src) : file;
+  var max = Writer.hfimg ? Writer.hfimg.MAX_PX : 600;
+  Writer.image.load(blob, max).then(function (url) {
+    H.setPic(a.part, a.k, { src: url, size: 'M' });
+    if (!H.pics()[a.part][a.k]) H.note('That picture could not be used.');
+    if (H.refocus) H.refocus();
+  }).catch(function () { H.note('That picture could not be read.'); });
+};
+
+document.addEventListener('copy', Writer.paste.onCopy, true);
+document.addEventListener('cut', Writer.paste.onCopy, true);
+document.addEventListener('paste', Writer.paste.onHfPaste, true);
 
 /* "Paste as text" chip near the caret. */
 Writer.paste.chip = null;

@@ -5,7 +5,18 @@
 Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. --> <!-- (before DW9) The page title and `Writer.config.release` are `DW8`. --> <!-- (before DW11) The page title and `Writer.config.release` are `DW9`. -->
 <!-- (before DW11a) The page title and `Writer.config.release` are `DW11` (DW10 is kept for a later release). -->
 <!-- (before DW12) The page title and `Writer.config.release` are `DW11a` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW12` (DW10 is kept for a later release).
+<!-- (before DW13) The page title and `Writer.config.release` are `DW12` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW13` (DW10 is kept for a later release).
+
+## DW13 — copy and paste pictures within Writer, and into the header / footer
+
+- **Copy a picture:** click a picture to select it (the handle and 25 / 50 / 100% bar show), then **Ctrl+C** copies it and **Ctrl+X** cuts it (one undo step). **Ctrl+V** pastes it at the caret at the same width. Ctrl+V while a picture is selected replaces that picture. Moving the caret (arrows, Home / End, Page Up / Down, Tab), typing or Ctrl+A drops the picture selection first, so a later paste does not replace it.
+- **Big pictures:** the 2 MB "Large paste: pasted as plain text" cap now counts only the text and markup, not the picture data, so copying text with pictures inside Writer no longer loses the pictures. Pictures have their own cap of 20 MB per paste; above it the text is pasted with a short note. A pasted picture over about 1.5 MB is downscaled first (`Writer.image.load`, longest side 1600 px) so documents stay light.
+- No "Paste as text" chip when the paste is only pictures.
+- **Header / footer:** while editing a header or footer (Insert → Header & Footer, or double-click the margin), click in a slot and press Ctrl+V with a Writer picture (or an image file) on the clipboard: it becomes that slot's picture at size **M**, exactly like **Picture…** (DW11): one header / footer undo step, saved in `.how`, printed and exported to PDF / `.docx` / `.odt`. It is downscaled to 600 px. Text pastes into a slot as before.
+- Unchanged: pasting from other apps and web pages (html first, an image file only when the clipboard has nothing else), the ribbon Insert image button and drag and drop.
+- Limits: a copied picture goes on the clipboard as HTML with the picture inside, so it pastes into Writer (and apps that read HTML pictures) but not into image editors like Paint. Pictures in a table cell are still left out of a paste.
+- Code: `modules/writer-paste.js` (`measure`, `hasText`, `plan`, `imageHtml`, `onCopy`, `onHfPaste`, `shrink`), `modules/writer-image.js` (keys while a picture is selected). Test: `node --test apps/office/writer/test/test-dw13-imgpaste.cjs`.
 
 ## DW12 — Save writes .docx and .odt directly
 
