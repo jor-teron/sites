@@ -89,7 +89,8 @@
   const FORMAT_TABLE = [
     { id: 'writer', open: ['.how', '.docx', '.odt'], save: ['.how'], export: ['.docx', '.odt', '.pdf'] },
     { id: 'spreadsheet', open: ['.hos', '.xlsx', '.xls', '.ods', '.csv'], save: ['.hos'], export: ['.xlsx', '.ods', '.csv'] },
-    { id: 'slides', open: ['.hop', '.hslides', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] },
+    /* (before PN4) { id: 'slides', open: ['.hop', '.hslides', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] }, */
+    { id: 'slides', open: ['.hop', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] },
     { id: 'base', open: ['.hob', '.hbase', '.odb', '.csv', '.tsv', '.txt', '.xlsx', '.xls', '.json', '.sqlite', '.sqlite3', '.db'], save: ['.hob'], export: ['.odb', '.xlsx', '.csv'] },
     { id: 'tables', open: ['.hot', '.csv'], save: ['.hot'], export: ['.csv'] }
   ];
@@ -106,7 +107,7 @@
     csv: 'spreadsheet',
     /* (before HO6) tsv: 'spreadsheet' */
     hop: 'slides',
-    hslides: 'slides',
+    /* (before PN4) hslides: 'slides', */
     pptx: 'slides',
     odp: 'slides',
     /* (before HO6) ppt: 'slides' — Presentation does not open .ppt */

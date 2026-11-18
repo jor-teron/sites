@@ -1,4 +1,5 @@
-# Hub Office Presentation (Office → Hub Office) — release PN2
+# Hub Office Presentation (Office → Hub Office) — release PN4
+<!-- (before PN4) # Hub Office Presentation (Office → Hub Office) — release PN2 -->
 <!-- (before PN2) # Hub Office Presentation (Office → Hub Office) — release PN1 -->
 <!-- (before PN1) # Hub Office Presentation (Office → Hub Office) — release SL11 -->
 <!-- (before SL11) # Hub Office Presentation (Office → Hub Office) — release HOP1 -->
@@ -9,7 +10,7 @@ A basic slide editor. Static, no build step, no libraries, works from `file://`.
 laptop: only the slide being edited is live (contenteditable title and body, plus any free text boxes, shapes and table
 cells), thumbnails are the same slide design scaled down (up to 9 bullets each), saving is debounced (400 ms) and one
 deck is one localStorage record. Pictures (SL3) are kept in IndexedDB, so the deck record stays small. SL5 stores
-formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). HOP1 renames the app to Presentation and saves decks as `.hop` files (old `.hslides` files still open). SL11 adds File → Save / Save As and Ctrl+S, which write the `.hop` file to the device (Hub Documents, the save picker, or a download on phones) through `../shared/office-native.js`. Export `.hop` and the in-browser deck list stay as they are. PN1 adds best-effort import of LibreOffice / OpenDocument presentations (`.odp`): File → Import .pptx / .odp…, dropping a `.odp` file, or a Hub link ending `.odp`. PN2 adds File → Export .odp…, which writes a 16:9 LibreOffice presentation (slides, text, pictures, simple shapes, tables, notes, a solid background) that LibreOffice and the PN1 importer can open. Saving stays `.hop`. The JSON format is unchanged (`hub-slides` version 6). A tiny store-only zip helper lives in the app; deflated .pptx / .odp imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency).
+formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and arrange. SL7 adds speaker notes, Presenter view, a pen and laser pointer, a black / white blank, and CSS slide transitions. SL8 adds more deck themes (colour + font sets; the app chrome stays System / Light / Dark), a master footer, hidden slides and named sections (still no new libraries). SL9 adds PowerPoint (.pptx) export and best-effort import, and PNG export (this slide, or all slides in a zip). HOP1 renames the app to Presentation and saves decks as `.hop` files (old `.hslides` files still open). SL11 adds File → Save / Save As and Ctrl+S, which write the `.hop` file to the device (Hub Documents, the save picker, or a download on phones) through `../shared/office-native.js`. Export `.hop` and the in-browser deck list stay as they are. PN1 adds best-effort import of LibreOffice / OpenDocument presentations (`.odp`): File → Import .pptx / .odp…, dropping a `.odp` file, or a Hub link ending `.odp`. PN2 adds File → Export .odp…, which writes a 16:9 LibreOffice presentation (slides, text, pictures, simple shapes, tables, notes, a solid background) that LibreOffice and the PN1 importer can open. Saving stays `.hop`. The JSON format is unchanged (`hub-slides` version 6). A tiny store-only zip helper lives in the app; deflated .pptx / .odp imports lazy-load JSZip already vendored in the repo (no CDN, no new dependency). PN4 drops `.hslides` support: only `.hop` is the native format (`.pptx` and `.odp` stay). Old `.hslides` files are the same JSON — rename to `.hop` to open.
 
 ## Use
 - **Slide list**: on the left (a strip on top on phones, ≤ 760 px). Numbered thumbnails show the title and bullets.
@@ -52,7 +53,9 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
   model); pasting a picture still works as in SL3.
 - **Decks**: the deck name (top left) opens the deck menu: New deck, Open deck… (list of decks on this device),
   Rename deck…, **Save**, **Save As…**, Import .hop…, Export .hop, Delete deck… (red, in-app confirm). Presentation reopens the last deck.
-  Dropping a .hop or .hslides file on the window imports it too. Opening a `.hop` / `.hslides` from Hub Files (`#drive=…&file=…`) loads it and binds Save to that file.
+  Dropping a .hop file on the window imports it too. Opening a `.hop` from Hub Files (`#drive=…&file=…`) loads it and binds Save to that file.
+  <!-- (before PN4) Dropping a .hop or .hslides file on the window imports it too. Opening a `.hop` / `.hslides` from Hub Files (`#drive=…&file=…`) loads it and binds Save to that file. -->
+  A `.hslides` file no longer opens (an in-app “This is not a Presentation file.” message); rename it to `.hop` to open.
   **Save** and **Ctrl+S** write the `.hop` to Hub Documents (or the bound file), or use the save picker / a download outside the Hub. **Save As…** asks for a name in-app in the Hub. **Export .hop** still downloads a fresh copy.
 - **Auto-save**: every change saves 400 ms later to the in-browser copy, and right away when you switch slide or deck, or the page is hidden or closed.
   The top bar shows Saving… / Saved. If a `.hop` file is already bound, leaving the page also updates that file (it does not download on each edit). If storage is missing, full or blocked, Presentation keeps working in memory and shows a
@@ -187,7 +190,8 @@ formatted text as structured runs (not raw HTML). SL6 adds shapes, tables and ar
 - **Settings (⚙)**: Theme System / Light / Dark (dark is the default; System follows the Hub's `sites-hub.theme`, then the
   device), storage state, keyboard list (with the Present keys) and About. In-app dialogs only. SL2 adds no new setting.
 
-## The .hop file (open format, still `hub-slides` version 6; `.hslides` still opens)
+## The .hop file (open format, still `hub-slides` version 6)
+<!-- (before PN4) ## The .hop file (open format, still `hub-slides` version 6; `.hslides` still opens) -->
 <!-- (before HOP1) ## The .hslides file (open format, version 4 since SL6) -->
 SL6 writes version 4 and reads versions 1, 2, 3 and 4. A file with a higher version than the app knows is refused with a message.
 Version 3 keeps the version-2 shape so a plain (unstyled) deck still has a string `title` and `{ text, level }` bullets, and
@@ -291,8 +295,10 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_odpgen.js` (`SLOdpgen`, PN2): build a {files} map from a deck into a LibreOffice `.odp` (mimetype, manifest, content.xml, styles.xml, meta.xml, Pictures). Zip packing is left to SLZip (mimetype first, flags 0).
 - `slides_png.js` (`SLPng`, SL9): `svgFor()` builds an SVG string from the model (Node-testable); `toPngBlob()` rasterises in a browser canvas.
 - `slides_save.js` (`SLSave`): settings + theme, deck list, decks, debounced auto-save, memory fallback; SL5 migrates plain text on load; SL6 fmt 5; SL7 fmt 6; SL8 fmt 7 and eight deck themes
-- `slides_file.js` (`SLFile`): .hop export / import and checks (writes v6, reads v1–v6; old .hslides files still open). `fileName` / `isDeckName` added in HOP1.
-- `slides_hop.js` (`SlidesHop` / `SLHop`, SL11): native Save / Save As of the `.hop` file through `../shared/office-native.js`. Accepts `.hop` and old `.hslides` from a File or a Hub hash. No JSON format bump.
+- `slides_file.js` (`SLFile`): .hop export / import and checks (writes v6, reads v1–v6). `fileName` / `isDeckName` added in HOP1. PN4: only `.hop` names are accepted (old `.hslides` files no longer open; rename to `.hop`).
+  <!-- (before PN4) .hop export / import and checks (writes v6, reads v1–v6; old .hslides files still open). -->
+- `slides_hop.js` (`SlidesHop` / `SLHop`, SL11): native Save / Save As of the `.hop` file through `../shared/office-native.js`. Accepts `.hop` only from a File or a Hub hash. No JSON format bump.
+  <!-- (before PN4) Accepts `.hop` and old `.hslides` from a File or a Hub hash. -->
 - `slides_edit.js` (`SLEdit`): the scaled 16:9 slide, contenteditable title / body / text boxes / shape text / table cells, Tab / Shift+Tab, layouts (placeholders),
   picture, text-box, shape and table select / move / resize / crop / arrange, and `SLEdit.html()` + `SLEdit.paint()`, the one static slide renderer used by
   the thumbnails, the pickers, Present and Print
@@ -302,7 +308,7 @@ Plain UTF-8 JSON, so any editor or script can read and write it:
 - `slides_print.js` (`SLPrint`, SL4, extended in SL7 / SL8): the print view (#print, one 16:9 page per slide, or A4 notes pages) and print / PDF; SL8 can include or skip hidden slides
 - `slides_hub.js` (`SLHub`, SL4): Hub app-bar bridge (tabs, deck name, File, Settings)
 - `slides_app.js`: top bar, ribbon, Format group + mini toolbar, Arrange group, Design (themes, master, hide, sections), Slide Show (Presenter view, notes, transitions), Quick Access bar wiring, menus, decks, dialogs, settings, keys, Present buttons, layout / theme pickers, picture, text-box, shape and table insert
-  (file / paste / drop), undo / redo, SL9 File export / import .pptx and Export PNG, SL11 Save / Save As / Ctrl+S of the `.hop` file, PN1 import of `.odp`, PN2 export of `.odp`; `window.Slides` (helpers for tests)
+  (file / paste / drop), undo / redo, SL9 File export / import .pptx and Export PNG, SL11 Save / Save As / Ctrl+S of the `.hop` file, PN1 import of `.odp`, PN2 export of `.odp`, PN4 drops `.hslides`; `window.Slides` (helpers for tests)
 
 ## Limits (SL1 – SL9)
 - Long text can run past the bottom of the slide; it scrolls

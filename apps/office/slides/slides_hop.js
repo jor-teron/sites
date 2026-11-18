@@ -3,8 +3,9 @@
    ROLE: SL11 native .hop Save / Save As of the current deck, through
          ../shared/office-native.js (the same Documents / picker /
          download path Spreadsheet and Tables use). The JSON format is
-         unchanged: "hub-slides" version 6. Old .hslides files still
-         open from a File or a Hub hash (#drive=…&file=…).
+         unchanged: "hub-slides" version 6. PN4: .hslides no longer opens
+         (rename an old .hslides file to .hop to open it).
+         (before PN4) Old .hslides files still open from a File or a Hub hash (#drive=…&file=…).
          Export .hop (SLFile.download) and the in-browser deck list
          (SLSave / localStorage) stay as they are. "Deck" wording is
          unchanged. Autosave of the .hop never downloads on each edit.
@@ -16,7 +17,7 @@
 
   var Hop = {};
   Hop.EXT = 'hop';
-  Hop.LEGACY = 'hslides';
+  /* (before PN4) Hop.LEGACY = 'hslides'; */
   Hop.FORMAT = 'hub-slides';
   Hop.VERSION = 6;
   Hop.MAX = 40 * 1024 * 1024;
@@ -42,7 +43,8 @@
   }
 
   Hop.stem = function stem(name) {
-    var s = nameOf(name).replace(/\.(hop|hslides)$/i, '');
+    /* (before PN4) var s = nameOf(name).replace(/\.(hop|hslides)$/i, ''); */
+    var s = nameOf(name).replace(/\.hop$/i, '');
     if (root && root.OfficeNative && root.OfficeNative.stem) return root.OfficeNative.stem(s, Hop.EXT, Hop.FALLBACK);
     s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!s) s = Hop.FALLBACK;
@@ -51,7 +53,8 @@
   };
   Hop.fileName = function fileName(name) { return Hop.stem(name) + '.' + Hop.EXT; };
   Hop.acceptsName = function acceptsName(name) {
-    return /\.(hop|hslides)$/i.test(nameOf(name));
+    /* (before PN4) return /\.(hop|hslides)$/i.test(nameOf(name)); */
+    return /\.hop$/i.test(nameOf(name));
   };
   Hop.isHop = function isHop(f) { return Hop.acceptsName(f); };
 
@@ -149,46 +152,8 @@
     };
   };
 
-  function hopDest(dest) {
-    if (!dest || !dest.name || !/\.hslides$/i.test(dest.name)) return dest;
-    var next = { kind: dest.kind, name: Hop.fileName(dest.name) };
-    if (dest.drive) next.drive = dest.drive;
-    if (dest.path != null) next.path = dest.path;
-    if (dest.handle) next.handle = dest.handle;
-    return next;
-  }
-
-  /* Override isFile / openFromHash so a legacy .hslides hash or File is accepted.
-     OfficeNative itself only matches the primary ext (.hop). */
-  function acceptLegacy(session) {
-    var openFile = session.openFile;
-    session.isFile = function (f) { return Hop.acceptsName(f); };
-    session.openFile = function (file, dest, opts) {
-      return openFile.call(session, file, hopDest(dest), opts);
-    };
-    session.openFromHash = function openFromHash() {
-      if (typeof window === 'undefined' || !window.location) return Promise.resolve(false);
-      var ref = Hop.parseHash(window.location.hash);
-      if (!ref) return Promise.resolve(false);
-      if (window.FsRef && typeof window.FsRef.parse === 'function') {
-        var parsed = window.FsRef.parse(window.location.hash);
-        if (parsed) ref = parsed;
-        if (!ref || !Hop.acceptsName(ref.name)) return Promise.resolve(false);
-      }
-      var key = (window.FsRef && window.FsRef.hash) ? window.FsRef.hash(ref) : (ref.drive + '|' + (ref.path || '') + '|' + ref.name);
-      if (key === session.lastHash) return Promise.resolve(false);
-      session.lastHash = key;
-      if (!window.FsRef || typeof session.openRef !== 'function') {
-        session.lastHash = '';
-        return Promise.resolve(false);
-      }
-      return session.openRef(ref).then(function (ok) {
-        if (!ok) session.lastHash = '';
-        return !!ok;
-      });
-    };
-    return session;
-  }
+  /* (before PN4) hopDest() remapped a .hslides dest to .hop; acceptLegacy() widened
+     isFile / openFromHash so a legacy .hslides hash or File was accepted. */
 
   Hop.install = function install(hooks) {
     hooks = hooks || {};
@@ -226,7 +191,7 @@
         return Promise.resolve(cur);
       }
     });
-    acceptLegacy(session);
+    /* (before PN4) acceptLegacy(session); */
     session.stemName = function () { return stemName; };
     session.noteStem = function (name) { stemName = Hop.stem(name); };
     session.hopFileName = Hop.fileName;

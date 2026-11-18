@@ -27,24 +27,28 @@ function loadHop() {
 /* parseHash objects are created in the vm, so their Object prototype is not this realm's. */
 function plain(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
 
-test('fileName writes a .hop name and strips .hslides', () => {
+test('fileName writes a .hop name and only strips .hop', () => {
   const { Hop } = loadHop();
   assert.equal(Hop.fileName('My talk'), 'My talk.hop');
   assert.equal(Hop.fileName('My talk.hop'), 'My talk.hop');
-  assert.equal(Hop.fileName('My talk.hslides'), 'My talk.hop');
+  /* (before PN4) assert.equal(Hop.fileName('My talk.hslides'), 'My talk.hop'); */
+  assert.equal(Hop.fileName('My talk.hslides'), 'My talk.hslides.hop');
   assert.equal(Hop.fileName('Q?.hop'), 'Q.hop');
   assert.equal(Hop.fileName(''), 'presentation.hop');
   assert.ok(Hop.fileName('Deck').endsWith('.hop'));
 });
 
-test('.hop and .hslides are accepted, other extensions are rejected', () => {
+test('.hop is accepted, .hslides and other extensions are rejected', () => {
   const { Hop } = loadHop();
   assert.equal(Hop.acceptsName('talk.hop'), true);
   assert.equal(Hop.acceptsName('talk.HOP'), true);
-  assert.equal(Hop.acceptsName('talk.hslides'), true);
-  assert.equal(Hop.acceptsName('talk.HSLIDES'), true);
+  /* (before PN4) assert.equal(Hop.acceptsName('talk.hslides'), true); */
+  /* (before PN4) assert.equal(Hop.acceptsName('talk.HSLIDES'), true); */
+  assert.equal(Hop.acceptsName('talk.hslides'), false);
+  assert.equal(Hop.acceptsName('talk.HSLIDES'), false);
   assert.equal(Hop.acceptsName({ name: 'talk.hop' }), true);
-  assert.equal(Hop.acceptsName({ name: 'talk.hslides' }), true);
+  /* (before PN4) assert.equal(Hop.acceptsName({ name: 'talk.hslides' }), true); */
+  assert.equal(Hop.acceptsName({ name: 'talk.hslides' }), false);
   assert.equal(Hop.acceptsName('talk.pptx'), false);
   assert.equal(Hop.acceptsName('talk.json'), false);
   assert.equal(Hop.acceptsName('talk.how'), false);
@@ -86,7 +90,8 @@ test('OfficeNative session is configured for .hop', () => {
   assert.ok(installed);
   assert.equal(installed.ext, 'hop');
   assert.equal(installed.isFile({ name: 'talk.hop' }), true);
-  assert.equal(installed.isFile({ name: 'talk.hslides' }), true);
+  /* (before PN4) assert.equal(installed.isFile({ name: 'talk.hslides' }), true); */
+  assert.equal(installed.isFile({ name: 'talk.hslides' }), false);
   assert.equal(installed.isFile({ name: 'talk.pptx' }), false);
 });
 
@@ -130,14 +135,13 @@ test('parse refuses a non hop / newer version', () => {
   assert.throws(() => Hop.parse(JSON.stringify({ format: 'hub-slides', version: 6 })), { message: /no slides list/ });
 });
 
-test('parseHash accepts .hop and .hslides and rejects other files', () => {
+test('parseHash accepts .hop and rejects .hslides and other files', () => {
   const { Hop } = loadHop();
   assert.deepEqual(plain(Hop.parseHash('#drive=local&path=Documents&file=Talk.hop')), {
     drive: 'local', path: 'Documents', name: 'Talk.hop'
   });
-  assert.deepEqual(plain(Hop.parseHash('drive=local&file=old.hslides')), {
-    drive: 'local', path: '', name: 'old.hslides'
-  });
+  /* (before PN4) parseHash('drive=local&file=old.hslides') returned { drive: 'local', path: '', name: 'old.hslides' } */
+  assert.equal(Hop.parseHash('drive=local&file=old.hslides'), null);
   assert.deepEqual(plain(Hop.parseHash('#drive=local&path=A%2FB&file=Q.HOP')), {
     drive: 'local', path: 'A/B', name: 'Q.HOP'
   });

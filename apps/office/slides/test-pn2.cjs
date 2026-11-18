@@ -305,7 +305,7 @@ test('round-trip through slides_odp.js keeps text, bullets, a rect, a picture, a
 test('slides.html wires Export .odp next to Export .pptx and loads odpgen', () => {
   const html = fs.readFileSync(path.join(dir, 'slides.html'), 'utf8');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.ok(live.indexOf('<title>Presentation PN2</title>') !== -1);
+  assert.ok(live.indexOf('<title>Presentation PN4</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before PN2) <title>Presentation PN1</title> -->') !== -1);
   const pptxAt = [];
   const odpAt = [];
@@ -322,11 +322,11 @@ test('slides.html wires Export .odp next to Export .pptx and loads odpgen', () =
   assert.equal(odp.length, 2, 'two Export .odp items');
   assert.ok(pptx[0] < odp[0] && odp[0] < pptx[1], 'File menu: Export .odp follows Export .pptx');
   assert.ok(pptx[1] < odp[1], '⋯ menu: Export .odp follows Export .pptx');
-  assert.ok(live.indexOf('src="slides_odpgen.js?v=PN2"') !== -1);
-  assert.ok(live.indexOf('src="slides_zip.js?v=PN2"') < live.indexOf('src="slides_odpgen.js?v=PN2"'));
-  assert.ok(live.indexOf('src="slides_odp.js?v=PN2"') < live.indexOf('src="slides_odpgen.js?v=PN2"'));
+  assert.ok(live.indexOf('src="slides_odpgen.js?v=PN4"') !== -1);
+  assert.ok(live.indexOf('src="slides_zip.js?v=PN4"') < live.indexOf('src="slides_odpgen.js?v=PN4"'));
+  assert.ok(live.indexOf('src="slides_odp.js?v=PN4"') < live.indexOf('src="slides_odpgen.js?v=PN4"'));
   const app = fs.readFileSync(path.join(dir, 'slides_app.js'), 'utf8');
-  assert.ok(/var VERSION = 'PN2'/.test(app));
+  assert.ok(/var VERSION = 'PN4'/.test(app));
   assert.ok(app.indexOf("/* (before PN2) var VERSION = 'PN1'; */") !== -1);
   assert.ok(app.indexOf('function exportOdp()') !== -1);
   assert.ok(app.indexOf('SLOdpgen.build') !== -1);
