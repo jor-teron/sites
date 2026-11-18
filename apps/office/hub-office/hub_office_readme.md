@@ -42,7 +42,9 @@ Files already on the Hub local drive (Documents) open through `#drive=…&file=�
 Files dropped or selected automatically open in a dedicated tab running the matching suite app. Lists below match each app's file pickers and export menus (verified in HO6):
 <!-- (before DW7) - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md`, `.pdf` -->
 <!-- (before HO6) - **Writer**: `.how` (native), `.docx`, `.odt`, `.txt`, `.md` -->
-- **Writer**: open `.how` (native), `.docx`, `.odt`; save `.how`; export `.docx`, `.odt`, `.pdf`
+<!-- (before DW9) - **Writer**: open `.how` (native), `.docx`, `.odt`; save `.how`; export `.docx`, `.odt`, `.pdf` -->
+- **Writer**: open `.how` (native), `.docx`, `.odt`, `.txt`; save `.how`; export `.docx`, `.odt`, `.pdf`
+  DW9: Writer opens `.txt` as a document (one paragraph per line). Saving still writes `.how` and does not overwrite the `.txt`. From Hub Office Open, `.txt` goes to Writer. Base can still import `.txt` from inside Base.
 <!-- (before SH27) - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.csv`, `.tsv` -->
 <!-- (before HO6) - **Spreadsheet**: `.hos` (native), `.xlsx`, `.xls`, `.ods`, `.csv`, `.tsv` -->
 - **Spreadsheet**: open `.hos` (native), `.xlsx`, `.xls`, `.ods`, `.csv`; save `.hos`; export `.xlsx`, `.ods`, `.csv`
@@ -58,7 +60,7 @@ Files dropped or selected automatically open in a dedicated tab running the matc
   BS14: `.hbase` no longer opens; old `.hbase` files are the same JSON — rename to `.hob` to open.
 - **Tables**: open `.hot` (native), `.csv`; save `.hot`; export `.csv`
 
-`.csv` files route to Spreadsheet. `.ppt`, `.md` and `.hslides` are not opened. Presentation does not open legacy `.ppt`. PN4: `.hslides` no longer opens; old `.hslides` files are the same JSON — rename to `.hop` to open. BS14: `.hbase` no longer opens; old `.hbase` files are the same JSON — rename to `.hob` to open.
+`.csv` files route to Spreadsheet. `.txt` files route to Writer (DW9; Base can still import `.txt` from inside Base). `.ppt`, `.md` and `.hslides` are not opened. Presentation does not open legacy `.ppt`. PN4: `.hslides` no longer opens; old `.hslides` files are the same JSON — rename to `.hop` to open. BS14: `.hbase` no longer opens; old `.hbase` files are the same JSON — rename to `.hob` to open.
 
 ## 6. Tests
 Run test suite:

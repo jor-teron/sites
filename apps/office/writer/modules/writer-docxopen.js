@@ -5,7 +5,9 @@
    ROLE: DF6 File > Open .docx (picker) and drag-and-drop of a
          .docx onto the page. DW7 also opens .odt (Writer.odtread)
          from the same menu item, drop, and Hub #drive=&file= links.
-         Reads .docx with Writer.docxread and .odt with Writer.odtread,
+         DW9 also opens .txt (Writer.txt) from the same menu item,
+         drop, and Hub links. Reads .docx with Writer.docxread,
+         .odt with Writer.odtread, and .txt with Writer.txt,
          saves the current doc, opens the result as a NEW document
          named after the file (unique), applies its page size /
          orientation / margins (global page prefs, like the Page
@@ -25,6 +27,10 @@ Writer.docxopen.isDocx = function isDocx(f) {
 
 Writer.docxopen.isOdt = function isOdt(f) {
   return !!f && (/\.odt$/i.test(f.name || '') || f.type === 'application/vnd.oasis.opendocument.text');
+};
+
+Writer.docxopen.isTxt = function isTxt(f) {
+  return !!f && /\.txt$/i.test(f.name || '');
 };
 
 /* (before HOW1) IndexedDB save and listDocs around a .docx open:
@@ -71,12 +77,22 @@ Draftly.docxopen.open = function open(file) {
 */
 Writer.docxopen.open = function open(file) {
   /* (before DW7) var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.docx$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document'; */
+  /* (before DW9) var odt = Writer.docxopen.isOdt(file);
+  var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.(docx|odt)$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document'; */
   var odt = Writer.docxopen.isOdt(file);
-  var ui = Writer.ui, base = String(file.name || 'Document').replace(/\.(docx|odt)$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document';
+  var txt = Writer.docxopen.isTxt(file);
+  var ui = Writer.ui, base;
+  if (txt && Writer.txt && Writer.txt.stem) base = Writer.txt.stem(file.name);
+  else base = String(file.name || 'Document').replace(/\.(docx|odt|txt)$/i, '').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Document';
   ui.showToast('Opening ' + file.name + '\u2026');
   if (Writer.app) clearTimeout(Writer.app.inputTimer);
   return file.arrayBuffer().then(function (buf) {
     /* (before DW7) return Writer.docxread.read(buf); */
+    /* (before DW9) return odt ? Writer.odtread.read(buf) : Writer.docxread.read(buf); */
+    if (txt) {
+      var text = new TextDecoder('utf-8').decode(buf instanceof Uint8Array ? buf : new Uint8Array(buf));
+      return (Writer.txt && Writer.txt.read) ? Writer.txt.read(text) : Promise.reject(new Error('TXT reader is not available'));
+    }
     return odt ? Writer.odtread.read(buf) : Writer.docxread.read(buf);
   }).then(function (res) {
     var prev = Writer.how ? Writer.how.autosave() : Promise.resolve();
@@ -107,8 +123,11 @@ Writer.docxopen.open = function open(file) {
   }).catch(function (e) {
     /* (before DW7) console.warn('writer: docx open failed', e);
     ui.showToast(e && e.userMessage ? e.userMessage : 'Could not open this .docx'); */
-    console.warn('writer: ' + (odt ? 'odt' : 'docx') + ' open failed', e);
-    var msg = e && e.userMessage ? e.userMessage : (odt ? 'Could not open this .odt' : 'Could not open this .docx');
+    /* (before DW9) console.warn('writer: ' + (odt ? 'odt' : 'docx') + ' open failed', e);
+    var msg = e && e.userMessage ? e.userMessage : (odt ? 'Could not open this .odt' : 'Could not open this .docx'); */
+    var kind = txt ? 'txt' : (odt ? 'odt' : 'docx');
+    console.warn('writer: ' + kind + ' open failed', e);
+    var msg = e && e.userMessage ? e.userMessage : ('Could not open this .' + kind);
     if (odt && Writer.dialog && Writer.dialog.alert) Writer.dialog.alert({ title: 'Could not open file', message: msg });
     else ui.showToast(msg);
   });
@@ -131,9 +150,12 @@ Writer.docxopen.bind = function bind() {
     /* (before DW7) if (D.isDocx(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
     else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how or .docx file to open it'); } */
-    if (D.isDocx(f) || D.isOdt(f)) { e.preventDefault(); D.open(f); }
+    /* (before DW9) if (D.isDocx(f) || D.isOdt(f)) { e.preventDefault(); D.open(f); }
     else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
-    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx or .odt file to open it'); }
+    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx or .odt file to open it'); } */
+    if (D.isDocx(f) || D.isOdt(f) || D.isTxt(f)) { e.preventDefault(); D.open(f); }
+    else if (Writer.how && Writer.how.isHow(f)) { e.preventDefault(); Writer.how.openFile(f, null); }
+    else if (f && !/^image\//.test(f.type)) { e.preventDefault(); Writer.ui.showToast('Drop a .how, .docx, .odt or .txt file to open it'); }
   });
 };
 

@@ -1,0 +1,99 @@
+/* DW9: Writer opens plain-text .txt files (modules/writer-txt.js).
+   Pure conversion tests: BOM, line endings, blank lines, HTML escape,
+   empty file, stem naming. No DOM, no browser, no network.
+   Run: node --test apps/office/writer/test/test-dw9-txt.cjs */
+'use strict';
+
+const test = require('node:test');
+const assert = require('assert');
+const Txt = require('../modules/writer-txt.js');
+
+test('txtToParagraphs strips a UTF-8 BOM', () => {
+  assert.deepEqual(Txt.txtToParagraphs('\uFEFFHello'), ['<p>Hello</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('\uFEFFLine 1\nLine 2'), ['<p>Line 1</p>', '<p>Line 2</p>']);
+});
+
+test('txtToParagraphs treats CRLF, CR and LF as line breaks', () => {
+  assert.deepEqual(Txt.txtToParagraphs('a\r\nb'), ['<p>a</p>', '<p>b</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('a\rb'), ['<p>a</p>', '<p>b</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('a\nb'), ['<p>a</p>', '<p>b</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('a\r\nb\rc\nd'), ['<p>a</p>', '<p>b</p>', '<p>c</p>', '<p>d</p>']);
+});
+
+test('txtToParagraphs keeps blank lines as empty paragraphs', () => {
+  assert.deepEqual(Txt.txtToParagraphs('a\n\nb'), ['<p>a</p>', '<p><br></p>', '<p>b</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('a\r\n\r\nb'), ['<p>a</p>', '<p><br></p>', '<p>b</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('\nHello'), ['<p><br></p>', '<p>Hello</p>']);
+});
+
+test('txtToParagraphs treats a trailing newline as a terminator, not a blank line', () => {
+  assert.deepEqual(Txt.txtToParagraphs('hello\n'), ['<p>hello</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('hello\n\n'), ['<p>hello</p>', '<p><br></p>']);
+});
+
+test('txtToParagraphs escapes HTML so text is never markup', () => {
+  assert.deepEqual(Txt.txtToParagraphs('<script>alert(1)</script>'), ['<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>']);
+  assert.deepEqual(Txt.txtToParagraphs('A & B < C > D'), ['<p>A &amp; B &lt; C &gt; D</p>']);
+});
+
+test('txtToParagraphs leaves tabs as they are', () => {
+  assert.deepEqual(Txt.txtToParagraphs('col1\tcol2'), ['<p>col1\tcol2</p>']);
+});
+
+test('an empty file gives one empty paragraph', () => {
+  assert.deepEqual(Txt.txtToParagraphs(''), ['<p><br></p>']);
+  assert.deepEqual(Txt.txtToParagraphs('\uFEFF'), ['<p><br></p>']);
+  assert.deepEqual(Txt.txtToParagraphs('\n'), ['<p><br></p>']);
+  assert.equal(Txt.toHtml(''), '<p><br></p>');
+});
+
+test('stem naming uses the file stem (notes.txt → notes)', () => {
+  assert.equal(Txt.stem('notes.txt'), 'notes');
+  assert.equal(Txt.stem('Notes.TXT'), 'Notes');
+  assert.equal(Txt.stem('my letter.txt'), 'my letter');
+  assert.equal(Txt.stem('Document'), 'Document');
+  assert.equal(Txt.stem(''), 'Document');
+  assert.equal(Txt.stem(null), 'Document');
+});
+
+test('read() returns the same HTML path as a docx/odt import', () => {
+  const res = Txt.read('Hello\n\nWorld');
+  assert.equal(res.html, '<p>Hello</p><p><br></p><p>World</p>');
+  assert.equal(res.page, null);
+  assert.deepEqual(res.hf, { head: ['', '', ''], foot: ['', '', ''] });
+  assert.deepEqual(res.notes, []);
+});
+
+const fs = require('fs');
+const path = require('path');
+const DIR = path.resolve(__dirname, '..');
+
+test('writer.html wires .txt into the import Open picker and loads writer-txt.js', () => {
+  const html = fs.readFileSync(path.join(DIR, 'writer.html'), 'utf8');
+  const live = html.replace(/<!--[\s\S]*?-->/g, '');
+  assert.ok(live.indexOf('<title>Writer DW9</title>') !== -1);
+  assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
+  assert.ok(live.indexOf('Open .docx / .odt / .txt') !== -1);
+  assert.ok(live.indexOf('accept=".docx,.odt,.txt,') !== -1);
+  assert.ok(live.indexOf('text/plain') !== -1);
+  assert.ok(live.indexOf('src="modules/writer-txt.js"') !== -1);
+  assert.ok(live.indexOf('src="modules/writer-txt.js"') < live.indexOf('src="modules/writer-docxopen.js"'));
+  /* Mail merge data picker is unchanged and still accepts .txt as table data. */
+  assert.ok(/id="mmFile"[^>]*accept="[^"]*\.txt[^"]*"/.test(live));
+  assert.ok(live.indexOf('id="howFile" accept=".how,application/json"') !== -1);
+  assert.ok(!/\?v=/.test(html), 'no cache-bust query');
+  const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
+  assert.ok(/release:\s*'DW9'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+});
+
+test('docxopen and how.js accept .txt from the picker, drop and Hub hash', () => {
+  const open = fs.readFileSync(path.join(DIR, 'modules/writer-docxopen.js'), 'utf8');
+  const liveOpen = open.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(liveOpen.indexOf('isTxt') !== -1);
+  assert.ok(liveOpen.indexOf('Writer.txt.read') !== -1);
+  assert.ok(liveOpen.indexOf('Writer.txt.stem') !== -1);
+  assert.ok(/isDocx\(f\)\s*\|\|\s*D\.isOdt\(f\)\s*\|\|\s*D\.isTxt\(f\)/.test(liveOpen));
+  const how = fs.readFileSync(path.join(DIR, 'modules/writer-how.js'), 'utf8');
+  const liveHow = how.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(/\\\.\(docx\|odt\|txt\)\$/.test(liveHow));
+});

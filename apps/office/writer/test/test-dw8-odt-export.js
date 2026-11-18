@@ -233,8 +233,10 @@ test('merged cells, highlight, colour, lists and page break survive a round-trip
 test('writer.html wires Export ODT next to Export DOCX and loads odtgen', function () {
   const html = fs.readFileSync(path.join(DIR, 'writer.html'), 'utf8');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.ok(live.indexOf('<title>Writer DW8</title>') !== -1);
+  /* (before DW9) assert.ok(live.indexOf('<title>Writer DW8</title>') !== -1); */
+  assert.ok(live.indexOf('<title>Writer DW9</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before DW8) <title>Writer DW7</title> -->') !== -1);
+  assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
   assert.ok(live.indexOf('Export ODT') !== -1);
   assert.ok(live.indexOf('id="exportOdtBtn"') !== -1);
   assert.ok(live.indexOf('id="exportDocxBtn"') < live.indexOf('id="exportOdtBtn"'));
@@ -251,7 +253,8 @@ test('writer.html wires Export ODT next to Export DOCX and loads odtgen', functi
   const gen = fs.readFileSync(path.join(DIR, 'modules/writer-odtgen.js'), 'utf8');
   assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(gen), 'no browser dialogs in odtgen');
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
-  assert.ok(/release:\s*'DW8'/.test(cfg));
+  /* (before DW9) assert.ok(/release:\s*'DW8'/.test(cfg)); */
+  assert.ok(/release:\s*'DW9'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 if (fs.existsSync('/usr/bin/soffice') || fs.existsSync('/usr/bin/libreoffice')) {

@@ -2,8 +2,12 @@
 # Writer
 
 <!-- (before DF25) Formerly Draftly. The folder stays `apps/office/draftly/`. File names, storage keys, message types, ids and URLs are unchanged, so saved documents and Hub links keep working. -->
-Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. -->
-The page title and `Writer.config.release` are `DW8`.
+Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are `writer.html` / `modules/writer-*.js`, the JavaScript global is `Writer`, the Hub id is `writer` and the localStorage keys are `writer_*`. Old links, Hub ids and settings keep working (see DF25 below). <!-- (before DW8) The page title and `Writer.config.release` are `DW7`. --> <!-- (before DW9) The page title and `Writer.config.release` are `DW8`. -->
+The page title and `Writer.config.release` are `DW9`.
+
+## DW9 — open plain-text .txt
+
+File → **Open .docx / .odt / .txt** opens a plain-text `.txt` file as a document. Each line becomes a paragraph; blank lines are kept; a UTF-8 BOM is stripped; Windows and Unix line endings both work; `<`, `>` and `&` are escaped so the text is never treated as markup. The document is named after the file (for example `notes.txt` → `notes`). Saving still writes `.how` and never overwrites the `.txt`. You can also drop a `.txt` on the page, or open a Hub `#drive=…&file=…` link that ends in `.txt`. Mail merge's own data picker (`#mmFile`) is unchanged and still accepts `.txt` as table data. Parser: `modules/writer-txt.js` (DOM-free). Test: `node --test apps/office/writer/test/test-dw9-txt.cjs`.
 
 ## DW8 — export LibreOffice .odt
 
@@ -40,7 +44,7 @@ The name on screen is Writer: the page title, the header next to the icon, Setti
 | `hf` | Header and footer. Three text slots each. `{page}`, `{pages}` and `{date}` stay as typed. |
 | `page` | Size (`A4` or `Legal`), orientation, margin preset, custom centimetres, page numbers on/off and position |
 
-File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). <!-- (before DW7) **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged. --> <!-- (before DW8) **Open .docx / .odt** (DW7), **Export DOCX**, **Export PDF** and **Print** are unchanged. --> **Open .docx / .odt** (DW7), **Export DOCX**, **Export ODT** (DW8), **Export PDF** and **Print** are unchanged.
+File → **Save** and **Save As** write `.how`. File → **Open .how**, or dropping a `.how` on the page, restores that document (text, formatting, images, header/footer, page setup). <!-- (before DW7) **Open .docx**, **Export DOCX**, **Export PDF** and **Print** are unchanged. --> <!-- (before DW8) **Open .docx / .odt** (DW7), **Export DOCX**, **Export PDF** and **Print** are unchanged. --> <!-- (before DW9) **Open .docx / .odt** (DW7), **Export DOCX**, **Export ODT** (DW8), **Export PDF** and **Print** are unchanged. --> **Open .docx / .odt / .txt** (DW7, DW9), **Export DOCX**, **Export ODT** (DW8), **Export PDF** and **Print** are unchanged.
 
 **In the Hub**, Save, Save As and autosave write the browser's Local drive, folder **Documents**. That is the same disk the Files app shows. Documents is created the first time a file is saved. Writer reopens the newest `.how` in Documents when it starts inside the Hub. Recent lists those files. A double-click on a `.how` in Files opens Writer on that file (the Hub id is still `draftly`).
 
@@ -85,6 +89,7 @@ An offline document editor laid out as fixed A4 pages, like a word processor. Te
 - `modules/writer-flow-blocks.js`: block helpers for flow (measure, join, text map, split a block)
 - `modules/writer-marks.js`: ¶ / ↵ format marks overlay
 - `modules/writer-export.js`: DOCX / ODT download, Print, File-menu export buttons, Ctrl+P
+- `modules/writer-txt.js`: DW9 plain-text `.txt` reader (one paragraph per line, HTML escaped)
 - `modules/writer-odtgen.js`: DW8 LibreOffice .odt writer (editor HTML to OpenDocument, packed with `writer-zip.js`)
 - `modules/writer-docxgen.js`: MM6 real DOCX writer (editor HTML to WordprocessingML, packed with `writer-zip.js`)
 - `modules/writer-pdf.js`: PDF download (image PDF; since MM4 only the fallback for non-Latin text or errors)
