@@ -10,7 +10,9 @@
          searched. Pages are cut between lines / table rows, never
          through them; .dr-pagebreak starts a new page.
    ENTRY: Writer.pdfgen.render(parts, opts) -> Promise<jsPDF>
-            parts: [{ html, hf: {head:[3], foot:[3]} | null }]
+            parts: [{ html, hf: {head:[3], foot:[3], img?} | null }]
+                   DW11: hf.img pictures (writer-hfimg.js) are drawn
+                   with addImage next to the header / footer text.
                    each part starts on a new page (mail merge rows);
                    {page}/{pages} count inside one part.
           Writer.pdfgen.canUse(htmlList, hfList) -> false when text is
@@ -307,7 +309,68 @@ Writer.pdfgen = (function () {
       }
     }
   }
-  function drawHf(doc, g, slots, top, page, pages) {
+  /* DW11: header / footer pictures. Every picture src is decoded once per
+     export: { src: { data, fmt, ar } } (ar = width / height). */
+  function partPics(part) {
+    var img = part && part.hf ? (part.hf.img || (Writer.hf && Writer.hf.data && Writer.hf.data.img)) : null;
+    return img && Writer.hfimg ? Writer.hfimg.normPics(img) : null;
+  }
+  function loadPics(parts) {
+    var cache = {}, todo = [];
+    parts.forEach(function (part) {
+      var img = partPics(part);
+      if (!img) return;
+      img.head.concat(img.foot).forEach(function (pic) {
+        if (pic && !(pic.src in cache)) { cache[pic.src] = null; todo.push(pic.src); }
+      });
+    });
+    return Promise.all(todo.map(function (src) {
+      return new Promise(function (res) {
+        var im = new Image();
+        im.onload = function () {
+          var d = im.naturalWidth && im.naturalHeight ? imageData(im) : null;
+          if (d) { d.ar = im.naturalWidth / im.naturalHeight; cache[src] = d; }
+          res();
+        };
+        im.onerror = function () { res(); };
+        im.src = src;
+      });
+    })).then(function () { return cache; });
+  }
+  /* One part (head / foot) with at least one picture: pictures and text
+     side by side, centred in the margin (writer-hfimg.js does the math). */
+  function drawHfPics(doc, g, slots, top, page, pages, row, cache) {
+    var I = Writer.hfimg, c = cfg(), pt = 10, lineH = pt * 0.3528 * 1.2;
+    var margin = (top ? c.marginTopCm : c.marginBottomCm) * 10, colW = (g.w - g.ml - g.mr) / 3;
+    doc.setFont(pdfFont(c.fontFamily), 'normal'); doc.setFontSize(pt); doc.setTextColor(0, 0, 0);
+    var boxes = [0, 1, 2].map(function (k) {
+      var pic = row[k], d = pic && cache[pic.src];
+      return d ? { d: d, box: I.fit(d.ar, pic.size, margin, colW) } : null;
+    });
+    var boxH = I.TEXT_MM;
+    boxes.forEach(function (b) { if (b) boxH = Math.max(boxH, b.box.h); });
+    var edge = I.boxTop(margin, boxH);
+    var midY = top ? edge + boxH / 2 : g.h - edge - boxH / 2;
+    (slots || ['', '', '']).forEach(function (t, k) {
+      var s = String(t || '').replace(/\{date\}/g, Writer.hf && Writer.hf.today ? Writer.hf.today() : '')
+        .replace(/\{page\}/g, String(page)).replace(/\{pages\}/g, String(pages));
+      var lines = s ? s.split(/\r?\n/) : [];
+      var textW = 0;
+      lines.forEach(function (line) { textW = Math.max(textW, doc.getTextWidth(line)); });
+      var b = boxes[k];
+      if (!b && !lines.length) return;
+      var at = I.place(k, b ? b.box.w : 0, textW, g);
+      if (b) {
+        try { doc.addImage(b.d.data, b.d.fmt, at.picX, midY - b.box.h / 2, b.box.w, b.box.h, undefined, 'FAST'); }
+        catch (e) { console.warn('writer pdf: header picture failed', e); }
+      }
+      var y0 = midY - lines.length * lineH / 2;
+      lines.forEach(function (line, li) { doc.text(line, at.textX, y0 + lineH * li + lineH * 0.78); });
+    });
+  }
+  /* (before DW11) function drawHf(doc, g, slots, top, page, pages) { */
+  function drawHf(doc, g, slots, top, page, pages, row, cache) {
+    if (row && cache && (row[0] || row[1] || row[2]) && Writer.hfimg) { drawHfPics(doc, g, slots, top, page, pages, row, cache); return; }
     if (!slots || !slots.join('').trim()) return;
     var c = cfg(), pt = 10, colW = (g.w - g.ml - g.mr) / 3;
     doc.setFont(pdfFont(c.fontFamily), 'normal'); doc.setFontSize(pt); doc.setTextColor(0, 0, 0);
@@ -326,7 +389,9 @@ Writer.pdfgen = (function () {
   }
 
   /* One part (document / merge row) -> pages added to doc. */
-  function renderPart(doc, part, g, first) {
+  /* (before DW11) function renderPart(doc, part, g, first) { */
+  function renderPart(doc, part, g, first, cache) {
+    var pics = partPics(part);   /* DW11 */
     var box = measureBox(part.html);
     return waitImages(box.ed).then(function () {
       var ops = collect(box.ed);
@@ -340,7 +405,8 @@ Writer.pdfgen = (function () {
           u.ops.forEach(function (op) { drawOp(doc, op, g, u.dy); });
         });
         doc.setPage(pageNo);
-        if (part.hf) { drawHf(doc, g, part.hf.head, true, i + 1, p.pages); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages); }
+        /* (before DW11) if (part.hf) { drawHf(doc, g, part.hf.head, true, i + 1, p.pages); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages); } */
+        if (part.hf) { drawHf(doc, g, part.hf.head, true, i + 1, p.pages, pics && pics.head, cache); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages, pics && pics.foot, cache); }
       }
       box.paper.remove();
       return p.pages;
@@ -357,17 +423,19 @@ Writer.pdfgen = (function () {
     var doc = new window.jspdf.jsPDF({ orientation: g.land ? 'landscape' : 'portrait', unit: 'mm', format: [Math.min(g.w, g.h), Math.max(g.w, g.h)], compress: true });
     /* (before DF24) doc.setProperties({ title: opts.title || 'Draftly document', creator: 'Draftly (Hub)' }); */
     doc.setProperties({ title: opts.title || 'Writer document', creator: 'Writer (Hub)' });
-    var i = 0;
+    var i = 0, cache = {};
     function next() {
       if (i >= parts.length) return Promise.resolve(doc);
       var k = i++;
       if (opts.onProgress) opts.onProgress(k, parts.length);
       if (opts.cancelled && opts.cancelled()) return Promise.reject(new Error('cancelled'));
-      return renderPart(doc, parts[k], g, k === 0).then(function () {
+      /* (before DW11) return renderPart(doc, parts[k], g, k === 0).then(function () { */
+      return renderPart(doc, parts[k], g, k === 0, cache).then(function () {
         return new Promise(function (res) { setTimeout(res, 0); });   /* repaint between rows */
       }).then(next);
     }
-    return next();
+    /* (before DW11) return next(); */
+    return loadPics(parts).then(function (c) { cache = c; return next(); });
     });
   }
 
@@ -381,7 +449,7 @@ Writer.pdfgen = (function () {
     if (typeof window.html2canvas !== 'function') return Promise.reject(new Error('html2canvas missing'));
     var g = geometry(), c = cfg();
     var doc = new window.jspdf.jsPDF({ orientation: g.land ? 'landscape' : 'portrait', unit: 'mm', format: [Math.min(g.w, g.h), Math.max(g.w, g.h)], compress: true });
-    var pageHpx = (g.h - g.mt - g.mb) / PX_MM, i = 0, firstPage = true;
+    var pageHpx = (g.h - g.mt - g.mb) / PX_MM, i = 0, firstPage = true, cache = {};   /* DW11: cache = header pictures */
     function next() {
       if (i >= parts.length) return Promise.resolve(doc);
       var part = parts[i++];
@@ -402,12 +470,15 @@ Writer.pdfgen = (function () {
           cx.drawImage(cv, 0, -Math.round(k * pageHpx * sc));
           doc.addImage(sl.toDataURL('image/jpeg', c.pdfJpegQuality || 0.92), 'JPEG', g.ml, g.mt, sl.width / sc * PX_MM, sl.height / sc * PX_MM, undefined, 'FAST');
           if (part.hf) {   /* header / footer text still real text when it is Latin */
-            if (latinOk(part.hf.head.join('') + part.hf.foot.join(''))) { drawHf(doc, g, part.hf.head, true, k + 1, n); drawHf(doc, g, part.hf.foot, false, k + 1, n); }
+            /* (before DW11) if (latinOk(part.hf.head.join('') + part.hf.foot.join(''))) { drawHf(doc, g, part.hf.head, true, k + 1, n); drawHf(doc, g, part.hf.foot, false, k + 1, n); } */
+            var pics = partPics(part);
+            if (latinOk(part.hf.head.join('') + part.hf.foot.join(''))) { drawHf(doc, g, part.hf.head, true, k + 1, n, pics && pics.head, cache); drawHf(doc, g, part.hf.foot, false, k + 1, n, pics && pics.foot, cache); }
           }
         }
       }, function (e) { box.paper.remove(); throw e; }).then(next);
     }
-    return next();
+    /* (before DW11) return next(); */
+    return loadPics(parts).then(function (c) { cache = c; return next(); });
     });
   }
 
@@ -418,7 +489,8 @@ Writer.pdfgen = (function () {
     if (Writer.editor && Writer.editor.stripMarks) Writer.editor.stripMarks(d);
     return d.innerHTML;
   }
-  function hfData() { return Writer.hf && !Writer.hf.isEmpty() ? { head: Writer.hf.data.head.slice(), foot: Writer.hf.data.foot.slice() } : null; }
+  /* (before DW11) function hfData() { return Writer.hf && !Writer.hf.isEmpty() ? { head: Writer.hf.data.head.slice(), foot: Writer.hf.data.foot.slice() } : null; } */
+  function hfData() { return Writer.hf && !Writer.hf.isEmpty() ? Writer.hf.get() : null; }
 
   function fileName(suffix) {
     var name = (Writer.storage && Writer.storage.currentName()) || cfg().pdfFileName || 'document';

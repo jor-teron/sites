@@ -285,7 +285,8 @@ test('writer.html wires the odt reader and the combined Open menu', function () 
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
   /* (before DW8) assert.ok(live.indexOf('<title>Writer DW7</title>') !== -1); */
   /* (before DW9) assert.ok(live.indexOf('<title>Writer DW8</title>') !== -1); */
-  assert.ok(live.indexOf('<title>Writer DW9</title>') !== -1);
+  /* (before DW11) assert.ok(live.indexOf('<title>Writer DW9</title>') !== -1); */
+  assert.ok(live.indexOf('<title>Writer DW11</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before DW7) <title>Writer DF25</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW8) <title>Writer DW7</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);

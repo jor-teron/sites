@@ -106,7 +106,8 @@ var cfg = read('apps/office/writer/modules/writer-config.js');
   /* (before DW7) "release: 'DF25'" */
   /* (before DW8) "release: 'DW7'" */
   /* (before DW9) "release: 'DW8'" */
-  "release: 'DW9'"
+  /* (before DW11) "release: 'DW9'" */
+  "release: 'DW11'"
 ].forEach(function (bit) {
   ok('config still has ' + bit, cfg.indexOf(bit) !== -1);
 });

@@ -112,6 +112,7 @@ Writer.export.hfXml = function hfXml(part, isLandscape, data) {
   var cfg = Writer.config;
   if (!Writer.hf) return '';
   var slots = (data || Writer.hf.data)[part];   /* data: other header / footer text (mail merge) */
+  if (Writer.hf.warnExport) Writer.hf.warnExport();   /* DW11: pictures stay out of .docx until DW11a */
   if (!slots.join('').trim()) return '';
   var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
   var pageW = isLandscape ? ps.docxH : ps.docxW;

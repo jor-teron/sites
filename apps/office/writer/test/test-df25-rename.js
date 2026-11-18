@@ -51,7 +51,8 @@ var title = htmlLive.match(/<title>([^<]*)<\/title>/);
 /* (before DW7) ok('title is Writer DF25', title && title[1] === 'Writer DF25', title && title[1]); */
 /* (before DW8) ok('title is Writer DW7', title && title[1] === 'Writer DW7', title && title[1]); */
 /* (before DW9) ok('title is Writer DW8', title && title[1] === 'Writer DW8', title && title[1]); */
-ok('title is Writer DW9', title && title[1] === 'Writer DW9', title && title[1]);
+/* (before DW11) ok('title is Writer DW9', title && title[1] === 'Writer DW9', title && title[1]); */
+ok('title is Writer DW11', title && title[1] === 'Writer DW11', title && title[1]);
 ok('no ?v= cache-bust', htmlLive.indexOf('?v=') === -1);
 var refs = [];
 htmlLive.replace(/<(?:script|link)\b[^>]*?\s(?:src|href)="([^"]+)"/g, function (_, u) { refs.push(u); });
@@ -105,7 +106,8 @@ ok('global is Writer, Draftly is an alias', ctx.window.Writer && ctx.window.Draf
 /* (before DW7) ok('config release is DF25', ctx.window.Writer.config.release === 'DF25'); */
 /* (before DW8) ok('config release is DW7', ctx.window.Writer.config.release === 'DW7'); */
 /* (before DW9) ok('config release is DW8', ctx.window.Writer.config.release === 'DW8'); */
-ok('config release is DW9', ctx.window.Writer.config.release === 'DW9');
+/* (before DW11) ok('config release is DW9', ctx.window.Writer.config.release === 'DW9'); */
+ok('config release is DW11', ctx.window.Writer.config.release === 'DW11');
 ok('migration ran at load: writer_settings copied', ls.getItem('writer_settings') === '{"theme":"dark","ruler":true}');
 ok('theme copied', ls.getItem('writer_theme') === 'dark');
 ok('dash key copied', ls.getItem('writer-ribbon-tab') === 'page');

@@ -71,7 +71,8 @@ const DIR = path.resolve(__dirname, '..');
 test('writer.html wires .txt into the import Open picker and loads writer-txt.js', () => {
   const html = fs.readFileSync(path.join(DIR, 'writer.html'), 'utf8');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.ok(live.indexOf('<title>Writer DW9</title>') !== -1);
+  /* (before DW11) assert.ok(live.indexOf('<title>Writer DW9</title>') !== -1); */
+  assert.ok(live.indexOf('<title>Writer DW11</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
   assert.ok(live.indexOf('Open .docx / .odt / .txt') !== -1);
   assert.ok(live.indexOf('accept=".docx,.odt,.txt,') !== -1);
@@ -83,7 +84,8 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   assert.ok(live.indexOf('id="howFile" accept=".how,application/json"') !== -1);
   assert.ok(!/\?v=/.test(html), 'no cache-bust query');
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
-  assert.ok(/release:\s*'DW9'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW11) assert.ok(/release:\s*'DW9'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW11'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 test('docxopen and how.js accept .txt from the picker, drop and Hub hash', () => {

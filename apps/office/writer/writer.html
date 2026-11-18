@@ -23,7 +23,8 @@
   <!-- (before DW7) <title>Writer DF25</title> -->
   <!-- (before DW8) <title>Writer DW7</title> -->
   <!-- (before DW9) <title>Writer DW8</title> -->
-  <title>Writer DW9</title>
+  <!-- (before DW11) <title>Writer DW9</title> -->
+  <title>Writer DW11</title>
   <meta name="theme-color" content="#5b5bf0">
   <!-- (before DF25) <link rel="icon" href="draftly_icon.png"> -->
   <link rel="icon" href="writer_icon.png">
@@ -217,6 +218,16 @@
         <button class="tool-btn labeled" data-hf-field="{page}" title="Insert page number"><span>Page #</span></button>
         <button class="tool-btn labeled" data-hf-field="of {pages}" title="Insert total pages"><span>of Pages</span></button>
         <button class="tool-btn labeled" data-hf-field="{date}" title="Insert today&#39;s date"><span>Date</span></button>
+        <!-- DW11: picture for the header / footer slot being edited -->
+        <span class="hf-pic-where" id="hfPicWhere" aria-live="polite"></span>
+        <button class="tool-btn labeled" id="hfPicBtn" title="Add a picture (e.g. a logo) to this slot" aria-label="Header or footer picture"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg><span>Picture&hellip;</span></button>
+        <input type="file" id="hfPicFile" accept="image/*" hidden>
+        <span class="hf-pic-opts" id="hfPicOpts" role="group" aria-label="Picture size" hidden>
+          <button class="tool-btn labeled" data-hf-size="S" title="Small picture (8 mm)" aria-pressed="false"><span>S</span></button>
+          <button class="tool-btn labeled" data-hf-size="M" title="Medium picture (14 mm)" aria-pressed="false"><span>M</span></button>
+          <button class="tool-btn labeled" data-hf-size="L" title="Large picture (20 mm)" aria-pressed="false"><span>L</span></button>
+          <button class="tool-btn labeled" id="hfPicRemove" title="Remove this slot&#39;s picture"><span>Remove</span></button>
+        </span>
         <button class="tool-btn labeled" id="hfCloseBtn" title="Close header &amp; footer (Esc)"><span>Close</span></button>
       </div>
       <div class="tool-group table-tools" id="tableTools" hidden>
@@ -442,6 +453,7 @@
   <script src="modules/writer-paste.js"></script>
   <script src="modules/writer-spacing.js"></script>
   <script src="modules/writer-zoom.js"></script>
+  <script src="modules/writer-hfimg.js"></script>
   <script src="modules/writer-headerfooter.js"></script>
   <script src="modules/writer-margins.js"></script>
   <script src="modules/writer-ruler.js"></script>
