@@ -1,13 +1,13 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO9: a Settings section on the Start Page stores shared defaults
-   (font, paper, date and number format, autosave, save location, name)
-   in office-shared-settings.js. Suites are not wired yet. HO8a: the
-   Home button in the Hub title bar shows its label (🏠 Home) and sits
-   on the left. HO8 moved the Start Page out of the tab strip into that
-   button. Document tabs stay in the existing row. Standalone, a small
-   Home button sits in that row. The Start Page tab is gone from the
-   strip, and the row hides when no documents are open. HO7 Start Page
-   cards, header and Open/drop are unchanged. */
+/* HO10: when Hub Office is in the Hub, it relays the active document's
+   Undo, Redo, Save, Print and File buttons into the title bar, after
+   🏠 Home, and says hello to each suite iframe so the in-app quick row
+   hides. Ribbon tabs stay inside the suite and are not relayed. HO9:
+   a Settings section on the Start Page stores shared defaults in
+   office-shared-settings.js. Suites are not wired to those yet. HO8a:
+   the Home button shows its label and sits on the left. Document tabs
+   stay in the existing row. Standalone, suites keep their own quick
+   row and a small Home button sits in the tab row. */
 (function (root) {
   'use strict';
 
@@ -16,7 +16,8 @@
   /* (before HO8) const VERSION = 'HO7'; */
   /* (before HO8a) const VERSION = 'HO8'; */
   /* (before HO9) const VERSION = 'HO8a'; */
-  const VERSION = 'HO9';
+  /* (before HO10) const VERSION = 'HO9'; */
+  const VERSION = 'HO10';
 
   const SUITES = [
     {
@@ -123,6 +124,8 @@
     { id: 'start', title: 'Start Page', type: 'start', icon: '🏠' }
   ];
   let activeTabId = 'start';
+  /* HO10: last title-bar button set from each document iframe. */
+  const hubBarByTab = Object.create(null);
 
   function getExt(filename) {
     const m = /\.([^./\\]+)$/.exec(String(filename || ''));
@@ -177,6 +180,145 @@
     /* (before HO8a) return { id: 'home', icon: '🏠', label: 'Home', title: 'Start Page', enabled: true }; */
     return { id: 'home', icon: '🏠', label: 'Home', title: 'Start Page', enabled: true, showLabel: true };
   }
+
+  /* HO10: prefix suite button ids so they cannot collide with Home.
+     The Hub allows at most 8 title-bar buttons in total. */
+  const TITLE_BAR_PREFIX = 'd:';
+  const TITLE_BAR_MAX = 8;
+
+  function copyButton(b) {
+    if (!b || typeof b !== 'object') return null;
+    const o = {};
+    Object.keys(b).forEach((k) => { o[k] = b[k]; });
+    return o;
+  }
+
+  function prefixTitleBarId(id) {
+    return TITLE_BAR_PREFIX + String(id == null ? '' : id);
+  }
+
+  function unprefixTitleBarId(id) {
+    const s = String(id == null ? '' : id);
+    if (s.indexOf(TITLE_BAR_PREFIX) !== 0) return null;
+    return s.slice(TITLE_BAR_PREFIX.length);
+  }
+
+  function prefixTitleBarButtons(list) {
+    return (Array.isArray(list) ? list : []).map((b) => {
+      const o = copyButton(b);
+      if (!o || o.id == null || o.id === '') return null;
+      o.id = prefixTitleBarId(o.id);
+      return o;
+    }).filter(Boolean);
+  }
+
+  /* File arrives as a ribbon tab, not a quick button. Promote only that
+     tab to a labelled title-bar button; other tabs stay in the suite. */
+  function fileButtonFromTabs(tabs) {
+    const list = Array.isArray(tabs) ? tabs : [];
+    for (let i = 0; i < list.length; i++) {
+      const t = list[i];
+      if (t && String(t.id) === 'file') {
+        return {
+          id: 'file',
+          label: t.label != null ? String(t.label) : 'File',
+          icon: t.icon != null ? String(t.icon) : '📁',
+          title: t.title != null ? String(t.title) : (t.label != null ? String(t.label) : 'File'),
+          enabled: t.enabled !== false,
+          showLabel: true
+        };
+      }
+    }
+    return null;
+  }
+
+  function applyButtonPatch(buttons, patch) {
+    const list = (Array.isArray(buttons) ? buttons : []).map(copyButton).filter(Boolean);
+    (Array.isArray(patch) ? patch : []).forEach((p) => {
+      if (!p || p.id == null) return;
+      let found = -1;
+      for (let i = 0; i < list.length; i++) {
+        if (list[i] && String(list[i].id) === String(p.id)) { found = i; break; }
+      }
+      if (found < 0) {
+        list.push(copyButton(p));
+      } else {
+        const o = copyButton(list[found]) || {};
+        Object.keys(p).forEach((k) => { o[k] = p[k]; });
+        list[found] = o;
+      }
+    });
+    return list;
+  }
+
+  function composeTitleBarButtons(homeButton, docState, max) {
+    const cap = max > 0 ? max : TITLE_BAR_MAX;
+    const home = copyButton(homeButton) || homeTitleBarButton();
+    const extras = [];
+    const seen = Object.create(null);
+    function add(b) {
+      if (!b || b.id == null || seen[String(b.id)]) return;
+      seen[String(b.id)] = true;
+      extras.push(b);
+    }
+    const state = docState || null;
+    if (state) {
+      (Array.isArray(state.buttons) ? state.buttons : []).forEach(add);
+      add(fileButtonFromTabs(state.tabs));
+    }
+    return [home].concat(prefixTitleBarButtons(extras)).slice(0, cap);
+  }
+
+  function clickKindForRelay(docState, rawId) {
+    if (docState && docState.clickKinds && docState.clickKinds[rawId]) {
+      return docState.clickKinds[rawId];
+    }
+    if (rawId === 'file' && fileButtonFromTabs(docState && docState.tabs)) return 'tab';
+    return 'button';
+  }
+
+  function stateFromSuiteSet(body) {
+    const buttons = (body && Array.isArray(body.buttons) ? body.buttons : []).map(copyButton).filter((b) => b && b.id != null);
+    const tabs = body && Array.isArray(body.tabs) ? body.tabs.map(copyButton).filter(Boolean) : [];
+    const clickKinds = Object.create(null);
+    buttons.forEach((b) => { clickKinds[String(b.id)] = 'button'; });
+    if (fileButtonFromTabs(tabs) && !clickKinds.file) clickKinds.file = 'tab';
+    return { buttons: buttons, tabs: tabs, clickKinds: clickKinds };
+  }
+
+  /* Pure planner for the title-bar relay. prev is the last stored state
+     for one document; body is the suite's hubTitleBar payload. */
+  function planTitleBarRelay(prev, body, isActive, homeButton, max) {
+    const op = body && body.op;
+    if (op === 'clear') {
+      if (!isActive) return { state: null, publish: null };
+      return { state: null, publish: 'set', buttons: composeTitleBarButtons(homeButton, null, max) };
+    }
+    if (op === 'set') {
+      const state = stateFromSuiteSet(body);
+      if (!isActive) return { state: state, publish: null };
+      return { state: state, publish: 'set', buttons: composeTitleBarButtons(homeButton, state, max) };
+    }
+    if (op === 'update') {
+      const base = prev || { buttons: [], tabs: [], clickKinds: Object.create(null) };
+      const clickKinds = Object.assign(Object.create(null), base.clickKinds || {});
+      const state = {
+        buttons: applyButtonPatch(base.buttons, body && body.buttons),
+        tabs: Array.isArray(base.tabs) ? base.tabs : [],
+        clickKinds: clickKinds
+      };
+      (state.buttons || []).forEach((b) => {
+        if (b && b.id != null && !clickKinds[String(b.id)]) clickKinds[String(b.id)] = 'button';
+      });
+      if (!isActive) return { state: state, publish: null };
+      if (body && Array.isArray(body.buttons) && body.buttons.length) {
+        return { state: state, publish: 'update', updateButtons: prefixTitleBarButtons(body.buttons) };
+      }
+      return { state: state, publish: null };
+    }
+    return { state: prev || null, publish: null };
+  }
+
 
   function syncChrome() {
     if (typeof document === 'undefined') return;
@@ -236,6 +378,7 @@
       });
     }
     syncChrome();
+    publishTitleBar('set');
   }
 
   // Close an active or background document tab
@@ -246,6 +389,7 @@
     if (idx < 0) return;
 
     openTabs.splice(idx, 1);
+    delete hubBarByTab[tabId];
 
     if (typeof document !== 'undefined') {
       const tabEl = document.getElementById('tab-btn-' + tabId);
@@ -334,6 +478,8 @@
         iframe.className = 'ho-doc-frame';
         iframe.title = title;
         iframe.src = app.url + hash;
+        /* (before HO10) the iframe was appended with no title-bar hello. */
+        iframe.addEventListener('load', function () { helloSuiteFrame(iframe); });
 
         view.appendChild(iframe);
         viewsContainer.appendChild(view);
@@ -823,21 +969,109 @@
     bind('set-author', 'change', (el) => ({ author: el.value }));
   }
 
+  function titleBarOrigin() {
+    return (typeof location !== 'undefined' && location.origin && location.origin !== 'null') ? location.origin : '*';
+  }
+
+  function helloSuiteFrame(iframe) {
+    if (typeof HubTitleBar === 'undefined' || !HubTitleBar.linked || !iframe) return;
+    try {
+      const win = iframe.contentWindow;
+      if (!win) return;
+      win.postMessage({ hubTitleBarHello: { v: 1 } }, titleBarOrigin());
+    } catch (e) { /* frame gone or not yet ready */ }
+  }
+
+  function helloAllSuiteFrames() {
+    if (typeof document === 'undefined') return;
+    const frames = document.querySelectorAll('iframe.ho-doc-frame');
+    for (let i = 0; i < frames.length; i++) helloSuiteFrame(frames[i]);
+  }
+
+  function frameForTab(tabId) {
+    if (typeof document === 'undefined' || !tabId) return null;
+    const view = document.getElementById('view-' + tabId);
+    return view ? view.querySelector('iframe.ho-doc-frame') : null;
+  }
+
+  function tabIdForSource(source) {
+    if (!source || typeof document === 'undefined') return null;
+    for (let i = 0; i < openTabs.length; i++) {
+      const t = openTabs[i];
+      if (!t || t.type !== 'doc') continue;
+      const frame = frameForTab(t.id);
+      try {
+        if (frame && frame.contentWindow === source) return t.id;
+      } catch (e) { /* ignore */ }
+    }
+    return null;
+  }
+
   /* Reuse the H49 HubTitleBar hook (office-hubbar.js). After the Hub
-     says hello, Home is a title-bar button. Document tabs are not sent
-     up — they stay in the in-app tab row. Standalone, or a frame that
-     never says hello, leaves the in-row Home button visible. */
+     says hello, Home is a title-bar button, and the active document's
+     quick buttons are relayed after it. Document tabs and ribbon tabs
+     are not sent up — they stay in the in-app rows. Standalone, or a
+     frame that never says hello, leaves the in-row Home button visible
+     and does not hello the suite iframes, so each suite keeps its own
+     quick row. */
+  function publishTitleBar(mode, updateButtons) {
+    if (typeof HubTitleBar === 'undefined' || !HubTitleBar.linked) return;
+    if (mode === 'update' && Array.isArray(updateButtons) && updateButtons.length) {
+      HubTitleBar.update({ buttons: updateButtons });
+      return;
+    }
+    const state = (activeTabId && activeTabId !== 'start') ? (hubBarByTab[activeTabId] || null) : null;
+    /* (before HO10) HubTitleBar.set({ buttons: [homeTitleBarButton()], align: 'left' }); */
+    HubTitleBar.set({ buttons: composeTitleBarButtons(homeTitleBarButton(), state, TITLE_BAR_MAX), align: 'left' });
+  }
+
+  function onSuiteTitleBar(tabId, body) {
+    const isActive = tabId === activeTabId && activeTabId !== 'start';
+    const planned = planTitleBarRelay(hubBarByTab[tabId] || null, body, isActive, homeTitleBarButton(), TITLE_BAR_MAX);
+    if (planned.state) hubBarByTab[tabId] = planned.state;
+    else delete hubBarByTab[tabId];
+    if (planned.publish === 'update') publishTitleBar('update', planned.updateButtons);
+    else if (planned.publish === 'set') publishTitleBar('set');
+  }
+
+  function forwardTitleBarClick(rawId, kind) {
+    if (!rawId || activeTabId === 'start') return;
+    const frame = frameForTab(activeTabId);
+    if (!frame) return;
+    try {
+      const win = frame.contentWindow;
+      if (!win) return;
+      win.postMessage({ hubTitleBarClick: { v: 1, kind: kind, id: rawId } }, titleBarOrigin());
+    } catch (e) { /* frame gone */ }
+  }
+
   function initHubHome() {
     if (typeof HubTitleBar === 'undefined') return;
-    function publish() {
-      if (!HubTitleBar.linked) return;
-      /* (before HO8a) HubTitleBar.set({ buttons: [homeTitleBarButton()] }); */
-      HubTitleBar.set({ buttons: [homeTitleBarButton()], align: 'left' });
-    }
-    HubTitleBar.onHello(publish);
-    HubTitleBar.onClick(function (kind, id) {
-      if (kind === 'button' && id === 'home') switchTab('start');
+    HubTitleBar.onHello(function () {
+      helloAllSuiteFrames();
+      publishTitleBar('set');
     });
+    HubTitleBar.onClick(function (kind, id) {
+      if (kind === 'button' && id === 'home') {
+        switchTab('start');
+        return;
+      }
+      if (kind !== 'button') return;
+      const raw = unprefixTitleBarId(id);
+      if (raw == null || raw === '') return;
+      const state = hubBarByTab[activeTabId] || null;
+      forwardTitleBarClick(raw, clickKindForRelay(state, raw));
+    });
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('message', function (e) {
+        if (!e || e.origin !== location.origin) return;
+        const d = e.data;
+        if (!d || typeof d !== 'object' || !d.hubTitleBar) return;
+        const tabId = tabIdForSource(e.source);
+        if (!tabId) return;
+        onSuiteTitleBar(tabId, d.hubTitleBar);
+      });
+    }
   }
 
   function init() {
@@ -879,7 +1113,17 @@
     openAcceptList,
     formatChipGroups,
     shouldShowTabBar,
-    homeTitleBarButton
+    homeTitleBarButton,
+    TITLE_BAR_PREFIX,
+    TITLE_BAR_MAX,
+    prefixTitleBarId,
+    unprefixTitleBarId,
+    prefixTitleBarButtons,
+    fileButtonFromTabs,
+    applyButtonPatch,
+    composeTitleBarButtons,
+    clickKindForRelay,
+    planTitleBarRelay
   };
 
 })(typeof window !== 'undefined' ? window : this);

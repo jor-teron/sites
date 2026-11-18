@@ -47,10 +47,10 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO9 and SUITES cover all 5 office applications', () => {
+test('VERSION is HO10 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO9');
+  assert.equal(HO.VERSION, 'HO10');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -272,10 +272,14 @@ test('homeTitleBarButton is a single Home button and JS wires H49 without sendin
   assert.equal(btn.showLabel, true);
 
   const js = fs.readFileSync(SCRIPT_PATH, 'utf8');
-  assert.ok(js.includes("HubTitleBar.set({ buttons: [homeTitleBarButton()], align: 'left' })"), 'set() sends Home on the left, without document tabs');
-  assert.ok(js.includes("if (kind === 'button' && id === 'home') switchTab('start')"), 'title-bar Home click shows the Start Page');
+  /* (before HO10) set() sent only [homeTitleBarButton()] */
+  assert.ok(js.includes('composeTitleBarButtons(homeTitleBarButton()'), 'set() composes Home plus the active document buttons');
+  assert.ok(js.includes("align: 'left'"), 'title-bar buttons sit on the left');
+  assert.ok(js.includes("if (kind === 'button' && id === 'home')"), 'title-bar Home click shows the Start Page');
   assert.ok(js.includes('HubTitleBar.onHello'), 'replies after hubTitleBarHello');
-  assert.ok(!/HubTitleBar\.set\([^)]*tabs:/.test(js), 'document tabs are not sent to the title bar');
+  assert.ok(js.includes('hubTitleBarHello'), 'says hello to suite iframes once linked');
+  assert.ok(js.includes('hubTitleBarClick'), 'forwards title-bar clicks to the active suite');
+  assert.ok(!/HubTitleBar\.set\([^)]*tabs:/.test(js), 'document tabs and ribbon tabs are not sent to the title bar');
 });
 
 test('formatTime and formatSize return expected readable strings', () => {
@@ -291,12 +295,12 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
 });
 
-test('Start Page HTML is the HO9 layout and keeps cache tokens', () => {
+test('Start Page HTML is the HO10 layout and keeps cache tokens', () => {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  assert.ok(html.includes('Hub Office HO9'), 'title includes HO9');
-  assert.ok(html.includes('content="HO9"'), 'version meta is HO9');
-  assert.ok(html.includes('hub_office.css?v=HO9'), 'css cache token is HO9');
-  assert.ok(html.includes('hub_office.js?v=HO9'), 'js cache token is HO9');
+  assert.ok(html.includes('Hub Office HO10'), 'title includes HO10');
+  assert.ok(html.includes('content="HO10"'), 'version meta is HO10');
+  assert.ok(html.includes('hub_office.css?v=HO10'), 'css cache token is HO10');
+  assert.ok(html.includes('hub_office.js?v=HO10'), 'js cache token is HO10');
   assert.ok(html.includes('Hub Office</h1>') || html.includes('>Hub Office</h1>'), 'has Hub Office heading');
   assert.ok(html.includes('Write, calculate, present and organise. Files save on this device.'), 'has the one-line description');
   assert.ok(html.includes('id="suites-grid"'), 'has suite cards grid');
