@@ -7,6 +7,8 @@
          at the caret as its own block. Click an image to select:
          corner handle resizes (mouse + touch, keeps aspect) and
          25 / 50 / 100% buttons. Delete / Backspace removes it.
+         DW13: Ctrl+C / X / V on a selected picture copy, cut or
+         replace it (writer-paste.js).
    MODEL: <p class="dl-img-block"><img src="data:..." style="width:N%">
           Width is a % of the page content width, so print, PDF
           and DOCX (writer-docxgen.js) follow it. writer-flow.js
@@ -212,7 +214,14 @@ Writer.image.init = function init() {
       e.preventDefault(); e.stopPropagation();
       Writer.history.checkpoint(); I.remove(I.sel); Writer.history.commit();
     } else if (e.key === 'Escape') I.select(null);
-    else if (e.key.length === 1 || e.key === 'Enter') I.select(null);
+    /* (before DW13) else if (e.key.length === 1 || e.key === 'Enter') I.select(null); */
+    else if (e.ctrlKey || e.metaKey) {
+      /* DW13: Ctrl+C / Ctrl+X / Ctrl+V keep the picture selected (writer-paste.js copies,
+         cuts or replaces it); the native selection wraps it so the copy event fires. */
+      if (!e.altKey && /^[cx]$/i.test(e.key)) {
+        try { var rg = document.createRange(), ws = window.getSelection(); rg.selectNode(I.sel); ws.removeAllRanges(); ws.addRange(rg); } catch (er) {}
+      } else if (!/^(v|control|meta|shift|alt)$/i.test(e.key)) I.select(null);   /* e.g. Ctrl+A selects text instead */
+    } else if (e.key.length === 1 || e.key === 'Enter' || /^(Arrow|Page|Home|End|Tab)/.test(e.key)) I.select(null);   /* DW13: moving away drops it too */
   }, true);
   /* undo / redo / reload replace the DOM: drop the stale selection */
   var apply = Writer.history.apply;
