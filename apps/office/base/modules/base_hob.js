@@ -4,7 +4,9 @@
          database, through ../shared/office-native.js (the same
          Documents / picker / download path Spreadsheet, Tables
          and Presentation use). The JSON format is unchanged:
-         magic "hbase" version 1. Old .hbase files still open
+         magic "hbase" version 1. BS14: .hbase no longer opens
+         (rename an old .hbase file to .hob to open it).
+         (before BS14) Old .hbase files still open
          from a File or a Hub hash (#drive=…&file=…). Live data
          stays in IndexedDB ('office-base'). File → Backup… (the
          dated download) and Restore / Import stay as they are.
@@ -23,7 +25,7 @@
 
   var Hob = {};
   Hob.EXT = 'hob';
-  Hob.LEGACY = 'hbase';
+  /* (before BS14) Hob.LEGACY = 'hbase'; */
   Hob.MAGIC = 'hbase';
   Hob.VERSION = 1;
   Hob.MAX = 48 * 1024 * 1024;
@@ -57,7 +59,8 @@
   }
 
   Hob.stem = function stem(name) {
-    var s = nameOf(name).replace(/\.(hob|hbase)$/i, '');
+    /* (before BS14) var s = nameOf(name).replace(/\.(hob|hbase)$/i, ''); */
+    var s = nameOf(name).replace(/\.hob$/i, '');
     if (root && root.OfficeNative && root.OfficeNative.stem) return root.OfficeNative.stem(s, Hob.EXT, Hob.FALLBACK);
     s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!s) s = Hob.FALLBACK;
@@ -66,11 +69,13 @@
   };
   Hob.fileName = function fileName(name) { return Hob.stem(name) + '.' + Hob.EXT; };
   Hob.acceptsName = function acceptsName(name) {
-    return /\.(hob|hbase)$/i.test(nameOf(name));
+    /* (before BS14) return /\.(hob|hbase)$/i.test(nameOf(name)); */
+    return /\.hob$/i.test(nameOf(name));
   };
   Hob.isHob = function isHob(f) { return Hob.acceptsName(f); };
 
-  /* First .hob / .hbase in a FileList, array, or DataTransfer-like { files }. */
+  /* First .hob in a FileList, array, or DataTransfer-like { files }. */
+  /* (before BS14) First .hob / .hbase */
   Hob.dropFile = function dropFile(list) {
     var files = !list ? [] : (list.files || list);
     var i, f;
@@ -155,18 +160,12 @@
     });
   };
 
-  function hobDest(dest) {
-    if (!dest || !dest.name || !/\.hbase$/i.test(dest.name)) return dest;
-    var next = { kind: dest.kind, name: Hob.fileName(dest.name) };
-    if (dest.drive) next.drive = dest.drive;
-    if (dest.path != null) next.path = dest.path;
-    if (dest.handle) next.handle = dest.handle;
-    return next;
-  }
+  /* (before BS14) hobDest() remapped a .hbase dest to .hob; acceptLegacy() widened
+     isFile / openFromHash so a legacy .hbase hash or File was accepted. */
+  function hobDest(dest) { return dest; }
 
-  /* Override isFile / openFromHash so a legacy .hbase hash or File is accepted.
-     OfficeNative itself only matches the primary ext (.hob). Opening a file
-     uses the existing Restore dialog (replace / add as a copy / cancel). */
+  /* Opening a file uses the existing Restore dialog (replace / add as a copy / cancel).
+     OfficeNative itself only matches the primary ext (.hob). */
   function acceptLegacy(session, hooks) {
     hooks = hooks || {};
     var pendingPics = null;
@@ -174,6 +173,14 @@
     function toast(msg) {
       if (hooks.toast) hooks.toast(msg);
       else if (root && typeof root.OfficeNotify !== 'undefined' && root.OfficeNotify.show) root.OfficeNotify.show(msg, 3500);
+    }
+    /* (before BS14) a .hbase File or hash was opened as a .hob backup (same JSON). */
+    function rejectHbase() {
+      if (root && root.OfficeDialog && typeof root.OfficeDialog.alert === 'function') {
+        root.OfficeDialog.alert({ title: 'Could not import', message: 'This is not a Base file.', okLabel: 'OK' });
+      } else {
+        toast('This is not a Base file.');
+      }
     }
     function flushStore() {
       if (root && root.BaseStore && typeof root.BaseStore.saveNow === 'function') root.BaseStore.saveNow();
@@ -234,6 +241,7 @@
             root.BaseFiles.restoreDialog(pk, {
               done: function (how) {
                 if (how === 'replace') {
+                  /* (before BS14) var bound = hobDest(dest);  remapped a .hbase dest to .hob */
                   var bound = hobDest(dest);
                   session.dest = bound || null;
                   session.holdClash = '';
@@ -315,6 +323,10 @@
       if (typeof window === 'undefined' || !window.location) return Promise.resolve(false);
       var ref = parseAnyHash(window.location.hash);
       if (ref && ref.name && /\.odb$/i.test(ref.name)) return openOdbFromHash(ref);
+      if (ref && ref.name && /\.hbase$/i.test(ref.name)) {
+        rejectHbase();
+        return Promise.resolve(false);
+      }
       ref = Hob.parseHash(window.location.hash);
       if (!ref) return Promise.resolve(false);
       if (window.FsRef && typeof window.FsRef.parse === 'function') {
@@ -347,12 +359,24 @@
         }
         return null;
       }
+      /* (before BS14) a dropped .hbase was restored like a .hob; now it is only used to show the in-app message. */
+      function hbaseOf(list) {
+        var files = !list ? [] : (list.files || list), i, f;
+        if (!files || typeof files.length !== 'number') return null;
+        for (i = 0; i < files.length; i++) {
+          f = files[i];
+          if (f && /\.hbase$/i.test(f.name || '')) return f;
+        }
+        return null;
+      }
       function fromEvent(e) {
         var dt = e && e.dataTransfer;
         if (!dt) return null;
         var hit = Hob.dropFile(dt.files);
         if (hit) return hit;
         hit = odbOf(dt.files);
+        if (hit) return hit;
+        hit = hbaseOf(dt.files);
         if (hit) return hit;
         var items = dt.items, i, it, f, ent;
         if (!items || !items.length) return null;
@@ -362,28 +386,41 @@
           try { f = it.getAsFile && it.getAsFile(); } catch (err) { f = null; }
           if (f && Hob.acceptsName(f)) return f;
           if (f && /\.odb$/i.test(f.name || '')) return f;
+          if (f && /\.hbase$/i.test(f.name || '')) return f;
           try { ent = it.webkitGetAsEntry && it.webkitGetAsEntry(); } catch (err2) { ent = null; }
           if (ent && ent.name && Hob.acceptsName(ent)) return { name: ent.name, _entry: ent };
           if (ent && ent.name && /\.odb$/i.test(ent.name)) return { name: ent.name, _entry: ent, _odb: true };
+          if (ent && ent.name && /\.hbase$/i.test(ent.name)) return { name: ent.name, _entry: ent, _hbase: true };
         }
         return null;
       }
       document.addEventListener('dragover', function (e) {
-        if (fromEvent(e) || odbOf(e.dataTransfer && e.dataTransfer.files)) {
+        if (fromEvent(e) || odbOf(e.dataTransfer && e.dataTransfer.files) || hbaseOf(e.dataTransfer && e.dataTransfer.files)) {
           e.preventDefault();
           try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
         }
       });
       /* (before BS11) drop only restored .hob / .hbase */
+      /* (before BS14) a dropped .hbase opened the Restore dialog */
       document.addEventListener('drop', function (e) {
         var f = fromEvent(e);
         if (!f || f._entry) {
-          if (f && f._entry) return;
-          f = Hob.dropFile(e.dataTransfer && e.dataTransfer.files) || odbOf(e.dataTransfer && e.dataTransfer.files);
+          if (f && f._entry && !f._hbase) return;
+          if (f && f._entry && f._hbase) {
+            e.preventDefault();
+            e.stopPropagation();
+            rejectHbase();
+            return;
+          }
+          f = Hob.dropFile(e.dataTransfer && e.dataTransfer.files) || odbOf(e.dataTransfer && e.dataTransfer.files) || hbaseOf(e.dataTransfer && e.dataTransfer.files);
         }
         if (!f) return;
         e.preventDefault();
         e.stopPropagation();
+        if (/\.hbase$/i.test(f.name || '') || f._hbase) {
+          rejectHbase();
+          return;
+        }
         if (/\.odb$/i.test(f.name || '') || f._odb) {
           if (root && root.BaseFiles && typeof root.BaseFiles.open === 'function') root.BaseFiles.open(f);
           return;

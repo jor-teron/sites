@@ -1,14 +1,17 @@
 /*
  * base-files.js  (HOB1; was BS9)
  * Full .hob backup/restore (tables, queries, reports, views, links, pictures).
- * Old .hbase files still open. The JSON format is unchanged: magic "hbase" version 1.
+ * BS14: .hbase no longer opens (rename an old .hbase file to .hob to open it).
+ * The JSON format is unchanged: magic "hbase" version 1.
+ * (before BS14) Old .hbase files still open. The JSON format is unchanged: magic "hbase" version 1.
  * (before HOB1) Full .hbase backup/restore.
  * Excel import/export through the Spreadsheet app's vendored SheetJS (lazy relative
  * load, not copied), read-only JSON and SQLite import, and "Send to Spreadsheet"
  * (downloads a workbook — Spreadsheet has no in-app hand-off).
  *
- *   .hob / .hbase file = JSON { magic: "hbase", version: 1, schema, exported, db, pics:
+ *   .hob file = JSON { magic: "hbase", version: 1, schema, exported, db, pics:
  *                 { key: { type, data: "<base64>" } } }
+ *   (before BS14) .hob / .hbase file = the same JSON
  *   Restore can replace everything (not undoable) or add a remapped copy (undoable).
  *   SheetJS: ../spreadsheet/vendor/sheetjs/xlsx.full.min.js
  *   sql.js (already in the repo, not copied): ../../tools/db-browser/vendor/sqljs/
@@ -158,7 +161,8 @@
     });
     return { tables: out, notes: notes };
   }
-  /* Flexible JSON → table specs. Does not treat a .hob / .hbase pack as a loose table list. */
+  /* Flexible JSON → table specs. Does not treat a .hob pack (magic "hbase") as a loose table list. */
+  /* (before BS14) Did not treat a .hob / .hbase pack as a loose table list. */
   function tablesFromJson(obj) {
     if (obj && obj.magic === MAGIC) return { tables: [], notes: { hbase: true } };
     if (typeof obj === "string") {
@@ -374,7 +378,8 @@
   }
   function isBackupName(name) {
     var n = typeof name === "string" ? name : (name && name.name) || "";
-    return /\.(hob|hbase)$/i.test(n);
+    /* (before BS14) return /\.(hob|hbase)$/i.test(n); */
+    return /\.hob$/i.test(n);
   }
   function currentRows(t) {
     return (typeof BaseGrid !== "undefined") ? BaseGrid.visibleRows(t, true) : (t.rows || []).slice();
@@ -487,7 +492,16 @@
     });
     box.appendChild(act); back.appendChild(box); document.body.appendChild(back); rep.focus();
   }
+  function rejectHbase() {
+    if (typeof OfficeDialog !== "undefined" && OfficeDialog.alert) {
+      OfficeDialog.alert({ title: "Could not import", message: "This is not a Base file.", okLabel: "OK" });
+    } else {
+      note("Could not import", "This is not a Base file.");
+    }
+  }
   function restoreFile(file, opts) {
+    /* (before BS14) restoreFile opened .hbase backups the same as .hob */
+    if (file && /\.hbase$/i.test(file.name || "")) { rejectHbase(); return; }
     var rd = new FileReader();
     rd.onload = function () {
       var res = parse(String(rd.result || ""));
@@ -565,6 +579,8 @@
   function open(file) {
     if (!file) return;
     var n = (file.name || "").toLowerCase();
+    /* (before BS14) if (isBackupName(n)) return restoreFile(file);  also matched .hbase */
+    if (/\.hbase$/i.test(n)) { rejectHbase(); return; }
     if (isBackupName(n)) return restoreFile(file);  /* (before HOB1) /\.hbase$/ */
     if (/\.odb$/.test(n) || (typeof BaseOdb !== "undefined" && BaseOdb.isOdb(file))) return importOdb(file);  /* (before BS11) no .odb */
     if (/\.xlsx?$/.test(n)) return importXlsx(file);
@@ -617,7 +633,8 @@
     try {
       if (typeof BaseHob !== "undefined" && BaseHob.stemName) stem = BaseHob.stemName() || stem;
     } catch (e) {}
-    stem = String(stem || "base").replace(/\.(hob|hbase|odb)$/i, "") || "base";
+    /* (before BS14) .replace(/\.(hob|hbase|odb)$/i, "") */
+    stem = String(stem || "base").replace(/\.(hob|odb)$/i, "") || "base";
     return stem + ".odb";
   }
   function exportOdb() {

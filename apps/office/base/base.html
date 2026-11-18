@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- (before BS14) <title>Base BS12</title> -->
   <!-- (before BS12) <title>Base BS11</title> -->
   <!-- (before BS11) <title>Base BS10</title> -->
   <!-- (before BS10) <title>Base HOB1</title> -->
-  <title>Base BS12</title><!-- legacy: <title>Base BS11</title> -->
+  <title>Base BS14</title><!-- legacy: <title>Base BS12</title> -->
   <!-- BS1-BS9 Base: a small database (tables, grid, form). Plain scripts, no build, works from file:// -->
   <link rel="icon" href="base_icon.svg">
   <link rel="stylesheet" href="../shared/office-ribbon.css">
@@ -17,10 +18,11 @@
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-settings.css">
   <link rel="stylesheet" href="../shared/office-collapse.css">
+  <!-- (before BS14) base.css?v=BS12 and every script ?v=BS12 (base-ui.js was ?v=HO12) -->
   <!-- (before BS12) base.css?v=BS11 and every script ?v=BS11 -->
   <!-- (before BS11) base.css?v=BS10 and every script ?v=BS10 -->
   <!-- (before BS10) base.css?v=HOB1 and every script ?v=HOB1 -->
-  <link rel="stylesheet" href="base.css?v=BS12">
+  <link rel="stylesheet" href="base.css?v=BS14">
 </head>
 <body>
   <!-- TOP BAR: File + tabs (built from BASE_RIBBON_TABS by ../shared/office-ribbon.js); hidden in the Hub -->
@@ -35,7 +37,8 @@
     <button type="button" class="file-item" role="menuitem" id="btn-new-table" data-icon="fileNew"><span>New table</span></button>
     <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open / Import…</span>
       <!-- (before BS11) accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.sqlite,.sqlite3,.db,..." -->
-      <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.odb,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.database" hidden>
+      <!-- (before BS14) accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.hbase,.odb,.sqlite,.sqlite3,.db,..." -->
+      <input id="file-import" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.hob,.odb,.sqlite,.sqlite3,.db,text/csv,text/plain,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.database" hidden>
     </label>
     <!-- (before BS10) no Save / Save As; a .hob file was Backup only -->
     <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
@@ -43,7 +46,8 @@
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-backup"><span>Backup…</span></button>
     <label class="file-item" role="menuitem"><span>Restore backup…</span>
-      <input id="file-restore" type="file" accept=".hob,.hbase,.json,application/json" hidden>
+      <!-- (before BS14) accept=".hob,.hbase,.json,application/json" -->
+      <input id="file-restore" type="file" accept=".hob,.json,application/json" hidden>
     </label>
     <div class="file-sep" role="separator"></div>
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
@@ -172,31 +176,32 @@
   <script src="../shared/office-hubbar.js"></script>
   <script src="../shared/office-docname.js"></script>
   <script src="../shared/office-quick.js"></script>
-  <script src="modules/base-quick.js?v=BS12"></script>
+  <script src="modules/base-quick.js?v=BS14"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-theme.js"></script>
   <script src="../shared/office-settings.js"></script>
   <script src="../shared/office-hover.js"></script>
   <script src="../shared/office-collapse.js"></script>
-  <script src="modules/base-types.js?v=BS12"></script>
-  <script src="modules/base-history.js?v=BS12"></script>
-  <script src="modules/base-store.js?v=BS12"></script>
-  <script src="modules/base-links.js?v=BS12"></script>
-  <script src="modules/base-pics.js?v=BS12"></script>
-  <script src="modules/base-csv.js?v=BS12"></script>
-  <script src="modules/base_odb.js?v=BS12"></script>
-  <script src="modules/base_odbgen.js?v=BS12"></script>
-  <script src="modules/base-files.js?v=BS12"></script>
-  <script src="modules/base_hob.js?v=BS12"></script>
-  <script src="modules/base-grid.js?v=BS12"></script>
-  <script src="modules/base-form.js?v=BS12"></script>
-  <script src="modules/base-fields.js?v=BS12"></script>
-  <script src="modules/base-query.js?v=BS12"></script>
-  <script src="modules/base-view.js?v=BS12"></script>
-  <script src="modules/base-report.js?v=BS12"></script>
-  <script src="modules/base-delete.js?v=BS12"></script>
+  <script src="modules/base-types.js?v=BS14"></script>
+  <script src="modules/base-history.js?v=BS14"></script>
+  <script src="modules/base-store.js?v=BS14"></script>
+  <script src="modules/base-links.js?v=BS14"></script>
+  <script src="modules/base-pics.js?v=BS14"></script>
+  <script src="modules/base-csv.js?v=BS14"></script>
+  <script src="modules/base_odb.js?v=BS14"></script>
+  <script src="modules/base_odbgen.js?v=BS14"></script>
+  <script src="modules/base-files.js?v=BS14"></script>
+  <script src="modules/base_hob.js?v=BS14"></script>
+  <script src="modules/base-grid.js?v=BS14"></script>
+  <script src="modules/base-form.js?v=BS14"></script>
+  <script src="modules/base-fields.js?v=BS14"></script>
+  <script src="modules/base-query.js?v=BS14"></script>
+  <script src="modules/base-view.js?v=BS14"></script>
+  <script src="modules/base-report.js?v=BS14"></script>
+  <script src="modules/base-delete.js?v=BS14"></script>
   <!-- (before HO12) <script src="modules/base-ui.js?v=BS12"></script> -->
-  <script src="modules/base-ui.js?v=HO12"></script>
-  <script src="modules/base_hub.js?v=BS12"></script>
+  <!-- (before BS14) <script src="modules/base-ui.js?v=HO12"></script> -->
+  <script src="modules/base-ui.js?v=BS14"></script>
+  <script src="modules/base_hub.js?v=BS14"></script>
 </body>
 </html>

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-/* HOB1: Base backup file names — export .hob, import .hob and .hbase.
+/* HOB1: Base backup file names — export .hob, import .hob.
+   BS14: .hbase is no longer accepted (rename to .hob to open).
+   (before BS14) import .hob and .hbase.
    Run: node --test apps/office/base/test-hob1.cjs
    No DOM, no browser, no network. Loads base-files.js in a vm (same pattern as test-hop1.cjs). */
 'use strict';
@@ -26,14 +28,17 @@ test('backupName writes a .hob export name', () => {
   assert.equal(BaseFiles.backupName('stamp').slice(-4), '.hob');
 });
 
-test('.hob and .hbase are accepted, other extensions are rejected', () => {
+test('.hob is accepted, .hbase and other extensions are rejected', () => {
   const BaseFiles = loadBaseFiles();
   assert.equal(BaseFiles.isBackupName('base-backup-2026-11-17.hob'), true);
   assert.equal(BaseFiles.isBackupName('base-backup-2026-11-17.HOB'), true);
-  assert.equal(BaseFiles.isBackupName('base-backup-2026-11-17.hbase'), true);
-  assert.equal(BaseFiles.isBackupName('old.HBASE'), true);
+  /* (before BS14) assert.equal(BaseFiles.isBackupName('base-backup-2026-11-17.hbase'), true); */
+  /* (before BS14) assert.equal(BaseFiles.isBackupName('old.HBASE'), true); */
+  assert.equal(BaseFiles.isBackupName('base-backup-2026-11-17.hbase'), false);
+  assert.equal(BaseFiles.isBackupName('old.HBASE'), false);
   assert.equal(BaseFiles.isBackupName({ name: 'data.hob' }), true);
-  assert.equal(BaseFiles.isBackupName({ name: 'data.hbase' }), true);
+  /* (before BS14) assert.equal(BaseFiles.isBackupName({ name: 'data.hbase' }), true); */
+  assert.equal(BaseFiles.isBackupName({ name: 'data.hbase' }), false);
   assert.equal(BaseFiles.isBackupName('data.json'), false);
   assert.equal(BaseFiles.isBackupName('data.xlsx'), false);
   assert.equal(BaseFiles.isBackupName('data.csv'), false);
