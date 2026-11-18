@@ -11,8 +11,11 @@
           Called from Writer.export.exportOdt.
    DEPENDS: Writer.zip (at call time)
    ISOLATION: Throws on a hard error. Undecodable images are skipped
-              (their alt text is written instead). Headers, footers
-              and anything Writer cannot represent are dropped quietly.
+              (their alt text is written instead). Anything Writer
+              cannot represent is dropped quietly.
+              (before DW11a) Headers, footers and anything Writer cannot represent are dropped quietly.
+   DW11a: opts.hf adds the header / footer (text slots, page fields,
+          pictures) to the master page in styles.xml.
    ============================================================ */
 (function (root) {
   'use strict';
@@ -936,6 +939,46 @@
     return xml + '</office:font-face-decls>';
   }
 
+  /* DW11a: header / footer of the master page. part = opts.hf.head / foot:
+     { slots: [3 text], pics: [3 x {bytes, ext, w, h (mm)} | null], edgeMm }.
+     Left / centre / right go to a centre and a right tab stop (as in the
+     .docx); each picture is an as-char frame before its slot's text, its
+     file in Pictures/. {page} / {pages} become page-number / page-count. */
+  function hfParaXml(part, b, style) {
+    var xml = '';
+    part.slots.forEach(function (t, k) {
+      if (k) xml += '<text:tab/>';
+      var p = part.pics && part.pics[k];
+      if (p && p.bytes) {
+        var path = b.addImage(p.bytes, p.ext);
+        xml += '<draw:frame draw:style-name="' + (String(t || '').length ? 'MFr2' : 'MFr1') + '" draw:name="' + style + 'Picture' + (k + 1) + '" text:anchor-type="as-char"' +
+          ' svg:width="' + cm3(p.w / 10) + 'cm" svg:height="' + cm3(p.h / 10) + 'cm" draw:z-index="0">' +
+          '<draw:image xlink:href="' + esc(path) + '" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>';
+      }
+      String(t || '').split(/(\{page\}|\{pages\})/).forEach(function (bit) {
+        if (bit === '{page}') xml += '<text:page-number text:select-page="current">1</text:page-number>';
+        else if (bit === '{pages}') xml += '<text:page-count>1</text:page-count>';
+        else if (bit) xml += textBits(bit);
+      });
+    });
+    return '<text:p text:style-name="' + style + '">' + xml + '</text:p>';
+  }
+  function hfStyles(b) {
+    var o = b.o, w = o.pageWidthCm || 21, m = o.margins || {};
+    var cw = Math.max(1, w - (m.left != null ? m.left : 2) - (m.right != null ? m.right : 2));
+    var para = function (name, disp) {
+      return '<style:style style:name="' + name + '" style:display-name="' + disp + '" style:family="paragraph" style:parent-style-name="Standard" style:class="extra">' +
+        '<style:paragraph-properties fo:margin-top="0cm" fo:margin-bottom="0cm" fo:line-height="100%"><style:tab-stops>' +
+        '<style:tab-stop style:position="' + cm3(cw / 2) + 'cm" style:type="center"/><style:tab-stop style:position="' + cm3(cw) + 'cm" style:type="right"/>' +
+        '</style:tab-stops></style:paragraph-properties><style:text-properties fo:font-size="10pt"/></style:style>';
+    };
+    var fr = function (name, gap) {
+      return '<style:style style:name="' + name + '" style:family="graphic"><style:graphic-properties text:anchor-type="as-char" style:vertical-pos="middle" style:vertical-rel="line"' +
+        ' fo:margin-left="0cm" fo:margin-right="' + gap + 'cm" fo:margin-top="0cm" fo:margin-bottom="0cm" draw:luminance="0%" draw:contrast="0%" draw:gamma="100%" draw:color-mode="standard"/></style:style>';
+    };
+    return { para: para('Header', 'Header') + para('Footer', 'Footer'), frames: fr('MFr1', '0') + fr('MFr2', '0.15') };
+  }
+
   function stylesXml(b) {
     var d = b.d, o = b.o, i, heads = '';
     var sizes = [2, 1.5, 1.17, 1, 0.83, 0.67];
@@ -946,11 +989,25 @@
     }
     var w = o.pageWidthCm || 21, h = o.pageHeightCm || 29.7, m = o.margins || {};
     var orient = o.landscape ? 'landscape' : 'portrait';
+    /* DW11a: with a header / footer the page margin is the gap to its box and
+       the box (min height) fills the rest, so the body starts where Writer has it. */
+    var hf = o.hf || null, hd = hf && hf.head, ft = hf && hf.foot;
+    var mt = m.top != null ? m.top : 0.5, mb = m.bottom != null ? m.bottom : 0.6;
+    var edgeT = hd ? (hd.edgeMm != null ? hd.edgeMm / 10 : mt * 0.4) : mt;
+    var edgeB = ft ? (ft.edgeMm != null ? ft.edgeMm / 10 : mb * 0.4) : mb;
     var page = '<style:page-layout style:name="Mpm1">' +
       '<style:page-layout-properties fo:page-width="' + cm3(w) + 'cm" fo:page-height="' + cm3(h) + 'cm" style:num-format="1" style:print-orientation="' + orient + '"' +
-      ' fo:margin-top="' + cm3(m.top != null ? m.top : 0.5) + 'cm" fo:margin-bottom="' + cm3(m.bottom != null ? m.bottom : 0.6) + 'cm"' +
+      /* (before DW11a) ' fo:margin-top="' + cm3(m.top != null ? m.top : 0.5) + 'cm" fo:margin-bottom="' + cm3(m.bottom != null ? m.bottom : 0.6) + 'cm"' + */
+      ' fo:margin-top="' + cm3(edgeT) + 'cm" fo:margin-bottom="' + cm3(edgeB) + 'cm"' +
       ' fo:margin-left="' + cm3(m.left != null ? m.left : 2) + 'cm" fo:margin-right="' + cm3(m.right != null ? m.right : 2) + 'cm" style:writing-mode="lr-tb"/>' +
+      (hd ? '<style:header-style><style:header-footer-properties fo:min-height="' + cm3(Math.max(0.1, mt - edgeT)) + 'cm" fo:margin-bottom="0cm" fo:margin-left="0cm" fo:margin-right="0cm" style:dynamic-spacing="false"/></style:header-style>' : '') +
+      (ft ? '<style:footer-style><style:header-footer-properties fo:min-height="' + cm3(Math.max(0.1, mb - edgeB)) + 'cm" fo:margin-top="0cm" fo:margin-left="0cm" fo:margin-right="0cm" style:dynamic-spacing="false"/></style:footer-style>' : '') +
       '</style:page-layout>';
+    var hs = hf ? hfStyles(b) : { para: '', frames: '' };
+    var master = '<style:master-page style:name="Standard" style:page-layout-name="Mpm1">' +
+      (hd ? '<style:header>' + hfParaXml(hd, b, 'Header') + '</style:header>' : '') +
+      (ft ? '<style:footer>' + hfParaXml(ft, b, 'Footer') + '</style:footer>' : '') +
+      '</style:master-page>';
     var lh = Math.round((d.lineHeight || 1.6) * 100);
     return XMLDECL + '<office:document-styles' + OFFICE_NS + ' office:version="1.2">' +
       fontDecls(b.fonts) +
@@ -967,9 +1024,12 @@
       '<style:text-properties fo:font-weight="bold"/>' +
       '</style:style>' +
       heads +
+      hs.para +   /* DW11a */
       '</office:styles>' +
-      '<office:automatic-styles>' + page + '</office:automatic-styles>' +
-      '<office:master-styles><style:master-page style:name="Standard" style:page-layout-name="Mpm1"/></office:master-styles>' +
+      /* (before DW11a) '<office:automatic-styles>' + page + '</office:automatic-styles>' + */
+      '<office:automatic-styles>' + page + hs.frames + '</office:automatic-styles>' +
+      /* (before DW11a) '<office:master-styles><style:master-page style:name="Standard" style:page-layout-name="Mpm1"/></office:master-styles>' + */
+      '<office:master-styles>' + (hf ? master : '<style:master-page style:name="Standard" style:page-layout-name="Mpm1"/>') + '</office:master-styles>' +
       '</office:document-styles>';
   }
 
@@ -995,7 +1055,8 @@
   function encodeUtf8(s) { return new TextEncoder().encode(s); }
 
   /* opts: {landscape, pageWidthCm, pageHeightCm, margins {top,right,bottom,left},
-            defaults {font, sizePt, lineHeight, paraAfterPt}} */
+            defaults {font, sizePt, lineHeight, paraAfterPt},
+            DW11a: hf {head, foot} each null or {slots, pics, edgeMm} (see hfParaXml)} */
   function build(bodyHtml, opts) {
     var zip = getZip(root);
     opts = opts || {};

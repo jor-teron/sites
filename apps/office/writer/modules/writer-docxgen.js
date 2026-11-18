@@ -4,7 +4,8 @@
    PROJECT: Writer
    ROLE: MM6 real DOCX writer. Turns Writer's editor HTML into
          WordprocessingML (word/document.xml with <w:p> / <w:r>,
-         <w:tbl>, numbering, images, header / footer parts) and
+         <w:tbl>, numbering, images, header / footer parts with
+         their pictures (DW11a)) and
          packs it with Writer.zip (store-only, works from file://).
          The old vendor/html-docx.js wrote the text as an attached
          HTML chunk (altChunk) that LibreOffice and most viewers do
@@ -896,7 +897,10 @@ Writer.docxgen = (function () {
 
   /* ------------------------------------------------ public */
   /* opts: {landscape, pageW, pageH (portrait twips), margins {top,right,bottom,left,header,footer},
-            headerXml, footerXml, defaults {font, sizePt, lineHeight, paraAfterPt}} */
+            headerXml, footerXml, defaults {font, sizePt, lineHeight, paraAfterPt},
+            DW11a: headerMedia, footerMedia [{id, bytes, ext}] pictures used by
+            headerXml / footerXml (r:embed id), written to word/media/ with
+            word/_rels/header1.xml.rels / footer1.xml.rels} */
   function build(bodyHtml, opts) {
     if (typeof DOMParser === 'undefined') throw new Error('DOMParser missing');
     if (!Writer.zip || !Writer.zip.build) throw new Error('Writer.zip missing');
@@ -922,6 +926,20 @@ Writer.docxgen = (function () {
     });
     var exts = {};
     b.media.forEach(function (mm) { exts[mm.ext] = true; });
+    /* DW11a: header / footer pictures get their own rels parts. */
+    var hfParts = [];
+    [['header1', hasH && opts.headerMedia], ['footer1', hasF && opts.footerMedia]].forEach(function (hp) {
+      var list = hp[1];
+      if (!list || !list.length) return;
+      var x = '';
+      list.forEach(function (mm, i) {
+        var name = hp[0] + '_image' + (i + 1) + '.' + mm.ext;
+        exts[mm.ext] = true;
+        x += '<Relationship Id="' + esc(mm.id) + '" Type="' + REL + 'image" Target="media/' + name + '"/>';
+        hfParts.push({ name: 'word/media/' + name, data: mm.bytes });
+      });
+      hfParts.push({ name: 'word/_rels/' + hp[0] + '.xml.rels', xml: XMLDECL + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + x + '</Relationships>' });
+    });
     var ct = XMLDECL + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
       Object.keys(exts).map(function (e) { return '<Default Extension="' + e + '" ContentType="' + MIME[e] + '"/>'; }).join('') +
@@ -944,9 +962,11 @@ Writer.docxgen = (function () {
     if (hasH) entries.push({ name: 'word/header1.xml', data: enc.encode(opts.headerXml) });
     if (hasF) entries.push({ name: 'word/footer1.xml', data: enc.encode(opts.footerXml) });
     b.media.forEach(function (mm) { entries.push({ name: 'word/media/' + mm.name, data: mm.data }); });
+    hfParts.forEach(function (hp) { entries.push({ name: hp.name, data: hp.xml != null ? enc.encode(hp.xml) : hp.data }); });   /* DW11a */
     var blob = Writer.zip.build(entries);
     return new Blob([blob], { type: CT_DOCX });
   }
 
-  return { build: build, colour: colour, sniffImage: sniffImage, lenPt: lenPt };
+  /* (before DW11a) return { build: build, colour: colour, sniffImage: sniffImage, lenPt: lenPt }; */
+  return { build: build, colour: colour, sniffImage: sniffImage, lenPt: lenPt, dataUrlBytes: dataUrlBytes };
 })();

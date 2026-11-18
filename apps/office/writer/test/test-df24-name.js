@@ -34,7 +34,9 @@ var htmlLive = live(html);
 var title = htmlLive.match(/<title>([^<]*)<\/title>/);
 /* (before DF21) ok('page title is Writer', title && title[1] === 'Writer', title && title[1]); */
 /* DF21: the page title carries the release id (Writer DF21); the name part is still Writer. */
-ok('page title is Writer', title && /^Writer( [A-Z]+[0-9]+)?$/.test(title[1]), title && title[1]);
+/* (before DW11a) ok('page title is Writer', title && /^Writer( [A-Z]+[0-9]+)?$/.test(title[1]), title && title[1]); */
+/* DW11a: release ids may end in a letter (Writer DW11a). */
+ok('page title is Writer', title && /^Writer( [A-Z]+[0-9]+[a-z]?)?$/.test(title[1]), title && title[1]);
 ok('old title kept', html.indexOf('<!-- (before DF24) <title>Draftly</title> -->') !== -1);
 ok('header label is Writer', /<span class="brand-name">Writer<\/span>/.test(htmlLive));
 ok('header title is Writer', /<div class="brand" title="Writer">/.test(htmlLive));
@@ -107,7 +109,8 @@ var cfg = read('apps/office/writer/modules/writer-config.js');
   /* (before DW8) "release: 'DW7'" */
   /* (before DW9) "release: 'DW8'" */
   /* (before DW11) "release: 'DW9'" */
-  "release: 'DW11'"
+  /* (before DW11a) "release: 'DW11'" */
+  "release: 'DW11a'"
 ].forEach(function (bit) {
   ok('config still has ' + bit, cfg.indexOf(bit) !== -1);
 });
