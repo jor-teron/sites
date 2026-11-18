@@ -19,6 +19,13 @@
            (SHEET_HOS from ../shared/office-native.js).
          Wraps SHEET_HOS.save / autosave / openFile / prepareNew.
          No new libraries. In-app dialogs only.
+         SH33: .xlsm (Excel with macros). An opened .xlsm keeps its macro parts
+         in memory (F.macro, from SHEET_XLSM.extract in spreadsheet_xlsm.js);
+         Save writes back to the same .xlsm through the .xlsx generator plus
+         SHEET_XLSM.inject, so the macros still run in Excel. Save As lists
+         "Excel with macros (.xlsm)" only for a workbook that came from an
+         .xlsm. Choosing .xlsx drops the macros from that file, silently.
+         F.macro is never written to localStorage or .hos.
    DEPENDS: SHEET_HOS (spreadsheet_hos.js), xlsxLoad / xlsxWriteBook,
             csvText, parseCsv, OfficeDialog, FsDrives / FsOps (Hub).
    ============================================================ */
@@ -30,9 +37,17 @@
     hos: { ext: '.hos', mime: 'application/json', label: 'Hub Office Spreadsheet (.hos)' },
     xlsx: { ext: '.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', label: 'Excel (.xlsx)' },
     ods: { ext: '.ods', mime: 'application/vnd.oasis.opendocument.spreadsheet', label: 'OpenDocument Spreadsheet (.ods)' },
-    csv: { ext: '.csv', mime: 'text/csv', label: 'CSV (.csv)' }
+    csv: { ext: '.csv', mime: 'text/csv', label: 'CSV (.csv)' },
+    /* SH33 */
+    xlsm: { ext: '.xlsm', mime: 'application/vnd.ms-excel.sheet.macroEnabled.12', label: 'Excel with macros (.xlsm)' }
   };
   F.ORDER = ['hos', 'xlsx', 'ods', 'csv'];
+  /* SH33: macro parts of the opened .xlsm (memory only), or null. */
+  F.macro = null;
+  /* SH33: Save As formats; .xlsm only for a workbook that came from an .xlsm. */
+  F.order = function order() {
+    return F.macro ? ['hos', 'xlsx', 'xlsm', 'ods', 'csv'] : F.ORDER.slice();
+  };
   F.DOCUMENTS = 'Documents';
   /* Current Save format and, for xlsx / ods / csv, the file it writes to:
      { kind:'hub', drive, path, name } | { kind:'handle', handle, name } | null. */
@@ -53,7 +68,8 @@
 
   /* ---------- pure helpers ---------- */
   F.extFormat = function extFormat(name) {
-    var m = /\.(hos|xlsx|ods|csv)$/i.exec(String(name || '').trim());
+    /* (before SH33) var m = /\.(hos|xlsx|ods|csv)$/i.exec(String(name || '').trim()); */
+    var m = /\.(hos|xlsx|xlsm|ods|csv)$/i.exec(String(name || '').trim());
     return m ? m[1].toLowerCase() : '';
   };
   /* The format Save keeps for an opened file: .xlsx / .ods / .csv write back,
@@ -62,9 +78,11 @@
     var f = F.extFormat(name);
     return f || 'hos';
   };
-  F.isDirect = function isDirect(fmt) { return fmt === 'xlsx' || fmt === 'ods' || fmt === 'csv'; };
+  /* (before SH33) F.isDirect = function isDirect(fmt) { return fmt === 'xlsx' || fmt === 'ods' || fmt === 'csv'; }; */
+  F.isDirect = function isDirect(fmt) { return fmt === 'xlsx' || fmt === 'xlsm' || fmt === 'ods' || fmt === 'csv'; };
   F.stem = function stem(name) {
-    var s = String(name || '').trim().replace(/\.(hos|xlsx|ods|csv)$/i, '');
+    /* (before SH33) var s = String(name || '').trim().replace(/\.(hos|xlsx|ods|csv)$/i, ''); */
+    var s = String(name || '').trim().replace(/\.(hos|xlsx|xlsm|ods|csv)$/i, '');
     s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!s) s = 'Sheet';
     if (s.length > 180) s = s.slice(0, 180).trim();
@@ -76,7 +94,8 @@
   F.mimeOf = function mimeOf(fmt) { return (F.FORMATS[fmt] || F.FORMATS.hos).mime; };
   /* Which generator writes a format (the save router). */
   F.generatorFor = function generatorFor(fmt) {
-    if (fmt === 'xlsx' || fmt === 'ods') return 'sheetjs';
+    /* (before SH33) if (fmt === 'xlsx' || fmt === 'ods') return 'sheetjs'; */
+    if (fmt === 'xlsx' || fmt === 'xlsm' || fmt === 'ods') return 'sheetjs';
     if (fmt === 'csv') return 'csv';
     return 'hos';
   };
@@ -85,6 +104,7 @@
     var typed = F.extFormat(v && v.name);
     var pick = F.FORMATS[v && v.format] ? v.format : (cur || 'hos');
     var fmt = typed || pick;
+    if (fmt === 'xlsm' && !F.macro) fmt = 'xlsx';   /* SH33: .xlsm is offered only for a workbook from an .xlsm */
     return { name: F.stem(v && v.name), format: fmt, file: F.fileName(v && v.name, fmt) };
   };
 
@@ -126,7 +146,17 @@
     if ((fmt === 'xlsx' || fmt === 'ods') && root.XLSX && typeof root.xlsxWriteBook === 'function') {
       return new Blob([root.xlsxWriteBook(root.XLSX, fmt, 'array')], { type: F.mimeOf(fmt) });
     }
+    if (fmt === 'xlsm' && root.XLSX && typeof root.xlsxWriteBook === 'function') return F.xlsmBlob(root.XLSX);   /* SH33 */
     return null;
+  };
+  /* SH33: the .xlsx generator's bytes with the kept macro parts put back. Without
+     kept parts (an .xlsm with no macros) it is the plain workbook with the
+     macroEnabled content type, so Excel accepts the .xlsm name. */
+  F.xlsmBlob = function xlsmBlob(X) {
+    var M = root.SHEET_XLSM;
+    if (!M || !M.inject) throw fail('Could not build the .xlsm file.');
+    var plain = root.xlsxWriteBook(X, 'xlsx', 'array');
+    return new Blob([M.inject(X, plain, F.macro || M.empty())], { type: F.mimeOf('xlsm') });
   };
   F.blobFor = function blobFor(fmt) {
     var gen = F.generatorFor(fmt);
@@ -137,6 +167,7 @@
     if (gen === 'csv') return Promise.reject(fail('Could not build the .csv file.'));
     if (typeof root.xlsxLoad !== 'function') return Promise.reject(fail('Could not build the ' + F.FORMATS[fmt].ext + ' file.'));
     return root.xlsxLoad().then(function (X) {
+      if (fmt === 'xlsm') return F.xlsmBlob(X);   /* SH33 */
       return new Blob([root.xlsxWriteBook(X, fmt, 'array')], { type: F.mimeOf(fmt) });
     });
   };
@@ -301,7 +332,8 @@
       fields: [
         { key: 'name', label: 'Name', type: 'text', value: cur },
         { key: 'format', label: 'Format', type: 'select', value: fmt,
-          options: F.ORDER.map(function (k) { return { value: k, label: F.FORMATS[k].label }; }) }
+          /* (before SH33) options: F.ORDER.map(function (k) { return { value: k, label: F.FORMATS[k].label }; }) */
+          options: F.order().map(function (k) { return { value: k, label: F.FORMATS[k].label }; }) }
       ],
       okLabel: 'Save',
       validate: function (v) { return String(v && v.name || '').trim() ? '' : 'Type a name.'; }
@@ -389,10 +421,13 @@
     }).then(function (res) { return res; }, function (e) { noteFailed(e); return { ok: false, wrote: false }; });
   };
   /* An .xlsx / .ods / .csv was just opened (spreadsheet_xlsx.js, openCsvFile). */
-  F.opened = function opened(fmt, dest, fileName) {
+  /* (before SH33) F.opened = function opened(fmt, dest, fileName) { */
+  F.opened = function opened(fmt, dest, fileName, macro) {
     var s = S();
     F.format = F.isDirect(fmt) ? fmt : 'hos';
     F.dest = dest || null;
+    /* SH33: an .xlsm keeps its macro parts (memory only); anything else forgets them. */
+    F.macro = F.format === 'xlsm' ? (macro || (root.SHEET_XLSM ? root.SHEET_XLSM.empty() : null)) : null;
     if (s) {
       if (s.detach) s.detach();
       s.skipWrite = F.format !== 'hos';
@@ -408,6 +443,7 @@
     F.format = 'hos';
     F.dest = null;
     F.savedSig = '';
+    F.macro = null;   /* SH33 */
     if (s && was !== 'hos') s.skipWrite = false;
   };
 
@@ -459,7 +495,8 @@
     var s = S();
     var n = String(file && file.name || '');
     if (/\.hos$/i.test(n) && s && s.openFile) return s.openFile(file, null);
-    if (/\.(xlsx|xls|ods)$/i.test(n) && typeof root.importXlsxFile === 'function') return root.importXlsxFile(file, o);
+    /* (before SH33) if (/\.(xlsx|xls|ods)$/i.test(n) && typeof root.importXlsxFile === 'function') return root.importXlsxFile(file, o); */
+    if (/\.(xlsx|xlsm|xls|ods)$/i.test(n) && typeof root.importXlsxFile === 'function') return root.importXlsxFile(file, o);
     return F.openCsvFile(file, o);
   };
   /* Outside the Hub, the browser's open picker gives a handle, so Save can write back. */
@@ -468,9 +505,11 @@
   };
   F.pickTypes = function pickTypes() {
     return [{
-      description: 'Spreadsheets (.xlsx, .ods, .csv, .xls)',
+      /* (before SH33) description: 'Spreadsheets (.xlsx, .ods, .csv, .xls)', */
+      description: 'Spreadsheets (.xlsx, .xlsm, .ods, .csv, .xls)',
       accept: {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+        'application/vnd.ms-excel.sheet.macroEnabled.12': ['.xlsm'],   /* SH33 */
         'application/vnd.oasis.opendocument.spreadsheet': ['.ods'],
         'text/csv': ['.csv'],
         'application/vnd.ms-excel': ['.xls']
