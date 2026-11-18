@@ -47,10 +47,10 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO8a and SUITES cover all 5 office applications', () => {
+test('VERSION is HO9 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO8a');
+  assert.equal(HO.VERSION, 'HO9');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -291,12 +291,12 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
 });
 
-test('Start Page HTML is the HO8a layout and keeps cache tokens', () => {
+test('Start Page HTML is the HO9 layout and keeps cache tokens', () => {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  assert.ok(html.includes('Hub Office HO8a'), 'title includes HO8a');
-  assert.ok(html.includes('content="HO8a"'), 'version meta is HO8a');
-  assert.ok(html.includes('hub_office.css?v=HO8a'), 'css cache token is HO8a');
-  assert.ok(html.includes('hub_office.js?v=HO8a'), 'js cache token is HO8a');
+  assert.ok(html.includes('Hub Office HO9'), 'title includes HO9');
+  assert.ok(html.includes('content="HO9"'), 'version meta is HO9');
+  assert.ok(html.includes('hub_office.css?v=HO9'), 'css cache token is HO9');
+  assert.ok(html.includes('hub_office.js?v=HO9'), 'js cache token is HO9');
   assert.ok(html.includes('Hub Office</h1>') || html.includes('>Hub Office</h1>'), 'has Hub Office heading');
   assert.ok(html.includes('Write, calculate, present and organise. Files save on this device.'), 'has the one-line description');
   assert.ok(html.includes('id="suites-grid"'), 'has suite cards grid');
@@ -309,6 +309,10 @@ test('Start Page HTML is the HO8a layout and keeps cache tokens', () => {
   assert.ok(suitesAt > 0 && openAt > suitesAt, 'Open/drop comes after the suite cards');
   assert.ok(recentAt > openAt, 'Recent comes after Open/drop');
   assert.ok(html.includes('id="recent-list"'), 'has recent list');
+  const settingsAt = html.indexOf('id="section-settings"');
+  assert.ok(settingsAt > recentAt, 'Settings comes after Recent');
+  assert.ok(html.includes('../shared/office-shared-settings.js'), 'loads the shared settings helper');
+  assert.ok(html.includes('Defaults for new documents. Each app\'s own settings still win.'), 'has the settings note');
   assert.ok(!html.includes('id="btn-formats"'), 'Supported formats link is gone');
   assert.ok(!html.includes('id="formats-backdrop"'), 'formats panel is gone');
   assert.ok(!html.includes('id="new-row"'), 'HO6 New row is gone');
@@ -323,10 +327,37 @@ test('Start Page HTML is the HO8a layout and keeps cache tokens', () => {
 });
 
 
+test('Settings section lists each HO9 control in one labelled row', () => {
+  const html = fs.readFileSync(HTML_PATH, 'utf8');
+  const start = html.indexOf('id="section-settings"');
+  const end = html.indexOf('</section>', start);
+  assert.ok(start > 0 && end > start, 'settings section is present');
+  const block = html.slice(start, end);
+  const ids = [
+    'set-font', 'set-font-size', 'set-paper', 'set-units',
+    'set-date-format', 'set-number-locale', 'set-autosave',
+    'set-save-location', 'set-author'
+  ];
+  ids.forEach((id) => {
+    assert.ok(block.includes('id="' + id + '"'), 'has #' + id);
+  });
+  assert.ok(block.includes('value="Times New Roman"') && block.includes('value="Tinos"'), 'font list is Writer fonts');
+  assert.ok(block.includes('value="A4"') && block.includes('value="Letter"'), 'paper is A4 or Letter');
+  assert.ok(block.includes('value="cm"') && block.includes('value="in"'), 'units are cm or in');
+  assert.ok(block.includes('31/12/2026') && block.includes('2026-12-31') && block.includes('12/31/2026'), 'date format examples');
+  assert.ok(block.includes('1,00,000 Indian') && block.includes('100,000 US') && block.includes('100,000 UK'), 'number style examples');
+  assert.ok(block.includes('Hub Documents') && block.includes('Ask each time'), 'save-location labels');
+  assert.ok(block.includes('Your name'), 'has Your name');
+  assert.ok(block.includes('Autosave'), 'has Autosave');
+  assert.ok(!/alert\(|confirm\(|prompt\(/.test(block), 'no native dialogs in the settings markup');
+});
+
 test('CSS hides the empty tab row and the in-row Home button after Hub hello', () => {
   const css = fs.readFileSync(path.join(ROOT, 'apps/office/hub-office/hub_office.css'), 'utf8');
   assert.ok(css.includes('.ho-tab-bar.ho-tab-bar-empty'), 'empty tab row can hide');
   assert.ok(css.includes('body.hub-titlebar .ho-home-btn'), 'in-row Home hides once the title-bar hook is linked');
+  assert.ok(css.includes('.ho-settings'), 'has Settings section styles');
+  assert.ok(css.includes('.ho-set-row'), 'settings rows are styled');
 });
 
 test('index.html redirects to hub_office.html', () => {

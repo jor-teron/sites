@@ -1,5 +1,6 @@
 /* Hub Office Suite Start Center — hub_office.css */
-/* HO8: the Start Page tab is gone from the strip. A compact Home
+/* HO9: Settings section on the Start Page (label left, control right).
+   HO8: the Start Page tab is gone from the strip. A compact Home
    button sits in the tab row as a standalone fallback and hides after
    the Hub title-bar hello (body.hub-titlebar). The tab row itself
    hides when no documents are open, because that row existed only for
@@ -311,7 +312,9 @@ body.hub-titlebar .ho-home-btn {
 .ho-card:focus-visible,
 .ho-btn-new:focus-visible,
 .ho-home-btn:focus-visible,
-.ho-recent-row:focus-visible {
+.ho-recent-row:focus-visible,
+.ho-settings select:focus-visible,
+.ho-settings input:focus-visible {
   outline: 2px solid var(--ho-focus);
   outline-offset: 2px;
 }
@@ -519,6 +522,83 @@ body.hub-titlebar .ho-home-btn {
   padding: 4px 2px;
   color: var(--ho-muted);
   font-size: 13px;
+}
+
+
+/* HO9 shared settings, under Recent */
+.ho-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 560px;
+}
+
+.ho-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 6px 2px;
+  min-height: 32px;
+}
+
+.ho-set-label {
+  font-size: 14px;
+  font-weight: 500;
+  flex: none;
+}
+
+.ho-set-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ho-set-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ho-muted);
+  white-space: nowrap;
+}
+
+.ho-settings select,
+.ho-settings input[type="number"],
+.ho-settings input[type="text"] {
+  background: var(--ho-surface);
+  color: var(--ho-text);
+  border: 1px solid var(--ho-border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 8px;
+}
+
+.ho-settings input[type="number"] {
+  width: 4.4em;
+}
+
+.ho-settings input[type="text"] {
+  width: 12.5em;
+  max-width: 42vw;
+  user-select: text;
+}
+
+.ho-settings input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ho-accent);
+  cursor: pointer;
+}
+
+.ho-set-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ho-muted);
+  line-height: 1.4;
 }
 
 /* Subtle full-page drop overlay (no blur) */

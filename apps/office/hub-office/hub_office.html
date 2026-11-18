@@ -8,15 +8,18 @@
   <!-- (before HO7) <title>Hub Office HO6</title> -->
   <!-- (before HO8) <title>Hub Office HO7</title> -->
   <!-- (before HO8a) <title>Hub Office HO8</title> -->
-  <title>Hub Office HO8a</title>
+  <!-- (before HO9) <title>Hub Office HO8a</title> -->
+  <title>Hub Office HO9</title>
   <!-- (before HO6) <meta name="version" content="HO-SC2"> -->
   <!-- (before HO7) <meta name="version" content="HO6"> -->
   <!-- (before HO8) <meta name="version" content="HO7"> -->
   <!-- (before HO8a) <meta name="version" content="HO8"> -->
-  <meta name="version" content="HO8a">
+  <!-- (before HO9) <meta name="version" content="HO8a"> -->
+  <meta name="version" content="HO9">
   <link rel="icon" href="hub_office_icon.png">
   <!-- (before HO8a) <link rel="stylesheet" href="hub_office.css?v=HO8"> -->
-  <link rel="stylesheet" href="hub_office.css?v=HO8a">
+  <!-- (before HO9) <link rel="stylesheet" href="hub_office.css?v=HO8a"> -->
+  <link rel="stylesheet" href="hub_office.css?v=HO9">
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
@@ -83,6 +86,78 @@
               <!-- Dynamically populated -->
             </div>
           </section>
+
+          <section class="ho-section" id="section-settings" aria-label="Settings">
+            <h2 class="ho-sec-title">Settings</h2>
+            <div class="ho-settings" id="ho-settings">
+              <div class="ho-set-row">
+                <span class="ho-set-label" id="lbl-set-font">Font</span>
+                <div class="ho-set-controls">
+                  <select id="set-font" aria-labelledby="lbl-set-font">
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Tinos">Tinos</option>
+                  </select>
+                  <label class="ho-set-size" for="set-font-size">Size
+                    <input type="number" id="set-font-size" min="6" max="72" step="1" value="12" aria-label="Font size">
+                  </label>
+                </div>
+              </div>
+              <div class="ho-set-row">
+                <span class="ho-set-label" id="lbl-set-paper">Paper</span>
+                <div class="ho-set-controls">
+                  <select id="set-paper" aria-labelledby="lbl-set-paper">
+                    <option value="A4">A4</option>
+                    <option value="Letter">Letter</option>
+                  </select>
+                  <label class="ho-set-size" for="set-units">Units
+                    <select id="set-units">
+                      <option value="cm">cm</option>
+                      <option value="in">in</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="ho-set-row">
+                <span class="ho-set-label" id="lbl-set-date">Date format</span>
+                <div class="ho-set-controls">
+                  <select id="set-date-format" aria-labelledby="lbl-set-date">
+                    <option value="dmy">31/12/2026</option>
+                    <option value="ymd">2026-12-31</option>
+                    <option value="mdy">12/31/2026</option>
+                  </select>
+                  <label class="ho-set-size" for="set-number-locale">Numbers
+                    <select id="set-number-locale">
+                      <option value="en-IN">1,00,000 Indian</option>
+                      <option value="en-US">100,000 US</option>
+                      <option value="en-GB">100,000 UK</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="ho-set-row">
+                <label class="ho-set-label" for="set-autosave">Autosave</label>
+                <div class="ho-set-controls">
+                  <input type="checkbox" id="set-autosave" checked>
+                </div>
+              </div>
+              <div class="ho-set-row">
+                <label class="ho-set-label" for="set-save-location">Save to</label>
+                <div class="ho-set-controls">
+                  <select id="set-save-location">
+                    <option value="documents">Hub Documents</option>
+                    <option value="ask">Ask each time</option>
+                  </select>
+                </div>
+              </div>
+              <div class="ho-set-row">
+                <label class="ho-set-label" for="set-author">Your name</label>
+                <div class="ho-set-controls">
+                  <input type="text" id="set-author" maxlength="60" autocomplete="name" spellcheck="false">
+                </div>
+              </div>
+            </div>
+            <p class="ho-set-note">Defaults for new documents. Each app's own settings still win.</p>
+          </section>
         </div>
       </div>
       <!-- Dynamic document views inserted here -->
@@ -99,7 +174,9 @@
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-dialog.js"></script>
   <script src="../shared/office-hubbar.js"></script>
+  <script src="../shared/office-shared-settings.js"></script>
   <!-- (before HO8a) <script src="hub_office.js?v=HO8"></script> -->
-  <script src="hub_office.js?v=HO8a"></script>
+  <!-- (before HO9) <script src="hub_office.js?v=HO8a"></script> -->
+  <script src="hub_office.js?v=HO9"></script>
 </body>
 </html>

@@ -62,6 +62,10 @@ Dialogs, save notices, and Auto theme (see above). No vendor file was moved or d
 
 `office-hubbar.js` passes `showLabel` and `kind:'text'` on buttons, and `align:'left'` on `set()`. Callers that omit them behave as before (icon-only buttons, right-aligned).
 
+## HO9 — shared Hub Office settings
+
+`office-shared-settings.js`: `OfficeSharedSettings` (`DEFAULTS`, `normalize`, `load`, `save`, `subscribe`) stores starting defaults for new documents in `hubOffice.settings` (font and size, paper and units, date and number format, autosave, save location, your name). Per-app settings still win and must not be copied into per-app keys. Already-open documents are not restyled. Suites do not read this key yet.
+
 Follow-up: these vendor files are byte-for-byte copies. A later release can point the apps at one copy.
 
 | bytes | copies |
