@@ -59,8 +59,11 @@ function evalCell(ctx, formula) {
   return cellValue(ctx, 'A1');
 }
 
-test('STYLE_HINT names WORLD, INR, USA or UK', function () {
+/* (before SH30) test('STYLE_HINT names WORLD, INR, USA or UK', function () {
   assert.equal(SPELLNUMBER.STYLE_HINT, 'SPELLNUMBER style: WORLD, INR, USA or UK');
+}); */
+test('STYLE_HINT names WORLD, INDIA/INR, USA/USD or UK/GBP', function () {
+  assert.equal(SPELLNUMBER.STYLE_HINT, 'SPELLNUMBER style: WORLD, INDIA/INR, USA/USD or UK/GBP');
 });
 
 test('WORLD wording: examples, zero, decimals, scales, hyphen, minus', function () {
