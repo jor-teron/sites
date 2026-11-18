@@ -14,6 +14,8 @@
  * string each; this parser has no array constants and no CSV quotes.
  * SH29: SPELLNUMBER(number, [style]) spells a number in words. Styles are
  * WORLD (default), INR, USA and UK. INDIA is accepted as an alias for INR.
+ * SH30: each style also accepts the country name and the currency code:
+ * WORLD (default), INDIA or INR, USA or USD, UK or GBP.
  */
 
 /**
@@ -1779,7 +1781,8 @@ var FX_CATALOG = [
   { name: "TEXT", cat: "Text", sig: "TEXT(value, format)", hint: "Format a number or date as text. Examples: 0.00, 0%, yyyy-mm-dd, dd/mm/yyyy." },
   { name: "CHAR", cat: "Text", sig: "CHAR(number)", hint: "The character for a code from 1 to 255. CHAR(10) is a line break. CHAR(65) is A. A code outside that range is #VALUE!." },
   { name: "TEXTSPLIT", cat: "Text", sig: "TEXTSPLIT(text, col_delimiter, [row_delimiter], [ignore_empty], [match_mode], [pad_with])", hint: "Split text across columns and down rows. It spills. ignore_empty TRUE skips empty pieces. match_mode 1 ignores case. Short rows are padded (default #N/A). No delimiter, or a range, is #VALUE!." },
-  { name: "SPELLNUMBER", cat: "Text", sig: "SPELLNUMBER(number, [style])", hint: "Spell a number in words. Style is WORLD (default, no currency), INR (rupees and paise, lakh and crore), USA (dollars and cents) or UK (pounds and pence). A bare style word is accepted. Unknown style is #VALUE!. A number of 1e15 or more is #NUM!." },
+  /* (before SH30) { name: "SPELLNUMBER", cat: "Text", sig: "SPELLNUMBER(number, [style])", hint: "Spell a number in words. Style is WORLD (default, no currency), INR (rupees and paise, lakh and crore), USA (dollars and cents) or UK (pounds and pence). A bare style word is accepted. Unknown style is #VALUE!. A number of 1e15 or more is #NUM!." }, */
+  { name: "SPELLNUMBER", cat: "Text", sig: "SPELLNUMBER(number, [style])", hint: "Spell a number in words. Style is WORLD (default, no currency), INDIA/INR (rupees and paise, lakh and crore), USA/USD (dollars and cents) or UK/GBP (pounds and pence). A bare style word is accepted. Unknown style is #VALUE!. A number of 1e15 or more is #NUM!." },
   { name: "TODAY", cat: "Date", sig: "TODAY()", hint: "Today's date as YYYY-MM-DD." },
   /* (before SH19) { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and time." }, */
   { name: "NOW", cat: "Date", sig: "NOW()", hint: "Current date and hours:minutes, with no seconds." },

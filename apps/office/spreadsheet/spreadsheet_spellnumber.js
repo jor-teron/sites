@@ -1,8 +1,9 @@
 /*
- * spreadsheet_spellnumber.js  (SH29)
- * Pure SPELLNUMBER wording: WORLD, INR, USA, UK.
+ * spreadsheet_spellnumber.js  (SH30)
+ * Pure SPELLNUMBER wording: WORLD, INDIA/INR, USA/USD, UK/GBP.
  * Loads in the browser (script tag) and in Node (module.exports).
- * INDIA is accepted as a quiet alias for INR. No style appends " only".
+ * Each style accepts the country name and the currency code. No style appends " only".
+ * (before SH30) spreadsheet_spellnumber.js (SH29); wording WORLD, INR, USA, UK; INDIA was a quiet alias for INR.
  */
 (function (root, factory) {
   var api = factory();
@@ -13,7 +14,8 @@
 
   var ERR_VALUE = "#VALUE!";
   var ERR_NUM = "#NUM!";
-  var STYLE_HINT = "SPELLNUMBER style: WORLD, INR, USA or UK";
+  /* (before SH30) var STYLE_HINT = "SPELLNUMBER style: WORLD, INR, USA or UK"; */
+  var STYLE_HINT = "SPELLNUMBER style: WORLD, INDIA/INR, USA/USD or UK/GBP";
   var MAX = 1e15;
 
   var ONES = [
@@ -159,8 +161,10 @@
     var s = style == null ? "" : String(style).trim().toUpperCase();
     if (s === "" || s === "WORLD") return "WORLD";
     if (s === "INR" || s === "INDIA") return "INR";
-    if (s === "USA") return "USA";
-    if (s === "UK") return "UK";
+    /* (before SH30) if (s === "USA") return "USA"; */
+    if (s === "USA" || s === "USD") return "USA";
+    /* (before SH30) if (s === "UK") return "UK"; */
+    if (s === "UK" || s === "GBP") return "UK";
     return null;
   }
 
