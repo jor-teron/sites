@@ -1,14 +1,17 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO7: suite cards return under a Hub Office header, with Open/drop
-   below them. The HO6 New row and Supported formats panel were removed
-   (before HO7). Sidebar, search and the long Supported: line stay gone
-   (before HO6). Tabbed document iframes are unchanged. */
+/* HO8: the Start Page moves to a Home button in the Hub title bar
+   (H49 HubTitleBar via office-hubbar.js). Document tabs stay in the
+   existing row. Standalone, a small Home button sits in that row. The
+   Start Page tab is gone from the strip, and the row hides when no
+   documents are open. HO7 Start Page cards, header and Open/drop are
+   unchanged. */
 (function (root) {
   'use strict';
 
   /* (before HO6) const was implicit; Start Center was unversioned as HO-SC2 in HTML only. */
   /* (before HO7) const VERSION = 'HO6'; */
-  const VERSION = 'HO7';
+  /* (before HO8) const VERSION = 'HO7'; */
+  const VERSION = 'HO8';
 
   const SUITES = [
     {
@@ -158,6 +161,29 @@
     return groups;
   }
 
+  /* The Start Page stays in openTabs as a persistent record, but it is
+     no longer a tab in the strip (before HO8). The document tab row
+     only needs to show when at least one document is open. */
+  function shouldShowTabBar(tabs) {
+    return (Array.isArray(tabs) ? tabs : []).some((t) => t && t.type === 'doc');
+  }
+
+  function homeTitleBarButton() {
+    return { id: 'home', icon: '🏠', label: 'Home', title: 'Start Page', enabled: true };
+  }
+
+  function syncChrome() {
+    if (typeof document === 'undefined') return;
+    const bar = document.getElementById('ho-tab-bar');
+    if (bar) bar.classList.toggle('ho-tab-bar-empty', !shouldShowTabBar(openTabs));
+    const home = document.getElementById('btn-home');
+    if (home) {
+      const onStart = activeTabId === 'start';
+      home.classList.toggle('active', onStart);
+      home.setAttribute('aria-pressed', onStart ? 'true' : 'false');
+    }
+  }
+
   function getSuite(appId) {
     return SUITES.find((s) => s.id === appId) || null;
   }
@@ -203,6 +229,7 @@
         view.classList.toggle('active', match);
       });
     }
+    syncChrome();
   }
 
   // Close an active or background document tab
@@ -226,6 +253,8 @@
     if (activeTabId === tabId) {
       const nextTab = openTabs[Math.max(0, idx - 1)] || openTabs[0];
       switchTab(nextTab.id);
+    } else {
+      syncChrome();
     }
   }
 
@@ -697,10 +726,11 @@
     });
   }
 
+  /* (before HO8) the Start Page tab (#tab-btn-start) was wired here. */
   function initShortcuts() {
-    const btnStart = document.getElementById('tab-btn-start');
-    if (btnStart) {
-      btnStart.addEventListener('click', () => switchTab('start'));
+    const btnHome = document.getElementById('btn-home');
+    if (btnHome) {
+      btnHome.addEventListener('click', () => switchTab('start'));
     }
 
     const btnAddTab = document.getElementById('btn-add-tab');
@@ -709,12 +739,30 @@
     }
   }
 
+  /* Reuse the H49 HubTitleBar hook (office-hubbar.js). After the Hub
+     says hello, Home is a title-bar button. Document tabs are not sent
+     up — they stay in the in-app tab row. Standalone, or a frame that
+     never says hello, leaves the in-row Home button visible. */
+  function initHubHome() {
+    if (typeof HubTitleBar === 'undefined') return;
+    function publish() {
+      if (!HubTitleBar.linked) return;
+      HubTitleBar.set({ buttons: [homeTitleBarButton()] });
+    }
+    HubTitleBar.onHello(publish);
+    HubTitleBar.onClick(function (kind, id) {
+      if (kind === 'button' && id === 'home') switchTab('start');
+    });
+  }
+
   function init() {
     initOpenFile();
     initDropOverlay();
     initShortcuts();
+    initHubHome();
     renderSuites();
     renderRecents();
+    syncChrome();
   }
 
   if (typeof document !== 'undefined') {
@@ -743,7 +791,9 @@
     formatTime,
     formatSize,
     openAcceptList,
-    formatChipGroups
+    formatChipGroups,
+    shouldShowTabBar,
+    homeTitleBarButton
   };
 
 })(typeof window !== 'undefined' ? window : this);

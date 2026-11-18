@@ -1,9 +1,10 @@
 /* Hub Office Suite Start Center — hub_office.css */
-/* HO7: suite cards return under a Hub Office header, with Open/drop
-   below them and the HO6 Recent list kept. HO6 New-row and Supported
-   formats panel styles were removed (before HO7). Sidebar, search and
-   the long Supported: line stay gone (before HO6). Tab bar and
-   document iframe styles are unchanged. */
+/* HO8: the Start Page tab is gone from the strip. A compact Home
+   button sits in the tab row as a standalone fallback and hides after
+   the Hub title-bar hello (body.hub-titlebar). The tab row itself
+   hides when no documents are open, because that row existed only for
+   the Start Page tab. HO7 Start Page card styles are unchanged. */
+/* (before HO8) Tab bar and document iframe styles were unchanged from HO7. */
 :root {
   --ho-bg: #121418;
   --ho-sidebar-bg: #181b21;
@@ -172,6 +173,46 @@ html, body {
   color: var(--ho-text);
 }
 
+/* HO8: standalone Home button in the tab row. Hidden in Hub once
+   body.hub-titlebar is set, because Home then lives in the title bar. */
+.ho-home-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  align-self: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ho-border);
+  background: var(--ho-surface);
+  color: var(--ho-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  flex: none;
+}
+
+.ho-home-btn:hover {
+  background: var(--ho-surface-hover);
+  color: var(--ho-text);
+}
+
+.ho-home-btn.active {
+  color: var(--ho-text);
+  border-color: var(--ho-accent);
+  font-weight: 600;
+}
+
+body.hub-titlebar .ho-home-btn {
+  display: none;
+}
+
+/* (before HO8) the tab bar always showed because the Start Page was a pinned tab. */
+.ho-tab-bar.ho-tab-bar-empty {
+  display: none;
+}
+
 /* Views Container */
 .ho-views-container {
   flex: 1;
@@ -269,6 +310,7 @@ html, body {
 .ho-btn-primary:focus-visible,
 .ho-card:focus-visible,
 .ho-btn-new:focus-visible,
+.ho-home-btn:focus-visible,
 .ho-recent-row:focus-visible {
   outline: 2px solid var(--ho-focus);
   outline-offset: 2px;

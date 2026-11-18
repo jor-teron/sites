@@ -6,12 +6,14 @@
   <meta name="theme-color" content="#181b21">
   <!-- (before HO6) <title>Hub Office</title> -->
   <!-- (before HO7) <title>Hub Office HO6</title> -->
-  <title>Hub Office HO7</title>
+  <!-- (before HO8) <title>Hub Office HO7</title> -->
+  <title>Hub Office HO8</title>
   <!-- (before HO6) <meta name="version" content="HO-SC2"> -->
   <!-- (before HO7) <meta name="version" content="HO6"> -->
-  <meta name="version" content="HO7">
+  <!-- (before HO8) <meta name="version" content="HO7"> -->
+  <meta name="version" content="HO8">
   <link rel="icon" href="hub_office_icon.png">
-  <link rel="stylesheet" href="hub_office.css?v=HO7">
+  <link rel="stylesheet" href="hub_office.css?v=HO8">
   <link rel="stylesheet" href="../shared/office-notify.css">
   <link rel="stylesheet" href="../shared/office-dialog.css">
   <script src="../../../shared/theme/hub_theme.js"></script>
@@ -19,10 +21,14 @@
 <body>
   <div class="ho-container" id="ho-container">
     <!-- Top Tab Bar -->
-    <header class="ho-tab-bar" id="ho-tab-bar" role="tablist" aria-label="Office tabs">
-      <button type="button" class="ho-tab ho-tab-pinned active" id="tab-btn-start" role="tab" aria-selected="true" data-tab-id="start">
+    <!-- (before HO8) a pinned Start Page tab sat in this row and kept the
+         bar visible even when no documents were open. Home now lives in the
+         Hub title bar (H49), with a compact in-row button as a standalone
+         fallback. The row hides until a document tab is open. -->
+    <header class="ho-tab-bar ho-tab-bar-empty" id="ho-tab-bar" role="tablist" aria-label="Office tabs">
+      <button type="button" class="ho-home-btn active" id="btn-home" title="Start Page" aria-label="Start Page" aria-pressed="true">
         <span class="ho-tab-icon">🏠</span>
-        <span class="ho-tab-title">Start Page</span>
+        <span class="ho-home-label">Home</span>
       </button>
       <div class="ho-tabs-list" id="ho-tabs-list">
         <!-- Dynamic tabs inserted here: [ 📝 Writer 1 ✕ ] -->
@@ -33,7 +39,8 @@
     <!-- Views Area -->
     <div class="ho-views-container" id="ho-views-container">
       <!-- Start Page View -->
-      <div class="ho-view active" id="view-start" role="tabpanel" aria-labelledby="tab-btn-start">
+      <!-- (before HO8) aria-labelledby pointed at the Start Page tab in the strip. -->
+      <div class="ho-view active" id="view-start" role="tabpanel" aria-label="Start Page">
         <!-- (before HO6) Start Page was a sidebar (brand, Open File, suite filter nav,
              search) plus a drop zone with a long Supported: line, description cards
              with taglines and format chips, and a recent list with a Refresh button. -->
@@ -88,6 +95,7 @@
   <script src="../../../shared/fs/fs_ref.js"></script>
   <script src="../shared/office-notify.js"></script>
   <script src="../shared/office-dialog.js"></script>
-  <script src="hub_office.js?v=HO7"></script>
+  <script src="../shared/office-hubbar.js"></script>
+  <script src="hub_office.js?v=HO8"></script>
 </body>
 </html>

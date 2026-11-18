@@ -47,10 +47,10 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO7 and SUITES cover all 5 office applications', () => {
+test('VERSION is HO8 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
-  assert.equal(HO.VERSION, 'HO7');
+  assert.equal(HO.VERSION, 'HO8');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -250,6 +250,33 @@ test('closeTab closes document tab and refuses to close Start tab', () => {
   assert.equal(HO.getActiveTabId(), 'start');
 });
 
+test('shouldShowTabBar is true only when a document tab is open', () => {
+  const HO = loadScript();
+  assert.equal(HO.shouldShowTabBar(HO.openTabs), false);
+  assert.equal(HO.shouldShowTabBar([]), false);
+  assert.equal(HO.shouldShowTabBar([{ id: 'start', type: 'start' }]), false);
+  const tab = HO.createDocTab('writer');
+  assert.equal(HO.shouldShowTabBar(HO.openTabs), true);
+  HO.closeTab(tab.id);
+  assert.equal(HO.shouldShowTabBar(HO.openTabs), false);
+});
+
+test('homeTitleBarButton is a single Home button and JS wires H49 without sending doc tabs', () => {
+  const HO = loadScript();
+  const btn = HO.homeTitleBarButton();
+  assert.equal(btn.id, 'home');
+  assert.equal(btn.label, 'Home');
+  assert.equal(btn.icon, '🏠');
+  assert.equal(btn.title, 'Start Page');
+  assert.equal(btn.enabled, true);
+
+  const js = fs.readFileSync(SCRIPT_PATH, 'utf8');
+  assert.ok(js.includes('HubTitleBar.set({ buttons: [homeTitleBarButton()] })'), 'set() sends only the Home button');
+  assert.ok(js.includes("if (kind === 'button' && id === 'home') switchTab('start')"), 'title-bar Home click shows the Start Page');
+  assert.ok(js.includes('HubTitleBar.onHello'), 'replies after hubTitleBarHello');
+  assert.ok(!/HubTitleBar\.set\([^)]*tabs:/.test(js), 'document tabs are not sent to the title bar');
+});
+
 test('formatTime and formatSize return expected readable strings', () => {
   const HO = loadScript();
   assert.equal(HO.formatSize(500), '500 B');
@@ -263,12 +290,12 @@ test('formatTime and formatSize return expected readable strings', () => {
   assert.equal(HO.formatTime(now - 3600000 * 2, now), '2 h ago');
 });
 
-test('Start Page HTML is the HO7 layout and keeps cache tokens', () => {
+test('Start Page HTML is the HO8 layout and keeps cache tokens', () => {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  assert.ok(html.includes('Hub Office HO7'), 'title includes HO7');
-  assert.ok(html.includes('content="HO7"'), 'version meta is HO7');
-  assert.ok(html.includes('hub_office.css?v=HO7'), 'css cache token is HO7');
-  assert.ok(html.includes('hub_office.js?v=HO7'), 'js cache token is HO7');
+  assert.ok(html.includes('Hub Office HO8'), 'title includes HO8');
+  assert.ok(html.includes('content="HO8"'), 'version meta is HO8');
+  assert.ok(html.includes('hub_office.css?v=HO8'), 'css cache token is HO8');
+  assert.ok(html.includes('hub_office.js?v=HO8'), 'js cache token is HO8');
   assert.ok(html.includes('Hub Office</h1>') || html.includes('>Hub Office</h1>'), 'has Hub Office heading');
   assert.ok(html.includes('Write, calculate, present and organise. Files save on this device.'), 'has the one-line description');
   assert.ok(html.includes('id="suites-grid"'), 'has suite cards grid');
@@ -287,6 +314,18 @@ test('Start Page HTML is the HO7 layout and keeps cache tokens', () => {
   assert.ok(!/Supported:\s*\.how/.test(html), 'long Supported: line is gone');
   assert.ok(!html.includes('id="ho-sidebar"'), 'sidebar is gone');
   assert.ok(!html.includes('id="ho-search"'), 'search box is gone');
+  assert.ok(!/<button[^>]*id="tab-btn-start"/.test(html), 'Start Page tab is gone from the strip');
+  assert.ok(html.includes('id="btn-home"'), 'standalone Home button is in the tab row');
+  assert.ok(html.includes('../shared/office-hubbar.js'), 'loads the H49 HubTitleBar helper');
+  assert.ok(html.includes('id="ho-tabs-list"'), 'document tabs list stays in the row');
+  assert.ok(html.includes('id="view-start"'), 'Start Page view is still in the content area');
+});
+
+
+test('CSS hides the empty tab row and the in-row Home button after Hub hello', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'apps/office/hub-office/hub_office.css'), 'utf8');
+  assert.ok(css.includes('.ho-tab-bar.ho-tab-bar-empty'), 'empty tab row can hide');
+  assert.ok(css.includes('body.hub-titlebar .ho-home-btn'), 'in-row Home hides once the title-bar hook is linked');
 });
 
 test('index.html redirects to hub_office.html', () => {
