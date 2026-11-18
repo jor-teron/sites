@@ -6943,12 +6943,12 @@ live wallpapers and the Hub Office Start Center, then handed over at
 fixes, the boot splash, Files icons, the title-bar text item, a
 catalog regen, and the desktop analog clock. Hub Office did a long
 run of suite, file-format and Writer work through the evening of
-18 Nov. Learn added Physics Lab and Dictionary. Apps added Weather
+18 Nov, ending with SH33 (.xlsm, macros kept). Learn added Physics Lab and Dictionary. Apps added Weather
 Forecast and a couple of Settings / Disk changes. Games added
 Orbital Core 3D. Lab finished LB3 cleanup.
 
-75 landings on main (71 pull requests and 4 commits with no PR
-number). Main at the end of 18 Nov: aecf24f9. Hub build is still
+76 landings on main (72 pull requests and 4 commits with no PR
+number). Main at the end of 18 Nov: 3f4c21ed. Hub build is still
 20261118f / hub-shell-v184 / H160. Next free Hub id: H164.
 
 
@@ -6959,9 +6959,10 @@ same afternoon.
   - #632  Fix static live wallpapers; Settings canvas preview
   - #633  Animate Settings live swatches; keep desktop animation state
   - H156  Flyout skips the section step when a category has only one
-          section (for example Favourites). PR #638
+          section (for example Favourites). PR #638 (Hub Main
+          Builder 2, before handover)
   - H157  Lock-core test no longer hard-codes the shell cache version.
-          PR #639
+          PR #639 (Hub Main Builder 2, before handover)
   - H158  Live wallpaper animates on the desktop (resume, pause, and
           the engine added to the shell cache). PR #644
   - H158a Live wallpaper still animates when Hub Motion is off; only
@@ -7035,9 +7036,13 @@ Office (Hub Office). Team 5 started the suite Start Center on 17 Nov
           header/footer. PR #682
   - DW13c Writer letterhead header/footer (one full-width block,
           resizable picture, grows to fit). PR #683
+  - SH33  Spreadsheet opens and saves .xlsm, keeping macros. PR #684
 
 
 Apps (Hub Apps Builder 2; tools/ and apps/ branches)
+  These PRs landed on 17-18 Nov. Hub Apps Builder 2 reported no
+  releases of its own on those two days, so they were likely
+  merged then from earlier work.
   - WX1a  Weather Forecast app shell with live current conditions.
           PR #622
   - WX1b  7-day forecast, with a 3-day collapse on phone. PR #623
@@ -7068,8 +7073,9 @@ Learn (Hub Teacher)
 
 
 Games (Hub Games Builder 2)
-  These two landed on main with no pull-request number in the
-  subject.
+  Hub Games Builder 2 shipped none on 17-18 Nov (its last merges
+  were #520 and #521, on 10 Nov). These two landed on main with no
+  pull-request number in the subject. The author is not confirmed.
   - Add Orbital Core 3D, a spherical tower defence game
     (4b9a0a52, 18 Nov 15:38 IST)
   - Fix Orbital Core 3D pan hang and speed up spherical A* pathfinding
@@ -7100,7 +7106,7 @@ Other
 
 
 Current state (end of 18 Nov 2026, IST)
-  - origin/main: aecf24f9
+  - origin/main: 3f4c21ed
   - Hub build: 20261118f / hub-shell-v184 / H160
   - Next free Hub id: H164
   - hub/tests: 414 tests, 412 passed, 2 skipped (jsdom not installed),
@@ -7118,6 +7124,10 @@ Ownership (who owns what)
   - Learn (apps/learn/**, learn-apps.csv): Hub Teacher
   - Lab: Hub Lab Builder
   - Apps and phone/: Hub Apps Builder 2
+  - Hub Main Builder 2 and Hub Apps Builder 2 both say they have
+    no area now, and are waiting on Jor for a new role. Games
+    scope for Hub Games Builder 2 is not yet confirmed by Jor
+    (there has been another Games owner since 14 Nov).
 
 
 How we work (short)
@@ -7150,46 +7160,170 @@ How we work (short)
     is already there.
 
 
-Open and parked
-  From this period:
-  - H158c: make Constellation, Rain and Lava stand out more on large
-    screens. Offered; Jor has not said yes.
-  - Notely word count: H162 added kind:'text', and HO8a now lets
-    office-hubbar.js pass kind through. Notely itself still sends
-    the count as a disabled button (local kind 'status'), so it
-    does not yet use the new text item. That change is Office's.
-  - Catalog / app index is stale after H163 for work that landed
-    later: Dictionary is in learn-apps.csv and hub_catalog.js
-    (DC-1) but not in hub_appindex.js; Orbital Core 3D is in
-    games-apps.csv only. Regen only when Jor asks.
-  - Dictionary word data is not in the hub_sw.js offline cache
-    (note in README_learn.txt).
+Each bot in its own words (18 Nov)
+----------------------------------
+Collected from each bot on 18 Nov 2026 IST, in their own words,
+then shortened to plain lists. Git landing lists above stay as
+they are; where a bot's account differs, that is noted here.
 
-  Still parked from earlier Team 2 / Team 1 notes (not built on
-  17-18 Nov):
-  - H130 / H131
-  - PIN retry limit
-  - H139b
-  - H98 pairing
-  - Fingerprint "Add phone" (waiting on an error code from Jor's
-    phone)
+
+HUB BUILDER (hub/, desktop/, apps/system, shared/, engine and
+catalog files; clone /workspace/sites_h46)
+  - Shipped: H158, H158a, H158b, H159, H159a, H160, H161, H162,
+    H163 (listed above).
+  - Planned / next: H164, a small catch-up — add Dictionary (and
+    Orbital Core 3D if Games wants it) to the app index, and put
+    apps/learn/dictionary and its data into the hub_sw.js offline
+    cache (Hub Teacher flagged this). Waits on Jor.
+  - Offered, no answer: H158c, stronger Constellation, Rain and
+    Lava live wallpapers on big screens.
+  - Gaps: #669 restyled the boot splash after H159a without a
+    build bump; if Settings is already open, it needs a reopen to
+    show the clock Hide state.
+  - Parked (from the handover): H130/H131, the PIN retry limit,
+    H139b, H98, the Connect-link gate, the Start-up manager,
+    fingerprint "Add phone" (needs an error code), RL1 relay
+    follow-ups (Windows and real SSH/VNC tests, fetch streaming,
+    external HTTPS, Apps switching to it), only ai/mcp/ restored
+    after b2f5bd3a, H150-H155 change-log lines missing in
+    hub_readme.md section 11, and verify that Pages serves the
+    current shell version.
+  - Ideas: Hub-wide default apps per file type (raised by Hub
+    Office); Files follow-ups for .txt (shared/fs/filetypes.js).
+
+
+HUB MAIN BUILDER 2
+  - Area: none now. Handed Office to Hub Office and the Hub to
+    Hub Builder on 17 Nov (about 22:10 IST). Waiting on Jor for
+    a new role.
+  - Shipped: H156 #638, H157 #639 (17 Nov, before handover).
+  - Its planned list (Base/Slides icons, the title-bar text item,
+    catalog regen) was done by Hub Builder as H161, H162, H163.
+  - Ideas (from Team 5 notes): unsaved-changes guard for tabs,
+    tab overflow scrolling, drag to reorder tabs, session restore,
+    OPFS limits for BusyBox, FsDrives subdirectory search.
+
+
+HUB APPS BUILDER 2
+  - Area: none now (handed Office to Hub Office on 17 Nov). Next
+    role waiting on Jor.
+  - Shipped 17-18 Nov: none, in its own account. Weather Forecast,
+    Settings order and Disk PRs #622-#630 are on its apps
+    branches and are listed under Apps above because they landed
+    on 17-18 Nov; they were likely merged then from earlier work.
+  - Pending leftovers: RL1 switch of Web MCP and Remote to
+    hub/relay not done; AG41 and AG43 leftovers; Agent long-chat
+    work for 4 GB machines needs a new id.
+  - Parked: WB1-WB4 (Remote Web Browser on relay), WWW1 (local
+    web browser), WP1 (Wikipedia app), MCP3, PV3, IV1/IV2, LL3,
+    PH2, PW3, NP6 (Nutrition Plate is now Learn's).
+  - Loose ends: Code Lab listed in both Lab and Learn;
+    tables_icon.svg vs .png; Tables release-id prefix clash.
+
+
+HUB OFFICE
+  - Area: apps/office/** (Writer, Spreadsheet, Presentation, Base,
+    Tables, Notely, Hub Office suite, PDF Tools, Mail, OCR, Paper
+    Scan, Print, MS Word Diff, Sketchbook, apps/office/shared)
+    and office-apps.csv rows. Never edits hub/, root shared/,
+    apps/system, desktop/, index.html or catalogs; no Hub build
+    bumps.
+  - Shipped: 34 releases #640-#684 (listed above; the Office list
+    also includes earlier SH25 #628 and Team 5's #634-#636).
+  - Planned: none queued. Focus is standalone Writer and
+    Spreadsheet; Hub Office suite work paused by Jor.
+  - Pending: Jor to retest the Writer-formatting-in-Hub-Office-tab
+    bug. Hub-wide default apps per file type, and .hslides /
+    .hbase / .txt follow-ups in Files, wait on Jor's go (Hub
+    area).
+  - Parked: HO13 tile "Open X" duplicates; PN5/BS15 save straight
+    to non-native formats; HO12a blank Base tab doesn't autosave;
+    BS13 + TB7; PT1, SH26, TB6; Sketchbook in-app dialogs; DW13a
+    ribbon Insert image while in header. Dropped by Jor: DW10,
+    SH28, PN3.
+  - Ideas: Notely word count via the H162 title-bar text item
+    (office-hubbar.js now passes kind since HO8a; Notely itself
+    still needs switching, on Jor's ask); Writer header text
+    formatting (bold/italic, wrapping).
+
+
+HUB GAMES BUILDER 2
+  - Area: Games (apps/games/**, games-apps.csv). Handed Learn to
+    Hub Teacher on 17 Nov. Exact Games scope not yet confirmed by
+    Jor (there is another Games owner since 14 Nov). Orbital
+    Core 3D (4b9a0a52, aecf24f9) landed with no PR; its author is
+    not confirmed.
+  - Shipped 17-18 Nov: none by this bot. Last merges #520, #521
+    (10 Nov).
+  - Planned (waiting on Jor): SWAP-1b Sweet Swap animations
+    (about 2 hours); AoE Ages (discussion). Next ids: SHIP-3,
+    AF-5, SNK-T2, SI-T2, SNL-3, SUDO-P2, SC-2a, Garden Guard 1b,
+    Jigsaw 1b.
+  - Waiting on Jor: Aeroplane review (apps/games/aeroplane plus a
+    Lab copy at apps/lab/aeroplane), more Browser FPS maps,
+    cleanup of apps/games/hero-builder (199 committed
+    node_modules files, not in the CSV), leftover contra-alpha,
+    a blank line in games-apps.csv.
+  - Parked: SB1b, NTR1a, ARQ1f, HEX 2D, NIX-G4, Hero Builder,
+    Osmos AI, DMQ1c, game sounds. Flag Master FM-1a moved to Hub
+    Teacher.
+  - Ideas: tune Battleship Hard AI from about 46 to 40-42 shots;
+    follow-ups for Sweet Swap, Garden Guard, Jigsaw.
+
+
+HUB TEACHER
+  - Area: Learn (apps/learn/**, learn-apps.csv; regenerates
+    hub_catalog.js with --catalog-only). Clone /workspace/sites_learn.
+  - Shipped 17-18 Nov: DC-1 Dictionary #665 (aa4d4657): offline
+    English dictionary from Open English WordNet 2025 (CC BY 4.0),
+    127,311 words, about 7.6 MB gzipped per-letter files,
+    suggestions, IPA, Hear it, recents, word of the day, spelling
+    suggestions. Physics Lab PS1a-PS1g #615-#621 also landed
+    17-18 Nov per git.
+  - Planned (waiting on Jor): DS-6 Driving School traffic cars
+    (about 170 lines), DS-7 trees (about 60 lines), DS-8 houses
+    and town buildings (about 110 lines).
+  - Pending: none.
+  - Parked (only Jor restarts): FM-1a..1c Flag Master, Code
+    School CS3 (Python).
+  - Ideas: DC-1a common meanings first, DC-2 Hindi meanings from
+    Wiktionary, DC-3 saved words + quiz, DC-4 word families and
+    phrases, DC-5 better word of the day. Dictionary is not in
+    the hub_sw.js offline cache yet.
+
+
+Release words (small differences the bots reported)
+  The shared wording above still holds. Small differences:
+  - Hub Office also uses "park" to mean keep for later.
+  - Games and Learn commit as J T <jor.teron@gmail.com>; Hub
+    commits as jor-teron (1854500+jor-teron@users.noreply.github.com).
+  - Apps and Office: no Playwright unless Jor asks.
+
+
+Open and parked
+  The full planned, pending, parked and ideas lists are in
+  "Each bot in its own words" above, so they are not repeated
+  here. This is only a short cross-team wait list.
+
+  Waiting on Jor:
+  - H164, a small catch-up: Dictionary (and Orbital Core 3D if
+    Games wants it) in the app index, and Dictionary data in the
+    hub_sw.js offline cache
+  - H158c (stronger live wallpapers on big screens)
+  - Next roles for Hub Main Builder 2 and Hub Apps Builder 2
+  - Games: SWAP-1b, AoE Ages, Aeroplane review, more Browser FPS
+    maps, and hero-builder cleanup
+  - Learn: DS-6, DS-7, DS-8
+  - Office: retest the Writer-formatting-in-Hub-Office-tab bug
+    (suite work is paused)
+  - Hub-wide default apps per file type, and Files follow-ups
+    for .txt / .hslides / .hbase (Hub area)
   - H149 was reserved and parked (see the Phase 2 wrap-up above)
 
-  From Team 1's 10-17 Nov notes, some items were closed on 17-18
-  Nov (the hard-coded v163 lock-core test in H157, the Favourites
-  lone "Other" section step in H156, LB3, and the catalog regen in
-  H163). Items from those notes that were not clearly closed:
-  - Pages deploy for older shell versions not verified
-  - Whether the earlier ai/ deletion was intentional (only ai/mcp/
-    was put back)
-  - Nutrition Plate ownership (Learn app; next id then given as NP8)
-  - Code Lab listed in both Lab and Learn CSVs
-  - Apps Builder's future role, waiting on Jor
+  On 17-18 Nov these older items were closed: the hard-coded v163
+  lock-core test (H157), the Favourites lone "Other" section step
+  (H156), LB3, and the catalog regen (H163).
 
-  Team 5's handover (README_technical_team5.txt) also left Hub
-  Office ideas, not approved: unsaved-changes guard, tab overflow
-  on small screens, drag-to-reorder tabs, dragging data between
-  suite tabs, a templates gallery, and session restore.
-
-Older parked lists are in the wrap-ups above, and in Team 1 and
-Team 3 week notes. Nothing in this notes branch has been pushed.
+  Older parked lists are also in the wrap-ups above, and in Team 1
+  and Team 3 week notes. Nothing in this notes branch has been
+  pushed.
