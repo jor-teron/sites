@@ -13,7 +13,15 @@
          (before HOW1) the native copy was IndexedDB via
          Draftly.storage.save. That function is kept and renamed
          saveLegacy; this file replaces Draftly.storage.save.
-   DEPENDS: config, storage, pages, editor, hf, breaks, ui, dialog
+         DW12: Save can also write .docx or .odt (How.format), like
+         LibreOffice: an opened .docx / .odt saves back to that same
+         file in that format (no .how copy), and Save As picks Writer
+         document (.how), Word (.docx) or OpenDocument Text (.odt).
+         No warning about the format. The typing timer never writes a
+         .docx / .odt; it is written on Save, and when leaving / opening
+         another document only if the content changed (see saveNow).
+   DEPENDS: config, storage, pages, editor, hf, breaks, ui, dialog,
+            export (DW12, for .docx / .odt)
    ============================================================ */
 (function (root) {
   'use strict';
@@ -30,6 +38,15 @@
   How.clashOpen = false;
   /* Set while a deleted document is still on screen, so the flush does not write it back. */
   How.skipWrite = false;
+  /* DW12: the format Save writes ('how', 'docx' or 'odt') and what was last written / opened. */
+  How.format = 'how';
+  How.savedSig = '';
+  How.FORMATS = {
+    how: { ext: '.how', mime: 'application/json', label: 'Writer document (.how)' },
+    docx: { ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', label: 'Word (.docx)' },
+    odt: { ext: '.odt', mime: 'application/vnd.oasis.opendocument.text', label: 'OpenDocument Text (.odt)' }
+  };
+  How.FORMAT_ORDER = ['how', 'docx', 'odt'];
   var tail = Promise.resolve();
 
   function fail(msg) {
@@ -48,7 +65,8 @@
   }
 
   How.stem = function stem(name) {
-    var s = String(name || '').replace(/\.how$/i, '');
+    /* (before DW12) var s = String(name || '').replace(/\.how$/i, ''); */
+    var s = String(name || '').replace(/\.(how|docx|odt)$/i, '');
     s = s.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!s) s = 'Document';
     if (s.length > 180) s = s.slice(0, 180).trim();
@@ -74,8 +92,55 @@
     var st = root && root.Writer && root.Writer.storage;
     if (st) st.autoName = name || '';
   }
-  How.fileName = function fileName(name) {
+  /* (before DW12) How.fileName = function fileName(name) {
     return How.stem(name) + '.how';
+  }; */
+  How.fileName = function fileName(name, fmt) {
+    var f = How.FORMATS[fmt] || How.FORMATS.how;
+    return How.stem(name) + f.ext;
+  };
+  /* DW12: 'docx' / 'odt' / 'how' from a file name's extension, '' when it is none of them. */
+  How.extFormat = function extFormat(name) {
+    var m = /\.(how|docx|odt)$/i.exec(String(name || ''));
+    return m ? m[1].toLowerCase() : '';
+  };
+  /* DW12: the format Save keeps for an opened file: .docx -> docx, .odt -> odt,
+     anything else (.how, .txt, no extension) -> how. */
+  How.formatOf = function formatOf(name) {
+    return How.extFormat(name) || 'how';
+  };
+  How.mimeOf = function mimeOf(fmt) {
+    return (How.FORMATS[fmt] || How.FORMATS.how).mime;
+  };
+  /* DW12: Save As name: the stem plus the new format's extension. */
+  How.targetName = function targetName(name, fmt) {
+    return How.fileName(name, fmt);
+  };
+  /* DW12: which generator writes a format (the save router). */
+  How.generatorFor = function generatorFor(fmt) {
+    if (fmt === 'docx') return 'docx';
+    if (fmt === 'odt') return 'odt';
+    return 'how';
+  };
+  /* DW12: Blob of the open document as .docx or .odt, through the same code as
+     File > Export DOCX / Export ODT (writer-export.js: writer-docxgen.js / writer-odtgen.js).
+     X: Writer.export (a stub in tests). Resolves a Blob. */
+  How.blobFor = function blobFor(fmt, X) {
+    X = X || (root && root.Writer && root.Writer.export);
+    var gen = How.generatorFor(fmt);
+    return new Promise(function (resolve) {
+      if (!X || gen === 'how') fail('This format cannot be written here.');
+      if (gen === 'docx') resolve(X.withDocx(function () { return X.makeDocxBlob(X.docxHtml()); }));
+      else resolve(X.makeOdtBlob(X.combinedHtml()));
+    }).then(function (blob) {
+      if (!blob) fail('Could not build the ' + How.FORMATS[gen].ext + ' file.');
+      return blob;
+    });
+  };
+  /* DW12: a cheap fingerprint of a capture, to skip rewriting an unchanged .docx / .odt. */
+  How.sig = function sig(snap) {
+    if (!snap) return '';
+    return [snap.name, snap.html, JSON.stringify(snap.hf || null), JSON.stringify(snap.page || null)].join('\u0001');
   };
   How.isHow = function isHow(f) {
     return !!f && /\.how$/i.test(f.name || '');
@@ -285,9 +350,23 @@
   }
   function finish(dest, snap, verb) {
     var stem = How.stem(dest && dest.name ? dest.name : snap.name);
-    return { ok: true, wrote: true, name: stem, verb: verb || 'Saved', dest: dest || null, created: snap.created };
+    /* (before DW12) return { ok: true, wrote: true, name: stem, verb: verb || 'Saved', dest: dest || null, created: snap.created }; */
+    return { ok: true, wrote: true, name: stem, verb: verb || 'Saved', dest: dest || null, created: snap.created, fmt: snap.fmt || 'how' };
+  }
+  /* DW12: write a .docx / .odt Blob to a Hub folder; a rename of the open file removes the old name. */
+  function putBlob(dir, dest, snap, old) {
+    return How.blobFor(snap.fmt).then(function (blob) {
+      return writeBlob(dir, dest.name, blob);
+    }).then(function () {
+      var renaming = old && old.kind === 'hub' && old.drive === dest.drive &&
+        String(old.path || '') === String(dest.path || '') && old.name !== dest.name;
+      var done = function () { return finish(dest, snap, 'Saved'); };
+      if (!renaming) return done();
+      return dir.removeEntry(old.name).then(done, done);
+    });
   }
   function put(dir, dest, snap, old) {
+    if (snap.fmt && snap.fmt !== 'how') return putBlob(dir, dest, snap, old);   /* DW12 */
     var stem = How.stem(dest.name);
     var body = How.pack({
       name: stem,
@@ -311,7 +390,7 @@
     var stem = How.stem(dest.name);
     var prev = remembered();
     if (How.holdClash === dest.name || How.clashOpen) return Promise.resolve({ ok: true, wrote: false, name: prev || stem });
-    var freeP = (window.FsOps && window.FsOps.uniqueName) ? window.FsOps.uniqueName(dir, dest.name) : Promise.resolve(How.fileName(stem + ' (2)'));
+    var freeP = (window.FsOps && window.FsOps.uniqueName) ? window.FsOps.uniqueName(dir, dest.name) : Promise.resolve(How.fileName(stem + ' (2)', snap.fmt));   /* (before DW12) How.fileName(stem + ' (2)') */
     return freeP.then(function (free) {
       var S = D();
       if (!S.storage || !S.storage.clashDialog) {
@@ -329,11 +408,13 @@
     });
   }
   function writeHub(snap, opts) {
-    var fname = How.fileName(snap.name);
+    /* (before DW12) var fname = How.fileName(snap.name); */
+    var fname = How.fileName(snap.name, snap.fmt);
     var dest;
     var old = How.dest && How.dest.kind === 'hub' ? How.dest : null;
     if (opts.saveAs || !old) dest = { kind: 'hub', drive: 'local', path: How.DOCUMENTS, name: fname };
-    else dest = { kind: 'hub', drive: old.drive, path: old.path || '', name: How.stem(old.name) === snap.name ? old.name : fname };
+    /* (before DW12) else dest = { kind: 'hub', drive: old.drive, path: old.path || '', name: How.stem(old.name) === snap.name ? old.name : fname }; */
+    else dest = { kind: 'hub', drive: old.drive, path: old.path || '', name: (How.stem(old.name) === snap.name && How.formatOf(old.name) === (snap.fmt || 'how')) ? old.name : fname };
     if (How.holdClash && How.holdClash !== dest.name) How.holdClash = '';
     var create = String(dest.path || '') === How.DOCUMENTS;
     return dirFor(dest, create).then(function (dir) {
@@ -346,7 +427,8 @@
             return How.list().then(function (rows) {
               var free = How.untitledFor(rows, 0);
               setAuto(free);
-              return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: How.fileName(free) }, snap, null);
+              /* (before DW12) return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: How.fileName(free) }, snap, null); */
+              return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: How.fileName(free, snap.fmt) }, snap, null);
             });
           }
           if (opts.unique && window.FsOps && window.FsOps.uniqueName) {
@@ -361,6 +443,7 @@
       });
     });
   }
+  /* (before DW12) writeHandle, download, writeStandalone, askName and saveNow were:
   function writeHandle(handle, text) {
     return handle.createWritable().then(function (w) {
       return w.write(new Blob([text], { type: 'application/json' })).then(function () { return w.close(); }, function (e) {
@@ -444,6 +527,159 @@
     }).then(function (res) {
       if (res && res.wrote) {
         var S = D();
+        setAuto(''); /* HO12b: once written, the name is the file's own * /
+        if (S.storage) {
+          S.storage.loadedName = res.name;
+          if (S.storage.setCurrentName) S.storage.setCurrentName(res.name, false);
+          if (S.storage.noteSaved) S.storage.noteSaved();
+        }
+        How.dest = res.dest || null;
+        if (res.created) How.created = res.created;
+        How.holdClash = '';
+      }
+      return res || { ok: true, wrote: false };
+    });
+  }
+
+  */
+  /* DW12: body is the .how text or a .docx / .odt Blob. */
+  function writeHandle(handle, body, fmt) {
+    return handle.createWritable().then(function (w) {
+      var blob = (typeof body === 'string') ? new Blob([body], { type: How.mimeOf(fmt) }) : body;
+      return w.write(blob).then(function () { return w.close(); }, function (e) {
+        return w.abort().then(function () { throw e; }, function () { throw e; });
+      });
+    });
+  }
+  function download(body, name, fmt) {
+    var blob = (typeof body === 'string') ? new Blob([body], { type: How.mimeOf(fmt) }) : body;
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+  }
+  /* DW12: the bytes for a format: .how text (named after stem) or a generated Blob. */
+  function bodyFor(fmt, snap, stem) {
+    if (fmt !== 'how') return How.blobFor(fmt);
+    return Promise.resolve(How.stringify(How.pack({
+      name: How.stem(stem || snap.name),
+      created: snap.created,
+      updated: Date.now(),
+      html: snap.html,
+      hf: snap.hf,
+      page: snap.page
+    })));
+  }
+  function writeStandalone(snap, opts) {
+    var fmt = snap.fmt || 'how';
+    if (!opts.saveAs && How.dest && How.dest.kind === 'handle' && How.dest.handle) {
+      var held = How.dest;
+      return bodyFor(fmt, snap).then(function (body) {
+        return writeHandle(held.handle, body, fmt);
+      }).then(function () {
+        return finish(held, snap, 'Saved');
+      });
+    }
+    if (!opts.explicit && !opts.saveAs) return Promise.resolve({ ok: true, wrote: false, name: snap.name });
+    if (typeof window.showSaveFilePicker === 'function') {
+      var F = How.FORMATS[fmt];
+      var accept = {};
+      accept[F.mime] = [F.ext];
+      return window.showSaveFilePicker({
+        suggestedName: How.fileName(snap.name, fmt),
+        types: [{ description: F.label, accept: accept }]
+      }).then(function (handle) {
+        var fname = handle.name || How.fileName(snap.name, fmt);
+        /* A known extension typed in the picker wins over the format chosen before. */
+        var use = How.extFormat(fname) || fmt;
+        var named = { name: How.stem(fname), created: snap.created, html: snap.html, hf: snap.hf, page: snap.page, fmt: use };
+        var dest = { kind: 'handle', handle: handle, name: fname };
+        return bodyFor(use, named, fname).then(function (body) {
+          return writeHandle(handle, body, use);
+        }).then(function () { return finish(dest, named, 'Saved'); });
+      });
+    }
+    return bodyFor(fmt, snap, snap.name).then(function (body) {
+      download(body, How.fileName(snap.name, fmt), fmt);
+      return finish(null, snap, 'Downloaded');
+    });
+  }
+  /* DW12: Save As asks for the name and the format in one in-app dialog
+     (outside the Hub the browser's picker then asks where). No format warning. */
+  function askName(opts) {
+    if (!opts.saveAs) return Promise.resolve();
+    var S = D();
+    var cur = S.storage && S.storage.currentName ? S.storage.currentName() : '';
+    var fmt = opts.format || How.format || 'how';
+    var picker = !How.inHub() && typeof window.showSaveFilePicker === 'function';
+    if (S.dialog && S.dialog.form) {
+      return S.dialog.form({
+        title: 'Save as',
+        fields: [
+          { key: 'name', label: 'Name', type: 'text', value: cur },
+          { key: 'format', label: 'Format', type: 'select', value: fmt,
+            options: How.FORMAT_ORDER.map(function (k) { return { value: k, label: How.FORMATS[k].label }; }) }
+        ],
+        okLabel: 'Save',
+        validate: function (v) { return String(v && v.name || '').trim() ? '' : 'Type a name.'; }
+      }).then(function (v) {
+        if (v === null || v === undefined) { var e = new Error('cancel'); e.name = 'AbortError'; throw e; }
+        var pick = How.FORMATS[v.format] ? v.format : fmt;
+        opts.format = How.extFormat(v.name) || pick;
+        if (S.storage && S.storage.setCurrentName) S.storage.setCurrentName(How.stem(v.name), false);
+      });
+    }
+    if (picker) return Promise.resolve();
+    if (!S.dialog || !S.dialog.prompt) return Promise.resolve();
+    return S.dialog.prompt({ title: 'Save as', label: 'Name', value: cur, okLabel: 'Save' }).then(function (v) {
+      if (v === null) { var e = new Error('cancel'); e.name = 'AbortError'; throw e; }
+      if (How.extFormat(v)) opts.format = How.extFormat(v);
+      if (S.storage && S.storage.setCurrentName) S.storage.setCurrentName(How.stem(v), false);
+    });
+  }
+  function blankSkip(snap, opts) {
+    if (opts.saveAs) return false;
+    var S = D();
+    if (!S.storage || !S.storage.isBlankUnsaved) return false;
+    return S.storage.isBlankUnsaved(snap.html) && !How.dest;
+  }
+  /* DW12 autosave rule for a .docx / .odt document (How.format):
+     - the typing timer and the periodic timer (opts.timer) never write it;
+     - other flushes (leaving the page, New, opening another file, a rename in the
+       name box, Read Aloud) write it to its own file only when there is one
+       (How.dest) and the content changed since it was opened or saved;
+     - Save / Save As (opts.explicit / opts.saveAs) always write it.
+     A .how document autosaves exactly as before. */
+  function saveNow(opts) {
+    opts = opts || {};
+    if (How.skipWrite && !opts.explicit && !opts.saveAs) {
+      return Promise.resolve({ ok: true, wrote: false, name: remembered() });
+    }
+    var user = !!(opts.explicit || opts.saveAs);
+    if (!user && (opts.format || How.format) !== 'how' && (opts.timer || !How.dest)) {
+      return Promise.resolve({ ok: true, wrote: false, name: remembered() || (D().storage && D().storage.currentName ? D().storage.currentName() : '') });
+    }
+    var snap = null;
+    return askName(opts).then(function () {
+      snap = How.capture();
+      snap.fmt = opts.format || How.format || 'how';
+      if (snap.fmt !== 'how' && !user && How.sig(snap) === How.savedSig) return { ok: true, wrote: false, name: snap.name };
+      if (blankSkip(snap, opts)) return { ok: true, wrote: false, name: snap.name };
+      var hub = How.inHub() && How.canLocal();
+      if (!hub && !opts.explicit && !opts.saveAs && !(How.dest && How.dest.kind === 'handle')) {
+        return { ok: true, wrote: false, name: snap.name };
+      }
+      var op = hub ? writeHub(snap, opts) : writeStandalone(snap, opts);
+      return Promise.resolve(op).then(function (res) {
+        if (!res) return { ok: true, wrote: false, name: snap.name };
+        return res;
+      });
+    }).then(function (res) {
+      if (res && res.wrote) {
+        var S = D();
         setAuto(''); /* HO12b: once written, the name is the file's own */
         if (S.storage) {
           S.storage.loadedName = res.name;
@@ -453,6 +689,8 @@
         How.dest = res.dest || null;
         if (res.created) How.created = res.created;
         How.holdClash = '';
+        How.format = res.fmt || 'how';   /* DW12: later Saves keep this format */
+        if (snap) { snap.name = res.name; How.savedSig = How.sig(snap); }
       }
       return res || { ok: true, wrote: false };
     });
@@ -477,6 +715,20 @@
   How.autosave = function autosave(opts) {
     return How.save(opts || {});
   };
+  /* DW12: a .docx / .odt was just opened (writer-docxopen.js): Save writes back to dest
+     (a Hub file, a picked file handle, or null = ask / Documents on the first Save) in
+     that format. No .how copy is made. */
+  How.opened = function opened(fmt, dest) {
+    var S = D();
+    How.format = How.FORMATS[fmt] ? fmt : 'how';
+    How.dest = dest || null;
+    How.created = 0;
+    How.holdClash = '';
+    setAuto('');
+    if (S.storage) S.storage.loadedName = S.storage.currentName ? S.storage.currentName() : '';
+    try { How.savedSig = How.sig(How.capture()); } catch (e) { How.savedSig = ''; }
+    return How.format;
+  };
 
   How.openFile = function openFile(file, dest, opts) {
     opts = opts || {};
@@ -493,6 +745,8 @@
           How.apply(doc);
           How.dest = dest || null;
           How.holdClash = '';
+          How.format = 'how';   /* DW12 */
+          How.savedSig = '';
           if (!opts.quiet) toast('Opened ' + doc.name);
           return true;
         });
@@ -528,7 +782,9 @@
       How.lastHash = key;
       return window.FsRef.resolve(ref).then(function (got) {
         return got.file.getFile().then(function (file) {
-          return D().docxopen.open(file).then(function (name) { return !!name; });
+          /* (before DW12) return D().docxopen.open(file).then(function (name) { return !!name; }); */
+          var dest = { kind: 'hub', drive: ref.drive, path: ref.path || '', name: ref.name };
+          return D().docxopen.open(file, { dest: dest }).then(function (name) { return !!name; });
         });
       }).then(function (ok) {
         if (!ok) How.lastHash = '';
@@ -566,6 +822,8 @@
   };
   How.fresh = function fresh() {
     var S = D();
+    How.format = 'how';   /* DW12: a new document is a .how until Save As picks another format */
+    How.savedSig = '';
     How.dest = null;
     How.created = 0;
     How.holdClash = '';

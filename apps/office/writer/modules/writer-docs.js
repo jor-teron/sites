@@ -252,7 +252,9 @@ Writer.docs.deleteNow = function deleteNow(name) {
   });
 };
 
-/* Save the open document as .how. Save As asks for a name in the Hub. */
+/* (before DW12) Save the open document as .how. Save As asks for a name in the Hub. */
+/* DW12: Save writes the open document in its format (.how, or the .docx / .odt it was opened from);
+   Save As asks for a name and a format (writer-how.js). */
 Writer.docs.save = function save() {
   var p = Writer.how ? Writer.how.save({ explicit: true }) : Writer.storage.save();
   return p.then(function (res) {
@@ -306,7 +308,9 @@ Writer.docs.bind = function bind() {
     Writer.app.inputTimer = setTimeout(function () {
       /* (before HO2) Draftly.storage.save();  — rejection was unhandled, so a full disk failed silently */
       /* (before HOW1) if (Draftly.app.ready && (!Draftly.settings || Draftly.settings.autosave())) Draftly.storage.save().catch(function () {}); */
-      if (Writer.app.ready && (!Writer.settings || Writer.settings.autosave()) && Writer.how) Writer.how.autosave();
+      /* (before DW12) if (Writer.app.ready && (!Writer.settings || Writer.settings.autosave()) && Writer.how) Writer.how.autosave(); */
+      /* DW12: timer: never rewrites an open .docx / .odt (that is written on Save; see writer-how.js saveNow) */
+      if (Writer.app.ready && (!Writer.settings || Writer.settings.autosave()) && Writer.how) Writer.how.autosave({ timer: true });
     }, cfg.inputDebounceMs);
   });
 
