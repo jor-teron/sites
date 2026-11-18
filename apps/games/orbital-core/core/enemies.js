@@ -64,8 +64,8 @@ export const ENEMY_TYPES = {
 
 export class Enemy {
   constructor(typeKey, startPos, pathNodes, planetMesh) {
-    this.typeKey = typeKey;
-    this.def = ENEMY_TYPES[typeKey];
+    this.typeKey = ENEMY_TYPES[typeKey] ? typeKey : 'scuttler';
+    this.def = ENEMY_TYPES[this.typeKey];
     this.hp = this.def.hp;
     this.maxHp = this.def.hp;
     this.speed = this.def.speed;

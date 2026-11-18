@@ -72,6 +72,7 @@ export class Simulation {
       this.wave = resumeState.wave;
       if (resumeState.towers && resumeState.towers.length > 0) {
         resumeState.towers.forEach(tData => {
+          if (!tData || !TOWER_TYPES[tData.typeKey]) return; // Skip deprecated towers
           const node = this.planet.navNodes[tData.nodeId];
           if (node && node.buildable && !node.occupied) {
             const tower = new Tower(tData.typeKey, node, this.planet.terrainMesh);

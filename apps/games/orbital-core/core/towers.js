@@ -65,8 +65,8 @@ export const TOWER_TYPES = {
 
 export class Tower {
   constructor(typeKey, node, planetMesh) {
-    this.typeKey = typeKey;
-    this.def = TOWER_TYPES[typeKey];
+    this.typeKey = TOWER_TYPES[typeKey] ? typeKey : 'laser';
+    this.def = TOWER_TYPES[this.typeKey];
     this.node = node;
     this.level = 1;
     this.cooldown = 0;

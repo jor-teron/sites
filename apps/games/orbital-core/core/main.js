@@ -168,8 +168,14 @@ class OrbitalCoreApp {
     }
 
     // Load initial level or active session
-    const startLevel = saveManager.data.inProgress ? saveManager.data.inProgress.level : saveManager.data.currentLevel;
-    this.loadLevel(startLevel, saveManager.data.inProgress);
+    try {
+      const startLevel = saveManager.data.inProgress ? saveManager.data.inProgress.level : saveManager.data.currentLevel;
+      this.loadLevel(startLevel, saveManager.data.inProgress);
+    } catch (err) {
+      console.warn('Failed to load active match from save, resetting to level 1:', err);
+      saveManager.clearActiveMatch();
+      this.loadLevel(1, null);
+    }
   }
 
   loadLevel(level, resumeState = null) {
@@ -370,7 +376,14 @@ class OrbitalCoreApp {
   }
 }
 
-// Boot game when DOM is loaded
-window.addEventListener('DOMContentLoaded', () => {
-  new OrbitalCoreApp();
-});
+// Boot game when DOM is ready
+function boot() {
+  if (window.__orbitalCoreApp) return;
+  window.__orbitalCoreApp = new OrbitalCoreApp();
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}

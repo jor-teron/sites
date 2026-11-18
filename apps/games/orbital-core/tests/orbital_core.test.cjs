@@ -116,5 +116,14 @@ test('Tower Scrap 75% refund formula', () => {
   assert.strictEqual(scrapValue, 150, 'Scrap refund should be 75% of invested value');
 });
 
+// 7. Deprecated Type Resiliency & Fallback
+test('Obsolete type graceful fallback in Tower and Enemy constructors', () => {
+  const towersCode = fs.readFileSync(path.resolve(__dirname, '../core/towers.js'), 'utf8');
+  assert.ok(towersCode.includes("this.typeKey = TOWER_TYPES[typeKey] ? typeKey : 'laser';"), 'Tower constructor lacks safe fallback');
+
+  const enemiesCode = fs.readFileSync(path.resolve(__dirname, '../core/enemies.js'), 'utf8');
+  assert.ok(enemiesCode.includes("this.typeKey = ENEMY_TYPES[typeKey] ? typeKey : 'scuttler';"), 'Enemy constructor lacks safe fallback');
+});
+
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) process.exit(1);
