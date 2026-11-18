@@ -79,20 +79,26 @@ test('STYLE_HINT lists both names for each style', function () {
 
 test('INDIA and INR give the same wording, including decimals', function () {
   assertSamePair('INDIA', 'INR', INR_NUMBERS);
-  assert.equal(SPELLNUMBER.spell(1250000.5, 'INR'), 'Twelve lakh fifty thousand rupees and fifty paise');
-  assert.equal(SPELLNUMBER.spell(1250000.5, 'INDIA'), 'Twelve lakh fifty thousand rupees and fifty paise');
+  /* (before SH31) assert.equal(SPELLNUMBER.spell(1250000.5, 'INR'), 'Twelve lakh fifty thousand rupees and fifty paise'); */
+  assert.equal(SPELLNUMBER.spell(1250000.5, 'INR'), 'Twelve lakh fifty thousand and fifty paise');
+  /* (before SH31) assert.equal(SPELLNUMBER.spell(1250000.5, 'INDIA'), 'Twelve lakh fifty thousand rupees and fifty paise'); */
+  assert.equal(SPELLNUMBER.spell(1250000.5, 'INDIA'), 'Twelve lakh fifty thousand and fifty paise');
 });
 
 test('USA and USD give the same wording, including decimals', function () {
   assertSamePair('USA', 'USD', USA_NUMBERS);
-  assert.equal(SPELLNUMBER.spell(1250000.5, 'USD'), 'One million two hundred fifty thousand dollars and fifty cents');
-  assert.equal(SPELLNUMBER.spell(1.01, 'USD'), 'One dollar and one cent');
+  /* (before SH31) assert.equal(SPELLNUMBER.spell(1250000.5, 'USD'), 'One million two hundred fifty thousand dollars and fifty cents'); */
+  assert.equal(SPELLNUMBER.spell(1250000.5, 'USD'), 'One million two hundred fifty thousand and fifty cents');
+  /* (before SH31) assert.equal(SPELLNUMBER.spell(1.01, 'USD'), 'One dollar and one cent'); */
+  assert.equal(SPELLNUMBER.spell(1.01, 'USD'), 'One and one cent');
 });
 
 test('UK and GBP give the same wording, including decimals', function () {
   assertSamePair('UK', 'GBP', UK_NUMBERS);
-  assert.equal(SPELLNUMBER.spell(105, 'GBP'), 'One hundred and five pounds');
-  assert.equal(SPELLNUMBER.spell(1250000.5, 'GBP'), 'One million two hundred and fifty thousand pounds and fifty pence');
+  /* (before SH31) assert.equal(SPELLNUMBER.spell(105, 'GBP'), 'One hundred and five pounds'); */
+  assert.equal(SPELLNUMBER.spell(105, 'GBP'), 'One hundred and five');
+  /* (before SH31) assert.equal(SPELLNUMBER.spell(1250000.5, 'GBP'), 'One million two hundred and fifty thousand pounds and fifty pence'); */
+  assert.equal(SPELLNUMBER.spell(1250000.5, 'GBP'), 'One million two hundred and fifty thousand and fifty pence');
 });
 
 test('lowercase and mixed case work for country names and currency codes', function () {
@@ -138,16 +144,21 @@ test('no wording ends with "only"', function () {
 
 test('engine: quoted and bare country names and currency codes', function () {
   const ctx = loadEngine();
-  const inr = 'Twelve lakh fifty thousand rupees and fifty paise';
+  /* (before SH31) const inr = 'Twelve lakh fifty thousand rupees and fifty paise'; */
+  const inr = 'Twelve lakh fifty thousand and fifty paise';
   assert.equal(evalCell(ctx, '=SPELLNUMBER(1250000.5,"INR")'), inr);
   assert.equal(evalCell(ctx, '=SPELLNUMBER(1250000.5, INR)'), inr);
   assert.equal(evalCell(ctx, '=SPELLNUMBER(1250000.5, inr)'), inr);
   assert.equal(evalCell(ctx, '=SPELLNUMBER(1250000.5, INDIA)'), inr);
   assert.equal(evalCell(ctx, '=SPELLNUMBER(1250000.5,"india")'), inr);
-  assert.equal(evalCell(ctx, '=SPELLNUMBER(1, USD)'), 'One dollar');
-  assert.equal(evalCell(ctx, '=SPELLNUMBER(1,"usd")'), 'One dollar');
-  assert.equal(evalCell(ctx, '=SPELLNUMBER(105, GBP)'), 'One hundred and five pounds');
-  assert.equal(evalCell(ctx, '=SPELLNUMBER(105,"gbp")'), 'One hundred and five pounds');
+  /* (before SH31) assert.equal(evalCell(ctx, '=SPELLNUMBER(1, USD)'), 'One dollar'); */
+  assert.equal(evalCell(ctx, '=SPELLNUMBER(1, USD)'), 'One');
+  /* (before SH31) assert.equal(evalCell(ctx, '=SPELLNUMBER(1,"usd")'), 'One dollar'); */
+  assert.equal(evalCell(ctx, '=SPELLNUMBER(1,"usd")'), 'One');
+  /* (before SH31) assert.equal(evalCell(ctx, '=SPELLNUMBER(105, GBP)'), 'One hundred and five pounds'); */
+  assert.equal(evalCell(ctx, '=SPELLNUMBER(105, GBP)'), 'One hundred and five');
+  /* (before SH31) assert.equal(evalCell(ctx, '=SPELLNUMBER(105,"gbp")'), 'One hundred and five pounds'); */
+  assert.equal(evalCell(ctx, '=SPELLNUMBER(105,"gbp")'), 'One hundred and five');
   assert.equal(evalCell(ctx, '=SPELLNUMBER(1250000.5)'), 'One million two hundred fifty thousand point five');
 });
 

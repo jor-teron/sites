@@ -36,15 +36,21 @@ CELL / TEXT
                         spell a number in words. style is WORLD (default),
                         INDIA or INR, USA or USD, UK or GBP, with or without
                         quotes. (before SH30: INR, USA or UK.) WORLD uses
-                        the short scale and no currency (1250000.5 is
-                        "One million two hundred fifty thousand point five").
+                        the short scale and no currency (12345.5 is
+                        "Twelve thousand three hundred forty five point five").
                         Decimals are read digit by digit after "point".
-                        INDIA/INR uses lakh and crore, rupees and paise,
-                        rounded to 2 decimals. USA/USD uses dollars and
-                        cents. UK/GBP uses pounds and pence, with "and"
-                        inside hundreds.
-                        A value of 1e15 or more is #NUM!. A non-numeric
-                        number or an unknown style is #VALUE!.
+                        No hyphens ("forty five", not "forty-five").
+                        (before SH31: tens were hyphenated; INR/USA/UK kept
+                        rupees/dollars/pounds.) INDIA/INR uses lakh and
+                        crore, rounded to 2 decimals, and keeps paise
+                        (12345.50 is "Twelve thousand three hundred forty
+                        five and fifty paise"). USA/USD keeps cents.
+                        UK/GBP keeps pence, with "and" inside hundreds.
+                        The main currency word is omitted. Zero is "Zero".
+                        A zero whole part with a fraction is only the small
+                        unit ("Fifty paise"). A value of 1e15 or more is
+                        #NUM!. A non-numeric number or an unknown style is
+                        #VALUE!.
 
 MATH
   +  -  *  /  ^
