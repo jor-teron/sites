@@ -1,8 +1,10 @@
 /*
- * spreadsheet_spellnumber.js  (SH30)
+ * spreadsheet_spellnumber.js  (SH31)
  * Pure SPELLNUMBER wording: WORLD, INDIA/INR, USA/USD, UK/GBP.
  * Loads in the browser (script tag) and in Node (module.exports).
  * Each style accepts the country name and the currency code. No style appends " only".
+ * No hyphens. Currency styles drop the main currency word and keep the small unit.
+ * (before SH31) spreadsheet_spellnumber.js (SH30); hyphenated tens; rupees/dollars/pounds kept.
  * (before SH30) spreadsheet_spellnumber.js (SH29); wording WORLD, INR, USA, UK; INDIA was a quiet alias for INR.
  */
 (function (root, factory) {
@@ -42,7 +44,8 @@
     if (n < 20) return ONES[n];
     var t = Math.floor(n / 10), u = n % 10;
     if (u === 0) return TENS[t];
-    return TENS[t] + "-" + ONES[u];
+    /* (before SH31) return TENS[t] + "-" + ONES[u]; */
+    return TENS[t] + " " + ONES[u];
   }
 
   function belowThousand(n, withAnd) {
@@ -143,7 +146,7 @@
     return major * 100 + cents;
   }
 
-  function moneyWords(centsTotal, majorWord, majorPlural, minorWord, minorPlural, intFn) {
+  /* (before SH31) function moneyWords(centsTotal, majorWord, majorPlural, minorWord, minorPlural, intFn) {
     var major = Math.floor(centsTotal / 100);
     var minor = centsTotal % 100;
     var maj, min;
@@ -154,6 +157,16 @@
       return maj + " and " + min;
     }
     if (major) return intFn(major) + " " + (major === 1 ? majorWord : majorPlural);
+    return intFn(minor) + " " + (minor === 1 ? minorWord : minorPlural);
+  } */
+  function moneyWords(centsTotal, minorWord, minorPlural, intFn) {
+    var major = Math.floor(centsTotal / 100);
+    var minor = centsTotal % 100;
+    if (centsTotal === 0) return "zero";
+    if (major && minor) {
+      return intFn(major) + " and " + intFn(minor) + " " + (minor === 1 ? minorWord : minorPlural);
+    }
+    if (major) return intFn(major);
     return intFn(minor) + " " + (minor === 1 ? minorWord : minorPlural);
   }
 
@@ -212,13 +225,16 @@
     cents = roundToCents(abs);
     if (Math.floor(cents / 100) >= MAX) return ERR_NUM;
     if (kind === "INR") {
-      words = moneyWords(cents, "rupee", "rupees", "paisa", "paise", indiaInt);
+      /* (before SH31) words = moneyWords(cents, "rupee", "rupees", "paisa", "paise", indiaInt); */
+      words = moneyWords(cents, "paisa", "paise", indiaInt);
     } else if (kind === "USA") {
-      words = moneyWords(cents, "dollar", "dollars", "cent", "cents", function (x) {
+      /* (before SH31) words = moneyWords(cents, "dollar", "dollars", "cent", "cents", function (x) { */
+      words = moneyWords(cents, "cent", "cents", function (x) {
         return shortScale(x, false);
       });
     } else {
-      words = moneyWords(cents, "pound", "pounds", "penny", "pence", function (x) {
+      /* (before SH31) words = moneyWords(cents, "pound", "pounds", "penny", "pence", function (x) { */
+      words = moneyWords(cents, "penny", "pence", function (x) {
         return shortScale(x, true);
       });
     }
