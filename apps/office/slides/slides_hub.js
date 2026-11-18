@@ -43,7 +43,13 @@
       post({ type: 'hub-ready' });
     },
     tab: function () { if (!linked) return; var t = A.activeTab(); if (t !== lastTab) { lastTab = t; post({ type: 'hub-tab', id: t }); } },
-    title: function () { if (!linked) return; var v = A.title(); if (v !== lastTitle) { lastTitle = v; post({ type: 'hub-title', value: v }); } }
+    /* (before HO11) title: function () { if (!linked) return; var v = A.title(); if (v !== lastTitle) { lastTitle = v; post({ type: 'hub-title', value: v }); } } */
+    title: function () {
+      var v = (A && A.title) ? A.title() : '';
+      if (typeof OfficeDocName !== 'undefined' && OfficeDocName.set) OfficeDocName.set(v);
+      if (!linked) return;
+      if (v !== lastTitle) { lastTitle = v; post({ type: 'hub-title', value: v }); }
+    }
   };
   window.SLHub = H;
 })();

@@ -117,6 +117,9 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* (before HO11) min-width and flex were unset, so long names did not ellipsis in the flex tab. */
+  min-width: 0;
+  flex: 1;
 }
 
 .ho-tab-close {

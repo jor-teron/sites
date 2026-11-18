@@ -1,13 +1,17 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO10: when Hub Office is in the Hub, it relays the active document's
-   Undo, Redo, Save, Print and File buttons into the title bar, after
-   🏠 Home, and says hello to each suite iframe so the in-app quick row
-   hides. Ribbon tabs stay inside the suite and are not relayed. HO9:
-   a Settings section on the Start Page stores shared defaults in
-   office-shared-settings.js. Suites are not wired to those yet. HO8a:
-   the Home button shows its label and sits on the left. Document tabs
-   stay in the existing row. Standalone, suites keep their own quick
-   row and a small Home button sits in the tab row. */
+/* HO11: document tabs show the document name (Untitled N until the
+   suite reports one). Suites post {hubOfficeDocName:{v:1, name}}
+   through office-docname.js; Hub Office does not send hub-hello, so
+   the ribbon stays visible. HO10: when Hub Office is in the Hub, it
+   relays the active document's Undo, Redo, Save, Print and File
+   buttons into the title bar, after 🏠 Home, and says hello to each
+   suite iframe so the in-app quick row hides. Ribbon tabs stay inside
+   the suite and are not relayed. HO9: a Settings section on the Start
+   Page stores shared defaults in office-shared-settings.js. Suites
+   are not wired to those yet. HO8a: the Home button shows its label
+   and sits on the left. Document tabs stay in the existing row.
+   Standalone, suites keep their own quick row and a small Home button
+   sits in the tab row. */
 (function (root) {
   'use strict';
 
@@ -17,7 +21,8 @@
   /* (before HO8a) const VERSION = 'HO8'; */
   /* (before HO9) const VERSION = 'HO8a'; */
   /* (before HO10) const VERSION = 'HO9'; */
-  const VERSION = 'HO10';
+  /* (before HO11) const VERSION = 'HO10'; */
+  const VERSION = 'HO11';
 
   const SUITES = [
     {
@@ -408,6 +413,55 @@
     }
   }
 
+  /* HO11: tab label helpers. Prefer OfficeDocName when the shared
+     helper is loaded; keep local fallbacks so tests can run this file
+     on its own. */
+  function sanitizeDocName(name) {
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.sanitize) return OfficeDocName.sanitize(name);
+    return String(name == null ? '' : name).trim();
+  }
+  function displayTabLabel(name) {
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.displayLabel) return OfficeDocName.displayLabel(name);
+    const s = sanitizeDocName(name);
+    return s.length <= 40 ? s : (s.slice(0, 39) + '\u2026');
+  }
+  function untitledLabel(n) {
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.placeholder) return OfficeDocName.placeholder(n);
+    const num = Number(n);
+    return 'Untitled ' + (isFinite(num) && num >= 1 ? Math.floor(num) : 1);
+  }
+  function parseDocNameMessage(data) {
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.parse) return OfficeDocName.parse(data);
+    if (!data || typeof data !== 'object' || !data.hubOfficeDocName || data.hubOfficeDocName.v !== 1) return null;
+    const name = sanitizeDocName(data.hubOfficeDocName.name);
+    return name || null;
+  }
+  function paintTabTitle(tabId, fullName, label) {
+    if (typeof document === 'undefined') return;
+    const btn = document.getElementById('tab-btn-' + tabId);
+    if (btn) {
+      btn.title = fullName;
+      const lbl = btn.querySelector('.ho-tab-title');
+      if (lbl) {
+        lbl.textContent = label;
+        lbl.title = fullName;
+      }
+      const closeBtn = btn.querySelector('.ho-tab-close');
+      if (closeBtn) closeBtn.setAttribute('aria-label', 'Close ' + fullName);
+    }
+    const iframe = frameForTab(tabId);
+    if (iframe) iframe.title = fullName;
+  }
+  function applyDocName(tabId, raw) {
+    const name = sanitizeDocName(raw);
+    if (!name || !tabId) return false;
+    const tab = openTabs.find((t) => t && t.id === tabId);
+    if (!tab || tab.type !== 'doc') return false;
+    tab.title = name;
+    paintTabTitle(tabId, name, displayTabLabel(name));
+    return true;
+  }
+
   // Create and mount a new document tab running the suite app
   function createDocTab(appId, options) {
     options = options || {};
@@ -418,7 +472,9 @@
     const tabId = 'doc-' + tabSeq;
     appCounters[appId] = (appCounters[appId] || 0) + 1;
 
-    const title = options.title || (app.name + ' ' + appCounters[appId]);
+    /* (before HO11) const title = options.title || (app.name + ' ' + appCounters[appId]); */
+    const title = sanitizeDocName(options.title) || untitledLabel(appCounters[appId]);
+    const label = displayTabLabel(title);
     const hash = options.hash ? ('#' + String(options.hash).replace(/^#/, '')) : '';
     const icon = getAppIcon(appId);
 
@@ -444,6 +500,7 @@
         btn.dataset.tabId = tabId;
         btn.setAttribute('role', 'tab');
         btn.setAttribute('aria-selected', 'false');
+        btn.title = title;
 
         const ico = document.createElement('span');
         ico.className = 'ho-tab-icon';
@@ -451,7 +508,7 @@
 
         const lbl = document.createElement('span');
         lbl.className = 'ho-tab-title';
-        lbl.textContent = title;
+        lbl.textContent = label;
         lbl.title = title;
 
         const closeBtn = document.createElement('button');
@@ -1066,10 +1123,13 @@
       window.addEventListener('message', function (e) {
         if (!e || e.origin !== location.origin) return;
         const d = e.data;
-        if (!d || typeof d !== 'object' || !d.hubTitleBar) return;
+        if (!d || typeof d !== 'object') return;
         const tabId = tabIdForSource(e.source);
         if (!tabId) return;
-        onSuiteTitleBar(tabId, d.hubTitleBar);
+        if (d.hubTitleBar) onSuiteTitleBar(tabId, d.hubTitleBar);
+        /* HO11: a name-only message from the suite iframe. */
+        const docName = parseDocNameMessage(d);
+        if (docName) applyDocName(tabId, docName);
       });
     }
   }
@@ -1123,7 +1183,12 @@
     applyButtonPatch,
     composeTitleBarButtons,
     clickKindForRelay,
-    planTitleBarRelay
+    planTitleBarRelay,
+    sanitizeDocName,
+    displayTabLabel,
+    untitledLabel,
+    parseDocNameMessage,
+    applyDocName
   };
 
 })(typeof window !== 'undefined' ? window : this);

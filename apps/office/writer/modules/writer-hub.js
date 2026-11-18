@@ -82,9 +82,15 @@ Writer.hub = {
     var t = activeTab();
     if (t !== lastTab) { lastTab = t; post(H.shape.tab(t)); }
   }
-  function sendTitle() {
+  /* (before HO11) function sendTitle() {
     if (!H.linked) return;
     var v = title();
+    if (v !== lastTitle) { lastTitle = v; post(H.shape.title(v)); }
+  } */
+  function sendTitle() {
+    var v = title();
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.set) OfficeDocName.set(v);
+    if (!H.linked) return;
     if (v !== lastTitle) { lastTitle = v; post(H.shape.title(v)); }
   }
 
@@ -128,6 +134,7 @@ Writer.hub = {
   Writer.storage.setCurrentName = function (name, persist) { setName.call(this, name, persist); sendTitle(); };
   var input = document.getElementById('fileNameInput');
   if (input) { input.addEventListener('input', sendTitle); input.addEventListener('change', sendTitle); }
+  sendTitle();
 
   /* File > Rename uses Writer.dialog (writer-ribbon.js); setCurrentName above sends hub-title. */
 

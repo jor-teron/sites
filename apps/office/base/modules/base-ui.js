@@ -319,6 +319,8 @@ function initBaseSettings() {
       BaseHop.install({
         toast: function (msg) { if (typeof OfficeNotify !== "undefined") OfficeNotify.show(msg, 3500); },
         currentName: function () { return (window.BaseHob && BaseHob.stemName) ? BaseHob.stemName() : "base"; },
+        /* (before HO11) install had no setName hook */
+        setName: function (name) { if (typeof OfficeDocName !== "undefined" && OfficeDocName.set) OfficeDocName.set(name); },
         noteFailed: function (err) {
           if (typeof OfficeNotify !== "undefined") OfficeNotify.show((err && (err.userMessage || err.message)) || "Could not save", 3500);
         }

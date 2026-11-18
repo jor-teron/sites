@@ -218,7 +218,13 @@
     sendCaps();
   }
   function sendTab() { if (!H.linked) return; var t = activeTab(); if (t !== lastTab) { lastTab = t; post({ type: 'hub-tab', id: t }); } }
-  function sendTitle() { if (!H.linked) return; var v = title(); if (v !== lastTitle) { lastTitle = v; post({ type: 'hub-title', value: v }); } }
+  /* (before HO11) function sendTitle() { if (!H.linked) return; var v = title(); if (v !== lastTitle) { lastTitle = v; post({ type: 'hub-title', value: v }); } } */
+  function sendTitle() {
+    var v = title();
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.set) OfficeDocName.set(v);
+    if (!H.linked) return;
+    if (v !== lastTitle) { lastTitle = v; post({ type: 'hub-title', value: v }); }
+  }
   R.noteName = function () { sendTitle(); };
 
   var hoverFile = false, leaveT = null, overMenu = false;
@@ -276,6 +282,7 @@
     initRibbon();
     initQuick();
     initHub();
+    sendTitle();
     if (root.OfficeIcons && OfficeIcons.fill) OfficeIcons.fill();
   };
   /* tables.js calls this after the theme changes (Settings, a file opened, New). */

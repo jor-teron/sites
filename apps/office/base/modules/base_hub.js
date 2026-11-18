@@ -30,6 +30,16 @@ BASE_HUB.start = function () {
   function sendApp() { lastTab = activeTab(); lastTitle = H.title(); post({ type: "hub-app", app: "Base", tabs: H.tabs, activeTab: lastTab, title: lastTitle }); sendCaps(); }
   function sendTab() { if (!H.linked) return; var t = activeTab(); if (t !== lastTab) { lastTab = t; post({ type: "hub-tab", id: t }); } }
   H.sendTitle = function () { if (!H.linked) return; var v = H.title(); if (v !== lastTitle) { lastTitle = v; post({ type: "hub-title", value: v }); } };
+  /* HO11: tab labels use the database file name, not the current table (H.title). */
+  function sendDocName() {
+    var v = (typeof BaseHob !== "undefined" && BaseHob.stemName) ? (BaseHob.stemName() || H.DEFAULT_NAME) : H.DEFAULT_NAME;
+    if (typeof OfficeDocName !== "undefined" && OfficeDocName.set) OfficeDocName.set(v);
+  }
+  if (typeof BaseHob !== "undefined" && BaseHob.noteStem) {
+    var noteStem = BaseHob.noteStem;
+    /* (before HO11) noteStem only stored the stem */
+    BaseHob.noteStem = function (name) { var r = noteStem.apply(this, arguments); sendDocName(); return r; };
+  }
   if (BASE_RIBBON) { var sel = BASE_RIBBON.select; BASE_RIBBON.select = function () { var r = sel.apply(this, arguments); sendTab(); return r; }; }
 
   var hoverFile = false, leaveT = null, overMenu = false;
@@ -60,5 +70,6 @@ BASE_HUB.start = function () {
       if (hoverFile && isFileOpen()) { var ms = Number(d.delay); startLeave(ms >= 0 && ms < 5000 ? ms : 300); }
     }
   });
+  sendDocName();
   post({ type: "hub-ready" });
 };
