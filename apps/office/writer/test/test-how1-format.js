@@ -43,7 +43,11 @@ assert.strictEqual(back.name, doc.name);
 assert.strictEqual(back.created, doc.created);
 assert.strictEqual(back.updated, doc.updated);
 assert.strictEqual(back.html, doc.html, 'content, formatting and the image come back');
-assert.deepStrictEqual(back.hf, doc.hf);
+/* (before DW13c) assert.deepStrictEqual(back.hf, doc.hf); */
+/* DW13c: an old 3-slot header comes back as the one-block shape (writer-hfimg.js v 2):
+   each non-empty slot is a line with its slot's alignment. */
+assert.deepStrictEqual(back.hf, { v: 2, head: ['Hub', 'Office'], foot: ['{page}', '{date}'],
+  al: { head: ['l', 'r'], foot: ['c', 'r'] } });
 assert.deepStrictEqual(back.page, How.pageOf(doc.page));
 assert.strictEqual(back.page.size, 'Legal');
 assert.strictEqual(back.page.orientation, 'landscape');

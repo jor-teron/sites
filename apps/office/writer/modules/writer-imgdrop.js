@@ -10,6 +10,9 @@
            footer): the first picture becomes that slot's picture at size M
            (600 px, Writer.hf.setPic: one header / footer undo step), like
            DW13 paste and DW11 Picture….
+           DW13c: the header / footer is one block, so the drop sets its one
+           picture (14 mm, centred; a replaced picture keeps its size and
+           alignment). slotAt() returns k 0 and the box as the cell.
          - onto anything else (ribbon, dialogs): nothing (the browser does
            not open the file either).
          Called from the document drop handler in writer-docxopen.js, which
@@ -24,7 +27,7 @@ window.Writer = Writer;
 Writer.imgdrop = {
   TYPES: /^image\/(png|jpe?g|pjpeg|gif|webp)$/i,
   EXT: /\.(png|jpe?g|gif|webp)$/i,
-  over: null      /* header / footer cell outlined during dragover */
+  over: null      /* header / footer cell (DW13c: box) outlined during dragover */
 };
 
 /* A drag that carries files (not text, links or a picture moved inside the page). */
@@ -69,7 +72,8 @@ function imgdropIn(r, x, y, pad) { return r && x >= r.left - pad && x <= r.right
 Writer.imgdrop.slotAt = function slotAt(target, x, y) {
   var el = imgdropEl(target);
   if (!el || !el.closest) return null;
-  var cell = el.closest('.hf-cell'), box = cell ? cell.closest('.hf-box') : el.closest('.hf-box');
+  /* (before DW13c) var cell = el.closest('.hf-cell'), box = cell ? cell.closest('.hf-box') : el.closest('.hf-box'); */
+  var box = el.closest('.hf-box');
   if (!box) {
     var paper = el.closest('.paper');
     if (!paper || Writer.editor.isInEditor(el)) return null;
@@ -77,21 +81,10 @@ Writer.imgdrop.slotAt = function slotAt(target, x, y) {
     for (var b = 0; b < boxes.length && !box; b++) if (imgdropIn(boxes[b].getBoundingClientRect(), x, y, 6)) box = boxes[b];
     if (!box) return null;
   }
-  var cells = box.querySelectorAll('.hf-cell');
-  if (!cells.length) return null;
-  if (!cell) {
-    var best = null, bd = Infinity;
-    for (var i = 0; i < cells.length; i++) {
-      var r = cells[i].getBoundingClientRect();
-      var d = x < r.left ? r.left - x : (x > r.right ? x - r.right : 0);
-      if (d < bd) { bd = d; best = cells[i]; }
-    }
-    cell = best;
-  }
-  var k = Array.prototype.indexOf.call(cells, cell);
+  /* (before DW13c) the nearest of the three .hf-cell slots by x gave k. */
   var part = box.getAttribute('data-part');
-  if (k < 0 || (part !== 'head' && part !== 'foot')) return null;
-  return { part: part, k: k, cell: cell, slot: cell.querySelector('.hf-slot'), paper: box.closest('.paper') };
+  if (part !== 'head' && part !== 'foot') return null;
+  return { part: part, k: 0, cell: box, slot: box.querySelector('.hf-text'), paper: box.closest('.paper') };
 };
 
 /* Caret range at the point, inside a page editor (or null). */
@@ -128,8 +121,11 @@ Writer.imgdrop.toSlot = function toSlot(s, file) {
   else if (s.slot) H.lastSlot = s.slot;
   var max = Writer.hfimg ? Writer.hfimg.MAX_PX : 600;
   return Writer.image.load(file, max).then(function (url) {
-    H.setPic(s.part, s.k, { src: url, size: 'M' });
-    if (!H.pics()[s.part][s.k]) H.note('That picture could not be used.');
+    /* (before DW13c) H.setPic(s.part, s.k, { src: url, size: 'M' }); */
+    /* (before DW13c) if (!H.pics()[s.part][s.k]) H.note('That picture could not be used.'); */
+    var old = H.pic(s.part);
+    H.setPic(s.part, { src: url, h: old ? old.h : 14, a: old ? old.a : 'c' });
+    if (!H.pic(s.part)) H.note('That picture could not be used.');
     if (s.slot) H.lastSlot = s.slot;
     if (H.refocus) H.refocus();
     if (H.syncPicTools) H.syncPicTools();

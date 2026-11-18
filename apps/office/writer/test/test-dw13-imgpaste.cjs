@@ -156,19 +156,23 @@ test('copy / cut of a selected picture puts <img> html on the clipboard', () => 
   assert.equal(P.firstDataImg(set['text/html']), PNG);
 });
 
-test('header / footer: a Writer picture pasted into a slot sets it at size M', async () => {
+/* (before DW13c) the two tests below pasted into slot k (foot slot 2 / head slot 0) and
+   expected setPic(part, k, { src, size: 'M' }). DW13c: the header / footer is one block
+   (.hf-text, still class hf-slot): setPic(part, { src, h: 14, a: 'c' }), and a replaced
+   picture keeps its height and alignment. */
+test('header / footer: a Writer picture pasted into the block sets its picture at 14 mm, centred', async () => {
   const { W, P } = load();
   const calls = [];
-  const pics = { head: [null, null, null], foot: [null, null, null] };
+  const pics = { head: null, foot: null };
   W.hfimg = { MAX_PX: 600 };
   let max = 0;
   W.image = { load: (b, m) => { max = m; assert.equal(b.type, 'image/png'); return Promise.resolve('data:image/png;base64,SMALL'); } };
   const slot = { nodeType: 1, closest: (s) => (s === '.hf-slot' ? slot : null) };
   W.hf = {
     editing: true, lastSlot: null,
-    activeSlot: () => ({ part: 'foot', k: 2 }),
-    setPic: (part, k, pic) => { calls.push([part, k, pic]); pics[part][k] = pic; },
-    pics: () => pics, note: (m) => calls.push(['note', m]), refocus() {}
+    activeSlot: () => ({ part: 'foot', k: 0 }),
+    setPic: (part, pic) => { calls.push([part, pic]); pics[part] = pic; },
+    pic: (part) => pics[part], note: (m) => calls.push(['note', m]), refocus() {}
   };
   const e = pasteEvt({ 'text/html': '<p class="dl-img-block"><img src="' + PNG + '" style="width:30%"></p>' });
   e.target = slot;
@@ -179,25 +183,26 @@ test('header / footer: a Writer picture pasted into a slot sets it at size M', a
   assert.equal(W.hf.lastSlot, slot);
   assert.equal(max, 600);
   assert.equal(calls.length, 1, 'one setPic = one header / footer undo step');
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), ['foot', 2, { src: 'data:image/png;base64,SMALL', size: 'M' }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), ['foot', { src: 'data:image/png;base64,SMALL', h: 14, a: 'c' }]);
 });
 
-test('header / footer: text pastes as before; image file pastes as the picture', async () => {
+test('header / footer: text pastes as before; image file pastes as the picture, a replaced one keeps its size', async () => {
   const { W, P } = load();
   const calls = [];
   W.image = { load: () => Promise.resolve('data:image/png;base64,F') };
   const slot = { nodeType: 1, closest: () => slot };
-  W.hf = { editing: true, activeSlot: () => ({ part: 'head', k: 0 }), setPic: (...a) => calls.push(a), pics: () => ({ head: [{}, null, null] }), note() {}, refocus() {} };
+  W.hf = { editing: true, activeSlot: () => ({ part: 'head', k: 0 }), setPic: (...a) => calls.push(a), pic: () => ({ src: 'x', h: 30, a: 'r' }), note() {}, refocus() {} };
   const t = pasteEvt({ 'text/html': '<p>Logo <img src="' + PNG + '"></p>', 'text/plain': 'Logo' });
   t.target = slot; let prevented = false; t.preventDefault = () => { prevented = true; };
   P.onHfPaste(t);
-  assert.ok(!prevented, 'text with a picture stays a plain text paste in the slot');
+  assert.ok(!prevented, 'text with a picture stays a plain text paste in the block');
   const f = pasteEvt({}, [{ type: 'image/png' }]);
   f.target = slot;
   P.onHfPaste(f);
   await new Promise((r) => setTimeout(r, 5));
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][2].size, 'M');
+  assert.equal(calls[0][0], 'head');
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0][1])), { src: 'data:image/png;base64,F', h: 30, a: 'r' });
   /* not editing: nothing happens */
   W.hf.editing = false;
   const g = pasteEvt({}, [{ type: 'image/png' }]); g.target = slot; let p2 = false; g.preventDefault = () => { p2 = true; };
@@ -218,11 +223,13 @@ test('dataBlob decodes a data URL; bigImgs finds only big pictures', () => {
 test('release is DW13; Writer picture keys in writer-image.js; no browser dialogs', () => {
   const html = fs.readFileSync(path.join(DIR, 'writer.html'), 'utf8');
   /* (before DW13b) assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13</title>') !== -1); */
-  assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13b</title>') !== -1);
+  /* (before DW13c) assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13b</title>') !== -1); */
+  assert.ok(/<title>Writer DW13(b|c)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW13) <title>Writer DW12</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW13b) assert.ok(/release:\s*'DW13'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW13b?'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW13c) assert.ok(/release:\s*'DW13b?'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW13[bc]?'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   const img = fs.readFileSync(path.join(DIR, 'modules/writer-image.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(/e\.ctrlKey \|\| e\.metaKey/.test(img) && /selectNode\(I\.sel\)/.test(img));
   ['modules/writer-paste.js', 'modules/writer-image.js'].forEach((f) => {

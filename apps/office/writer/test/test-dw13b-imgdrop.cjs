@@ -3,6 +3,9 @@
    at the drop point, a drop on a header / footer slot sets that slot's picture
    at M, document drops are unchanged, a non-picture file keeps the toast, drags
    without files are ignored, several pictures insert in order as one undo step.
+   DW13c: the header / footer is one block, so a drop anywhere on it (or its
+   margin) sets its one picture at 14 mm, centred (k is always 0). The slot
+   checks below were rewritten for that with the same intent ("(before DW13c)").
    Run: node --test apps/office/writer/test/test-dw13b-imgdrop.cjs */
 'use strict';
 
@@ -48,15 +51,13 @@ function world() {
   const para = el('p', editor);
   const text = { nodeType: 3, parentElement: para };
   const box = el('hf-box hf-head', paper, { attrs: { 'data-part': 'head' }, rect: { left: 100, right: 700, top: 20, bottom: 50 } });
-  const cells = [0, 1, 2].map((k) => {
-    const c = el('hf-cell', box, { rect: { left: 100 + k * 200, right: 290 + k * 200, top: 20, bottom: 50 } });
-    c.kids = [el('hf-slot', c, { attrs: { 'data-slot': String(k) } })];
-    return c;
-  });
-  box.kids = cells;
+  /* (before DW13c) three .hf-cell children (200 px apart), each with a .hf-slot */
+  const hfText = el('hf-text hf-slot', box, { attrs: { 'data-part': 'head', 'data-slot': '0' } });
+  const pic = el('hf-pic', box);
+  box.kids = [hfText, pic];
   paper.kids = [box];
   const ribbon = el('ribbon', null);
-  return { workspace, paper, editor, para, text, box, cells, ribbon };
+  return { workspace, paper, editor, para, text, box, hfText, pic, ribbon };
 }
 
 function load(opts) {
@@ -97,13 +98,14 @@ function load(opts) {
     docxopen: {},
     how: { isHow: (f) => /\.how$/.test(f.name), openFile: (f) => log.push(['openHow', f.name]), inHub: () => true }
   };
-  const pics = { head: [null, null, null], foot: [null, null, null] };
+  /* (before DW13c) pics rows of 3 and setPic(part, k, { src, size }) */
+  const pics = { head: opts.oldPic || null, foot: null };
   W.hf = {
     editing: !!opts.editing, lastSlot: null,
     enter: (part, k) => { W.hf.editing = true; log.push(['enter', part.name, k]); },
     exit: () => { W.hf.editing = false; log.push(['exit']); },
-    setPic: (part, k, pic) => { pics[part][k] = pic; log.push(['setPic', part, k, pic.size, pic.src]); },
-    pics: () => pics, note: (m) => log.push(['note', m]), refocus() {}, syncPicTools() {}
+    setPic: (part, pic) => { pics[part] = pic; log.push(['setPic', part, pic.h, pic.a, pic.src]); },
+    pic: (part) => pics[part], note: (m) => log.push(['note', m]), refocus() {}, syncPicTools() {}
   };
   vm.createContext(ctx);
   ctx.Writer = W;
@@ -158,22 +160,32 @@ test('no caret at the point (page margin, old browser): falls back to the curren
   assert.deepEqual(L.log.filter((x) => x[0] === 'insert').length, 1);
 });
 
-test('a picture dropped on a header slot sets that slot at size M, 600 px', async () => {
+/* (before DW13c) 'a picture dropped on a header slot sets that slot at size M, 600 px' (slot 2) */
+test('a picture dropped on the header sets its picture at 14 mm, centred, 600 px', async () => {
   const L = load();
-  const slotEl = L.w.cells[2].kids[0];
-  await fire(L, 'drop', dropEvt(slotEl, [file('logo.png', 'image/png'), file('b.png', 'image/png')]));
-  assert.deepEqual(L.log.find((x) => x[0] === 'enter'), ['enter', 'head', 2]);
+  await fire(L, 'drop', dropEvt(L.w.hfText, [file('logo.png', 'image/png'), file('b.png', 'image/png')]));
+  assert.deepEqual(L.log.find((x) => x[0] === 'enter'), ['enter', 'head', 0]);
   assert.deepEqual(L.log.filter((x) => x[0] === 'load'), [['load', 'logo.png', 600]]);
-  assert.deepEqual(L.log.find((x) => x[0] === 'setPic'), ['setPic', 'head', 2, 'M', 'data:image/png;base64,logo.png']);
+  assert.deepEqual(L.log.find((x) => x[0] === 'setPic'), ['setPic', 'head', 14, 'c', 'data:image/png;base64,logo.png']);
   assert.ok(!L.log.some((x) => x[0] === 'insert' || x[0] === 'checkpoint'));   /* not the body, not body undo */
 });
 
-test('an empty (hidden) header: a drop in its margin on the paper picks the slot by position', async () => {
+test('a drop on the header picture replaces it and keeps its height and alignment', async () => {
+  const L = load({ oldPic: { src: 'data:image/png;base64,OLD', h: 33, a: 'r' } });
+  await fire(L, 'drop', dropEvt(L.w.pic, [file('new.png', 'image/png')]));
+  assert.deepEqual(L.log.find((x) => x[0] === 'setPic'), ['setPic', 'head', 33, 'r', 'data:image/png;base64,new.png']);
+});
+
+/* (before DW13c) '... picks the slot by position' (x 350 -> centre slot 1) */
+test('an empty (hidden) header: a drop in its margin on the paper goes to the header block', async () => {
   const L = load({ editing: true });
   await fire(L, 'drop', dropEvt(L.w.paper, [file('a.png', 'image/png')], null, 350, 30));
   assert.ok(!L.log.some((x) => x[0] === 'enter'));
-  assert.equal(L.W.hf.lastSlot, L.w.cells[1].kids[0]);
-  assert.deepEqual(L.log.find((x) => x[0] === 'setPic').slice(0, 4), ['setPic', 'head', 1, 'M']);
+  assert.equal(L.W.hf.lastSlot, L.w.hfText);
+  assert.deepEqual(L.log.find((x) => x[0] === 'setPic').slice(0, 4), ['setPic', 'head', 14, 'c']);
+  const M = load({ editing: true });
+  await fire(M, 'drop', dropEvt(M.w.paper, [file('a.png', 'image/png')], null, 350, 90));   /* below the header box */
+  assert.ok(!M.log.some((x) => x[0] === 'setPic'));
 });
 
 test('dropping on the ribbon or a dialog does nothing but stops the browser opening it', async () => {
@@ -216,23 +228,26 @@ test('drags without files (moving a picture inside Writer, text) are left to the
   assert.ok(!L.log.length);
 });
 
+/* (before DW13c) the outlined element was the slot's .hf-cell; now the whole .hf-box */
 test('dragover outlines the header slot under a picture, and drop clears it', async () => {
   const L = load();
-  const cell = L.w.cells[0];
-  await fire(L, 'dragover', dropEvt(cell.kids[0], [file('a.png', 'image/png')]));
+  const cell = L.w.box;
+  await fire(L, 'dragover', dropEvt(L.w.hfText, [file('a.png', 'image/png')]));
   assert.ok(cell.classList.contains('hf-drop'));
   await fire(L, 'dragover', dropEvt(L.w.para, [file('a.png', 'image/png')]));
   assert.ok(!cell.classList.contains('hf-drop'));
-  await fire(L, 'dragover', dropEvt(cell.kids[0], [file('a.docx', '')]));
+  await fire(L, 'dragover', dropEvt(L.w.hfText, [file('a.docx', '')]));
   assert.ok(!cell.classList.contains('hf-drop'));   /* only pictures */
 });
 
 test('release is DW13b; script loaded before writer-docxopen.js; no browser dialogs or fetch', () => {
   const html = read('writer.html');
-  assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13b</title>') !== -1);
+  /* (before DW13c) assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13b</title>') !== -1); */
+  assert.ok(/<title>Writer DW13(b|c)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW13b) <title>Writer DW13</title> -->') !== -1);
   assert.ok(html.indexOf('modules/writer-imgdrop.js') !== -1 && html.indexOf('modules/writer-imgdrop.js') < html.indexOf('modules/writer-docxopen.js'));
-  assert.ok(/release:\s*'DW13b'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW13c) assert.ok(/release:\s*'DW13b'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW13[bc]'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
   const src = DROP.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(src));
   assert.ok(!/\bfetch\s*\(/.test(src));

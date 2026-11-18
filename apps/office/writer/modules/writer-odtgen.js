@@ -14,7 +14,7 @@
               (their alt text is written instead). Anything Writer
               cannot represent is dropped quietly.
               (before DW11a) Headers, footers and anything Writer cannot represent are dropped quietly.
-   DW11a: opts.hf adds the header / footer (text slots, page fields,
+   DW11a: opts.hf adds the header / footer (DW13c: picture + text lines; was text slots, page fields,
           pictures) to the master page in styles.xml.
    ============================================================ */
 (function (root) {
@@ -940,28 +940,35 @@
   }
 
   /* DW11a: header / footer of the master page. part = opts.hf.head / foot:
-     { slots: [3 text], pics: [3 x {bytes, ext, w, h (mm)} | null], edgeMm }.
-     Left / centre / right go to a centre and a right tab stop (as in the
-     .docx); each picture is an as-char frame before its slot's text, its
-     file in Pictures/. {page} / {pages} become page-number / page-count. */
+     (before DW13c) { slots: [3 text], pics: [3 x {bytes, ext, w, h (mm)} | null], edgeMm }:
+     left / centre / right on a centre and a right tab stop (as in the .docx),
+     each picture an as-char frame before its slot's text.
+     DW13c: { lines: [{ t, a }], pic: { bytes, ext, w, h (mm), a } | null }:
+     the picture in its own aligned paragraph on top (as-char frame, file in
+     Pictures/), then one paragraph per line with its alignment (automatic
+     styles <style>_l / _c / _r). {page} / {pages} become page-number / page-count. */
   function hfParaXml(part, b, style) {
-    var xml = '';
-    part.slots.forEach(function (t, k) {
-      if (k) xml += '<text:tab/>';
-      var p = part.pics && part.pics[k];
-      if (p && p.bytes) {
-        var path = b.addImage(p.bytes, p.ext);
-        xml += '<draw:frame draw:style-name="' + (String(t || '').length ? 'MFr2' : 'MFr1') + '" draw:name="' + style + 'Picture' + (k + 1) + '" text:anchor-type="as-char"' +
-          ' svg:width="' + cm3(p.w / 10) + 'cm" svg:height="' + cm3(p.h / 10) + 'cm" draw:z-index="0">' +
-          '<draw:image xlink:href="' + esc(path) + '" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>';
-      }
-      String(t || '').split(/(\{page\}|\{pages\})/).forEach(function (bit) {
-        if (bit === '{page}') xml += '<text:page-number text:select-page="current">1</text:page-number>';
-        else if (bit === '{pages}') xml += '<text:page-count>1</text:page-count>';
-        else if (bit) xml += textBits(bit);
+    var xml = '', al = function (a) { return style + '_' + (a === 'l' || a === 'r' ? a : 'c'); };
+    var p = part.pic;
+    if (p && p.bytes) {
+      var path = b.addImage(p.bytes, p.ext);
+      xml += '<text:p text:style-name="' + al(p.a) + 'P">' +
+        '<draw:frame draw:style-name="MFr1" draw:name="' + style + 'Picture" text:anchor-type="as-char"' +
+        ' svg:width="' + cm3(p.w / 10) + 'cm" svg:height="' + cm3(p.h / 10) + 'cm" draw:z-index="0">' +
+        '<draw:image xlink:href="' + esc(path) + '" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame></text:p>';
+    }
+    var lines = part.lines || [];
+    lines.forEach(function (l) {
+      var inner = '';
+      String(l.t || '').split(/(\{page\}|\{pages\})/).forEach(function (bit) {
+        if (bit === '{page}') inner += '<text:page-number text:select-page="current">1</text:page-number>';
+        else if (bit === '{pages}') inner += '<text:page-count>1</text:page-count>';
+        else if (bit) inner += textBits(bit);
       });
+      xml += '<text:p text:style-name="' + al(l.a) + '">' + inner + '</text:p>';
     });
-    return '<text:p text:style-name="' + style + '">' + xml + '</text:p>';
+    if (!lines.length && !xml) xml = '<text:p text:style-name="' + style + '"/>';
+    return xml;
   }
   function hfStyles(b) {
     var o = b.o, w = o.pageWidthCm || 21, m = o.margins || {};
@@ -976,7 +983,18 @@
       return '<style:style style:name="' + name + '" style:family="graphic"><style:graphic-properties text:anchor-type="as-char" style:vertical-pos="middle" style:vertical-rel="line"' +
         ' fo:margin-left="0cm" fo:margin-right="' + gap + 'cm" fo:margin-top="0cm" fo:margin-bottom="0cm" draw:luminance="0%" draw:contrast="0%" draw:gamma="100%" draw:color-mode="standard"/></style:style>';
     };
-    return { para: para('Header', 'Header') + para('Footer', 'Footer'), frames: fr('MFr1', '0') + fr('MFr2', '0.15') };
+    /* (before DW13c) return { para: para('Header', 'Header') + para('Footer', 'Footer'), frames: fr('MFr1', '0') + fr('MFr2', '0.15') }; */
+    /* DW13c: aligned line paragraphs, and the picture paragraph (1.5 mm gap under it). */
+    var aligned = '';
+    ['Header', 'Footer'].forEach(function (parent) {
+      [['l', 'start'], ['c', 'center'], ['r', 'end']].forEach(function (x) {
+        aligned += '<style:style style:name="' + parent + '_' + x[0] + '" style:family="paragraph" style:parent-style-name="' + parent + '">' +
+          '<style:paragraph-properties fo:text-align="' + x[1] + '"/></style:style>' +
+          '<style:style style:name="' + parent + '_' + x[0] + 'P" style:family="paragraph" style:parent-style-name="' + parent + '">' +
+          '<style:paragraph-properties fo:text-align="' + x[1] + '" fo:margin-bottom="0.15cm"/></style:style>';
+      });
+    });
+    return { para: para('Header', 'Header') + para('Footer', 'Footer'), frames: fr('MFr1', '0') + fr('MFr2', '0.15') + aligned };
   }
 
   function stylesXml(b) {
@@ -1056,7 +1074,8 @@
 
   /* opts: {landscape, pageWidthCm, pageHeightCm, margins {top,right,bottom,left},
             defaults {font, sizePt, lineHeight, paraAfterPt},
-            DW11a: hf {head, foot} each null or {slots, pics, edgeMm} (see hfParaXml)} */
+            DW11a: hf {head, foot} each null or {slots, pics, edgeMm} (see hfParaXml)
+            DW13c: each null or {lines, pic, edgeMm} (see hfParaXml)} */
   function build(bodyHtml, opts) {
     var zip = getZip(root);
     opts = opts || {};

@@ -28,7 +28,8 @@
   <!-- (before DW12) <title>Writer DW11a</title> -->
   <!-- (before DW13) <title>Writer DW12</title> -->
   <!-- (before DW13b) <title>Writer DW13</title> -->
-  <title>Writer DW13b</title>
+  <!-- (before DW13c) <title>Writer DW13b</title> -->
+  <title>Writer DW13c</title>
   <meta name="theme-color" content="#5b5bf0">
   <!-- (before DF25) <link rel="icon" href="draftly_icon.png"> -->
   <link rel="icon" href="writer_icon.png">
@@ -222,15 +223,21 @@
         <button class="tool-btn labeled" data-hf-field="{page}" title="Insert page number"><span>Page #</span></button>
         <button class="tool-btn labeled" data-hf-field="of {pages}" title="Insert total pages"><span>of Pages</span></button>
         <button class="tool-btn labeled" data-hf-field="{date}" title="Insert today&#39;s date"><span>Date</span></button>
-        <!-- DW11: picture for the header / footer slot being edited -->
+        <!-- DW13c: line / picture alignment (the Home align buttons work too) -->
+        <button class="tool-btn" data-hf-align="l" title="Align left (the selected picture, or the lines at the caret)" aria-label="Header or footer align left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+        <button class="tool-btn" data-hf-align="c" title="Centre (the selected picture, or the lines at the caret)" aria-label="Header or footer centre"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+        <button class="tool-btn" data-hf-align="r" title="Align right (the selected picture, or the lines at the caret)" aria-label="Header or footer align right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+        <!-- DW11: picture for the header / footer slot being edited (DW13c: one picture on top of the header / footer) -->
         <span class="hf-pic-where" id="hfPicWhere" aria-live="polite"></span>
-        <button class="tool-btn labeled" id="hfPicBtn" title="Add a picture (e.g. a logo) to this slot" aria-label="Header or footer picture"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg><span>Picture&hellip;</span></button>
+        <!-- (before DW13c) title="Add a picture (e.g. a logo) to this slot" -->
+        <button class="tool-btn labeled" id="hfPicBtn" title="Add a picture (e.g. a logo) on top of the header" aria-label="Header or footer picture"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg><span>Picture&hellip;</span></button>
         <input type="file" id="hfPicFile" accept="image/*" hidden>
         <span class="hf-pic-opts" id="hfPicOpts" role="group" aria-label="Picture size" hidden>
           <button class="tool-btn labeled" data-hf-size="S" title="Small picture (8 mm)" aria-pressed="false"><span>S</span></button>
           <button class="tool-btn labeled" data-hf-size="M" title="Medium picture (14 mm)" aria-pressed="false"><span>M</span></button>
           <button class="tool-btn labeled" data-hf-size="L" title="Large picture (20 mm)" aria-pressed="false"><span>L</span></button>
-          <button class="tool-btn labeled" id="hfPicRemove" title="Remove this slot&#39;s picture"><span>Remove</span></button>
+          <!-- (before DW13c) title="Remove this slot&#39;s picture" -->
+          <button class="tool-btn labeled" id="hfPicRemove" title="Remove the picture (or select it and press Delete)"><span>Remove</span></button>
         </span>
         <button class="tool-btn labeled" id="hfCloseBtn" title="Close header &amp; footer (Esc)"><span>Close</span></button>
       </div>

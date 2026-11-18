@@ -187,10 +187,20 @@
     if (root && root.Writer && root.Writer.hfimg) return root.Writer.hfimg;
     try { return typeof require === 'function' ? require('./writer-hfimg.js') : null; } catch (e) { return null; }
   }
+  /* DW13c: the header / footer is saved as the hf v 2 block (writer-hfimg.js):
+     { v: 2, head: [lines], foot: [lines], al: { head, foot }, pic?: { head, foot } }.
+     Old 3-slot headers (no v) still load: normalize migrates them. pic is
+     written only when there is a picture. The file version stays 1. */
   How.hfOf = function hfOf(h) {
-    /* (before DW11) return { head: hfRow(h && h.head), foot: hfRow(h && h.foot) }; */
-    var out = { head: hfRow(h && h.head), foot: hfRow(h && h.foot) };
     var I = hfImg();
+    if (I && I.normalize) {
+      var b = I.normalize(h);
+      if (!I.hasPic(b)) delete b.pic;
+      return b;
+    }
+    /* (before DW11) return { head: hfRow(h && h.head), foot: hfRow(h && h.foot) }; */
+    /* (before DW13c) the lines below were the whole function (3 slots + img). */
+    var out = { head: hfRow(h && h.head), foot: hfRow(h && h.foot) };
     if (I && h && h.img) {
       var img = I.normPics(h.img);
       if (I.hasAny(img)) out.img = img;

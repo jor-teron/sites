@@ -13,6 +13,9 @@
             parts: [{ html, hf: {head:[3], foot:[3], img?} | null }]
                    DW11: hf.img pictures (writer-hfimg.js) are drawn
                    with addImage next to the header / footer text.
+                   DW13c: hf = { head: [lines], foot: [lines], al?, pic? }
+                   (writer-hfimg.js v 2): picture on top, lines below;
+                   the body moves down by Writer.hf.extra.
                    each part starts on a new page (mail merge rows);
                    {page}/{pages} count inside one part.
           Writer.pdfgen.canUse(htmlList, hfList) -> false when text is
@@ -60,7 +63,11 @@ Writer.pdfgen = (function () {
     var c = cfg(), ps = c.paperSizes[c.paperSize] || c.paperSizes.A4;
     var land = document.body.classList.contains(c.landscapeClass);
     var w = (land ? ps.heightCm : ps.widthCm) * 10, h = (land ? ps.widthCm : ps.heightCm) * 10;
-    return { land: land, w: w, h: h, mt: c.marginTopCm * 10, mb: c.marginBottomCm * 10, ml: c.marginLeftCm * 10, mr: c.marginRightCm * 10 };
+    /* (before DW13c) return { land: land, w: w, h: h, mt: c.marginTopCm * 10, mb: c.marginBottomCm * 10, ml: c.marginLeftCm * 10, mr: c.marginRightCm * 10 }; */
+    /* DW13c: a grown header / footer block moves the body, as on screen (Writer.hf.extra). */
+    var ex = (Writer.hf && Writer.hf.extra) || { head: 0, foot: 0 };
+    return { land: land, w: w, h: h, mt: c.marginTopCm * 10 + ex.head, mb: c.marginBottomCm * 10 + ex.foot, ml: c.marginLeftCm * 10, mr: c.marginRightCm * 10,
+      mt0: c.marginTopCm * 10, mb0: c.marginBottomCm * 10 };
   }
 
   /* -------------------------------------------- style helpers */
@@ -310,17 +317,27 @@ Writer.pdfgen = (function () {
     }
   }
   /* DW11: header / footer pictures. Every picture src is decoded once per
-     export: { src: { data, fmt, ar } } (ar = width / height). */
+     export: { src: { data, fmt, ar } } (ar = width / height).
+     (before DW13c) partPics returned the 3-slot rows (hf.img); drawHfPics drew
+     pictures and slot text side by side, centred in the margin; drawHf drew
+     the left / centre / right slot text on one baseline.
+     DW13c: one picture { src, h, a } per part (hf.pic, else the open
+     document's), drawn on top of the block, then the text lines. */
   function partPics(part) {
-    var img = part && part.hf ? (part.hf.img || (Writer.hf && Writer.hf.data && Writer.hf.data.img)) : null;
-    return img && Writer.hfimg ? Writer.hfimg.normPics(img) : null;
+    var I = Writer.hfimg;
+    if (!part || !part.hf || !I) return null;
+    var src = part.hf.pic || (Writer.hf && Writer.hf.data && Writer.hf.data.pic) || {};
+    return { head: I.normBlockPic(src.head), foot: I.normBlockPic(src.foot) };
+  }
+  function partAligns(part) {
+    return (part && part.hf && part.hf.al) || (Writer.hf && Writer.hf.data && Writer.hf.data.al) || { head: [], foot: [] };
   }
   function loadPics(parts) {
     var cache = {}, todo = [];
     parts.forEach(function (part) {
       var img = partPics(part);
       if (!img) return;
-      img.head.concat(img.foot).forEach(function (pic) {
+      [img.head, img.foot].forEach(function (pic) {
         if (pic && !(pic.src in cache)) { cache[pic.src] = null; todo.push(pic.src); }
       });
     });
@@ -337,54 +354,36 @@ Writer.pdfgen = (function () {
       });
     })).then(function () { return cache; });
   }
-  /* One part (head / foot) with at least one picture: pictures and text
-     side by side, centred in the margin (writer-hfimg.js does the math). */
-  function drawHfPics(doc, g, slots, top, page, pages, row, cache) {
-    var I = Writer.hfimg, c = cfg(), pt = 10, lineH = pt * 0.3528 * 1.2;
-    var margin = (top ? c.marginTopCm : c.marginBottomCm) * 10, colW = (g.w - g.ml - g.mr) / 3;
-    doc.setFont(pdfFont(c.fontFamily), 'normal'); doc.setFontSize(pt); doc.setTextColor(0, 0, 0);
-    var boxes = [0, 1, 2].map(function (k) {
-      var pic = row[k], d = pic && cache[pic.src];
-      return d ? { d: d, box: I.fit(d.ar, pic.size, margin, colW) } : null;
-    });
-    var boxH = I.TEXT_MM;
-    boxes.forEach(function (b) { if (b) boxH = Math.max(boxH, b.box.h); });
-    var edge = I.boxTop(margin, boxH);
-    var midY = top ? edge + boxH / 2 : g.h - edge - boxH / 2;
-    (slots || ['', '', '']).forEach(function (t, k) {
-      var s = String(t || '').replace(/\{date\}/g, Writer.hf && Writer.hf.today ? Writer.hf.today() : '')
-        .replace(/\{page\}/g, String(page)).replace(/\{pages\}/g, String(pages));
-      var lines = s ? s.split(/\r?\n/) : [];
-      var textW = 0;
-      lines.forEach(function (line) { textW = Math.max(textW, doc.getTextWidth(line)); });
-      var b = boxes[k];
-      if (!b && !lines.length) return;
-      var at = I.place(k, b ? b.box.w : 0, textW, g);
-      if (b) {
-        try { doc.addImage(b.d.data, b.d.fmt, at.picX, midY - b.box.h / 2, b.box.w, b.box.h, undefined, 'FAST'); }
-        catch (e) { console.warn('writer pdf: header picture failed', e); }
-      }
-      var y0 = midY - lines.length * lineH / 2;
-      lines.forEach(function (line, li) { doc.text(line, at.textX, y0 + lineH * li + lineH * 0.78); });
-    });
-  }
+  /* DW13c: one header / footer block. lines = template texts, al = their
+     alignments, pic = { src, h, a } | null. The block sits 0.4 x the margin
+     from the paper edge (head: its top, foot: its bottom), picture first. */
   /* (before DW11) function drawHf(doc, g, slots, top, page, pages) { */
-  function drawHf(doc, g, slots, top, page, pages, row, cache) {
-    if (row && cache && (row[0] || row[1] || row[2]) && Writer.hfimg) { drawHfPics(doc, g, slots, top, page, pages, row, cache); return; }
-    if (!slots || !slots.join('').trim()) return;
-    var c = cfg(), pt = 10, colW = (g.w - g.ml - g.mr) / 3;
+  /* (before DW13c) function drawHf(doc, g, slots, top, page, pages, row, cache) { */
+  function drawHf(doc, g, lines, top, page, pages, pic, cache, al) {
+    var I = Writer.hfimg, c = cfg(), pt = 10, lineH = pt * 0.3528 * 1.2;
+    if (!I) return;
+    lines = lines || [];
+    var d = pic && cache && cache[pic.src];
+    if (!d && !lines.join('').trim()) return;
+    var colW = g.w - g.ml - g.mr;
+    var box = d ? I.fitPic(d.ar, pic.h, colW) : null;
+    var blockH = I.blockMm(lines.length, box ? box.h : 0);
+    var edge = I.edgeMm(top ? g.mt0 : g.mb0);
+    var y = top ? edge : g.h - edge - blockH;
+    if (box) {
+      try { doc.addImage(d.data, d.fmt, g.ml + I.picX(pic.a, box.w, colW), y, box.w, box.h, undefined, 'FAST'); }
+      catch (e) { console.warn('writer pdf: header picture failed', e); }
+      y += box.h + I.PIC_GAP_MM;
+    }
     doc.setFont(pdfFont(c.fontFamily), 'normal'); doc.setFontSize(pt); doc.setTextColor(0, 0, 0);
-    var y = top ? c.marginTopCm * 4 + pt * 0.3528 * 0.95 : g.h - c.marginBottomCm * 4 - pt * 0.3528 * 0.3;
-    slots.forEach(function (t, k) {
+    lines.forEach(function (t, li) {
       var s = String(t || '').replace(/\{date\}/g, Writer.hf && Writer.hf.today ? Writer.hf.today() : '')
         .replace(/\{page\}/g, String(page)).replace(/\{pages\}/g, String(pages));
       if (!s) return;
-      s.split(/\r?\n/).forEach(function (line, li) {
-        var yy = top ? y + li * pt * 0.3528 * 1.2 : y;
-        if (k === 0) doc.text(line, g.ml, yy);
-        else if (k === 1) doc.text(line, g.ml + colW * 1.5, yy, { align: 'center' });
-        else doc.text(line, g.w - g.mr, yy, { align: 'right' });
-      });
+      var a = I.normAlign(al && al[li]), yy = y + lineH * li + lineH * 0.78;
+      if (a === 'l') doc.text(s, g.ml, yy);
+      else if (a === 'r') doc.text(s, g.w - g.mr, yy, { align: 'right' });
+      else doc.text(s, g.ml + colW / 2, yy, { align: 'center' });
     });
   }
 
@@ -406,7 +405,8 @@ Writer.pdfgen = (function () {
         });
         doc.setPage(pageNo);
         /* (before DW11) if (part.hf) { drawHf(doc, g, part.hf.head, true, i + 1, p.pages); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages); } */
-        if (part.hf) { drawHf(doc, g, part.hf.head, true, i + 1, p.pages, pics && pics.head, cache); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages, pics && pics.foot, cache); }
+        /* (before DW13c) if (part.hf) { drawHf(doc, g, part.hf.head, true, i + 1, p.pages, pics && pics.head, cache); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages, pics && pics.foot, cache); } */
+        if (part.hf) { var al = partAligns(part); drawHf(doc, g, part.hf.head, true, i + 1, p.pages, pics && pics.head, cache, al.head); drawHf(doc, g, part.hf.foot, false, i + 1, p.pages, pics && pics.foot, cache, al.foot); }
       }
       box.paper.remove();
       return p.pages;
@@ -472,7 +472,9 @@ Writer.pdfgen = (function () {
           if (part.hf) {   /* header / footer text still real text when it is Latin */
             /* (before DW11) if (latinOk(part.hf.head.join('') + part.hf.foot.join(''))) { drawHf(doc, g, part.hf.head, true, k + 1, n); drawHf(doc, g, part.hf.foot, false, k + 1, n); } */
             var pics = partPics(part);
-            if (latinOk(part.hf.head.join('') + part.hf.foot.join(''))) { drawHf(doc, g, part.hf.head, true, k + 1, n, pics && pics.head, cache); drawHf(doc, g, part.hf.foot, false, k + 1, n, pics && pics.foot, cache); }
+            /* (before DW13c) ... drawHf(doc, g, part.hf.head, true, k + 1, n, pics && pics.head, cache); drawHf(doc, g, part.hf.foot, false, k + 1, n, pics && pics.foot, cache); } */
+            var al2 = partAligns(part);
+            if (latinOk(part.hf.head.join('') + part.hf.foot.join(''))) { drawHf(doc, g, part.hf.head, true, k + 1, n, pics && pics.head, cache, al2.head); drawHf(doc, g, part.hf.foot, false, k + 1, n, pics && pics.foot, cache, al2.foot); }
           }
         }
       }, function (e) { box.paper.remove(); throw e; }).then(next);

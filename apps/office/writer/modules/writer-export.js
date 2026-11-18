@@ -52,6 +52,7 @@ Writer.export.setupPrintStyles = function setupPrintStyles() {
   var w = (isLandscape ? cfg.paperHeightCm : cfg.paperWidthCm) + 'cm';
   var h = (isLandscape ? cfg.paperWidthCm : cfg.paperHeightCm) + 'cm';
   /* Each paper card is printed as one sheet of the chosen size, exactly as on screen. */
+  var hfEx = (Writer.hf && Writer.hf.extra) || { head: 0, foot: 0 };   /* DW13c */
   printStyle.textContent =
     OfficePage.pageRule({ paper: cfg.paperSize, orientation: isLandscape ? 'landscape' : 'portrait', margins: '0' }) +
     '@media print {' +
@@ -63,7 +64,9 @@ Writer.export.setupPrintStyles = function setupPrintStyles() {
     ' .pop-menu { display: none !important; }' +
     ' .paper { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important;' +
     ' width: ' + w + ' !important; height: ' + h + ' !important; min-height: 0 !important;' +
-    ' padding: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm ' + cfg.marginBottomCm + 'cm ' + cfg.marginLeftCm + 'cm !important;' +
+    /* (before DW13c) ' padding: ' + cfg.marginTopCm + 'cm ' + cfg.marginRightCm + 'cm ' + cfg.marginBottomCm + 'cm ' + cfg.marginLeftCm + 'cm !important;' + */
+    /* DW13c: a grown header / footer block moves the body (as on screen). */
+    ' padding: ' + (cfg.marginTopCm + hfEx.head / 10) + 'cm ' + cfg.marginRightCm + 'cm ' + (cfg.marginBottomCm + hfEx.foot / 10) + 'cm ' + cfg.marginLeftCm + 'cm !important;' +
     ' overflow: hidden !important; background: #fff !important; page-break-after: always; break-after: page; }' +
     ' .paper:last-child { page-break-after: auto; break-after: auto; }' +
     ' body:not(.pn-on) .paper .page-number { display: none !important; }' +
@@ -106,103 +109,108 @@ Writer.export.printDocument = function printDocument() {
   }, Writer.config.printCleanupMs);
 };
 
-/* DW11a: header / footer pictures for export. One row (3 slots) of
-   { bytes, ext, w, h } (w / h in mm, the DW11 size and margin-fit math of
-   writer-hfimg.js) or null. data: other header / footer (mail merge); its
-   pictures, or the open document's when it has none. Pictures that are not
-   PNG / JPEG / GIF (e.g. a hand-made .webp) are skipped with one console note. */
-Writer.export.hfPics = function hfPics(part, isLandscape, data) {
-  var I = Writer.hfimg, D = Writer.docxgen, cfg = Writer.config, none = [null, null, null];
-  if (!I || !D || !D.dataUrlBytes || !Writer.hf) return none;
-  var img = (data && data.img) || (Writer.hf.data && Writer.hf.data.img);
-  if (!I.hasAny(img)) return none;
-  var row = I.normPics(img)[part];
+/* (before DW13c) Writer.export.hfPics(part, isLandscape, data) returned one row
+   (3 slots) of { bytes, ext, w, h } sized by the DW11 S / M / L margin-fit math,
+   and Writer.export.hfEdgeMm(part, pics) moved the header into the margin
+   (writer-hfimg.js boxTop). The DW11a slot XML (left / centre / right on tab
+   stops in one paragraph, each picture before its slot's text) is replaced by
+   the DW13c letterhead block below.
+
+   DW13c: the header / footer picture for export: { bytes, ext, w, h, a } (w / h
+   in mm: its height, cut to the text column, aspect kept) or null. data: other
+   header / footer (mail merge); its picture, or the open document's when it has
+   none. Pictures that are not PNG / JPEG / GIF (e.g. a hand-made .webp) are
+   skipped with one console note. */
+Writer.export.hfPic = function hfPic(part, isLandscape, data) {
+  var I = Writer.hfimg, D = Writer.docxgen, cfg = Writer.config;
+  if (!I || !D || !D.dataUrlBytes || !Writer.hf) return null;
+  var src = (data && data.pic) || (Writer.hf.data && Writer.hf.data.pic) || {};
+  var pic = I.normBlockPic(src[part]);
+  if (!pic) return null;
   var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
   var pageWmm = (isLandscape ? ps.heightCm : ps.widthCm) * 10;
-  var colMm = (pageWmm - (cfg.marginLeftCm + cfg.marginRightCm) * 10) / 3;
-  var margin = (part === 'head' ? cfg.marginTopCm : cfg.marginBottomCm) * 10;
-  return row.map(function (pic) {
-    if (!pic) return null;
-    var bytes = D.dataUrlBytes(pic.src), info = bytes && D.sniffImage(bytes);
-    if (!info || !info.w || !info.h || !/^(png|jpeg|gif)$/.test(info.ext)) {
-      if (!Writer.export.warnedHfPic) { Writer.export.warnedHfPic = true; console.warn('writer: a header / footer picture is not PNG / JPEG / GIF and was left out of the export'); }
-      return null;
-    }
-    var box = I.fit(info.w / info.h, pic.size, margin, colMm);
-    return { bytes: bytes, ext: info.ext, w: box.w, h: box.h };
+  var colMm = pageWmm - (cfg.marginLeftCm + cfg.marginRightCm) * 10;
+  var bytes = D.dataUrlBytes(pic.src), info = bytes && D.sniffImage(bytes);
+  if (!info || !info.w || !info.h || !/^(png|jpeg|gif)$/.test(info.ext)) {
+    if (!Writer.export.warnedHfPic) { Writer.export.warnedHfPic = true; console.warn('writer: a header / footer picture is not PNG / JPEG / GIF and was left out of the export'); }
+    return null;
+  }
+  var box = I.fitPic(info.w / info.h, pic.h, colMm);
+  return { bytes: bytes, ext: info.ext, w: box.w, h: box.h, a: pic.a };
+};
+
+/* DW13c: the lines of one part as [{ t, a }] ({date} filled in). data: other
+   header / footer lines (mail merge); its alignments, or the open document's. */
+Writer.export.hfLines = function hfLines(part, data) {
+  var I = Writer.hfimg, d = Writer.hf.data || {};
+  var texts = (data || d)[part] || [];
+  var al = (data && data.al && data.al[part]) || (d.al && d.al[part]) || [];
+  return texts.map(function (t, i) {
+    return { t: String(t == null ? '' : t).replace(/\{date\}/g, Writer.hf.today()), a: I ? I.normAlign(al[i]) : 'c' };
   });
 };
 
-/* DW11a: distance (mm) from the paper edge to a header / footer box that
-   holds pictures (writer-hfimg.js boxTop, as in print and PDF), or null. */
-Writer.export.hfEdgeMm = function hfEdgeMm(part, pics) {
-  var I = Writer.hfimg, cfg = Writer.config, boxH = I ? I.TEXT_MM : 0, any = false;
-  (pics || []).forEach(function (p) { if (p) { any = true; boxH = Math.max(boxH, p.h); } });
-  if (!any || !I) return null;
-  return I.boxTop((part === 'head' ? cfg.marginTopCm : cfg.marginBottomCm) * 10, boxH);
+/* DW13c: mm the body moves for a grown block (writer-hfimg.js extraMm), for exports. */
+Writer.export.hfExtraMm = function hfExtraMm(part, lines, pic) {
+  var I = Writer.hfimg, cfg = Writer.config;
+  if (!I || (!pic && !lines.map(function (l) { return l.t; }).join('').trim())) return 0;
+  return I.extraMm((part === 'head' ? cfg.marginTopCm : cfg.marginBottomCm) * 10, I.blockMm(lines.length, pic ? pic.h : 0));
 };
 
-/* Word header / footer part for one row of slots, or '' when empty.
-   Left / centre / right use a centre and a right tab stop; {page} and
-   {pages} become PAGE / NUMPAGES fields; {date} is today's date.
-   DW11a: hfPart also puts each slot's picture (inline drawing) before that
-   slot's text and returns the pictures for word/_rels/header1.xml.rels:
-   { xml, media: [{ id, bytes, ext }], edgeMm }. noPics: text only (the
-   html-docx fallback). Without pictures the XML is exactly as before DW11a. */
+/* Word header / footer part, or '' when empty. DW13c: one picture paragraph
+   (inline drawing, aligned) then one paragraph per text line, each with its
+   alignment; {page} and {pages} become PAGE / NUMPAGES fields; {date} is
+   today's date. Returns { xml, media: [{ id, bytes, ext }], extraMm } (media
+   for word/_rels/header1.xml.rels). noPics: text only (the html-docx fallback). */
 Writer.export.hfXml = function hfXml(part, isLandscape, data) {
   return Writer.export.hfPart(part, isLandscape, data, true).xml;
 };
 
 Writer.export.hfPart = function hfPart(part, isLandscape, data, noPics) {
-  var cfg = Writer.config;
   /* (before DW11a) if (!Writer.hf) return ''; */
-  if (!Writer.hf) return { xml: '', media: [], edgeMm: null };
-  var slots = (data || Writer.hf.data)[part];   /* data: other header / footer text (mail merge) */
-  /* (before DW11a) if (Writer.hf.warnExport) Writer.hf.warnExport(); */
-  var pics = noPics ? [null, null, null] : Writer.export.hfPics(part, isLandscape, data);
-  var hasPic = !!(pics[0] || pics[1] || pics[2]);
-  /* (before DW11a) if (!slots.join('').trim()) return ''; */
-  if (!slots.join('').trim() && !hasPic) return { xml: '', media: [], edgeMm: null };
-  var ps = cfg.paperSizes[cfg.paperSize] || cfg.paperSizes.A4;
-  var pageW = isLandscape ? ps.docxH : ps.docxW;
-  var textW = pageW - cfg.docxMarginLeft - cfg.docxMarginRight;
+  if (!Writer.hf) return { xml: '', media: [], extraMm: 0 };
+  var lines = Writer.export.hfLines(part, data);
+  var pic = noPics ? null : Writer.export.hfPic(part, isLandscape, data);
+  if (!lines.map(function (l) { return l.t; }).join('').trim() && !pic) return { xml: '', media: [], extraMm: 0 };
   var esc = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
   var rpr = '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="20"/></w:rPr>';
   var run = function (t) { return '<w:r>' + rpr + '<w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>'; };
   var field = function (instr, shown) { return '<w:fldSimple w:instr="' + instr + '"><w:r>' + rpr + '<w:t>' + shown + '</w:t></w:r></w:fldSimple>'; };
-  var media = [], base = part === 'head' ? 1000 : 2000;
-  var drawing = function (p, k) {
-    var id = 'rId' + (media.length + 1), n = base + k + 1;
-    var cx = Math.max(9525, Math.round(p.w * 36000)), cy = Math.max(9525, Math.round(p.h * 36000));   /* mm -> EMU */
-    media.push({ id: id, bytes: p.bytes, ext: p.ext });
-    var gap = String(String(slots[k] || '').length ? Math.round((Writer.hfimg ? Writer.hfimg.PIC_GAP_MM : 1.5) * 36000) : 0);   /* gap to the slot text */
-    return '<w:r>' + rpr + '<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="' + gap + '"><wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
+  var jc = function (a) { return '<w:jc w:val="' + ({ l: 'left', c: 'center', r: 'right' }[a] || 'center') + '"/>'; };
+  var media = [], base = part === 'head' ? 1000 : 2000, body = '';
+  if (pic) {
+    var id = 'rId1', n = base + 1;
+    var cx = Math.max(9525, Math.round(pic.w * 36000)), cy = Math.max(9525, Math.round(pic.h * 36000));   /* mm -> EMU */
+    media.push({ id: id, bytes: pic.bytes, ext: pic.ext });
+    var gapTw = Math.round((Writer.hfimg ? Writer.hfimg.PIC_GAP_MM : 1.5) * 56.7);
+    body += '<w:p><w:pPr>' + jc(pic.a) + '<w:spacing w:before="0" w:after="' + gapTw + '" w:line="240" w:lineRule="auto"/></w:pPr>' +
+      '<w:r>' + rpr + '<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
       '<wp:docPr id="' + n + '" name="Header picture ' + n + '"/>' +
       '<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
-      '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="' + n + '" name="hf-' + part + '-' + (k + 1) + '.' + p.ext + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
+      '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="' + n + '" name="hf-' + part + '.' + pic.ext + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
       '<pic:blipFill><a:blip r:embed="' + id + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
       '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
-      '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>';
-  };
-  var runs = slots.map(function (t, k) {
-    var out = k ? '<w:r>' + rpr + '<w:tab/></w:r>' : '';
-    if (pics[k]) out += drawing(pics[k], k);   /* DW11a: the picture sits before the slot's text */
-    String(t).replace(/\{date\}/g, Writer.hf.today()).split(/(\{page\}|\{pages\})/).forEach(function (bit) {
-      if (bit === '{page}') out += field('PAGE', '1');
-      else if (bit === '{pages}') out += field('NUMPAGES', '1');
-      else if (bit) out += run(bit);
+      '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+  }
+  /* trailing empty lines after the text are kept (they are part of the block) */
+  lines.forEach(function (l) {
+    var runs = '';
+    l.t.split(/(\{page\}|\{pages\})/).forEach(function (bit) {
+      if (bit === '{page}') runs += field('PAGE', '1');
+      else if (bit === '{pages}') runs += field('NUMPAGES', '1');
+      else if (bit) runs += run(bit);
     });
-    return out;
-  }).join('');
+    body += '<w:p><w:pPr>' + jc(l.a) + '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>' + rpr + '</w:pPr>' + runs + '</w:p>';
+  });
+  if (!lines.length) body += '<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr></w:p>';   /* Word needs a paragraph last */
   var tag = part === 'head' ? 'hdr' : 'ftr';
-  var ns = hasPic ? ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"' : '';
+  var ns = pic ? ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"' : '';
   return {
     xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<w:' + tag + ' xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"' + ns + '>' +
-      '<w:p><w:pPr><w:tabs><w:tab w:val="center" w:pos="' + Math.round(textW / 2) + '"/><w:tab w:val="right" w:pos="' + textW + '"/></w:tabs>' +
-      '<w:spacing w:before="0" w:after="0"/></w:pPr>' + runs + '</w:p></w:' + tag + '>',
+      body + '</w:' + tag + '>',
     media: media,
-    edgeMm: hasPic ? Writer.export.hfEdgeMm(part, pics) : null
+    extraMm: Writer.export.hfExtraMm(part, lines, pic)
   };
 };
 
@@ -229,11 +237,14 @@ Writer.export.makeDocxBlob = function makeDocxBlob(bodyHtml, hfData) {
   var footerXml = Writer.export.hfXml('foot', isLandscape, hfData);
   var head = Writer.export.hfPart('head', isLandscape, hfData);       /* DW11a: text + pictures */
   var foot = Writer.export.hfPart('foot', isLandscape, hfData);
-  /* DW11a: a header / footer with pictures sits where print and PDF put it (writer-hfimg.js boxTop). */
+  /* (before DW13c) DW11a: a header / footer with pictures sat where print and PDF put it (writer-hfimg.js boxTop):
+  if (head.edgeMm != null) docxMargins.header = Math.round(head.edgeMm * 56.7);
+  if (foot.edgeMm != null) docxMargins.footer = Math.round(foot.edgeMm * 56.7); */
   var docxMargins = {};
   for (var mk in margins) docxMargins[mk] = margins[mk];
-  if (head.edgeMm != null) docxMargins.header = Math.round(head.edgeMm * 56.7);
-  if (foot.edgeMm != null) docxMargins.footer = Math.round(foot.edgeMm * 56.7);
+  /* DW13c: the header stays 0.4 x the margin from the edge and a grown block moves the body, as on screen. */
+  docxMargins.top = margins.top + Math.round(head.extraMm * 56.7);
+  docxMargins.bottom = margins.bottom + Math.round(foot.extraMm * 56.7);
 
   if (Writer.docxgen) {
     try {
@@ -308,17 +319,19 @@ Writer.export.exportDocx = function exportDocx() {
 };
 
 /* DW11a: header / footer for the .odt (writer-odtgen.js opts.hf), or null.
-   Text slots with {date} filled in ({page} / {pages} become page fields),
-   pictures from hfPics (same sizes as DOCX / PDF), and the edge distance. */
+   (before DW13c) { slots: [3 text], pics: [3], edgeMm } per part.
+   DW13c: { lines: [{ t, a }], pic: { bytes, ext, w, h, a } | null } per part;
+   {date} filled in ({page} / {pages} become page fields), the picture as in
+   the .docx. The page layout keeps the header 0.4 x the margin from the edge
+   and the header grows (fo:min-height), as in Writer. */
 Writer.export.odtHf = function odtHf(isLandscape, data) {
   if (!Writer.hf) return null;
-  var d = data || Writer.hf.data, out = { head: null, foot: null }, any = false;
+  var out = { head: null, foot: null }, any = false;
   ['head', 'foot'].forEach(function (part) {
-    var slots = (d[part] || ['', '', '']).map(function (t) { return String(t == null ? '' : t).replace(/\{date\}/g, Writer.hf.today()); });
-    var pics = Writer.export.hfPics(part, isLandscape, data);
-    var hasPic = !!(pics[0] || pics[1] || pics[2]);
-    if (!slots.join('').trim() && !hasPic) return;
-    out[part] = { slots: slots, pics: pics, edgeMm: Writer.export.hfEdgeMm(part, pics) };
+    var lines = Writer.export.hfLines(part, data);
+    var pic = Writer.export.hfPic(part, isLandscape, data);
+    if (!lines.map(function (l) { return l.t; }).join('').trim() && !pic) return;
+    out[part] = { lines: lines, pic: pic, edgeMm: null };
     any = true;
   });
   return any ? out : null;
