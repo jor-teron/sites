@@ -423,6 +423,12 @@
     N.start = function start() {
       return N.openFromHash().then(function (opened) {
         if (opened) return true;
+        /* (before HO12) if (!N.inHub() || !N.canLocal()) return false;
+        return N.list().then(function (rows) {
+          if (rows.length) return N.openName(rows[0].name, { quiet: true });
+          return false;
+        }); */
+        if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return false;
         if (!N.inHub() || !N.canLocal()) return false;
         return N.list().then(function (rows) {
           if (rows.length) return N.openName(rows[0].name, { quiet: true });

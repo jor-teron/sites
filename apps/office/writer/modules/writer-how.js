@@ -547,6 +547,12 @@
   How.start = function start() {
     return How.openFromHash().then(function (opened) {
       if (opened) return true;
+      /* (before HO12) if (!How.inHub() || !How.canLocal()) return false;
+      return How.list().then(function (rows) {
+        if (rows.length) return How.openName(rows[0].name, { quiet: true });
+        return false;
+      }); */
+      if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return false;
       if (!How.inHub() || !How.canLocal()) return false;
       return How.list().then(function (rows) {
         if (rows.length) return How.openName(rows[0].name, { quiet: true });

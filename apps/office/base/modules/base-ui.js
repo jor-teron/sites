@@ -305,7 +305,7 @@ function initBaseSettings() {
     BaseStore.saveNow();
     if (window.BaseHob && BaseHob.dest && typeof BaseHob.autosaveWithPics === "function") BaseHob.autosaveWithPics();
   });
-  BaseStore.load(function () {
+  function afterLoad() {
     try {
       var t0 = BaseStore.table();
       if (t0 && typeof BaseView !== "undefined") {
@@ -336,5 +336,14 @@ function initBaseSettings() {
         }
       });
     }
-    if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start(); });
+    if (typeof BASE_HUB !== "undefined" && BASE_HUB.start) BASE_HUB.start();
+  }
+  /* (before HO12) BaseStore.load(function () { ... }); always restored the
+     IndexedDB database. A new Hub Office tab (?new=1) starts blank and
+     does not open IndexedDB, so the last database is left untouched. */
+  var isNew = (typeof OfficeNewDoc !== "undefined" && OfficeNewDoc.isNewDocLaunch)
+    ? OfficeNewDoc.isNewDocLaunch()
+    : (typeof URLSearchParams !== "undefined" && new URLSearchParams(location.search).get("new") === "1");
+  if (isNew) afterLoad();
+  else BaseStore.load(afterLoad);
 })();

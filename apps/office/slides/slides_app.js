@@ -186,8 +186,14 @@
   $('warn-x').onclick = function () { $('warn').hidden = true; };
 
   /* ---------- deck + slides ---------- */
+  /* HO12: a new Hub Office tab builds an in-memory blank deck and must
+     not write it as the last-opened deck, so standalone still restores. */
+  var holdCurrent = false;
   function showDeck(d) {
-    deck = d; SLSave.setCurrent(d.id);
+    /* (before HO12) deck = d; SLSave.setCurrent(d.id); */
+    deck = d;
+    if (!holdCurrent) SLSave.setCurrent(d.id);
+    holdCurrent = false;
     /* (before HOP1) document.title = d.name + ' · Slides ' + VERSION; */
     $('deck-name').textContent = d.name; document.title = d.name + ' · Presentation ' + VERSION;
     undo = []; redo = [];
@@ -1342,10 +1348,24 @@
       if (window.SLPics && SLPics.hydrate) SLPics.hydrate(d).then(startPv, startPv); else startPv();
       return;
     }
-    var id = SLSave.currentId(), d = id && SLSave.load(id);
+    /* (before HO12) var id = SLSave.currentId(), d = id && SLSave.load(id);
     if (!d) { var f = SLSave.list()[0]; d = f && SLSave.load(f.id); }
-    if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Presentation', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);   /* (before HOP1) title: 'Welcome to Slides' · legacy (SL1 – SL3): …Add slides with ＋ Slide */
-    showDeck(d); if (!SLSave.memOnly) status('Saved');
+    if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Presentation', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);
+    showDeck(d); if (!SLSave.memOnly) status('Saved'); */
+    var isNew = (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch)
+      ? OfficeNewDoc.isNewDocLaunch(location.search)
+      : (typeof URLSearchParams !== 'undefined' && new URLSearchParams(location.search).get('new') === '1');
+    var d;
+    if (isNew) {
+      holdCurrent = true;
+      d = SLSave.cleanDeck({ name: 'Untitled deck', slides: [{}] });
+    } else {
+      var id = SLSave.currentId();
+      d = id && SLSave.load(id);
+      if (!d) { var f = SLSave.list()[0]; d = f && SLSave.load(f.id); }
+      if (!d) d = SLSave.newDeck('My first deck', [{ title: 'Welcome to Presentation', body: 'Type a title above and bullets here\nOne bullet per line\n\tPress Tab to indent a line\nAdd slides with ＋ New slide' }]);   /* (before HOP1) title: 'Welcome to Slides' · legacy (SL1 – SL3): …Add slides with ＋ Slide */
+    }
+    showDeck(d); if (!isNew && !SLSave.memOnly) status('Saved');
     if (window.SlidesHop && !window.SLHop) {
       SlidesHop.install({
         capture: function () { return deck; },
