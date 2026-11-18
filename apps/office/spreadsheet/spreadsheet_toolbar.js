@@ -72,7 +72,8 @@ function wireUi() {
       return;
     }
     /* (before SH27) if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; } */
-    if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
+    /* (before SH33) if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; } */
+    if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xlsm|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
     /* (before SH32) a .csv was read into the active sheet of the open workbook:
     var reader = new FileReader();
     reader.onload = function () { importCsvText(String(reader.result)); };
