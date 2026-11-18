@@ -64,7 +64,7 @@
        Settings › Look › Show boot splash is off (sites-hub.bootSplash = '0'). Not for ?join=. -->
   <link rel="stylesheet" href="hub/core/hub_splash.css?v=20261118f" />
   <link rel="stylesheet" href="hub/core/hub_clock.css?v=20261118f" />
-  <style>html.hub-splash{background:#121418}html.hub-splash.hub-splash-light{background:#e9ecf1}html.hub-splash>body{visibility:hidden!important}#hub-splash{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;visibility:visible;background:inherit}</style>
+  <style>html.hub-splash{background:#070d18}html.hub-splash.hub-splash-light{background:#f1f5f9}html.hub-splash>body{visibility:hidden!important}#hub-splash{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;visibility:visible;background:inherit}</style>
   <script>try { if (window === top && !/[?&]join=/.test(location.search) && localStorage.getItem('sites-hub.bootSplash') !== '0') { var r = document.documentElement; r.classList.add('hub-splash'); if (localStorage.getItem('sites-hub.theme') !== 'dark') r.classList.add('hub-splash-light'); var d = document.createElement('div'); d.id = 'hub-splash'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Hub'); d.setAttribute('aria-busy', 'true'); r.appendChild(d); } } catch (_) { /* blocked */ }</script>
   <script src="hub/core/hub_splash.js?v=20261118f"></script>
 </head>
