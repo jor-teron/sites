@@ -81,13 +81,15 @@
   /* Truthful open / save / export lists, checked against each app's
      file-input accept lists and File-menu export items in HO6.
      Corrections from the planned lists:
-       Writer open dropped .txt and .md (no file picker or drop handler).
+       (before DW9) Writer open dropped .txt and .md (no file picker or drop handler).
+       Writer open dropped .md (no file picker or drop handler). DW9 added .txt.
        Spreadsheet open dropped .tsv (accept is .xlsx .xls .ods .csv only).
        Presentation export added .pdf (File → Export PDF is in the menu).
        Base open added .tsv .txt .xls .sqlite3 (in accept + base-files.js open()).
        Tables export is .csv. */
   const FORMAT_TABLE = [
-    { id: 'writer', open: ['.how', '.docx', '.odt'], save: ['.how'], export: ['.docx', '.odt', '.pdf'] },
+    /* (before DW9) { id: 'writer', open: ['.how', '.docx', '.odt'], save: ['.how'], export: ['.docx', '.odt', '.pdf'] }, */
+    { id: 'writer', open: ['.how', '.docx', '.odt', '.txt'], save: ['.how'], export: ['.docx', '.odt', '.pdf'] },
     { id: 'spreadsheet', open: ['.hos', '.xlsx', '.xls', '.ods', '.csv'], save: ['.hos'], export: ['.xlsx', '.ods', '.csv'] },
     /* (before PN4) { id: 'slides', open: ['.hop', '.hslides', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] }, */
     { id: 'slides', open: ['.hop', '.pptx', '.odp'], save: ['.hop'], export: ['.pptx', '.odp', '.png', '.pdf'] },
@@ -100,6 +102,8 @@
     how: 'writer',
     docx: 'writer',
     odt: 'writer',
+    /* (before DW9) txt: 'base' */
+    txt: 'writer',
     /* (before HO6) txt: 'writer', md: 'writer', markdown: 'writer' */
     hos: 'spreadsheet',
     xlsx: 'spreadsheet',
@@ -120,8 +124,8 @@
     sqlite: 'base',
     sqlite3: 'base',
     json: 'base',
-    tsv: 'base',
-    txt: 'base'
+    tsv: 'base'
+    /* (before DW9) txt: 'base' */
     /* (before HO6) base: 'base' — Base has no .base file picker */
   };
 

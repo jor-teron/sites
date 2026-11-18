@@ -479,7 +479,8 @@
     if (!ref || !ref.name) return Promise.resolve(false);
     var key = window.FsRef.hash(ref);
     if (key === How.lastHash) return Promise.resolve(false);
-    if (/\.(docx|odt)$/i.test(ref.name) && D().docxopen && D().docxopen.open) {
+    /* (before DW9) if (/\.(docx|odt)$/i.test(ref.name) && D().docxopen && D().docxopen.open) { */
+    if (/\.(docx|odt|txt)$/i.test(ref.name) && D().docxopen && D().docxopen.open) {
       How.lastHash = key;
       return window.FsRef.resolve(ref).then(function (got) {
         return got.file.getFile().then(function (file) {

@@ -78,7 +78,8 @@ test('FORMAT_TABLE lists truthful open, save and export formats', () => {
   const byId = Object.fromEntries(HO.FORMAT_TABLE.map((row) => [row.id, row]));
 
   /* (before HO6) Writer formats: ['.how', '.docx', '.odt', '.txt'] — .txt/.md are not opened */
-  assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.open)), ['.how', '.docx', '.odt']);
+  /* (before DW9) assert.deepEqual(..., ['.how', '.docx', '.odt']); */
+  assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.open)), ['.how', '.docx', '.odt', '.txt']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.save)), ['.how']);
   assert.deepEqual(JSON.parse(JSON.stringify(byId.writer.export)), ['.docx', '.odt', '.pdf']);
 
@@ -110,7 +111,8 @@ test('formatChipGroups builds Open, Save and Export groups and marks native', ()
   const writer = HO.FORMAT_TABLE.find((row) => row.id === 'writer');
   const groups = clone(HO.formatChipGroups(writer));
   assert.deepEqual(groups.map((g) => g.label), ['Open', 'Save', 'Export']);
-  assert.deepEqual(groups[0].formats, ['.how', '.docx', '.odt']);
+  /* (before DW9) assert.deepEqual(groups[0].formats, ['.how', '.docx', '.odt']); */
+  assert.deepEqual(groups[0].formats, ['.how', '.docx', '.odt', '.txt']);
   assert.deepEqual(groups[1].formats, ['.how']);
   assert.deepEqual(groups[2].formats, ['.docx', '.odt', '.pdf']);
   groups.forEach((g) => {
@@ -129,6 +131,8 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.how, 'writer');
   assert.equal(HO.EXT_MAP.docx, 'writer');
   assert.equal(HO.EXT_MAP.odt, 'writer');
+  /* (before DW9) assert.equal(HO.EXT_MAP.txt, 'base'); */
+  assert.equal(HO.EXT_MAP.txt, 'writer');
 
   assert.equal(HO.EXT_MAP.hos, 'spreadsheet');
   assert.equal(HO.EXT_MAP.xlsx, 'spreadsheet');
@@ -154,7 +158,7 @@ test('EXT_MAP routes all expected extensions to matching suites', () => {
   assert.equal(HO.EXT_MAP.sqlite3, 'base');
   assert.equal(HO.EXT_MAP.json, 'base');
   assert.equal(HO.EXT_MAP.tsv, 'base');
-  assert.equal(HO.EXT_MAP.txt, 'base');
+  /* (before DW9) assert.equal(HO.EXT_MAP.txt, 'base'); */
   assert.equal(HO.EXT_MAP.md, undefined);
 });
 
@@ -165,6 +169,7 @@ test('routeByFilename maps known names and rejects unknown extensions', () => {
   assert.equal(HO.routeByFilename('Talk.odp'), 'slides');
   assert.equal(HO.routeByFilename('Contacts.odb'), 'base');
   assert.equal(HO.routeByFilename('Notes.how'), 'writer');
+  assert.equal(HO.routeByFilename('notes.txt'), 'writer');
   assert.equal(HO.routeByFilename('budget.HOS'), 'spreadsheet');
   assert.equal(HO.routeByFilename('deck.ppt'), null);
   assert.equal(HO.routeByFilename('readme.md'), null);

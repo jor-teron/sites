@@ -290,7 +290,8 @@ test('html wiring: Review tab, status items, scripts, title', function () {
     /* (before DF25) 'src="modules/draftly-writetext.js"', 'src="modules/draftly-write.js"', 'href="ui/write.css"', '<title>Writer DF21</title>'] */
     /* (before DW7) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DF25</title>'] */
     /* (before DW8) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW7</title>'] */
-    'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW8</title>']
+    /* (before DW9) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW8</title>'] */
+    'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW9</title>']
     .forEach(function (s) { assert.ok(html.indexOf(s) !== -1, s); });
   /* (before DF25) assert.ok(html.indexOf('draftly-writetext.js') < html.indexOf('draftly-write.js"')); */
   assert.ok(html.indexOf('writer-writetext.js') < html.indexOf('writer-write.js"'));
