@@ -114,7 +114,8 @@ function loadHub() {
 test('createDocTab adds ?new=1 for a new blank tab and keeps a file-open hash clean', () => {
   const HO = loadHub();
   const blank = HO.createDocTab('writer');
-  assert.equal(blank.url, '../writer/?new=1');
+  /* (before HO12b) assert.equal(blank.url, '../writer/?new=1'); */
+  assert.equal(blank.url, '../writer/?new=1&untitled=1');
   const named = HO.createDocTab('spreadsheet', { title: 'Budget.hos' });
   assert.equal(named.url, '../spreadsheet/?new=1');
   const opened = HO.createDocTab('writer', {

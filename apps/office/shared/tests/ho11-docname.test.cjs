@@ -96,8 +96,11 @@ test('set() posts a sanitized name to the same-origin parent', () => {
   assert.equal(ctx.messages.length, 1);
   assert.equal(ctx.messages[0].origin, 'https://hub.test');
   const payload = JSON.parse(JSON.stringify(ctx.messages[0].data));
-  assert.deepEqual(payload, { hubOfficeDocName: { v: 1, name: 'Budget.hos' } });
-  assert.equal(ctx.OfficeDocName.parse(payload), 'Budget.hos');
+  /* (before HO12b) assert.deepEqual(payload, { hubOfficeDocName: { v: 1, name: 'Budget.hos' } });
+  assert.equal(ctx.OfficeDocName.parse(payload), 'Budget.hos'); */
+  /* HO12b: the name is sent without its file extension. */
+  assert.deepEqual(payload, { hubOfficeDocName: { v: 1, name: 'Budget' } });
+  assert.equal(ctx.OfficeDocName.parse(payload), 'Budget');
 });
 
 test('set() is a no-op outside a frame, and for an empty name', () => {

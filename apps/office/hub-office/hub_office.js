@@ -1,5 +1,10 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO12: a new blank document tab adds ?new=1 so the suite starts
+/* HO12b: a new tab's "Untitled N" is the lowest N not used by that suite's
+   open tabs or the Documents files seen by the last scan, and it is passed
+   to the suite as &untitled=N (the suite's own name still wins). Tab labels
+   drop the file extension (the tooltip keeps the full name). Switching to a
+   document tab focuses its frame, so Ctrl+B / I / E reach the document.
+   HO12: a new blank document tab adds ?new=1 so the suite starts
    fresh; opening a file still uses #drive=&file= and loads that file.
    Standalone suites (no flag) still restore their last document.
    HO11: document tabs show the document name (Untitled N until the
@@ -26,7 +31,8 @@
   /* (before HO10) const VERSION = 'HO9'; */
   /* (before HO11) const VERSION = 'HO10'; */
   /* (before HO12) const VERSION = 'HO11'; */
-  const VERSION = 'HO12';
+  /* (before HO12b) const VERSION = 'HO12'; */
+  const VERSION = 'HO12b';
 
   const SUITES = [
     {
@@ -135,6 +141,8 @@
   // State: Tab tracking
   let tabSeq = 0;
   const appCounters = Object.create(null);
+  /* HO12b: Documents files from the last scanHubDocuments() (for Untitled N). */
+  let scannedDocs = [];
   const openTabs = [
     { id: 'start', title: 'Start Page', type: 'start', icon: '🏠' }
   ];
@@ -394,6 +402,20 @@
     }
     syncChrome();
     publishTitleBar('set');
+    /* HO12b: keys go to the document after a tab switch (not for the Start Page). */
+    focusTabFrame(tabId);
+  }
+
+  /* HO12b: same as the Hub title bar (desktop/gamebar/hub-gamebar.js frame.focus()). */
+  function focusTabFrame(tabId) {
+    if (!tabId || tabId === 'start') return false;
+    const tab = openTabs.find((t) => t && t.id === tabId);
+    if (!tab || tab.type !== 'doc') return false;
+    const iframe = frameForTab(tabId);
+    if (!iframe) return false;
+    try { if (iframe.contentWindow && iframe.contentWindow.focus) iframe.contentWindow.focus(); } catch (_) {}
+    try { if (iframe.focus) iframe.focus(); } catch (_) {}
+    return true;
   }
 
   // Close an active or background document tab
@@ -430,15 +452,38 @@
     if (typeof OfficeDocName !== 'undefined' && OfficeDocName.sanitize) return OfficeDocName.sanitize(name);
     return String(name == null ? '' : name).trim();
   }
-  function displayTabLabel(name) {
-    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.displayLabel) return OfficeDocName.displayLabel(name);
+  /* HO12b: the label drops the file extension ("Report.how" -> "Report"). */
+  function stripDocExt(name) {
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.stripExt) return OfficeDocName.stripExt(name);
     const s = sanitizeDocName(name);
+    const t = s.replace(/\.(how|hos|hop|hob|hot|docx|odt|txt|xlsx|xls|ods|csv|tsv|pptx|odp|odb|json)$/i, '').trim();
+    return t || s;
+  }
+  function displayTabLabel(name) {
+    /* (before HO12b) if (typeof OfficeDocName !== 'undefined' && OfficeDocName.displayLabel) return OfficeDocName.displayLabel(name); */
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.displayLabel) return OfficeDocName.displayLabel(stripDocExt(name));
+    const s = stripDocExt(name);
     return s.length <= 40 ? s : (s.slice(0, 39) + '\u2026');
   }
   function untitledLabel(n) {
     if (typeof OfficeDocName !== 'undefined' && OfficeDocName.placeholder) return OfficeDocName.placeholder(n);
     const num = Number(n);
     return 'Untitled ' + (isFinite(num) && num >= 1 ? Math.floor(num) : 1);
+  }
+  /* HO12b: lowest free Untitled N for a suite: its open tabs plus the
+     Documents files of that suite seen by the last scan. */
+  function nextUntitledNumber(appId) {
+    const names = [];
+    openTabs.forEach((t) => { if (t && t.type === 'doc' && t.appId === appId) names.push(t.title); });
+    (scannedDocs || []).forEach((d) => { if (d && d.appId === appId) names.push(d.name); });
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.untitled && OfficeDocName.untitledNumber) {
+      return OfficeDocName.untitledNumber(OfficeDocName.untitled(names, 0)) || 1;
+    }
+    const used = {};
+    names.forEach((n) => { const m = /^untitled\s+(\d+)$/i.exec(stripDocExt(n)); if (m) used[+m[1]] = true; });
+    let k = 1;
+    while (used[k]) k++;
+    return k;
   }
   function parseDocNameMessage(data) {
     if (typeof OfficeDocName !== 'undefined' && OfficeDocName.parse) return OfficeDocName.parse(data);
@@ -478,18 +523,23 @@
     const app = getSuite(appId);
     if (!app) return null;
 
+    /* HO12b: pick the Untitled number before this tab joins openTabs. */
+    const untitledN = sanitizeDocName(options.title) ? 0 : nextUntitledNumber(appId);
     tabSeq++;
     const tabId = 'doc-' + tabSeq;
     appCounters[appId] = (appCounters[appId] || 0) + 1;
 
     /* (before HO11) const title = options.title || (app.name + ' ' + appCounters[appId]); */
-    const title = sanitizeDocName(options.title) || untitledLabel(appCounters[appId]);
+    /* (before HO12b) const title = sanitizeDocName(options.title) || untitledLabel(appCounters[appId]); */
+    const title = sanitizeDocName(options.title) || untitledLabel(untitledN);
     const label = displayTabLabel(title);
     /* (before HO12) const hash = options.hash ? ('#' + String(options.hash).replace(/^#/, '')) : ''; */
     const hashRaw = options.hash ? String(options.hash).replace(/^#/, '') : '';
     const src = (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.frameSrc)
-      ? OfficeNewDoc.frameSrc(app.url, { hash: hashRaw, newBlank: !hashRaw })
-      : (app.url + (hashRaw ? ('#' + hashRaw) : ((app.url.indexOf('?') >= 0 ? '&' : '?') + 'new=1')));
+      /* (before HO12b) ? OfficeNewDoc.frameSrc(app.url, { hash: hashRaw, newBlank: !hashRaw }) */
+      ? OfficeNewDoc.frameSrc(app.url, { hash: hashRaw, newBlank: !hashRaw, untitled: untitledN })
+      /* (before HO12b) : (app.url + (hashRaw ? ('#' + hashRaw) : ((app.url.indexOf('?') >= 0 ? '&' : '?') + 'new=1'))); */
+      : (app.url + (hashRaw ? ('#' + hashRaw) : ((app.url.indexOf('?') >= 0 ? '&' : '?') + 'new=1' + (untitledN ? '&untitled=' + untitledN : ''))));
     const icon = getAppIcon(appId);
 
     const tabRecord = {
@@ -698,6 +748,7 @@
           }
         }
       }
+      scannedDocs = found;
       return found;
     } catch (_) {
       return [];
@@ -1203,6 +1254,9 @@
     sanitizeDocName,
     displayTabLabel,
     untitledLabel,
+    nextUntitledNumber,
+    stripDocExt,
+    focusTabFrame,
     parseDocNameMessage,
     applyDocName
   };

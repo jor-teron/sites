@@ -54,6 +54,26 @@
     if (s.length > 180) s = s.slice(0, 180).trim();
     return s;
   };
+  /* HO12b: "Untitled N" for a new document: the lowest N not used by the
+     .how rows (case and extension ignored); pref (the Hub Office tab's N) when free. */
+  How.untitledFor = function untitledFor(rows, pref) {
+    var names = (rows || []).map(function (r) { return r && typeof r === 'object' ? r.name : r; });
+    var D = root && root.OfficeDocName;
+    if (D && D.untitled) return D.untitled(names, pref || 0);
+    var used = {};
+    names.forEach(function (n) { var m = /^untitled\s+(\d+)$/i.exec(How.stem(n)); if (m) used[+m[1]] = true; });
+    var k = (pref >= 1 && !used[pref]) ? pref : 1;
+    if (k !== pref) while (used[k]) k++;
+    return 'Untitled ' + k;
+  };
+  function isAuto(name) {
+    var st = root && root.Writer && root.Writer.storage;
+    return !!(st && st.isAutoName && st.isAutoName(name));
+  }
+  function setAuto(name) {
+    var st = root && root.Writer && root.Writer.storage;
+    if (st) st.autoName = name || '';
+  }
   How.fileName = function fileName(name) {
     return How.stem(name) + '.how';
   };
@@ -217,6 +237,7 @@
       if (S.editor && S.editor.stripMarks) S.editor.stripMarks(editor);
     }
     How.created = doc.created || Date.now();
+    setAuto(''); /* HO12b: an opened document keeps its own name */
     if (S.storage) {
       S.storage.loadedName = doc.name;
       if (S.storage.setCurrentName) S.storage.setCurrentName(doc.name, false);
@@ -319,6 +340,15 @@
       return exists(dir, dest.name).then(function (there) {
         var same = !!(old && !opts.saveAs && old.drive === dest.drive && String(old.path || '') === String(dest.path || '') && old.name === dest.name);
         if (there && !same) {
+          /* HO12b: an auto-made Untitled name never opens the clash dialog;
+             it quietly takes the next free Untitled N. */
+          if (!opts.saveAs && isAuto(snap.name)) {
+            return How.list().then(function (rows) {
+              var free = How.untitledFor(rows, 0);
+              setAuto(free);
+              return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: How.fileName(free) }, snap, null);
+            });
+          }
           if (opts.unique && window.FsOps && window.FsOps.uniqueName) {
             return window.FsOps.uniqueName(dir, dest.name).then(function (free) {
               return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: free }, snap, null);
@@ -414,6 +444,7 @@
     }).then(function (res) {
       if (res && res.wrote) {
         var S = D();
+        setAuto(''); /* HO12b: once written, the name is the file's own */
         if (S.storage) {
           S.storage.loadedName = res.name;
           if (S.storage.setCurrentName) S.storage.setCurrentName(res.name, false);
@@ -542,7 +573,7 @@
     if (S.pages && S.pages.rebuildSinglePage) S.pages.rebuildSinglePage();
     var editor = S.pages && S.pages.firstEditor ? S.pages.firstEditor() : null;
     if (editor) editor.innerHTML = '<p><br></p>';
-    if (S.storage && S.storage.fillNameIfEmpty) S.storage.fillNameIfEmpty();
+    /* (before HO12b) if (S.storage && S.storage.fillNameIfEmpty) S.storage.fillNameIfEmpty();
     return How.list().then(function (rows) {
       var base = S.storage && S.storage.currentName ? S.storage.currentName() : 'Document';
       var name = base;
@@ -550,11 +581,30 @@
       var taken = {};
       rows.forEach(function (r) { taken[How.stem(r.name).toLowerCase()] = true; });
       while (taken[String(name).toLowerCase()]) name = base + '_' + (n++);
+      if (S.storage && S.storage.setCurrentName) S.storage.setCurrentName(name, false); */
+    return How.list().then(function (rows) {
+      var name = How.untitledFor(rows, 0);
+      setAuto(name);
       if (S.storage && S.storage.setCurrentName) S.storage.setCurrentName(name, false);
       if (S.hf && S.hf.set && S.hf.blank) S.hf.set(S.hf.blank());
       if (S.pages && S.pages.layoutAll) S.pages.layoutAll();
       if (editor) { editor.focus(); if (S.editor) S.editor.activeEditor = editor; }
       if (S.history && S.history.reset) S.history.reset();
+      return name;
+    });
+  };
+  /* HO12b: name the blank document of a new Hub Office tab Untitled N
+     (?untitled=N when free in Documents). Only while the name is still auto-made. */
+  How.nameNew = function nameNew(pref) {
+    var S = D();
+    var D2 = root && root.OfficeDocName;
+    if (pref == null) pref = (D2 && D2.preferred) ? D2.preferred() : 0;
+    return How.list().then(function (rows) {
+      var cur = S.storage && S.storage.currentName ? S.storage.currentName() : '';
+      if (cur && !isAuto(cur)) return cur;
+      var name = How.untitledFor(rows, pref);
+      setAuto(name);
+      if (S.storage && S.storage.setCurrentName) S.storage.setCurrentName(name, false);
       return name;
     });
   };
@@ -566,7 +616,9 @@
         if (rows.length) return How.openName(rows[0].name, { quiet: true });
         return false;
       }); */
-      if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return false;
+      /* (before HO12b) a new tab kept the name from fillNameIfEmpty:
+      if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return false; */
+      if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return How.nameNew().then(function () { return false; });
       if (!How.inHub() || !How.canLocal()) return false;
       return How.list().then(function (rows) {
         if (rows.length) return How.openName(rows[0].name, { quiet: true });

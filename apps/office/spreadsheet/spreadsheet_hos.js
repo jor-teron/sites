@@ -425,7 +425,8 @@
 
   function install() {
     if (!root.OfficeNative) return;
-    var stemName = 'Sheet';
+    /* (before HO12b) var stemName = 'Sheet'; */
+    var stemName = (root.OfficeDocName && root.OfficeDocName.initial) ? root.OfficeDocName.initial() : 'Sheet';
     var session = root.OfficeNative.create({
       ext: 'hos',
       label: 'Hub Office Spreadsheet',
@@ -465,6 +466,9 @@
     });
     session.stemName = function () { return stemName; };
     session.noteStem = function (name) { stemName = Hos.stem(name); };
+    /* HO12b: the starting Untitled N is auto-made until a file opens or saves. */
+    if (session.isAutoName && /^Untitled \d+$/.test(stemName)) session.autoName = stemName;
+    /* (before HO12b) prepareNew named the new sheet Sheet, Sheet_2, ... :
     session.prepareNew = function () {
       session.detach();
       if (typeof saveStore === 'function') clearTimeout(saveStore._t);
@@ -476,6 +480,11 @@
         else stemName = name;
         return name;
       });
+    }; */
+    session.prepareNew = function () {
+      session.detach();
+      if (typeof saveStore === 'function') clearTimeout(saveStore._t);
+      return session.newName(0);
     };
     root.SHEET_HOS = session;
 

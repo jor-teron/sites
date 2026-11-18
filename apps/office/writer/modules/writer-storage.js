@@ -62,13 +62,29 @@ Writer.storage.open = function open() {
   return p;
 };
 
-/* Build Doc_YYYY_MM_DD_HH-MM from local time. No colon. */
-Writer.storage.makeName = function makeName(date) {
+/* Build Doc_YYYY_MM_DD_HH-MM from local time. No colon.
+   (before HO12b) this was Writer.storage.makeName, the default name of every new document. */
+Writer.storage.makeStampName = function makeStampName(date) {
   var d = date || new Date();
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   return Writer.config.namePrefix +
     d.getFullYear() + '_' + pad(d.getMonth() + 1) + '_' + pad(d.getDate()) + '_' +
     pad(d.getHours()) + '-' + pad(d.getMinutes());
+};
+
+/* HO12b: a new document is "Untitled N" (N from the Hub Office tab's ?untitled=N,
+   else 1). writer-how.js then picks the lowest free N in Documents. */
+Writer.storage.makeName = function makeName() {
+  var D = (typeof OfficeDocName !== 'undefined') ? OfficeDocName : null;
+  return (D && D.initial) ? D.initial() : 'Untitled 1';
+};
+
+/* HO12b: the auto-made name of the open, never-saved document ('' when the
+   name is a file's own or one the user typed). */
+Writer.storage.autoName = '';
+Writer.storage.isAutoName = function isAutoName(name) {
+  var a = Writer.storage.autoName;
+  return !!a && String(name || '').replace(/\.how$/i, '').trim().toLowerCase() === a.toLowerCase();
 };
 
 /* Name currently in the toolbar box. Empty string if missing. */
@@ -90,7 +106,10 @@ Writer.storage.setCurrentName = function setCurrentName(name, persist) {
 /* Fill the name box only when it is empty. */
 Writer.storage.fillNameIfEmpty = function fillNameIfEmpty() {
   if (!Writer.storage.currentName()) {
-    Writer.storage.setCurrentName(Writer.storage.makeName());
+    /* (before HO12b) Writer.storage.setCurrentName(Writer.storage.makeName()); */
+    var auto = Writer.storage.makeName();
+    Writer.storage.autoName = auto;
+    Writer.storage.setCurrentName(auto);
   }
   return Writer.storage.currentName();
 };
@@ -181,12 +200,15 @@ Writer.storage.save = function save() {
       }
       tx.oncomplete = function () {
         if (Writer.storage.replaceOk === name) Writer.storage.replaceOk = '';
+        /* (before HO12b) if (clash) { Writer.storage.askNameClash(name, old); resolve(old || ''); return; } */
+        if (clash && Writer.storage.isAutoName(name)) { Writer.storage.quietUntitled(); resolve(old || ''); return; }
         if (clash) { Writer.storage.askNameClash(name, old); resolve(old || ''); return; }
         if (old && old !== name) {
           var b = Writer.storage.readBackup();
           if (b && b.name === old) { try { localStorage.removeItem(cfg.storageKeyBackup); } catch (e) {} }
         }
         Writer.storage.loadedName = name;
+        Writer.storage.autoName = ''; /* HO12b */
         try { localStorage.setItem(cfg.storageKeyLastName, name); } catch (e) {}
         resolve(name);
       };
@@ -218,6 +240,19 @@ Writer.storage.freeName = function freeName(name) {
     while (taken[base + ' (' + n + ')']) n++;
     return base + ' (' + n + ')';
   });
+};
+
+/* HO12b: an auto-made name that is taken moves to the next free Untitled N, no dialog. */
+Writer.storage.quietUntitled = function quietUntitled() {
+  var S = Writer.storage;
+  return S.listDocs().then(function (rows) {
+    var D = (typeof OfficeDocName !== 'undefined') ? OfficeDocName : null;
+    var names = (rows || []).map(function (r) { return r.name; });
+    var free = D && D.untitled ? D.untitled(names, 0) : S.makeStampName();
+    S.autoName = free;
+    S.setCurrentName(free, false);
+    return S.save();
+  }).catch(function () {});
 };
 
 /* DF15-B1: three-button choice in the Office dialog style. Resolves 'use' | 'replace' | null. */

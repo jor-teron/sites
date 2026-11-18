@@ -114,7 +114,16 @@
 
   /* SL11: write the bound .hop (or create one). Flush localStorage first. Autosave of the
      .hop is only for an already-bound file, so it never downloads on each edit. */
-  function detachHop() { if (window.SLHop && SLHop.detach) SLHop.detach(); }
+  /* (before HO12b) function detachHop() { if (window.SLHop && SLHop.detach) SLHop.detach(); } */
+  function detachHop() { if (window.SLHop && SLHop.detach) { SLHop.detach(); SLHop.autoName = ''; } }
+  /* HO12b: "Untitled N" for a new deck, lowest N not used by decks on this device
+     or by extra names (.hop files); pref is the Hub Office tab's N when free. */
+  function untitledDeckName(extra, pref) {
+    var names = SLSave.list().map(function (d) { return d.name; }).concat(extra || []);
+    if (typeof OfficeDocName !== 'undefined' && OfficeDocName.untitled) return OfficeDocName.untitled(names, pref || 0);
+    return uniqueName('Untitled deck');
+  }
+  function markAutoName(name) { if (window.SLHop && SLHop.isAutoName) SLHop.autoName = name; }
   function saveHop(opts) {
     opts = opts || {};
     if (!deck) return Promise.resolve(false);
@@ -277,10 +286,19 @@
     for (var k = 2; k < 1000; k++) { var c = n + ' (' + k + ')'; if (names.indexOf(c.toLowerCase()) < 0) return c; }
     return n;
   }
-  function newDeck() {
+  /* (before HO12b) function newDeck() {
     askName('New deck', uniqueName('Untitled deck'), 'Create').then(function (n) {
       if (n === null) return;
       SLSave.flush(); detachHop(); showDeck(SLSave.newDeck(n || 'Untitled deck')); status('Saved'); toast('New deck'); SLEdit.focusTitle();
+    });
+  } */
+  function newDeck() {
+    var proposed = untitledDeckName();
+    askName('New deck', proposed, 'Create').then(function (n) {
+      if (n === null) return;
+      SLSave.flush(); detachHop(); showDeck(SLSave.newDeck(n || proposed)); status('Saved'); toast('New deck'); SLEdit.focusTitle();
+      /* An unchanged proposal is auto-made: its first .hop save never asks about a clash. */
+      if (!n || n === proposed) markAutoName(proposed);
     });
   }
   function fmtDate(ms) { try { return new Date(ms).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (_) { return ''; } }
@@ -309,7 +327,8 @@
       if (!ok) return;
       var id = deck.id, name = deck.name; SLSave.deleteDeck(id);
       var next = SLSave.list()[0], d = next && SLSave.load(next.id);
-      detachHop(); showDeck(d || SLSave.newDeck('Untitled deck'));
+      /* (before HO12b) detachHop(); showDeck(d || SLSave.newDeck('Untitled deck')); */
+      detachHop(); showDeck(d || SLSave.newDeck(untitledDeckName()));
       toast('Deleted “' + name + '”');
     });
   }
@@ -1371,7 +1390,8 @@
     var d;
     if (isNew) {
       holdCurrent = true;
-      d = SLSave.cleanDeck({ name: 'Untitled deck', slides: [{}] });
+      /* (before HO12b) d = SLSave.cleanDeck({ name: 'Untitled deck', slides: [{}] }); */
+      d = SLSave.cleanDeck({ name: untitledDeckName([], typeof OfficeDocName !== 'undefined' && OfficeDocName.preferred ? OfficeDocName.preferred() : 0), slides: [{}] });
     } else {
       var id = SLSave.currentId();
       d = id && SLSave.load(id);
@@ -1417,6 +1437,23 @@
     }
     if (window.SLHop) {
       SLHop.bind();
+      /* HO12b: a new tab's deck is Untitled N; also skip names used by .hop files in Documents. */
+      if (isNew && deck) {
+        markAutoName(deck.name);
+        if (SLHop.list) SLHop.list().then(function (rows) {
+          if (!deck || !SLHop.isAutoName || !SLHop.isAutoName(deck.name)) return;
+          var pref = (typeof OfficeDocName !== 'undefined' && OfficeDocName.preferred) ? OfficeDocName.preferred() : 0;
+          var hopNames = (rows || []).map(function (r) { return r.name; });
+          var own = deck.name;
+          /* keep the name unless a .hop file already has it */
+          if (hopNames.every(function (h) { return SLHop.stem(h).toLowerCase() !== own.toLowerCase(); })) return;
+          var name = untitledDeckName(hopNames, pref);
+          if (name === own) return;
+          deck.name = name; markAutoName(name);
+          $('deck-name').textContent = name; document.title = name + ' · Presentation ' + VERSION;
+          SLHub.title();
+        }, function () {});
+      }
       /* (before PN1) SLHop.openFromHash(); */
       /* (before PN4) SLHop.openFromHash().then(function (ok) { if (!ok) return openImportFromHash(); }); */
       SLHop.openFromHash().then(function (ok) {

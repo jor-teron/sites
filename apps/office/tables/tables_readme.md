@@ -142,5 +142,9 @@ Tables now has the same chrome as Writer and Spreadsheet, built from the shared 
 - **Chrome is unchanged.** The ribbon, toolbar, column headers, sheet tabs, pop-ups and labels keep 13px through a new `--ui-font-size` (the body font used to read `--sheet-font-size`). Rows stay 30px.
 - Tables has no font Settings, so there is nothing to move. No `?v=` was added (NV2), the title stays Tables TB5 and the `.hot` format is unchanged.
 
+## 13. HO12b — new files are Untitled N
+
+A new Hub Office tab, File → New and an empty Documents folder name the file `Untitled N` (lowest free among `.hot` files; the tab's `?untitled=N` when free) through `TABLES_HOT.newName()`. (before HO12b) `Tables`, `Tables (2)`, …. The first save of an auto-made name never opens the clash dialog.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as tables_icon_before_IC6.svg

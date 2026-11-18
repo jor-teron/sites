@@ -92,7 +92,13 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
   if (clr) clr.addEventListener("click", function () { clearing = true; setTimeout(function () { clearing = false; }, 0); }, true);
   if (typeof emptyGrid === "function") {
     var eg = emptyGrid;
-    emptyGrid = function () { var r = eg.apply(this, arguments); if (clearing) H.setTitle(H.DEFAULT_NAME); return r; };
+    /* (before HO12b) emptyGrid = function () { var r = eg.apply(this, arguments); if (clearing) H.setTitle(H.DEFAULT_NAME); return r; }; */
+    emptyGrid = function () {
+      var r = eg.apply(this, arguments);
+      /* HO12b: Clear names the new workbook Untitled N through SHEET_HOS.prepareNew. */
+      if (clearing && !(typeof SHEET_HOS !== "undefined" && SHEET_HOS.prepareNew)) H.setTitle(H.DEFAULT_NAME);
+      return r;
+    };
   }
 
   /* File menu, anchored top-left inside the frame (its button is hidden in the hub). */

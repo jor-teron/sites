@@ -174,6 +174,8 @@
     N.clashOpen = false;
     N.skipWrite = false;
     N.applying = false;
+    /* HO12b: the auto-made "Untitled N" of a new document ('' once saved or renamed). */
+    N.autoName = '';
     var tail = Promise.resolve();
 
     function enqueue(fn) {
@@ -192,6 +194,23 @@
       N.dest = null;
       N.created = 0;
       N.holdClash = '';
+    };
+    /* HO12b: true while the current name is the auto-made Untitled name. */
+    N.isAutoName = function (name) {
+      return !!N.autoName && String(N.stem(name)).toLowerCase() === N.autoName.toLowerCase();
+    };
+    /* HO12b: name a new document "Untitled N" (lowest free among saved files;
+       the Hub Office tab's N from ?untitled=N when that one is free). */
+    N.newName = function newName(preferred) {
+      var D = root.OfficeDocName;
+      var pref = preferred != null ? preferred : (D && D.preferred ? D.preferred() : 0);
+      return N.list().then(function (rows) {
+        var names = (rows || []).map(function (r) { return r.name; });
+        var name = D && D.untitled ? D.untitled(names, pref) : ('Untitled ' + (pref || 1));
+        N.autoName = name;
+        if (spec.setName) spec.setName(name);
+        return name;
+      });
     };
 
     function toast(msg) { if (spec.toast) spec.toast(msg); }
@@ -257,6 +276,16 @@
         return exists(dir, dest.name).then(function (there) {
           var same = !!(old && !opts.saveAs && old.drive === dest.drive && String(old.path || '') === String(dest.path || '') && old.name === dest.name);
           if (there && !same) {
+            /* HO12b: an auto-made Untitled name never asks; it takes the next free Untitled N. */
+            if (!opts.saveAs && N.isAutoName(snap.name)) {
+              return N.list().then(function (rows) {
+                var D = root.OfficeDocName;
+                var names = (rows || []).map(function (r) { return r.name; });
+                var free = D && D.untitled ? D.untitled(names, 0) : N.stem(snap.name) + ' (2)';
+                N.autoName = free;
+                return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: N.fileName(free) }, snap, null);
+              });
+            }
             if (opts.unique && window.FsOps && window.FsOps.uniqueName) {
               return window.FsOps.uniqueName(dir, dest.name).then(function (free) {
                 return put(dir, { kind: 'hub', drive: dest.drive, path: dest.path, name: free }, snap, null);
@@ -321,6 +350,8 @@
         return Promise.resolve(op).then(function (res) { return res || { ok: true, wrote: false, name: snap.name }; });
       }).then(function (res) {
         if (res && res.wrote) {
+          /* HO12b: once written, the name is the file's own. */
+          N.autoName = '';
           if (spec.setName) spec.setName(res.name);
           if (res.dest) N.dest = res.dest;
           else if (!N.inHub()) N.dest = null;
@@ -363,6 +394,7 @@
             N.dest = dest || null;
             N.holdClash = '';
             if (doc.created) N.created = doc.created;
+            N.autoName = ''; /* HO12b */
             if (spec.setName) spec.setName(doc.name);
             if (!opts.quiet) toast('Opened ' + doc.name);
             return true;
@@ -428,11 +460,16 @@
           if (rows.length) return N.openName(rows[0].name, { quiet: true });
           return false;
         }); */
-        if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return false;
+        /* (before HO12b) the blank document kept the suite's fallback name. */
+        function blank() {
+          if (!N.newName) return false;
+          return N.newName().then(function () { return false; }, function () { return false; });
+        }
+        if (typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch()) return blank();
         if (!N.inHub() || !N.canLocal()) return false;
         return N.list().then(function (rows) {
           if (rows.length) return N.openName(rows[0].name, { quiet: true });
-          return false;
+          return blank();
         });
       }).catch(function () { return false; });
     };

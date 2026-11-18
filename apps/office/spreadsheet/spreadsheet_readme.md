@@ -449,5 +449,9 @@ SPELLNUMBER no longer uses hyphens in any style ("forty five", not "forty-five")
 - **Release id:** title and `SHEET_VERSION` are SH31. `?v=` on `spreadsheet_spellnumber.js`, `spreadsheet_functions.js` and `spreadsheet_settings.js` is `SH31`. Other tokens stay as they were (HO3 or SH27).
 - **Tests:** `node --test apps/office/spreadsheet/test-sh31-spellnumber-wording.cjs`, `test-sh30-spellnumber-aliases.cjs` and `test-sh29-spellnumber.cjs`.
 
+## HO12b — new workbooks are Untitled N
+
+A new Hub Office tab, File → New / Clear, and an empty Documents folder name the workbook `Untitled N` (lowest free among `.hos` files; the tab's `?untitled=N` when free) through `SHEET_HOS.newName()`. (before HO12b) `Sheet`, `Sheet_2`, …. The first save of that auto-made name never opens the name-clash dialog; it moves to the next free `Untitled N`. The Hub Office tab shows the name without `.hos`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
