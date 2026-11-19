@@ -81,6 +81,14 @@ export class Enemy {
 
     this.mesh = this.buildMesh();
     this.mesh.position.copy(startPos);
+    if (this.def.isFlyer) {
+      const norm = new THREE.Vector3().copy(startPos).normalize();
+      this.mesh.position.addScaledVector(norm, this.def.altitude);
+    } else {
+      const clearance = 0.35 * (this.def.scale || 1.0);
+      const norm = new THREE.Vector3().copy(startPos).normalize();
+      this.mesh.position.addScaledVector(norm, clearance);
+    }
     planetMesh.add(this.mesh);
   }
 
@@ -212,9 +220,12 @@ export class Enemy {
     const targetNode = this.pathNodes[this.pathIndex];
     let targetPos = targetNode.pos.clone();
 
-    // Flyers hover above the terrain
+    // Flyers hover above the terrain, ground creeps sit with clearance on the terrain surface
     if (this.def.isFlyer) {
       targetPos.addScaledVector(targetNode.normal, this.def.altitude);
+    } else {
+      const clearance = 0.35 * (this.def.scale || 1.0);
+      targetPos.addScaledVector(targetNode.normal, clearance);
     }
 
     const currentSpeed = this.speed * this.slowFactor;
@@ -228,6 +239,15 @@ export class Enemy {
     } else {
       dir.normalize();
       this.mesh.position.addScaledVector(dir, moveDist);
+
+      // Prevent ground units from sinking into curved planet terrain or clipping through slopes
+      if (!this.def.isFlyer) {
+        const curR = this.mesh.position.length();
+        const targetR = targetPos.length();
+        const progress = Math.min(1.0, moveDist / distToTarget);
+        const desiredR = THREE.MathUtils.lerp(curR, targetR, progress);
+        this.mesh.position.normalize().multiplyScalar(Math.max(desiredR, targetR * 0.98));
+      }
 
       // Orient forward along path and upright relative to planet surface
       const up = targetNode.normal;

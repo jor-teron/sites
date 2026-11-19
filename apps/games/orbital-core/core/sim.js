@@ -108,8 +108,8 @@ export class Simulation {
     }
   }
 
-  // Spherical A* Pathfinding across geodesic nav nodes
-  findPath(startPos, targetPos) {
+  // Spherical A* Pathfinding across geodesic nav nodes with obstacle and elevation awareness
+  findPath(startPos, targetPos, isFlyer = false) {
     if (!this.planet || !this.planet.navNodes.length) return [];
     const nodes = this.planet.navNodes;
 
@@ -140,6 +140,9 @@ export class Simulation {
     gScore.set(startNodeId, 0);
     fScore.set(startNodeId, nodes[startNodeId].pos.distanceTo(nodes[targetNodeId].pos));
 
+    let closestNodeToTarget = startNodeId;
+    let minH = nodes[startNodeId].pos.distanceTo(nodes[targetNodeId].pos);
+
     let iterations = 0;
     while (openSet.length > 0 && iterations++ < 1500) {
       // Find lowest fScore in openSet
@@ -154,6 +157,12 @@ export class Simulation {
       }
       const current = openSet.splice(bestIdx, 1)[0];
       closedSet.add(current);
+
+      const currentH = nodes[current].pos.distanceTo(nodes[targetNodeId].pos);
+      if (currentH < minH) {
+        minH = currentH;
+        closestNodeToTarget = current;
+      }
 
       if (current === targetNodeId) {
         const path = [nodes[current]];
@@ -170,11 +179,29 @@ export class Simulation {
         if (closedSet.has(nId)) continue;
         const neighbor = nodes[nId];
 
-        // Tower obstruction blocks pathing
-        if (neighbor.occupied) continue;
+        // Tower obstruction blocks pathing for ground creeps
+        if (!isFlyer && neighbor.occupied) continue;
 
         let stepCost = nodes[current].pos.distanceTo(neighbor.pos);
-        if (neighbor.isLiquid) stepCost *= 3.0; // Water / Lava penalty
+
+        if (!isFlyer) {
+          // Liquid (water / lava) penalty
+          if (neighbor.isLiquid) stepCost *= 3.5;
+
+          // Mountain & Peak obstacle costs - steers ground creeps around ridges into valleys
+          if (neighbor.isPeak) {
+            stepCost *= 12.0; // Avoid mountain peaks unless strictly required
+          } else if (neighbor.isMountain) {
+            stepCost *= 4.0;  // Mountain slope penalty
+          }
+
+          // Sheer cliff / elevation step penalty
+          const elevDiff = Math.abs(neighbor.radius - nodes[current].radius);
+          const slope = elevDiff / (nodes[current].pos.distanceTo(neighbor.pos) || 1);
+          if (slope > 0.35) {
+            stepCost *= (1.0 + slope * 6.0); // Severe penalty for vertical rock faces
+          }
+        }
 
         const tentativeG = (gScore.get(current) || 0) + stepCost;
         if (tentativeG < (gScore.get(nId) || Infinity)) {
@@ -190,13 +217,22 @@ export class Simulation {
       }
     }
 
-    // Direct fallback if completely blocked
-    return [nodes[startNodeId], nodes[targetNodeId]];
+    // Best surface path fallback (prevents straight-line tunneling through core/mantle)
+    const fallbackPath = [nodes[closestNodeToTarget]];
+    let curr = closestNodeToTarget;
+    while (cameFrom.has(curr)) {
+      curr = cameFrom.get(curr);
+      fallbackPath.unshift(nodes[curr]);
+    }
+    if (closestNodeToTarget !== targetNodeId) {
+      fallbackPath.push(nodes[targetNodeId]);
+    }
+    return fallbackPath;
   }
 
   recomputeAllPaths() {
     this.enemies.forEach(enemy => {
-      enemy.pathNodes = this.findPath(enemy.mesh.position, this.planet.corePosition);
+      enemy.pathNodes = this.findPath(enemy.mesh.position, this.planet.corePosition, enemy.def.isFlyer);
       enemy.pathIndex = 0;
     });
   }
@@ -209,7 +245,7 @@ export class Simulation {
 
     // Temporarily test if building this tower completely traps creeps
     node.occupied = true;
-    const testPath = this.findPath(this.planet.spawners[0].pos, this.planet.corePosition);
+    const testPath = this.findPath(this.planet.spawners[0].pos, this.planet.corePosition, false);
     if (!testPath || testPath.length < 2) {
       node.occupied = false;
       return false; // Cannot completely seal the spawner
@@ -396,8 +432,9 @@ export class Simulation {
       this.waveSpawnTimer -= dt;
       if (this.waveSpawnTimer <= 0) {
         const typeKey = this.waveSpawnQueue.shift();
+        const isFlyer = Boolean(ENEMY_TYPES[typeKey] && ENEMY_TYPES[typeKey].isFlyer);
         const spawner = this.planet.spawners[Math.floor(Math.random() * this.planet.spawners.length)];
-        const path = this.findPath(spawner.pos, this.planet.corePosition);
+        const path = this.findPath(spawner.pos, this.planet.corePosition, isFlyer);
 
         const enemy = new Enemy(typeKey, spawner.pos, path, this.planet.terrainMesh);
         this.enemies.push(enemy);

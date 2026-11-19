@@ -125,5 +125,20 @@ test('Obsolete type graceful fallback in Tower and Enemy constructors', () => {
   assert.ok(enemiesCode.includes("this.typeKey = ENEMY_TYPES[typeKey] ? typeKey : 'scuttler';"), 'Enemy constructor lacks safe fallback');
 });
 
+// 8. Mountain Obstacle Tagging & Pathfinding Ground vs Flyer Steering
+test('Mountain and Peak obstacle awareness in Planet navigation and Sim pathfinding', () => {
+  const planetCode = fs.readFileSync(path.resolve(__dirname, '../core/planet.js'), 'utf8');
+  assert.ok(planetCode.includes('isMountain'), 'Planet navNodes must define isMountain property');
+  assert.ok(planetCode.includes('isPeak'), 'Planet navNodes must define isPeak property');
+
+  const simCode = fs.readFileSync(path.resolve(__dirname, '../core/sim.js'), 'utf8');
+  assert.ok(simCode.includes('isFlyer'), 'findPath must support flyer vs ground distinction');
+  assert.ok(simCode.includes('neighbor.isPeak'), 'findPath must account for mountain peak obstacles');
+  assert.ok(simCode.includes('neighbor.isMountain'), 'findPath must account for mountain ridge obstacles');
+
+  const enemiesCode = fs.readFileSync(path.resolve(__dirname, '../core/enemies.js'), 'utf8');
+  assert.ok(enemiesCode.includes('clearance'), 'Enemy movement must provide surface clearance for ground creeps');
+});
+
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) process.exit(1);

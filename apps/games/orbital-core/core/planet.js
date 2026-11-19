@@ -348,9 +348,10 @@ export function generatePlanet(seed = 1) {
       const pos = new THREE.Vector3(nx * r, ny * r, nz * r);
       const normal = new THREE.Vector3(nx, ny, nz).normalize();
 
-      // Check buildability: dry land, not too steep, not on spawner or core
+      // Check buildability & obstacle tagging
       const isLiquid = r < seaLevel;
-      const isPeak = r > baseRadius * 1.15;
+      const isPeak = r > baseRadius * 1.12;
+      const isMountain = r > baseRadius * 1.07;
       const nearNorth = ny > 0.82;
       const nearSouth = ny < -0.82;
       const buildable = !isLiquid && !isPeak && !nearNorth && !nearSouth;
@@ -367,6 +368,8 @@ export function generatePlanet(seed = 1) {
         buildable,
         occupied: false,
         isLiquid,
+        isPeak,
+        isMountain,
         tower: null,
         neighbors: []
       };
