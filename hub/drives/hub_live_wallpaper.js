@@ -11,11 +11,9 @@
  *
  * Presets:
  *   - live:aurora        Harmonic flowing color ribbons over a cached teal-to-indigo sky (H158b: slower waves)
- *   - live:constellation Sparse cyan stars with a soft blue haze, thin links and faint triangles (H158b)
- *   // - live:circadian     24-hour diurnal dynamic sky with drifting atmospheric clouds   (before H158b)
- *   - live:rain          Rain on glass: soft drops sliding down a blurred blue-grey pane (H158b)
- *   - live:lava          Lava flow: warm blobs slowly merging on a downscaled buffer (H158b)
- *   - live:geo           Geometric drift: a muted hex grid with a slow colour wave (H158b)
+ *   - live:constellation Glowing constellation nodes with proximity links and geometric polygons (Web_OS identical)
+ *   - live:synthwave     Retro Synthwave: neon horizon sun with 3D perspective grid floor (Web_OS identical)
+ *   // Retired: live:circadian, live:rain, live:lava, live:geo
  *
  * Governance & Performance:
  *   - 30 FPS cap via timestamp delta in requestAnimationFrame
@@ -139,361 +137,291 @@
             ctx.fill();
           }
         }
-        ctx.restore();
+        if (ctx.restore) ctx.restore();
       }
     },
 
     'live:constellation': {
       id: 'live:constellation',
       name: 'Constellation',
-      desc: 'Sparse cyan stars with thin links on a soft blue haze',
-      color: '#1b2560',
+      desc: 'Glowing constellation nodes with proximity links and geometric polygons',
+      color: '#030712',
       init(state, w, h) {
         state.t = 0;
-        state.stars = [];
-        const isSmall = Math.min(w, h) < 150;
-        const count = isSmall ? 7 : 18;
+        state.startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        state.lastNow = state.startTime;
+        state.nodes = [];
+        const count = Math.min(Math.floor(((w || 1920) * (h || 1080)) / 36000) + 18, 52);
         for (let i = 0; i < count; i++) {
-          state.stars.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            vx: (Math.random() - 0.5) * (isSmall ? 0.08 : 0.14),
-            vy: (Math.random() - 0.5) * (isSmall ? 0.08 : 0.14),
-            r: Math.random() * 1.1 + 1.1,
-            pulse: Math.random() * Math.PI * 2,
-            pulseSpeed: Math.random() * 0.018 + 0.01
+          state.nodes.push({
+            x: Math.random() * (w || 1920),
+            y: Math.random() * (h || 1080),
+            vx: (Math.random() - 0.5) * 0.55,
+            vy: (Math.random() - 0.5) * 0.55,
+            radius: 1.6 + Math.random() * 1.8,
+            phase: Math.random() * Math.PI * 2
           });
         }
-        const spr = 48;
-        state.glow = makeOffscreen(spr, spr);
-        const gctx = state.glow.getContext && state.glow.getContext('2d');
-        if (gctx) {
-          const cx = spr / 2, R = spr / 2 - 1;
-          const grd = gctx.createRadialGradient(cx, cx, 0, cx, cx, R);
-          grd.addColorStop(0, 'rgba(210, 250, 255, 0.95)');
-          grd.addColorStop(0.12, 'rgba(160, 230, 255, 0.55)');
-          grd.addColorStop(0.38, 'rgba(80, 190, 255, 0.16)');
-          grd.addColorStop(1, 'rgba(40, 100, 200, 0)');
-          gctx.fillStyle = grd;
-          gctx.fillRect(0, 0, spr, spr);
-          gctx.beginPath();
-          gctx.arc(cx, cx, 5.2, 0, Math.PI * 2);
-          gctx.strokeStyle = 'rgba(190, 240, 255, 0.85)';
-          gctx.lineWidth = 1.2;
-          gctx.stroke();
-        }
+        state.stars = state.nodes;
       },
       render(ctx, w, h, state) {
-        state.t += 1;
-        const bg = cacheCanvas(state, 'bg', w, h, (g, gw, gh) => {
-          g.fillStyle = '#1b2560';
-          g.fillRect(0, 0, gw, gh);
-          const haze = g.createRadialGradient(gw * 0.5, gh * 0.72, gw * 0.05, gw * 0.5, gh * 0.62, Math.max(gw, gh) * 0.7);
-          haze.addColorStop(0, 'rgba(63, 85, 168, 0.95)');
-          haze.addColorStop(0.45, 'rgba(50, 70, 150, 0.45)');
-          haze.addColorStop(1, 'rgba(27, 37, 96, 0)');
-          g.fillStyle = haze;
-          g.fillRect(0, 0, gw, gh);
-        });
-        blit(ctx, bg, w, h);
+        state.t = (state.t || 0) + 1;
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (!state.startTime) state.startTime = now;
+        if (!state.lastNow) state.lastNow = now;
+        const delta = Math.max(1, Math.min(now - state.lastNow, 100));
+        state.lastNow = now;
+        const elapsed = (now - state.startTime) * 0.001;
+        const dtFactor = Math.min(delta / 16.667, 3);
 
-        const stars = state.stars;
-        if (!stars || !stars.length) return;
-        const isSmall = Math.min(w, h) < 150;
-        for (let i = 0; i < stars.length; i++) {
-          const s = stars[i];
-          s.x += s.vx;
-          s.y += s.vy;
-          if (s.x < 0) s.x = w; else if (s.x > w) s.x = 0;
-          if (s.y < 0) s.y = h; else if (s.y > h) s.y = 0;
+        const nodes = state.nodes || state.stars;
+        if (!nodes || !nodes.length) {
+          this.init(state, w, h);
+          return;
         }
 
-        const maxDist = isSmall ? 52 : Math.max(120, Math.min(180, Math.round(Math.sqrt(w * h) * 0.13)));
-        const links = [];
-        for (let i = 0; i < stars.length; i++) {
-          for (let j = i + 1; j < stars.length; j++) {
-            const dx = stars[i].x - stars[j].x, dy = stars[i].y - stars[j].y;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            if (d < maxDist) links.push([i, j, d]);
-          }
+        const docEl = (typeof document !== 'undefined' && document.documentElement) ? document.documentElement : null;
+        const isDark = docEl
+          ? ((!docEl.dataset || docEl.dataset.mode !== 'light') &&
+             (!docEl.classList || (!docEl.classList.contains('hub-light') && !docEl.classList.contains('light'))) &&
+             (!docEl.dataset || docEl.dataset.theme !== 'light'))
+          : true;
+
+        // Background
+        const bgGrad = ctx.createLinearGradient(0, 0, w, h);
+        if (isDark) {
+          bgGrad.addColorStop(0, '#030712');
+          bgGrad.addColorStop(0.5, '#0b1124');
+          bgGrad.addColorStop(1, '#050814');
+        } else {
+          bgGrad.addColorStop(0, '#f8fafc');
+          bgGrad.addColorStop(0.5, '#f1f5f9');
+          bgGrad.addColorStop(1, '#e0e7ff');
         }
-        const near = {};
-        for (let k = 0; k < links.length; k++) {
-          const a = links[k][0], b = links[k][1];
-          if (!near[a]) near[a] = {};
-          if (!near[b]) near[b] = {};
-          near[a][b] = true;
-          near[b][a] = true;
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Update nodes
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          n.x += n.vx * dtFactor;
+          n.y += n.vy * dtFactor;
+
+          if (n.x < 0) { n.x = 0; n.vx = -n.vx; }
+          else if (n.x > w) { n.x = w; n.vx = -n.vx; }
+          if (n.y < 0) { n.y = 0; n.vy = -n.vy; }
+          else if (n.y > h) { n.y = h; n.vy = -n.vy; }
         }
-        ctx.fillStyle = 'rgba(140, 210, 255, 0.055)';
-        for (let i = 0; i < stars.length; i++) {
-          const nb = near[i];
-          if (!nb) continue;
-          const ids = [];
-          for (const k in nb) ids.push(+k);
-          for (let a = 0; a < ids.length; a++) {
-            for (let b = a + 1; b < ids.length; b++) {
-              if (ids[b] > i && near[ids[a]] && near[ids[a]][ids[b]]) {
-                ctx.beginPath();
-                ctx.moveTo(stars[i].x, stars[i].y);
-                ctx.lineTo(stars[ids[a]].x, stars[ids[a]].y);
-                ctx.lineTo(stars[ids[b]].x, stars[ids[b]].y);
-                ctx.closePath();
-                ctx.fill();
+
+        // Draw proximity links and subtle triangular faces
+        const maxDist = 130;
+        const maxDistSq = maxDist * maxDist;
+        const triDistSq = 75 * 75;
+
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < nodes.length; i++) {
+          const a = nodes[i];
+          for (let j = i + 1; j < nodes.length; j++) {
+            const b = nodes[j];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < maxDistSq) {
+              const dist = Math.sqrt(distSq);
+              const alpha = (1 - dist / maxDist) * (isDark ? 0.35 : 0.28);
+              ctx.strokeStyle = isDark
+                ? `rgba(56, 189, 248, ${alpha})`
+                : `rgba(99, 102, 241, ${alpha})`;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+
+              // Check for 3rd node to form faint triangular polygon
+              for (let k = j + 1; k < nodes.length; k++) {
+                const c = nodes[k];
+                const dax = a.x - c.x, day = a.y - c.y;
+                const dbx = b.x - c.x, dby = b.y - c.y;
+                if (dax * dax + day * day < triDistSq && dbx * dbx + dby * dby < triDistSq) {
+                  ctx.fillStyle = isDark
+                    ? 'rgba(14, 165, 233, 0.035)'
+                    : 'rgba(99, 102, 241, 0.03)';
+                  ctx.beginPath();
+                  ctx.moveTo(a.x, a.y);
+                  ctx.lineTo(b.x, b.y);
+                  ctx.lineTo(c.x, c.y);
+                  ctx.closePath();
+                  ctx.fill();
+                }
               }
             }
           }
         }
-        ctx.lineWidth = isSmall ? 0.7 : 1;
-        ctx.strokeStyle = 'rgba(170, 230, 255, 0.42)';
-        for (let k = 0; k < links.length; k++) {
-          const a = stars[links[k][0]], b = stars[links[k][1]];
-          const fade = 1 - links[k][2] / maxDist;
-          ctx.globalAlpha = 0.25 + fade * 0.55;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
-        ctx.globalAlpha = 1;
 
-        const glow = state.glow;
-        const gs = glow ? glow.width : 48;
-        for (let i = 0; i < stars.length; i++) {
-          const s = stars[i];
-          const pulse = 0.72 + Math.sin(state.t * s.pulseSpeed + s.pulse) * 0.28;
-          const size = gs * (0.55 + s.r * 0.12) * (isSmall ? 0.7 : 1);
-          if (glow) {
-            ctx.globalAlpha = pulse;
-            try { ctx.drawImage(glow, s.x - size / 2, s.y - size / 2, size, size); } catch (_) { /* stub */ }
-            ctx.globalAlpha = 1;
-          }
-          ctx.fillStyle = 'rgba(230, 255, 255, ' + (0.85 + pulse * 0.15).toFixed(2) + ')';
+        // Draw glowing nodes
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          const pulse = 0.8 + 0.2 * Math.sin(elapsed * 2.5 + n.phase);
+          const r = (n.radius || 2) * pulse;
+
           ctx.beginPath();
-          ctx.arc(s.x, s.y, s.r * 0.7, 0, Math.PI * 2);
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = isDark ? '#38bdf8' : '#6366f1';
+          ctx.fill();
+
+          // Node aura
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r * 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(99, 102, 241, 0.1)';
           ctx.fill();
         }
       }
     },
 
-    'live:rain': {
-      id: 'live:rain',
-      name: 'Rain on glass',
-      desc: 'Soft drops sliding down a blurred blue-grey pane',
-      color: '#2a3540',
-      init(state, w, h) {
+    'live:synthwave': {
+      id: 'live:synthwave',
+      name: 'Retro Synthwave',
+      desc: 'Neon horizon sun with 3D perspective grid floor',
+      color: '#1e082b',
+      init(state) {
         state.t = 0;
-        const isSmall = Math.min(w, h) < 150;
-        const count = isSmall ? 12 : 42;
-        state.drops = [];
-        for (let i = 0; i < count; i++) {
-          state.drops.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            len: (Math.random() * 10 + 8) * (isSmall ? 0.6 : 1),
-            speed: (Math.random() * 1.4 + 0.9) * (isSmall ? 0.7 : 1),
-            width: Math.random() * 1.1 + 0.7,
-            alpha: Math.random() * 0.35 + 0.25
-          });
-        }
+        state.startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
       },
       render(ctx, w, h, state) {
-        state.t += 1;
-        const isSmall = Math.min(w, h) < 150;
-        const bg = cacheCanvas(state, 'bg', w, h, (g, gw, gh) => {
-          // Draw a soft gradient at half size, then scale up for a cheap blur
-          const sw = Math.max(1, gw >> 1), sh = Math.max(1, gh >> 1);
-          const tmp = makeOffscreen(sw, sh);
-          const t = tmp.getContext && tmp.getContext('2d');
-          if (t) {
-            const grd = t.createLinearGradient(0, 0, 0, sh);
-            grd.addColorStop(0, '#3a4a58');
-            grd.addColorStop(0.45, '#2c3a48');
-            grd.addColorStop(1, '#1c2832');
-            t.fillStyle = grd;
-            t.fillRect(0, 0, sw, sh);
-            const haze = t.createRadialGradient(sw * 0.4, sh * 0.25, 0, sw * 0.4, sh * 0.3, Math.max(sw, sh) * 0.6);
-            haze.addColorStop(0, 'rgba(160, 185, 205, 0.28)');
-            haze.addColorStop(1, 'rgba(40, 50, 60, 0)');
-            t.fillStyle = haze;
-            t.fillRect(0, 0, sw, sh);
-            g.imageSmoothingEnabled = true;
-            try { g.drawImage(tmp, 0, 0, gw, gh); } catch (_) { g.fillStyle = '#2a3540'; g.fillRect(0, 0, gw, gh); }
-          } else {
-            g.fillStyle = '#2a3540';
-            g.fillRect(0, 0, gw, gh);
-          }
-        });
-        blit(ctx, bg, w, h);
+        state.t = (state.t || 0) + 1;
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (!state.startTime) state.startTime = now;
+        const elapsed = (now - state.startTime) * 0.001;
 
-        const drops = state.drops;
-        if (!drops) return;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = 'rgba(210, 225, 235, 0.55)';
-        for (let i = 0; i < drops.length; i++) {
-          const d = drops[i];
-          d.y += d.speed;
-          if (d.y - d.len > h) {
-            d.y = -d.len;
-            d.x = Math.random() * w;
-          }
-          ctx.globalAlpha = d.alpha;
-          ctx.lineWidth = d.width;
+        const docEl = (typeof document !== 'undefined' && document.documentElement) ? document.documentElement : null;
+        const isDark = docEl
+          ? ((!docEl.dataset || docEl.dataset.mode !== 'light') &&
+             (!docEl.classList || (!docEl.classList.contains('hub-light') && !docEl.classList.contains('light'))) &&
+             (!docEl.dataset || docEl.dataset.theme !== 'light'))
+          : true;
+
+        const horizonY = Math.floor(h * 0.52);
+        const centerX = Math.floor(w * 0.5);
+
+        // 1. Sky Gradient
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+        if (isDark) {
+          skyGrad.addColorStop(0, '#05020a');
+          skyGrad.addColorStop(0.4, '#160728');
+          skyGrad.addColorStop(0.75, '#3b0745');
+          skyGrad.addColorStop(1, '#5b0e52');
+        } else {
+          skyGrad.addColorStop(0, '#e0e7ff');
+          skyGrad.addColorStop(0.45, '#f3e8ff');
+          skyGrad.addColorStop(0.8, '#fae8ff');
+          skyGrad.addColorStop(1, '#fce7f3');
+        }
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, horizonY);
+
+        // 2. Neon Horizon Sun with horizontal blind cuts
+        const sunRadius = Math.min(w * 0.14, 88);
+        const sunCenterY = horizonY - sunRadius * 0.45;
+
+        if (ctx.save) ctx.save();
+        ctx.beginPath();
+        if (ctx.rect) ctx.rect(0, 0, w, horizonY); // clip sun to sky area
+        if (ctx.clip) ctx.clip();
+
+        // Sun outer aura
+        const auraGrad = ctx.createRadialGradient(centerX, sunCenterY, sunRadius * 0.4, centerX, sunCenterY, sunRadius * 1.8);
+        auraGrad.addColorStop(0, isDark ? 'rgba(244, 63, 94, 0.4)' : 'rgba(251, 146, 60, 0.35)');
+        auraGrad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+        ctx.fillStyle = auraGrad;
+        ctx.beginPath();
+        ctx.arc(centerX, sunCenterY, sunRadius * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sun body
+        const sunGrad = ctx.createLinearGradient(centerX, sunCenterY - sunRadius, centerX, sunCenterY + sunRadius);
+        if (isDark) {
+          sunGrad.addColorStop(0, '#fde047');
+          sunGrad.addColorStop(0.5, '#fb923c');
+          sunGrad.addColorStop(1, '#f43f5e');
+        } else {
+          sunGrad.addColorStop(0, '#f59e0b');
+          sunGrad.addColorStop(0.5, '#ec4899');
+          sunGrad.addColorStop(1, '#8b5cf6');
+        }
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(centerX, sunCenterY, sunRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Synthwave horizontal blind slats through the lower half of the sun
+        const slatCount = 7;
+        for (let s = 1; s <= slatCount; s++) {
+          const slatY = sunCenterY + (s / slatCount) * sunRadius;
+          const slatHeight = 1.5 + (s / slatCount) * 3.5;
+          ctx.fillStyle = isDark ? '#1e082b' : '#f5d0fe';
+          ctx.fillRect(centerX - sunRadius - 4, slatY, (sunRadius + 4) * 2, slatHeight);
+        }
+        if (ctx.restore) ctx.restore();
+
+        // 3. Grid Floor (horizonY to h)
+        const floorGrad = ctx.createLinearGradient(0, horizonY, 0, h);
+        if (isDark) {
+          floorGrad.addColorStop(0, '#080210');
+          floorGrad.addColorStop(0.3, '#0e031c');
+          floorGrad.addColorStop(1, '#04010a');
+        } else {
+          floorGrad.addColorStop(0, '#fdf4ff');
+          floorGrad.addColorStop(0.4, '#f5f3ff');
+          floorGrad.addColorStop(1, '#ede9fe');
+        }
+        ctx.fillStyle = floorGrad;
+        ctx.fillRect(0, horizonY, w, h - horizonY);
+
+        // 4. Perspective Grid Lines radiating outward
+        const gridVLines = 28;
+        const bottomSpread = w * 2.8;
+        const bottomStart = centerX - bottomSpread / 2;
+
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i <= gridVLines; i++) {
+          const bottomX = bottomStart + (i / gridVLines) * bottomSpread;
+          ctx.strokeStyle = isDark ? 'rgba(6, 182, 212, 0.28)' : 'rgba(124, 58, 237, 0.22)';
           ctx.beginPath();
-          ctx.moveTo(d.x, d.y - d.len);
-          ctx.lineTo(d.x, d.y);
+          ctx.moveTo(centerX, horizonY);
+          ctx.lineTo(bottomX, h);
           ctx.stroke();
         }
-        ctx.globalAlpha = 1;
-        // Occasional merge: if two calm drops share a column, keep the faster one and respawn the other
-        if (!isSmall && (state.t % 45) === 0) {
-          for (let i = 0; i < drops.length; i++) {
-            for (let j = i + 1; j < drops.length; j++) {
-              const a = drops[i], b = drops[j];
-              if (Math.abs(a.x - b.x) < 3 && Math.abs(a.y - b.y) < 18) {
-                const keep = a.speed >= b.speed ? a : b;
-                const drop = keep === a ? b : a;
-                keep.len = Math.min(22, keep.len + 2);
-                keep.alpha = Math.min(0.7, keep.alpha + 0.08);
-                drop.y = -drop.len;
-                drop.x = Math.random() * w;
-              }
-            }
-          }
-        }
-      }
-    },
 
-    'live:lava': {
-      id: 'live:lava',
-      name: 'Lava flow',
-      desc: 'Warm blobs slowly merging and splitting',
-      color: '#2a0a12',
-      init(state, w, h) {
-        state.t = 0;
-        const isSmall = Math.min(w, h) < 150;
-        const count = isSmall ? 4 : 7;
-        const pal = ['#e85d12', '#f07828', '#e04d7a', '#c43a90', '#8a2a9a', '#d94a2a'];
-        state.blobs = [];
-        for (let i = 0; i < count; i++) {
-          const r = (isSmall ? 28 : 90) * (0.55 + Math.random() * 0.7);
-          state.blobs.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.35,
-            vy: (Math.random() - 0.5) * 0.3,
-            r: r,
-            color: pal[i % pal.length]
-          });
-        }
-      },
-      render(ctx, w, h, state) {
-        state.t += 1;
-        const blobs = state.blobs;
-        if (!blobs) return;
-        for (let i = 0; i < blobs.length; i++) {
-          const b = blobs[i];
-          b.x += b.vx;
-          b.y += b.vy;
-          if (b.x < -b.r) b.x = w + b.r; else if (b.x > w + b.r) b.x = -b.r;
-          if (b.y < -b.r) b.y = h + b.r; else if (b.y > h + b.r) b.y = -b.r;
-        }
-        // Cheap split / merge: push overlapping blobs apart slightly, and slowly breathe radius
-        for (let i = 0; i < blobs.length; i++) {
-          blobs[i].r += Math.sin(state.t * 0.012 + i) * 0.12;
-          for (let j = i + 1; j < blobs.length; j++) {
-            const a = blobs[i], b = blobs[j];
-            const dx = b.x - a.x, dy = b.y - a.y;
-            const d = Math.sqrt(dx * dx + dy * dy) || 1;
-            const min = (a.r + b.r) * 0.55;
-            if (d < min) {
-              const push = (min - d) * 0.004;
-              a.vx -= (dx / d) * push;
-              a.vy -= (dy / d) * push;
-              b.vx += (dx / d) * push;
-              b.vy += (dy / d) * push;
-            }
-          }
+        // 5. Horizontal Grid Lines moving forward with logarithmic 3D foreshortening
+        const scrollOffset = (elapsed * 0.45) % 1;
+        const hLineCount = 14;
+        const floorHeight = h - horizonY;
+
+        for (let i = 0; i <= hLineCount; i++) {
+          const progress = (i + scrollOffset) / hLineCount;
+          if (progress <= 0 || progress > 1) continue;
+          const perspectiveY = horizonY + Math.pow(progress, 2.2) * floorHeight;
+          const lineAlpha = Math.pow(progress, 1.4) * (isDark ? 0.65 : 0.45);
+
+          ctx.strokeStyle = isDark
+            ? `rgba(244, 63, 94, ${lineAlpha})`
+            : `rgba(217, 70, 239, ${lineAlpha})`;
+          ctx.lineWidth = 1 + progress * 1.5;
+          ctx.beginPath();
+          ctx.moveTo(0, perspectiveY);
+          ctx.lineTo(w, perspectiveY);
+          ctx.stroke();
         }
 
-        const scale = Math.min(w, h) < 150 ? 3 : 4;
-        const sw = Math.max(1, Math.round(w / scale)), sh = Math.max(1, Math.round(h / scale));
-        let buf = state.buf;
-        if (!buf || buf.width !== sw || buf.height !== sh) {
-          buf = makeOffscreen(sw, sh);
-          state.buf = buf;
-        }
-        const g = buf.getContext && buf.getContext('2d');
-        if (g) {
-          g.setTransform(1, 0, 0, 1, 0, 0);
-          g.globalCompositeOperation = 'source-over';
-          g.fillStyle = '#1a060c';
-          g.fillRect(0, 0, sw, sh);
-          g.globalCompositeOperation = 'lighter';
-          const sx = sw / w, sy = sh / h;
-          for (let i = 0; i < blobs.length; i++) {
-            const b = blobs[i];
-            const cx = b.x * sx, cy = b.y * sy, r = b.r * Math.max(sx, sy);
-            const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
-            grd.addColorStop(0, b.color);
-            grd.addColorStop(0.45, b.color);
-            grd.addColorStop(1, 'rgba(0,0,0,0)');
-            g.fillStyle = grd;
-            g.beginPath();
-            g.arc(cx, cy, r, 0, Math.PI * 2);
-            g.fill();
-          }
-          g.globalCompositeOperation = 'source-over';
-          ctx.imageSmoothingEnabled = true;
-          try { ctx.drawImage(buf, 0, 0, w, h); } catch (_) {
-            ctx.fillStyle = '#2a0a12';
-            ctx.fillRect(0, 0, w, h);
-          }
-        } else {
-          ctx.fillStyle = '#2a0a12';
-          ctx.fillRect(0, 0, w, h);
-        }
-      }
-    },
-
-    'live:geo': {
-      id: 'live:geo',
-      name: 'Geometric drift',
-      desc: 'A muted hex grid with a slow colour wave',
-      color: '#1a2a28',
-      init(state, w, h) {
-        state.t = 0;
-      },
-      render(ctx, w, h, state) {
-        state.t += 0.018;
-        const isSmall = Math.min(w, h) < 150;
-        const size = isSmall ? 16 : 34;
-        const hexW = size * 1.732;
-        const hexH = size * 1.5;
-        ctx.fillStyle = '#152422';
-        ctx.fillRect(0, 0, w, h);
-        const cols = Math.ceil(w / hexW) + 2;
-        const rows = Math.ceil(h / hexH) + 2;
-        for (let row = 0; row < rows; row++) {
-          for (let col = 0; col < cols; col++) {
-            const cx = col * hexW + (row % 2 ? hexW * 0.5 : 0) - size;
-            const cy = row * hexH - size * 0.2;
-            const wave = 0.5 + 0.5 * Math.sin(col * 0.45 + row * 0.38 + state.t);
-            const r = Math.round(45 + (194 - 45) * wave);
-            const g = Math.round(92 + (180 - 92) * wave);
-            const b = Math.round(90 + (154 - 90) * wave);
-            ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
-            ctx.beginPath();
-            for (let k = 0; k < 6; k++) {
-              const a = (Math.PI / 180) * (60 * k - 30);
-              const px = cx + size * 0.92 * Math.cos(a);
-              const py = cy + size * 0.92 * Math.sin(a);
-              if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-            }
-            ctx.closePath();
-            ctx.fill();
-          }
-        }
+        // 6. Horizon glow bar
+        const hGlow = ctx.createLinearGradient(0, horizonY - 4, 0, horizonY + 6);
+        hGlow.addColorStop(0, 'rgba(244, 63, 94, 0)');
+        hGlow.addColorStop(0.5, isDark ? 'rgba(244, 63, 94, 0.7)' : 'rgba(168, 85, 247, 0.5)');
+        hGlow.addColorStop(1, 'rgba(6, 182, 212, 0)');
+        ctx.fillStyle = hGlow;
+        ctx.fillRect(0, horizonY - 4, w, 10);
       }
     }
   };
@@ -566,7 +494,7 @@
             ctx.fill();
           }
         }
-        ctx.restore();
+        if (ctx.restore) ctx.restore();
       }
     },
 
@@ -920,7 +848,8 @@
 
   function set(id) {
     // H158b: Circadian sky was removed; older saves keep working as Aurora
-    if (id === 'live:circadian') id = 'live:aurora';
+    // Retired presets resolve to Aurora
+    if (id === 'live:circadian' || id === 'live:rain' || id === 'live:lava' || id === 'live:geo') id = 'live:aurora';
     if (!id || !PRESETS[id]) {
       stop();
       return false;

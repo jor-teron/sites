@@ -39,16 +39,10 @@ window.HUB_WALLPAPERS = [
 window.HUB_LIVE_WALLPAPERS = [
   { id: 'live:aurora', name: 'Aurora waves', desc: 'Slow harmonic ribbons over a teal-to-indigo sky', live: true,
     color: '#071525', image: 'linear-gradient(180deg, #04151c 0%, #0a3d45 40%, #1a1c52 75%, #1b1540 100%)' },
-  { id: 'live:constellation', name: 'Constellation', desc: 'Sparse cyan stars with thin links on a soft blue haze', live: true,
-    color: '#1b2560', image: 'radial-gradient(circle at 50% 70%, #3f55a8 0%, #1b2560 70%, #15204e 100%)' },
-  // { id: 'live:circadian', name: 'Circadian sky', desc: '24-hour dynamic time-of-day sky', live: true,
-  //   color: '#091226', image: 'linear-gradient(180deg, #091226 0%, #1e335a 50%, #3a5078 100%)' },   (before H158b)
-  { id: 'live:rain', name: 'Rain on glass', desc: 'Soft drops sliding down a blurred blue-grey pane', live: true,
-    color: '#2a3540', image: 'linear-gradient(180deg, #3a4a58 0%, #2c3a48 50%, #1c2832 100%)' },
-  { id: 'live:lava', name: 'Lava flow', desc: 'Warm blobs slowly merging and splitting', live: true,
-    color: '#2a0a12', image: 'radial-gradient(circle at 40% 60%, #e85d12 0%, #8a2a9a 55%, #1a060c 100%)' },
-  { id: 'live:geo', name: 'Geometric drift', desc: 'A muted hex grid with a slow colour wave', live: true,
-    color: '#1a2a28', image: 'linear-gradient(135deg, #2d5c5a 0%, #c2b394 100%)' }
+  { id: 'live:constellation', name: 'Constellation', desc: 'Glowing constellation nodes with proximity links and geometric polygons', live: true,
+    color: '#030712', image: 'linear-gradient(135deg, #030712 0%, #0b1124 50%, #050814 100%)' },
+  { id: 'live:synthwave', name: 'Retro Synthwave', desc: 'Neon horizon sun with 3D perspective grid floor', live: true,
+    color: '#1e082b', image: 'linear-gradient(180deg, #1e082b 0%, #701a75 50%, #06b6d4 100%)' }
 ];
 
 // Picture wallpapers: URLs are made absolute from this script's own address, so the Hub (site
@@ -106,8 +100,8 @@ window.HUB_LIVE_WALLPAPERS = [
 
 /** id or '#rrggbb' → wallpaper object (custom colours get light from their brightness). */
 window.hubWallpaper = function (v) {
-  // H158b: Circadian sky was removed; older saves resolve as Aurora
-  if (v === 'live:circadian') v = 'live:aurora';
+  // Retired presets resolve to Aurora
+  if (v === 'live:circadian' || v === 'live:rain' || v === 'live:lava' || v === 'live:geo') v = 'live:aurora';
   const list = window.HUB_WALLPAPERS;
   const hit = list.find((w) => w.id === v);
   if (hit) return hit;
