@@ -159,9 +159,19 @@ html.hub-glass .seg {
   box-shadow: none !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   background: transparent;
+  gap: 8px;
+  row-gap: 8px;
+  column-gap: 8px;
+  margin-top: 8px;
 }
 html.hub-glass .seg button + button {
   border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Vertical spacing: ensure 8px top/bottom gap between stacked buttons and switches */
+html.hub-glass .switch,
+html.hub-glass button.tap {
+  margin-top: 8px;
 }
 
 /* Glass buttons & controls: subtle translucent borders with soft frosted Aero fill */
