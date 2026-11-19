@@ -29,7 +29,7 @@ html.hub-glass {
   --gl-tint-dim: rgba(20, 24, 32, 0.20);           /* inactive title bars (H102). H61b: rgba(20, 24, 32, 0.33). H61: rgba(255, 255, 255, 0.38) */
   --gl-tint-menu: rgba(18, 22, 30, 0.34);          /* menus / pop-ups: long lists (H102). H61b: rgba(18, 22, 30, 0.44). H61: rgba(250, 251, 254, 0.70) */
   --gl-solid: rgba(30, 34, 44, 0.96);              /* H61: rgba(243, 245, 249, 0.97) */
-  --gl-line: rgba(255, 255, 255, 0.42);            /* crisp white glass edge (H102). H61b: rgba(255, 255, 255, 0.22). H61: rgba(255, 255, 255, 0.60) */
+  --gl-line: rgba(255, 255, 255, 0.22);            /* soft glass edge (H102/H61b). H61: rgba(255, 255, 255, 0.60) */
   --gl-edge: rgba(0, 0, 0, 0.28);                  /* outer dark hairline. H61: rgba(20, 30, 50, 0.22) */
   /* H61: --gl-gloss: linear-gradient(180deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.20) 46%,
      rgba(255,255,255,.04) 54%, rgba(255,255,255,.14) 100%); */

@@ -11,6 +11,7 @@
  *
  * Presets:
  *   - live:aurora        Harmonic flowing color ribbons over a cached teal-to-indigo sky (H158b: slower waves)
+ *   - live:waves         Living Waves: silky smooth, dynamic fluid waves with celestial light motes (Web_OS identical)
  *   - live:constellation Glowing constellation nodes with proximity links and geometric polygons (Web_OS identical)
  *   - live:synthwave     Retro Synthwave: neon horizon sun with 3D perspective grid floor (Web_OS identical)
  *   // Retired: live:circadian, live:rain, live:lava, live:geo
@@ -138,6 +139,215 @@
           }
         }
         if (ctx.restore) ctx.restore();
+      }
+    },
+
+    'live:waves': {
+      id: 'live:waves',
+      name: 'Living Waves',
+      desc: 'Silky smooth, dynamic fluid waves with celestial light motes',
+      color: '#080c16',
+      init(state, w, h) {
+        state.t = 0;
+        state.startTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        state.lastNow = state.startTime;
+        state.particles = [];
+        const isSmall = Math.min(w || 1920, h || 1080) < 150;
+        const count = isSmall ? 14 : 38;
+        for (let i = 0; i < count; i++) {
+          state.particles.push({
+            x: Math.random() * (w || 1920),
+            y: Math.random() * (h || 1080),
+            radius: 1 + Math.random() * 2.2,
+            speedY: 0.15 + Math.random() * 0.35,
+            wobbleSpeed: 0.001 + Math.random() * 0.002,
+            wobbleAmp: 15 + Math.random() * 25,
+            phase: Math.random() * Math.PI * 2,
+            alpha: 0.15 + Math.random() * 0.5,
+            pulseSpeed: 0.002 + Math.random() * 0.003
+          });
+        }
+        state.stars = state.particles;
+      },
+      render(ctx, w, h, state) {
+        state.t = (state.t || 0) + 1;
+        const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        if (!state.startTime) state.startTime = now;
+        if (!state.lastNow) state.lastNow = now;
+        const delta = Math.max(1, Math.min(now - state.lastNow, 100));
+        state.lastNow = now;
+        const elapsed = (now - state.startTime) * 0.001;
+        const dtFactor = Math.min(delta / 16.667, 3);
+
+        const particles = state.particles || state.stars;
+        if (!particles || !particles.length) {
+          this.init(state, w, h);
+          return;
+        }
+
+        const docEl = (typeof document !== 'undefined' && document.documentElement) ? document.documentElement : null;
+        const isDark = docEl
+          ? ((!docEl.dataset || docEl.dataset.mode !== 'light') &&
+             (!docEl.classList || (!docEl.classList.contains('hub-light') && !docEl.classList.contains('light'))) &&
+             (!docEl.dataset || docEl.dataset.theme !== 'light'))
+          : true;
+
+        // Base backdrop gradient
+        const bgGrad = ctx.createLinearGradient(0, 0, w * 0.8, h);
+        if (isDark) {
+          bgGrad.addColorStop(0, '#080c16');
+          bgGrad.addColorStop(0.5, '#0f172a');
+          bgGrad.addColorStop(1, '#070b14');
+        } else {
+          bgGrad.addColorStop(0, '#e2e8f0');
+          bgGrad.addColorStop(0.5, '#f1f5f9');
+          bgGrad.addColorStop(1, '#dbeafe');
+        }
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Floating ambient motes with frame-rate independent scaling
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.y -= p.speedY * dtFactor;
+          if (p.y < -10) {
+            p.y = h + 10;
+            p.x = Math.random() * w;
+          }
+          if (p.x > w) p.x = Math.random() * w;
+          const currentX = p.x + Math.sin(elapsed * p.wobbleSpeed * 1000 + p.phase) * p.wobbleAmp;
+          const currentAlpha = p.alpha * (0.6 + 0.4 * Math.sin(elapsed * p.pulseSpeed * 1000 + p.phase));
+
+          ctx.beginPath();
+          ctx.arc(currentX, p.y, p.radius, 0, Math.PI * 2);
+          if (isDark) {
+            ctx.fillStyle = `rgba(165, 243, 252, ${currentAlpha * 0.8})`;
+          } else {
+            ctx.fillStyle = `rgba(59, 130, 246, ${currentAlpha * 0.45})`;
+          }
+          ctx.fill();
+        }
+
+        // Wave configurations
+        const waves = isDark
+          ? [
+              {
+                yBase: 0.52,
+                amplitude: 36,
+                wavelength1: 240,
+                wavelength2: 380,
+                speed1: 0.45,
+                speed2: 0.35,
+                colorTop: 'rgba(99, 102, 241, 0.28)',
+                colorBottom: 'rgba(67, 56, 202, 0.03)',
+                stroke: 'rgba(129, 140, 248, 0.45)',
+                lineWidth: 1.5
+              },
+              {
+                yBase: 0.62,
+                amplitude: 44,
+                wavelength1: 190,
+                wavelength2: 310,
+                speed1: -0.55,
+                speed2: 0.42,
+                colorTop: 'rgba(6, 182, 212, 0.26)',
+                colorBottom: 'rgba(14, 165, 233, 0.04)',
+                stroke: 'rgba(34, 211, 238, 0.5)',
+                lineWidth: 1.8
+              },
+              {
+                yBase: 0.74,
+                amplitude: 48,
+                wavelength1: 220,
+                wavelength2: 340,
+                speed1: 0.65,
+                speed2: -0.48,
+                colorTop: 'rgba(217, 70, 239, 0.24)',
+                colorBottom: 'rgba(168, 85, 247, 0.03)',
+                stroke: 'rgba(244, 114, 182, 0.55)',
+                lineWidth: 2
+              }
+            ]
+          : [
+              {
+                yBase: 0.54,
+                amplitude: 32,
+                wavelength1: 240,
+                wavelength2: 380,
+                speed1: 0.45,
+                speed2: 0.35,
+                colorTop: 'rgba(147, 51, 234, 0.2)',
+                colorBottom: 'rgba(192, 132, 252, 0.03)',
+                stroke: 'rgba(168, 85, 247, 0.4)',
+                lineWidth: 1.5
+              },
+              {
+                yBase: 0.64,
+                amplitude: 38,
+                wavelength1: 190,
+                wavelength2: 310,
+                speed1: -0.55,
+                speed2: 0.42,
+                colorTop: 'rgba(14, 165, 233, 0.22)',
+                colorBottom: 'rgba(56, 189, 248, 0.04)',
+                stroke: 'rgba(56, 189, 248, 0.45)',
+                lineWidth: 1.8
+              },
+              {
+                yBase: 0.76,
+                amplitude: 42,
+                wavelength1: 220,
+                wavelength2: 340,
+                speed1: 0.65,
+                speed2: -0.48,
+                colorTop: 'rgba(236, 72, 153, 0.18)',
+                colorBottom: 'rgba(244, 114, 182, 0.03)',
+                stroke: 'rgba(244, 114, 182, 0.5)',
+                lineWidth: 2
+              }
+            ];
+
+        const ampScale = h < 300 ? Math.max(0.2, h / 300) : 1;
+        const step = Math.min(w, h) < 150 ? 5 : 8;
+
+        // Render each organic harmonic wave
+        for (let wIdx = 0; wIdx < waves.length; wIdx++) {
+          const cfg = waves[wIdx];
+          const waveGrad = ctx.createLinearGradient(0, h * (cfg.yBase - 0.2), 0, h);
+          waveGrad.addColorStop(0, cfg.colorTop);
+          waveGrad.addColorStop(1, cfg.colorBottom);
+
+          const amp = cfg.amplitude * ampScale;
+
+          ctx.beginPath();
+          ctx.moveTo(0, h);
+
+          for (let x = 0; x <= w + step; x += step) {
+            const y =
+              h * cfg.yBase +
+              Math.sin(x / cfg.wavelength1 + elapsed * cfg.speed1) * amp +
+              Math.cos(x / cfg.wavelength2 + elapsed * cfg.speed2) * (amp * 0.55);
+            ctx.lineTo(x, y);
+          }
+          ctx.lineTo(w, h);
+          ctx.closePath();
+          ctx.fillStyle = waveGrad;
+          ctx.fill();
+
+          // Crest highlight stroke
+          ctx.beginPath();
+          for (let x = 0; x <= w + step; x += step) {
+            const y =
+              h * cfg.yBase +
+              Math.sin(x / cfg.wavelength1 + elapsed * cfg.speed1) * amp +
+              Math.cos(x / cfg.wavelength2 + elapsed * cfg.speed2) * (amp * 0.55);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.strokeStyle = cfg.stroke;
+          ctx.lineWidth = cfg.lineWidth;
+          ctx.stroke();
+        }
       }
     },
 
@@ -850,6 +1060,9 @@
     // H158b: Circadian sky was removed; older saves keep working as Aurora
     // Retired presets resolve to Aurora
     if (id === 'live:circadian' || id === 'live:rain' || id === 'live:lava' || id === 'live:geo') id = 'live:aurora';
+    if (id === 'waves' || id === 'living-waves') id = 'live:waves';
+    if (id === 'constellation') id = 'live:constellation';
+    if (id === 'synthwave') id = 'live:synthwave';
     if (!id || !PRESETS[id]) {
       stop();
       return false;

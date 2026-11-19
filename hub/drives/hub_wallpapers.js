@@ -39,6 +39,8 @@ window.HUB_WALLPAPERS = [
 window.HUB_LIVE_WALLPAPERS = [
   { id: 'live:aurora', name: 'Aurora waves', desc: 'Slow harmonic ribbons over a teal-to-indigo sky', live: true,
     color: '#071525', image: 'linear-gradient(180deg, #04151c 0%, #0a3d45 40%, #1a1c52 75%, #1b1540 100%)' },
+  { id: 'live:waves', name: 'Living Waves', desc: 'Silky smooth, dynamic fluid waves with celestial light motes', live: true,
+    color: '#080c16', image: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)' },
   { id: 'live:constellation', name: 'Constellation', desc: 'Glowing constellation nodes with proximity links and geometric polygons', live: true,
     color: '#030712', image: 'linear-gradient(135deg, #030712 0%, #0b1124 50%, #050814 100%)' },
   { id: 'live:synthwave', name: 'Retro Synthwave', desc: 'Neon horizon sun with 3D perspective grid floor', live: true,
@@ -102,6 +104,9 @@ window.HUB_LIVE_WALLPAPERS = [
 window.hubWallpaper = function (v) {
   // Retired presets resolve to Aurora
   if (v === 'live:circadian' || v === 'live:rain' || v === 'live:lava' || v === 'live:geo') v = 'live:aurora';
+  if (v === 'waves' || v === 'living-waves') v = 'live:waves';
+  if (v === 'constellation') v = 'live:constellation';
+  if (v === 'synthwave') v = 'live:synthwave';
   const list = window.HUB_WALLPAPERS;
   const hit = list.find((w) => w.id === v);
   if (hit) return hit;

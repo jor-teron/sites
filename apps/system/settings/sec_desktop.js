@@ -115,8 +115,8 @@
       // H72: the QR / link tiles on the home screen (default off; Desktop and Phone mode)
       const showTiles = ui.switch('Show tiles on the home screen', 'QR / link tiles on the home screen (Desktop and Phone)',
         S.get('showTiles') === '1', (on) => S.set('showTiles', on ? '1' : ''));
-      // H160: Desktop-only analog clock, off by default (hub/core/hub_clock.js)
-      const deskClock = ui.switch('Show analog clock on the desktop', 'A small analog clock on the Desktop. Drag it to move; right-click for size or to hide. Off by default',
+      // Web_OS desktop analog clock (hub/core/hub_clock.js)
+      const deskClock = ui.switch('Show analog clock on the desktop', 'Displays a live analog clock widget on the desktop background. Off by default',
         S.get('deskClock') === '1', (on) => S.set('deskClock', on ? '1' : ''));
       deskClock.id = 'desktop-desk-clock';
       /* H52: moved to Settings → Hub bar (sec_hubbar.js)

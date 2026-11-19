@@ -15,15 +15,15 @@ html.light.hub-glass {
   --ga-glow: 0 1px 2px rgba(0, 0, 0, 0.65);
   --bg: transparent; --side: rgba(10, 12, 18, 0.22); --card: rgba(255, 255, 255, 0.10); --card2: rgba(255, 255, 255, 0.14);
   --sheet: rgba(24, 28, 38, 0.86); --chip: rgba(255, 255, 255, 0.14); --bar: rgba(255, 255, 255, 0.08);
-  --tb: rgba(255, 255, 255, 0.12); --tb-hi: rgba(255, 255, 255, 0.22); --tb-line: rgba(255, 255, 255, 0.30);
-  --line: rgba(255, 255, 255, 0.20); --text: #ffffff; --muted: rgba(255, 255, 255, 0.76); --desc: rgba(255, 255, 255, 0.82);
+  --tb: rgba(255, 255, 255, 0.12); --tb-hi: rgba(255, 255, 255, 0.22); --tb-line: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.08); --text: #ffffff; --muted: rgba(255, 255, 255, 0.76); --desc: rgba(255, 255, 255, 0.82);
   --msg: rgba(255, 255, 255, 0.86); --soft: rgba(255, 255, 255, 0.10); --soft2: rgba(255, 255, 255, 0.18); --grid: rgba(255, 255, 255, 0.10);
   --ok: #6ef0b8; --bad: #ff9c9c; --warn: #ffd166;
   --hi: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.08));
   --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30), 0 1px 3px rgba(0, 0, 0, 0.18);
   /* pop-ups (dialogs / context menus) stay dense and readable */
-  --uid-bg: rgba(24, 28, 38, 0.92); --uid-line: rgba(255, 255, 255, 0.22); --uid-text: #fff; --uid-muted: rgba(255, 255, 255, 0.74); --uid-bad: #ff9c9c;
-  --ctx-bg: rgba(24, 28, 38, 0.92); --ctx-line: rgba(255, 255, 255, 0.22); --ctx-text: #fff; --ctx-muted: rgba(255, 255, 255, 0.74); --ctx-bad: #ff9c9c;
+  --uid-bg: rgba(24, 28, 38, 0.92); --uid-line: rgba(255, 255, 255, 0.14); --uid-text: #fff; --uid-muted: rgba(255, 255, 255, 0.74); --uid-bad: #ff9c9c;
+  --ctx-bg: rgba(24, 28, 38, 0.92); --ctx-line: rgba(255, 255, 255, 0.14); --ctx-text: #fff; --ctx-muted: rgba(255, 255, 255, 0.74); --ctx-bad: #ff9c9c;
   --toast: rgba(0, 0, 0, 0.75); --toast-text: #fff;
   /* Terminal: dark glass + its green (dense text) */
   --fg: #5dff8a; --dim: #3fd06a; --err: #c8ffb0; --glow: rgba(51, 255, 102, 0.30); --edge: rgba(120, 255, 160, 0.30);
@@ -37,7 +37,7 @@ html.light.hub-glass body { background: transparent !important; color: var(--tex
 html.light.hub-glass:has(> body .term, > body #term, > body #out) { --ga-tint: rgba(4, 8, 6, 0.55); }
 /* cards / rows: a crisp white edge */
 html.light.hub-glass input, html.light.hub-glass select, html.light.hub-glass textarea {
-  background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.28); color-scheme: dark;
+  background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.12); color-scheme: dark;
 }
 html.light.hub-glass ::placeholder { color: rgba(255, 255, 255, 0.72); }   /* H105: was .60 */
 html.light.hub-glass option { background: #1e222c; color: #fff; }
@@ -46,11 +46,11 @@ html.light.hub-glass a { color: color-mix(in srgb, var(--accent) 55%, #fff); }
 html.light.hub-glass .side { background: rgba(10, 12, 18, 0.34); }
 html.light.hub-glass .quick-title, html.light.hub-glass .storage { color: rgba(255, 255, 255, 0.88); }
 html.light.hub-glass .quick-link svg { color: #cfe2ff; }
-html.light.hub-glass .drive-manage { color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32); }
+html.light.hub-glass .drive-manage { color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
 html.light.hub-glass .drive-manage svg { color: #fff; }
-html.light.hub-glass .storage b { background: rgba(0, 0, 0, 0.30); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+html.light.hub-glass .storage b { background: rgba(0, 0, 0, 0.30); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10); }
 html.light.hub-glass .storage i { background: #8fc1ff; }
-html.light.hub-glass .path, html.light.hub-glass .seg { background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+html.light.hub-glass .path { background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
 html.light.hub-glass .search { background: rgba(0, 0, 0, 0.26); }
 html.light.hub-glass .search-box svg, html.light.hub-glass .path-ico, html.light.hub-glass .crumb-sep { color: rgba(255, 255, 255, 0.85); }
 html.light.hub-glass .tb:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
@@ -63,7 +63,7 @@ html.light.hub-glass .badge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0
 /* Reduce transparency: solid dark slate (same as the Hub's solid glass) */
 html.light.hub-glass.hub-glass-solid {
   --ga-tint: rgb(30, 34, 44); --ga-shine: none; --ga-glow: none;
-  --side: #262a35; --card: #343946; --card2: #3b404e; --line: rgba(255, 255, 255, 0.14);
+  --side: #262a35; --card: #343946; --card2: #3b404e; --line: rgba(255, 255, 255, 0.08);
   --panel: #10161a; --sheet: #2b303c;
 }
 html.light.hub-glass.hub-glass-solid:has(> body .term, > body #term, > body #out) { --ga-tint: #07120a; }
@@ -79,15 +79,15 @@ html.hub-glass:not(.light) {
   --ga-glow: 0 1px 2px rgba(0, 0, 0, 0.65);
   --bg: transparent; --side: rgba(10, 12, 18, 0.22); --card: rgba(255, 255, 255, 0.10); --card2: rgba(255, 255, 255, 0.14);
   --sheet: rgba(24, 28, 38, 0.86); --chip: rgba(255, 255, 255, 0.14); --bar: rgba(255, 255, 255, 0.08);
-  --tb: rgba(255, 255, 255, 0.12); --tb-hi: rgba(255, 255, 255, 0.22); --tb-line: rgba(255, 255, 255, 0.30);
-  --line: rgba(255, 255, 255, 0.20); --text: #ffffff; --muted: rgba(255, 255, 255, 0.76); --desc: rgba(255, 255, 255, 0.82);
+  --tb: rgba(255, 255, 255, 0.12); --tb-hi: rgba(255, 255, 255, 0.22); --tb-line: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.08); --text: #ffffff; --muted: rgba(255, 255, 255, 0.76); --desc: rgba(255, 255, 255, 0.82);
   --msg: rgba(255, 255, 255, 0.86); --soft: rgba(255, 255, 255, 0.10); --soft2: rgba(255, 255, 255, 0.18); --grid: rgba(255, 255, 255, 0.10);
   --ok: #6ef0b8; --bad: #ff9c9c; --warn: #ffd166;
   --hi: color-mix(in srgb, var(--accent) 34%, rgba(255, 255, 255, 0.08));
   --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30), 0 1px 3px rgba(0, 0, 0, 0.18);
   /* pop-ups (dialogs / context menus) stay dense and readable */
-  --uid-bg: rgba(24, 28, 38, 0.92); --uid-line: rgba(255, 255, 255, 0.22); --uid-text: #fff; --uid-muted: rgba(255, 255, 255, 0.74); --uid-bad: #ff9c9c;
-  --ctx-bg: rgba(24, 28, 38, 0.92); --ctx-line: rgba(255, 255, 255, 0.22); --ctx-text: #fff; --ctx-muted: rgba(255, 255, 255, 0.74); --ctx-bad: #ff9c9c;
+  --uid-bg: rgba(24, 28, 38, 0.92); --uid-line: rgba(255, 255, 255, 0.14); --uid-text: #fff; --uid-muted: rgba(255, 255, 255, 0.74); --uid-bad: #ff9c9c;
+  --ctx-bg: rgba(24, 28, 38, 0.92); --ctx-line: rgba(255, 255, 255, 0.14); --ctx-text: #fff; --ctx-muted: rgba(255, 255, 255, 0.74); --ctx-bad: #ff9c9c;
   --toast: rgba(0, 0, 0, 0.75); --toast-text: #fff;
   /* Terminal: dark glass + its green (dense text) */
   --fg: #5dff8a; --dim: #3fd06a; --err: #c8ffb0; --glow: rgba(51, 255, 102, 0.30); --edge: rgba(120, 255, 160, 0.30);
@@ -101,7 +101,7 @@ html.hub-glass:not(.light) body { background: transparent !important; color: var
 html.hub-glass:not(.light):has(> body .term, > body #term, > body #out) { --ga-tint: rgba(4, 8, 6, 0.55); }
 /* cards / rows: a crisp white edge */
 html.hub-glass:not(.light) input, html.hub-glass:not(.light) select, html.hub-glass:not(.light) textarea {
-  background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.28); color-scheme: dark;
+  background-color: rgba(0, 0, 0, 0.22); color: #fff; border-color: rgba(255, 255, 255, 0.12); color-scheme: dark;
 }
 html.hub-glass:not(.light) ::placeholder { color: rgba(255, 255, 255, 0.72); }   /* H105: was .60 */
 html.hub-glass:not(.light) option { background: #1e222c; color: #fff; }
@@ -110,11 +110,11 @@ html.hub-glass:not(.light) a { color: color-mix(in srgb, var(--accent) 55%, #fff
 html.hub-glass:not(.light) .side { background: rgba(10, 12, 18, 0.34); }
 html.hub-glass:not(.light) .quick-title, html.hub-glass:not(.light) .storage { color: rgba(255, 255, 255, 0.88); }
 html.hub-glass:not(.light) .quick-link svg { color: #cfe2ff; }
-html.hub-glass:not(.light) .drive-manage { color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32); }
+html.hub-glass:not(.light) .drive-manage { color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
 html.hub-glass:not(.light) .drive-manage svg { color: #fff; }
-html.hub-glass:not(.light) .storage b { background: rgba(0, 0, 0, 0.30); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22); }
+html.hub-glass:not(.light) .storage b { background: rgba(0, 0, 0, 0.30); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10); }
 html.hub-glass:not(.light) .storage i { background: #8fc1ff; }
-html.hub-glass:not(.light) .path, html.hub-glass:not(.light) .seg { background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28); }
+html.hub-glass:not(.light) .path { background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
 html.hub-glass:not(.light) .search { background: rgba(0, 0, 0, 0.26); }
 html.hub-glass:not(.light) .search-box svg, html.hub-glass:not(.light) .path-ico, html.hub-glass:not(.light) .crumb-sep { color: rgba(255, 255, 255, 0.85); }
 html.hub-glass:not(.light) .tb:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
@@ -127,7 +127,7 @@ html.hub-glass:not(.light) .badge { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.
 /* Reduce transparency: solid dark slate (same as the Hub's solid glass) */
 html.hub-glass:not(.light).hub-glass-solid {
   --ga-tint: rgb(30, 34, 44); --ga-shine: none; --ga-glow: none;
-  --side: #262a35; --card: #343946; --card2: #3b404e; --line: rgba(255, 255, 255, 0.14);
+  --side: #262a35; --card: #343946; --card2: #3b404e; --line: rgba(255, 255, 255, 0.08);
   --panel: #10161a; --sheet: #2b303c;
 }
 html.hub-glass:not(.light).hub-glass-solid:has(> body .term, > body #term, > body #out) { --ga-tint: #07120a; }
@@ -137,7 +137,7 @@ html.hub-glass:not(.light) {
   --ga-tint: rgba(8, 10, 14, 0.50);
   --ga-shine: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(255, 255, 255, 0) 100%);
   --side: rgba(0, 0, 0, 0.30); --card: rgba(255, 255, 255, 0.07); --card2: rgba(255, 255, 255, 0.10);
-  --sheet: rgba(14, 16, 22, 0.90); --line: rgba(255, 255, 255, 0.16);
+  --sheet: rgba(14, 16, 22, 0.90); --line: rgba(255, 255, 255, 0.08);
   --uid-bg: rgba(14, 16, 22, 0.94); --ctx-bg: rgba(14, 16, 22, 0.94);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
@@ -146,8 +146,43 @@ html.hub-glass:not(.light) .lhead { background: rgba(0, 0, 0, 0.60); }
 html.hub-glass:not(.light) .status { background: rgba(0, 0, 0, 0.40); }
 html.hub-glass:not(.light).hub-glass-solid {
   --ga-tint: rgb(18, 20, 27); --ga-shine: none; --ga-glow: none;
-  --side: #1a1d26; --card: #262a35; --card2: #2c303c; --line: rgba(255, 255, 255, 0.12);
+  --side: #1a1d26; --card: #262a35; --card2: #2c303c; --line: rgba(255, 255, 255, 0.08);
   --panel: #0a0f12; --sheet: #1f232d; --uid-bg: #1f232d; --ctx-bg: #1f232d;
 }
 html.hub-glass:not(.light).hub-glass-solid .side { background: #1a1d26; }
 html.hub-glass:not(.light).hub-glass-solid .lhead, html.hub-glass:not(.light).hub-glass-solid .status { background: #15181f; }
+
+/* =====================================================================================================
+ * Button groupings (.seg) & buttons: remove harsh white wireframe borders, apply frosted Aero styling
+ * ===================================================================================================== */
+html.hub-glass .seg {
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: transparent;
+}
+html.hub-glass .seg button + button {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Glass buttons & controls: subtle translucent borders with soft frosted Aero fill */
+html.hub-glass .seg-btn,
+html.hub-glass .switch,
+html.hub-glass .key-btn,
+html.hub-glass button.tap {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+html.hub-glass .seg-btn:hover,
+html.hub-glass .switch:hover,
+html.hub-glass .key-btn:hover:not(:disabled),
+html.hub-glass button.tap:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.16);
+}
+html.hub-glass .seg-btn.on,
+html.hub-glass .key-btn.on,
+html.hub-glass .switch.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 30%, rgba(255, 255, 255, 0.08));
+}

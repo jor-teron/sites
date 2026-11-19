@@ -1,28 +1,84 @@
 /*
- * H160 Desktop analog clock (hub/core/hub_clock.css) — the #hub-desk-clock widget on
- * the Desktop only (body.wm-desktop). Hidden in Phone mode. Lives inside #wm-desk at
- * z-index 1, so it sits above the wallpaper and under windows (which start at 10).
+ * Desktop analog clock (hub/core/hub_clock.css) — Web_OS identical desktop analog clock widget.
+ * Visible on Desktop mode only (body.wm-desktop). Lives inside #wm-desk at z-index 1.
  */
-#hub-desk-clock {
+#analogClock, .analog-clock, #hub-desk-clock {
   display: none;
   position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 250px;
+  height: 250px;
+  min-width: 250px;
+  min-height: 250px;
+  pointer-events: none;
+  opacity: 0.5;
   z-index: 1;
-  width: 128px;
-  height: 128px;
-  pointer-events: auto;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
   box-sizing: border-box;
 }
-body.wm-desktop #hub-desk-clock { display: block; }
-body.wm-desktop #hub-desk-clock[hidden] { display: none !important; }
-#hub-desk-clock.dragging { cursor: grabbing; }
-#hub-desk-clock svg {
+
+body.wm-desktop #analogClock,
+body.wm-desktop .analog-clock,
+body.wm-desktop #hub-desk-clock {
   display: block;
+}
+
+body.wm-desktop #analogClock[hidden],
+body.wm-desktop .analog-clock[hidden],
+body.wm-desktop #hub-desk-clock[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  #analogClock, .analog-clock, #hub-desk-clock {
+    display: none !important;
+  }
+}
+
+.analog-face {
   width: 100%;
   height: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.28));
+  border: 3px solid rgba(226, 232, 240, 0.7);
+  border-radius: 50%;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.analog-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #e2e8f0;
+}
+
+.hand {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform-origin: bottom center;
+  background: #e2e8f0;
+  border-radius: 2px;
+}
+
+.hand.hour {
+  width: 6px;
+  height: 70px;
+  margin-left: -3px;
+}
+
+.hand.minute {
+  width: 4px;
+  height: 95px;
+  margin-left: -2px;
+}
+
+.hand.second {
+  width: 2px;
+  height: 108px;
+  margin-left: -1px;
+  background: #f87171;
 }

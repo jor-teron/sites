@@ -1,56 +1,41 @@
 /*
- * H160 Desktop analog clock (hub/core/hub_clock.js) — a small SVG clock on the Hub
- * desktop (desktop/desktop.html only, not Phone). Off by default
+ * Desktop analog clock (hub/core/hub_clock.js) — Web_OS identical desktop analog clock widget
+ * on the Hub desktop (desktop/desktop.html only, not Phone).
  * (Settings › Desktop › Show analog clock on the desktop; sites-hub.deskClock = '1').
  *
- * Look: thin cream ring, see-through face, cream hour and minute hands, red second
- * hand, a small centre dot, subtle ticks at 12 / 3 / 6 / 9, no numbers. Soft shadow
- * so it reads on any wallpaper. Sits above the wallpaper, below windows.
- *
- * Drag to move (position remembered in sites-hub.deskClockPos). Right-click: Small /
- * Medium / Large (sites-hub.deskClockSize) and Hide clock (turns the Settings switch
- * off). Hands update once a second (setTimeout aligned to the next second, not rAF).
- * Pauses while a window is maximised (.wm-max, not minimised, not on the other
- * workspace), the screen is locked, a break is on, or the tab is hidden — same
- * signals as hub/drives/hub_live_wallpaper.js shouldPause.
- *
- * API: window.HubClock (also module.exports in Node): SIZES, MARGIN, prefEnabled,
- *   normalizeSize, sizePx, handAngles, nextSecondDelay, parsePos, formatPos,
- *   defaultPos, clampPos, shouldPause, isMaximisedClass, shouldShow, apply.
+ * Look & Feel (Web_OS identical):
+ * - Circular face (250px diameter) with 3px subtle border rgba(226, 232, 240, 0.7)
+ * - Fixed top-right positioning: top 16px, right 18px on the desktop surface
+ * - Clean HTML5 elements: .analog-face, #handHour.hand.hour, #handMinute.hand.minute, #handSecond.hand.second, .analog-dot
+ * - Hands: hour (width 6px, height 70px, #e2e8f0), minute (4px x 95px, #e2e8f0), second (2px x 108px, #f87171)
+ * - Center dot: 10px diameter, #e2e8f0
+ * - Non-intrusive: opacity 0.5, pointer-events none
+ * - Auto-pauses when tab is hidden, screen is locked, or a window is maximised
  */
 (function (global) {
   'use strict';
 
-  const SIZES = { s: 88, m: 128, l: 176 };
-  const MARGIN = 16;
-  const CREAM = '#f3ead2';
-  const RED = '#e53935';
+  const SIZE = 250;
   const KEY_ON = 'deskClock';
-  const KEY_SIZE = 'deskClockSize';
-  const KEY_POS = 'deskClockPos';
   const P = 'sites-hub.';
 
   function prefEnabled(v) {
     return v === '1';
   }
 
-  function normalizeSize(v) {
-    return (v === 's' || v === 'l') ? v : 'm';
+  function sizePx() {
+    return SIZE;
   }
 
-  function sizePx(v) {
-    return SIZES[normalizeSize(v)];
-  }
-
-  /** Clock-hand angles in degrees, clockwise from 12. */
+  /** Clock-hand angles in degrees (Web_OS formula: hour h*30 + m*0.5, minute m*6, second s*6). */
   function handAngles(date) {
     const d = date || new Date(0);
     const s = d.getSeconds();
     const m = d.getMinutes();
     const h = d.getHours() % 12;
     return {
-      hour: (h * 30) + (m * 0.5) + (s * (0.5 / 60)),
-      minute: (m * 6) + (s * 0.1),
+      hour: (h * 30) + (m * 0.5),
+      minute: m * 6,
       second: s * 6
     };
   }
@@ -59,52 +44,6 @@
     const t = nowMs == null ? 0 : Number(nowMs);
     const rem = ((t % 1000) + 1000) % 1000;
     return Math.max(1, 1000 - rem);
-  }
-
-  function parsePos(raw) {
-    if (raw == null || raw === '') return null;
-    const s = String(raw).trim();
-    let x, y;
-    if (s.charAt(0) === '{') {
-      try {
-        const o = JSON.parse(s);
-        x = o && o.x; y = o && o.y;
-      } catch (_) { return null; }
-    } else {
-      const p = s.split(',');
-      if (p.length < 2) return null;
-      x = p[0]; y = p[1];
-    }
-    x = +x; y = +y;
-    if (!isFinite(x) || !isFinite(y)) return null;
-    return { x: Math.round(x), y: Math.round(y) };
-  }
-
-  function formatPos(x, y) {
-    return Math.round(x) + ',' + Math.round(y);
-  }
-
-  function defaultPos(viewW, viewH, size, margin, taskH, taskTop) {
-    const m = margin == null ? MARGIN : margin;
-    const s = size || SIZES.m;
-    const th = taskH || 0;
-    const vw = viewW || 0, vh = viewH || 0;
-    const x = vw - s - m;
-    const y = taskTop ? (th + m) : m;
-    return clampPos(x, y, s, vw, vh, th, taskTop);
-  }
-
-  function clampPos(x, y, size, viewW, viewH, taskH, taskTop) {
-    const s = size || 0;
-    const th = taskH || 0;
-    const vw = viewW || 0, vh = viewH || 0;
-    const minX = 0;
-    const maxX = Math.max(0, vw - s);
-    const minY = taskTop ? th : 0;
-    const maxY = Math.max(minY, taskTop ? (vh - s) : (vh - th - s));
-    const nx = Math.max(minX, Math.min(x == null ? 0 : x, maxX));
-    const ny = Math.max(minY, Math.min(y == null ? 0 : y, maxY));
-    return { x: Math.round(nx), y: Math.round(ny) };
   }
 
   function shouldPause(opts) {
@@ -128,17 +67,11 @@
   }
 
   const api = {
-    SIZES: SIZES,
-    MARGIN: MARGIN,
-    prefEnabled: prefEnabled,
-    normalizeSize: normalizeSize,
+    SIZE: SIZE,
     sizePx: sizePx,
+    prefEnabled: prefEnabled,
     handAngles: handAngles,
     nextSecondDelay: nextSecondDelay,
-    parsePos: parsePos,
-    formatPos: formatPos,
-    defaultPos: defaultPos,
-    clampPos: clampPos,
     shouldPause: shouldPause,
     isMaximisedClass: isMaximisedClass,
     shouldShow: shouldShow
@@ -151,39 +84,18 @@
   window.HubClock = api;
 
   let el = null, hourEl = null, minuteEl = null, secondEl = null;
-  let timer = 0, paused = false, dragging = false, sizeId = 'm';
-  let pos = null, observer = null, started = false;
+  let timer = 0, paused = false, started = false, observer = null;
 
   function rd(k) {
     try { return localStorage.getItem(P + k) || ''; } catch (_) { return ''; }
-  }
-  function wr(k, v) {
-    try {
-      if (v == null || v === '') localStorage.removeItem(P + k);
-      else localStorage.setItem(P + k, String(v));
-    } catch (_) { /* blocked */ }
   }
 
   function isDesktop() {
     return !!(document.body && document.body.classList.contains('wm-desktop'));
   }
 
-  function taskbar() {
-    const root = document.documentElement;
-    const top = root && root.classList.contains('hub-task-top');
-    let h = 40;
-    try {
-      const cs = getComputedStyle(root);
-      const px = parseFloat(cs.getPropertyValue('--wm-task-h'));
-      if (isFinite(px) && px > 0) h = px;
-    } catch (_) { /* no css */ }
-    return { h: h, top: !!top };
-  }
-
-  function viewSize() {
-    const wrap = document.getElementById('frame-wrap');
-    if (wrap && wrap.clientWidth) return { w: wrap.clientWidth, h: wrap.clientHeight };
-    return { w: window.innerWidth || 0, h: window.innerHeight || 0 };
+  function mountParent() {
+    return document.getElementById('wm-desk') || document.getElementById('frame-wrap') || document.body;
   }
 
   function pauseSignals() {
@@ -197,15 +109,11 @@
     };
   }
 
-  function rotate(node, deg) {
-    if (node) node.setAttribute('transform', 'rotate(' + deg + ' 50 50)');
-  }
-
   function paint(date) {
     const a = handAngles(date || new Date());
-    rotate(hourEl, a.hour);
-    rotate(minuteEl, a.minute);
-    rotate(secondEl, a.second);
+    if (hourEl) hourEl.style.transform = 'rotate(' + a.hour + 'deg)';
+    if (minuteEl) minuteEl.style.transform = 'rotate(' + a.minute + 'deg)';
+    if (secondEl) secondEl.style.transform = 'rotate(' + a.second + 'deg)';
     if (el) {
       const d = date || new Date();
       let h = d.getHours(), m = d.getMinutes();
@@ -252,155 +160,52 @@
     else if (!now && paused) resume();
   }
 
-  function place(x, y) {
-    if (!el) return;
-    const tb = taskbar();
-    const vs = viewSize();
-    const p = clampPos(x, y, sizePx(sizeId), vs.w, vs.h, tb.h, tb.top);
-    pos = p;
-    el.style.left = p.x + 'px';
-    el.style.top = p.y + 'px';
-  }
+  function buildClockDom() {
+    const face = document.createElement('div');
+    face.className = 'analog-face';
 
-  function remember() {
-    if (pos) wr(KEY_POS, formatPos(pos.x, pos.y));
-  }
+    hourEl = document.createElement('div');
+    hourEl.className = 'hand hour';
+    hourEl.id = 'handHour';
 
-  function applySize(id) {
-    sizeId = normalizeSize(id);
-    if (!el) return;
-    const px = sizePx(sizeId);
-    el.style.width = px + 'px';
-    el.style.height = px + 'px';
-    el.dataset.size = sizeId;
-    const cur = pos || { x: 0, y: 0 };
-    place(cur.x, cur.y);
-  }
+    minuteEl = document.createElement('div');
+    minuteEl.className = 'hand minute';
+    minuteEl.id = 'handMinute';
 
-  function svgEl(name, attrs) {
-    const n = document.createElementNS('http://www.w3.org/2000/svg', name);
-    Object.keys(attrs).forEach((k) => n.setAttribute(k, attrs[k]));
-    return n;
-  }
+    secondEl = document.createElement('div');
+    secondEl.className = 'hand second';
+    secondEl.id = 'handSecond';
 
-  function buildSvg() {
-    const svg = svgEl('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true', focusable: 'false' });
-    svg.appendChild(svgEl('circle', { cx: '50', cy: '50', r: '46', fill: 'none', stroke: CREAM, 'stroke-width': '2.2' }));
-    const ticks = [[50, 7, 50, 13], [93, 50, 87, 50], [50, 93, 50, 87], [7, 50, 13, 50]];
-    ticks.forEach((t) => {
-      svg.appendChild(svgEl('line', { x1: t[0], y1: t[1], x2: t[2], y2: t[3], stroke: CREAM, 'stroke-width': '1.8', 'stroke-linecap': 'round' }));
-    });
-    hourEl = svgEl('line', { id: 'hub-clock-hour', x1: '50', y1: '50', x2: '50', y2: '28', stroke: CREAM, 'stroke-width': '3.2', 'stroke-linecap': 'round' });
-    minuteEl = svgEl('line', { id: 'hub-clock-minute', x1: '50', y1: '50', x2: '50', y2: '16', stroke: CREAM, 'stroke-width': '2.1', 'stroke-linecap': 'round' });
-    secondEl = svgEl('line', { id: 'hub-clock-second', x1: '50', y1: '54', x2: '50', y2: '12', stroke: RED, 'stroke-width': '1.1', 'stroke-linecap': 'round' });
-    svg.appendChild(hourEl);
-    svg.appendChild(minuteEl);
-    svg.appendChild(secondEl);
-    svg.appendChild(svgEl('circle', { cx: '50', cy: '50', r: '2.4', fill: CREAM }));
-    svg.appendChild(svgEl('circle', { cx: '50', cy: '50', r: '1.15', fill: RED }));
-    return svg;
-  }
+    const dot = document.createElement('div');
+    dot.className = 'analog-dot';
 
-  function mountParent() {
-    return document.getElementById('wm-desk') || document.getElementById('frame-wrap') || document.body;
-  }
-
-  function deskPoint(clientX, clientY) {
-    const parent = el && el.parentElement;
-    if (parent && parent.getBoundingClientRect) {
-      const r = parent.getBoundingClientRect();
-      return { x: clientX - r.left, y: clientY - r.top };
-    }
-    return { x: clientX, y: clientY };
-  }
-
-  function onDrag(e) {
-    if (!dragging || e.pointerId !== dragging.id) return;
-    const p = deskPoint(e.clientX - dragging.dx, e.clientY - dragging.dy);
-    place(p.x, p.y);
-  }
-
-  function endDrag(e) {
-    if (!dragging || (e && e.pointerId !== dragging.id)) return;
-    const id = dragging.id;
-    dragging = false;
-    if (el) {
-      el.classList.remove('dragging');
-      try { el.releasePointerCapture(id); } catch (_) { /* already */ }
-    }
-    document.removeEventListener('pointermove', onDrag);
-    document.removeEventListener('pointerup', endDrag);
-    document.removeEventListener('pointercancel', endDrag);
-    remember();
-  }
-
-  function startDrag(e) {
-    if (!el || e.button !== 0) return;
-    const r = el.getBoundingClientRect();
-    dragging = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top };
-    el.classList.add('dragging');
-    try { el.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
-    document.addEventListener('pointermove', onDrag);
-    document.addEventListener('pointerup', endDrag);
-    document.addEventListener('pointercancel', endDrag);
-    e.preventDefault();
-  }
-
-  function setSize(id) {
-    applySize(id);
-    wr(KEY_SIZE, sizeId === 'm' ? '' : sizeId);
-    remember();
-  }
-
-  function hideClock() {
-    wr(KEY_ON, '');
-    if (window.HubPrefs) window.HubPrefs.apply();
-    else apply();
-    try {
-      const origin = (location.protocol === 'file:' || location.origin === 'null') ? '*' : location.origin;
-      window.postMessage({ type: 'hub-prefs', key: KEY_ON }, origin);
-    } catch (_) { /* ignore */ }
-  }
-
-  function openMenu(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (dragging) endDrag({ pointerId: dragging.id });
-    const items = [
-      { label: 'Small', hint: sizeId === 's' ? '\u2713' : '', action: () => setSize('s') },
-      { label: 'Medium', hint: sizeId === 'm' ? '\u2713' : '', action: () => setSize('m') },
-      { label: 'Large', hint: sizeId === 'l' ? '\u2713' : '', action: () => setSize('l') },
-      { sep: true },
-      { label: 'Hide clock', action: hideClock }
-    ];
-    if (window.CtxMenu && window.CtxMenu.open) window.CtxMenu.open(e.clientX, e.clientY, items);
+    face.appendChild(hourEl);
+    face.appendChild(minuteEl);
+    face.appendChild(secondEl);
+    face.appendChild(dot);
+    return face;
   }
 
   function ensure() {
     if (el && el.parentElement) return el;
-    el = document.getElementById('hub-desk-clock');
+    el = document.getElementById('analogClock') || document.getElementById('hub-desk-clock');
     if (!el) {
       el = document.createElement('div');
-      el.id = 'hub-desk-clock';
-      el.setAttribute('role', 'img');
-      el.setAttribute('aria-label', 'Clock');
-      el.appendChild(buildSvg());
+      el.id = 'analogClock';
+      el.className = 'analog-clock';
+      el.setAttribute('aria-hidden', 'true');
+      el.appendChild(buildClockDom());
     } else {
-      hourEl = el.querySelector('#hub-clock-hour') || hourEl;
-      minuteEl = el.querySelector('#hub-clock-minute') || minuteEl;
-      secondEl = el.querySelector('#hub-clock-second') || secondEl;
-      if (!hourEl) {
+      hourEl = el.querySelector('#handHour, .hand.hour') || hourEl;
+      minuteEl = el.querySelector('#handMinute, .hand.minute') || minuteEl;
+      secondEl = el.querySelector('#handSecond, .hand.second') || secondEl;
+      if (!hourEl || !minuteEl || !secondEl) {
         el.textContent = '';
-        el.appendChild(buildSvg());
+        el.appendChild(buildClockDom());
       }
     }
     const parent = mountParent();
     if (parent && el.parentElement !== parent) parent.appendChild(el);
-    if (!el._hubClockBound) {
-      el._hubClockBound = true;
-      el.addEventListener('pointerdown', startDrag);
-      el.addEventListener('contextmenu', openMenu);
-    }
     return el;
   }
 
@@ -416,15 +221,6 @@
   function show() {
     ensure();
     el.hidden = false;
-    applySize(rd(KEY_SIZE));
-    const vs = viewSize();
-    const tb = taskbar();
-    const saved = parsePos(rd(KEY_POS));
-    if (saved) place(saved.x, saved.y);
-    else {
-      const d = defaultPos(vs.w, vs.h, sizePx(sizeId), MARGIN, tb.h, tb.top);
-      place(d.x, d.y);
-    }
     if (shouldPause(pauseSignals())) {
       paint(new Date());
       pause();
@@ -442,11 +238,6 @@
     if (started) return;
     started = true;
     document.addEventListener('visibilitychange', checkState);
-    window.addEventListener('resize', () => {
-      if (!el || el.hidden) return;
-      const cur = pos || { x: 0, y: 0 };
-      place(cur.x, cur.y);
-    });
     try {
       observer = new MutationObserver(() => {
         checkState();
