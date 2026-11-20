@@ -110,6 +110,7 @@ Writer.docxopen.open = function open(file, o) {
       if (pg.margins) ui.setPage(pg.size, 'custom', pg.margins); else ui.setPage(pg.size, Writer.config.marginPreset, Writer.config.marginCustom);
       ui.setOrientation(pg.orient);
     }
+    if (Writer.empty && Writer.empty.leave) Writer.empty.leave('open');   /* DW18: show the page again before layout */
     if (Writer.how) { Writer.how.dest = null; Writer.how.created = 0; Writer.how.format = 'how'; }
     Writer.storage.loadedName = '';
     Writer.storage.setCurrentName(base, false);

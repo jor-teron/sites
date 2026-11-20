@@ -1,0 +1,106 @@
+/* ============================================================
+   FILE: ui/empty.css
+   PROJECT: Writer
+   ROLE: DW18 "No document open" panel (writer-empty.js).
+         body.writer-empty hides the page, ruler and status bar and
+         dims the ribbon; the panel sits in the middle of the workspace.
+         Phone first; light and dark through the theme variables.
+   ============================================================ */
+
+body.writer-empty .pages-scaler,
+body.writer-empty #ruler,
+body.writer-empty .status-bar,
+body.writer-empty .find-bar,
+body.writer-empty .mm-preview { display: none !important; }
+
+body.writer-empty nav.ribbon { opacity: 0.45; pointer-events: none; filter: grayscale(0.4); }
+body.writer-empty .file-name { visibility: hidden; }
+
+body.writer-empty .workspace {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 14px 40px;
+}
+
+.empty-panel[hidden] { display: none; }
+.empty-panel {
+  width: 100%;
+  max-width: 420px;
+  margin: auto 0;
+  font-family: var(--ui-font);
+  color: var(--text-primary);
+}
+.empty-card {
+  background: var(--bg-toolbar);
+  border: 1px solid var(--border-light);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: 0 6px 24px var(--shadow);
+  padding: 22px 18px 16px;
+  text-align: center;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.empty-mark {
+  display: inline-flex;
+  width: 48px; height: 48px;
+  align-items: center; justify-content: center;
+  border-radius: 14px;
+  background: var(--accent-grad);
+  margin-bottom: 8px;
+}
+.empty-mark svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.empty-title { margin: 4px 0 2px; font-size: 18px; font-weight: 600; }
+.empty-sub { margin: 0 0 16px; font-size: 13px; color: var(--text-secondary); }
+
+.empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+.empty-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; min-width: 128px;       /* touch size */
+  padding: 0 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-light);
+  background: var(--select-bg);
+  color: var(--text-primary);
+  font: 500 14px var(--ui-font);
+  cursor: pointer;
+  justify-content: center;
+}
+.empty-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.empty-btn:hover { background: var(--btn-hover); }
+.empty-btn:active { background: var(--btn-active); }
+.empty-btn:focus-visible, .empty-recent-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.empty-primary { background: var(--accent); border-color: transparent; color: #fff; }
+.empty-primary:hover { background: var(--accent); filter: brightness(1.08); }
+
+.empty-recent-head {
+  text-align: left;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 4px;
+}
+.empty-recent { display: flex; flex-direction: column; text-align: left; max-height: 40dvh; overflow-y: auto; }
+.empty-recent-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 44px;
+  padding: 0 8px;
+  border: 0; border-radius: 8px;
+  background: transparent; color: var(--text-primary);
+  font: 14px var(--ui-font); text-align: left; cursor: pointer;
+}
+.empty-recent-item:hover { background: var(--btn-hover); }
+.empty-recent-item svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--text-secondary); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.empty-recent-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-none { padding: 10px 4px; font-size: 13px; color: var(--text-secondary); }
+
+/* Disabled File menu items while empty */
+.file-menu .file-item:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+@media (min-width: 700px) {
+  body.writer-empty .workspace { align-items: center; padding: 32px 24px 64px; }
+  .empty-card { padding: 28px 28px 20px; }
+}
+
+@media print { .empty-panel { display: none !important; } }

@@ -302,6 +302,7 @@
 
   How.apply = function apply(doc) {
     var S = D();
+    if (S.empty && S.empty.leave) S.empty.leave('open');   /* DW18: show the page again before layout */
     if (S.ui && S.ui.setPage) S.ui.setPage(doc.page.size, doc.page.margins, doc.page.custom);
     if (S.ui && S.ui.setOrientation) S.ui.setOrientation(doc.page.orientation);
     if (S.breaks && S.breaks.setNumbers) S.breaks.setNumbers(doc.page.numbers.on, doc.page.numbers.pos);
@@ -668,6 +669,10 @@
     if (How.skipWrite && !opts.explicit && !opts.saveAs) {
       return Promise.resolve({ ok: true, wrote: false, name: remembered() });
     }
+    /* DW18: no document open (writer-empty.js): autosave, timers, Save and Save As write nothing. */
+    if (D().empty && D().empty.canWrite && !D().empty.canWrite(D().empty.state)) {
+      return Promise.resolve({ ok: true, wrote: false, empty: true, name: '' });
+    }
     var user = !!(opts.explicit || opts.saveAs);
     if (!user && (opts.format || How.format) !== 'how' && (opts.timer || !How.dest)) {
       return Promise.resolve({ ok: true, wrote: false, name: remembered() || (D().storage && D().storage.currentName ? D().storage.currentName() : '') });
@@ -832,6 +837,7 @@
   };
   How.fresh = function fresh() {
     var S = D();
+    if (S.empty && S.empty.leave) S.empty.leave('blank');   /* DW18 */
     How.format = 'how';   /* DW12: a new document is a .how until Save As picks another format */
     How.savedSig = '';
     How.dest = null;

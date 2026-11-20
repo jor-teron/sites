@@ -15,6 +15,9 @@
          DW15: File > New opens a new Hub window (desktop) or a new
          browser tab (standalone). Phone mode and a blocked popup
          keep the old same-window newDoc.
+         DW18: File > Close (closeDoc) saves, then shows the empty state
+         (writer-empty.js). Delete ends there too, and a fresh window
+         starts there unless a file link or a New flag asks for a document.
    DEPENDS: config, storage, ui, editor, pages, history, view
    ============================================================ */
 
@@ -95,11 +98,36 @@ Writer.docs.load = function load() {
       Writer.app.ready = true;
     });
   }
+  /* DW18: no file link and no New flag → start with no document open
+     (before DW18: the Hub reopened the newest .how, standalone showed a blank page). */
+  var boot = 'file';
+  try { boot = Writer.docs.bootMode(window); } catch (e) { boot = 'file'; }
+  if (boot === 'empty' && Writer.empty && Writer.empty.enter) {
+    Writer.empty.enter('boot-empty');
+    Writer.app.ready = true;
+    return Promise.resolve(false);
+  }
   var start = (Writer.how && Writer.how.start) ? Writer.how.start() : Promise.resolve(false);
   return start.then(function () {
     Writer.app.ready = true;
   }, function () {
     Writer.app.ready = true;
+  });
+};
+
+/* DW18: what a fresh window shows: 'blank' | 'file' | 'empty' (Writer.empty.bootMode).
+   The DW15 New flag was already taken in load(), so fresh is false here.
+   Without writer-empty.js it is 'file' (the old start path). */
+Writer.docs.bootMode = function bootMode(win) {
+  if (!Writer.empty || !Writer.empty.bootMode) return 'file';
+  var loc = (win && win.location) || {};
+  var parse = win && win.FsRef && win.FsRef.parse;
+  var officeNew = false;
+  try { officeNew = !!(typeof OfficeNewDoc !== 'undefined' && OfficeNewDoc.isNewDocLaunch && OfficeNewDoc.isNewDocLaunch(loc.search || '')); } catch (e) {}
+  return Writer.empty.bootMode({
+    fresh: false,
+    hashFile: Writer.empty.hashHasFile(loc.hash || '', parse),
+    officeNew: officeNew
   });
 };
 
@@ -213,6 +241,47 @@ Writer.docs.newDoc = function newDoc() {
     Writer.ui.showToast('New document ' + name);
   }).catch(function () {
     Writer.ui.showToast('Could not create document');
+  });
+};
+
+/* DW18: File > Close. Save first like newDoc (autosave also writes back to an opened
+   .docx / .odt that has a file), then show the empty state. No new document is made.
+   Asks first only when that save cannot keep the edits (no file to write to). */
+Writer.docs.closeInfo = function closeInfo() {
+  var how = Writer.how || {};
+  var ed = Writer.pages && Writer.pages.firstEditor ? Writer.pages.firstEditor() : null;
+  var html = ed ? ed.innerHTML : '';
+  var blank = !!(Writer.storage && Writer.storage.isBlankUnsaved && Writer.storage.isBlankUnsaved(html));
+  return {
+    willWrite: Writer.empty ? Writer.empty.flushWrites({
+      inHub: !!(how.inHub && how.inHub()),
+      canLocal: !!(how.canLocal && how.canLocal()),
+      destKind: how.dest ? how.dest.kind : '',
+      format: how.format || 'how'
+    }) : true,
+    blank: blank,
+    changed: !!(Writer.history && Writer.history.canUndo && Writer.history.canUndo())
+  };
+};
+
+Writer.docs.closeDoc = function closeDoc() {
+  if (!Writer.empty || Writer.empty.isEmpty()) return Promise.resolve(false);
+  var label = Writer.storage.currentName() || 'document';
+  var ask = Writer.empty.closeNeedsConfirm(Writer.docs.closeInfo()) && Writer.dialog && Writer.dialog.confirm
+    ? Writer.dialog.confirm({ title: 'Close document?', message: '"' + label + '" has changes that are not saved to a file. Close it anyway? Use Save first to keep them.', okLabel: 'Close', danger: true })
+    : Promise.resolve(true);
+  return ask.then(function (yes) {
+    if (!yes) return false;
+    clearTimeout(Writer.app.inputTimer);
+    var flushed = Writer.how ? Writer.how.autosave() : Promise.resolve();
+    return flushed.catch(function () {}).then(function () {
+      Writer.empty.enter('close');
+      Writer.ui.showToast('Closed ' + label);
+      return true;
+    });
+  }).catch(function () {
+    Writer.ui.showToast('Could not close document');
+    return false;
   });
 };
 
@@ -344,6 +413,8 @@ Writer.docs.openNewTab = function openNewTab(win) {
 /* File > New: open a new window or tab when we can, else the old same-window newDoc. */
 Writer.docs.requestNew = function requestNew(win) {
   if (win === undefined && typeof window !== 'undefined') win = window;
+  /* DW18: nothing open, nothing to keep: the blank document opens in this window. */
+  if (Writer.empty && Writer.empty.isEmpty && Writer.empty.isEmpty()) return Writer.docs.newDoc();
   var inFrame = false;
   try { inFrame = !!(win && win.parent && win.parent !== win); } catch (e) { inFrame = true; }
   var mode = Writer.docs.newMode({
@@ -369,6 +440,7 @@ Writer.docs.requestNew = function requestNew(win) {
 };
 
 /* Delete one .how file after confirm. If it is open, open another or a blank page.
+   DW18: if it is open, Writer shows the empty state instead.
    (before HOW1) deleteNow called storage.deleteDoc and then opened the next IndexedDB record. */
 Writer.docs.deleteDoc = function deleteDoc(name) {
   var label = Writer.how ? Writer.how.stem(name) : name;
@@ -394,6 +466,12 @@ Writer.docs.deleteNow = function deleteNow(name) {
     : Promise.resolve();
   return gone.then(function () {
     if (!isOpen) return null;
+    /* DW18: the deleted (or closed) document leaves no document open. */
+    if (Writer.empty && Writer.empty.enter) {
+      Writer.empty.enter('delete');
+      return null;
+    }
+    /* (before DW18) the branch below opened the next .how or a blank page; kept for a build without writer-empty.js. */
     if (!Writer.how) return Writer.docs.showBlank();
     Writer.how.dest = null;
     Writer.how.skipWrite = true;
@@ -552,6 +630,8 @@ Writer.docs.bind = function bind() {
   Writer.ui.onClick('newBtn', function () { Writer.docs.requestNew(); });
   Writer.ui.onClick('saveBtn', function () { Writer.docs.save(); });
   Writer.ui.onClick('saveAsBtn', function () { Writer.docs.saveAs(); });
+  Writer.ui.onClick('closeDocBtn', function () { Writer.docs.closeDoc(); });   /* DW18 */
+  if (Writer.empty && Writer.empty.bind) Writer.empty.bind();                  /* DW18 panel + keys */
   /* (before DW14) Writer.ui.onClick('openHowBtn', function () {
     var inp = document.getElementById('howFile');
     if (!inp) return;
@@ -615,7 +695,8 @@ Writer.docs.bind = function bind() {
 
 /* Old names kept for callers that still use Writer.app.* */
 Writer.app = Writer.app || {};
-['load:loadDocument', 'toggleRecent', 'openDoc', 'showBlank', 'newDoc', 'deleteDoc', 'save:saveDocument'].forEach(function (pair) {
+/* (before DW18) ['load:loadDocument', 'toggleRecent', 'openDoc', 'showBlank', 'newDoc', 'deleteDoc', 'save:saveDocument'].forEach */
+['load:loadDocument', 'toggleRecent', 'openDoc', 'showBlank', 'newDoc', 'deleteDoc', 'save:saveDocument', 'closeDoc'].forEach(function (pair) {
   var p = pair.split(':');
   Writer.app[p[1] || p[0]] = function () { return Writer.docs[p[0]].apply(Writer.docs, arguments); };
 });

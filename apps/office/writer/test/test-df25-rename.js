@@ -62,7 +62,8 @@ var title = htmlLive.match(/<title>([^<]*)<\/title>/);
 /* (before DW15) ok('title is Writer DW12, DW13, DW13b, DW13c, DW14 or DW14a', title && /^Writer DW1(2|3|3b|3c|4|4a)$/.test(title[1]), title && title[1]); */
 /* (before DW16) ok('title is Writer DW12, DW13, DW13b, DW13c, DW14, DW14a or DW15', title && /^Writer DW1(2|3|3b|3c|4|4a|5)$/.test(title[1]), title && title[1]); */
 /* (before DW17) ok('title is Writer DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15 or DW16', title && /^Writer DW1(2|3|3b|3c|4|4a|5|6)$/.test(title[1]), title && title[1]); */
-ok('title is Writer DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15, DW16 or DW17', title && /^Writer DW1(2|3|3b|3c|4|4a|5|6|7)$/.test(title[1]), title && title[1]);
+/* (before DW18) ok('title is Writer DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15, DW16 or DW17', title && /^Writer DW1(2|3|3b|3c|4|4a|5|6|7)$/.test(title[1]), title && title[1]); */
+ok('title is Writer DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15, DW16, DW17 or DW18', title && /^Writer DW1(2|3|3b|3c|4|4a|5|6|7|8)$/.test(title[1]), title && title[1]);
 ok('no ?v= cache-bust', htmlLive.indexOf('?v=') === -1);
 var refs = [];
 htmlLive.replace(/<(?:script|link)\b[^>]*?\s(?:src|href)="([^"]+)"/g, function (_, u) { refs.push(u); });
@@ -127,7 +128,8 @@ ok('global is Writer, Draftly is an alias', ctx.window.Writer && ctx.window.Draf
 /* (before DW15) ok('config release is DW12, DW13, DW13b, DW13c, DW14 or DW14a', /^DW1(2|3|3b|3c|4|4a)$/.test(ctx.window.Writer.config.release)); */
 /* (before DW16) ok('config release is DW12, DW13, DW13b, DW13c, DW14, DW14a or DW15', /^DW1(2|3|3b|3c|4|4a|5)$/.test(ctx.window.Writer.config.release)); */
 /* (before DW17) ok('config release is DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15 or DW16', /^DW1(2|3|3b|3c|4|4a|5|6)$/.test(ctx.window.Writer.config.release)); */
-ok('config release is DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15, DW16 or DW17', /^DW1(2|3|3b|3c|4|4a|5|6|7)$/.test(ctx.window.Writer.config.release));
+/* (before DW18) ok('config release is DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15, DW16 or DW17', /^DW1(2|3|3b|3c|4|4a|5|6|7)$/.test(ctx.window.Writer.config.release)); */
+ok('config release is DW12, DW13, DW13b, DW13c, DW14, DW14a, DW15, DW16, DW17 or DW18', /^DW1(2|3|3b|3c|4|4a|5|6|7|8)$/.test(ctx.window.Writer.config.release));
 ok('migration ran at load: writer_settings copied', ls.getItem('writer_settings') === '{"theme":"dark","ruler":true}');
 ok('theme copied', ls.getItem('writer_theme') === 'dark');
 ok('dash key copied', ls.getItem('writer-ribbon-tab') === 'page');
