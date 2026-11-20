@@ -38,8 +38,8 @@
  * - H52b: Pooh Chat / Devices / Update (the .header-right items placeTray moves) follow the same switches in
  *   Phone mode's top bar too; Update off + a build waiting → the dot on Home ▾ (#cat-btn) there (H52c: removed). wm.css.
  * - H144: Ask before closing (sites-hub.askClose, default on, '0' = off; not for a joined / ?join device;
- *   window.__hubAllowUnload() skips the prompt for a Hub reload). Fullscreen button #wm-fs on the right of
- *   the bar, just before the clock (sites-hub.showFsBtn, default on, '0' = off; hidden when the browser has
+ *   window.__hubAllowUnload() skips the prompt for a Hub reload). Fullscreen button #wm-fs at the far right of
+ *   the bar, after the clock (H164; before H164: just before the clock) (sites-hub.showFsBtn, default on, '0' = off; hidden when the browser has
  *   no Fullscreen API). Settings → Desktop; live via HubPrefs.apply() → __hubSyncFsBtn.
  * - H145: when the close prompt is actually requested, html.hub-leave-blur paints a full-screen blur behind
  *   the browser's Leave / Cancel box (best-effort; some browsers freeze the page first). Cancel, or a later
@@ -203,7 +203,9 @@
   document.addEventListener('fullscreenchange', paintFs);
   document.addEventListener('webkitfullscreenchange', paintFs);
   window.__hubSyncFsBtn = paintFs;
-  bar.append(start, showDesk, searchBtn, tasks, tray, fsBtn, clock);
+  // bar.append(start, showDesk, searchBtn, tasks, tray, fsBtn, clock);   // (before H164)
+  // H164: clock then fullscreen, so #wm-fs is rightmost
+  bar.append(start, showDesk, searchBtn, tasks, tray, clock, fsBtn);
   document.body.appendChild(bar);
 
   // Old top bar items ↔ tray

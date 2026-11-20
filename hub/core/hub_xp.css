@@ -135,6 +135,12 @@ html.hub-xp body.wm-desktop #wm-taskbar .wm-clock {
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.35);
 }
 html.hub-xp.hub-bar-off-clock body.wm-desktop #wm-taskbar .wm-clock { display: none !important; }
+/* H164: #wm-fs sits after the tray+clock band. Bar padding-right is 0, so inset the button from the
+   screen edge; margin-left keeps a gap even when the clock is hidden and the tray's -4px would close it. */
+html.hub-xp body.wm-desktop #wm-taskbar #wm-fs {
+  margin-left: 4px;
+  margin-right: 6px;
+}
 html.hub-xp body.wm-desktop #wm-taskbar svg { filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.35)); }
 
 /* ---------- Phone mode top bar: the same blue bar; Home ▾ is the green button ---------- */
