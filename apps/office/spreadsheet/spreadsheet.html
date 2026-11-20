@@ -20,7 +20,8 @@
   <!-- (before SH33) <title>Spreadsheet SH32</title> -->
   <!-- (before SH35) <title>Spreadsheet SH33</title> -->
   <!-- (before SH36) <title>Spreadsheet SH35</title> -->
-  <title>Spreadsheet SH36</title>
+  <!-- (before SH37) <title>Spreadsheet SH36</title> -->
+  <title>Spreadsheet SH37</title>
   <!-- (before HO3) every local cache token (?v=) on this page was SH18; HO3 bumps them for the 12pt default. Title stays SH18. -->
   <link rel="icon" href="spreadsheet_icon.png">
   <link rel="stylesheet" href="spreadsheet.css?v=HO3">
@@ -33,7 +34,8 @@
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-colour.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=HO3">
+  <!-- (before SH37) <link rel="stylesheet" href="spreadsheet_ribbon.css?v=HO3"> -->
+  <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH37">
   <link rel="stylesheet" href="spreadsheet_page.css?v=HO3">
 </head>
 <body>
@@ -50,8 +52,12 @@
 
   <!-- File menu: Draftly look (../shared/office-tools.css .file-item, icons from office-icons.js) -->
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
-    <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button>
-    <button type="button" class="file-item" role="menuitem" id="btn-open-hos" data-icon="fileOpen"><span>Open .hos</span></button>
+    <!-- SH37: order matches Writer: New, Open..., (Rename SH38), Save, Save As, Print, (Delete SH38), Export..., then Settings and Functions. -->
+    <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button> -->
+    <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New</span></button>
+    <!-- SH37: one Open... for .hos, .xlsx, .xlsm, .xls, .ods and .csv (spreadsheet_filemenu.js routes by extension). -->
+    <button type="button" class="file-item" role="menuitem" id="btn-open" data-icon="fileOpen"><span>Open...</span></button>
+    <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="btn-open-hos" data-icon="fileOpen"><span>Open .hos</span></button> -->
     <input id="hos-file" type="file" accept=".hos,application/json" hidden>
     <!-- (before SH27) <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / CSV)</span>
       <input id="file-import" type="file" accept=".xlsx,.xls,.csv,text/csv,text/plain" hidden>
@@ -59,20 +65,37 @@
     <!-- (before SH33) <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / ODS / CSV)</span>
       <input id="file-import" type="file" accept=".xlsx,.xls,.ods,.csv,text/csv,text/plain,application/vnd.oasis.opendocument.spreadsheet" hidden>
     </label> -->
-    <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / ODS / CSV)</span>
+    <!-- (before SH37) <label class="file-item" role="menuitem" data-icon="fileOpen"><span>Open (XLSX / ODS / CSV)</span>
       <input id="file-import" type="file" accept=".xlsx,.xlsm,.xls,.ods,.csv,text/csv,text/plain,application/vnd.oasis.opendocument.spreadsheet,application/vnd.ms-excel.sheet.macroEnabled.12" hidden>
-    </label>
-    <div class="file-sep" role="separator"></div>
+    </label> -->
+    <!-- SH37: #file-import is now the hidden fallback for Open... (no handle picker, or in the Hub). It keeps its id, so the
+         toolbar opener and the Hub title listener still run. The label stays as its parent for the SH32 click hook but is never shown. -->
+    <label id="file-import-wrap" hidden style="display:none"><input id="file-import" type="file" accept=".hos,.xlsx,.xlsm,.xls,.ods,.csv,application/json,text/csv,text/plain,application/vnd.oasis.opendocument.spreadsheet,application/vnd.ms-excel.sheet.macroEnabled.12" hidden></label>
+    <!-- SH38 slot: Rename -->
+    <!-- (before SH37) <div class="file-sep" role="separator"></div> -->
     <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-save-as" data-icon="fileSave"><span>Save As</span></button>
+    <!-- (before SH37) the three exports sat here; they moved to the Export... chooser (#sheet-export-menu):
     <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>Export CSV</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx" data-icon="fileExport"><span>Export XLSX</span></button>
-    <!-- (before SH27) Export ODS was not in the File menu -->
-    <button type="button" class="file-item" role="menuitem" id="btn-export-ods" data-icon="fileExport"><span>Export ODS</span></button>
-    <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button>
-    <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
+    (before SH27) Export ODS was not in the File menu
+    <button type="button" class="file-item" role="menuitem" id="btn-export-ods" data-icon="fileExport"><span>Export ODS</span></button> -->
+    <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button> -->
+    <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
+    <!-- SH38 slot: Delete -->
+    <button type="button" class="file-item" role="menuitem" id="btn-export-menu" data-icon="fileExport" aria-haspopup="menu" aria-expanded="false" aria-controls="sheet-export-menu"><span>Export...</span></button>
+    <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
+    <div class="file-sep" role="separator"></div> -->
     <div class="file-sep" role="separator"></div>
+    <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <a class="file-item" role="menuitem" href="FUNCTIONS.txt" target="_blank" rel="noopener" data-icon="fileHelp"><span>Functions</span></a>
+  </div>
+  <!-- SH37: Export... chooser, like Writer's #exportMenu. The ids are the old File menu ones, so the existing
+       exportCsv / exportXlsx / exportOds wiring is unchanged. -->
+  <div class="of-file-menu file-menu" id="sheet-export-menu" role="menu" aria-labelledby="btn-export-menu" hidden>
+    <button type="button" class="file-item" role="menuitem" id="btn-export" data-icon="fileExport"><span>CSV (.csv)</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-export-xlsx" data-icon="fileExport"><span>Excel (.xlsx)</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-export-ods" data-icon="fileExport"><span>OpenDocument (.ods)</span></button>
   </div>
 
   <!-- RIBBON: one row per tab, scrolls sideways when narrow -->
@@ -333,7 +356,8 @@
   <!-- (before SH27) <script src="spreadsheet_toolbar.js?v=HO3"></script> -->
   <!-- (before SH32) <script src="spreadsheet_toolbar.js?v=SH27"></script> -->
   <!-- (before SH33) <script src="spreadsheet_toolbar.js?v=SH32"></script> -->
-  <script src="spreadsheet_toolbar.js?v=SH33"></script>
+  <!-- (before SH37) <script src="spreadsheet_toolbar.js?v=SH33"></script> -->
+  <script src="spreadsheet_toolbar.js?v=SH37"></script>
   <!-- (before SH27) <script src="spreadsheet_settings.js?v=HO3"></script> -->
   <!-- (before SH29) <script src="spreadsheet_settings.js?v=SH27"></script> -->
   <!-- (before SH30) <script src="spreadsheet_settings.js?v=SH29"></script> -->
@@ -342,7 +366,8 @@
   <!-- (before SH33) <script src="spreadsheet_settings.js?v=SH32"></script> -->
   <!-- (before SH35) <script src="spreadsheet_settings.js?v=SH33"></script> -->
   <!-- (before SH36) <script src="spreadsheet_settings.js?v=SH35"></script> -->
-  <script src="spreadsheet_settings.js?v=SH36"></script>
+  <!-- (before SH37) <script src="spreadsheet_settings.js?v=SH36"></script> -->
+  <script src="spreadsheet_settings.js?v=SH37"></script>
   <script src="spreadsheet_page.js?v=HO3"></script>
   <script src="spreadsheet_ribbon.js?v=HO3"></script>
   <script src="spreadsheet_logic.js?v=HO3"></script>
@@ -378,5 +403,7 @@
   <!-- SH32: Save keeps an opened .xlsx / .ods / .csv; Save As picks a format -->
   <!-- (before SH33) <script src="spreadsheet_saveformat.js?v=SH32"></script> -->
   <script src="spreadsheet_saveformat.js?v=SH33"></script>
+  <!-- SH37: File menu Open... routing, Export... chooser, full-height menu (after saveformat: uses SHEET_SAVEFMT.openAny). -->
+  <script src="spreadsheet_filemenu.js?v=SH37"></script>
 </body>
 </html>

@@ -166,7 +166,8 @@ test("wiring: title, VERSION, ?v= tokens, readme", function () {
   if (html.indexOf("<!-- (before SH36) <script src=\"spreadsheet_grid.js?v=HO3\"></script> -->") < 0) {
     throw new Error("old grid.js token was not kept");
   }
-  if (live.indexOf("spreadsheet_settings.js?v=SH36") < 0) throw new Error("settings.js cache token is not SH36");
+  /* (before SH37) if (live.indexOf("spreadsheet_settings.js?v=SH36") < 0) throw new Error("settings.js cache token is not SH36"); */
+  if (!/spreadsheet_settings\.js\?v=SH3[6-9]/.test(live)) throw new Error("settings.js cache token is not SH36 or later");
   if (settings.indexOf('var SHEET_VERSION = "SH36";') < 0) throw new Error("SHEET_VERSION is not SH36");
   if (settings.indexOf('/* (before SH36) var SHEET_VERSION = "SH35";') < 0) throw new Error("old SHEET_VERSION was not kept");
   if (readme.indexOf("## SH36") < 0) throw new Error("readme is missing the SH36 note");
