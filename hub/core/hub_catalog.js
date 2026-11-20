@@ -64,6 +64,7 @@ Game of Life,      game-of-life/,  , , Simulator, Conway's cellular automaton: p
 Browser FPS,       browser-fps/,   , , 3D, 3D first-person shooter: explore or fight on camp - island - snow and forest maps
 LandCraft,         landcraft/,     , , 3D, Voxel block world in Minecraft style: explore - break and place blocks - swim
 Valley Explorer HEX-7a, valley-explorer/, valley-explorer/assets/valley-icon.svg, , 3D, First-person WebGPU valley: walk the hills and collect glowing landmarks
+Orbital Core 3D,    orbital-core/,  orbital-core/assets/orbital-core_icon.png, , 3D, Spherical 3D tower defence: defend a rotating planetoid core against alien swarms across 999 seeds
 Island Conquest,   island-conquest/, , , Beta, Strategy: send ships to capture islands from the AI before it takes yours
 Tennis Ball Blitz, tennis-throw/,  , , Beta, Aim and throw tennis balls at targets against the clock - win medals
 AR Game,           ar-game/,       , , Beta, Phone camera AR game: catch pets or chase ghosts and zombies in your room
