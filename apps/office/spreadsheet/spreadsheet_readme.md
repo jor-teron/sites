@@ -548,5 +548,20 @@ Long text in an opened file was cut off: rows grew only for cells with Wrap on o
 - Old code kept as `(before SH39)` comments. Title and `SHEET_VERSION` are SH39; `?v=SH39` on config, settings, edit, style, rows, resize and hos.
 - Tests: `test-sh39-wrap.cjs`.
 
+## SH40 — File > Close and the "No workbook open" state
+
+Mirrors Writer DW18. The File menu is now New, Open..., Rename, Save, Save As, Print, **Close**, Delete, Export..., then Settings and Functions.
+
+- **Close** (`btn-close`, `SHEET_FILEMENU.closeWorkbook`) saves first the way New does: `SHEET_HOS.autosave({ flush: true })`, which writes the `.hos` autosave (Hub file or a picked file) or, for an opened `.xlsx` / `.xlsm` / `.ods` / `.csv`, `SHEET_SAVEFMT.flush` to its file. Then it shows the empty state; no new workbook is made. It asks first only when the edits have nowhere to go (standalone, no picked file, edits in the undo history, not blank), and never in the Hub (`closeNeedsConfirm`, `flushWrites`).
+- **Empty state** (`spreadsheet_empty.js`, `spreadsheet_empty.css`): no grid; a centred panel with New, Open... and Recent (the Hub's Documents `.hos` list from `SHEET_HOS.list`; standalone a hint to use Open...). The ribbon, ribbon tabs, formula bar and sheet tabs are inert and dimmed or hidden; Rename, Save, Save As, Print, Close, Delete and Export... are disabled. The Hub title is empty, so the window shows just "Spreadsheet".
+- Nothing autosaves while empty: `SHEET_HOS.save` / `autosave` are wrapped (`canWrite`), `skipWrite` is on, and `renderViewport` is held, so resize and scroll do not redraw the hidden grid. The workbook data and the undo history are cleared on entry.
+- Keys while empty: Ctrl+N (new here) and Ctrl+O (Open...) work; Ctrl+S shows "No workbook open" (Ctrl+P is handled by Quick Access, which toasts); edit shortcuts and Delete / Backspace outside a text field do nothing.
+- New, Open... (any opener: `SHEET_HOS.openFile`, `importXlsxFile`, `SHEET_SAVEFMT.openCsvFile`), a recent file or a link leave the empty state before the workbook is drawn; a failed or cancelled `.hos` / `.csv` open goes back to it. New while empty opens in this window (no Hub window, no tab, no question).
+- **Delete** (SH38) now ends in the empty state instead of a new Untitled (`M.blankWorkbook()` kept for a build without `spreadsheet_empty.js`).
+- **Boot:** a fresh window starts empty. A `#drive=&file=` link, `#new` or the SH38 `sheet_open_new` flag, and a Hub Office `?new=1` launch still open as before (`bootMode`; `SHEET_HOS.start` is wrapped after SH38's wrapper, and `spreadsheet_xlsx.js` still opens an `.xlsx` / `.ods` / `.csv` link first). Close drops the file link from the address, so a restored Hub window starts empty.
+- Quick Access: Undo / Redo / Save are off and Print toasts while empty (`spreadsheet_quick.js`).
+- Title and `SHEET_VERSION` are SH40. `?v=SH40` on `spreadsheet_settings.js`, `spreadsheet_quick.js`, `spreadsheet_filemenu.js`, and the new `spreadsheet_empty.js` / `spreadsheet_empty.css`.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh40-close.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

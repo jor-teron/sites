@@ -1,0 +1,102 @@
+/* ============================================================
+   FILE: spreadsheet_empty.css
+   ROLE: SH40 "No workbook open" panel (spreadsheet_empty.js, Writer DW18 ui/empty.css).
+         body.sheet-empty hides the grid, formula bar and sheet tabs and dims the
+         ribbon; the panel sits in the middle of the window.
+         Phone first; dark by default, light through body.sheet-light (the
+         spreadsheet.css variables).
+   ============================================================ */
+
+body.sheet-empty #sheet-wrap,
+body.sheet-empty #sheet-formula-row,
+body.sheet-empty #sheet-footer,
+body.sheet-empty #sheet-context-menu { display: none !important; }
+
+body.sheet-empty #of-ribbon,
+body.sheet-empty #of-tabs { opacity: 0.45; pointer-events: none; filter: grayscale(0.4); }
+
+.sheet-empty-panel[hidden] { display: none; }
+.sheet-empty-panel {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: calc(100% - 78px);
+  padding: 24px 14px 40px;
+  overflow-y: auto;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.sheet-empty-card {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 24px var(--shadow);
+  padding: 22px 18px 16px;
+  text-align: center;
+}
+.sheet-empty-mark {
+  display: inline-flex;
+  width: 48px; height: 48px;
+  align-items: center; justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1e8e3e, #34a853);
+  margin-bottom: 8px;
+}
+.sheet-empty-mark svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sheet-empty-title { margin: 4px 0 2px; font-size: 18px; font-weight: 600; }
+.sheet-empty-sub { margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+
+.sheet-empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+.sheet-empty-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; min-width: 128px;       /* touch size */
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--btn);
+  color: var(--text);
+  font: 500 14px system-ui, -apple-system, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+.sheet-empty-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sheet-empty-btn:hover { background: var(--hover); }
+.sheet-empty-btn:focus-visible, .sheet-empty-item:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+.sheet-empty-primary { background: var(--sel); border-color: transparent; color: #fff; }
+.sheet-empty-primary:hover { background: var(--sel); filter: brightness(1.08); }
+
+.sheet-empty-head {
+  text-align: left;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.sheet-empty-recent { display: flex; flex-direction: column; text-align: left; max-height: 40dvh; overflow-y: auto; }
+.sheet-empty-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 44px;
+  padding: 0 8px;
+  border: 0; border-radius: 8px;
+  background: transparent; color: var(--text);
+  font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; text-align: left; cursor: pointer;
+}
+.sheet-empty-item:hover { background: var(--hover); }
+.sheet-empty-item svg { flex: none; width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.sheet-empty-item span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-empty-none { padding: 10px 4px; font-size: 13px; color: var(--muted); }
+
+/* Disabled File menu items while empty */
+#of-file-menu .file-item:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+
+@media (min-width: 700px) {
+  .sheet-empty-panel { align-items: center; padding: 32px 24px 64px; }
+  .sheet-empty-card { padding: 28px 28px 20px; }
+}
+
+@media print { .sheet-empty-panel { display: none !important; } }
