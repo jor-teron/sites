@@ -458,7 +458,9 @@ function ensureCellVisible(r, c) {
     else if (x2 > right) wrap.scrollLeft = Math.max(0, x2 - (viewW - m.headW));
   }
   SHEET_VIEW.lock--;
-  renderViewport(true);
+  /* (before SH36) renderViewport(true);  forced a full rebuild on every arrow press, even when the cell was already visible */
+  renderViewport(false);
+  if (!(inpGrid[r] && inpGrid[r][c])) renderViewport(true);
 }
 
 function sheetHeadCell(c) { return SHEET_DOM.heads[c] || null; }

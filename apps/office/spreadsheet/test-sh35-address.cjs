@@ -266,9 +266,11 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
   assert.ok(html.indexOf('<title>Spreadsheet SH35</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH35) <title>Spreadsheet SH33</title> -->') !== -1);
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  for (const f of ['spreadsheet_config.js', 'spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js', 'spreadsheet_hos.js']) {
+  /* (before SH36) every file below was checked for ?v=SH35; SH36 bumps settings. */
+  for (const f of ['spreadsheet_config.js', 'spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_xlsx.js', 'spreadsheet_hos.js']) {
     assert.ok(live.indexOf(f + '?v=SH35') !== -1, f);
   }
+  assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js');
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH35";') !== -1);
   const readme = read('spreadsheet_readme.md');
   assert.ok(readme.indexOf('## SH35') !== -1);
