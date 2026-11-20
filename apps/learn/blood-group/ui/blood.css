@@ -1,4 +1,4 @@
-/* Blood Group BG-1 — app look on top of the Learn kit (../common/ui/learn.css): one scrollable page of sections and cards.
+/* Blood Group BG-2 — app look on top of the Learn kit (../common/ui/learn.css): two views (home, donation) of sections and cards.
    Single column on portrait phones, cards in a grid on wider screens. Red accent. Light mode follows the Hub theme (html.light).
    Plain CSS, no blur or heavy filters (weak phones). */
 .bg { --accent: #ef5350; --red: #d32f2f; --red2: #ff8a80; --plasma: #f4c95d; --wbc: #e8eaf6; --wbcn: #7e57c2; --plt: #f48fb1;
@@ -44,8 +44,40 @@ button.bg-card:hover { border-color: var(--accent); }
 .bg-bart { display: block; height: 16px; border-radius: 8px; background: var(--panel2); overflow: hidden; }
 .bg-barf { display: block; height: 100%; border-radius: 8px; background: var(--accent); }
 .bg-list { margin: 0; padding-left: 1.3em; line-height: 1.6; }
-.bg-next { flex-direction: row; justify-content: flex-start; text-align: left; gap: 12px; opacity: 0.6; border-style: dashed; cursor: default; }
-.bg-nextsvg { flex: none; width: 36px; height: 44px; fill: var(--muted); }
+.bg-next { flex-direction: row; justify-content: flex-start; text-align: left; gap: 14px; min-height: 72px; padding: 14px 16px;
+  border: 2px solid var(--accent); }
+.bg-nextsvg { flex: none; width: 40px; height: 48px; fill: var(--red); }
+.bg-next .bg-cn { font-size: 1.15rem; color: var(--accent); }
+/* BG-2 donation view */
+.bg-view { display: flex; flex-direction: column; gap: 18px; }
+.bg-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+.bg-vt { margin: 0; font-size: 1.35rem; color: var(--accent); }
+.bg-back { align-self: flex-start; min-height: 44px; padding: 8px 16px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--text); font: inherit; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.bg-back:hover { border-color: var(--accent); }
+.bg-togs { display: flex; gap: 8px; flex-wrap: wrap; }
+.bg-tog { flex: 1 1 140px; min-height: 44px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--text); font: inherit; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.bg-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bg-dropb { min-height: 72px; padding: 4px 0; border: 2px solid transparent; border-radius: 14px; background: none; font: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: opacity 0.15s; }
+.bg-dropb.bg-on { background: var(--panel2); }
+.bg-dropb.bg-off { opacity: 0.28; }
+.bg-dropb[aria-pressed="true"] { border-color: var(--accent); opacity: 1; }
+.bg-dropb .bg-dropsvg, .bg-uni .bg-dropsvg { pointer-events: none; }
+.bg-dropb .bg-dropt { pointer-events: none; }
+.bg-uni .bg-drop { width: 64px; }
+.bg-rule { flex-direction: row; align-items: center; justify-content: flex-start; text-align: left; gap: 12px; }
+.bg-why { align-items: flex-start; text-align: left; border-left: 4px solid var(--accent); }
+.bg-ico { flex: none; width: 48px; height: 48px; }
+.bg-i1 { fill: var(--panel2); stroke: var(--muted); stroke-width: 2; } .bg-i2 { fill: var(--red); }
+.bg-il { fill: none; stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.bg-iw { fill: none; stroke: #fff; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.bg-it { fill: var(--text); font: 800 13px system-ui, sans-serif; text-anchor: middle; } .bg-itw { fill: #fff; }
+.bg-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.bg-step { display: flex; align-items: flex-start; gap: 12px; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); }
+.bg-num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; }
 .bg-disc { margin: 0; font-size: 0.82rem; color: var(--muted); text-align: center; }
 @media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; }
   .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
