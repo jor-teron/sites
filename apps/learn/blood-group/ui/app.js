@@ -1,18 +1,21 @@
-/* Blood Group BG-3 — three views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
+/* Blood Group BG-3a — three views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
    1 what blood is (red cells, white cells, platelets, plasma; tap a part for a tip), 2 the ABO groups (a red cell with its
    A / B markers and the antibodies in the plasma; tap a card to highlight it), 3 the Rh factor and the 8 groups as drop badges,
-   4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation and family views.
+   4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation and family views
+   (shortcuts; the title-bar tabs also switch views).
    DONATION view (BG-2, hash #donate so refresh and the browser Back button work): a "Who can give to whom" tap chart of the
    8 groups (Give to / Receive from, highlights come from BG.canGive), universal donor and receiver, who can donate (India,
    basic), why donate, what happens at a donation (4 steps).
    FAMILY view (BG-3, hash #family): alleles explainer, Parents to child (pick Mum and Dad, possible / not possible, optional
-   genotypes with odds and a Punnett square) and Guess (which parents can have this child). "<- Blood groups" goes back to
-   the home view (in-app, not a category button).
+   genotypes with odds and a Punnett square) and Guess (which parents can have this child).
+   Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family, mapped to "" / #donate / #family. Deep links
+   and Back/Forward stay in sync. Home shortcut cards are kept; the old "<- Blood groups" back links are gone. Room is left
+   for a future Quiz tab (BG-4), not added here.
    Saves in localStorage: learn.blood-group.group (the last highlighted ABO group), learn.blood-group.chart ({ group, mode }),
    learn.blood-group.family ({ mode, mum, dad, mumAbo, dadAbo, mumRh, dadRh }).
-   In a Hub desktop window the header moves to the Hub title bar (LearnHubBar). No tabs and no buttons are sent. */
+   In a Hub desktop window the header (and these tabs) move to the Hub title bar (LearnHubBar). */
 (() => {
-  const B = window.BG, VER = 'BG-3', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
+  const B = window.BG, VER = 'BG-3a', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -122,10 +125,10 @@
     h('li', null, 'Your blood group comes from your parents. It stays the same all your life.'),
     h('li', null, 'Red cells live for about 4 months. Your body makes new ones all the time.')));
 
-  // ---- 6 cards that open the donation and family views ----
-  let cameFromHome = false, homeTop = 0;
+  // ---- 6 cards that open the donation and family views (shortcuts; tabs in the title bar also switch) ----
+  let homeTop = 0;
   const nextCard = (hash, title, sub, art) => h('button', { type: 'button', class: 'bg-card bg-next', 'data-go': hash,
-    onclick: () => { cameFromHome = true; location.hash = hash; } },
+    onclick: () => { location.hash = hash; } },
     art, h('span', { class: 'bg-nextt' }, h('span', { class: 'bg-cn' }, title), h('span', { class: 'bg-cj' }, sub)));
   const s6 = h('section', { class: 'bg-sec' }, h('div', { class: 'bg-nextrow' },
     nextCard('donate', 'Blood donation \u2192', 'Who can give to whom, who can donate, and what happens when you give blood.',
@@ -137,8 +140,6 @@
         s('path', { d: 'M20 24 C17.5 29 14 33 14 36 A6 6 0 0 0 26 36 C26 33 22.5 29 20 24 Z' })))));
 
   // ================= DONATION VIEW (BG-2) =================
-  const backBtn = () => h('button', { type: 'button', class: 'bg-back', 'data-go': 'home', onclick: goHome }, '\u2190 Blood groups');
-
   // ---- d1 who can give to whom ----
   const saved = store.read(PRE + 'chart', {}) || {};
   let chMode = saved.mode === 'receive' ? 'receive' : 'give', chPick = B.groups.includes(saved.group) ? saved.group : '';
@@ -383,16 +384,21 @@
     if (famMode === 'guess' && !guess) newGuess();
   }
 
-  // ---- views and navigation (#donate, #family) ----
+  // ---- views and navigation (#donate, #family); title-bar tabs switch these views ----
+  const TABS = [
+    { id: 'home', label: 'Groups', short: 'Groups', hash: '', controls: 'bg-home' },
+    { id: 'donate', label: 'Donation', short: 'Donate', hash: '#donate', controls: 'bg-donate' },
+    { id: 'family', label: 'Family', short: 'Family', hash: '#family', controls: 'bg-family' }
+  ];
   const disc = () => h('p', { class: 'bg-disc' }, 'For learning only. A doctor or blood bank can test your blood group.');
   const famNote = h('p', { class: 'bg-disc' }, 'Rare variants (like Bombay group) exist. Real family questions need a lab test.');
-  const home = h('div', { class: 'bg-view', 'data-view': 'home' }, s1, s2, s3, s4, s5, s6, disc());
-  const donate = h('div', { class: 'bg-view', 'data-view': 'donate', hidden: true },
-    h('div', { class: 'bg-top' }, backBtn(), h('h2', { class: 'bg-vt' }, 'Blood donation')), d1, d2, d3, d4, d5, backBtn(), disc());
-  const family = h('div', { class: 'bg-view', 'data-view': 'family', hidden: true },
-    h('div', { class: 'bg-top' }, backBtn(), h('h2', { class: 'bg-vt' }, 'Family puzzle')),
+  const home = h('div', { class: 'bg-view', id: 'bg-home', 'data-view': 'home', role: 'tabpanel' }, s1, s2, s3, s4, s5, s6, disc());
+  const donate = h('div', { class: 'bg-view', id: 'bg-donate', 'data-view': 'donate', role: 'tabpanel', hidden: true },
+    h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Blood donation')), d1, d2, d3, d4, d5, disc());
+  const family = h('div', { class: 'bg-view', id: 'bg-family', 'data-view': 'family', role: 'tabpanel', hidden: true },
+    h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Family puzzle')),
     f0, h('div', { class: 'bg-togs', role: 'group', 'aria-label': 'Family mode' }, famModeBtns),
-    parentsPane, guessPane, backBtn(), famNote);
+    parentsPane, guessPane, famNote);
   const here = h('span', { class: 'lrn-here' }, 'Blood Group');
   const head = h('header', { class: 'lrn-head' }, h('h1', null, here), h('span', { class: 'bg-ver' }, VER));
   const main = h('main', { class: 'lrn-main bg-main', id: 'lrn-main' }, home, donate, family);
@@ -401,17 +407,11 @@
     if (v === view) return;
     if (view === 'home') homeTop = main.scrollTop;
     view = v; home.hidden = v !== 'home'; donate.hidden = v !== 'donate'; family.hidden = v !== 'family';
-    here.textContent = v === 'donate' ? 'Blood Group \u203a Donation' : v === 'family' ? 'Blood Group \u203a Family' : 'Blood Group';
     main.scrollTop = v === 'home' ? homeTop : 0;
   }
-  function goHome() {
-    if (cameFromHome) { cameFromHome = false; history.back(); return; }   // undo our own #donate or #family entry
-    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
-    show('home');
-  }
   const route = () => {
-    const v = location.hash === '#donate' ? 'donate' : location.hash === '#family' ? 'family' : 'home';
-    if (v === 'home') cameFromHome = false;
+    const t = window.LearnHubBar && LearnHubBar.tabFromHash ? LearnHubBar.tabFromHash(TABS, location.hash) : null;
+    const v = t && t.id ? t.id : (location.hash === '#donate' ? 'donate' : location.hash === '#family' ? 'family' : 'home');
     show(v);
   };
   window.addEventListener('hashchange', route);
@@ -420,5 +420,5 @@
   root.className = 'lrn bg'; root.replaceChildren(head, main);
   route();
   document.title = 'Blood Group ' + VER;
-  if (window.LearnHubBar) LearnHubBar.attach(head);   // Hub desktop window: the header goes to the title bar (no tabs, no buttons)
+  if (window.LearnHubBar) LearnHubBar.attach(head, { tabs: TABS, hash: true, tabLabel: 'Blood Group sections' });
 })();
