@@ -240,10 +240,14 @@ test('writer.html wires Export ODT next to Export DOCX and loads odtgen', functi
   /* (before DW13) assert.ok(/<title>Writer DW1(1a|2)<\/title>/.test(live)); */
   /* (before DW13b) assert.ok(/<title>Writer DW1(1a|2|3)<\/title>/.test(live)); */
   /* (before DW13c) assert.ok(/<title>Writer DW1(1a|2|3|3b)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c)<\/title>/.test(live));
+  /* (before DW14) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW8) <title>Writer DW7</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
-  assert.ok(live.indexOf('Export ODT') !== -1);
+  /* (before DW14) assert.ok(live.indexOf('Export ODT') !== -1); */
+  assert.ok(live.indexOf('id="exportBtn"') !== -1);
+  assert.ok(live.indexOf('Export...') !== -1);
+  assert.ok(live.indexOf('id="exportMenu"') !== -1);
   assert.ok(live.indexOf('id="exportOdtBtn"') !== -1);
   assert.ok(live.indexOf('id="exportDocxBtn"') < live.indexOf('id="exportOdtBtn"'));
   assert.ok(live.indexOf('id="exportOdtBtn"') < live.indexOf('id="exportPdfBtn"'));
@@ -266,7 +270,8 @@ test('writer.html wires Export ODT next to Export DOCX and loads odtgen', functi
   /* (before DW13) assert.ok(/release:\s*'DW(11a|12)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13b) assert.ok(/release:\s*'DW(11a|12|13)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13c) assert.ok(/release:\s*'DW(11a|12|13|13b)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW14) assert.ok(/release:\s*'DW(11a|12|13|13b|13c)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 if (fs.existsSync('/usr/bin/soffice') || fs.existsSync('/usr/bin/libreoffice')) {

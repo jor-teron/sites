@@ -243,11 +243,13 @@ test('dragover outlines the header slot under a picture, and drop clears it', as
 test('release is DW13b; script loaded before writer-docxopen.js; no browser dialogs or fetch', () => {
   const html = read('writer.html');
   /* (before DW13c) assert.ok(html.replace(/<!--[\s\S]*?-->/g, '').indexOf('<title>Writer DW13b</title>') !== -1); */
-  assert.ok(/<title>Writer DW13(b|c)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW14) assert.ok(/<title>Writer DW13(b|c)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(13b|13c|14)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW13b) <title>Writer DW13</title> -->') !== -1);
   assert.ok(html.indexOf('modules/writer-imgdrop.js') !== -1 && html.indexOf('modules/writer-imgdrop.js') < html.indexOf('modules/writer-docxopen.js'));
   /* (before DW13c) assert.ok(/release:\s*'DW13b'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW13[bc]'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW14) assert.ok(/release:\s*'DW13[bc]'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(13b|13c|14)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
   const src = DROP.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(src));
   assert.ok(!/\bfetch\s*\(/.test(src));

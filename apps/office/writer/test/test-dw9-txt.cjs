@@ -77,16 +77,21 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   /* (before DW13) assert.ok(/<title>Writer DW1(1a|2)<\/title>/.test(live)); */
   /* (before DW13b) assert.ok(/<title>Writer DW1(1a|2|3)<\/title>/.test(live)); */
   /* (before DW13c) assert.ok(/<title>Writer DW1(1a|2|3|3b)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c)<\/title>/.test(live));
+  /* (before DW14) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
-  assert.ok(live.indexOf('Open .docx / .odt / .txt') !== -1);
-  assert.ok(live.indexOf('accept=".docx,.odt,.txt,') !== -1);
+  /* (before DW14) assert.ok(live.indexOf('Open .docx / .odt / .txt') !== -1); */
+  /* (before DW14) assert.ok(live.indexOf('accept=".docx,.odt,.txt,') !== -1); */
+  assert.ok(live.indexOf('Open...') !== -1);
+  assert.ok(live.indexOf('id="openFileBtn"') !== -1);
+  assert.ok(live.indexOf('accept=".how,.docx,.odt,.txt,') !== -1);
   assert.ok(live.indexOf('text/plain') !== -1);
   assert.ok(live.indexOf('src="modules/writer-txt.js"') !== -1);
   assert.ok(live.indexOf('src="modules/writer-txt.js"') < live.indexOf('src="modules/writer-docxopen.js"'));
   /* Mail merge data picker is unchanged and still accepts .txt as table data. */
   assert.ok(/id="mmFile"[^>]*accept="[^"]*\.txt[^"]*"/.test(live));
-  assert.ok(live.indexOf('id="howFile" accept=".how,application/json"') !== -1);
+  /* (before DW14) assert.ok(live.indexOf('id="howFile" accept=".how,application/json"') !== -1); */
+  assert.ok(html.indexOf('id="howFile" accept=".how,application/json"') !== -1);
   assert.ok(!/\?v=/.test(html), 'no cache-bust query');
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW11) assert.ok(/release:\s*'DW9'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -95,7 +100,8 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   /* (before DW13) assert.ok(/release:\s*'DW(11a|12)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13b) assert.ok(/release:\s*'DW(11a|12|13)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW13c) assert.ok(/release:\s*'DW(11a|12|13|13b)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW14) assert.ok(/release:\s*'DW(11a|12|13|13b|13c)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 test('docxopen and how.js accept .txt from the picker, drop and Hub hash', () => {

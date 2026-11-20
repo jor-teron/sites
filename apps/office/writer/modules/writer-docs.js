@@ -273,6 +273,34 @@ Writer.docs.saveAs = function saveAs() {
   });
 };
 
+/* DW14: which opener a picked file should use, from its name only. */
+Writer.docs.openKind = function openKind(fileName) {
+  var name = String(fileName || '').trim();
+  var dot = name.lastIndexOf('.');
+  if (dot < 0 || dot === name.length - 1) return null;
+  var ext = name.slice(dot + 1).toLowerCase();
+  if (ext === 'how') return 'how';
+  if (ext === 'docx') return 'docx';
+  if (ext === 'odt') return 'odt';
+  if (ext === 'txt') return 'txt';
+  return null;
+};
+
+/* DW14: send a picked file to the opener that already handles that kind. */
+Writer.docs.openPicked = function openPicked(file) {
+  if (!file) return;
+  var kind = Writer.docs.openKind(file.name);
+  if (kind === 'how') {
+    if (Writer.how) Writer.how.openFile(file, null);
+    return;
+  }
+  if (kind === 'docx' || kind === 'odt' || kind === 'txt') {
+    if (Writer.docxopen) Writer.docxopen.open(file);
+    return;
+  }
+  if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast('Choose a .how, .docx, .odt or .txt file to open it');
+};
+
 /* Buttons, Ctrl+S, autosave after input, save when leaving. */
 Writer.docs.bind = function bind() {
   var cfg = Writer.config;
@@ -280,7 +308,7 @@ Writer.docs.bind = function bind() {
   Writer.ui.onClick('newBtn', function () { Writer.docs.newDoc(); });
   Writer.ui.onClick('saveBtn', function () { Writer.docs.save(); });
   Writer.ui.onClick('saveAsBtn', function () { Writer.docs.saveAs(); });
-  Writer.ui.onClick('openHowBtn', function () {
+  /* (before DW14) Writer.ui.onClick('openHowBtn', function () {
     var inp = document.getElementById('howFile');
     if (!inp) return;
     inp.value = '';
@@ -289,6 +317,16 @@ Writer.docs.bind = function bind() {
   var howFile = document.getElementById('howFile');
   if (howFile) howFile.addEventListener('change', function () {
     if (howFile.files && howFile.files[0] && Writer.how) Writer.how.openFile(howFile.files[0], null);
+  }); */
+  Writer.ui.onClick('openFileBtn', function () {
+    var inp = document.getElementById('openFile');
+    if (!inp) return;
+    inp.value = '';
+    inp.click();
+  });
+  var openFile = document.getElementById('openFile');
+  if (openFile) openFile.addEventListener('change', function () {
+    if (openFile.files && openFile.files[0]) Writer.docs.openPicked(openFile.files[0]);
   });
 
   /* Margins come from the Page panel preset (see Writer.docs.load). Drop the old free-form key. */
