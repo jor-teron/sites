@@ -5,16 +5,16 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '../core/blood.js'), 'utf8'
 const B = ctx.window.BG, same = (a, b) => assert.deepStrictEqual(JSON.parse(JSON.stringify(a)), b);
 const ABO = ['A', 'B', 'O', 'AB'];
 
-test('tab list includes Myths (#myths) and leaves room for Health', () => {
+test('tab list includes Myths (#myths)', () => {
   const ids = B.views.map(t => t.id);
   const labels = B.views.map(t => t.label);
-  same(ids, ['home', 'donate', 'family', 'myths']);
-  same(labels, ['Groups', 'Donation', 'Family', 'Myths']);
+  same(ids.slice(0, 4), ['home', 'donate', 'family', 'myths']);
+  same(labels.slice(0, 4), ['Groups', 'Donation', 'Family', 'Myths']);
   const myths = B.views.find(t => t.id === 'myths');
   assert.ok(myths);
   assert.strictEqual(myths.hash, '#myths');
   assert.strictEqual(myths.short, 'Myths');
-  assert.ok(!B.views.some(t => /health|quiz/i.test(t.id + t.label + (t.hash || ''))));
+  assert.ok(!B.views.some(t => /quiz/i.test(t.id + t.label + (t.hash || ''))));
 });
 
 test('four personality entries, one each for A, B, O and AB, each flagged myth', () => {

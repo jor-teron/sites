@@ -1,4 +1,4 @@
-/* Blood Group BG-5 — app look on top of the Learn kit (../common/ui/learn.css): four views (home, donation, family puzzle, myths) of sections and cards, switched from title-bar tabs.
+/* Blood Group BG-6 — app look on top of the Learn kit (../common/ui/learn.css): five views (home, donation, family puzzle, myths, health) of sections and cards, switched from title-bar tabs.
    Single column on portrait phones, cards in a grid on wider screens. Red accent. Light mode follows the Hub theme (html.light).
    Plain CSS, no blur or heavy filters (weak phones). */
 .bg { --accent: #ef5350; --red: #d32f2f; --red2: #ff8a80; --plasma: #f4c95d; --wbc: #e8eaf6; --wbcn: #7e57c2; --plt: #f48fb1;
@@ -153,6 +153,21 @@ html.light .bg-chip[aria-pressed="true"] { color: #fff; }
 .bg-flip-back { display: none; }
 .bg-flip.bg-flipped .bg-flip-front, .bg-flip[aria-pressed="true"] .bg-flip-front { display: none; }
 .bg-flip.bg-flipped .bg-flip-back, .bg-flip[aria-pressed="true"] .bg-flip-back { display: flex; }
+
+/* BG-6 health: nutrient and food cards, anaemia signs, lifestyle tips.
+   Layouts are wrap-safe (auto-fill, nowrap badges/labels, min widths) so a narrow Hub window
+   does not clip names the way a viewport media query would miss. */
+.bg-nutri { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.bg-nutricard { align-items: flex-start; text-align: left; min-width: 0; gap: 6px; }
+.bg-nutricard .bg-cn { white-space: nowrap; }
+.bg-foods { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 6px 0 0; padding: 0; }
+.bg-food { display: inline-block; font-size: 0.82rem; padding: 4px 8px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--note); color: var(--text); white-space: nowrap; }
+.bg-signs { display: flex; flex-wrap: wrap; gap: 6px; }
+.bg-sign { display: inline-block; font-size: 0.88rem; font-weight: 600; padding: 6px 10px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
+.bg-warn { border-left: 4px solid var(--accent); }
+.bg-health-part2 { display: flex; flex-direction: column; gap: 18px; }
 /* Short tab labels when the title bar itself is narrow (Hub window or phone), not only when the desktop is 360px. */
 .bg .lrn-head-tabs { container-type: inline-size; }
 @container (max-width: 520px) {
@@ -162,7 +177,7 @@ html.light .bg-chip[aria-pressed="true"] { color: #fff; }
 }
 @media (max-width: 560px) { .bg-nextrow { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .lrn-head { flex-wrap: nowrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1rem; }
-  .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-pers { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-pers, .bg-nutri { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .bg-abotable { font-size: 0.72rem; } .bg-chip, .bg-childchip { font-size: 0.95rem; } }
 @media (max-width: 360px) { .bg-chip, .bg-childchip { font-size: 0.88rem; padding: 6px 2px; } .bg-abotable { font-size: 0.68rem; } }
 @media (min-width: 561px) and (max-aspect-ratio: 1/1) { .bg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

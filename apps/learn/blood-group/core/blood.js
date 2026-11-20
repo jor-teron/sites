@@ -1,4 +1,4 @@
-/* Blood Group BG-5 — data and pure rules, no DOM. Attaches window.BG.
+/* Blood Group BG-6 — data and pure rules, no DOM. Attaches window.BG.
    BG.groups: the 8 groups in display order. BG.parse('AB-') -> { abo: 'AB', rh: '-' } (null if not a group).
    BG.antigens(g): markers on the red cell ('A', 'B', 'RhD'). BG.antibodies(g): ABO antibodies in the plasma ('anti-A', 'anti-B').
    BG.india: approximate share of each group in India in percent (varies by region).
@@ -15,9 +15,12 @@
    BG-3b: BG.aboTable() is a 4x4 ABO reference ({ rows, cols, cells }) with Mum down the side and Dad across the top, both in
    A, B, AB, O order. Each cell lists the possible child ABO groups in that same order. BG.pickerWhy(mum, dad): one plain
    sentence for the family picker (what each parent can pass, the child's possible ABO groups, and a short Rh note).
-   BG-5 (myths): BG.views lists the title-bar tabs (Groups, Donation, Family, Myths). A future Health tab (BG-6) is not added.
-   BG.personality: A, B, O and AB trait cards, each with myth: true. BG.mythIntro: short history (Furukawa 1927, Nomi 1970s),
-   the studies note, and a bura-hara note. BG.mythFacts: myth vs fact pairs (myth and fact are non-empty strings). */
+   BG-5 (myths): BG.personality: A, B, O and AB trait cards, each with myth: true. BG.mythIntro: short history (Furukawa 1927,
+   Nomi 1970s), the studies note, and a bura-hara note. BG.mythFacts: myth vs fact pairs (myth and fact are non-empty strings).
+   BG-6 (health): BG.views lists the title-bar tabs (Groups, Donation, Family, Myths, Health). BG.health holds part 1, healthy
+   blood: nutrient needs (iron, B12, folate and vitamin C) each with foods, iron tips, anaemia (what it is, signs, who is at
+   higher risk, and a warning to test before iron tablets), lifestyle tips for circulation, and a not-medical-advice
+   disclaimer. Room is left in the Health view for BG-6a (normal numbers, a CBC explainer and an Hb checker). */
 (function (W) {
   const ABO = ['O', 'A', 'B', 'AB'];
   const groups = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'];
@@ -270,12 +273,13 @@
     return s;
   }
   // ---- BG-5: myths (Japan's blood-type personality, and myth vs fact) ----
-  // Room is left for a Health tab (BG-6); it is not added here.
+  // ---- BG-6: Health tab (part 1, healthy blood). Room is left for BG-6a. ----
   const views = [
     { id: 'home',   label: 'Groups',   short: 'Groups', hash: '' },
     { id: 'donate', label: 'Donation', short: 'Donate', hash: '#donate' },
     { id: 'family', label: 'Family',   short: 'Family', hash: '#family' },
-    { id: 'myths',  label: 'Myths',    short: 'Myths',  hash: '#myths' }
+    { id: 'myths',  label: 'Myths',    short: 'Myths',  hash: '#myths' },
+    { id: 'health', label: 'Health',   short: 'Health', hash: '#health' }
   ];
   const mythIntro = {
     history: 'In Japan, a belief called ketsueki-gata says your ABO group describes your personality. It grew from Takeji Furukawa\'s 1927 paper and became popular through Masahiko Nomi\'s books in the 1970s. It is still pop culture there, in horoscopes, dating, character profiles and even some job interviews.',
@@ -304,9 +308,49 @@
     { id: 'relative', myth: 'Blood from a relative is always safest.',
       fact: 'Relatives must be tested too, and a directed donation can carry some extra risks. Matching and testing matter, not family.' }
   ];
+
+  // ---- BG-6: healthy blood (general info, not medical advice) ----
+  const health = {
+    needs: [
+      { id: 'iron', name: 'Iron',
+        job: 'Used to make haemoglobin, which carries oxygen.',
+        foods: ['dal and lentils', 'rajma', 'chana', 'green leafy veg such as palak and methi',
+          'jaggery in moderation', 'eggs', 'meat and fish', 'dates', 'ragi', 'poha'] },
+      { id: 'b12', name: 'Vitamin B12',
+        job: 'Helps the body make red cells.',
+        foods: ['milk', 'curd', 'paneer', 'eggs', 'fish and meat', 'fortified foods'],
+        note: 'Vegetarians may need to watch B12, because it is found mainly in animal foods and in some fortified foods.' },
+      { id: 'folate', name: 'Folate',
+        job: 'Helps the body make red cells.',
+        foods: ['leafy greens', 'beans', 'citrus'] },
+      { id: 'vitc', name: 'Vitamin C',
+        job: 'Helps the body absorb iron from plant foods.',
+        foods: ['amla', 'citrus', 'guava', 'tomato', 'lemon'] }
+    ],
+    ironTips: [
+      'Add a vitamin C food to iron-rich meals, for example lemon on dal, or amla, guava or tomato with palak.',
+      'Avoid tea or coffee within about an hour of an iron-rich meal; they can reduce how much iron you absorb.',
+      'Cooking in an iron kadhai can add a little extra iron to the food.'
+    ],
+    anaemia: {
+      what: 'Anaemia means the blood has too little haemoglobin, so less oxygen reaches the body.',
+      signs: ['Tiredness', 'Pale skin or eyelids', 'Breathlessness', 'Dizziness', 'Cold hands'],
+      risk: 'Women and girls, people who are pregnant, children, vegetarians (for B12), and people with heavy periods or other blood loss are at higher risk.',
+      warning: 'Get a blood test before taking iron tablets; too much iron can harm.'
+    },
+    lifestyle: [
+      { id: 'water', title: 'Drink water', text: 'Staying hydrated helps blood flow easily.' },
+      { id: 'exercise', title: 'Regular exercise', text: 'For example, 30 minutes of walking most days helps circulation.' },
+      { id: 'smoke', title: 'No smoking', text: 'Smoking thickens the blood and harms blood vessels.' },
+      { id: 'alcohol', title: 'Limit alcohol', text: 'Too much alcohol can affect blood cells and the liver, which helps make blood proteins.' },
+      { id: 'weight', title: 'Keep a healthy weight', text: 'A healthy weight is easier on the heart and circulation.' }
+    ],
+    disclaimer: 'General information, not medical advice. See a doctor for symptoms or tests.'
+  };
   W.BG = { ABO, groups, aboInfo, rhInfo, india, parts, parse, antigens, antibodies, rhPositive, name, indiaTotal, byCommon,
     canGive, givesTo, receivesFrom, compatText, donor,
     aboGenos, rhGenos, aboPheno, rhPheno, punnett, childABO, childRh, childGroups, canHaveChild, childOdds, inheritWhy, makeGuess,
     ABO_SHOW, aboTable, pickerWhy,
-    views, mythIntro, personality, mythFacts };
+    views, mythIntro, personality, mythFacts,
+    health };
 })(window);
