@@ -57,7 +57,10 @@ test("gridContextMenuItems returns correct row context menu items", function () 
     "Clear contents",
     "---",
     "Hide row",
-    "Unhide rows"
+    /* (before SH39) "Unhide rows" was the last item */
+    "Unhide rows",
+    "---",
+    "Fit row height"
   ]);
 });
 

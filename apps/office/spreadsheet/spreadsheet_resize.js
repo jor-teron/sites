@@ -9,6 +9,10 @@
  * Auto-fit uses estimateRowHeight (pure math, no 26×100 layout reads).
  * HO3: the default cell size is 12pt = 16px, so the math default is 16 (was 13). One line is
  * 6 + 16 * 1.25 = 26px, still under the 30px automatic floor. Explicit cell sizes stay px.
+ * SH39: wrap is ON by default (Settings > "Wrap text by default"). A cell's wrap is st.wrap = true
+ * (explicit on), st.nowrap = true (explicit off), else the default: effectiveWrap(st, defaultOn).
+ * So every automatic row grows to fit long text, also in opened .xlsx / .ods / .csv files.
+ * A height set by hand (heights[r]) still wins; "Fit row height" (row menu) clears it.
  */
 
 /* Pure helper: estimated pixel height of one cell's text. Used by auto-fit and by tests.
@@ -107,6 +111,58 @@ function defaultSheetFontSize() {
   return SHEET_DEFAULT_FONT_PX;
 }
 
+/* ---------- SH39 pure helpers (test-sh39-wrap.cjs) ---------- */
+/* Effective wrap of a style. Explicit on (wrap === true) or off (nowrap === true) wins;
+ * otherwise the "Wrap text by default" setting (missing = on). */
+function effectiveWrap(st, defaultOn) {
+  if (st && st.wrap === true) return true;
+  if (st && st.nowrap === true) return false;
+  return defaultOn !== false;
+}
+/* Toolbar Wrap: store an explicit on / off. Off keeps st.wrap false, so the XLSX export
+ * (if (st.wrap) wrapText) and the .hos delta do not write wrap for it. */
+function setExplicitWrap(st, on) {
+  if (!st) return st;
+  st.wrap = !!on;
+  st.nowrap = !on;
+  return st;
+}
+/* True when the text needs more than one line in widthPx (a line break, or longer than the
+ * column at ~0.6em per character). Short text short-circuits, so plain cells stay cheap. */
+function wrapTextOverflows(text, widthPx, fontSize) {
+  var fs, charsPerLine;
+  text = text == null ? "" : String(text);
+  if (!text) return false;
+  if (text.indexOf("\n") !== -1 || text.indexOf("\r") !== -1) return true;
+  fs = fontSize || SHEET_DEFAULT_FONT_PX;
+  charsPerLine = Math.max(1, Math.floor(Math.max(1, (widthPx || 100) - 12) / Math.max(1, fs * 0.6)));
+  return text.length > charsPerLine;
+}
+/* "Wrap text by default" setting (SHEET_SETTINGS.s.wrapDefault); missing = on. */
+function sheetWrapDefault() {
+  var s = typeof SHEET_SETTINGS !== "undefined" && SHEET_SETTINGS ? SHEET_SETTINGS.s : null;
+  return !(s && s.wrapDefault === false);
+}
+/* Fit row height: clear the hand-set heights of rows r1..r2 so they auto-fit. Returns how many changed. */
+function clearRowHeights(heights, r1, r2) {
+  var r, n = 0, a = Math.min(r1, r2), b = Math.max(r1, r2);
+  if (!heights) return 0;
+  for (r = a; r <= b; r++) {
+    if (heights[r] != null) { heights[r] = null; n++; }
+  }
+  return n;
+}
+/* Width a cell's text can use: the column, or the visible columns of its merge. */
+function cellTextWidthPx(merges, r, c) {
+  var m = typeof styleMergeAt === "function" ? styleMergeAt(merges, r, c) : null, w = 0, i;
+  if (!m) return colWidthPx(c);
+  for (i = m.c1; i <= m.c2; i++) {
+    if (typeof hiddenCols !== "undefined" && hiddenCols && hiddenCols[i]) continue;
+    w += colWidthPx(i);
+  }
+  return w;
+}
+
 function colWidthPx(c) {
   if (typeof colWidths !== "undefined" && colWidths && colWidths[c]) return colWidths[c];
   if (typeof autoColWidth === "function") return autoColWidth();
@@ -135,6 +191,7 @@ function autoFitRowHeight(r) {
   merges = s && s.merges;
   var store = (typeof rowStore === "function" && typeof cells !== "undefined" && cells) ? rowStore(cells[r]) : null;
   if (store && store._n === 0) return maxH;
+  var wrapDef = sheetWrapDefault(), wrapOn, oneLine;   /* SH39 */
   for (c = 0; c < COLS; c++) {
     if (typeof hiddenCols !== "undefined" && hiddenCols && hiddenCols[c]) continue;
     if (store && !store[c]) continue;
@@ -154,8 +211,14 @@ function autoFitRowHeight(r) {
       w = mW;
     }
     fontSize = (st && st.fontSize) ? Number(st.fontSize) : defaultSheetFontSize();
+    /* SH39: wrap on by default. A one-line cell that fits under the current height skips the estimate. */
+    wrapOn = effectiveWrap(st, wrapDef);
+    oneLine = 6 + fontSize * 1.25;
+    if (oneLine <= maxH && text.indexOf("\n") === -1 && text.indexOf("\r") === -1 &&
+        (!wrapOn || !wrapTextOverflows(text, w, fontSize))) continue;
     need = estimateRowHeight(text, {
-      wrap: !!(st && st.wrap),
+      /* (before SH39) wrap: !!(st && st.wrap), */
+      wrap: wrapOn,
       widthPx: w,
       fontSize: fontSize,
       lineHeight: 1.25,
@@ -169,6 +232,19 @@ function autoFitRowHeight(r) {
     if (need > maxH) maxH = need;
   }
   return maxH;
+}
+
+/* SH39: row menu "Fit row height": the selected rows go back to automatic (content-fit). */
+function fitSelectedRowHeights() {
+  var s = typeof workbook !== "undefined" && workbook && workbook.sheets && workbook.sheets[workbook.active];
+  var g = typeof selRange === "function" ? selRange() : { r1: selR, r2: typeof extR === "number" ? extR : selR };
+  if (!s || !s.heights) return 0;
+  if (typeof undoRecord === "function") undoRecord("row-height");
+  var n = clearRowHeights(s.heights, g.r1, g.r2);
+  applyRowHeights();
+  if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
+  if (typeof saveStore === "function") saveStore();
+  return n;
 }
 
 function autoColWidth() {
@@ -299,7 +375,8 @@ SHEET_INIT.push(function () {
       var s = workbook && workbook.sheets[workbook.active];
       if (s && s.heights) {
         if (typeof undoRecord === "function") undoRecord("row-height");
-        s.heights[parseInt(ev.target.dataset.r, 10)] = null;
+        /* (before SH39) s.heights[parseInt(ev.target.dataset.r, 10)] = null; */
+        clearRowHeights(s.heights, parseInt(ev.target.dataset.r, 10), parseInt(ev.target.dataset.r, 10));   /* SH39: same as Fit row height */
         applyRowHeights();
         if (typeof applyHiddenAndFreeze === "function") applyHiddenAndFreeze();
         saveStore();
