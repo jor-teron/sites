@@ -419,3 +419,13 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - **Fresh window**: starts empty instead of reopening the newest .how (Hub) or a blank page (standalone). `Writer.empty.bootMode`: the DW15 `writer_open_new` flag or `#new` → blank; a `#drive=&file=` link (.how / .docx / .odt / .txt) → that file; Hub Office `?new=1` → blank; otherwise empty. Hub session restore keeps the window's current hash (`desktop/wm/wm_windows.js` curUrl), so a window opened on a file reopens it; Close drops that hash with `history.replaceState`, so a closed window restores empty.
 - Styles in `ui/empty.css` (theme variables, light and dark; 44px touch targets; phone first, centred from 700px).
 - Test: `node --test apps/office/writer/test/test-dw18-close.cjs`.
+
+## DW19 — linked left and right margins on the ruler
+
+- 20 Nov 2026 IST. Dragging either margin edge on the ruler (`#rulerGrabL` / `#rulerGrabR`) now moves the other side to the same value, so the text stays centred. The drag tip shows both values, e.g. "Left 2.5 · Right 2.5 cm". If the two margins were different (typed in Page Setup), the first linked drag makes them equal.
+- Hold **Alt** during the drag to move only that side (the before-DW19 behaviour, kept commented in `writer-ruler.js`).
+- Settings › Editing › **Link left and right margins** (`linkMargins` in `writer_settings`, on when missing). On touch screens (coarse pointer or ≤700px) a small chain-link button sits on the middle of the ruler's bottom edge (44px touch target); it shows and flips the same setting (crossed-out link = off).
+- Linked clamp: each side stays within the custom limits (0.5–5 cm) and the text is never narrower than 2 cm (`(paper − 2) / 2`). Unlinked keeps the old one-side clamp. Indent markers follow the live drag (DW17 `R.sync(live)` wiring).
+- Page Setup typed values (Custom margins dialog) are unchanged and stay independent.
+- Pure math: `Writer.ruler.linkMargins({ side, start, dx, w, linked, alt, min, max, minText })` → `{ left, right, linked, tip }`; `Writer.ruler.tipLabel`, `Writer.ruler.linkedFrom(settings)`.
+- Test: `node --test apps/office/writer/test/test-dw19-margins.cjs`.

@@ -25,7 +25,9 @@ Writer.settings = {
     paper: 'A4', orientation: 'portrait', margins: 'normal',
     /* (before DF21) autosave: true, backupSec: 0, hoverTabs: true, ribbonCollapsed: false */
     autosave: true, backupSec: 0, hoverTabs: true, ribbonCollapsed: false,
-    spellcheck: false   /* DF21: browser spell check on the page, off by default */
+    /* (before DW19) spellcheck: false   DF21: browser spell check on the page, off by default */
+    spellcheck: false,  /* DF21: browser spell check on the page, off by default */
+    linkMargins: true   /* DW19: ruler margin drag moves left and right together */
   },
   fonts: ['Times New Roman', 'Tinos'],
   sizes: [8, 10, 11, 12, 14, 16, 18],
@@ -69,7 +71,9 @@ Writer.settings.sections = function sections(s) {
       { key: 'font', type: 'select', id: 'setFont', label: 'Default font', options: S.fonts.map(function (f) { return [f, f]; }) },
       { key: 'fontSize', type: 'select', id: 'setFontSize', label: 'Default size', cast: Number, options: S.sizes.map(function (n) { return [n, n + ' pt']; }) },
       { key: 'lineHeight', type: 'select', id: 'setLine', label: 'Line spacing', cast: Number, options: S.spacings.map(function (n) { return [n, n.toFixed(n === 1.15 ? 2 : 1)]; }) },
-      { key: 'spellcheck', type: 'switch', id: 'setSpell', label: 'Spell check' }   /* DF21 */
+      /* (before DW19) { key: 'spellcheck', type: 'switch', id: 'setSpell', label: 'Spell check' }   DF21 */
+      { key: 'spellcheck', type: 'switch', id: 'setSpell', label: 'Spell check' },   /* DF21 */
+      { key: 'linkMargins', type: 'switch', id: 'setLinkMargins', label: 'Link left and right margins' }   /* DW19: ruler drag */
     ] },
     { title: 'New document', rows: [
       { key: 'paper', type: 'select', id: 'setPaper', label: 'Paper size', options: Object.keys(cfg.paperSizes).map(function (k) { return [k, cfg.paperSizes[k].label]; }) },
@@ -154,6 +158,7 @@ Writer.settings.apply = function apply(k) {
   if (!k || k === 'backupSec') S.startBackup();
   if (!k || k === 'ribbonCollapsed') { if (Writer.ribbon && Writer.ribbon.collapse) Writer.ribbon.collapse.apply(s.ribbonCollapsed); }  /* DF13c */
   if (!k || k === 'spellcheck') { if (Writer.write && Writer.write.applySpell) Writer.write.applySpell(); }  /* DF21 */
+  if (!k || k === 'linkMargins') { if (Writer.ruler && Writer.ruler.syncLink) Writer.ruler.syncLink(); }  /* DW19 */
 };
 
 Writer.settings.applyTheme = function applyTheme() {
