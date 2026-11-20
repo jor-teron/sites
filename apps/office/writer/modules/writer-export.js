@@ -384,12 +384,56 @@ Writer.export.exportOdt = function exportOdt() {
 
 /* File menu: Print / Export DOCX / Export ODT / Export PDF, and Ctrl+P. */
 /* (before DW8) File menu: Print / Export DOCX / Export PDF, and Ctrl+P. */
+/* DW14: File menu has one Export... item; the format buttons live in #exportMenu. */
+Writer.export.isChooserOpen = function isChooserOpen() {
+  var menu = document.getElementById('exportMenu');
+  return !!(menu && !menu.hidden);
+};
+
+Writer.export.closeChooser = function closeChooser() {
+  var menu = document.getElementById('exportMenu');
+  var btn = document.getElementById('exportBtn');
+  if (menu) menu.hidden = true;
+  if (btn) {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+};
+
+Writer.export.openChooser = function openChooser() {
+  var menu = document.getElementById('exportMenu');
+  var btn = document.getElementById('exportBtn');
+  var fileBtn = document.getElementById('fileBtn');
+  if (!menu) return;
+  if (Writer.ribbon && Writer.ribbon.setFile) Writer.ribbon.setFile(false);
+  menu.hidden = false;
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  var anchor = fileBtn || btn;
+  if (Writer.view && Writer.view.place && anchor) Writer.view.place(menu, anchor);
+};
+
 Writer.export.bind = function bind() {
   Writer.ui.onClick('printBtn', function () { Writer.export.printDocument(); });
-  Writer.ui.onClick('exportDocxBtn', function () { Writer.export.exportDocx(); });
+  Writer.ui.onClick('exportBtn', function () { Writer.export.openChooser(); });
+  /* (before DW14) Writer.ui.onClick('exportDocxBtn', function () { Writer.export.exportDocx(); });
   Writer.ui.onClick('exportOdtBtn', function () { Writer.export.exportOdt(); });
+  Writer.ui.onClick('exportPdfBtn', function () { if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download(); }); */
+  Writer.ui.onClick('exportDocxBtn', function () { Writer.export.closeChooser(); Writer.export.exportDocx(); });
+  Writer.ui.onClick('exportOdtBtn', function () { Writer.export.closeChooser(); Writer.export.exportOdt(); });
   /* Legacy (before MM4): image PDF only.
   Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); }); */
-  Writer.ui.onClick('exportPdfBtn', function () { if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download(); });   /* MM4 / DF14 real-text PDF */
+  Writer.ui.onClick('exportPdfBtn', function () {
+    Writer.export.closeChooser();
+    if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download();
+  });   /* MM4 / DF14 real-text PDF */
+  document.addEventListener('mousedown', function (e) {
+    if (!Writer.export.isChooserOpen()) return;
+    var menu = document.getElementById('exportMenu');
+    if (menu && menu.contains(e.target)) return;
+    Writer.export.closeChooser();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && Writer.export.isChooserOpen()) Writer.export.closeChooser();
+  });
   /* HO1: Ctrl/Cmd+P goes through ../shared/office-quick.js (same printDocument). */
 };

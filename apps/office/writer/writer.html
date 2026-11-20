@@ -29,7 +29,8 @@
   <!-- (before DW13) <title>Writer DW12</title> -->
   <!-- (before DW13b) <title>Writer DW13</title> -->
   <!-- (before DW13c) <title>Writer DW13b</title> -->
-  <title>Writer DW13c</title>
+  <!-- (before DW14) <title>Writer DW13c</title> -->
+  <title>Writer DW14</title>
   <meta name="theme-color" content="#5b5bf0">
   <!-- (before DF25) <link rel="icon" href="draftly_icon.png"> -->
   <link rel="icon" href="writer_icon.png">
@@ -91,27 +92,37 @@
   <!-- File menu (FT1) -->
   <div class="pop-menu file-menu" id="fileMenu" role="menu" aria-labelledby="fileBtn" hidden>
       <button type="button" class="file-item" role="menuitem" id="newBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M12 10v7M8.5 13.5h7"/></svg><span>New</span></button>
-      <button type="button" class="file-item" role="menuitem" id="renameBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/></svg><span>Rename</span></button>
-      <button type="button" class="file-item" role="menuitem" id="deleteCurrentBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><span>Delete document</span></button>
-      <button type="button" class="file-item" role="menuitem" id="openHowBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .how</span></button>
-      <input type="file" id="howFile" accept=".how,application/json" hidden>
+      <button type="button" class="file-item" role="menuitem" id="openFileBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open...</span></button>
+      <input type="file" id="openFile" accept=".how,.docx,.odt,.txt,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,text/plain" hidden>
+      <!-- (before DW14) <button type="button" class="file-item" role="menuitem" id="openHowBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .how</span></button> -->
+      <!-- (before DW14) <input type="file" id="howFile" accept=".how,application/json" hidden> -->
       <!-- (before DW7) <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx</span></button> -->
       <!-- (before DW9) <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx / .odt</span></button> -->
-      <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx / .odt / .txt</span></button>
+      <!-- (before DW14) <button type="button" class="file-item" role="menuitem" id="openDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7V19h17V9h-9l-2-2z"/><path d="M12 17v-5.5M9.5 14 12 11.5l2.5 2.5"/></svg><span>Open .docx / .odt / .txt</span></button> -->
       <!-- (before DW7) <input type="file" id="docxFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden> -->
       <!-- (before DW9) <input type="file" id="docxFile" accept=".docx,.odt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text" hidden> -->
-      <input type="file" id="docxFile" accept=".docx,.odt,.txt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,text/plain" hidden>
-      <div class="file-sep" role="separator"></div>
+      <!-- (before DW14) <input type="file" id="docxFile" accept=".docx,.odt,.txt,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,text/plain" hidden> -->
+      <button type="button" class="file-item" role="menuitem" id="renameBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/></svg><span>Rename</span></button>
       <button type="button" class="file-item" role="menuitem" id="saveBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save <kbd>Ctrl+S</kbd></span></button>
       <button type="button" class="file-item" role="menuitem" id="saveAsBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span>Save As</span></button>
       <button type="button" class="file-item" role="menuitem" id="printBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V4h10v5"/><rect x="4" y="9" width="16" height="7" rx="1.5"/><path d="M7 14h10v6H7z"/></svg><span>Print <kbd>Ctrl+P</kbd></span></button>
-      <button type="button" class="file-item" role="menuitem" id="exportDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export DOCX</span></button>
-      <button type="button" class="file-item" role="menuitem" id="exportOdtBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export ODT</span></button>
-      <button type="button" class="file-item" role="menuitem" id="exportPdfBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export PDF</span></button>
+      <button type="button" class="file-item" role="menuitem" id="deleteCurrentBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><!-- (before DW14) <span>Delete document</span> --><span>Delete</span></button>
+      <button type="button" class="file-item" role="menuitem" id="exportBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="exportMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export...</span></button>
+      <!-- (before DW14) <button type="button" class="file-item" role="menuitem" id="exportDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export DOCX</span></button> -->
+      <!-- (before DW14) <button type="button" class="file-item" role="menuitem" id="exportOdtBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export ODT</span></button> -->
+      <!-- (before DW14) <button type="button" class="file-item" role="menuitem" id="exportPdfBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>Export PDF</span></button> -->
+      <div class="file-sep" role="separator"></div>
       <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
       <div class="file-sep" role="separator"></div>
       <button type="button" class="file-item file-recent-head" role="menuitem" id="recentBtn" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Recent</span></button>
       <div class="recent-menu recent-inline" id="recentMenu" hidden></div>
+  </div>
+
+  <!-- DW14: one Export... chooser (DOCX, ODT, PDF). The three buttons keep the old ids so the existing export handlers still run. -->
+  <div class="pop-menu file-menu" id="exportMenu" role="menu" aria-labelledby="exportBtn" hidden>
+      <button type="button" class="file-item" role="menuitem" id="exportDocxBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>DOCX</span></button>
+      <button type="button" class="file-item" role="menuitem" id="exportOdtBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>ODT</span></button>
+      <button type="button" class="file-item" role="menuitem" id="exportPdfBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg><span>PDF</span></button>
   </div>
 
   <!-- Custom margins dialog -->

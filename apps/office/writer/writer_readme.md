@@ -8,7 +8,8 @@ Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are 
 <!-- (before DW13) The page title and `Writer.config.release` are `DW12` (DW10 is kept for a later release). -->
 <!-- (before DW13b) The page title and `Writer.config.release` are `DW13` (DW10 is kept for a later release). -->
 <!-- (before DW13c) The page title and `Writer.config.release` are `DW13b` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW13c` (DW10 is kept for a later release).
+<!-- (before DW14) The page title and `Writer.config.release` are `DW13c` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW14` (DW10 is kept for a later release).
 
 ## DW13c — letterhead header and footer (one full-width block, resizable picture, grows to fit)
 
@@ -363,3 +364,12 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - `writer-how.js`: `untitledFor(rows, pref)` picks the lowest free `Untitled N` among the `.how` files in Documents; `nameNew()` runs for a new Hub Office tab (`?new=1`), and File → New (`fresh()`) uses it instead of `Doc_…_2`.
 - Two new documents in the same minute no longer share a name, and an auto-made name that is already taken is saved quietly as the next free `Untitled N`, so the "Name already used" dialog (whose backdrop blocked the ribbon) only appears for a name you typed.
 - Test: `node --test apps/office/writer/test/test-ho12b-untitled.cjs`.
+
+
+## DW14 — File menu: one Open, one Export, new order
+
+- 20 Nov 2026 IST. The File menu no longer lists two Open items and three Export items. The order is now New, Open..., Rename, Save, Save As, Print, Delete, Export..., then Settings and Recent at the bottom, as before.
+- **Open...** uses one file picker for `.how`, `.docx`, `.odt` and `.txt`. The file is sent to the opener that already handled that type. A name that is not one of those types gets the usual toast.
+- **Export...** opens a small panel to pick DOCX, ODT or PDF, then runs the export we already had. The panel closes when you pick a format, press Escape, or click outside. It fits a phone screen.
+- **Delete document** is now labelled **Delete**.
+- The old menu buttons and file inputs are kept as `(before DW14)` comments. Test: `node --test apps/office/writer/test/test-dw14-filemenu.cjs`.
