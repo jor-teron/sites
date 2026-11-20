@@ -1,4 +1,4 @@
-/* Blood Group BG-2 — app look on top of the Learn kit (../common/ui/learn.css): two views (home, donation) of sections and cards.
+/* Blood Group BG-2 — app look on top of the Learn kit (../common/ui/learn.css): three views (home, donation, family puzzle) of sections and cards.
    Single column on portrait phones, cards in a grid on wider screens. Red accent. Light mode follows the Hub theme (html.light).
    Plain CSS, no blur or heavy filters (weak phones). */
 .bg { --accent: #ef5350; --red: #d32f2f; --red2: #ff8a80; --plasma: #f4c95d; --wbc: #e8eaf6; --wbcn: #7e57c2; --plt: #f48fb1;
@@ -79,6 +79,30 @@ button.bg-card:hover { border-color: var(--accent); }
 .bg-num { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800;
   display: flex; align-items: center; justify-content: center; }
 .bg-disc { margin: 0; font-size: 0.82rem; color: var(--muted); text-align: center; }
+/* BG-3 family puzzle */
+.bg-famicon { width: 48px; height: 48px; }
+.bg-genos { display: flex; flex-direction: column; gap: 8px; }
+.bg-genorow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bg-genol { flex: none; font-size: 0.88rem; color: var(--muted); min-width: 5.5em; }
+.bg-genob { flex: 0 1 auto; min-width: 72px; }
+.bg-famcell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.bg-famcell.bg-off { opacity: 0.28; }
+.bg-pct { font-size: 0.75rem; font-weight: 700; color: var(--muted); min-height: 1em; }
+.bg-famcell.bg-on .bg-pct { color: var(--accent); }
+.bg-punnetts { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.bg-pq { border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--panel); }
+.bg-pqcap { font-weight: 700; margin: 0 0 8px; text-align: center; }
+.bg-pqgrid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 4px; text-align: center; }
+.bg-pqh { font-size: 0.82rem; color: var(--muted); font-weight: 700; padding: 6px 4px; display: flex; align-items: center; justify-content: center; }
+.bg-pqc { background: var(--panel2); border-radius: 8px; font-weight: 800; padding: 10px 4px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.bg-guesschild { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.bg-pairwho { display: flex; gap: 18px; justify-content: center; width: 100%; }
+.bg-pairp { display: flex; flex-direction: column; align-items: center; }
+.bg-card.bg-yes { border-color: var(--mB); box-shadow: 0 0 0 2px var(--mB) inset; }
+.bg-card.bg-no { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+.bg-parents, .bg-guess { display: flex; flex-direction: column; gap: 14px; }
+.bg-nextrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+@media (max-width: 560px) { .bg-nextrow { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; }
   .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 561px) and (max-aspect-ratio: 1/1) { .bg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
