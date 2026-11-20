@@ -36,6 +36,9 @@
          It asks only when the edits have nowhere to go (never in the Hub). Delete
          now ends in the empty state too, and New while empty opens here.
          Tested by test-sh40-close.cjs.
+         SH40a: Close asks Save As / Discard / Cancel whenever the edits cannot be saved
+         back (also in the Hub, e.g. an .xlsx picked with no save-back target). Save As
+         closes only after it wrote. Tested by test-sh40a-close-ask.cjs.
    DEPENDS: SHEET_HOS, SHEET_SAVEFMT, ribbonSetFile, SHEET_INIT. Load last.
    ============================================================ */
 (function (root) {
@@ -452,7 +455,8 @@
     if (s && s.applying) info.changed = false;
     return info;
   };
-  /* File > Close: save first (the New / SH38 flush), then the empty state. No new workbook. */
+  /* (before SH40a)
+  /* File > Close: save first (the New / SH38 flush), then the empty state. No new workbook. *\/
   M.closeWorkbook = function closeWorkbook() {
     var em = EM(), f = F(), s = H();
     if (!em || em.isEmpty()) return Promise.resolve(false);
@@ -465,13 +469,149 @@
       if (!yes) return false;
       if (typeof root.saveStore === 'function') clearTimeout(root.saveStore._t);
       if (typeof root.blurEditing === 'function') { try { root.blurEditing(); } catch (e) {} }
-      /* .hos: the autosave (Hub file or a picked file); .xlsx / .ods / .csv: SHEET_SAVEFMT.flush. */
+      /* .hos: the autosave (Hub file or a picked file); .xlsx / .ods / .csv: SHEET_SAVEFMT.flush. *\/
       var flushed = (s && s.autosave) ? Promise.resolve(s.autosave({ flush: true })) : Promise.resolve();
       return flushed.catch(function () {}).then(function () {
         em.enter('close');
         toast('Closed ' + name);
         return true;
       });
+    }).catch(function () {
+      toast('Could not close workbook');
+      return false;
+    });
+  };
+  */
+  /* SH40a: the three choices when Close would drop edits that cannot be saved back. */
+  M.CLOSE_CHOICES = [
+    { id: 'cancel', label: 'Cancel' },
+    { id: 'discard', label: 'Discard', danger: true },
+    { id: 'saveas', label: 'Save As...', primary: true }
+  ];
+  /* 'close' or 'confirm' from closeInfo() (SHEET_EMPTY.closeDecision). */
+  M.closeDecisionFor = function closeDecisionFor(info, em) {
+    info = info || {};
+    var dirty = !!info.changed && !info.blank;
+    if (em && em.closeDecision) return em.closeDecision({ dirty: dirty, canSaveBack: !!info.willWrite });
+    if (em && em.closeNeedsConfirm) return em.closeNeedsConfirm(info) ? 'confirm' : 'close';
+    return 'close';
+  };
+  M.closeMessage = function closeMessage(name) {
+    return '"' + (name || 'Untitled') + '" has changes that cannot be saved back to its file. Save a copy with Save As, or discard the changes?';
+  };
+  /* Save As / Discard / Cancel box (OfficeDialog has OK / Cancel only). Same look: office-dialog.css.
+     Resolves 'saveas' | 'discard' | 'cancel'. Esc, a backdrop click or Cancel = 'cancel'. */
+  M.askCloseChoice = function askCloseChoice(name) {
+    var doc = root.document, D = root.OfficeDialog;
+    if (!doc || !doc.body || typeof doc.createElement !== 'function') {
+      return Promise.resolve(root.confirm ? (root.confirm(M.closeMessage(name) + ' (OK discards)') ? 'discard' : 'cancel') : 'cancel');
+    }
+    if (D && D.isOpen && D.isOpen()) return Promise.resolve('cancel');
+    return new Promise(function (resolve) {
+      var host = doc.createElement('dialog');
+      host.className = 'dlg-modal';
+      var box = doc.createElement('div');
+      box.className = 'dlg';
+      box.setAttribute('role', 'alertdialog');
+      box.setAttribute('aria-modal', 'true');
+      var title = doc.createElement('div');
+      title.className = 'dlg-title';
+      title.id = 'sheetCloseTitle';
+      title.textContent = 'Close workbook?';
+      var msg = doc.createElement('div');
+      msg.className = 'dlg-message';
+      msg.id = 'sheetCloseMsg';
+      msg.textContent = M.closeMessage(name);
+      box.setAttribute('aria-labelledby', 'sheetCloseTitle');
+      box.setAttribute('aria-describedby', 'sheetCloseMsg');
+      box.appendChild(title);
+      box.appendChild(msg);
+      var row = doc.createElement('div');
+      row.className = 'dlg-actions sheet-close-actions';
+      var btns = [], primary = null;
+      M.CLOSE_CHOICES.forEach(function (c) {
+        var b = doc.createElement('button');
+        b.type = 'button';
+        b.className = 'dlg-btn ' + (c.id === 'cancel' ? 'dlg-cancel' : 'dlg-ok') + (c.danger ? ' dlg-danger' : '');
+        b.textContent = c.label;
+        b.setAttribute('data-choice', c.id);
+        b.addEventListener('click', function () { finish(c.id); });
+        row.appendChild(b);
+        btns.push(b);
+        if (c.primary) primary = b;
+      });
+      box.appendChild(row);
+      host.appendChild(box);
+      var before = doc.activeElement, done = false;
+      function finish(id) {
+        if (done) return;
+        done = true;
+        doc.removeEventListener('keydown', onKey, true);
+        try { if (host.close) host.close(); } catch (e) {}
+        if (host.remove) host.remove();
+        try { if (before && before.focus && doc.contains(before)) before.focus({ preventScroll: true }); } catch (e) {}
+        resolve(id);
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish('cancel'); return; }
+        if (e.key === 'Enter' && !e.isComposing) {
+          e.preventDefault(); e.stopPropagation();
+          var a = doc.activeElement;
+          finish(a && a.getAttribute && a.getAttribute('data-choice') ? a.getAttribute('data-choice') : 'saveas');
+          return;
+        }
+        if (e.key === 'Tab') {
+          var i = btns.indexOf(doc.activeElement);
+          e.preventDefault();
+          btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+          return;
+        }
+        e.stopPropagation();   /* keep app shortcuts out while open */
+      }
+      doc.addEventListener('keydown', onKey, true);
+      host.addEventListener('cancel', function (e) { e.preventDefault(); finish('cancel'); });
+      host.addEventListener('mousedown', function (e) { if (e.target === host) { e.preventDefault(); finish('cancel'); } });
+      doc.body.appendChild(host);
+      if (typeof host.showModal === 'function') {
+        try { host.showModal(); } catch (e) { host.setAttribute('open', ''); }
+      } else host.setAttribute('open', '');
+      if (primary && primary.focus) primary.focus();
+    });
+  };
+  /* File > Close: save first (the New / SH38 flush), then the empty state. No new workbook.
+     SH40a: edits that cannot be saved back ask Save As / Discard / Cancel, in the Hub too. */
+  M.closeWorkbook = function closeWorkbook() {
+    var em = EM(), f = F(), s = H();
+    if (!em || em.isEmpty()) return Promise.resolve(false);
+    function nameNow() { return f && f.currentName ? f.currentName() : (s && s.stemName ? s.stemName() : 'workbook'); }
+    var name = nameNow();
+    function finish(discard) {
+      if (typeof root.saveStore === 'function') clearTimeout(root.saveStore._t);
+      if (typeof root.blurEditing === 'function') { try { root.blurEditing(); } catch (e) {} }
+      /* .hos: the autosave (Hub file or a picked file); .xlsx / .ods / .csv: SHEET_SAVEFMT.flush.
+         Discard writes nothing (there is no file to write back to anyway). */
+      var flushed = (!discard && s && s.autosave) ? Promise.resolve(s.autosave({ flush: true })) : Promise.resolve();
+      return flushed.catch(function () {}).then(function () {
+        var label = nameNow();
+        em.enter('close');
+        toast((discard ? 'Closed without saving ' : 'Closed ') + label);
+        return true;
+      });
+    }
+    var decision = M.closeDecisionFor(M.closeInfo(), em);
+    var ask = decision === 'confirm' ? M.askCloseChoice(name) : Promise.resolve('close');
+    return ask.then(function (choice) {
+      if (choice === 'cancel') return false;
+      if (choice === 'saveas') {
+        if (!s || !s.save) return false;
+        if (typeof root.saveStore === 'function') clearTimeout(root.saveStore._t);
+        /* The existing Save As flow (name + format box); close only after it wrote. */
+        return Promise.resolve(s.save({ explicit: true, saveAs: true })).then(function (res) {
+          if (!(res && res.wrote)) return false;
+          return finish(false);
+        }, function () { return false; });
+      }
+      return finish(choice === 'discard');
     }).catch(function () {
       toast('Could not close workbook');
       return false;

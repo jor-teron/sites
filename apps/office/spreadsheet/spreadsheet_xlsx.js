@@ -168,7 +168,9 @@ function importXlsxFile(file, o) {
   if (file && file.name && window.SHEET_HUB && SHEET_HUB.setTitle) {
     SHEET_HUB.setTitle(String(file.name).replace(/\.[^.]+$/, ""));
   }
-  Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) {
+  /* (before SH40a) Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) { ... }) returned nothing. */
+  /* SH40a: returns Promise<boolean> so a failed open can go back to the empty panel (spreadsheet_empty.js). */
+  return Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) {
     var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true });
     var loaded = xlsxSheetsFromBook(XLSX, wb);
     /* SH33: an .xlsm keeps its macro parts (raw bytes, memory only) for Save. */
@@ -220,7 +222,9 @@ function importXlsxFile(file, o) {
     try { unknownNote = typeof fxUnknownNote === "function" ? fxUnknownNote(sheets) : ""; } catch (e) { unknownNote = ""; }
     if (unknownNote) msg += ". " + unknownNote;
     saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
-  }).catch(function (e) { xlsxToast("Could not open file: " + e.message); });
+    return true;   /* SH40a */
+  /* (before SH40a) }).catch(function (e) { xlsxToast("Could not open file: " + e.message); }); */
+  }).catch(function (e) { xlsxToast("Could not open file: " + e.message); return false; });
 }
 
 /* Build one SheetJS worksheet from a sheet's cells (pure) */
