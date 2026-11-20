@@ -9,6 +9,8 @@
          at the caret / selection as inline margin-left,
          margin-right and text-indent (cm). Snap 0.1 cm, keep
          >= 2 cm of text. Undo via history.checkpoint + input.
+         DW17: Word-style SVG shapes that scale with zoom (--rs from
+         the ruler), a drag guide line, and I.positions (pure).
    DEPENDS: ruler, config, view, editor, history
    ============================================================ */
 
@@ -62,7 +64,7 @@ Writer.indent.read = function read(el) {
   return { left: f(s.marginLeft), right: f(s.marginRight), first: f(s.textIndent) };
 };
 
-/* Place the four markers for the block at the caret. */
+/* (before DW17) Place the four markers for the block at the caret.
 Writer.indent.sync = function sync(live) {
   var I = Writer.indent, R = Writer.ruler, cfg = Writer.config;
   var box = R.el('rulerIndent');
@@ -76,18 +78,87 @@ Writer.indent.sync = function sync(live) {
   R.el('indLeft').style.left = (L + v.left) * m.cm + 'px';
   R.el('indRight').style.left = (m.w - Rt - v.right) * m.cm + 'px';
 };
+*/
+
+/* DW17: marker x positions (px from the ruler track's left edge). Pure.
+   v = { left, right, first } cm; cm = px per cm (zoom included);
+   w = paper width cm; L / Rt = page margins cm. */
+Writer.indent.positions = function positions(v, cm, w, L, Rt) {
+  var r2 = function (n) { return Math.round(n * 100) / 100; };
+  return {
+    first: r2((L + v.left + v.first) * cm),
+    hang: r2((L + v.left) * cm),
+    left: r2((L + v.left) * cm),
+    right: r2((w - Rt - v.right) * cm)
+  };
+};
+
+/* DW17: last values placed, so a live margin drag can move the markers too. */
+Writer.indent.lastV = null;
+
+/* Place the four markers for the block at the caret.
+   DW17: `marg` ({ left, right } cm) overrides the page margins while a
+   ruler margin edge is being dragged; positions come from I.positions. */
+Writer.indent.sync = function sync(live, marg) {
+  var I = Writer.indent, R = Writer.ruler, cfg = Writer.config;
+  var box = R.el('rulerIndent');
+  if (!box || !R.on) return;
+  var v = live;
+  if (!v) { var bl = I.blocks(); if (!bl.length) { box.hidden = true; I.lastV = null; return; } v = I.read(bl[0]); }
+  I.lastV = v;
+  box.hidden = false;
+  var m = R.metrics();
+  var L = marg ? marg.left : cfg.marginLeftCm, Rt = marg ? marg.right : cfg.marginRightCm;
+  var p = I.positions(v, m.cm, m.w, L, Rt);
+  R.el('indFirst').style.left = p.first + 'px';
+  R.el('indHang').style.left = p.hang + 'px';
+  R.el('indLeft').style.left = p.left + 'px';
+  R.el('indRight').style.left = p.right + 'px';
+};
+
+/* DW17: Word-style marker shapes (inline SVG, accent fill + outline). */
+Writer.indent.SHAPES = {
+  first: '<svg class="ind-shape" viewBox="0 0 10 7" aria-hidden="true" focusable="false"><path d="M.5 .5h9V3L5 6.5 .5 3z"/></svg>',
+  hang: '<svg class="ind-shape" viewBox="0 0 10 7" aria-hidden="true" focusable="false"><path d="M5 .5 9.5 4v2.5h-9V4z"/></svg>',
+  left: '<svg class="ind-shape" viewBox="0 0 10 4" aria-hidden="true" focusable="false"><rect x=".5" y=".5" width="9" height="3"/></svg>',
+  right: '<svg class="ind-shape" viewBox="0 0 10 7" aria-hidden="true" focusable="false"><path d="M5 .5 9.5 4v2.5h-9V4z"/></svg>'
+};
+
+/* DW17: faint vertical guide down the page at the dragged marker. */
+Writer.indent.guide = function guide(g) {
+  var R = Writer.ruler, line = R.el('indGuide'), track = R.el('rulerTrack');
+  if (!line) return;
+  if (!g || !track) { line.hidden = true; return; }
+  var gr = g.getBoundingClientRect(), tr = track.getBoundingClientRect();
+  line.style.left = Math.round(gr.left + gr.width / 2) + 'px';
+  line.style.top = Math.round(tr.bottom) + 'px';
+  line.hidden = false;
+};
 
 Writer.indent.build = function build() {
   var I = Writer.indent, R = Writer.ruler, track = R.el('rulerTrack');
   if (!track || R.el('rulerIndent')) return;
   var d = document.createElement('div');
   d.className = 'ruler-indent'; d.id = 'rulerIndent'; d.hidden = true;
-  d.innerHTML =
+  /* (before DW17) d.innerHTML =
     '<div class="ind-grab ind-first" id="indFirst" data-k="first" title="First-line indent"><i></i></div>' +
     '<div class="ind-grab ind-hang" id="indHang" data-k="hang" title="Hanging indent"><i></i></div>' +
     '<div class="ind-grab ind-left" id="indLeft" data-k="left" title="Left indent"><i></i></div>' +
-    '<div class="ind-grab ind-right" id="indRight" data-k="right" title="Right indent"><i></i></div>';
+    '<div class="ind-grab ind-right" id="indRight" data-k="right" title="Right indent"><i></i></div>'; */
+  var S = I.SHAPES;
+  d.innerHTML =
+    '<div class="ind-grab ind-first" id="indFirst" data-k="first" title="First-line indent">' + S.first + '</div>' +
+    '<div class="ind-grab ind-hang" id="indHang" data-k="hang" title="Hanging indent">' + S.hang + '</div>' +
+    '<div class="ind-grab ind-left" id="indLeft" data-k="left" title="Left indent">' + S.left + '</div>' +
+    '<div class="ind-grab ind-right" id="indRight" data-k="right" title="Right indent">' + S.right + '</div>';
   track.appendChild(d);
+  /* DW17: drag guide line (fixed, so it spans the visible page). */
+  if (!R.el('indGuide')) {
+    var gl = document.createElement('div');
+    gl.className = 'ind-guide'; gl.id = 'indGuide'; gl.hidden = true;
+    gl.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(gl);
+  }
   d.querySelectorAll('.ind-grab').forEach(function (g) {
     g.addEventListener('mousedown', function (e) { e.preventDefault(); });  // keep the caret
     g.addEventListener('pointerdown', I.start);
@@ -107,6 +178,7 @@ Writer.indent.start = function start(e) {
   g.addEventListener('pointermove', I.move);
   g.addEventListener('pointerup', I.end);
   g.addEventListener('pointercancel', I.end);
+  I.guide(g);   // DW17
 };
 
 Writer.indent.r1 = function (v) { return Math.round(v * 10) / 10; };
@@ -134,6 +206,7 @@ Writer.indent.move = function move(e) {
   c.first = I.r1(c.first);
   d.cur = c;
   I.sync(c);
+  I.guide(d.g);   // DW17
   var tip = R.el('rulerTip'), label, at;
   if (d.k === 'first') { label = 'First line ' + (c.left + c.first).toFixed(1); at = cfg.marginLeftCm + c.left + c.first; }
   else if (d.k === 'hang') { label = 'Hanging ' + c.left.toFixed(1); at = cfg.marginLeftCm + c.left; }
@@ -158,6 +231,7 @@ Writer.indent.end = function end() {
   d.g.removeEventListener('pointerup', I.end);
   d.g.removeEventListener('pointercancel', I.end);
   R.el('rulerTip').hidden = true;
+  I.guide(null);   // DW17: hide the guide on drop / cancel
   var c = d.cur, v0 = d.v0;
   if (c.left === v0.left && c.right === v0.right && c.first === v0.first) { I.sync(); return; }
   d.bl.forEach(function (el) {
@@ -177,7 +251,16 @@ Writer.indent.init = function init() {
   if (!R) return;
   I.build();
   var rs = R.sync;
-  R.sync = function (live) { var out = rs.apply(this, arguments); if (!live) I.sync(); return out; };
+  /* (before DW17) R.sync = function (live) { var out = rs.apply(this, arguments); if (!live) I.sync(); return out; }; */
+  /* DW17: a zoom / page change during an indent drag keeps the dragged values
+     (it used to snap the markers back to the block's old values), and a live
+     margin drag moves the markers with the margin edge. */
+  R.sync = function (live) {
+    var out = rs.apply(this, arguments);
+    if (!live) I.sync(I.drag ? I.drag.cur : undefined);
+    else if (!I.drag && I.lastV) I.sync(I.lastV, live);
+    return out;
+  };
   document.addEventListener('selectionchange', function () { if (!I.drag) I.sync(); });
   document.addEventListener('input', function () { if (!I.drag) I.sync(); });
   I.sync();

@@ -10,7 +10,8 @@ Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are 
 <!-- (before DW13c) The page title and `Writer.config.release` are `DW13b` (DW10 is kept for a later release). -->
 <!-- (before DW14) The page title and `Writer.config.release` are `DW13c` (DW10 is kept for a later release). -->
 <!-- (before DW16) The page title and `Writer.config.release` are `DW14` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW16` (DW10 is kept for a later release).
+<!-- (before DW17) The page title and `Writer.config.release` are `DW16` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW17` (DW10 is kept for a later release).
 
 ## DW13c — letterhead header and footer (one full-width block, resizable picture, grows to fit)
 
@@ -397,3 +398,13 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - When the menu opens (and if the window is resized while it is open), Writer sets `--file-menu-top` from the menu's actual top after it is positioned. In the Hub, the menu is moved after `setFile`, so the top is measured again. The height formula is `Writer.ui.menuMaxHeight(top, viewH)` (never shorter than 160px).
 - No fly-out: Recent stays an inline list inside the File menu.
 - Test: `node --test apps/office/writer/test/test-dw16-filemenu-height.cjs`.
+
+## DW17 — ruler indent markers: Word-style, placed inside the ruler, scale with zoom
+
+- 20 Nov 2026 IST. The four indent markers (DF7) were fixed 5–6px CSS-border triangles on a fixed 22px ruler: tiny at 150–200%, the left-indent square hung below the ruler and the hanging / right triangles floated mid-track.
+- They are now small inline SVG shapes in Word's style, accent fill with a dark outline (readable in light and dark themes): first line = down-pointing pentagon on the top edge; hanging = up-pointing pentagon sitting on the left-indent block; left indent = block on the bottom edge, joined to the hanging marker; right indent = up-pointing pentagon on the bottom edge. All stay inside the ruler track.
+- `--rs` on `#ruler` = `Writer.ruler.scale(zoom)` (zoom held to 0.8–1.6). Track height, tick lengths, tick numbers, marker sizes, the margin grabs and the tip follow it. Touch grab zones stay 44px wide.
+- Hover and drag highlight the marker (no scale animation with `prefers-reduced-motion`). While dragging, a faint dashed guide line runs down the page at the marker; it hides on drop / cancel and in print.
+- Marker x positions come from the pure `Writer.indent.positions(v, cm, w, L, Rt)`.
+- Fixes: a zoom or page change during an indent drag no longer snaps the markers back to the old values; dragging a ruler margin edge now moves the indent markers with it (they used to stay put until drop). Sync order was already right: every zoom path (status bar, Ctrl+wheel / keys, fit-to-width on resize) ends in `view.fit()` → `ruler.sync()` → `indent.sync()`.
+- Test: `node --test apps/office/writer/test/test-dw17-ruler-indent.cjs`.

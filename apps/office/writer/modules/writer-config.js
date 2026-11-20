@@ -67,8 +67,9 @@ Writer.config = {
   /* (before DW14a) release: 'DW14', */
   /* (before DW15) release: 'DW14a', */
   /* (before DW16) release: 'DW15', */
-  /* DW16: release id (also in the page title, Writer DW16). DW10 is kept for later. */
-  release: 'DW16',
+  /* (before DW17) release: 'DW16', */
+  /* DW17: release id (also in the page title, Writer DW17). DW10 is kept for later. */
+  release: 'DW17',
 
   /* ----- Margins (cm) ----- */
   /* Top page margin. */
