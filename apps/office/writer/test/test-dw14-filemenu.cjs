@@ -107,7 +107,8 @@ test('writer.html File menu: new order, one Open..., one Export...', () => {
   assert.ok(html.indexOf('<!-- (before DW14) <input type="file" id="howFile" accept=".how,application/json" hidden> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW14) <button type="button" class="file-item" role="menuitem" id="openDocxBtn">') !== -1);
   assert.ok(html.indexOf('<!-- (before DW14) <title>Writer DW13c</title> -->') !== -1);
-  assert.ok(/<title>Writer DW14<\/title>/.test(src));
+  /* (before DW14a) assert.ok(/<title>Writer DW14<\/title>/.test(src)); */
+  assert.ok(/<title>Writer DW14a?<\/title>/.test(src));
   assert.ok(!/\?v=/.test(html), 'no cache-bust query');
 });
 
@@ -129,5 +130,6 @@ test('docs.js and export.js keep the old wiring as comments and bind the new con
   assert.ok(liveExp.indexOf("Writer.ui.onClick('exportOdtBtn'") !== -1);
   assert.ok(liveExp.indexOf("Writer.ui.onClick('exportPdfBtn'") !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
-  assert.ok(/release:\s*'DW14'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW14a) assert.ok(/release:\s*'DW14'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW14a?'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });

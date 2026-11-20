@@ -9,6 +9,9 @@
          DF3: a blank document is kept in memory only; it is
          stored on its first real edit.
          (before HOW1) load / Recent / save used IndexedDB.
+         DW14: one Open... in the File menu, routed by openKind.
+         DW14a: Open... uses showOpenFilePicker when it is available,
+         so Save can write back to a picked .docx / .odt.
    DEPENDS: config, storage, ui, editor, pages, history, view
    ============================================================ */
 
@@ -301,6 +304,77 @@ Writer.docs.openPicked = function openPicked(file) {
   if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast('Choose a .how, .docx, .odt or .txt file to open it');
 };
 
+/* DW14a: use the browser's open picker when the window has it. */
+Writer.docs.openMode = function openMode(win) {
+  if (win === undefined && typeof window !== 'undefined') win = window;
+  return (win && typeof win.showOpenFilePicker === 'function') ? 'picker' : 'input';
+};
+
+/* DW14a: user cancel is silent; any other picker failure falls back to the hidden input. */
+Writer.docs.openPickerFail = function openPickerFail(err) {
+  if (err && err.name === 'AbortError') return 'silent';
+  return 'input';
+};
+
+/* DW14a: types for the handle picker (includes .how, which DW12's docx picker did not). */
+Writer.docs.pickTypes = function pickTypes() {
+  return [{
+    description: 'Documents (.how, .docx, .odt, .txt)',
+    accept: {
+      'application/json': ['.how'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.oasis.opendocument.text': ['.odt'],
+      'text/plain': ['.txt']
+    }
+  }];
+};
+
+/* DW14a: open a file from a FileSystemFileHandle so Save can write back. */
+Writer.docs.openPickedHandle = function openPickedHandle(handle) {
+  if (!handle || !handle.getFile) return Promise.resolve();
+  return handle.getFile().then(function (file) {
+    if (!file) return;
+    var kind = Writer.docs.openKind(file.name);
+    if (kind === 'how') {
+      /* How.openFile already accepts a handle dest, so Save can write back to the .how. */
+      if (Writer.how) Writer.how.openFile(file, { kind: 'handle', handle: handle, name: handle.name || file.name });
+      return;
+    }
+    if (kind === 'docx' || kind === 'odt' || kind === 'txt') {
+      /* Same handle path DW12 used on Open .docx / .odt / .txt. A .txt still becomes a .how copy. */
+      if (Writer.docxopen) Writer.docxopen.open(file, { handle: handle });
+      return;
+    }
+    if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast('Choose a .how, .docx, .odt or .txt file to open it');
+  });
+};
+
+/* DW14a: the hidden <input type=file> used when the handle picker is missing or fails. */
+Writer.docs.openWithInput = function openWithInput() {
+  var inp = document.getElementById('openFile');
+  if (!inp) return;
+  inp.value = '';
+  inp.click();
+};
+
+/* DW14a: File > Open.... Uses the handle picker when it is available and not in the Hub
+   (same Hub rule as Writer.docxopen.canPick from DW12). */
+Writer.docs.openFromMenu = function openFromMenu(win) {
+  if (win === undefined && typeof window !== 'undefined') win = window;
+  if (Writer.docs.openMode(win) !== 'picker' || (Writer.how && Writer.how.inHub && Writer.how.inHub())) {
+    Writer.docs.openWithInput();
+    return Promise.resolve();
+  }
+  return win.showOpenFilePicker({ types: Writer.docs.pickTypes(), multiple: false }).then(function (hs) {
+    var h = hs && hs[0];
+    if (!h) return;
+    return Writer.docs.openPickedHandle(h);
+  }).catch(function (e) {
+    if (Writer.docs.openPickerFail(e) === 'silent') return;
+    Writer.docs.openWithInput();
+  });
+};
+
 /* Buttons, Ctrl+S, autosave after input, save when leaving. */
 Writer.docs.bind = function bind() {
   var cfg = Writer.config;
@@ -318,12 +392,13 @@ Writer.docs.bind = function bind() {
   if (howFile) howFile.addEventListener('change', function () {
     if (howFile.files && howFile.files[0] && Writer.how) Writer.how.openFile(howFile.files[0], null);
   }); */
-  Writer.ui.onClick('openFileBtn', function () {
+  /* (before DW14a) Writer.ui.onClick('openFileBtn', function () {
     var inp = document.getElementById('openFile');
     if (!inp) return;
     inp.value = '';
     inp.click();
-  });
+  }); */
+  Writer.ui.onClick('openFileBtn', function () { Writer.docs.openFromMenu(); });
   var openFile = document.getElementById('openFile');
   if (openFile) openFile.addEventListener('change', function () {
     if (openFile.files && openFile.files[0]) Writer.docs.openPicked(openFile.files[0]);

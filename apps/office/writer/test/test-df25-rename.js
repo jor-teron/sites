@@ -58,7 +58,8 @@ var title = htmlLive.match(/<title>([^<]*)<\/title>/);
 /* (before DW13b) ok('title is Writer DW12 or DW13', title && /^Writer DW1(2|3)$/.test(title[1]), title && title[1]); */
 /* (before DW13c) ok('title is Writer DW12, DW13 or DW13b', title && /^Writer DW1(2|3|3b)$/.test(title[1]), title && title[1]); */
 /* (before DW14) ok('title is Writer DW12, DW13, DW13b or DW13c', title && /^Writer DW1(2|3|3b|3c)$/.test(title[1]), title && title[1]); */
-ok('title is Writer DW12, DW13, DW13b, DW13c or DW14', title && /^Writer DW1(2|3|3b|3c|4)$/.test(title[1]), title && title[1]);
+/* (before DW14a) ok('title is Writer DW12, DW13, DW13b, DW13c or DW14', title && /^Writer DW1(2|3|3b|3c|4)$/.test(title[1]), title && title[1]); */
+ok('title is Writer DW12, DW13, DW13b, DW13c, DW14 or DW14a', title && /^Writer DW1(2|3|3b|3c|4|4a)$/.test(title[1]), title && title[1]);
 ok('no ?v= cache-bust', htmlLive.indexOf('?v=') === -1);
 var refs = [];
 htmlLive.replace(/<(?:script|link)\b[^>]*?\s(?:src|href)="([^"]+)"/g, function (_, u) { refs.push(u); });
@@ -119,7 +120,8 @@ ok('global is Writer, Draftly is an alias', ctx.window.Writer && ctx.window.Draf
 /* (before DW13b) ok('config release is DW12 or DW13', /^DW1(2|3)$/.test(ctx.window.Writer.config.release)); */
 /* (before DW13c) ok('config release is DW12, DW13 or DW13b', /^DW1(2|3|3b)$/.test(ctx.window.Writer.config.release)); */
 /* (before DW14) ok('config release is DW12, DW13, DW13b or DW13c', /^DW1(2|3|3b|3c)$/.test(ctx.window.Writer.config.release)); */
-ok('config release is DW12, DW13, DW13b, DW13c or DW14', /^DW1(2|3|3b|3c|4)$/.test(ctx.window.Writer.config.release));
+/* (before DW14a) ok('config release is DW12, DW13, DW13b, DW13c or DW14', /^DW1(2|3|3b|3c|4)$/.test(ctx.window.Writer.config.release)); */
+ok('config release is DW12, DW13, DW13b, DW13c, DW14 or DW14a', /^DW1(2|3|3b|3c|4|4a)$/.test(ctx.window.Writer.config.release));
 ok('migration ran at load: writer_settings copied', ls.getItem('writer_settings') === '{"theme":"dark","ruler":true}');
 ok('theme copied', ls.getItem('writer_theme') === 'dark');
 ok('dash key copied', ls.getItem('writer-ribbon-tab') === 'page');
