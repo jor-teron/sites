@@ -9,7 +9,7 @@
          sheet tabs are off, the Hub title is just "Spreadsheet" and nothing
          is saved, so no stray Untitled file appears.
          Pure rules (next, canEdit, canWrite, bootMode, hashHasFile,
-         keyAction, closeNeedsConfirm, flushWrites, recentRows,
+         keyAction, closeNeedsConfirm, closeDecision (SH40a), flushWrites, recentRows,
          workbookBlank) are tested in test-sh40-close.cjs; enter / leave
          touch the page.
    DEPENDS: (at run time) SHEET_HOS, SHEET_SAVEFMT, SHEET_FILEMENU, SHEET_HUB,
@@ -95,7 +95,17 @@
     return null;
   };
 
-  /* Close asks first only when the flush cannot keep the edits, and never in the Hub:
+  /* SH40a: Close asks (Save As / Discard / Cancel) whenever the workbook has edits and the
+     save before Close cannot write them back (no file target), in the Hub too.
+     o.dirty: edits in the undo history and not blank. o.canSaveBack: flushWrites(...). */
+  E.closeDecision = function closeDecision(o) {
+    o = o || {};
+    if (!o.dirty) return 'close';
+    return o.canSaveBack ? 'close' : 'confirm';
+  };
+
+  /* (before SH40a) Close used closeNeedsConfirm (kept for older callers and tests).
+     Close asks first only when the flush cannot keep the edits, and never in the Hub:
      o.inHub true -> no; o.willWrite true -> no; o.blank -> no; else o.changed. */
   E.closeNeedsConfirm = function closeNeedsConfirm(o) {
     o = o || {};
@@ -320,7 +330,8 @@
     }
     if (typeof root.importXlsxFile === 'function' && !root.importXlsxFile._sh40) {
       var imp = root.importXlsxFile;
-      root.importXlsxFile = function () { return opening(imp, root, arguments); };   /* returns nothing: no re-enter */
+      /* (before SH40a) importXlsxFile returned nothing, so a failed open stayed on a blank grid. */
+      root.importXlsxFile = function () { return opening(imp, root, arguments); };   /* SH40a: Promise<boolean>; false goes back to empty */
       root.importXlsxFile._sh40 = true;
     }
     /* No grid while empty: resize / scroll / timers do not redraw a hidden table. */

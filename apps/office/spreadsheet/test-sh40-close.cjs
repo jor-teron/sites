@@ -106,6 +106,9 @@ function page(o) {
   vm.runInContext(read('spreadsheet_filemenu.js'), ctx, { filename: 'spreadsheet_filemenu.js' });
   vm.runInContext(read('spreadsheet_empty.js'), ctx, { filename: 'spreadsheet_empty.js' });
   ctx.SHEET_INIT.forEach((fn) => fn());
+  /* SH40a: Close asks with a Save As / Discard / Cancel box (no DOM here): stand-in that logs like the old confirm.
+     (before SH40a) closeWorkbook used OfficeDialog.confirm, logged above as confirm:<title>. */
+  ctx.SHEET_FILEMENU.askCloseChoice = () => { log.push('confirm:Close workbook?'); return Promise.resolve(o.choice || (o.answer === false ? 'cancel' : 'discard')); };
   return { ctx, ids, body, log, hos, fmt, winListeners, docListeners, E: ctx.SHEET_EMPTY, M: ctx.SHEET_FILEMENU };
 }
 const tick = () => new Promise((r) => setTimeout(r, 0));

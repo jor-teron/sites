@@ -563,5 +563,17 @@ Mirrors Writer DW18. The File menu is now New, Open..., Rename, Save, Save As, P
 - Title and `SHEET_VERSION` are SH40. `?v=SH40` on `spreadsheet_settings.js`, `spreadsheet_quick.js`, `spreadsheet_filemenu.js`, and the new `spreadsheet_empty.js` / `spreadsheet_empty.css`.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh40-close.cjs`.
 
+## SH40a — Close asks before dropping edits that cannot be saved back
+
+SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through the Hub file picker (no save-back target) lost its edits on Close.
+
+- Close now asks **Save As / Discard / Cancel** whenever the workbook has edits (undo history, not blank) and the save before Close cannot write them back (`SHEET_EMPTY.closeDecision({ dirty, canSaveBack })` → `'close' | 'confirm'`; `canSaveBack` is the SH40 `flushWrites`). This applies in the Hub too, and replaces the standalone two-button question.
+- **Save As** runs the existing Save As flow (name + format box) and closes only when it wrote; cancelled or failed keeps the workbook open. **Discard** closes into the empty state without writing. **Cancel** keeps the workbook.
+- A workbook with a save-back target (Hub file, picked file handle, Hub `.hos`) keeps SH40: flush, then close, no question. Delete never asks this question. New does not go through Close.
+- The box is `SHEET_FILEMENU.askCloseChoice` (OfficeDialog has only OK / Cancel); it uses the `office-dialog.css` look, Esc / backdrop = Cancel, Save As has focus.
+- `importXlsxFile` now returns `Promise<boolean>`, so a failed `.xlsx` / `.ods` open from the empty state goes back to the empty panel instead of a blank grid.
+- Old `closeWorkbook` and the old `importXlsxFile` lines kept as `(before SH40a)` comments. Title and `SHEET_VERSION` are SH40a; `?v=SH40a` on settings, xlsx, filemenu and empty.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh40a-close-ask.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
