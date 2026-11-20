@@ -24,6 +24,18 @@
   animation: pop-in 0.14s ease-out;
 }
 .pop-menu[hidden] { display: none; }
+
+/* DW16: File and Export menus use the space from their top edge to the
+   window bottom, minus an 8px gap. Other .pop-menu popups keep the 360px cap.
+   (before DW16) #fileMenu and #exportMenu inherited
+   max-height: min(360px, calc(100vh - 80px)); */
+#fileMenu,
+#exportMenu {
+  /* 100vh first, for browsers without dvh. */
+  max-height: calc(100vh - var(--file-menu-top, 80px) - 8px);
+  max-height: calc(100dvh - var(--file-menu-top, 80px) - 8px);
+  overflow: auto;
+}
 @keyframes pop-in {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }
   to { opacity: 1; transform: none; }

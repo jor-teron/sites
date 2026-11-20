@@ -410,6 +410,8 @@ Writer.export.openChooser = function openChooser() {
   if (btn) btn.setAttribute('aria-expanded', 'true');
   var anchor = fileBtn || btn;
   if (Writer.view && Writer.view.place && anchor) Writer.view.place(menu, anchor);
+  /* DW16: same window-height cap as the File menu. */
+  if (Writer.ui && Writer.ui.setFileMenuTop) Writer.ui.setFileMenuTop(menu);
 };
 
 Writer.export.bind = function bind() {

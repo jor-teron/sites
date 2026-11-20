@@ -156,6 +156,35 @@ Writer.ui.syncFontSelects = function syncFontSelects() {
   }
 };
 
+/* DW16: space from a menu's top edge down to the window bottom, minus an 8px gap.
+   Never shorter than 160px. top and viewH are CSS pixels. */
+Writer.ui.menuMaxHeight = function menuMaxHeight(top, viewH) {
+  var t = Number(top);
+  var h = Number(viewH);
+  if (!isFinite(t)) t = 0;
+  if (!isFinite(h) || h <= 0) h = 0;
+  var px = h - t - 8;
+  return px < 160 ? 160 : px;
+};
+
+/* After a File or Export menu is positioned, record its top so CSS can
+   grow it to the window bottom. */
+Writer.ui.setFileMenuTop = function setFileMenuTop(menu) {
+  if (!menu) return;
+  var top = Math.round(menu.getBoundingClientRect().top);
+  menu.style.setProperty('--file-menu-top', top + 'px');
+};
+
+/* Refresh --file-menu-top on whichever File/Export menu is open. */
+Writer.ui.syncOpenFileMenus = function syncOpenFileMenus() {
+  var ids = ['fileMenu', 'exportMenu'];
+  var i, m;
+  for (i = 0; i < ids.length; i++) {
+    m = document.getElementById(ids[i]);
+    if (m && !m.hidden) Writer.ui.setFileMenuTop(m);
+  }
+};
+
 /* Bind one click that does not steal the caret. */
 Writer.ui.onClick = function onClick(id, fn) {
   var node = document.getElementById(id);
@@ -175,6 +204,8 @@ Writer.ui.bind = function bind() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
       if (Writer.marks) Writer.marks.redraw();
+      /* DW16: keep an open File or Export menu reaching the window bottom. */
+      if (Writer.ui.syncOpenFileMenus) Writer.ui.syncOpenFileMenus();
     }, Writer.config.resizeDebounceMs);
   });
 };

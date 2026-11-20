@@ -227,7 +227,8 @@ test('release is DW13; Writer picture keys in writer-image.js; no browser dialog
   /* (before DW14) assert.ok(/<title>Writer DW13(b|c)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW14a) assert.ok(/<title>Writer DW(13b|13c|14)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW15) assert.ok(/<title>Writer DW(13b|13c|14|14a)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(13b|13c|14|14a|15)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW16) assert.ok(/<title>Writer DW(13b|13c|14|14a|15)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW13) <title>Writer DW12</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW13b) assert.ok(/release:\s*'DW13'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -235,7 +236,8 @@ test('release is DW13; Writer picture keys in writer-image.js; no browser dialog
   /* (before DW14) assert.ok(/release:\s*'DW13[bc]?'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW14a) assert.ok(/release:\s*'DW(13|13b|13c|14)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW15) assert.ok(/release:\s*'DW(13|13b|13c|14|14a)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW16) assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   const img = fs.readFileSync(path.join(DIR, 'modules/writer-image.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(/e\.ctrlKey \|\| e\.metaKey/.test(img) && /selectNode\(I\.sel\)/.test(img));
   ['modules/writer-paste.js', 'modules/writer-image.js'].forEach((f) => {

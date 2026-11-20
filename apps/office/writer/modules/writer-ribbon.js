@@ -54,6 +54,8 @@ Writer.ribbon.setFile = function setFile(show, focusFirst) {
     var vw = document.documentElement.clientWidth;
     menu.style.top = Math.round(r.bottom + 8) + 'px';
     menu.style.left = Math.round(Math.max(8, Math.min(r.left, vw - menu.offsetWidth - 8))) + 'px';
+    /* DW16: measure the top after positioning so the menu can grow to the window bottom. */
+    if (Writer.ui && Writer.ui.setFileMenuTop) Writer.ui.setFileMenuTop(menu);
     var recent = document.getElementById('recentMenu');
     if (recent && recent.hidden && Writer.docs && Writer.docs.toggleRecent) Writer.docs.toggleRecent();
     if (focusFirst) { var first = menu.querySelector('.file-item'); if (first) first.focus(); }
