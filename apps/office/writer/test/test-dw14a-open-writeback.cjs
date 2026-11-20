@@ -172,7 +172,8 @@ test('writer.html title is DW14a; docs.js keeps the old Open... click as a comme
   const docs = fs.readFileSync(path.join(DIR, 'modules/writer-docs.js'), 'utf8');
   const src = live(html);
   const liveDocs = live(docs);
-  assert.ok(/<title>Writer DW14a<\/title>/.test(src));
+  /* (before DW15) assert.ok(/<title>Writer DW14a<\/title>/.test(src)); */
+  assert.ok(/<title>Writer DW1(4a|5)<\/title>/.test(src));
   assert.ok(html.indexOf('<!-- (before DW14a) <title>Writer DW14</title> -->') !== -1);
   assert.ok(docs.indexOf('(before DW14a)') !== -1);
   assert.ok(liveDocs.indexOf('Writer.docs.openFromMenu') !== -1);
@@ -180,5 +181,6 @@ test('writer.html title is DW14a; docs.js keeps the old Open... click as a comme
   assert.ok(liveDocs.indexOf('Writer.docs.openPickerFail') !== -1);
   assert.ok(liveDocs.indexOf('Writer.docs.openPickedHandle') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
-  assert.ok(/release:\s*'DW14a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW15) assert.ok(/release:\s*'DW14a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW1(4a|5)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });

@@ -380,3 +380,11 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - Open... now uses the browser's `showOpenFilePicker` when it is available (outside the Hub). A picked .docx or .odt keeps its file handle, and Save writes back to that file, as it did before DW14. A picked .how also keeps its handle, because `Writer.how.openFile` already accepts one. A .txt still becomes a .how copy, as in DW12.
 - If you cancel the picker, nothing happens (no toast). If the picker is missing, or it throws (for example a SecurityError in a cross-origin iframe), Open... falls back to the hidden file input from DW14.
 - Test: `node --test apps/office/writer/test/test-dw14a-open-writeback.cjs`.
+
+
+## DW15 — File > New opens a new window
+
+- 20 Nov 2026 IST. File → New no longer clears the current window. In the Hub's desktop mode it asks the Hub to open a second Writer window (`hub-open-app` with `newInstance: true`). Because the Hub drops the query and hash, Writer leaves a one-shot `localStorage` key `writer_open_new`. The new window, if it starts within 30 seconds, begins on a blank document with the default paper and margins, instead of reopening the last file.
+- Standalone (its own browser tab) opens Writer in a new tab with `#new`. That tab starts blank and then drops the hash from the address. If the browser blocks the popup, New keeps the old same-window behaviour.
+- Hub phone mode still uses the same window, when Writer can see the Hub's `HubMode` (same origin). If it cannot tell phone from desktop, it prefers a new window, as the plan said.
+- The old New click (`Writer.docs.newDoc()` in the same window) is kept as a `(before DW15)` comment. Test: `node --test apps/office/writer/test/test-dw15-new-window.cjs`.
