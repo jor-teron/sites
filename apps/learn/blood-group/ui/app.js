@@ -1,4 +1,4 @@
-/* Blood Group BG-6 — five views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
+/* Blood Group BG-6a — five views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
    1 what blood is (red cells, white cells, platelets, plasma; tap a part for a tip), 2 the ABO groups (a red cell with its
    A / B markers and the antibodies in the plasma; tap a card to highlight it), 3 the Rh factor and the 8 groups as drop badges,
    4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation, family, myths and
@@ -12,16 +12,17 @@
    and gene-pair Punnett picks live in a collapsed More section. A short alleles note and the lab-test note stay on the page.
    MYTHS view (BG-5, hash #myths): Japan's blood-type personality (ketsueki-gata) as tap cards for A, B, O and AB, each with
    a "Myth, not science" badge, plus a short history, a studies note and a bura-hara note; then Myth vs Fact flip cards.
-   HEALTH view (BG-6, hash #health): what healthy blood needs (iron, B12, folate and vitamin C, with India-friendly food
-   cards), iron tips, anaemia signs and who is at higher risk, lifestyle for circulation, and a not-medical-advice
-   disclaimer. A #bg-health-part2 hook is left empty for BG-6a (normal numbers, a CBC explainer and an Hb checker).
+   HEALTH view (BG-6 / BG-6a, hash #health): what healthy blood needs (iron, B12, folate and vitamin C, with India-friendly
+   food cards), iron tips, anaemia signs and who is at higher risk, lifestyle for circulation; then Know your numbers
+   (typical ranges for haemoglobin, blood pressure and blood sugar, a CBC explainer, and an Is my Hb normal? checker that
+   stores nothing), and a not-medical-advice disclaimer at the end.
    Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family / Myths / Health, mapped to "" / #donate /
    #family / #myths / #health (from BG.views). Deep links and Back/Forward stay in sync. Home shortcut cards are kept.
    Saves in localStorage: learn.blood-group.group (the last highlighted ABO group), learn.blood-group.chart ({ group, mode }),
    learn.blood-group.family ({ mum, dad, mumAbo, dadAbo, mumRh, dadRh }), learn.blood-group.myths ({ abo }).
    In a Hub desktop window the header (and these tabs) move to the Hub title bar (LearnHubBar). */
 (() => {
-  const B = window.BG, VER = 'BG-6', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
+  const B = window.BG, VER = 'BG-6a', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -147,7 +148,7 @@
     nextCard('myths', 'Myths \u2192', "Japan's blood-type personality myth, and myth versus fact.",
       svg('0 0 40 48', 'bg-nextsvg', 'Myths', s('path', { d: DROP }),
         s('text', { x: '20', y: '32', class: 'bg-itw', 'text-anchor': 'middle' }, '?'))),
-    nextCard('health', 'Health \u2192', 'How to keep blood healthy: iron, B12, folate, and everyday habits.',
+    nextCard('health', 'Health \u2192', 'How to keep blood healthy, and how to read common blood numbers.',
       svg('0 0 40 48', 'bg-nextsvg', 'Health', s('path', { d: DROP }),
         s('text', { x: '20', y: '33', class: 'bg-itw', 'text-anchor': 'middle' }, '+')))));
 
@@ -455,8 +456,8 @@
     h('div', { class: 'bg-flips' }, B.mythFacts.map(flipCard)));
 
 
-  // ================= HEALTH VIEW (BG-6) =================
-  // Part 1: healthy blood. #bg-health-part2 is left empty for BG-6a (numbers, CBC, Hb checker).
+  // ================= HEALTH VIEW (BG-6 / BG-6a) =================
+  // Part 1: healthy blood. Part 2 (#bg-health-part2): know your numbers, a CBC explainer, and an Hb checker (stores nothing).
   const foodChips = foods => h('ul', { class: 'bg-foods' }, foods.map(f => h('li', { class: 'bg-food' }, f)));
   const needSec = sec('needs', 'What healthy blood needs',
     h('p', { class: 'bg-p' }, 'Healthy blood needs a few key nutrients. Iron is used to make haemoglobin, which carries oxygen. Vitamin B12 and folate help the body make red cells. Vitamin C helps the body absorb iron from plant foods.'),
@@ -478,7 +479,52 @@
     h('div', { class: 'bg-grid' }, B.health.lifestyle.map(x => h('div', { class: 'bg-card bg-why', 'data-life': x.id },
       h('span', { class: 'bg-cn' }, x.title), h('span', { class: 'bg-cj' }, x.text)))));
   const healthDisc = h('p', { class: 'bg-disc' }, B.health.disclaimer);
-  const healthPart2 = h('div', { id: 'bg-health-part2', class: 'bg-health-part2' });
+  const rangeSec = sec('numbers', 'Know your numbers',
+    h('p', { class: 'bg-p bg-muted' }, B.health.ranges.note),
+    h('div', { class: 'bg-grid bg-ranges' }, B.health.ranges.items.map(r => h('div', { class: 'bg-card bg-rangecard', 'data-range': r.id },
+      h('span', { class: 'bg-cn' }, r.title),
+      h('span', { class: 'bg-unit' }, r.unit),
+      h('ul', { class: 'bg-rangelist' }, r.lines.map(ln => h('li', null, ln))),
+      h('p', { class: 'bg-p bg-seedoc' }, r.seeDoctor)))));
+  const cbcSec = sec('cbc', 'Reading a CBC report',
+    h('p', { class: 'bg-p bg-muted' }, B.health.cbc.lead),
+    h('div', { class: 'bg-grid bg-cbc' }, B.health.cbc.items.map(c => h('div', { class: 'bg-card bg-cbccard', 'data-cbc': c.id },
+      h('span', { class: 'bg-cn' }, c.name),
+      h('span', { class: 'bg-cj' }, c.text)))));
+  let hbWho = '';
+  const hbOut = h('p', { class: 'bg-tip', id: 'bg-hb-out', 'aria-live': 'polite' });
+  const hbInput = h('input', { type: 'number', class: 'bg-hbin', id: 'bg-hb-in', inputmode: 'decimal',
+    min: '3', max: '25', step: '0.1', autocomplete: 'off', enterkeyhint: 'done',
+    'aria-label': 'Haemoglobin in grams per decilitre' });
+  const paintHb = () => {
+    const raw = String(hbInput.value || '').trim();
+    const band = B.hbBand(raw, hbWho);
+    hbOut.className = 'bg-tip';
+    if (!raw && !hbWho) { hbOut.textContent = 'Enter a haemoglobin value and pick who the reading is for.'; return; }
+    if (!hbWho) { hbOut.textContent = 'Pick who the reading is for.'; return; }
+    if (!raw) { hbOut.textContent = 'Enter a haemoglobin value in g/dL.'; return; }
+    if (!band) { hbOut.textContent = 'Enter a number from 3 to 25.'; return; }
+    hbOut.classList.add('bg-band-' + band);
+    if (band === 'low') hbOut.textContent = 'This looks low. Talk to a doctor.';
+    else if (band === 'high') hbOut.textContent = 'This looks high. A doctor can advise.';
+    else hbOut.textContent = 'This looks in the usual range. Labs vary, so a doctor can confirm.';
+  };
+  const whoBtns = [['man', 'Man'], ['woman', 'Woman'], ['pregnant', 'Pregnant']].map(([id, label]) =>
+    h('button', { type: 'button', class: 'bg-tog', 'data-who': id, 'aria-pressed': 'false', onclick: () => {
+      hbWho = id;
+      whoBtns.forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-who') === hbWho)));
+      paintHb();
+    } }, label));
+  hbInput.addEventListener('input', paintHb);
+  hbInput.addEventListener('change', paintHb);
+  paintHb();
+  const hbSec = sec('hbcheck', 'Is my Hb normal?',
+    h('p', { class: 'bg-p bg-muted' }, 'Enter a haemoglobin value in g/dL and pick who the reading is for. Nothing is saved. This is only a guide; labs vary.'),
+    h('div', { class: 'bg-hbcheck' },
+      h('label', { class: 'bg-hblabel', 'for': 'bg-hb-in' }, h('span', null, 'Hb (g/dL)'), hbInput),
+      h('div', { class: 'bg-togs', role: 'group', 'aria-label': 'Who the reading is for' }, whoBtns),
+      hbOut));
+  const healthPart2 = h('div', { id: 'bg-health-part2', class: 'bg-health-part2' }, rangeSec, cbcSec, hbSec);
 
   // ---- views and navigation (#donate, #family, #myths, #health); title-bar tabs switch these views ----
   const TABS = B.views.map(t => ({ id: t.id, label: t.label, short: t.short, hash: t.hash, controls: 'bg-' + t.id }));
@@ -495,7 +541,7 @@
     m1, m2, disc());
   const health = h('div', { class: 'bg-view', id: 'bg-health', 'data-view': 'health', role: 'tabpanel', hidden: true },
     h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Health')),
-    needSec, tipSec, anaemiaSec, lifeSec, healthDisc, healthPart2);
+    needSec, tipSec, anaemiaSec, lifeSec, healthPart2, healthDisc);
   const panels = { home, donate, family, myths, health };
 
   const here = h('span', { class: 'lrn-here' }, 'Blood Group');

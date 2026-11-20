@@ -1,4 +1,4 @@
-/* Blood Group BG-6 — data and pure rules, no DOM. Attaches window.BG.
+/* Blood Group BG-6a — data and pure rules, no DOM. Attaches window.BG.
    BG.groups: the 8 groups in display order. BG.parse('AB-') -> { abo: 'AB', rh: '-' } (null if not a group).
    BG.antigens(g): markers on the red cell ('A', 'B', 'RhD'). BG.antibodies(g): ABO antibodies in the plasma ('anti-A', 'anti-B').
    BG.india: approximate share of each group in India in percent (varies by region).
@@ -20,7 +20,11 @@
    BG-6 (health): BG.views lists the title-bar tabs (Groups, Donation, Family, Myths, Health). BG.health holds part 1, healthy
    blood: nutrient needs (iron, B12, folate and vitamin C) each with foods, iron tips, anaemia (what it is, signs, who is at
    higher risk, and a warning to test before iron tablets), lifestyle tips for circulation, and a not-medical-advice
-   disclaimer. Room is left in the Health view for BG-6a (normal numbers, a CBC explainer and an Hb checker). */
+   disclaimer. BG-6a (know your numbers): BG.health.ranges (haemoglobin, blood pressure and blood sugar; each with a
+   See a doctor if… line; figures are approximate because labs vary), BG.health.cbc (compact CBC report cards: Hb, RBC,
+   WBC, platelets, hematocrit/PCV and MCV), and BG.hbBand(value, who) for the Hb checker (who is man, woman or
+   pregnant; returns 'low', 'normal' or 'high', or null if the value is not a number from 3 to 25 or who is unknown).
+   The checker stores nothing. */
 (function (W) {
   const ABO = ['O', 'A', 'B', 'AB'];
   const groups = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'];
@@ -273,7 +277,7 @@
     return s;
   }
   // ---- BG-5: myths (Japan's blood-type personality, and myth vs fact) ----
-  // ---- BG-6: Health tab (part 1, healthy blood). Room is left for BG-6a. ----
+  // ---- BG-6 / BG-6a: Health tab (healthy blood, then know your numbers). ----
   const views = [
     { id: 'home',   label: 'Groups',   short: 'Groups', hash: '' },
     { id: 'donate', label: 'Donation', short: 'Donate', hash: '#donate' },
@@ -345,12 +349,68 @@
       { id: 'alcohol', title: 'Limit alcohol', text: 'Too much alcohol can affect blood cells and the liver, which helps make blood proteins.' },
       { id: 'weight', title: 'Keep a healthy weight', text: 'A healthy weight is easier on the heart and circulation.' }
     ],
+    // ---- BG-6a: know your numbers (typical adult figures; labs vary) ----
+    ranges: {
+      note: 'Typical adult figures. Labs vary, so these ranges are approximate.',
+      items: [
+        { id: 'hb', title: 'Haemoglobin', unit: 'g/dL',
+          lines: [
+            'Men: about 13.5 to 17.5 g/dL.',
+            'Women: about 12.0 to 15.5 g/dL.',
+            'In pregnancy, below 11 g/dL counts as anaemia.'
+          ],
+          seeDoctor: 'See a doctor if your haemoglobin is below the usual range for you, or if you feel very tired, pale or short of breath.' },
+        { id: 'bp', title: 'Blood pressure', unit: 'mmHg',
+          lines: [
+            'Normal is below 120/80.',
+            '120 to 129 with the lower number (diastolic) below 80 is elevated.',
+            '130/80 or above is high, so see a doctor.',
+            '180/120 or above is urgent.'
+          ],
+          seeDoctor: 'See a doctor if your reading is 130/80 or above, or if you have a severe headache, chest pain or sudden vision changes. 180/120 or above is urgent.' },
+        { id: 'sugar', title: 'Blood sugar', unit: 'mg/dL',
+          lines: [
+            'Fasting: normal is below 100 mg/dL, 100 to 125 is prediabetes, and 126 or above may mean diabetes.',
+            '2 hours after a meal: normal is below 140 mg/dL, 140 to 199 is prediabetes, and 200 or above may mean diabetes.'
+          ],
+          seeDoctor: 'See a doctor if your fasting sugar is 100 mg/dL or above, or your reading 2 hours after a meal is 140 mg/dL or above, or if you have unusual thirst, tiredness or weight loss.' }
+      ]
+    },
+    cbc: {
+      lead: 'A Complete Blood Count (CBC) is a common blood test. These are typical adult figures; labs vary.',
+      items: [
+        { id: 'hb', name: 'Hb', text: 'Haemoglobin, the oxygen carrier. See the ranges above.' },
+        { id: 'rbc', name: 'RBC', text: 'Red-cell count. About 4.5 to 5.9 million/uL for men and about 4.1 to 5.1 for women.' },
+        { id: 'wbc', name: 'WBC', text: 'White cells, the infection fighters. About 4,000 to 11,000/uL.' },
+        { id: 'plt', name: 'Platelets', text: 'Help the blood clot. About 150,000 to 450,000/uL.' },
+        { id: 'hct', name: 'Hematocrit (PCV)', text: 'The share of blood that is red cells (packed cell volume).' },
+        { id: 'mcv', name: 'MCV', text: 'The average size of red cells. Small cells can hint at low iron; large cells can hint at low B12 or folate.' }
+      ]
+    },
     disclaimer: 'General information, not medical advice. See a doctor for symptoms or tests.'
   };
+  // ---- BG-6a: Hb checker (pure; stores nothing) ----
+  const HB_CUT = { man: [13.5, 17.5], woman: [12.0, 15.5], pregnant: [11.0, 15.5] };
+  function parseHb(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+    if (typeof value !== 'string') return NaN;
+    const t = value.trim();
+    if (!/^\d+(\.\d+)?$/.test(t)) return NaN;
+    return Number(t);
+  }
+  function hbBand(value, who) {
+    const n = parseHb(value);
+    if (!Number.isFinite(n) || n < 3 || n > 25) return null;
+    const cut = HB_CUT[String(who || '').toLowerCase()];
+    if (!cut) return null;
+    if (n < cut[0]) return 'low';
+    if (n > cut[1]) return 'high';
+    return 'normal';
+  }
   W.BG = { ABO, groups, aboInfo, rhInfo, india, parts, parse, antigens, antibodies, rhPositive, name, indiaTotal, byCommon,
     canGive, givesTo, receivesFrom, compatText, donor,
     aboGenos, rhGenos, aboPheno, rhPheno, punnett, childABO, childRh, childGroups, canHaveChild, childOdds, inheritWhy, makeGuess,
     ABO_SHOW, aboTable, pickerWhy,
     views, mythIntro, personality, mythFacts,
-    health };
+    health, hbBand };
 })(window);
