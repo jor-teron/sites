@@ -27,14 +27,19 @@
     app: 'Writer',
     undo: function () { D.history.undo(); },
     redo: function () { D.history.redo(); },
-    canUndo: function () { return D.history.canUndo(); },
-    canRedo: function () { return D.history.redoStack.length > 0; },
+    /* (before DW18) canUndo: function () { return D.history.canUndo(); }, */
+    /* (before DW18) canRedo: function () { return D.history.redoStack.length > 0; }, */
+    /* DW18: nothing to undo, save or print while no document is open (writer-empty.js). */
+    canUndo: function () { return !(D.empty && D.empty.isEmpty()) && D.history.canUndo(); },
+    canRedo: function () { return !(D.empty && D.empty.isEmpty()) && D.history.redoStack.length > 0; },
+    canSave: function () { return !(D.empty && D.empty.isEmpty()); },
     /* (before HOW1) save: function () { return D.storage.save().then(function () { return true; }); }, */
     save: function () {
       var p = (D.how && D.how.save) ? D.how.save({ explicit: true }) : D.storage.save();
       return p.then(function (res) { return !(res && res.ok === false); });
     },
-    print: function () { D.export.printDocument(); },
+    /* (before DW18) print: function () { D.export.printDocument(); }, */
+    print: function () { if (D.empty && D.empty.isEmpty()) { if (D.ui && D.ui.showToast) D.ui.showToast('No document open'); return; } D.export.printDocument(); },
     undoKey: function (ev) {
       var a = document.activeElement;
       if (D.editor.isInEditor(ev.target) || (a && a.classList && a.classList.contains(D.config.editorClass))) return true;

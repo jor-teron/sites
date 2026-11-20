@@ -49,7 +49,9 @@ Writer.app.init = function init() {
     if (Writer.view) Writer.view.init();
     Writer.docs.load().then(function () {
       var editor = Writer.pages.firstEditor();
-      if (editor) {
+      /* (before DW18) if (editor) { */
+      /* DW18: no focus on the hidden page while no document is open (the panel's New has it). */
+      if (editor && !(Writer.empty && Writer.empty.isEmpty())) {
         editor.focus();
         Writer.editor.activeEditor = editor;
       }
