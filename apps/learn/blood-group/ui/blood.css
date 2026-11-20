@@ -1,4 +1,4 @@
-/* Blood Group BG-2 — app look on top of the Learn kit (../common/ui/learn.css): three views (home, donation, family puzzle) of sections and cards.
+/* Blood Group BG-3a — app look on top of the Learn kit (../common/ui/learn.css): three views (home, donation, family puzzle) of sections and cards, switched from title-bar tabs.
    Single column on portrait phones, cards in a grid on wider screens. Red accent. Light mode follows the Hub theme (html.light).
    Plain CSS, no blur or heavy filters (weak phones). */
 .bg { --accent: #ef5350; --red: #d32f2f; --red2: #ff8a80; --plasma: #f4c95d; --wbc: #e8eaf6; --wbcn: #7e57c2; --plt: #f48fb1;
@@ -103,6 +103,6 @@ button.bg-card:hover { border-color: var(--accent); }
 .bg-parents, .bg-guess { display: flex; flex-direction: column; gap: 14px; }
 .bg-nextrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 @media (max-width: 560px) { .bg-nextrow { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 560px) { .lrn-head { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1.1rem; }
+@media (max-width: 560px) { .lrn-head { flex-wrap: nowrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1rem; }
   .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 561px) and (max-aspect-ratio: 1/1) { .bg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
