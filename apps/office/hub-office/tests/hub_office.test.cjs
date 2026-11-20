@@ -50,11 +50,13 @@ function loadScript(customWindow = {}) {
   return context.HubOffice;
 }
 
-test('VERSION is HO12b and SUITES cover all 5 office applications', () => {
+/* (before HO13) test('VERSION is HO12b and SUITES cover all 5 office applications', () => { */
+test('VERSION is HO13 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
   /* (before HO12b) assert.equal(HO.VERSION, 'HO12'); */
-  assert.equal(HO.VERSION, 'HO12b');
+  /* (before HO13) assert.equal(HO.VERSION, 'HO12b'); */
+  assert.equal(HO.VERSION, 'HO13');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
@@ -417,8 +419,12 @@ test('Start Page HTML is the HO12 layout and keeps cache tokens', () => {
   assert.ok(suitesAt > 0 && openAt > suitesAt, 'Open/drop comes after the suite cards');
   assert.ok(recentAt > openAt, 'Recent comes after Open/drop');
   assert.ok(html.includes('id="recent-list"'), 'has recent list');
-  const settingsAt = html.indexOf('id="section-settings"');
-  assert.ok(settingsAt > recentAt, 'Settings comes after Recent');
+  /* (before HO13) const settingsAt = html.indexOf('id="section-settings"');
+  assert.ok(settingsAt > recentAt, 'Settings comes after Recent'); */
+  /* HO13: the settings live on the Settings page, after the Start Page view. */
+  const live = html.replace(/<!--[\s\S]*?-->/g, '');
+  assert.ok(!live.includes('id="section-settings"'), 'Start Page Settings section is commented out');
+  assert.ok(live.indexOf('id="view-settings"') > live.indexOf('id="section-recent"'), 'Settings page comes after the Start Page');
   assert.ok(html.includes('../shared/office-shared-settings.js'), 'loads the shared settings helper');
   assert.ok(html.includes('Defaults for new documents. Each app\'s own settings still win.'), 'has the settings note');
   assert.ok(!html.includes('id="btn-formats"'), 'Supported formats link is gone');
@@ -436,8 +442,11 @@ test('Start Page HTML is the HO12 layout and keeps cache tokens', () => {
 
 
 test('Settings section lists each HO9 control in one labelled row', () => {
-  const html = fs.readFileSync(HTML_PATH, 'utf8');
-  const start = html.indexOf('id="section-settings"');
+  /* (before HO13) const html = fs.readFileSync(HTML_PATH, 'utf8');
+  const start = html.indexOf('id="section-settings"'); */
+  /* HO13: check the live block on the Settings page (comments stripped). */
+  const html = fs.readFileSync(HTML_PATH, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  const start = html.indexOf('id="section-settings-page"');
   const end = html.indexOf('</section>', start);
   assert.ok(start > 0 && end > start, 'settings section is present');
   const block = html.slice(start, end);

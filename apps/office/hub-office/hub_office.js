@@ -1,4 +1,9 @@
 /* Hub Office Suite Start Center — hub_office.js */
+/* HO13: a Settings tile after Tables opens one Settings tab, always
+   right after Home in the tab strip. The Settings page holds all the
+   Hub Office settings (moved from the Start Page with the same ids and
+   storage key) and has a Close button. The title bar shows Home only
+   while Settings is active. */
 /* HO12b: a new tab's "Untitled N" is the lowest N not used by that suite's
    open tabs or the Documents files seen by the last scan, and it is passed
    to the suite as &untitled=N (the suite's own name still wins). Tab labels
@@ -32,7 +37,8 @@
   /* (before HO11) const VERSION = 'HO10'; */
   /* (before HO12) const VERSION = 'HO11'; */
   /* (before HO12b) const VERSION = 'HO12'; */
-  const VERSION = 'HO12b';
+  /* (before HO13) const VERSION = 'HO12b'; */
+  const VERSION = 'HO13';
 
   const SUITES = [
     {
@@ -195,8 +201,50 @@
   /* The Start Page stays in openTabs as a persistent record, but it is
      no longer a tab in the strip (before HO8). The document tab row
      only needs to show when at least one document is open. */
-  function shouldShowTabBar(tabs) {
+  /* (before HO13) function shouldShowTabBar(tabs) {
     return (Array.isArray(tabs) ? tabs : []).some((t) => t && t.type === 'doc');
+  } */
+  /* HO13: the row also shows while the Settings tab is open. */
+  function shouldShowTabBar(tabs) {
+    return (Array.isArray(tabs) ? tabs : []).some((t) => t && (t.type === 'doc' || t.type === 'settings'));
+  }
+
+  /* HO13: Settings tab helpers (pure). */
+  const SETTINGS_TAB_ID = 'settings';
+
+  /* Settings sits right after Home (the 'start' record), before any document. */
+  function settingsTabInsertIndex(tabs) {
+    const list = Array.isArray(tabs) ? tabs : [];
+    const startIdx = list.findIndex((t) => t && t.id === 'start');
+    return startIdx >= 0 ? startIdx + 1 : 0;
+  }
+
+  /* Only one Settings tab: switch to it if it is open, otherwise create it. */
+  function planOpenSettings(tabs) {
+    const list = Array.isArray(tabs) ? tabs : [];
+    const idx = list.findIndex((t) => t && t.id === SETTINGS_TAB_ID);
+    if (idx >= 0) return { action: 'switch', id: SETTINGS_TAB_ID, index: idx };
+    return { action: 'create', id: SETTINGS_TAB_ID, index: settingsTabInsertIndex(list) };
+  }
+
+  /* Which tab to show after closing the active tab. `tabs` is the list
+     before removal. Settings always goes back to Home; a document keeps
+     the old rule (the tab before it in the strip, else the first). */
+  function nextTabAfterClose(tabs, closedId) {
+    const list = Array.isArray(tabs) ? tabs : [];
+    if (closedId === SETTINGS_TAB_ID) return 'start';
+    const idx = list.findIndex((t) => t && t.id === closedId);
+    if (idx < 0) return 'start';
+    const rest = list.filter((t, i) => i !== idx);
+    const next = rest[Math.max(0, idx - 1)] || rest[0];
+    return next ? next.id : 'start';
+  }
+
+  /* Title-bar relay only applies to a document tab (not Home or Settings). */
+  function isDocTabActive(tabs, activeId) {
+    if (!activeId || activeId === 'start' || activeId === SETTINGS_TAB_ID) return false;
+    const list = Array.isArray(tabs) ? tabs : [];
+    return list.some((t) => t && t.id === activeId && t.type === 'doc');
   }
 
   function homeTitleBarButton() {
@@ -424,6 +472,7 @@
 
     const idx = openTabs.findIndex((t) => t.id === tabId);
     if (idx < 0) return;
+    const before = openTabs.slice();
 
     openTabs.splice(idx, 1);
     delete hubBarByTab[tabId];
@@ -432,14 +481,19 @@
       const tabEl = document.getElementById('tab-btn-' + tabId);
       if (tabEl) tabEl.remove();
 
+      /* (before HO13) if (viewEl) viewEl.remove(); */
       const viewEl = document.getElementById('view-' + tabId);
-      if (viewEl) viewEl.remove();
+      /* HO13: the Settings view is static markup; switchTab hides it. */
+      if (viewEl && tabId !== SETTINGS_TAB_ID) viewEl.remove();
     }
 
     // If closing the active tab, switch to adjacent or fallback to start
-    if (activeTabId === tabId) {
+    /* (before HO13) if (activeTabId === tabId) {
       const nextTab = openTabs[Math.max(0, idx - 1)] || openTabs[0];
       switchTab(nextTab.id);
+    } else { */
+    if (activeTabId === tabId) {
+      switchTab(nextTabAfterClose(before, tabId));
     } else {
       syncChrome();
     }
@@ -611,6 +665,64 @@
 
     switchTab(tabId);
     return tabRecord;
+  }
+
+  /* HO13: open the single Settings tab right after Home, or switch to it. */
+  function openSettingsTab() {
+    const plan = planOpenSettings(openTabs);
+    if (plan.action === 'switch') {
+      switchTab(SETTINGS_TAB_ID);
+      return openTabs[plan.index];
+    }
+    const tabRecord = { id: SETTINGS_TAB_ID, title: 'Settings', icon: '⚙️', type: 'settings' };
+    openTabs.splice(plan.index, 0, tabRecord);
+
+    if (typeof document !== 'undefined') {
+      const tabsList = document.getElementById('ho-tabs-list');
+      if (tabsList && !document.getElementById('tab-btn-' + SETTINGS_TAB_ID)) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ho-tab ho-tab-settings';
+        btn.id = 'tab-btn-' + SETTINGS_TAB_ID;
+        btn.dataset.tabId = SETTINGS_TAB_ID;
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', 'false');
+        btn.title = 'Settings';
+
+        const ico = document.createElement('span');
+        ico.className = 'ho-tab-icon';
+        ico.textContent = '⚙️';
+
+        const lbl = document.createElement('span');
+        lbl.className = 'ho-tab-title';
+        lbl.textContent = 'Settings';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'ho-tab-close';
+        closeBtn.setAttribute('aria-label', 'Close Settings');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTab(SETTINGS_TAB_ID);
+        });
+
+        btn.append(ico, lbl, closeBtn);
+        btn.addEventListener('click', () => switchTab(SETTINGS_TAB_ID));
+        /* Home is not in this list, so "right after Home" is the first slot. */
+        if (tabsList.firstChild) tabsList.insertBefore(btn, tabsList.firstChild);
+        else tabsList.appendChild(btn);
+      }
+      const view = document.getElementById('view-' + SETTINGS_TAB_ID);
+      if (view) view.setAttribute('aria-labelledby', 'tab-btn-' + SETTINGS_TAB_ID);
+    }
+
+    switchTab(SETTINGS_TAB_ID);
+    return tabRecord;
+  }
+
+  function closeSettingsTab() {
+    closeTab(SETTINGS_TAB_ID);
   }
 
   function findDriveRef(filename) {
@@ -862,6 +974,64 @@
       card.append(header, desc, fmts, actions);
       grid.appendChild(card);
     });
+
+    /* HO13: Settings tile after Tables. Not a suite: no formats, recents or routing. */
+    renderSettingsTile(grid);
+  }
+
+  function renderSettingsTile(grid) {
+    if (!grid) return;
+    const card = document.createElement('div');
+    card.className = 'ho-card ho-card-settings';
+    card.id = 'card-settings';
+    card.dataset.id = 'settings';
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
+    card.setAttribute('aria-label', 'Open Settings');
+    card.addEventListener('click', openSettingsTab);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openSettingsTab();
+      }
+    });
+
+    const header = document.createElement('div');
+    header.className = 'ho-card-header';
+    const icon = document.createElement('span');
+    icon.className = 'ho-card-icon ho-card-emoji';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '⚙️';
+    const info = document.createElement('div');
+    info.className = 'ho-card-info';
+    const name = document.createElement('span');
+    name.className = 'ho-card-name';
+    name.textContent = 'Settings';
+    info.appendChild(name);
+    header.append(icon, info);
+
+    const desc = document.createElement('p');
+    desc.className = 'ho-card-desc';
+    desc.textContent = 'Font, paper, date and number format, autosave, save location and your name.';
+
+    const actions = document.createElement('div');
+    actions.className = 'ho-card-actions';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ho-btn-new';
+    const gear = document.createElement('span');
+    gear.textContent = '⚙️';
+    const btnLabel = document.createElement('span');
+    btnLabel.textContent = 'Open Settings';
+    btn.append(gear, btnLabel);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSettingsTab();
+    });
+    actions.appendChild(btn);
+
+    card.append(header, desc, actions);
+    grid.appendChild(card);
   }
 
   async function renderRecents() {
@@ -1013,6 +1183,21 @@
     if (btnAddTab) {
       btnAddTab.addEventListener('click', () => createDocTab('writer'));
     }
+
+    /* HO13: Settings page Close button, and Escape inside the page. */
+    const btnSettingsClose = document.getElementById('btn-settings-close');
+    if (btnSettingsClose && typeof btnSettingsClose.addEventListener === 'function') {
+      btnSettingsClose.addEventListener('click', closeSettingsTab);
+    }
+    const settingsView = document.getElementById('view-' + SETTINGS_TAB_ID);
+    if (settingsView && typeof settingsView.addEventListener === 'function') {
+      settingsView.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && activeTabId === SETTINGS_TAB_ID) {
+          e.preventDefault();
+          closeSettingsTab();
+        }
+      });
+    }
   }
 
   function settingsStore() {
@@ -1144,13 +1329,15 @@
       HubTitleBar.update({ buttons: updateButtons });
       return;
     }
-    const state = (activeTabId && activeTabId !== 'start') ? (hubBarByTab[activeTabId] || null) : null;
+    /* (before HO13) const state = (activeTabId && activeTabId !== 'start') ? (hubBarByTab[activeTabId] || null) : null; */
+    const state = isDocTabActive(openTabs, activeTabId) ? (hubBarByTab[activeTabId] || null) : null;
     /* (before HO10) HubTitleBar.set({ buttons: [homeTitleBarButton()], align: 'left' }); */
     HubTitleBar.set({ buttons: composeTitleBarButtons(homeTitleBarButton(), state, TITLE_BAR_MAX), align: 'left' });
   }
 
   function onSuiteTitleBar(tabId, body) {
-    const isActive = tabId === activeTabId && activeTabId !== 'start';
+    /* (before HO13) const isActive = tabId === activeTabId && activeTabId !== 'start'; */
+    const isActive = tabId === activeTabId && isDocTabActive(openTabs, activeTabId);
     const planned = planTitleBarRelay(hubBarByTab[tabId] || null, body, isActive, homeTitleBarButton(), TITLE_BAR_MAX);
     if (planned.state) hubBarByTab[tabId] = planned.state;
     else delete hubBarByTab[tabId];
@@ -1159,7 +1346,8 @@
   }
 
   function forwardTitleBarClick(rawId, kind) {
-    if (!rawId || activeTabId === 'start') return;
+    /* (before HO13) if (!rawId || activeTabId === 'start') return; */
+    if (!rawId || !isDocTabActive(openTabs, activeTabId)) return;
     const frame = frameForTab(activeTabId);
     if (!frame) return;
     try {
@@ -1258,7 +1446,15 @@
     stripDocExt,
     focusTabFrame,
     parseDocNameMessage,
-    applyDocName
+    applyDocName,
+    /* HO13 */
+    SETTINGS_TAB_ID,
+    settingsTabInsertIndex,
+    planOpenSettings,
+    nextTabAfterClose,
+    isDocTabActive,
+    openSettingsTab,
+    closeSettingsTab
   };
 
 })(typeof window !== 'undefined' ? window : this);

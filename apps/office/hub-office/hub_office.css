@@ -604,6 +604,81 @@ body.hub-titlebar .ho-home-btn {
   line-height: 1.4;
 }
 
+/* HO13: Settings tile and Settings page (tab right after Home). */
+.ho-card-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  line-height: 1;
+  background: var(--ho-surface-hover);
+}
+
+.ho-settings-page {
+  max-width: 640px;
+  gap: 16px;
+}
+
+.ho-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ho-settings-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--ho-border);
+  background: var(--ho-surface);
+  color: var(--ho-text);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  flex: none;
+}
+
+.ho-settings-close:hover {
+  background: var(--ho-surface-hover);
+  border-color: var(--ho-accent);
+}
+
+.ho-settings-close:focus-visible {
+  outline: 2px solid var(--ho-accent);
+  outline-offset: 2px;
+}
+
+.ho-settings-page .ho-settings {
+  max-width: none;
+  gap: 4px;
+}
+
+.ho-settings-page .ho-set-row {
+  min-height: 44px;
+  border-bottom: 1px solid var(--ho-border);
+}
+
+.ho-settings-page .ho-set-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 600px) {
+  .ho-settings-page .ho-settings select,
+  .ho-settings-page .ho-settings input[type="number"],
+  .ho-settings-page .ho-settings input[type="text"] {
+    font-size: 16px;
+    min-height: 36px;
+  }
+  .ho-settings-page .ho-settings input[type="text"] {
+    max-width: 60vw;
+  }
+}
+
 /* Subtle full-page drop overlay (no blur) */
 .ho-drop-overlay {
   position: fixed;
