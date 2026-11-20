@@ -1,4 +1,4 @@
-/* Blood Group BG-3 — data and pure rules, no DOM. Attaches window.BG.
+/* Blood Group BG-5 — data and pure rules, no DOM. Attaches window.BG.
    BG.groups: the 8 groups in display order. BG.parse('AB-') -> { abo: 'AB', rh: '-' } (null if not a group).
    BG.antigens(g): markers on the red cell ('A', 'B', 'RhD'). BG.antibodies(g): ABO antibodies in the plasma ('anti-A', 'anti-B').
    BG.india: approximate share of each group in India in percent (varies by region).
@@ -14,7 +14,10 @@
    BG.inheritWhy(mum, dad, child): a short yes/no sentence. BG.makeGuess(rand): a puzzle with one valid parent pair and one not.
    BG-3b: BG.aboTable() is a 4x4 ABO reference ({ rows, cols, cells }) with Mum down the side and Dad across the top, both in
    A, B, AB, O order. Each cell lists the possible child ABO groups in that same order. BG.pickerWhy(mum, dad): one plain
-   sentence for the family picker (what each parent can pass, the child's possible ABO groups, and a short Rh note). */
+   sentence for the family picker (what each parent can pass, the child's possible ABO groups, and a short Rh note).
+   BG-5 (myths): BG.views lists the title-bar tabs (Groups, Donation, Family, Myths). A future Health tab (BG-6) is not added.
+   BG.personality: A, B, O and AB trait cards, each with myth: true. BG.mythIntro: short history (Furukawa 1927, Nomi 1970s),
+   the studies note, and a bura-hara note. BG.mythFacts: myth vs fact pairs (myth and fact are non-empty strings). */
 (function (W) {
   const ABO = ['O', 'A', 'B', 'AB'];
   const groups = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'];
@@ -266,8 +269,44 @@
     else s += ' Rh: + and \u2212 can give either.';
     return s;
   }
+  // ---- BG-5: myths (Japan's blood-type personality, and myth vs fact) ----
+  // Room is left for a Health tab (BG-6); it is not added here.
+  const views = [
+    { id: 'home',   label: 'Groups',   short: 'Groups', hash: '' },
+    { id: 'donate', label: 'Donation', short: 'Donate', hash: '#donate' },
+    { id: 'family', label: 'Family',   short: 'Family', hash: '#family' },
+    { id: 'myths',  label: 'Myths',    short: 'Myths',  hash: '#myths' }
+  ];
+  const mythIntro = {
+    history: 'In Japan, a belief called ketsueki-gata says your ABO group describes your personality. It grew from Takeji Furukawa\'s 1927 paper and became popular through Masahiko Nomi\'s books in the 1970s. It is still pop culture there, in horoscopes, dating, character profiles and even some job interviews.',
+    studies: 'Large studies in Japan and the US found no link between blood type and personality.',
+    harassment: 'A related problem is called bura-hara (blood-type harassment): people may be teased or left out, even at work, because of their type.'
+  };
+  const personality = [
+    { abo: 'A',  myth: true, text: 'Believed to be calm, careful, organised and polite, but anxious and a perfectionist.' },
+    { abo: 'B',  myth: true, text: 'Believed to be creative, passionate and free-spirited, but seen as selfish and moody.' },
+    { abo: 'O',  myth: true, text: 'Believed to be confident, a leader, outgoing and generous, but stubborn.' },
+    { abo: 'AB', myth: true, text: 'Believed to be a rational, cool, dual-natured "genius type", but seen as distant and hard to read.' }
+  ];
+  const mythFacts = [
+    { id: 'beetroot', myth: 'Eating beetroot makes more blood.',
+      fact: 'Beetroot has little iron. Iron-rich foods plus vitamin C help, and beetroot is fine, but it is not magic.' },
+    { id: 'weak', myth: 'Donating blood makes you weak.',
+      fact: 'A healthy adult\'s body replaces the plasma within a day or two and the red cells within weeks, so you can rest and drink fluids.' },
+    { id: 'diet', myth: 'Your blood group can change with diet.',
+      fact: 'Your blood group is set by your genes. Rare exceptions are a bone marrow transplant and some diseases.' },
+    { id: 'orare', myth: 'O negative is rare everywhere.',
+      fact: 'In India, Rh negative is uncommon overall, and how common each group is differs by region.' },
+    { id: 'rhmum', myth: 'Rh negative mothers cannot have healthy babies.',
+      fact: 'With an anti-D injection and care, Rh negative mothers have healthy babies.' },
+    { id: 'tattoo', myth: 'You cannot donate if you have a tattoo.',
+      fact: 'You usually wait a period first. Check local rules; in India this is often 12 months.' },
+    { id: 'relative', myth: 'Blood from a relative is always safest.',
+      fact: 'Relatives must be tested too, and a directed donation can carry some extra risks. Matching and testing matter, not family.' }
+  ];
   W.BG = { ABO, groups, aboInfo, rhInfo, india, parts, parse, antigens, antibodies, rhPositive, name, indiaTotal, byCommon,
     canGive, givesTo, receivesFrom, compatText, donor,
     aboGenos, rhGenos, aboPheno, rhPheno, punnett, childABO, childRh, childGroups, canHaveChild, childOdds, inheritWhy, makeGuess,
-    ABO_SHOW, aboTable, pickerWhy };
+    ABO_SHOW, aboTable, pickerWhy,
+    views, mythIntro, personality, mythFacts };
 })(window);
