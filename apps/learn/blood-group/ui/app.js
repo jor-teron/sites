@@ -1,4 +1,4 @@
-/* Blood Group BG-3a — three views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
+/* Blood Group BG-3b — three views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
    1 what blood is (red cells, white cells, platelets, plasma; tap a part for a tip), 2 the ABO groups (a red cell with its
    A / B markers and the antibodies in the plasma; tap a card to highlight it), 3 the Rh factor and the 8 groups as drop badges,
    4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation and family views
@@ -6,16 +6,18 @@
    DONATION view (BG-2, hash #donate so refresh and the browser Back button work): a "Who can give to whom" tap chart of the
    8 groups (Give to / Receive from, highlights come from BG.canGive), universal donor and receiver, who can donate (India,
    basic), why donate, what happens at a donation (4 steps).
-   FAMILY view (BG-3, hash #family): alleles explainer, Parents to child (pick Mum and Dad, possible / not possible, optional
-   genotypes with odds and a Punnett square) and Guess (which parents can have this child).
+   FAMILY view (BG-3b, hash #family): Mum and Dad chip pickers side by side (8 full group-name chips each), a Child box that
+   lights possible groups and greys out the rest, a plain-English reason, and a 4x4 ABO reference table below. The old
+   8-column drop badges are gone from this view (they wrapped on a narrow or Hub window so only + / \u2212 showed). Guess
+   and gene-pair Punnett picks live in a collapsed More section. A short alleles note and the lab-test note stay on the page.
    Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family, mapped to "" / #donate / #family. Deep links
    and Back/Forward stay in sync. Home shortcut cards are kept; the old "<- Blood groups" back links are gone. Room is left
    for a future Quiz tab (BG-4), not added here.
    Saves in localStorage: learn.blood-group.group (the last highlighted ABO group), learn.blood-group.chart ({ group, mode }),
-   learn.blood-group.family ({ mode, mum, dad, mumAbo, dadAbo, mumRh, dadRh }).
+   learn.blood-group.family ({ mum, dad, mumAbo, dadAbo, mumRh, dadRh }).
    In a Hub desktop window the header (and these tabs) move to the Hub title bar (LearnHubBar). */
 (() => {
-  const B = window.BG, VER = 'BG-3a', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
+  const B = window.BG, VER = 'BG-3b', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -204,19 +206,20 @@
     h('span', { class: 'bg-num', 'aria-hidden': 'true' }, String(i + 1)),
     h('span', null, h('span', { class: 'bg-cn' }, st.title), h('span', { class: 'bg-cj' }, st.text))))));
 
-  // ================= FAMILY VIEW (BG-3) =================
+  // ================= FAMILY VIEW (BG-3b) =================
+  // Chip order is A+/A- then B, AB, O, so each column reads as pairs, not a tight 8-drop row.
+  const CHIPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
   const famSaved = store.read(PRE + 'family', {}) || {};
-  let famMode = famSaved.mode === 'guess' ? 'guess' : 'parents';
-  let famMum = B.groups.includes(famSaved.mum) ? famSaved.mum : '';
-  let famDad = B.groups.includes(famSaved.dad) ? famSaved.dad : '';
+  const asGroup = g => (B.groups.includes(g) ? g : '');
+  let famMum = asGroup(famSaved.mum) || 'A+';
+  let famDad = asGroup(famSaved.dad) || 'B+';
   const aboPick = (g, v) => { const p = B.parse(g); return p && B.aboGenos(p.abo).includes(v) ? v : ''; };
   const rhPick  = (g, v) => { const p = B.parse(g); return p && B.rhGenos(p.rh).includes(v) ? v : ''; };
   let famMumAbo = aboPick(famMum, famSaved.mumAbo), famDadAbo = aboPick(famDad, famSaved.dadAbo);
   let famMumRh  = rhPick(famMum, famSaved.mumRh),   famDadRh  = rhPick(famDad, famSaved.dadRh);
-  const saveFam = () => store.write(PRE + 'family', { mode: famMode, mum: famMum, dad: famDad, mumAbo: famMumAbo, dadAbo: famDadAbo, mumRh: famMumRh, dadRh: famDadRh });
+  const saveFam = () => store.write(PRE + 'family', { mum: famMum, dad: famDad, mumAbo: famMumAbo, dadAbo: famDadAbo, mumRh: famMumRh, dadRh: famDadRh });
   const resolvedAbo = (g, picked) => { const p = B.parse(g); if (!p) return ''; const all = B.aboGenos(p.abo); return all.includes(picked) ? picked : (all.length === 1 ? all[0] : ''); };
   const resolvedRh  = (g, picked) => { const p = B.parse(g); if (!p) return ''; const all = B.rhGenos(p.rh);  return all.includes(picked) ? picked : (all.length === 1 ? all[0] : ''); };
-  const joinList = items => items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
   const oddLabel = (row, total) => {
     if (!row || !row.n) return '';
     if (row.n === total) return '100%';
@@ -224,22 +227,14 @@
   };
 
   const f0 = sec('alleles', 'How a child gets a group',
-    h('p', { class: 'bg-p' }, 'You get one letter (an allele) from Mum and one from Dad. The pair is your genotype. The group we see (A, B, AB or O, and + or \u2212) comes from that pair.'),
-    h('ul', { class: 'bg-list' },
-      h('li', null, h('b', null, 'A and B are co-dominant. '), 'If you have both, you are group AB.'),
-      h('li', null, h('b', null, 'O is recessive. '), 'AO looks like A, and BO looks like B. Only OO is group O.'),
-      h('li', null, h('b', null, 'Rh positive is dominant. '), 'One D is enough for Rh+. Only dd is Rh negative.')));
+    h('p', { class: 'bg-p' }, 'A child gets one gene from Mum and one from Dad. A and B together make AB. O stays hidden unless both genes are O. Rh+ wins: two Rh\u2212 parents have only a Rh\u2212 child; a Rh+ parent can have either.'));
 
-  const famModeBtns = [['parents', 'Parents to child'], ['guess', 'Guess']].map(([m, label]) =>
-    h('button', { type: 'button', class: 'bg-tog', 'data-mode': m, 'aria-pressed': 'false', onclick: () => setFamMode(m) }, label));
-
-  function parentBtns(which) {
-    return B.groups.map(g => h('button', { type: 'button', class: 'bg-drop bg-dropb', 'data-g': g, 'aria-pressed': 'false',
+  function parentChips(which) {
+    return CHIPS.map(g => h('button', { type: 'button', class: 'bg-chip', 'data-g': g, 'aria-pressed': 'false',
       'aria-label': (which === 'mum' ? 'Mum ' : 'Dad ') + B.name(g),
-      onclick: () => setParent(which, ((which === 'mum' ? famMum : famDad) === g) ? '' : g) },
-      svg('0 0 40 48', 'bg-dropsvg', 'Blood group ' + B.name(g), s('path', { d: DROP })), h('span', { class: 'bg-dropt' }, B.name(g))));
+      onclick: () => setParent(which, g) }, B.name(g)));
   }
-  const mumBtns = parentBtns('mum'), dadBtns = parentBtns('dad');
+  const mumBtns = parentChips('mum'), dadBtns = parentChips('dad');
   const mumGenoBox = h('div', { class: 'bg-genos' }), dadGenoBox = h('div', { class: 'bg-genos' });
 
   function genoRow(label, options, picked, onPick) {
@@ -252,18 +247,16 @@
   }
   function fillGenos() {
     const mp = B.parse(famMum), dp = B.parse(famDad);
-    const mumRows = mp ? [genoRow('Mum ABO', B.aboGenos(mp.abo), famMumAbo, v => { famMumAbo = v; saveFam(); fillGenos(); paintFam(); }),
-                          genoRow('Mum Rh',  B.rhGenos(mp.rh),  famMumRh,  v => { famMumRh  = v; saveFam(); fillGenos(); paintFam(); })].filter(Boolean) : [];
-    const dadRows = dp ? [genoRow('Dad ABO', B.aboGenos(dp.abo), famDadAbo, v => { famDadAbo = v; saveFam(); fillGenos(); paintFam(); }),
-                          genoRow('Dad Rh',  B.rhGenos(dp.rh),  famDadRh,  v => { famDadRh  = v; saveFam(); fillGenos(); paintFam(); })].filter(Boolean) : [];
+    const mumRows = mp ? [genoRow('Mum ABO', B.aboGenos(mp.abo), famMumAbo, v => { famMumAbo = v; saveFam(); fillGenos(); paintMore(); }),
+                          genoRow('Mum Rh',  B.rhGenos(mp.rh),  famMumRh,  v => { famMumRh  = v; saveFam(); fillGenos(); paintMore(); })].filter(Boolean) : [];
+    const dadRows = dp ? [genoRow('Dad ABO', B.aboGenos(dp.abo), famDadAbo, v => { famDadAbo = v; saveFam(); fillGenos(); paintMore(); }),
+                          genoRow('Dad Rh',  B.rhGenos(dp.rh),  famDadRh,  v => { famDadRh  = v; saveFam(); fillGenos(); paintMore(); })].filter(Boolean) : [];
     mumGenoBox.replaceChildren(...mumRows);
     dadGenoBox.replaceChildren(...dadRows);
   }
 
-  const famCells = B.groups.map(g => h('div', { class: 'bg-famcell', 'data-g': g },
-    h('div', { class: 'bg-drop' }, svg('0 0 40 48', 'bg-dropsvg', 'Blood group ' + B.name(g), s('path', { d: DROP })), h('span', { class: 'bg-dropt' }, B.name(g))),
-    h('span', { class: 'bg-pct' }, '')));
-  const famSay = h('p', { class: 'bg-tip', role: 'status', 'aria-live': 'polite' });
+  const childChips = CHIPS.map(g => h('div', { class: 'bg-childchip', 'data-g': g, 'aria-label': B.name(g) }, B.name(g)));
+  const famSay = h('p', { class: 'bg-tip bg-whyline', role: 'status', 'aria-live': 'polite' });
   const famBars = h('div', { class: 'bg-bars' });
   const famPunnett = h('div', { class: 'bg-punnetts' });
 
@@ -274,45 +267,33 @@
         ...sq.cols.map(c => h('div', { class: 'bg-pqh' }, c)),
         ...[0, 1].flatMap(i => [h('div', { class: 'bg-pqh' }, sq.rows[i]), ...sq.cells[i].map(cell => h('div', { class: 'bg-pqc' }, cell))])));
   }
-  function paintFam() {
+  function paintPicker() {
     mumBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.g === famMum)));
     dadBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.g === famDad)));
-    if (!famMum || !famDad) {
-      famCells.forEach(c => { c.classList.remove('bg-on', 'bg-off'); c.querySelector('.bg-pct').textContent = ''; });
-      famSay.textContent = 'Pick Mum\'s and Dad\'s groups to see which groups a child can have.';
-      famBars.replaceChildren(); famPunnett.replaceChildren();
-      return;
-    }
+    const possible = B.childGroups(famMum, famDad);
+    childChips.forEach(c => {
+      const on = possible.includes(c.dataset.g);
+      c.classList.toggle('bg-on', on); c.classList.toggle('bg-off', !on);
+      c.setAttribute('aria-disabled', String(!on));
+    });
+    famSay.textContent = B.pickerWhy(famMum, famDad);
+    const mp = B.parse(famMum), dp = B.parse(famDad);
+    tableCells.forEach(td => {
+      const hit = mp && dp && td.dataset.mum === mp.abo && td.dataset.dad === dp.abo;
+      td.classList.toggle('bg-on', !!hit);
+      td.setAttribute('aria-pressed', String(!!hit));
+    });
+  }
+  function paintMore() {
     const aboM = resolvedAbo(famMum, famMumAbo), aboD = resolvedAbo(famDad, famDadAbo);
     const rhM  = resolvedRh(famMum, famMumRh),   rhD  = resolvedRh(famDad, famDadRh);
     const odds = (aboM && aboD && rhM && rhD) ? B.childOdds(aboM, aboD, rhM, rhD) : null;
-    const possible = odds ? odds.rows.filter(r => r.n > 0).map(r => r.group) : B.childGroups(famMum, famDad);
-    famCells.forEach(c => {
-      const on = possible.includes(c.dataset.g);
-      c.classList.toggle('bg-on', on); c.classList.toggle('bg-off', !on);
-      const row = odds && odds.rows.find(r => r.group === c.dataset.g);
-      c.querySelector('.bg-pct').textContent = odds ? oddLabel(row, odds.total) : '';
-    });
     if (odds) {
-      const bits = odds.rows.filter(r => r.n > 0).map(r => oddLabel(r, odds.total) + ' ' + B.name(r.group));
-      famSay.textContent = 'With Mum ' + aboM + ' ' + rhM + ' and Dad ' + aboD + ' ' + rhD + ', a child is ' + joinList(bits) + '.';
       famBars.replaceChildren(...odds.rows.filter(r => r.n > 0).map(r => h('div', { class: 'bg-bar' },
         h('span', { class: 'bg-barl' }, B.name(r.group)),
         h('span', { class: 'bg-bart' }, h('span', { class: 'bg-barf', style: 'width:' + r.pct + '%' })),
         h('span', { class: 'bg-barv' }, oddLabel(r, odds.total)))));
-    } else {
-      const abo = B.ABO.filter(a => possible.some(g => B.parse(g).abo === a));
-      const rh = ['+', '-'].filter(r => possible.some(g => B.parse(g).rh === r));
-      let say;
-      if (possible.length === 1) say = 'These parents can only have a ' + B.name(possible[0]) + ' child.';
-      else {
-        say = 'These parents can have a child of group ' + joinList(abo);
-        say += rh.length === 2 ? ', Rh positive or Rh negative.' : (', and the child is always ' + (rh[0] === '+' ? 'Rh positive.' : 'Rh negative.'));
-      }
-      say += ' Pick a genotype to see the odds.';
-      famSay.textContent = say;
-      famBars.replaceChildren();
-    }
+    } else famBars.replaceChildren();
     const cards = [];
     if (aboM && aboD) cards.push(punnettCard('ABO: ' + aboM + ' \u00d7 ' + aboD, B.punnett(aboM, aboD)));
     if (rhM && rhD)   cards.push(punnettCard('Rh: ' + rhM + ' \u00d7 ' + rhD, B.punnett(rhM, rhD)));
@@ -321,15 +302,46 @@
   function setParent(which, g) {
     if (which === 'mum') { famMum = g; famMumAbo = aboPick(g, famMumAbo); famMumRh = rhPick(g, famMumRh); }
     else { famDad = g; famDadAbo = aboPick(g, famDadAbo); famDadRh = rhPick(g, famDadRh); }
-    saveFam(); fillGenos(); paintFam();
+    saveFam(); fillGenos(); paintPicker(); paintMore();
+  }
+  function setFromTable(mumAbo, dadAbo) {
+    const m = B.parse(famMum), d = B.parse(famDad);
+    setParent('mum', mumAbo + (m && m.rh ? m.rh : '+'));
+    setParent('dad', dadAbo + (d && d.rh ? d.rh : '+'));
   }
 
+  const table = B.aboTable();
+  const tableCells = [];
+  const aboTableEl = h('table', { class: 'bg-abotable', 'aria-label': 'Possible child ABO groups' },
+    h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Mum \\ Dad'),
+      ...table.cols.map(c => h('th', { scope: 'col' }, 'Dad ' + c)))),
+    h('tbody', null, ...table.rows.map((mum, i) => h('tr', null,
+      h('th', { scope: 'row' }, 'Mum ' + mum),
+      ...table.cells[i].map((child, j) => {
+        const dad = table.cols[j];
+        const td = h('td', { role: 'button', tabindex: '0', 'data-mum': mum, 'data-dad': dad,
+          'aria-label': 'Mum ' + mum + ' and Dad ' + dad + ': child can be ' + child.join(', '),
+          onclick: () => setFromTable(mum, dad),
+          onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault && e.preventDefault(); setFromTable(mum, dad); } } },
+          child.join(', '));
+        tableCells.push(td);
+        return td;
+      })))));
+
   const parentsPane = h('div', { class: 'bg-parents' },
-    sec('mum', "Mum's group", h('div', { class: 'bg-drops' }, mumBtns), mumGenoBox),
-    sec('dad', "Dad's group", h('div', { class: 'bg-drops' }, dadBtns), dadGenoBox),
-    sec('child', 'Possible children',
-      h('div', { class: 'bg-drops' }, famCells), famSay, famBars, famPunnett,
-      h('p', { class: 'bg-p bg-muted' }, 'Lit groups are possible. Dim groups are not. Odds appear when both genotypes are known.')));
+    sec('parents', 'Mum and Dad',
+      h('div', { class: 'bg-picker' },
+        h('div', { class: 'bg-pickcol' }, h('h3', { class: 'bg-pickh' }, 'Mum'), h('div', { class: 'bg-chips', role: 'group', 'aria-label': "Mum's group" }, mumBtns)),
+        h('div', { class: 'bg-pickcol' }, h('h3', { class: 'bg-pickh' }, 'Dad'), h('div', { class: 'bg-chips', role: 'group', 'aria-label': "Dad's group" }, dadBtns))),
+      h('div', { class: 'bg-childbox' },
+        h('h3', { class: 'bg-pickh' }, 'Child'),
+        h('div', { class: 'bg-childchips', 'aria-label': 'Possible child groups' }, childChips),
+        famSay)));
+
+  const rhNote = h('p', { class: 'bg-p bg-muted' }, '+ and + can give + or \u2212; \u2212 and \u2212 give only \u2212; + and \u2212 can give either.');
+  const tablePane = sec('abotable', 'ABO table',
+    h('p', { class: 'bg-p bg-muted' }, 'Mum down the side, Dad across the top. Each cell lists the child ABO groups that are possible. Tap a cell to set the picker.'),
+    h('div', { class: 'bg-tablewrap' }, aboTableEl), rhNote);
 
   let guess = null, guessPicked = -1, guessScore = { ok: 0, n: 0 };
   const guessChildBox = h('div', { class: 'bg-guesschild' });
@@ -337,7 +349,6 @@
   const guessSay = h('p', { class: 'bg-tip', role: 'status', 'aria-live': 'polite' });
   const guessScoreEl = h('p', { class: 'bg-p bg-muted' });
   const guessNext = h('button', { type: 'button', class: 'bg-back', hidden: true, onclick: () => newGuess() }, 'Next puzzle');
-
   function pairCard(pair, i) {
     return h('button', { type: 'button', class: 'bg-card bg-pair', 'data-i': String(i),
       'aria-label': 'Mum ' + B.name(pair.mum) + ' and Dad ' + B.name(pair.dad),
@@ -376,13 +387,10 @@
   const guessPane = h('div', { class: 'bg-guess' },
     sec('guess', 'Guess the parents', guessChildBox, guessPairs, guessSay, guessNext, guessScoreEl));
 
-  function setFamMode(m) {
-    famMode = m === 'guess' ? 'guess' : 'parents'; saveFam();
-    famModeBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === famMode)));
-    parentsPane.hidden = famMode !== 'parents';
-    guessPane.hidden = famMode !== 'guess';
-    if (famMode === 'guess' && !guess) newGuess();
-  }
+  const morePane = h('details', { class: 'bg-more' },
+    h('summary', null, 'More: guess and gene pairs'),
+    h('p', { class: 'bg-p bg-muted' }, 'Optional: pick the gene pair to see the odds and a Punnett square.'),
+    mumGenoBox, dadGenoBox, famBars, famPunnett, guessPane);
 
   // ---- views and navigation (#donate, #family); title-bar tabs switch these views ----
   const TABS = [
@@ -396,9 +404,9 @@
   const donate = h('div', { class: 'bg-view', id: 'bg-donate', 'data-view': 'donate', role: 'tabpanel', hidden: true },
     h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Blood donation')), d1, d2, d3, d4, d5, disc());
   const family = h('div', { class: 'bg-view', id: 'bg-family', 'data-view': 'family', role: 'tabpanel', hidden: true },
-    h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Family puzzle')),
-    f0, h('div', { class: 'bg-togs', role: 'group', 'aria-label': 'Family mode' }, famModeBtns),
-    parentsPane, guessPane, famNote);
+    h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Family')),
+    f0, parentsPane, tablePane, morePane, famNote);
+
   const here = h('span', { class: 'lrn-here' }, 'Blood Group');
   const head = h('header', { class: 'lrn-head' }, h('h1', null, here), h('span', { class: 'bg-ver' }, VER));
   const main = h('main', { class: 'lrn-main bg-main', id: 'lrn-main' }, home, donate, family);
@@ -416,7 +424,7 @@
   };
   window.addEventListener('hashchange', route);
   setChart(chPick, chMode);
-  fillGenos(); paintFam(); setFamMode(famMode);
+  fillGenos(); paintPicker(); paintMore(); newGuess();
   root.className = 'lrn bg'; root.replaceChildren(head, main);
   route();
   document.title = 'Blood Group ' + VER;
