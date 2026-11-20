@@ -30,6 +30,12 @@
            localStorage sheet_open_new) or a new browser tab (#new); on Hub phone
            or when that fails, the old clear-in-place handler runs.
          Tested by test-sh38-filemenu.cjs.
+         SH40: Close (Writer DW18), between Print and Delete. It saves first like New
+         (SHEET_SAVEFMT flush for an .xlsx / .ods / .csv target, the .hos autosave),
+         then shows the empty state (spreadsheet_empty.js) without a new workbook.
+         It asks only when the edits have nowhere to go (never in the Hub). Delete
+         now ends in the empty state too, and New while empty opens here.
+         Tested by test-sh40-close.cjs.
    DEPENDS: SHEET_HOS, SHEET_SAVEFMT, ribbonSetFile, SHEET_INIT. Load last.
    ============================================================ */
 (function (root) {
@@ -39,7 +45,8 @@
 
   /* Live File menu order (ids). */
   /* (before SH38) M.ORDER = ['btn-clear', 'btn-open', 'btn-save', 'btn-save-as', 'btn-print', 'btn-export-menu', 'settingsMenuBtn']; */
-  M.ORDER = ['btn-clear', 'btn-open', 'btn-rename', 'btn-save', 'btn-save-as', 'btn-print', 'btn-delete', 'btn-export-menu', 'settingsMenuBtn'];
+  /* (before SH40) M.ORDER = ['btn-clear', 'btn-open', 'btn-rename', 'btn-save', 'btn-save-as', 'btn-print', 'btn-delete', 'btn-export-menu', 'settingsMenuBtn']; */
+  M.ORDER = ['btn-clear', 'btn-open', 'btn-rename', 'btn-save', 'btn-save-as', 'btn-print', 'btn-close', 'btn-delete', 'btn-export-menu', 'settingsMenuBtn'];
   M.ACCEPT = ['.hos', '.xlsx', '.xlsm', '.xls', '.ods', '.csv'];
   M.EXPORTS = ['btn-export', 'btn-export-xlsx', 'btn-export-ods'];
 
@@ -104,6 +111,8 @@
   function el(id) { return root.document ? root.document.getElementById(id) : null; }
   function F() { return root.SHEET_SAVEFMT || null; }
   function H() { return root.SHEET_HOS || null; }
+  function EM() { return root.SHEET_EMPTY || null; }   /* SH40 */
+  function isEmptyNow() { var e = EM(); return !!(e && e.isEmpty && e.isEmpty()); }
   function inHub() { var f = F(); return !!(f && f.inHub && f.inHub()); }
   function toast(msg) {
     if (typeof root.setStatus === 'function') root.setStatus(msg);
@@ -226,11 +235,25 @@
     if (rn) rn.addEventListener('click', function () { M.rename(); });
     var del = el('btn-delete');
     if (del) del.addEventListener('click', function () { M.deleteCurrent(); });
+    /* SH40 */
+    var cl = el('btn-close');
+    if (cl) cl.addEventListener('click', function () {
+      if (typeof root.ribbonSetFile === 'function') root.ribbonSetFile(false);
+      M.closeWorkbook();
+    });
     /* New: decide before the old clear handlers (spreadsheet_toolbar.js, spreadsheet_hub.js)
        see the click. When a new window or tab opened, they never run. */
     doc.addEventListener('click', function (e) {
       var t = e.target && e.target.closest ? e.target.closest('#btn-clear') : null;
       if (!t) return;
+      /* SH40: nothing open, nothing to keep: the new workbook opens in this window, no question. */
+      if (isEmptyNow()) {
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        if (typeof root.ribbonSetFile === 'function') root.ribbonSetFile(false);
+        M.newHere();
+        return;
+      }
       if (M.requestNew(root) === 'same') return;   /* old clear-in-place handler runs */
       e.stopPropagation();
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
@@ -380,7 +403,10 @@
     var gone = (disk && root.FsDrives) ? dirOf(disk).then(function (dir) { return dir.removeEntry(disk.name); })
       .catch(function (e) { if (!notFound(e)) throw e; }) : Promise.resolve();
     return gone.then(function () {
-      M.blankWorkbook();
+      /* (before SH40) M.blankWorkbook(); */
+      var em = EM();
+      if (em && em.enter) em.enter('delete');   /* SH40: no new Untitled; the empty state */
+      else M.blankWorkbook();
       toast((plan.onDisk ? 'Deleted ' : 'Closed ') + name);
       return true;
     }).catch(function () {
@@ -402,6 +428,74 @@
     if (typeof root.renderSheetTabs === 'function') root.renderSheetTabs();
     if (typeof root.highlightSel === 'function') root.highlightSel();
     return named;
+  };
+
+  /* ================= SH40 ================= */
+
+  /* ---------- Close (Writer DW18) ---------- */
+  /* Facts for the Close question (SHEET_EMPTY.closeNeedsConfirm). */
+  M.closeInfo = function closeInfo() {
+    var f = F(), s = H(), em = EM();
+    var t = target();
+    var hub = !!(f && f.inHub && f.inHub());
+    var info = {
+      inHub: hub,
+      willWrite: em && em.flushWrites ? em.flushWrites({
+        inHub: hub,
+        canLocal: !!(f && f.canLocal && f.canLocal()),
+        destKind: t.dest ? t.dest.kind : '',
+        format: t.format
+      }) : true,
+      blank: em && em.workbookBlank && root.workbook ? em.workbookBlank(root.workbook.sheets, root.rowStore) : false,
+      changed: !!(root.UNDO && root.UNDO.past && root.UNDO.past.length)
+    };
+    if (s && s.applying) info.changed = false;
+    return info;
+  };
+  /* File > Close: save first (the New / SH38 flush), then the empty state. No new workbook. */
+  M.closeWorkbook = function closeWorkbook() {
+    var em = EM(), f = F(), s = H();
+    if (!em || em.isEmpty()) return Promise.resolve(false);
+    var name = f && f.currentName ? f.currentName() : (s && s.stemName ? s.stemName() : 'workbook');
+    var D = root.OfficeDialog;
+    var ask = em.closeNeedsConfirm(M.closeInfo()) && D && D.confirm
+      ? D.confirm({ title: 'Close workbook?', message: '"' + name + '" has changes that are not saved to a file. Close it anyway? Use Save first to keep them.', okLabel: 'Close', danger: true })
+      : Promise.resolve(true);
+    return ask.then(function (yes) {
+      if (!yes) return false;
+      if (typeof root.saveStore === 'function') clearTimeout(root.saveStore._t);
+      if (typeof root.blurEditing === 'function') { try { root.blurEditing(); } catch (e) {} }
+      /* .hos: the autosave (Hub file or a picked file); .xlsx / .ods / .csv: SHEET_SAVEFMT.flush. */
+      var flushed = (s && s.autosave) ? Promise.resolve(s.autosave({ flush: true })) : Promise.resolve();
+      return flushed.catch(function () {}).then(function () {
+        em.enter('close');
+        toast('Closed ' + name);
+        return true;
+      });
+    }).catch(function () {
+      toast('Could not close workbook');
+      return false;
+    });
+  };
+  /* New while empty: a blank Untitled workbook in this window (no Hub window, no tab, no question). */
+  M.newHere = function newHere() {
+    var em = EM();
+    if (em && em.leave) em.leave('new');
+    var p = M.blankWorkbook();
+    if (root.UNDO) { root.UNDO.past = []; root.UNDO.future = []; }
+    if (typeof root.undoButtons === 'function') root.undoButtons();
+    return p;
+  };
+  /* The one-time New flag is there and fresh, without taking it (SHEET_HOS.start takes it). */
+  M.peekOpenNew = function peekOpenNew(now, store) {
+    if (!store || typeof store.getItem !== 'function') return false;
+    var raw = null;
+    try { raw = store.getItem(M.OPEN_NEW_KEY); } catch (e) { return false; }
+    if (raw == null || raw === '') return false;
+    var t = Number(raw);
+    if (!isFinite(t)) return false;
+    var age = now - t;
+    return age >= 0 && age < M.OPEN_NEW_MS;
   };
 
   /* ---------- New (Writer DW15) ---------- */

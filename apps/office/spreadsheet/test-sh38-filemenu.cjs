@@ -237,14 +237,17 @@ test('html: Rename and Delete fill the SH37 slots; wiring SH38', () => {
   const ids = [];
   menu.replace(/<button[^>]*\bid="([^"]+)"/g, (m, id) => { ids.push(id); return m; });
   assert.deepStrictEqual(ids, Array.from(M.ORDER));
-  assert.deepStrictEqual(ids, ['btn-clear', 'btn-open', 'btn-rename', 'btn-save', 'btn-save-as', 'btn-print', 'btn-delete', 'btn-export-menu', 'settingsMenuBtn']);
+  /* (before SH40) assert.deepStrictEqual(ids, ['btn-clear', 'btn-open', 'btn-rename', 'btn-save', 'btn-save-as', 'btn-print', 'btn-delete', 'btn-export-menu', 'settingsMenuBtn']); */
+  assert.deepStrictEqual(ids, ['btn-clear', 'btn-open', 'btn-rename', 'btn-save', 'btn-save-as', 'btn-print', 'btn-close', 'btn-delete', 'btn-export-menu', 'settingsMenuBtn']);   // SH40 Close
   assert.ok(menu.indexOf('<span>Rename</span>') !== -1 && menu.indexOf('<span>Delete</span>') !== -1);
   assert.ok(html.indexOf('<title>Spreadsheet SH38</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH38) <title>Spreadsheet SH37</title> -->') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH38";') !== -1);
-  assert.ok(live.indexOf('spreadsheet_filemenu.js?v=SH38') !== -1);
+  /* (before SH40) assert.ok(live.indexOf('spreadsheet_filemenu.js?v=SH38') !== -1); */
+  assert.ok(live.indexOf('spreadsheet_filemenu.js?v=SH38') !== -1 || live.indexOf('spreadsheet_filemenu.js?v=SH40') !== -1);
   /* (before SH39) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH38') !== -1); */
-  assert.ok(live.indexOf('spreadsheet_settings.js?v=SH38') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH39') !== -1);
+  /* (before SH40) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH38') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH39') !== -1); */
+  assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40)/.test(live));
   /* The old clear handler is kept for phone / fallback. */
   assert.ok(read('spreadsheet_toolbar.js').indexOf('onBtn("btn-clear"') !== -1);
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH38') !== -1);

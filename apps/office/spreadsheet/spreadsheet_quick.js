@@ -11,6 +11,9 @@
  *          ribbonSelectTab, ribbonSetFile, SHEET_RIBBON, SHEET_COLLAPSE, SHEET_HUB, clipTarget.
  * Load after spreadsheet_hub.js.
  */
+/* SH40 */
+function sheetQuickEmpty() { return typeof SHEET_EMPTY !== "undefined" && !!SHEET_EMPTY && SHEET_EMPTY.isEmpty(); }
+
 SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
   if (typeof OfficeQuick === "undefined") return;
   function activeTab() {
@@ -22,8 +25,12 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
     app: "Spreadsheet",
     undo: undo,
     redo: redo,
-    canUndo: function () { return UNDO.past.length > 0; },
-    canRedo: function () { return UNDO.future.length > 0; },
+    /* (before SH40) canUndo: function () { return UNDO.past.length > 0; }, */
+    /* (before SH40) canRedo: function () { return UNDO.future.length > 0; }, */
+    /* SH40: nothing to undo, save or print while no workbook is open (spreadsheet_empty.js). */
+    canUndo: function () { return !sheetQuickEmpty() && UNDO.past.length > 0; },
+    canRedo: function () { return !sheetQuickEmpty() && UNDO.future.length > 0; },
+    canSave: function () { return !sheetQuickEmpty(); },
     /* (before HOS1) save: function () {
       var st = document.getElementById("status");
       saveStore();
@@ -34,7 +41,11 @@ SHEET_INIT.push(function () {   /* runs in boot(), after initRibbon() */
       var p = (typeof SHEET_HOS !== "undefined" && SHEET_HOS.save) ? SHEET_HOS.save({ explicit: true }) : Promise.resolve({ ok: false });
       return p.then(function (res) { return !(res && res.ok === false); }, function () { return false; });
     },
-    print: printSheet,
+    /* (before SH40) print: printSheet, */
+    print: function () {
+      if (sheetQuickEmpty()) { if (typeof OfficeNotify !== "undefined" && OfficeNotify.show) OfficeNotify.show("No workbook open"); return; }
+      printSheet();
+    },
     undoKey: function () { return !!clipTarget(); },
     tabs: function () { return [{ id: "file", label: "File" }].concat(SHEET_RIBBON_TABS.map(function (t) { return { id: t.id, label: t.label }; })); },
     activeTab: activeTab,

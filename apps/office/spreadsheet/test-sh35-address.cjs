@@ -272,7 +272,8 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
     assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1, f);   // SH39 bumps config and hos
   }
   /* (before SH37) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js'); */
-  assert.ok(/spreadsheet_settings\.js\?v=SH3[5-9]/.test(live), 'spreadsheet_settings.js');
+  /* (before SH40) assert.ok(/spreadsheet_settings\.js\?v=SH3[5-9]/.test(live), 'spreadsheet_settings.js'); */
+  assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|40)/.test(live), 'spreadsheet_settings.js');
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH35";') !== -1);
   const readme = read('spreadsheet_readme.md');
   assert.ok(readme.indexOf('## SH35') !== -1);

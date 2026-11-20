@@ -23,7 +23,8 @@
   <!-- (before SH37) <title>Spreadsheet SH36</title> -->
   <!-- (before SH38) <title>Spreadsheet SH37</title> -->
   <!-- (before SH39) <title>Spreadsheet SH38</title> -->
-  <title>Spreadsheet SH39</title>
+  <!-- (before SH40) <title>Spreadsheet SH39</title> -->
+  <title>Spreadsheet SH40</title>
   <!-- (before HO3) every local cache token (?v=) on this page was SH18; HO3 bumps them for the 12pt default. Title stays SH18. -->
   <link rel="icon" href="spreadsheet_icon.png">
   <link rel="stylesheet" href="spreadsheet.css?v=HO3">
@@ -39,6 +40,8 @@
   <!-- (before SH37) <link rel="stylesheet" href="spreadsheet_ribbon.css?v=HO3"> -->
   <link rel="stylesheet" href="spreadsheet_ribbon.css?v=SH37">
   <link rel="stylesheet" href="spreadsheet_page.css?v=HO3">
+  <!-- SH40: "No workbook open" panel -->
+  <link rel="stylesheet" href="spreadsheet_empty.css?v=SH40">
 </head>
 <body>
   <!-- TOP BAR: File button + ribbon tabs (built from SHEET_RIBBON_TABS by ../shared/office-ribbon.js) -->
@@ -55,6 +58,7 @@
   <!-- File menu: Draftly look (../shared/office-tools.css .file-item, icons from office-icons.js) -->
   <div class="of-file-menu file-menu" id="of-file-menu" role="menu" aria-labelledby="of-file-btn" hidden>
     <!-- SH37: order matches Writer: New, Open..., (Rename SH38), Save, Save As, Print, (Delete SH38), Export..., then Settings and Functions. -->
+    <!-- SH40: Close (Writer DW18) sits between Print and Delete. -->
     <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New / Clear</span></button> -->
     <button type="button" class="file-item" role="menuitem" id="btn-clear" data-icon="fileNew"><span>New</span></button>
     <!-- SH37: one Open... for .hos, .xlsx, .xlsm, .xls, .ods and .csv (spreadsheet_filemenu.js routes by extension). -->
@@ -85,6 +89,7 @@
     <button type="button" class="file-item" role="menuitem" id="btn-export-ods" data-icon="fileExport"><span>Export ODS</span></button> -->
     <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button> -->
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
+    <button type="button" class="file-item" role="menuitem" id="btn-close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Close</span></button>
     <!-- (before SH38) SH38 slot: Delete -->
     <button type="button" class="file-item" role="menuitem" id="btn-delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><span>Delete</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export-menu" data-icon="fileExport" aria-haspopup="menu" aria-expanded="false" aria-controls="sheet-export-menu"><span>Export...</span></button>
@@ -314,6 +319,20 @@
     <button type="button" role="menuitem" data-border="none">No border</button>
   </div>
   <div id="sheet-wrap" class="sheet-wrap"></div>
+  <!-- SH40: shown instead of the grid when no workbook is open (spreadsheet_empty.js) -->
+  <section class="sheet-empty-panel" id="sheet-empty-panel" aria-label="No workbook open" hidden>
+    <div class="sheet-empty-card">
+      <div class="sheet-empty-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/></svg></div>
+      <h1 class="sheet-empty-title">No workbook open</h1>
+      <p class="sheet-empty-sub">Start a new workbook or open one.</p>
+      <div class="sheet-empty-actions">
+        <button type="button" class="sheet-empty-btn sheet-empty-primary" id="sheet-empty-new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>New</span></button>
+        <button type="button" class="sheet-empty-btn" id="sheet-empty-open"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/></svg><span>Open...</span></button>
+      </div>
+      <div class="sheet-empty-head">Recent</div>
+      <div class="sheet-empty-recent" id="sheet-empty-recent"></div>
+    </div>
+  </section>
   <div class="sheet-footer" id="sheet-footer">
     <div class="sheet-tabs" id="sheet-tabs" role="tablist" aria-label="Sheets"></div>
     <button type="button" class="sheet-tab-add" id="btn-sheet-add" title="Add sheet" aria-label="Add sheet">+</button>
@@ -375,7 +394,8 @@
   <!-- (before SH37) <script src="spreadsheet_settings.js?v=SH36"></script> -->
   <!-- (before SH38) <script src="spreadsheet_settings.js?v=SH37"></script> -->
   <!-- (before SH39) <script src="spreadsheet_settings.js?v=SH38"></script> -->
-  <script src="spreadsheet_settings.js?v=SH39"></script>
+  <!-- (before SH40) <script src="spreadsheet_settings.js?v=SH39"></script> -->
+  <script src="spreadsheet_settings.js?v=SH40"></script>
   <script src="spreadsheet_page.js?v=HO3"></script>
   <script src="spreadsheet_ribbon.js?v=HO3"></script>
   <script src="spreadsheet_logic.js?v=HO3"></script>
@@ -402,7 +422,8 @@
   <!-- SH33: .xlsm macro parts kept on open, put back on Save -->
   <script src="spreadsheet_xlsm.js?v=SH33"></script>
   <script src="spreadsheet_hub.js?v=HO3"></script>
-  <script src="spreadsheet_quick.js?v=HO3"></script>
+  <!-- (before SH40) <script src="spreadsheet_quick.js?v=HO3"></script> -->
+  <script src="spreadsheet_quick.js?v=SH40"></script>
   <script src="../../../shared/fs/fs_drives.js"></script>
   <script src="../../../shared/fs/fs_ops.js"></script>
   <script src="../../../shared/fs/fs_ref.js"></script>
@@ -417,6 +438,9 @@
   <script src="spreadsheet_saveformat.js?v=SH33"></script>
   <!-- SH37: File menu Open... routing, Export... chooser, full-height menu (after saveformat: uses SHEET_SAVEFMT.openAny). -->
   <!-- (before SH38) <script src="spreadsheet_filemenu.js?v=SH37"></script> -->
-  <script src="spreadsheet_filemenu.js?v=SH38"></script>
+  <!-- (before SH40) <script src="spreadsheet_filemenu.js?v=SH38"></script> -->
+  <script src="spreadsheet_filemenu.js?v=SH40"></script>
+  <!-- SH40: "No workbook open" state (after filemenu: wraps SHEET_HOS.start, uses SHEET_FILEMENU) -->
+  <script src="spreadsheet_empty.js?v=SH40"></script>
 </body>
 </html>
