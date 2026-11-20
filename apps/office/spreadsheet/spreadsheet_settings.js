@@ -3,7 +3,7 @@
  * SH1 Settings panel for Spreadsheet (gear at the right of the top bar), built with the shared
  * ../shared/office-settings.js. One localStorage key 'spreadsheet_settings'.
  * View: theme, open tabs on hover (DF13), collapse ribbon (DF13c), (light / dark / auto via ../shared/office-theme.js), gridlines, formula bar.
- * Editing: default cell font and size. About: version + reset.
+ * Editing: default cell font and size, SH39 "Wrap text by default" (wrapDefault, on). About: version + reset.
  * Runs at load (scripts sit at the end of <body>) so the theme applies before first paint.
  * SS1: Theme is Auto (default) / Light / Dark. Auto inside the Sites Hub (same-origin parent frame)
  * follows localStorage 'sites-hub.theme' ('dark' = Dark, anything else = Light), standalone it follows
@@ -33,7 +33,8 @@ var SHEET_THEME_KEY = "spreadsheet_theme";      // resolved 'dark' | 'light' for
 /* (before SH36) var SHEET_VERSION = "SH35";                     // legacy: "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 /* (before SH37) var SHEET_VERSION = "SH36";                     // legacy: "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 /* (before SH38) var SHEET_VERSION = "SH37";                     // legacy: "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
-var SHEET_VERSION = "SH38";                     // legacy: "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
+/* (before SH39) var SHEET_VERSION = "SH38";                     // legacy: "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
+var SHEET_VERSION = "SH39";                     // legacy: "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
 var SHEET_FONTS = ["Segoe UI", "Arial", "Calibri", "Times New Roman", "Consolas"];
 /* (before HO3) var SHEET_SIZES = [11, 12, 13, 14, 16, 18];   // px */
 var SHEET_SIZES = [9, 10, 11, 12, 14, 16, 18];   // HO3: Settings default size, in pt
@@ -103,6 +104,8 @@ function sheetApplySetting(k) {
     /* (before HO3) b.style.setProperty("--sheet-font-size", s.fontSize + "px"); */
     b.style.setProperty("--sheet-font-size", sheetFontSizeCss(s.fontSize));
   }
+  /* SH39: Wrap text by default changed: redraw so faces and row heights follow (skipped at load, before the grid exists). */
+  if (k === "wrapDefault" && typeof renderViewport === "function" && document.getElementById("sheet-sizer")) renderViewport(true);
   if ((!k || k === "ribbonCollapsed") && typeof SHEET_COLLAPSE !== "undefined" && SHEET_COLLAPSE) SHEET_COLLAPSE.apply(s.ribbonCollapsed);
 }
 
@@ -126,7 +129,8 @@ function initSheetSettings() {
     key: SHEET_SETTINGS_KEY,
     /* legacy (SH1): theme default "dark" */
     /* (before HO3) defaults: { theme: "auto", ss1: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: 13, hoverTabs: true, ribbonCollapsed: false }, */
-    defaults: { theme: "auto", ss1: true, ho3: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: SHEET_DEFAULT_FONT_SIZE, hoverTabs: true, ribbonCollapsed: false },
+    /* (before SH39) defaults: { theme: "auto", ss1: true, ho3: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: SHEET_DEFAULT_FONT_SIZE, hoverTabs: true, ribbonCollapsed: false }, */
+    defaults: { theme: "auto", ss1: true, ho3: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: SHEET_DEFAULT_FONT_SIZE, hoverTabs: true, ribbonCollapsed: false, wrapDefault: true },
     gearBtn: document.getElementById("settingsBtn"),
     validate: function (s) {
       /* SS1 one-time move: SH1 saved the old default 'dark' for everyone, so pre-SS1 settings start on Auto */
@@ -150,7 +154,9 @@ function initSheetSettings() {
       { title: "Editing", rows: [
         { key: "font", type: "select", id: "set-font", label: "Default font", options: SHEET_FONTS.map(function (f) { return [f, f]; }) },
         /* (before HO3) { key: "fontSize", type: "select", id: "set-font-size", label: "Default size", cast: Number, options: SHEET_SIZES.map(function (n) { return [n, n + " px"]; }) } */
-        { key: "fontSize", type: "select", id: "set-font-size", label: "Default size", options: function () { return sheetFontSizeOptions(SHEET_SETTINGS && SHEET_SETTINGS.s ? SHEET_SETTINGS.s.fontSize : savedSize); } }
+        /* (before SH39) the Editing section ended at Default size */
+        { key: "fontSize", type: "select", id: "set-font-size", label: "Default size", options: function () { return sheetFontSizeOptions(SHEET_SETTINGS && SHEET_SETTINGS.s ? SHEET_SETTINGS.s.fontSize : savedSize); } },
+        { key: "wrapDefault", type: "switch", id: "set-wrap-default", label: "Wrap text by default" }   // SH39
       ] },
       { title: "About", rows: [{ type: "about", id: "set-version", text: "Spreadsheet " + SHEET_VERSION }] }
     ],

@@ -43,7 +43,8 @@ const SPREADSHEET_CONFIG = {
     bg: "",                              // cell background ("" = CSS default)
     color: "",                           // text colour ("" = CSS default)
     fontSize: "",                        // px, "" = default
-    wrap: false,
+    wrap: false,                         // SH39: true = explicit Wrap on
+    nowrap: false,                       // SH39: true = explicit Wrap off; both false = "Wrap text by default" setting
     bt: "", br: "", bb: "", bl: "",     // border colours ("" = none extra)
   },
 

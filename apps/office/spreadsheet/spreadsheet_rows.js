@@ -151,7 +151,10 @@ function gridContextMenuItems(type) {
       { id: "clear", label: "Clear contents", shortcut: "Del", run: function () { if (typeof clearSelection === "function") clearSelection(); } },
       { sep: true },
       { id: "row-hide", label: "Hide row", run: function () { if (typeof hideSelection === "function") hideSelection("r"); } },
-      { id: "row-unhide", label: "Unhide rows", run: function () { if (typeof unhideAroundSelection === "function") unhideAroundSelection(); } }
+      /* (before SH39) the row menu ended at Unhide rows */
+      { id: "row-unhide", label: "Unhide rows", run: function () { if (typeof unhideAroundSelection === "function") unhideAroundSelection(); } },
+      { sep: true },
+      { id: "row-fit", label: "Fit row height", run: function () { if (typeof fitSelectedRowHeights === "function") fitSelectedRowHeights(); } }   /* SH39 */
     ];
   }
   if (type === "col") {

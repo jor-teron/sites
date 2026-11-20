@@ -535,5 +535,18 @@ The File menu is now the same as Writer's: New, Open..., Rename, Save, Save As, 
 - **Code:** `spreadsheet_filemenu.js` (`SHEET_FILEMENU.rename`, `deleteCurrent`, `requestNew`, `wrapStart`).
 - **Tests:** `node --test apps/office/spreadsheet/test-sh38-filemenu.cjs`.
 
+## SH39 — Wrap text on by default, rows fit long text
+
+Long text in an opened file was cut off: rows grew only for cells with Wrap on or a line break, and the .xlsx / .ods reader does not bring Wrap in. Now wrap is on by default, so every automatic row grows to fit its tallest cell (new sheets and opened .xlsx / .ods / .csv alike).
+
+- A cell's wrap is `effectiveWrap(st, defaultOn)` (`spreadsheet_resize.js`): `st.wrap === true` is explicit on, `st.nowrap === true` is explicit off, otherwise Settings > Editing > **Wrap text by default** (`wrapDefault` in `spreadsheet_settings`, on when missing). Used by the cell face, auto-fit, the Wrap button state and Alt+Enter.
+- The toolbar **Wrap** button toggles the explicit value (`setExplicitWrap`). Off keeps `wrap: false`, so the XLSX export writes no `wrapText`; `.hos` saves `nowrap: true` only for explicit off (`nowrap` is a new style key, default false in `CFG.defaultStyle`).
+- A default-wrapped cell gets the wrapping face only when its text needs more than one line (`wrapTextOverflows`); short cells keep the plain input. Auto-fit skips the estimate for one-line cells.
+- A row height set by hand still wins. Row header right-click > **Fit row height** clears it for the selected rows (`fitSelectedRowHeights`, undoable); double-clicking a row's bottom grip does the same for that row.
+- Turning the setting off gives the old behaviour (only explicit Wrap or line breaks grow rows).
+- Height is an estimate (about 0.6em per character), so word wrap can sometimes need one line more than the row gives.
+- Old code kept as `(before SH39)` comments. Title and `SHEET_VERSION` are SH39; `?v=SH39` on config, settings, edit, style, rows, resize and hos.
+- Tests: `test-sh39-wrap.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

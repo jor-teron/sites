@@ -32,7 +32,8 @@
   Hos.SHEETS = 20;
   Hos.NAME_MAX = 31;
 
-  var STYLE_KEYS = ['align', 'bold', 'italic', 'underline', 'bg', 'color', 'fontSize', 'wrap', 'bt', 'br', 'bb', 'bl', 'fmt'];
+  /* (before SH39) var STYLE_KEYS = ['align', 'bold', 'italic', 'underline', 'bg', 'color', 'fontSize', 'wrap', 'bt', 'br', 'bb', 'bl', 'fmt']; */
+  var STYLE_KEYS = ['align', 'bold', 'italic', 'underline', 'bg', 'color', 'fontSize', 'wrap', 'nowrap', 'bt', 'br', 'bb', 'bl', 'fmt'];   // SH39: nowrap = explicit Wrap off
   var PAPERS = { A4: 1, Letter: 1, Legal: 1 };
   var MARGIN_PRESETS = { normal: 1, narrow: 1, wide: 1, custom: 1 };
 
@@ -62,7 +63,7 @@
   function styleBase() {
     var b = {
       align: 'center', bold: false, italic: false, underline: false,
-      bg: '', color: '', fontSize: '', wrap: false,
+      bg: '', color: '', fontSize: '', wrap: false, nowrap: false,
       bt: '', br: '', bb: '', bl: '', fmt: 'general'
     };
     if (typeof defaultStyle === 'function') {

@@ -71,11 +71,13 @@ function insertCellLineBreak(inp, r, c) {
     text = formula + "\n";
   }
   st = ensureStyle(r, c);
-  needWrap = !st.wrap;
+  /* (before SH39) needWrap = !st.wrap; */
+  needWrap = typeof effectiveWrap === "function" ? !effectiveWrap(st, sheetWrapDefault()) : !st.wrap;   /* SH39: default wrap counts */
   if (text === formula && !needWrap) return;
   undoRecord("line-break");
   cells[r][c].formula = text;
-  if (needWrap) st.wrap = true;
+  /* (before SH39) if (needWrap) st.wrap = true; */
+  if (needWrap) { st.wrap = true; st.nowrap = false; }
   /* Leave the cell committed. An <input type="text"> cannot keep the break, so
      staying in edit would overwrite the formula with a single line on blur.
      The cell-face shows the break after paint. */

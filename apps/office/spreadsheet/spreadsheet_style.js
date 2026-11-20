@@ -376,10 +376,23 @@ function styleApplyLook(td, inp, st, r, c) {
     }
   }
   var hasBreak = faceText.indexOf("\n") !== -1 || faceText.indexOf("\r") !== -1;
+  /* (before SH39)
   td.classList.toggle("wrap", !!st.wrap);
   td.classList.toggle("has-break", !st.wrap && hasBreak);
   face = td.querySelector(".cell-face");
   if (st.wrap || hasBreak) {
+  */
+  /* SH39: wrap is on by default. A default-wrapped cell gets the wrapping face only when its text
+     needs more than one line, so short cells keep the plain input (cheap to draw). */
+  var wrapOn = typeof effectiveWrap === "function"
+    ? effectiveWrap(st, typeof sheetWrapDefault === "function" ? sheetWrapDefault() : true) : !!st.wrap;
+  var wrapFace = wrapOn && (st.wrap === true || hasBreak ||
+    (typeof wrapTextOverflows === "function" && typeof cellTextWidthPx === "function" &&
+      wrapTextOverflows(faceText, cellTextWidthPx(merges || null, r, c), st.fontSize ? Number(st.fontSize) : (typeof defaultSheetFontSize === "function" ? defaultSheetFontSize() : 16))));
+  td.classList.toggle("wrap", !!wrapFace);
+  td.classList.toggle("has-break", !wrapOn && hasBreak);
+  face = td.querySelector(".cell-face");
+  if (wrapFace || hasBreak) {
     if (!face) {
       face = document.createElement("div");
       face.className = "cell-face";
@@ -576,9 +589,16 @@ function initStyleTools() {
   var bd, fs, i, sizes = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24];
   onBtn("btn-merge", mergeSelection);
   onBtn("btn-unmerge", unmergeSelection);
+  /* (before SH39)
   onBtn("btn-wrap", function () {
     var on = !cellStyle(selR, selC).wrap;
     styleSelection("wrap", function (st) { st.wrap = on; });
+  });
+  */
+  /* SH39: toggles the explicit value; off on a default-wrapped cell stores nowrap. */
+  onBtn("btn-wrap", function () {
+    var on = !effectiveWrap(cellStyle(selR, selC), sheetWrapDefault());
+    styleSelection("wrap", function (st) { setExplicitWrap(st, on); });   /* paintAll refits the rows */
   });
   onBtn("btn-painter", function (ev) {
     if (STYLE_PAINTER.on && !STYLE_PAINTER.sticky) { stylePainterOff(); return; }
@@ -624,7 +644,8 @@ function initStyleTools() {
       /* (before HO3) else if (fsEl) fsEl.value = "13"; */
       else if (fsEl) fsEl.value = String(styleDefaultSizePx());   // shows the default only; nothing is stored
       var w = document.getElementById("btn-wrap");
-      if (w) w.classList.toggle(CLS.toggleOn, !!st.wrap);
+      /* (before SH39) if (w) w.classList.toggle(CLS.toggleOn, !!st.wrap); */
+      if (w) w.classList.toggle(CLS.toggleOn, typeof effectiveWrap === "function" ? effectiveWrap(st, sheetWrapDefault()) : !!st.wrap);
     };
     highlightSel._styleWrap = true;
   }

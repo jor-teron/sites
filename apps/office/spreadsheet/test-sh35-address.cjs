@@ -268,7 +268,8 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
   /* (before SH36) every file below was checked for ?v=SH35; SH36 bumps settings. */
   for (const f of ['spreadsheet_config.js', 'spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_xlsx.js', 'spreadsheet_hos.js']) {
-    assert.ok(live.indexOf(f + '?v=SH35') !== -1, f);
+    /* (before SH39) assert.ok(live.indexOf(f + '?v=SH35') !== -1, f); */
+    assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1, f);   // SH39 bumps config and hos
   }
   /* (before SH37) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js'); */
   assert.ok(/spreadsheet_settings\.js\?v=SH3[5-9]/.test(live), 'spreadsheet_settings.js');
