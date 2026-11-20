@@ -1,8 +1,8 @@
-/* Blood Group BG-3b — three views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
+/* Blood Group BG-5 — four views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
    1 what blood is (red cells, white cells, platelets, plasma; tap a part for a tip), 2 the ABO groups (a red cell with its
    A / B markers and the antibodies in the plasma; tap a card to highlight it), 3 the Rh factor and the 8 groups as drop badges,
-   4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation and family views
-   (shortcuts; the title-bar tabs also switch views).
+   4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation, family and myths
+   views (shortcuts; the title-bar tabs also switch views).
    DONATION view (BG-2, hash #donate so refresh and the browser Back button work): a "Who can give to whom" tap chart of the
    8 groups (Give to / Receive from, highlights come from BG.canGive), universal donor and receiver, who can donate (India,
    basic), why donate, what happens at a donation (4 steps).
@@ -10,14 +10,16 @@
    lights possible groups and greys out the rest, a plain-English reason, and a 4x4 ABO reference table below. The old
    8-column drop badges are gone from this view (they wrapped on a narrow or Hub window so only + / \u2212 showed). Guess
    and gene-pair Punnett picks live in a collapsed More section. A short alleles note and the lab-test note stay on the page.
-   Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family, mapped to "" / #donate / #family. Deep links
-   and Back/Forward stay in sync. Home shortcut cards are kept; the old "<- Blood groups" back links are gone. Room is left
-   for a future Quiz tab (BG-4), not added here.
+   MYTHS view (BG-5, hash #myths): Japan's blood-type personality (ketsueki-gata) as tap cards for A, B, O and AB, each with
+   a "Myth, not science" badge, plus a short history, a studies note and a bura-hara note; then Myth vs Fact flip cards.
+   Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family / Myths, mapped to "" / #donate / #family /
+   #myths (from BG.views). Deep links and Back/Forward stay in sync. Home shortcut cards are kept. Room is left for a
+   future Health tab (BG-6), not added here.
    Saves in localStorage: learn.blood-group.group (the last highlighted ABO group), learn.blood-group.chart ({ group, mode }),
-   learn.blood-group.family ({ mum, dad, mumAbo, dadAbo, mumRh, dadRh }).
+   learn.blood-group.family ({ mum, dad, mumAbo, dadAbo, mumRh, dadRh }), learn.blood-group.myths ({ abo }).
    In a Hub desktop window the header (and these tabs) move to the Hub title bar (LearnHubBar). */
 (() => {
-  const B = window.BG, VER = 'BG-3b', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
+  const B = window.BG, VER = 'BG-5', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -127,7 +129,7 @@
     h('li', null, 'Your blood group comes from your parents. It stays the same all your life.'),
     h('li', null, 'Red cells live for about 4 months. Your body makes new ones all the time.')));
 
-  // ---- 6 cards that open the donation and family views (shortcuts; tabs in the title bar also switch) ----
+  // ---- 6 cards that open the donation, family and myths views (shortcuts; tabs in the title bar also switch) ----
   let homeTop = 0;
   const nextCard = (hash, title, sub, art) => h('button', { type: 'button', class: 'bg-card bg-next', 'data-go': hash,
     onclick: () => { location.hash = hash; } },
@@ -139,7 +141,10 @@
       svg('0 0 40 48', 'bg-nextsvg bg-famicon', 'Parents and a child',
         s('path', { d: 'M14 2 C10 10 4 16 4 22 A10 10 0 0 0 24 22 C24 16 18 10 14 2 Z' }),
         s('path', { d: 'M28 6 C25 12 20 17 20 22 A8 8 0 0 0 36 22 C36 17 31 12 28 6 Z' }),
-        s('path', { d: 'M20 24 C17.5 29 14 33 14 36 A6 6 0 0 0 26 36 C26 33 22.5 29 20 24 Z' })))));
+        s('path', { d: 'M20 24 C17.5 29 14 33 14 36 A6 6 0 0 0 26 36 C26 33 22.5 29 20 24 Z' }))),
+    nextCard('myths', 'Myths \u2192', "Japan's blood-type personality myth, and myth versus fact.",
+      svg('0 0 40 48', 'bg-nextsvg', 'Myths', s('path', { d: DROP }),
+        s('text', { x: '20', y: '32', class: 'bg-itw', 'text-anchor': 'middle' }, '?')))));
 
   // ================= DONATION VIEW (BG-2) =================
   // ---- d1 who can give to whom ----
@@ -392,12 +397,60 @@
     h('p', { class: 'bg-p bg-muted' }, 'Optional: pick the gene pair to see the odds and a Punnett square.'),
     mumGenoBox, dadGenoBox, famBars, famPunnett, guessPane);
 
-  // ---- views and navigation (#donate, #family); title-bar tabs switch these views ----
-  const TABS = [
-    { id: 'home', label: 'Groups', short: 'Groups', hash: '', controls: 'bg-home' },
-    { id: 'donate', label: 'Donation', short: 'Donate', hash: '#donate', controls: 'bg-donate' },
-    { id: 'family', label: 'Family', short: 'Family', hash: '#family', controls: 'bg-family' }
-  ];
+  // ================= MYTHS VIEW (BG-5) =================
+  const mythSaved = store.read(PRE + 'myths', {}) || {};
+  let mythAbo = B.personality.some(p => p.abo === mythSaved.abo) ? mythSaved.abo : '';
+  const saveMyths = () => store.write(PRE + 'myths', { abo: mythAbo });
+  const persTip = h('p', { class: 'bg-tip', role: 'status' }, 'Tap a group to read the traits people once believed.');
+  function paintPersTip() {
+    const p = B.personality.find(x => x.abo === mythAbo);
+    persTip.textContent = p ? ('Type ' + p.abo + ': ' + p.text) : 'Tap a group to read the traits people once believed.';
+  }
+  const persCards = B.personality.map(p => h('button', { type: 'button', class: 'bg-card bg-perscard', 'data-abo': p.abo,
+    'aria-pressed': String(p.abo === mythAbo),
+    'aria-label': 'Group ' + p.abo + ' personality myth',
+    onclick: () => pickMyth(p.abo) },
+    h('span', { class: 'bg-badge' }, 'Myth, not science'),
+    h('span', { class: 'bg-big' }, p.abo),
+    h('span', { class: 'bg-cj' }, p.text)));
+  function pickMyth(a) {
+    mythAbo = mythAbo === a ? '' : a;
+    saveMyths();
+    persCards.forEach(c => c.setAttribute('aria-pressed', String(c.dataset.abo === mythAbo)));
+    paintPersTip();
+  }
+  paintPersTip();
+  const m1 = sec('ketsueki', "Japan's blood-type personality",
+    h('p', { class: 'bg-p' }, B.mythIntro.history),
+    h('div', { class: 'bg-grid bg-pers' }, persCards),
+    persTip,
+    h('p', { class: 'bg-p' }, B.mythIntro.studies),
+    h('p', { class: 'bg-p bg-muted' }, B.mythIntro.harassment));
+  function flipCard(item) {
+    const front = h('span', { class: 'bg-flipside bg-flip-front' },
+      h('span', { class: 'bg-flip-k' }, 'Myth'),
+      h('span', { class: 'bg-cn' }, item.myth),
+      h('span', { class: 'bg-cj' }, 'Tap to see the fact'));
+    const back = h('span', { class: 'bg-flipside bg-flip-back' },
+      h('span', { class: 'bg-flip-k' }, 'Fact'),
+      h('span', { class: 'bg-cn' }, item.fact),
+      h('span', { class: 'bg-cj' }, 'Tap to see the myth'));
+    const btn = h('button', { type: 'button', class: 'bg-card bg-flip', 'data-myth': item.id,
+      'aria-pressed': 'false',
+      'aria-label': 'Myth: ' + item.myth + ' Fact: ' + item.fact,
+      onclick: () => {
+        const on = btn.getAttribute('aria-pressed') !== 'true';
+        btn.setAttribute('aria-pressed', String(on));
+        btn.classList.toggle('bg-flipped', on);
+      } }, front, back);
+    return btn;
+  }
+  const m2 = sec('mythfact', 'Myth vs Fact',
+    h('p', { class: 'bg-p bg-muted' }, 'Tap a card to flip it. These are common beliefs, each with the real fact in a line or two.'),
+    h('div', { class: 'bg-flips' }, B.mythFacts.map(flipCard)));
+
+  // ---- views and navigation (#donate, #family, #myths); title-bar tabs switch these views ----
+  const TABS = B.views.map(t => ({ id: t.id, label: t.label, short: t.short, hash: t.hash, controls: 'bg-' + t.id }));
   const disc = () => h('p', { class: 'bg-disc' }, 'For learning only. A doctor or blood bank can test your blood group.');
   const famNote = h('p', { class: 'bg-disc' }, 'Rare variants (like Bombay group) exist. Real family questions need a lab test.');
   const home = h('div', { class: 'bg-view', id: 'bg-home', 'data-view': 'home', role: 'tabpanel' }, s1, s2, s3, s4, s5, s6, disc());
@@ -406,20 +459,27 @@
   const family = h('div', { class: 'bg-view', id: 'bg-family', 'data-view': 'family', role: 'tabpanel', hidden: true },
     h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Family')),
     f0, parentsPane, tablePane, morePane, famNote);
+  const myths = h('div', { class: 'bg-view', id: 'bg-myths', 'data-view': 'myths', role: 'tabpanel', hidden: true },
+    h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Myths')),
+    m1, m2, disc());
+  const panels = { home, donate, family, myths };
 
   const here = h('span', { class: 'lrn-here' }, 'Blood Group');
   const head = h('header', { class: 'lrn-head' }, h('h1', null, here), h('span', { class: 'bg-ver' }, VER));
-  const main = h('main', { class: 'lrn-main bg-main', id: 'lrn-main' }, home, donate, family);
+  const main = h('main', { class: 'lrn-main bg-main', id: 'lrn-main' }, home, donate, family, myths);
   let view = '';
   function show(v) {
+    if (!panels[v]) v = 'home';
     if (v === view) return;
     if (view === 'home') homeTop = main.scrollTop;
-    view = v; home.hidden = v !== 'home'; donate.hidden = v !== 'donate'; family.hidden = v !== 'family';
+    view = v;
+    Object.keys(panels).forEach(id => { panels[id].hidden = id !== v; });
     main.scrollTop = v === 'home' ? homeTop : 0;
   }
   const route = () => {
-    const t = window.LearnHubBar && LearnHubBar.tabFromHash ? LearnHubBar.tabFromHash(TABS, location.hash) : null;
-    const v = t && t.id ? t.id : (location.hash === '#donate' ? 'donate' : location.hash === '#family' ? 'family' : 'home');
+    const tab = window.LearnHubBar && LearnHubBar.tabFromHash ? LearnHubBar.tabFromHash(TABS, location.hash) : null;
+    const raw = (location.hash || '').replace(/^#/, '');
+    const v = tab && tab.id ? tab.id : (panels[raw] ? raw : 'home');
     show(v);
   };
   window.addEventListener('hashchange', route);
