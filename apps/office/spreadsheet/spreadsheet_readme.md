@@ -511,5 +511,18 @@ Arrow keys felt 1–2 s slow, worse with the mouse over the grid. `focusCell` ca
 - **Code:** `ensureCellVisible` in `spreadsheet_grid.js`. The old `renderViewport(true)` is kept as a `(before SH36)` comment.
 - **Tests:** `node apps/office/spreadsheet/test-sh36-arrow.js`.
 
+## SH37 — File menu matches Writer
+
+The File menu is now New, Open..., Save, Save As, Print, Export..., then Settings and Functions (the same order as Writer; Rename and Delete come in SH38). It had two Opens and three Exports.
+
+- **Open...** (`btn-open`) takes `.hos`, `.xlsx`, `.xlsm`, `.xls`, `.ods` and `.csv` and routes by extension (`SHEET_FILEMENU.openKind`): `.hos` to `SHEET_HOS.openFile`, the rest to `SHEET_SAVEFMT.openAny`. Outside the Hub it uses the browser's open picker and passes the file handle, so Save writes back to the same file (a `.hos` too, through the OfficeNative handle dest; `.xls` still saves as `.hos`). In the Hub, without the picker, or when the picker fails, it clicks the hidden `#file-import` input, whose old change handler and Hub title listener run as before. A cancel is silent.
+- **Export...** (`btn-export-menu`) opens `#sheet-export-menu` where the File menu was, with CSV, Excel (.xlsx) and OpenDocument (.ods). The buttons keep the ids `btn-export`, `btn-export-xlsx`, `btn-export-ods`, so `exportCsv` / `exportXlsx` / `exportOds` are wired as before. Escape, a click outside or a resize closes it.
+- Labels: "New / Clear" is "New" (it still clears in place, same confirm) and "Print / PDF" is "Print".
+- **Height (Writer DW16):** `#of-file-menu` and `#sheet-export-menu` use `max(160px, calc(100dvh - var(--file-menu-top) - 8px))` and scroll. `--file-menu-top` is recorded when a menu opens. The shared `.file-menu` rule in `../shared/office-tools.css` is unchanged.
+- Old markup (`btn-open-hos`, the Open label, the three Export items, "New / Clear", "Print / PDF") is kept as `(before SH37)` comments.
+- Title and `SHEET_VERSION` are SH37. `?v=SH37` on `spreadsheet_toolbar.js`, `spreadsheet_settings.js`, `spreadsheet_ribbon.css` and the new `spreadsheet_filemenu.js`.
+- **Code:** `spreadsheet_filemenu.js` (`SHEET_FILEMENU`).
+- **Tests:** `node --test apps/office/spreadsheet/test-sh37-filemenu.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

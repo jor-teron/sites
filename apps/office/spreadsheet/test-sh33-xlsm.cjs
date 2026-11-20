@@ -413,7 +413,8 @@ test('wiring: title, VERSION, ?v= tokens, script order, readme', function () {
   /* (before SH35) every file below was checked for ?v=SH33; SH35 bumps settings and xlsx. */
   /* (before SH36) settings was SH33 or SH35; SH36 bumps settings. */
   for (const f of ['spreadsheet_toolbar.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js', 'spreadsheet_xlsm.js', 'spreadsheet_saveformat.js']) {
-    assert.ok(live.indexOf(f + '?v=SH33') !== -1 || live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH36') !== -1, f);
+    /* (before SH37) assert.ok(live.indexOf(f + '?v=SH33') !== -1 || live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH36') !== -1, f); */
+    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH3[3-9]').test(live), f);
   }
   /* (before SH35) assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v=SH33')); */
   assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v='));

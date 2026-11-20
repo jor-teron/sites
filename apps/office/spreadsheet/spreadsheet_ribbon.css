@@ -18,6 +18,18 @@ body {   /* on body (not :root) so the SH1 light theme vars flow through */
 /* SH4: shared File menu items inside the sheet's dropdown */
 .of-file-menu.file-menu { width: 240px; }
 .of-file-menu .file-item { text-decoration: none; }
+/* SH37: the File menu and the Export... chooser use the space from their top edge to the
+   window bottom, minus an 8px gap, never shorter than 160px, and scroll (Writer DW16).
+   --file-menu-top is set by spreadsheet_filemenu.js when a menu opens.
+   (before SH37) #of-file-menu inherited max-height: calc(100vh - 80px) from ../shared/office-tools.css .file-menu */
+#of-file-menu,
+#sheet-export-menu {
+  /* 100vh first, for browsers without dvh or max(). */
+  max-height: calc(100vh - var(--file-menu-top, 80px) - 8px);
+  max-height: max(160px, calc(100vh - var(--file-menu-top, 80px) - 8px));
+  max-height: max(160px, calc(100dvh - var(--file-menu-top, 80px) - 8px));
+  overflow: auto;
+}
 
 /* SH1 Settings gear at the right end of the top bar (44px tap target, jelly press) */
 .sheet-gear {

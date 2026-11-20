@@ -60,7 +60,8 @@ function wireUi() {
       highlightSel();
     }
     if (typeof OfficeDialog !== "undefined" && OfficeDialog.confirm) {
-      OfficeDialog.confirm({ title: "New / Clear", message: msg, okLabel: "Clear", danger: true }).then(function (ok) { if (ok) go(); });
+      /* (before SH37) OfficeDialog.confirm({ title: "New / Clear", message: msg, okLabel: "Clear", danger: true }).then(function (ok) { if (ok) go(); }); */
+      OfficeDialog.confirm({ title: "New", message: msg, okLabel: "Clear", danger: true }).then(function (ok) { if (ok) go(); });
     } else go();
   });
   document.getElementById("file-import").addEventListener("change", function (ev) {

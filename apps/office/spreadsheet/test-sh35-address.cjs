@@ -270,7 +270,8 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
   for (const f of ['spreadsheet_config.js', 'spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_xlsx.js', 'spreadsheet_hos.js']) {
     assert.ok(live.indexOf(f + '?v=SH35') !== -1, f);
   }
-  assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js');
+  /* (before SH37) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js'); */
+  assert.ok(/spreadsheet_settings\.js\?v=SH3[5-9]/.test(live), 'spreadsheet_settings.js');
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH35";') !== -1);
   const readme = read('spreadsheet_readme.md');
   assert.ok(readme.indexOf('## SH35') !== -1);
