@@ -373,3 +373,10 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - **Export...** opens a small panel to pick DOCX, ODT or PDF, then runs the export we already had. The panel closes when you pick a format, press Escape, or click outside. It fits a phone screen.
 - **Delete document** is now labelled **Delete**.
 - The old menu buttons and file inputs are kept as `(before DW14)` comments. Test: `node --test apps/office/writer/test/test-dw14-filemenu.cjs`.
+
+## DW14a — Open... keeps Save write-back for .docx / .odt
+
+- 20 Nov 2026 IST. After DW14, File → Open... used a plain file picker, so Save could not write back to a .docx or .odt opened from the menu. Drag-and-drop and Hub links were unchanged.
+- Open... now uses the browser's `showOpenFilePicker` when it is available (outside the Hub). A picked .docx or .odt keeps its file handle, and Save writes back to that file, as it did before DW14. A picked .how also keeps its handle, because `Writer.how.openFile` already accepts one. A .txt still becomes a .how copy, as in DW12.
+- If you cancel the picker, nothing happens (no toast). If the picker is missing, or it throws (for example a SecurityError in a cross-origin iframe), Open... falls back to the hidden file input from DW14.
+- Test: `node --test apps/office/writer/test/test-dw14a-open-writeback.cjs`.
