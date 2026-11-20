@@ -11,7 +11,10 @@
    BG.punnett(g1, g2): a 2x2 Punnett square ({ rows, cols, cells }). BG.childABO(a, b) / BG.childRh(r1, r2): possible types
    when the parents' genotypes are unknown (union of every genotype pair). BG.childGroups(mum, dad): the 8-group list.
    BG.canHaveChild(mum, dad, child). BG.childOdds(mumAbo, dadAbo, mumRh, dadRh): counts out of 16 when genotypes are known.
-   BG.inheritWhy(mum, dad, child): a short yes/no sentence. BG.makeGuess(rand): a puzzle with one valid parent pair and one not. */
+   BG.inheritWhy(mum, dad, child): a short yes/no sentence. BG.makeGuess(rand): a puzzle with one valid parent pair and one not.
+   BG-3b: BG.aboTable() is a 4x4 ABO reference ({ rows, cols, cells }) with Mum down the side and Dad across the top, both in
+   A, B, AB, O order. Each cell lists the possible child ABO groups in that same order. BG.pickerWhy(mum, dad): one plain
+   sentence for the family picker (what each parent can pass, the child's possible ABO groups, and a short Rh note). */
 (function (W) {
   const ABO = ['O', 'A', 'B', 'AB'];
   const groups = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'];
@@ -233,7 +236,38 @@
     const answer = rnd() < 0.5 ? 0 : 1;
     return { child, pairs: answer === 0 ? [y, n] : [n, y], answer };
   }
+  // ---- BG-3b: 4x4 ABO table and a plain-English picker reason ----
+  const ABO_SHOW = ['A', 'B', 'AB', 'O'];
+  function joinOr(items) {
+    if (!items.length) return '';
+    if (items.length === 1) return items[0];
+    return items.slice(0, -1).join(', ') + ' or ' + items[items.length - 1];
+  }
+  function aboGives(abo) {
+    if (abo === 'A') return 'A or O';
+    if (abo === 'B') return 'B or O';
+    if (abo === 'AB') return 'A or B';
+    if (abo === 'O') return 'only O';
+    return '';
+  }
+  function aboTable() {
+    const cells = ABO_SHOW.map(mum => ABO_SHOW.map(dad => ABO_SHOW.filter(c => childABO(mum, dad).includes(c))));
+    return { rows: ABO_SHOW.slice(), cols: ABO_SHOW.slice(), cells };
+  }
+  function pickerWhy(mum, dad) {
+    const m = parse(mum), d = parse(dad);
+    if (!m || !d || !m.rh || !d.rh) return '';
+    const abo = ABO_SHOW.filter(c => childABO(m.abo, d.abo).includes(c));
+    const rh = childRh(m.rh, d.rh);
+    let s = 'Mum ' + m.abo + ' gives ' + aboGives(m.abo) + ', Dad ' + d.abo + ' gives ' + aboGives(d.abo);
+    s += ', so the child can be ' + joinOr(abo) + '.';
+    if (m.rh === '-' && d.rh === '-') s += ' Rh: both \u2212 give only \u2212.';
+    else if (m.rh === '+' && d.rh === '+') s += ' Rh: both + can give + or \u2212.';
+    else s += ' Rh: + and \u2212 can give either.';
+    return s;
+  }
   W.BG = { ABO, groups, aboInfo, rhInfo, india, parts, parse, antigens, antibodies, rhPositive, name, indiaTotal, byCommon,
     canGive, givesTo, receivesFrom, compatText, donor,
-    aboGenos, rhGenos, aboPheno, rhPheno, punnett, childABO, childRh, childGroups, canHaveChild, childOdds, inheritWhy, makeGuess };
+    aboGenos, rhGenos, aboPheno, rhPheno, punnett, childABO, childRh, childGroups, canHaveChild, childOdds, inheritWhy, makeGuess,
+    ABO_SHOW, aboTable, pickerWhy };
 })(window);

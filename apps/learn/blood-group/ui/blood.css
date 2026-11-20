@@ -1,4 +1,4 @@
-/* Blood Group BG-3a — app look on top of the Learn kit (../common/ui/learn.css): three views (home, donation, family puzzle) of sections and cards, switched from title-bar tabs.
+/* Blood Group BG-3b — app look on top of the Learn kit (../common/ui/learn.css): three views (home, donation, family puzzle) of sections and cards, switched from title-bar tabs.
    Single column on portrait phones, cards in a grid on wider screens. Red accent. Light mode follows the Hub theme (html.light).
    Plain CSS, no blur or heavy filters (weak phones). */
 .bg { --accent: #ef5350; --red: #d32f2f; --red2: #ff8a80; --plasma: #f4c95d; --wbc: #e8eaf6; --wbcn: #7e57c2; --plt: #f48fb1;
@@ -102,7 +102,42 @@ button.bg-card:hover { border-color: var(--accent); }
 .bg-card.bg-no { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
 .bg-parents, .bg-guess { display: flex; flex-direction: column; gap: 14px; }
 .bg-nextrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+/* BG-3b family picker and ABO table: two columns of named chips, not 8 narrow drops */
+.bg-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bg-pickcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.bg-pickh { margin: 0; font-size: 1.05rem; font-weight: 800; text-align: center; color: var(--accent); }
+.bg-chips, .bg-childchips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.bg-childchips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bg-chip, .bg-childchip { min-height: 44px; min-width: 44px; padding: 6px 4px; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-weight: 800;
+  font-size: 1rem; line-height: 1.1; white-space: nowrap; text-align: center;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  display: flex; align-items: center; justify-content: center; }
+button.bg-chip { cursor: pointer; }
+button.bg-chip:hover { border-color: var(--accent); }
+.bg-chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bg-childbox { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.bg-childchip.bg-on { border-color: var(--accent); background: var(--panel2); color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent) inset; }
+.bg-childchip.bg-off { opacity: 0.45; color: var(--muted); text-decoration: line-through; }
+.bg-whyline { font-size: 0.95rem; }
+.bg-tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.bg-abotable { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.78rem; }
+.bg-abotable th, .bg-abotable td { border: 1px solid var(--line); padding: 8px 4px; text-align: center; vertical-align: middle; }
+.bg-abotable th { background: var(--panel2); font-weight: 700; color: var(--text); }
+.bg-abotable td { background: var(--panel); color: var(--text); cursor: pointer; min-height: 44px;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.bg-abotable td:hover { border-color: var(--accent); }
+.bg-abotable td.bg-on { background: var(--panel2); box-shadow: 0 0 0 2px var(--accent) inset; font-weight: 700; color: var(--accent); }
+.bg-more { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 0 12px 12px; }
+.bg-more > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700;
+  list-style-position: inside; padding: 8px 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.bg-more[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.bg-more .bg-guess, .bg-more .bg-genos, .bg-more .bg-punnetts, .bg-more .bg-bars { margin-top: 12px; }
+html.light .bg-chip[aria-pressed="true"] { color: #fff; }
 @media (max-width: 560px) { .bg-nextrow { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .lrn-head { flex-wrap: nowrap; gap: 6px; padding: 8px 10px; } .lrn-head h1 { font-size: 1rem; }
-  .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .bg-grid, .bg-grid2 { grid-template-columns: minmax(0, 1fr); } .bg-drops { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .bg-abotable { font-size: 0.72rem; } .bg-chip, .bg-childchip { font-size: 0.95rem; } }
+@media (max-width: 360px) { .bg-chip, .bg-childchip { font-size: 0.88rem; padding: 6px 2px; } .bg-abotable { font-size: 0.68rem; } }
 @media (min-width: 561px) and (max-aspect-ratio: 1/1) { .bg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
