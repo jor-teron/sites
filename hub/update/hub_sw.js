@@ -18,6 +18,9 @@
  *     request. R58: a cached image is re-fetched in the background at most once per worker lifetime,
  *     and only when the cached copy is over a day old (its Date header), not on every request
  *     (R25 did that), so an edited icon / wallpaper still shows within a day. Fonts: cache first (RUNTIME).
+ *   · H165: apps/learn/dictionary and apps/learn/blood-group shell files are in SHELL, so they
+ *     open offline on a first visit. Dictionary data shards under apps/learn/dictionary/data/ are
+ *     not precached (about 7.6 MB gzipped); they use cache-first after the first fetch (RUNTIME).
  *   · navigations not in a cache when offline: hub/update/hub_offline.html.
  *   · H129d: a navigation to / is the index.html shell copy; one to the removed /hub.html gets that same copy.
  * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
@@ -28,8 +31,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261118f';
-const CACHE = 'hub-shell-v184';  // 2026-11-18f: Desktop analog clock
+const V = '20261121a';
+const CACHE = 'hub-shell-v185';  // 2026-11-21a: H165 catch-up
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -114,6 +117,13 @@ const SHELL = [
   'unlock.html', 'hub/core/hub_unlock.js',   // H142: the phone unlock page (its QR path needs internet anyway); H143: + fingerprint / Add phone
   'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js', 'phone/hidden-apps.csv',   // H85: the phone look opens offline too
   'phone/phone_connect.js', 'phone/vendor/jsQR.js',   // H129b: PH14 Connect sheet + its QR reader, so phone.html's Connect works offline
+  'apps/learn/dictionary/', 'apps/learn/dictionary/index.html', 'apps/learn/dictionary/dictionary.html',
+  'apps/learn/dictionary/dictionary_icon.png', 'apps/learn/dictionary/core/dict.js',
+  'apps/learn/dictionary/ui/app.js', 'apps/learn/dictionary/ui/dictionary.css',   // H165: Dictionary shell (not data/)
+  'apps/learn/blood-group/', 'apps/learn/blood-group/index.html', 'apps/learn/blood-group/blood-group.html',
+  'apps/learn/blood-group/blood-group_icon.png', 'apps/learn/blood-group/core/blood.js',
+  'apps/learn/blood-group/ui/app.js', 'apps/learn/blood-group/ui/blood.css',   // H165: Blood Group shell
+  'apps/learn/common/ui/learn.css', 'apps/learn/common/core/state.js', 'apps/learn/shared/learn-hubbar.js',   // H165: shared Learn files both apps load
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
@@ -279,6 +289,13 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   if (/\.(woff2?|ttf|otf)$/i.test(path)) {
+    e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; })));
+    return;
+  }
+  // H165: Dictionary data shards are not in SHELL (too large to precache). Cache-first after the first
+  // fetch, stored in RUNTIME under the bare URL, so a letter file used once still opens offline.
+  // (before H165) these paths used the general apps/ network-first rule below
+  if (path.includes('/apps/learn/dictionary/data/')) {
     e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; })));
     return;
   }

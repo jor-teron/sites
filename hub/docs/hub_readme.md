@@ -164,6 +164,15 @@ The Hub desktop (`desktop/desktop.html`; the site root `index.html` asks Desktop
 
 - 2026-11-18 IST: **H160 — Desktop analog clock:** an optional analog clock on the Desktop (thin cream ring, see-through face, cream hour and minute hands, red second hand, no numbers). Off by default (Settings › Desktop › Show analog clock on the desktop). Drag to move; it remembers its place. Right-click for Small / Medium / Large or Hide clock. Hands tick once a second and pause while a window is maximised, the screen is locked, or the tab is hidden. Not shown on Phone. Build 20261118f / hub-shell-v184.
 
+- 2026-11-15 IST: **H150 — Start menu sections step:** The Start menu flyout now goes category > sections > apps. Build 20261115a / hub-shell-v169.
+- 2026-11-15 IST: **H151 — Shared search core:** Shared search core, bar and sources (the Search app uses them). Build 20261115b / hub-shell-v170.
+- 2026-11-15 IST: **H152 — Settings search:** Settings search box (shared search bar, Settings items only). Build 20261115c / hub-shell-v171.
+- 2026-11-15 IST: **H153 — App Hub search:** App Hub search box (apps only; home = all, category = that category). Build 20261115d / hub-shell-v172.
+- 2026-11-16 IST: **H154 — Flyouts match Start menu:** Start menu flyouts look exactly like the Start menu (every theme). Build 20261116a / hub-shell-v173.
+- 2026-11-16 IST: **H155 — Favourites flat list:** Favourites is a flat list of TV, My Day, News, Agent, Globe and LandCraft. Build 20261116b / hub-shell-v174.
+- 2026-11-21 IST: **H165 — Hub catch-up:** Dictionary and Blood Group app shells are in the service-worker offline cache, so they open offline on a first visit. Dictionary letter data (about 7.6 MB gzipped) is not precached; each shard is cached on first use (cache-first after that). `hub_catalog.js` gains Orbital Core 3D; `hub_appindex.js` gains Orbital Core 3D, Dictionary and Blood Group. Build 20261121a / hub-shell-v185.
+
+
 ## 12. Related apps
 - Controller (phone side): `../controller/controller_readme.md`
 - File Drop: two-way file transfer between any devices (same frame format as phone → hub files)
