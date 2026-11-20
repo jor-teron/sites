@@ -171,6 +171,7 @@ The Hub desktop (`desktop/desktop.html`; the site root `index.html` asks Desktop
 - 2026-11-16 IST: **H154 — Flyouts match Start menu:** Start menu flyouts look exactly like the Start menu (every theme). Build 20261116a / hub-shell-v173.
 - 2026-11-16 IST: **H155 — Favourites flat list:** Favourites is a flat list of TV, My Day, News, Agent, Globe and LandCraft. Build 20261116b / hub-shell-v174.
 - 2026-11-21 IST: **H165 — Hub catch-up:** Dictionary and Blood Group app shells are in the service-worker offline cache, so they open offline on a first visit. Dictionary letter data (about 7.6 MB gzipped) is not precached; each shard is cached on first use (cache-first after that). `hub_catalog.js` gains Orbital Core 3D; `hub_appindex.js` gains Orbital Core 3D, Dictionary and Blood Group. Build 20261121a / hub-shell-v185.
+- 2026-11-21 IST: **H164 — Taskbar clock and fullscreen swap:** On the Desktop taskbar, the digital clock sits left of the fullscreen button, which is now rightmost (tray, clock, fullscreen). The XP theme still paints tray + clock as one band, with the fullscreen button outside it. Build 20261121b / hub-shell-v186.
 
 
 ## 12. Related apps

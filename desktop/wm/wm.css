@@ -257,7 +257,7 @@ body.wm-desktop #wm-taskbar {
 .wm-clock { color: var(--muted); font-size: calc(var(--wm-task-h) * 0.33); font-weight: 900; font-variant-numeric: tabular-nums; padding: 0 6px 0 4px; white-space: nowrap; }
 
 /* Show Desktop (right after Start): minimise all ↔ restore; .on while the desktop is shown */
-/* H144: #wm-fs (fullscreen, right of the tray, before the clock) shares this look; .on while full screen */
+/* H144: #wm-fs (fullscreen) shares this look; .on while full screen. H164: after the clock, far right (before H164: right of the tray, before the clock) */
 #wm-showdesk, #wm-search, #wm-fs {   /* H48b: Search button shares the Show Desktop look */
   width: var(--tb-btn); height: var(--tb-btn); flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
   border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; padding: 0;
