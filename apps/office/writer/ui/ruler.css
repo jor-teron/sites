@@ -7,8 +7,10 @@
 
 .ruler { position: sticky; top: -32px; z-index: 5; display: block; width: max-content; min-width: 100%; margin: -24px 0 8px; pointer-events: none; }
 .ruler[hidden] { display: none; }
+/* DW17: --rs = ruler scale (writer-ruler.js sets it from zoom, 0.8-1.6); --ru = one scaled px. */
+.ruler { --rs: 1; --ru: calc(1px * var(--rs)); }
 .ruler-track {
-  position: relative; margin: 0 auto; height: 22px; pointer-events: auto; touch-action: none;
+  position: relative; margin: 0 auto; height: 22px; height: calc(22 * var(--ru)); pointer-events: auto; touch-action: none;
   background: var(--bg-paper, #fff); border: 1px solid var(--border-light); border-radius: 3px;
   box-shadow: 0 1px 3px var(--shadow); overflow: visible; user-select: none; -webkit-user-select: none;
 }
@@ -18,25 +20,34 @@
 .ruler-ticks .t-half { height: 5px; }
 .ruler-ticks .t-mm { height: 3px; }
 .ruler-ticks b { position: absolute; top: 1px; transform: translateX(-50%); font: 500 9px var(--ui-font); color: var(--text-secondary); }
+/* DW17: ticks and numbers follow the ruler scale (the lines above are the before-DW17 sizes). */
+.ruler-ticks .t-cm { height: calc(8 * var(--ru)); }
+.ruler-ticks .t-half { height: calc(5 * var(--ru)); }
+.ruler-ticks .t-mm { height: calc(3 * var(--ru)); }
+.ruler-ticks b { top: calc(1 * var(--ru)); font-size: calc(9 * var(--ru)); line-height: 1; }
 .ruler-margin { position: absolute; top: 0; bottom: 0; background: rgba(128,128,128,.28); pointer-events: none; }
 .ruler-margin-l { left: 0; }
 .ruler-margin-r { right: 0; }
 /* big invisible grab zone (44px) centred on the margin edge */
-.ruler-grab { position: absolute; top: -11px; width: 44px; height: 44px; margin-left: -22px; cursor: ew-resize; touch-action: none; }
+.ruler-grab { position: absolute; top: -11px; top: calc(11 * var(--ru) - 22px); width: 44px; height: 44px; margin-left: -22px; cursor: ew-resize; touch-action: none; }
 .ruler-grab::after {
-  content: ''; position: absolute; left: 21px; top: 11px; width: 2px; height: 22px; background: var(--accent, #3b82f6);
+  content: ''; position: absolute; left: 21px; top: 11px; width: 2px; height: 22px;
+  top: calc(22px - 11 * var(--ru)); height: calc(22 * var(--ru)); /* DW17 */
+  background: var(--accent, #3b82f6);
   border-radius: 1px; transition: transform .18s cubic-bezier(.34,1.56,.64,1);
 }
 .ruler-grab:hover::after, .ruler-grab.dragging::after { transform: scaleX(2); }
 .ruler-grab.dragging::after { transform: scale(2, 1.15); }
-.ruler-tip { position: absolute; top: 26px; transform: translateX(-50%); padding: 2px 6px; border-radius: 4px; font: 600 11px var(--ui-font); background: var(--text-primary); color: var(--bg-paper, #fff); white-space: nowrap; pointer-events: none; }
+.ruler-tip { position: absolute; top: 26px; top: calc(22 * var(--ru) + 4px); transform: translateX(-50%); padding: 2px 6px; border-radius: 4px; font: 600 11px var(--ui-font); background: var(--text-primary); color: var(--bg-paper, #fff); white-space: nowrap; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .ruler-grab::after { transition: none; } .ruler-grab.dragging::after, .ruler-grab:hover::after { transform: none; } }
 @media print { .ruler { display: none !important; } }
 
 /* ----- DF7 indent markers (writer-indent.js) ----- */
 .ruler-indent { position: absolute; inset: 0; pointer-events: none; }
 .ruler-indent[hidden] { display: none; }
-/* 44px invisible grab zone; the visible shape is the <i> */
+/* (before DW17) fixed 5-6px CSS-border triangles; the left square hung
+   below the track and the hang / right triangles floated mid-track.
+/* 44px invisible grab zone; the visible shape is the <i> * /
 .ind-grab { position: absolute; width: 44px; height: 22px; margin-left: -22px; cursor: ew-resize; touch-action: none; pointer-events: auto; z-index: 2; }
 .ind-first { top: -11px; height: 22px; }
 .ind-hang  { top: 7px; height: 12px; }
@@ -48,3 +59,34 @@
 .ind-left i { top: 0; left: 18px; width: 8px; height: 4px; border: 1px solid var(--accent, #3b82f6); background: var(--bg-paper, #fff); }
 .ind-grab:active i, .ind-grab.dragging i { transform: scale(1.35); }
 @media (prefers-reduced-motion: reduce) { .ind-grab i { transition: none; } .ind-grab:active i, .ind-grab.dragging i { transform: none; } }
+*/
+
+/* DW17: Word-style SVG markers that follow --rs and stay inside the track.
+   Track inner height = 22u - 2px (border-box, 1px border); u = --ru.
+   first: 10x7u from the top edge; hang: 10x7u sitting on the left block;
+   left: 10x4u on the bottom edge; right: 10x7u on the bottom edge.
+   Grab zones stay 44px wide (touch) and reach past the track like before. */
+.ind-grab { position: absolute; width: 44px; margin-left: -22px; cursor: ew-resize; touch-action: none; pointer-events: auto; z-index: 2; }
+.ind-first { top: -11px; height: calc(11px + 7 * var(--ru)); }
+.ind-hang  { bottom: calc(3.5 * var(--ru)); height: calc(7 * var(--ru) + 3px); }
+.ind-left  { bottom: -18px; height: calc(4 * var(--ru) + 18px); }
+.ind-right { bottom: -18px; height: calc(11 * var(--ru) + 18px); }
+.ind-shape {
+  position: absolute; left: calc(22px - 5 * var(--ru)); width: calc(10 * var(--ru)); display: block; overflow: visible;
+  fill: var(--accent, #3b82f6); stroke: var(--text-primary, #1f2937); stroke-width: 1; vector-effect: non-scaling-stroke;
+  stroke-linejoin: round; transition: transform .18s cubic-bezier(.34,1.56,.64,1), filter .12s;
+}
+.ind-shape path, .ind-shape rect { vector-effect: non-scaling-stroke; }
+.ind-first .ind-shape { top: 11px; height: calc(7 * var(--ru)); transform-origin: 50% 0; }
+.ind-hang .ind-shape  { bottom: 0; height: calc(7 * var(--ru)); transform-origin: 50% 100%; }
+.ind-left .ind-shape  { top: 0; height: calc(4 * var(--ru)); transform-origin: 50% 0; }
+.ind-right .ind-shape { bottom: 18px; height: calc(7 * var(--ru)); transform-origin: 50% 100%; }
+/* hover / drag highlight */
+.ind-grab:hover .ind-shape { filter: brightness(1.18) drop-shadow(0 0 1.5px var(--accent, #3b82f6)); }
+.ind-grab.dragging .ind-shape, .ind-grab:active .ind-shape { filter: brightness(1.25) drop-shadow(0 0 2px var(--accent, #3b82f6)); transform: scale(1.2); }
+.ind-grab.dragging { z-index: 3; }
+/* drag guide down the page */
+.ind-guide { position: fixed; top: 0; bottom: 0; left: 0; width: 0; border-left: 1px dashed var(--accent, #3b82f6); opacity: .55; pointer-events: none; z-index: 4; }
+.ind-guide[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .ind-shape { transition: none; } .ind-grab.dragging .ind-shape, .ind-grab:active .ind-shape { transform: none; } }
+@media print { .ind-guide { display: none !important; } }

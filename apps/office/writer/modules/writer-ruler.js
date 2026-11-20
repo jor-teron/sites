@@ -7,6 +7,8 @@
          the left / right margin edges (mouse + touch, snap
          0.1 cm) to set Custom margins via Writer.ui.setPage.
          Page tab "Ruler" toggle, default off ('writer_ruler').
+         DW17: sets --rs (R.scale, pure) so track, ticks and
+         indent markers grow / shrink with zoom.
    DEPENDS: config, view, ui (setPage), storage via ui
    ============================================================ */
 
@@ -47,6 +49,14 @@ Writer.ruler.metrics = function metrics() {
   return { cm: Writer.view.CM_PX * (Writer.view.zoom || 1), w: land ? cfg.paperHeightCm : cfg.paperWidthCm };
 };
 
+/* DW17: ruler / indent-marker scale for a zoom: the zoom, held to 0.8-1.6
+   so markers stay grabbable at 50% and do not get huge at 200%. Pure. */
+Writer.ruler.scale = function scale(zoom) {
+  var z = Number(zoom);
+  if (!isFinite(z) || z <= 0) z = 1;
+  return Math.round(Math.max(0.8, Math.min(1.6, z)) * 1000) / 1000;
+};
+
 /* Redraw ticks, numbers and margin shading. */
 Writer.ruler.sync = function sync(live) {
   var R = Writer.ruler, cfg = Writer.config;
@@ -55,6 +65,8 @@ Writer.ruler.sync = function sync(live) {
   var m = R.metrics();
   var track = R.el('rulerTrack');
   track.style.width = (m.w * m.cm) + 'px';
+  /* DW17: track height, ticks, labels and indent markers follow zoom (ui/ruler.css). */
+  r.style.setProperty('--rs', String(R.scale(Writer.view.zoom || 1)));
   var L = live ? live.left : cfg.marginLeftCm, Rt = live ? live.right : cfg.marginRightCm;
   R.el('rulerMarginL').style.width = (L * m.cm) + 'px';
   R.el('rulerMarginR').style.width = (Rt * m.cm) + 'px';

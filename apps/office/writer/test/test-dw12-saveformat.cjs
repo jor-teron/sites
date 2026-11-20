@@ -388,7 +388,8 @@ test('release is DW12', () => {
   /* (before DW14a) assert.ok(/<title>Writer DW1(2|3|3b|3c|4)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW15) assert.ok(/<title>Writer DW1(2|3|3b|3c|4|4a)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW16) assert.ok(/<title>Writer DW1(2|3|3b|3c|4|4a|5)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW1(2|3|3b|3c|4|4a|5|6)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW17) assert.ok(/<title>Writer DW1(2|3|3b|3c|4|4a|5|6)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW1(2|3|3b|3c|4|4a|5|6|7)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW12) <title>Writer DW11a</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW13) assert.ok(/release:\s*'DW12'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -398,7 +399,8 @@ test('release is DW12', () => {
   /* (before DW14a) assert.ok(/release:\s*'DW1(2|3|3b|3c|4)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW15) assert.ok(/release:\s*'DW1(2|3|3b|3c|4|4a)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW16) assert.ok(/release:\s*'DW1(2|3|3b|3c|4|4a|5)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW1(2|3|3b|3c|4|4a|5|6)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW17) assert.ok(/release:\s*'DW1(2|3|3b|3c|4|4a|5|6)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW1(2|3|3b|3c|4|4a|5|6|7)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   /* no format warning anywhere in the save code */
   const how = HOW.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(!/keep (this|current) format/i.test(how));
