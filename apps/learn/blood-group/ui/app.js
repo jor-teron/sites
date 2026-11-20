@@ -1,8 +1,8 @@
-/* Blood Group BG-5 — four views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
+/* Blood Group BG-6 — five views in one page, all drawings are inline SVG made here. HOME view (BG-1), one scrollable page:
    1 what blood is (red cells, white cells, platelets, plasma; tap a part for a tip), 2 the ABO groups (a red cell with its
    A / B markers and the antibodies in the plasma; tap a card to highlight it), 3 the Rh factor and the 8 groups as drop badges,
-   4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation, family and myths
-   views (shortcuts; the title-bar tabs also switch views).
+   4 how common each group is in India (approximate bars), 5 did you know, 6 cards that open the donation, family, myths and
+   health views (shortcuts; the title-bar tabs also switch views).
    DONATION view (BG-2, hash #donate so refresh and the browser Back button work): a "Who can give to whom" tap chart of the
    8 groups (Give to / Receive from, highlights come from BG.canGive), universal donor and receiver, who can donate (India,
    basic), why donate, what happens at a donation (4 steps).
@@ -12,14 +12,16 @@
    and gene-pair Punnett picks live in a collapsed More section. A short alleles note and the lab-test note stay on the page.
    MYTHS view (BG-5, hash #myths): Japan's blood-type personality (ketsueki-gata) as tap cards for A, B, O and AB, each with
    a "Myth, not science" badge, plus a short history, a studies note and a bura-hara note; then Myth vs Fact flip cards.
-   Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family / Myths, mapped to "" / #donate / #family /
-   #myths (from BG.views). Deep links and Back/Forward stay in sync. Home shortcut cards are kept. Room is left for a
-   future Health tab (BG-6), not added here.
+   HEALTH view (BG-6, hash #health): what healthy blood needs (iron, B12, folate and vitamin C, with India-friendly food
+   cards), iron tips, anaemia signs and who is at higher risk, lifestyle for circulation, and a not-medical-advice
+   disclaimer. A #bg-health-part2 hook is left empty for BG-6a (normal numbers, a CBC explainer and an Hb checker).
+   Title-bar tabs (BG-3a, LearnHubBar array form): Groups / Donation / Family / Myths / Health, mapped to "" / #donate /
+   #family / #myths / #health (from BG.views). Deep links and Back/Forward stay in sync. Home shortcut cards are kept.
    Saves in localStorage: learn.blood-group.group (the last highlighted ABO group), learn.blood-group.chart ({ group, mode }),
    learn.blood-group.family ({ mum, dad, mumAbo, dadAbo, mumRh, dadRh }), learn.blood-group.myths ({ abo }).
    In a Hub desktop window the header (and these tabs) move to the Hub title bar (LearnHubBar). */
 (() => {
-  const B = window.BG, VER = 'BG-5', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
+  const B = window.BG, VER = 'BG-6', PRE = 'learn.blood-group.', store = LRN.store, NS = 'http://www.w3.org/2000/svg';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -129,7 +131,7 @@
     h('li', null, 'Your blood group comes from your parents. It stays the same all your life.'),
     h('li', null, 'Red cells live for about 4 months. Your body makes new ones all the time.')));
 
-  // ---- 6 cards that open the donation, family and myths views (shortcuts; tabs in the title bar also switch) ----
+  // ---- 6 cards that open the donation, family, myths and health views (shortcuts; tabs in the title bar also switch) ----
   let homeTop = 0;
   const nextCard = (hash, title, sub, art) => h('button', { type: 'button', class: 'bg-card bg-next', 'data-go': hash,
     onclick: () => { location.hash = hash; } },
@@ -144,7 +146,10 @@
         s('path', { d: 'M20 24 C17.5 29 14 33 14 36 A6 6 0 0 0 26 36 C26 33 22.5 29 20 24 Z' }))),
     nextCard('myths', 'Myths \u2192', "Japan's blood-type personality myth, and myth versus fact.",
       svg('0 0 40 48', 'bg-nextsvg', 'Myths', s('path', { d: DROP }),
-        s('text', { x: '20', y: '32', class: 'bg-itw', 'text-anchor': 'middle' }, '?')))));
+        s('text', { x: '20', y: '32', class: 'bg-itw', 'text-anchor': 'middle' }, '?'))),
+    nextCard('health', 'Health \u2192', 'How to keep blood healthy: iron, B12, folate, and everyday habits.',
+      svg('0 0 40 48', 'bg-nextsvg', 'Health', s('path', { d: DROP }),
+        s('text', { x: '20', y: '33', class: 'bg-itw', 'text-anchor': 'middle' }, '+')))));
 
   // ================= DONATION VIEW (BG-2) =================
   // ---- d1 who can give to whom ----
@@ -449,7 +454,33 @@
     h('p', { class: 'bg-p bg-muted' }, 'Tap a card to flip it. These are common beliefs, each with the real fact in a line or two.'),
     h('div', { class: 'bg-flips' }, B.mythFacts.map(flipCard)));
 
-  // ---- views and navigation (#donate, #family, #myths); title-bar tabs switch these views ----
+
+  // ================= HEALTH VIEW (BG-6) =================
+  // Part 1: healthy blood. #bg-health-part2 is left empty for BG-6a (numbers, CBC, Hb checker).
+  const foodChips = foods => h('ul', { class: 'bg-foods' }, foods.map(f => h('li', { class: 'bg-food' }, f)));
+  const needSec = sec('needs', 'What healthy blood needs',
+    h('p', { class: 'bg-p' }, 'Healthy blood needs a few key nutrients. Iron is used to make haemoglobin, which carries oxygen. Vitamin B12 and folate help the body make red cells. Vitamin C helps the body absorb iron from plant foods.'),
+    h('div', { class: 'bg-grid bg-nutri' }, B.health.needs.map(n => h('div', { class: 'bg-card bg-nutricard', 'data-nutrient': n.id },
+      h('span', { class: 'bg-cn' }, n.name),
+      h('span', { class: 'bg-cj' }, n.job),
+      foodChips(n.foods),
+      n.note ? h('p', { class: 'bg-p bg-muted' }, n.note) : null))));
+  const tipSec = sec('irontips', 'Iron tips',
+    h('div', { class: 'bg-grid' }, B.health.ironTips.map(tx => h('div', { class: 'bg-card bg-why' },
+      h('span', { class: 'bg-cj' }, tx)))));
+  const anaemiaSec = sec('anaemia', 'Anaemia',
+    h('p', { class: 'bg-p' }, B.health.anaemia.what),
+    h('p', { class: 'bg-p' }, h('b', null, 'Common signs')),
+    h('div', { class: 'bg-signs' }, B.health.anaemia.signs.map(sg => h('span', { class: 'bg-sign' }, sg))),
+    h('p', { class: 'bg-p' }, h('b', null, 'Who is at higher risk? '), B.health.anaemia.risk),
+    h('p', { class: 'bg-tip bg-warn' }, B.health.anaemia.warning));
+  const lifeSec = sec('lifestyle', 'Lifestyle for circulation',
+    h('div', { class: 'bg-grid' }, B.health.lifestyle.map(x => h('div', { class: 'bg-card bg-why', 'data-life': x.id },
+      h('span', { class: 'bg-cn' }, x.title), h('span', { class: 'bg-cj' }, x.text)))));
+  const healthDisc = h('p', { class: 'bg-disc' }, B.health.disclaimer);
+  const healthPart2 = h('div', { id: 'bg-health-part2', class: 'bg-health-part2' });
+
+  // ---- views and navigation (#donate, #family, #myths, #health); title-bar tabs switch these views ----
   const TABS = B.views.map(t => ({ id: t.id, label: t.label, short: t.short, hash: t.hash, controls: 'bg-' + t.id }));
   const disc = () => h('p', { class: 'bg-disc' }, 'For learning only. A doctor or blood bank can test your blood group.');
   const famNote = h('p', { class: 'bg-disc' }, 'Rare variants (like Bombay group) exist. Real family questions need a lab test.');
@@ -462,11 +493,14 @@
   const myths = h('div', { class: 'bg-view', id: 'bg-myths', 'data-view': 'myths', role: 'tabpanel', hidden: true },
     h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Myths')),
     m1, m2, disc());
-  const panels = { home, donate, family, myths };
+  const health = h('div', { class: 'bg-view', id: 'bg-health', 'data-view': 'health', role: 'tabpanel', hidden: true },
+    h('div', { class: 'bg-top' }, h('h2', { class: 'bg-vt' }, 'Health')),
+    needSec, tipSec, anaemiaSec, lifeSec, healthDisc, healthPart2);
+  const panels = { home, donate, family, myths, health };
 
   const here = h('span', { class: 'lrn-here' }, 'Blood Group');
   const head = h('header', { class: 'lrn-head' }, h('h1', null, here), h('span', { class: 'bg-ver' }, VER));
-  const main = h('main', { class: 'lrn-main bg-main', id: 'lrn-main' }, home, donate, family, myths);
+  const main = h('main', { class: 'lrn-main bg-main', id: 'lrn-main' }, home, donate, family, myths, health);
   let view = '';
   function show(v) {
     if (!panels[v]) v = 'home';
