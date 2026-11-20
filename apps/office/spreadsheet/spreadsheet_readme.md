@@ -504,5 +504,12 @@ SH24 draws only the visible window. The paint loop treated a slot as empty with 
 
 A new Hub Office tab, File → New / Clear, and an empty Documents folder name the workbook `Untitled N` (lowest free among `.hos` files; the tab's `?untitled=N` when free) through `SHEET_HOS.newName()`. (before HO12b) `Sheet`, `Sheet_2`, …. The first save of that auto-made name never opens the name-clash dialog; it moves to the next free `Untitled N`. The Hub Office tab shows the name without `.hos`.
 
+## SH36 — Arrow keys no longer rebuild the grid when the cell is already visible
+
+Arrow keys felt 1–2 s slow, worse with the mouse over the grid. `focusCell` called `ensureCellVisible`, which always ended with `renderViewport(true)` and rebuilt every visible cell (`buildVirtualTable`, merges, paint, highlight) even when the next cell was already on screen. `renderViewport(false)` already skips that work when the visible window (`SHEET_VIEW.key`) has not changed, and a scroll still changes the key so the new rows are drawn. If the target input is still missing after that (for example at the overscan edge), it falls back to a forced rebuild. Title and `SHEET_VERSION` are SH36. `?v=SH36` on `spreadsheet_grid.js` and `spreadsheet_settings.js`. Other tokens stay as they were.
+
+- **Code:** `ensureCellVisible` in `spreadsheet_grid.js`. The old `renderViewport(true)` is kept as a `(before SH36)` comment.
+- **Tests:** `node apps/office/spreadsheet/test-sh36-arrow.js`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
