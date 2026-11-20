@@ -262,6 +262,7 @@ First Aid,               first-aid/,                 , , Health, First aid basic
 Human Body Explorer,     human-body/,                , , Health, Tap body parts outside and inside to learn their names and jobs - with quiz
 Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian and Assam meal plates and plan a week with personal portions and live nutrients with a balanced-plate guide
 Nutrition Calculator,    nutrition-calculator/,      nutrition-calculator/nutrition-calculator_icon.png, , Health, Work out calories and nutrients for your meals
+Blood Group,             blood-group/,               , , Health, Learn about blood: its parts - the 8 blood groups - Rh factor and how common each is
 
 Knife Skills,            knife-skills/,              knife-skills/knife-skills_icon.png, , Cooking, Kitchen knife skills 101: basic cuts and safety tips
 Ingredient Swaps,        ingredient-substitutions/,  ingredient-substitutions/ingredient-substitutions_icon.png, , Cooking, Find substitutes for common cooking ingredients
