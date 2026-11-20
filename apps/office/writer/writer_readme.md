@@ -9,7 +9,8 @@ Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are 
 <!-- (before DW13b) The page title and `Writer.config.release` are `DW13` (DW10 is kept for a later release). -->
 <!-- (before DW13c) The page title and `Writer.config.release` are `DW13b` (DW10 is kept for a later release). -->
 <!-- (before DW14) The page title and `Writer.config.release` are `DW13c` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW14` (DW10 is kept for a later release).
+<!-- (before DW16) The page title and `Writer.config.release` are `DW14` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW16` (DW10 is kept for a later release).
 
 ## DW13c — letterhead header and footer (one full-width block, resizable picture, grows to fit)
 
@@ -388,3 +389,11 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - Standalone (its own browser tab) opens Writer in a new tab with `#new`. That tab starts blank and then drops the hash from the address. If the browser blocks the popup, New keeps the old same-window behaviour.
 - Hub phone mode still uses the same window, when Writer can see the Hub's `HubMode` (same origin). If it cannot tell phone from desktop, it prefers a new window, as the plan said.
 - The old New click (`Writer.docs.newDoc()` in the same window) is kept as a `(before DW15)` comment. Test: `node --test apps/office/writer/test/test-dw15-new-window.cjs`.
+
+## DW16 — File menu uses the full window height
+
+- 20 Nov 2026 IST. Writer's File menu was capped at 360px by `ui/popups.css` (`.pop-menu { max-height: min(360px, calc(100vh - 80px)); }`), which loaded after the shared `.file-menu` rule and won. The inline Recent list then made the menu scroll early.
+- `#fileMenu` and the DW14 `#exportMenu` now grow from their top edge down to the window bottom, minus an 8px gap: `max-height: calc(100dvh - var(--file-menu-top, 80px) - 8px)`, with a `100vh` fallback for older browsers. Other `.pop-menu` popups keep the 360px cap. The menu still scrolls (`overflow: auto`) when the list is taller than that space.
+- When the menu opens (and if the window is resized while it is open), Writer sets `--file-menu-top` from the menu's actual top after it is positioned. In the Hub, the menu is moved after `setFile`, so the top is measured again. The height formula is `Writer.ui.menuMaxHeight(top, viewH)` (never shorter than 160px).
+- No fly-out: Recent stays an inline list inside the File menu.
+- Test: `node --test apps/office/writer/test/test-dw16-filemenu-height.cjs`.

@@ -173,7 +173,8 @@ test('writer.html title is DW14a; docs.js keeps the old Open... click as a comme
   const src = live(html);
   const liveDocs = live(docs);
   /* (before DW15) assert.ok(/<title>Writer DW14a<\/title>/.test(src)); */
-  assert.ok(/<title>Writer DW1(4a|5)<\/title>/.test(src));
+  /* (before DW16) assert.ok(/<title>Writer DW1(4a|5)<\/title>/.test(src)); */
+  assert.ok(/<title>Writer DW1(4a|5|6)<\/title>/.test(src));
   assert.ok(html.indexOf('<!-- (before DW14a) <title>Writer DW14</title> -->') !== -1);
   assert.ok(docs.indexOf('(before DW14a)') !== -1);
   assert.ok(liveDocs.indexOf('Writer.docs.openFromMenu') !== -1);
@@ -182,5 +183,6 @@ test('writer.html title is DW14a; docs.js keeps the old Open... click as a comme
   assert.ok(liveDocs.indexOf('Writer.docs.openPickedHandle') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW15) assert.ok(/release:\s*'DW14a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW1(4a|5)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW16) assert.ok(/release:\s*'DW1(4a|5)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW1(4a|5|6)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });

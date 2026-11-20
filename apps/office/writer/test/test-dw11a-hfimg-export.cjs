@@ -231,7 +231,8 @@ test('DW11 export warning is gone; release is DW11a', () => {
   /* (before DW14) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW14a) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW15) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW16) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW11a) <title>Writer DW11</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW12) assert.ok(/release:\s*'DW11a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -241,7 +242,8 @@ test('DW11 export warning is gone; release is DW11a', () => {
   /* (before DW14) assert.ok(/release:\s*'DW(11a|12|13|13b|13c)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW14a) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW15) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW16) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 const SOFFICE = fs.existsSync('/usr/bin/soffice') ? 'soffice' : (fs.existsSync('/usr/bin/libreoffice') ? 'libreoffice' : null);

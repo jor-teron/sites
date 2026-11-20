@@ -124,6 +124,8 @@ Writer.hub = {
       var m = document.getElementById('fileMenu');
       m.style.top = H.menuInset + 'px';
       m.style.left = H.menuInset + 'px';
+      /* DW16: Hub moves the menu after setFile, so measure the top again. */
+      if (Writer.ui && Writer.ui.setFileMenuTop) Writer.ui.setFileMenuTop(m);
     }
   };
 
