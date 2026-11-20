@@ -877,21 +877,32 @@ function paintSpillOutline() {
   }
 }
 
-function paintRendered() {
-  var spec = SHEET_VIEW.spec, rows, cols, i, j, r, c;
-  if (typeof STYLE_CF_STATS !== "undefined") STYLE_CF_STATS = {};
-  if (!spec) return;
-  rows = spec.rows;
-  cols = spec.cols;
+/* SH34: a window slot is a row or column index. 0 is row 1 / column A, so it
+   must be painted. null and a spacer object are not cells. */
+function sheetSlotSkip(item) {
+  return item == null || item.spacer === true;
+}
+
+/* Same walk paintRendered uses, so a test can see which cells get painted. */
+function forEachPaintedSlot(rows, cols, fn) {
+  var i, j;
+  if (!rows || !cols || typeof fn !== "function") return;
   for (i = 0; i < rows.length; i++) {
-    if (!rows[i] || rows[i].spacer) continue;
-    r = rows[i];
+    /* (before SH34) if (!rows[i] || rows[i].spacer) continue;  !0 skipped row 1 */
+    if (sheetSlotSkip(rows[i])) continue;
     for (j = 0; j < cols.length; j++) {
-      if (!cols[j] || cols[j].spacer) continue;
-      c = cols[j];
-      paintCell(r, c);
+      /* (before SH34) if (!cols[j] || cols[j].spacer) continue;  !0 skipped column A */
+      if (sheetSlotSkip(cols[j])) continue;
+      fn(rows[i], cols[j]);
     }
   }
+}
+
+function paintRendered() {
+  var spec = SHEET_VIEW.spec;
+  if (typeof STYLE_CF_STATS !== "undefined") STYLE_CF_STATS = {};
+  if (!spec) return;
+  forEachPaintedSlot(spec.rows, spec.cols, function (r, c) { paintCell(r, c); });
   if (typeof paintSpillOutline === "function") paintSpillOutline();
 }
 

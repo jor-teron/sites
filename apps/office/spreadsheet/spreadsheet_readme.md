@@ -493,6 +493,13 @@ A real `.xlsm` showed errors on about 15 sheets because `ADDRESS` was missing an
 - **Release id:** title and `SHEET_VERSION` are SH35. `?v=SH35` on `spreadsheet_config.js`, `spreadsheet_formula.js`, `spreadsheet_functions.js`, `spreadsheet_settings.js`, `spreadsheet_xlsx.js` and `spreadsheet_hos.js`. Other tokens stay as they were.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh35-address.cjs`.
 
+## SH34 — Row 1 and column A paint on a redraw
+
+SH24 draws only the visible window. The paint loop treated a slot as empty with `!item`. Index 0 is row 1 and column A, and `!0` is true, so those cells were built but never painted. Values, spill results and styles on row 1 and column A stayed blank until that one cell was focused. A spacer and a missing slot are still skipped. Title and `SHEET_VERSION` stay SH35 (this id was parked, then SH35 shipped). `?v=` is unchanged.
+
+- **Code:** `sheetSlotSkip` and `forEachPaintedSlot` in `spreadsheet_grid.js`. The old `!item` checks are kept as `(before SH34)` comments.
+- **Tests:** `node apps/office/spreadsheet/test-sh24-grid.js`.
+
 ## HO12b — new workbooks are Untitled N
 
 A new Hub Office tab, File → New / Clear, and an empty Documents folder name the workbook `Untitled N` (lowest free among `.hos` files; the tab's `?untitled=N` when free) through `SHEET_HOS.newName()`. (before HO12b) `Sheet`, `Sheet_2`, …. The first save of that auto-made name never opens the name-clash dialog; it moves to the next free `Untitled N`. The Hub Office tab shows the name without `.hos`.
