@@ -160,5 +160,29 @@ test("the visible window is a slice, print uses the used range", function () {
   eq(ix, 40);
 });
 
+test("row 0 and column 0 are painted; holes and spacers are not", function () {
+  eq(ctx.sheetSlotSkip(0), false);
+  eq(ctx.sheetSlotSkip(1), false);
+  eq(ctx.sheetSlotSkip(null), true);
+  eq(ctx.sheetSlotSkip(undefined), true);
+  eq(ctx.sheetSlotSkip({ spacer: true, px: 30 }), true);
+  var painted = [];
+  ctx.paintCell = function (r, c) { painted.push(r + ":" + c); };
+  ctx.document = { querySelectorAll: function () { return []; } };
+  ctx.SHEET_VIEW.spec = {
+    rows: [0, { spacer: true, px: 90 }, null, 1],
+    cols: [0, null, 2]
+  };
+  ctx.paintRendered();
+  eq(painted.join(" "), "0:0 0:2 1:0 1:2");
+  reset();
+  var spec = ctx.viewSpec(ctx.sheetPrefix(), 0, 0, 400, 900, false);
+  painted = [];
+  ctx.SHEET_VIEW.spec = spec;
+  ctx.paintRendered();
+  if (painted.indexOf("0:0") < 0) throw new Error("A1 was not painted, got " + painted.slice(0, 6).join(" "));
+  if (spec.rows.indexOf(0) < 0 || spec.cols.indexOf(0) < 0) throw new Error("viewport spec dropped row 0 or column 0");
+});
+
 console.log("passed", passed, "failed", failed);
 process.exit(failed ? 1 : 0);
