@@ -524,5 +524,16 @@ The File menu is now New, Open..., Save, Save As, Print, Export..., then Setting
 - **Code:** `spreadsheet_filemenu.js` (`SHEET_FILEMENU`).
 - **Tests:** `node --test apps/office/spreadsheet/test-sh37-filemenu.cjs`.
 
+## SH38 — File menu Rename, Delete, and New in a new window
+
+The File menu is now the same as Writer's: New, Open..., Rename, Save, Save As, Print, Delete, Export..., then Settings and Functions.
+
+- **Rename** (`btn-rename`) asks for a name, sets it through `SHEET_SAVEFMT.setName` (the Hub title follows), and writes at once like Writer's rename. A file in a Hub folder is written under the new name in the same folder and the old one is removed (a taken name asks Replace / Use free / Cancel). An opened `.xlsx` / `.ods` / `.csv` saves in its own format. A picked file outside the Hub keeps its handle; it is renamed on disk only when the browser has `FileSystemHandle.move`, otherwise the same file is written and only the title changes. A workbook with no file just takes the name Save will use.
+- **Delete** (`btn-delete`) asks first (Writer's rule). In the Hub with the Local drive and a file, it deletes that file from its folder ("Delete workbook?"). Otherwise it only closes ("Close workbook?") and leaves any downloaded or picked file as it is. The file is let go before it is removed, so no flush writes it back. Then a new, empty `Untitled N` workbook (the old New / Clear steps, without the flush; Undo still brings the cells back).
+- **New** opens a fresh instance like Writer DW15. In a Hub window it posts `hub-open-app {url, name:'Spreadsheet', newInstance:true}` and sets the one-time `localStorage` key `sheet_open_new` (under 30 s, always removed), because the Hub ignores query and hash. Standalone it opens a new tab with `#new`. The new instance skips reopening the last workbook (`SHEET_HOS.start` wrapped; a `#drive=&file=` link still opens first). On Hub phone, or when posting or the popup fails, the old clear-in-place handler in `spreadsheet_toolbar.js` runs unchanged.
+- Title and `SHEET_VERSION` are SH38. `?v=SH38` on `spreadsheet_settings.js` and `spreadsheet_filemenu.js`.
+- **Code:** `spreadsheet_filemenu.js` (`SHEET_FILEMENU.rename`, `deleteCurrent`, `requestNew`, `wrapStart`).
+- **Tests:** `node --test apps/office/spreadsheet/test-sh38-filemenu.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

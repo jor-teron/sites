@@ -21,7 +21,8 @@
   <!-- (before SH35) <title>Spreadsheet SH33</title> -->
   <!-- (before SH36) <title>Spreadsheet SH35</title> -->
   <!-- (before SH37) <title>Spreadsheet SH36</title> -->
-  <title>Spreadsheet SH37</title>
+  <!-- (before SH38) <title>Spreadsheet SH37</title> -->
+  <title>Spreadsheet SH38</title>
   <!-- (before HO3) every local cache token (?v=) on this page was SH18; HO3 bumps them for the 12pt default. Title stays SH18. -->
   <link rel="icon" href="spreadsheet_icon.png">
   <link rel="stylesheet" href="spreadsheet.css?v=HO3">
@@ -71,7 +72,8 @@
     <!-- SH37: #file-import is now the hidden fallback for Open... (no handle picker, or in the Hub). It keeps its id, so the
          toolbar opener and the Hub title listener still run. The label stays as its parent for the SH32 click hook but is never shown. -->
     <label id="file-import-wrap" hidden style="display:none"><input id="file-import" type="file" accept=".hos,.xlsx,.xlsm,.xls,.ods,.csv,application/json,text/csv,text/plain,application/vnd.oasis.opendocument.spreadsheet,application/vnd.ms-excel.sheet.macroEnabled.12" hidden></label>
-    <!-- SH38 slot: Rename -->
+    <!-- (before SH38) SH38 slot: Rename -->
+    <button type="button" class="file-item" role="menuitem" id="btn-rename"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/></svg><span>Rename</span></button>
     <!-- (before SH37) <div class="file-sep" role="separator"></div> -->
     <button type="button" class="file-item" role="menuitem" id="btn-save" data-icon="fileSave"><span>Save</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-save-as" data-icon="fileSave"><span>Save As</span></button>
@@ -82,7 +84,8 @@
     <button type="button" class="file-item" role="menuitem" id="btn-export-ods" data-icon="fileExport"><span>Export ODS</span></button> -->
     <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print / PDF</span></button> -->
     <button type="button" class="file-item" role="menuitem" id="btn-print" data-icon="filePrint"><span>Print</span></button>
-    <!-- SH38 slot: Delete -->
+    <!-- (before SH38) SH38 slot: Delete -->
+    <button type="button" class="file-item" role="menuitem" id="btn-delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/></svg><span>Delete</span></button>
     <button type="button" class="file-item" role="menuitem" id="btn-export-menu" data-icon="fileExport" aria-haspopup="menu" aria-expanded="false" aria-controls="sheet-export-menu"><span>Export...</span></button>
     <!-- (before SH37) <button type="button" class="file-item" role="menuitem" id="settingsMenuBtn" data-icon="fileSettings"><span>Settings</span></button>
     <div class="file-sep" role="separator"></div> -->
@@ -367,7 +370,8 @@
   <!-- (before SH35) <script src="spreadsheet_settings.js?v=SH33"></script> -->
   <!-- (before SH36) <script src="spreadsheet_settings.js?v=SH35"></script> -->
   <!-- (before SH37) <script src="spreadsheet_settings.js?v=SH36"></script> -->
-  <script src="spreadsheet_settings.js?v=SH37"></script>
+  <!-- (before SH38) <script src="spreadsheet_settings.js?v=SH37"></script> -->
+  <script src="spreadsheet_settings.js?v=SH38"></script>
   <script src="spreadsheet_page.js?v=HO3"></script>
   <script src="spreadsheet_ribbon.js?v=HO3"></script>
   <script src="spreadsheet_logic.js?v=HO3"></script>
@@ -404,6 +408,7 @@
   <!-- (before SH33) <script src="spreadsheet_saveformat.js?v=SH32"></script> -->
   <script src="spreadsheet_saveformat.js?v=SH33"></script>
   <!-- SH37: File menu Open... routing, Export... chooser, full-height menu (after saveformat: uses SHEET_SAVEFMT.openAny). -->
-  <script src="spreadsheet_filemenu.js?v=SH37"></script>
+  <!-- (before SH38) <script src="spreadsheet_filemenu.js?v=SH37"></script> -->
+  <script src="spreadsheet_filemenu.js?v=SH38"></script>
 </body>
 </html>
