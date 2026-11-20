@@ -9,6 +9,11 @@
          Page tab "Ruler" toggle, default off ('writer_ruler').
          DW17: sets --rs (R.scale, pure) so track, ticks and
          indent markers grow / shrink with zoom.
+         DW19: left and right margins are linked: dragging one edge
+         moves the other to the same value (text stays centred).
+         Alt while dragging = only that side. Setting 'linkMargins'
+         (writer-settings.js, on by default); a chain-link button on
+         the ruler (touch screens) flips it. Math: R.linkMargins (pure).
    DEPENDS: config, view, ui (setPage), storage via ui
    ============================================================ */
 
@@ -37,9 +42,82 @@ Writer.ruler.build = function build() {
     '<div class="ruler-margin ruler-margin-r" id="rulerMarginR"></div>' +
     '<div class="ruler-grab" data-side="left" id="rulerGrabL" title="Drag to change the left margin"></div>' +
     '<div class="ruler-grab" data-side="right" id="rulerGrabR" title="Drag to change the right margin"></div>' +
-    '<span class="ruler-tip" id="rulerTip" hidden></span></div>';
+    '<span class="ruler-tip" id="rulerTip" hidden></span>' +
+    /* DW19: link toggle (shown on touch screens, ui/ruler.css) */
+    '<button type="button" class="ruler-link" id="rulerLink" aria-pressed="true" title="Left and right margins are linked (tap to unlink)" aria-label="Link left and right margins">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="rl-a" d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path class="rl-b" d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/><path class="rl-cut" d="M4 4l16 16"/></svg></button>' +
+    '</div>';
   ws.insertBefore(r, scaler);
   ['rulerGrabL', 'rulerGrabR'].forEach(function (id) { R.el(id).addEventListener('pointerdown', R.start); });
+  var link = R.el('rulerLink');
+  if (link) {
+    link.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    link.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    link.addEventListener('click', function (e) { e.preventDefault(); R.setLink(!R.linked()); });
+  }
+};
+
+/* DW19: the margin link setting (writer_settings.linkMargins; on when missing). */
+Writer.ruler.linkOn = true;   /* used only when the Settings module is missing */
+Writer.ruler.linkedFrom = function linkedFrom(s) {
+  return !(s && s.linkMargins === false);
+};
+Writer.ruler.linked = function linked() {
+  var st = Writer.settings && Writer.settings.s;
+  return st ? Writer.ruler.linkedFrom(st) : Writer.ruler.linkOn;
+};
+Writer.ruler.setLink = function setLink(on) {
+  on = !!on;
+  if (Writer.settings && Writer.settings.s && Writer.settings.set && Writer.settings.panel) Writer.settings.set('linkMargins', on);
+  else if (Writer.settings && Writer.settings.s) Writer.settings.s.linkMargins = on;
+  else Writer.ruler.linkOn = on;
+  Writer.ruler.syncLink();
+  if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast(on ? 'Left and right margins linked' : 'Left and right margins unlinked');
+  return on;
+};
+Writer.ruler.syncLink = function syncLink() {
+  var b = Writer.ruler.el('rulerLink');
+  if (!b) return;
+  var on = Writer.ruler.linked();
+  b.setAttribute('aria-pressed', String(on));
+  b.classList.toggle('active', on);
+  b.title = on ? 'Left and right margins are linked (tap to unlink)' : 'Left and right margins are separate (tap to link)';
+};
+
+/* DW19: new margins for a drag. Pure.
+   o: side 'left'|'right', start {left, right} (cm), dx (cm, pointer moved right = +),
+      w paper width (cm), linked (setting), alt (Alt held), min, max (cfg custom limits), minText (2).
+   Linked (and no Alt): both sides take the dragged value, so the text stays centred;
+   the text width never goes below minText. Otherwise only that side moves (before DW19 rule).
+   Values snap to 0.1 cm. Returns { left, right, linked, tip }. */
+Writer.ruler.linkMargins = function linkMargins(o) {
+  o = o || {};
+  var st = o.start || {};
+  var min = o.min != null ? o.min : 0.5, maxCfg = o.max != null ? o.max : 5;
+  var minText = o.minText != null ? o.minText : 2;
+  var w = Number(o.w) || 21;
+  var side = o.side === 'right' ? 'right' : 'left';
+  var dx = Number(o.dx) || 0;
+  var v = side === 'left' ? st.left + dx : st.right - dx;
+  var link = !!o.linked && !o.alt;
+  var out = { left: st.left, right: st.right, linked: link };
+  var max;
+  if (link) {
+    max = Math.min(maxCfg, (w - minText) / 2);
+    v = Math.round(Math.max(min, Math.min(max, v)) * 10) / 10;
+    if ((w - 2 * v) < minText - 1e-9) v = Math.floor(((w - minText) / 2) * 10) / 10;
+    out.left = v; out.right = v;
+  } else {
+    var other = side === 'left' ? st.right : st.left;
+    max = Math.min(maxCfg, w - other - minText);   /* keep at least 2 cm of text */
+    v = Math.round(Math.max(min, Math.min(max, v)) * 10) / 10;
+    out[side] = v;
+  }
+  out.tip = Writer.ruler.tipLabel(out.left, out.right);
+  return out;
+};
+Writer.ruler.tipLabel = function tipLabel(l, r) {
+  return 'Left ' + Number(l).toFixed(1) + ' \u00b7 Right ' + Number(r).toFixed(1) + ' cm';
 };
 
 /* Scaled px per cm and paper width in cm. */
@@ -108,6 +186,7 @@ Writer.ruler.start = function start(e) {
   R.drag = { side: g.getAttribute('data-side'), x0: e.clientX, g: g,
     m: { top: cfg.marginTopCm, bottom: cfg.marginBottomCm, left: cfg.marginLeftCm, right: cfg.marginRightCm } };
   R.drag.cur = Object.assign({}, R.drag.m);
+  R.drag.alt = !!e.altKey;   /* DW19 */
   g.classList.add('dragging');
   g.addEventListener('pointermove', R.move);
   g.addEventListener('pointerup', R.end);
@@ -119,6 +198,16 @@ Writer.ruler.move = function move(e) {
   if (!d) return;
   var mt = R.metrics();
   var dx = (e.clientX - d.x0) / mt.cm;
+  /* DW19: linked margins (R.linkMargins); Alt = only this side. The commented lines below are the before-DW19 math. */
+  var nm = R.linkMargins({ side: d.side, start: d.m, dx: dx, w: mt.w, linked: R.linked(), alt: !!(e.altKey || d.alt),
+    min: cfg.marginCustomMin || 0.5, max: cfg.marginCustomMax || 5, minText: 2 });
+  d.cur.left = nm.left; d.cur.right = nm.right;
+  R.sync(d.cur);
+  var tip0 = R.el('rulerTip');
+  tip0.hidden = false;
+  tip0.textContent = nm.tip;
+  tip0.style.left = (d.side === 'left' ? nm.left : mt.w - nm.right) * mt.cm + 'px';
+  /* (before DW19) only the dragged side moved:
   var v = d.side === 'left' ? d.m.left + dx : d.m.right - dx;
   var other = d.side === 'left' ? d.m.right : d.m.left;
   var max = Math.min(cfg.marginCustomMax || 5, mt.w - other - 2);   // keep at least 2 cm of text
@@ -128,7 +217,7 @@ Writer.ruler.move = function move(e) {
   var tip = R.el('rulerTip');
   tip.hidden = false;
   tip.textContent = (d.side === 'left' ? 'L ' : 'R ') + v.toFixed(1) + ' cm';
-  tip.style.left = (d.side === 'left' ? v : mt.w - v) * mt.cm + 'px';
+  tip.style.left = (d.side === 'left' ? v : mt.w - v) * mt.cm + 'px'; */
 };
 
 Writer.ruler.end = function end() {
@@ -140,7 +229,8 @@ Writer.ruler.end = function end() {
   d.g.removeEventListener('pointerup', R.end);
   d.g.removeEventListener('pointercancel', R.end);
   R.el('rulerTip').hidden = true;
-  if (d.cur[d.side] === d.m[d.side]) { R.sync(); return; }
+  /* (before DW19) if (d.cur[d.side] === d.m[d.side]) { R.sync(); return; } */
+  if (d.cur.left === d.m.left && d.cur.right === d.m.right) { R.sync(); return; }
   Writer.ui.setPage(cfg.paperSize, 'custom', d.cur);
   R.sync();
 };
@@ -159,6 +249,7 @@ Writer.ruler.init = function init() {
   var stored = null;
   try { stored = localStorage.getItem(R.KEY); } catch (e) {}
   R.set(stored === '1', false);
+  R.syncLink();   /* DW19 */
 };
 
 Writer.ruler.init();

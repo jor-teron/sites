@@ -90,3 +90,25 @@
 .ind-guide[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { .ind-shape { transition: none; } .ind-grab.dragging .ind-shape, .ind-grab:active .ind-shape { transform: none; } }
 @media print { .ind-guide { display: none !important; } }
+
+/* ----- DW19 margin link toggle (writer-ruler.js #rulerLink) -----
+   Touch screens only (mouse users hold Alt to move one side). A 44px hit zone
+   centred on the ruler's bottom edge in the middle of the page; the visible
+   chip is small and uses the ruler's colours, light and dark. */
+.ruler-link {
+  display: none; position: absolute; left: 50%; top: 100%; width: 44px; height: 44px;
+  margin: -22px 0 0 -22px; padding: 0; border: 0; background: transparent; cursor: pointer;
+  pointer-events: auto; touch-action: manipulation; z-index: 3; -webkit-tap-highlight-color: transparent;
+}
+.ruler-link svg {
+  position: absolute; left: 50%; top: 50%; width: calc(16 * var(--ru)); height: calc(16 * var(--ru));
+  transform: translate(-50%, -50%); padding: 2px; box-sizing: content-box;
+  background: var(--bg-paper, #fff); border: 1px solid var(--border-light); border-radius: 999px;
+  box-shadow: 0 1px 3px var(--shadow);
+  fill: none; stroke: var(--text-secondary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.ruler-link.active svg { stroke: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); }
+.ruler-link .rl-cut { display: none; }
+.ruler-link:not(.active) .rl-cut { display: inline; }
+.ruler-link:focus-visible svg { outline: 2px solid var(--accent, #3b82f6); outline-offset: 2px; }
+@media (pointer: coarse), (max-width: 700px) { .ruler-link { display: block; } }
