@@ -12,6 +12,9 @@
          DW14: one Open... in the File menu, routed by openKind.
          DW14a: Open... uses showOpenFilePicker when it is available,
          so Save can write back to a picked .docx / .odt.
+         DW15: File > New opens a new Hub window (desktop) or a new
+         browser tab (standalone). Phone mode and a blocked popup
+         keep the old same-window newDoc.
    DEPENDS: config, storage, ui, editor, pages, history, view
    ============================================================ */
 
@@ -78,6 +81,20 @@ Writer.docs.load = function load() {
   editor.innerHTML = cfg.defaultHtml;
   Writer.storage.fillNameIfEmpty();
   if (Writer.editor) Writer.editor.stripMarks(editor);
+  /* DW15: a New window or tab starts blank instead of reopening the last document. */
+  var fresh = false;
+  try {
+    fresh = Writer.docs.consumeNewLaunch(Date.now(), window.localStorage, window.location, window.history);
+  } catch (e) {}
+  if (fresh) {
+    return Writer.docs.showBlank().then(function (name) {
+      if (Writer.settings && Writer.settings.applyNewPage) Writer.settings.applyNewPage();
+      Writer.app.ready = true;
+      return name;
+    }).catch(function () {
+      Writer.app.ready = true;
+    });
+  }
   var start = (Writer.how && Writer.how.start) ? Writer.how.start() : Promise.resolve(false);
   return start.then(function () {
     Writer.app.ready = true;
@@ -197,6 +214,158 @@ Writer.docs.newDoc = function newDoc() {
   }).catch(function () {
     Writer.ui.showToast('Could not create document');
   });
+};
+
+/* DW15: how File > New should open.
+   inFrame + inHub + phone === true → same window (Hub phone mode).
+   inFrame + inHub otherwise (desktop, or phone unknown) → a new Hub window.
+   inFrame === false → a new browser tab.
+   Anything else (an unknown frame) → same window. */
+Writer.docs.OPEN_NEW_KEY = 'writer_open_new';
+Writer.docs.OPEN_NEW_MS = 30000;
+
+Writer.docs.newMode = function newMode(opts) {
+  opts = opts || {};
+  if (opts.inFrame && opts.inHub) {
+    if (opts.phone === true) return 'same';
+    return 'hub-window';
+  }
+  if (opts.inFrame === false) return 'tab';
+  return 'same';
+};
+
+/* Hub phone mode, when the parent is same-origin and exposes HubMode.
+   true = phone, false = desktop, null = unknown. */
+Writer.docs.hubPhone = function hubPhone(win) {
+  if (!win) return null;
+  try {
+    var p = win.parent;
+    if (!p || p === win) return null;
+    if (p.HubMode && typeof p.HubMode.isDesktop === 'function') {
+      return !(p.HubMode.isDesktop() && p.HubWM);
+    }
+  } catch (e) { /* cross-origin or file:// */ }
+  return null;
+};
+
+Writer.docs.inHubFrame = function inHubFrame() {
+  if (Writer.hub && Writer.hub.linked) return true;
+  try {
+    if (typeof document !== 'undefined' && document.body && document.body.classList.contains('in-hub')) return true;
+  } catch (e) {}
+  return false;
+};
+
+Writer.docs.markOpenNew = function markOpenNew(now, store) {
+  if (!store || typeof store.setItem !== 'function') return false;
+  try { store.setItem(Writer.docs.OPEN_NEW_KEY, String(now)); return true; } catch (e) { return false; }
+};
+
+/* True when the one-shot flag is present and under 30 s old. Always removes the key. */
+Writer.docs.takeOpenNew = function takeOpenNew(now, store) {
+  if (!store || typeof store.getItem !== 'function') return false;
+  var raw = null;
+  try { raw = store.getItem(Writer.docs.OPEN_NEW_KEY); } catch (e) { return false; }
+  try { if (store.removeItem) store.removeItem(Writer.docs.OPEN_NEW_KEY); } catch (e) {}
+  if (raw == null || raw === '') return false;
+  var t = Number(raw);
+  if (!isFinite(t)) return false;
+  var age = now - t;
+  return age >= 0 && age < Writer.docs.OPEN_NEW_MS;
+};
+
+/* Standalone New uses #new (not ?new=1, which Hub Office already uses). */
+Writer.docs.launchIsNew = function launchIsNew(loc) {
+  if (!loc) return false;
+  return String(loc.hash || '') === '#new';
+};
+
+Writer.docs.newTabUrl = function newTabUrl(href) {
+  try {
+    var u = new URL(href);
+    u.hash = 'new';
+    return u.href;
+  } catch (e) {
+    return String(href || '').replace(/#.*$/, '') + '#new';
+  }
+};
+
+Writer.docs.cleanNewUrl = function cleanNewUrl(loc, hist) {
+  if (!loc || !Writer.docs.launchIsNew(loc) || !hist || typeof hist.replaceState !== 'function') return;
+  try {
+    var u = new URL(loc.href);
+    u.hash = '';
+    hist.replaceState(null, '', u.href);
+  } catch (e) {
+    try { hist.replaceState(null, '', String(loc.href).replace(/#new$/, '')); } catch (e2) {}
+  }
+};
+
+Writer.docs.consumeNewLaunch = function consumeNewLaunch(now, store, loc, hist) {
+  var fromFlag = Writer.docs.takeOpenNew(now, store);
+  var fromUrl = Writer.docs.launchIsNew(loc);
+  if (fromUrl) Writer.docs.cleanNewUrl(loc, hist);
+  return !!(fromFlag || fromUrl);
+};
+
+Writer.docs.hubOpenTarget = function hubOpenTarget(loc) {
+  if (!loc) return '*';
+  return loc.protocol === 'file:' || loc.origin === 'null' ? '*' : loc.origin;
+};
+
+Writer.docs.hubWriterUrl = function hubWriterUrl(href) {
+  try { return new URL('./', href).href; } catch (e) {
+    var s = String(href || '');
+    var hash = s.indexOf('#');
+    if (hash >= 0) s = s.slice(0, hash);
+    var q = s.indexOf('?');
+    if (q >= 0) s = s.slice(0, q);
+    if (/\/[^/]+\.[^/]+$/.test(s)) s = s.replace(/\/[^/]+$/, '/');
+    else if (s && s.slice(-1) !== '/') s += '/';
+    return s;
+  }
+};
+
+Writer.docs.postHubNew = function postHubNew(win) {
+  if (!win || !win.parent || typeof win.parent.postMessage !== 'function') return false;
+  var loc = win.location || {};
+  var msg = { type: 'hub-open-app', url: Writer.docs.hubWriterUrl(loc.href), name: 'Writer', newInstance: true };
+  win.parent.postMessage(msg, Writer.docs.hubOpenTarget(loc));
+  return true;
+};
+
+Writer.docs.openNewTab = function openNewTab(win) {
+  if (!win || typeof win.open !== 'function') return false;
+  var url = Writer.docs.newTabUrl(win.location ? win.location.href : '');
+  var w = win.open(url, '_blank');
+  return !!w;
+};
+
+/* File > New: open a new window or tab when we can, else the old same-window newDoc. */
+Writer.docs.requestNew = function requestNew(win) {
+  if (win === undefined && typeof window !== 'undefined') win = window;
+  var inFrame = false;
+  try { inFrame = !!(win && win.parent && win.parent !== win); } catch (e) { inFrame = true; }
+  var mode = Writer.docs.newMode({
+    inFrame: inFrame,
+    inHub: Writer.docs.inHubFrame(),
+    phone: Writer.docs.hubPhone(win)
+  });
+  if (mode === 'hub-window') {
+    Writer.docs.markOpenNew(Date.now(), win && win.localStorage);
+    try {
+      if (Writer.docs.postHubNew(win)) return Promise.resolve();
+    } catch (e) { /* fall through */ }
+    try { if (win && win.localStorage && win.localStorage.removeItem) win.localStorage.removeItem(Writer.docs.OPEN_NEW_KEY); } catch (e2) {}
+    return Writer.docs.newDoc();
+  }
+  if (mode === 'tab') {
+    var opened = false;
+    try { opened = Writer.docs.openNewTab(win); } catch (e) { opened = false; }
+    if (!opened) return Writer.docs.newDoc();
+    return Promise.resolve();
+  }
+  return Writer.docs.newDoc();
 };
 
 /* Delete one .how file after confirm. If it is open, open another or a blank page.
@@ -379,7 +548,8 @@ Writer.docs.openFromMenu = function openFromMenu(win) {
 Writer.docs.bind = function bind() {
   var cfg = Writer.config;
   Writer.ui.onClick('recentBtn', function () { Writer.docs.toggleRecent(); });
-  Writer.ui.onClick('newBtn', function () { Writer.docs.newDoc(); });
+  /* (before DW15) Writer.ui.onClick('newBtn', function () { Writer.docs.newDoc(); }); */
+  Writer.ui.onClick('newBtn', function () { Writer.docs.requestNew(); });
   Writer.ui.onClick('saveBtn', function () { Writer.docs.save(); });
   Writer.ui.onClick('saveAsBtn', function () { Writer.docs.saveAs(); });
   /* (before DW14) Writer.ui.onClick('openHowBtn', function () {

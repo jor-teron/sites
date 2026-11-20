@@ -197,14 +197,23 @@ Writer.settings.hook = function hook() {
     var sb = Writer.find.setStatusBar;
     Writer.find.setStatusBar = function (on) { var r = sb.apply(this, arguments); S.s.statusBar = !!on; S.save(); return r; };
   }
+  /* DW15: default paper, orientation and margins for a new document
+     (same-window New, or a New window/tab at startup). */
+  Writer.settings.applyNewPage = function applyNewPage() {
+    var s = Writer.settings.s, cfg = Writer.config, u = Writer.ui;
+    if (!s || !u || !u.setPage) return;
+    u.setPage(s.paper, s.margins, s.margins === 'custom' ? cfg.marginCustom : undefined);
+    if (u.setOrientation) u.setOrientation(s.orientation);
+  };
   /* New document: apply the default paper, orientation and margins. */
   if (Writer.docs && Writer.docs.newDoc) {
     var nd = Writer.docs.newDoc;
     Writer.docs.newDoc = function () {
       return nd.apply(this, arguments).then(function (r) {
-        var s = S.s, cfg = Writer.config;
+        /* (before DW15) var s = S.s, cfg = Writer.config;
         ui.setPage(s.paper, s.margins, s.margins === 'custom' ? cfg.marginCustom : undefined);
-        ui.setOrientation(s.orientation);
+        ui.setOrientation(s.orientation); */
+        Writer.settings.applyNewPage();
         return r;
       });
     };
