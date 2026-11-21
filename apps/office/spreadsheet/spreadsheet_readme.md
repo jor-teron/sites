@@ -584,5 +584,15 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Old lines kept as `(before SH41)` comments. Title and `SHEET_VERSION` are SH41; `?v=SH41` on grid, resize and settings.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh41-row-heights.cjs`.
 
+## SH42: CONCATENATE
+
+- `CONCATENATE(text1, text2, ...)`: Excel's classic name for `CONCAT`. Both now share `fxConcatArgs`: arguments are joined in order; a range (or a spilled array) is read row by row; a blank is empty text; numbers, dates and TRUE / FALSE are joined as their value text, as `CONCAT` did.
+- The first error value (for example `#DIV/0!` in a referenced cell) is the result. It is returned, not thrown, so `IFERROR(CONCATENATE(...), "x")` works.
+- `CONCAT` now also accepts ranges (`CONCAT(A1:A3)` was `#ERR`).
+- Formulas from an `.xlsx` with Excel's future-function prefixes (`_xlfn.CONCAT`, `_xlfn._xlws.SORT`, `COM.MICROSOFT.IFS`) evaluate: `fxStripPrefixes` drops them after the strings are pulled out (in `spreadsheet_formula.js`). `CONCATENATE` itself is saved by Excel without a prefix.
+- Function picker / hint: catalog entry next to `CONCAT`; `FUNCTIONS.txt` lists it. An opened workbook using `CONCATENATE` no longer gets the "Not supported yet" note.
+- Title and `SHEET_VERSION` are SH42; `?v=SH42` on formula, functions and settings.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh42-concatenate.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

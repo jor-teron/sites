@@ -5,6 +5,7 @@ CELL / TEXT
   A1 + B1               cell math (spaces allowed)
   A1 & B2               concatenate
   CONCAT(a, b, ...)     concatenate
+  CONCATENATE(a, b, ...)  same as CONCAT (classic Excel name)
   LEN(text)
   UPPER(text)
   LOWER(text)

@@ -394,6 +394,11 @@ function findFormulaCall(s) {
 /**
  * Evaluate an expression (no leading =)
  */
+/* SH42: drop _xlfn. / _xlws. / com.microsoft. before a name (pure; case-insensitive). */
+function fxStripPrefixes(s) {
+  return String(s).replace(/(^|[^A-Za-z0-9_.$'!])(?:_xlfn\.|_xlws\.|com\.microsoft\.)+(?=[A-Za-z])/gi, "$1");
+}
+
 function evalExpr(expr) {
   var s, bag, m, name, inside, addr, n, out;
 
@@ -412,6 +417,9 @@ function evalExpr(expr) {
 
   bag = [];
   s = pullStrings(s, bag);
+  /* SH42: Excel's future-function prefixes in an .xlsx formula (_xlfn.CONCAT, _xlfn._xlws.SORT,
+     COM.MICROSOFT.IFS) name the plain function. Strings are already pulled out, so text is safe. */
+  s = fxStripPrefixes(s);
   if (s.indexOf(ERR_REF) !== -1) fail(ERR_REF);       // a ref removed by delete row / column
   /* $ is consumed by mapRefs; do not strip it globally (would break 'Sheet $1'!A1) */
 
