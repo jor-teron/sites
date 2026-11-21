@@ -45,7 +45,8 @@ function undoSnapshot() {
         merges: sh.merges ? JSON.parse(JSON.stringify(sh.merges)) : [],
         condFormats: sh.condFormats ? JSON.parse(JSON.stringify(sh.condFormats)) : [],
         charts: sh.charts ? JSON.parse(JSON.stringify(sh.charts)) : [],
-        heights: sh.heights ? sh.heights.slice() : null
+        heights: sh.heights ? sh.heights.slice() : null,
+        lazy: sh.lazy != null ? sh.lazy : undefined   /* SH49: a not-yet-loaded xlsx sheet stays one */
       };
     })
   });
@@ -110,6 +111,8 @@ function undoRestore(snap) {
     if (src.heights && sh.heights) {
       for (r = 0; r < ROWS; r++) sh.heights[r] = typeof src.heights[r] === "number" ? src.heights[r] : null;
     }
+    /* SH49: a placeholder comes back as a placeholder (its raw worksheet is still kept) */
+    if (src.lazy != null && typeof SHEET_LAZY !== "undefined" && SHEET_LAZY.raw[src.lazy]) sh.lazy = src.lazy;
     workbook.sheets.push(sh);
   }
   workbook.active = Math.max(0, Math.min(workbook.sheets.length - 1, d.active | 0));

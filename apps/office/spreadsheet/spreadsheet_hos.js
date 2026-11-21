@@ -296,7 +296,13 @@
     return a;
   }
 
-  function liveCapture(session) {
+  /* (before SH49) function liveCapture(session) { */
+  /* SH49: o.sig (the save fingerprint) leaves not-yet-loaded xlsx sheets as they are and
+     gives them, and converted sheets that still equal the file, an empty cell list plus
+     lazyTok; any real capture converts and calculates every sheet first. */
+  function liveCapture(session, o) {
+    var sig = !!(o && o.sig);
+    if (!sig && typeof ensureAllSheetsLoaded === 'function') ensureAllSheetsLoaded();
     var lim = limits();
     var now = Date.now();
     if (session && !session.created) session.created = now;
@@ -307,9 +313,12 @@
     var src = (typeof workbook !== 'undefined' && workbook && workbook.sheets) ? workbook.sheets : [];
     for (i = 0; i < src.length; i++) {
       sh = src[i];
+      var tok = sig && typeof lazySigToken === 'function' ? lazySigToken(sh) : null;   /* SH49 */
       sheets.push({
         name: sh.name,
-        cells: sh.cells,
+        lazyTok: tok,
+        /* (before SH49) cells: sh.cells, */
+        cells: tok ? [] : sh.cells,
         widths: sh.widths,
         heights: sh.heights,
         hiddenRows: flagIndexes(sh.hiddenRows),
@@ -437,7 +446,8 @@
   /* Used by the .hos smoke test to restore a parsed file into the live workbook. */
   Hos.applyToWorkbook = applyDoc;
   /* SH32: the live workbook as a logical document (spreadsheet_saveformat.js fingerprints it). */
-  Hos.capture = function capture() { return liveCapture(null); };
+  /* (before SH49) Hos.capture = function capture() { return liveCapture(null); }; */
+  Hos.capture = function capture(o) { return liveCapture(null, o); };
 
   function install() {
     if (!root.OfficeNative) return;

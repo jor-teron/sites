@@ -29,6 +29,9 @@
  * Save writes back to the same .xlsm with them. Macros are not run or shown.
  * SH35: the open toast adds "Not supported yet: NAME, ... (n cells)" when a
  * formula uses a function this app does not have.
+ * SH49: open converts and calculates only the first sheet; the others are
+ * placeholders converted on first use (spreadsheet_lazy.js). Export / Save build
+ * the book after ensureAllSheetsLoaded, so the file is the same as before.
  */
 function xlsxFmtZ(fmt) {
   if (fmt === "int") return "0";
@@ -102,9 +105,12 @@ function xlsxTitle() {
   return String(t || "Sheet");
 }
 
-/* Fill a sheet's cells from a SheetJS worksheet (pure; returns count of dropped cells) */
-function xlsxFillGrid(XLSX, ws, grid) {
-  var dropped = 0, key, a, cell, txt;
+/* Fill a sheet's cells from a SheetJS worksheet (pure; returns count of dropped cells)
+   SH49: o.cached also writes the file's cached value (formula cells: v; others: the text) */
+/* (before SH49) function xlsxFillGrid(XLSX, ws, grid) { */
+function xlsxFillGrid(XLSX, ws, grid, o) {
+  var dropped = 0, key, a, cell, txt, slot, cv;
+  var cached = !!(o && o.cached);
   grid = grid || cells;
   for (key in ws) {
     if (key.charAt(0) === "!") continue;
@@ -116,7 +122,18 @@ function xlsxFillGrid(XLSX, ws, grid) {
     else if (cell.t === "e") txt = cell.w || "";
     else if (cell.t === "d" || (cell.t === "n" && cell.w && /[\/\-:]/.test(cell.w))) txt = cell.w || String(cell.v);
     else txt = cell.v == null ? "" : String(cell.v);
-    grid[a.r][a.c].formula = txt;
+    /* (before SH49) grid[a.r][a.c].formula = txt; */
+    slot = grid[a.r][a.c];
+    slot.formula = txt;
+    if (cached) {
+      cv = txt;
+      if (cell.f) {
+        if (cell.t === "b") cv = cell.v ? "TRUE" : "FALSE";
+        else if (cell.t === "e") cv = cell.w || "";
+        else cv = cell.v == null ? "" : cell.v;
+      }
+      slot.value = cv;
+    }
   }
   return dropped;
 }
@@ -151,6 +168,33 @@ function xlsxSheetsFromBook(XLSX, wb) {
   return { sheets: sheets, cutSheets: names.length - take.length, dropped: dropped };
 }
 
+/* SH49: like xlsxSheetsFromBook, but only sheet `first` (default 0) is converted.
+   Every other sheet is a placeholder (sheet.lazy = key of its raw worksheet).
+   dropped counts the converted sheet only; moreCut is true when a placeholder's
+   range goes past the grid. */
+function xlsxSheetsFromBookLazy(XLSX, wb, first) {
+  var cap = (CFG.sheets && CFG.sheets.max) || 20;
+  var names = wb.SheetNames || [];
+  var take = names.slice(0, cap);
+  var used = {}, sheets = [], dropped = 0, moreCut = false, i, name, sh, ws;
+  first = first | 0;
+  for (i = 0; i < take.length; i++) {
+    name = String(take[i] || ("Sheet" + (i + 1))).slice(0, CFG.sheets.nameMax);
+    name = uniqueName(name, used);
+    sh = makeSheet(name);
+    ws = wb.Sheets[take[i]];
+    if (i === first) {
+      dropped += xlsxFillGrid(XLSX, ws, sh.cells, { cached: true });
+      sh.lazyClean = lazyRegister(XLSX, ws);
+    } else {
+      sh.lazy = lazyRegister(XLSX, ws);
+      if (lazyRangeCut(XLSX, ws)) moreCut = true;
+    }
+    sheets.push(sh);
+  }
+  return { sheets: sheets, cutSheets: names.length - take.length, dropped: dropped, moreCut: moreCut };
+}
+
 /* Write the live workbook through SheetJS (pure; type defaults to array). */
 function xlsxWriteBook(XLSX, bookType, typ) {
   return XLSX.write(xlsxBuildBook(XLSX), { bookType: bookType || "xlsx", type: typ || "array" });
@@ -172,7 +216,9 @@ function importXlsxFile(file, o) {
   /* SH40a: returns Promise<boolean> so a failed open can go back to the empty panel (spreadsheet_empty.js). */
   return Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) {
     var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true });
-    var loaded = xlsxSheetsFromBook(XLSX, wb);
+    /* (before SH49) var loaded = xlsxSheetsFromBook(XLSX, wb); */
+    var loaded = typeof xlsxSheetsFromBookLazy === "function" && typeof lazyRegister === "function"
+      ? xlsxSheetsFromBookLazy(XLSX, wb, 0) : xlsxSheetsFromBook(XLSX, wb);   /* SH49: first sheet only */
     /* SH33: an .xlsm keeps its macro parts (raw bytes, memory only) for Save. */
     var macro = null;
     if (direct === "xlsm" && typeof SHEET_XLSM !== "undefined") {
@@ -217,9 +263,15 @@ function importXlsxFile(file, o) {
     if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + ((CFG.sheets && CFG.sheets.max) || 20) + ")";
     /* (before SH24) if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped"; */
     if (dropped) msg += ", " + dropped + " cells outside A–FZ × " + ROWS + " skipped";
+    if (loaded.moreCut) msg += ", some cells outside A–FZ × " + ROWS + " in other sheets will be skipped";   /* SH49 */
     /* SH35: one short note naming functions this app does not have */
     var unknownNote = "";
-    try { unknownNote = typeof fxUnknownNote === "function" ? fxUnknownNote(sheets) : ""; } catch (e) { unknownNote = ""; }
+    /* (before SH49) try { unknownNote = typeof fxUnknownNote === "function" ? fxUnknownNote(sheets) : ""; } catch (e) { unknownNote = ""; } */
+    /* SH49: placeholders are scanned from their raw worksheets, so the note is the same and nothing is converted */
+    try {
+      unknownNote = typeof lazyUnknownNote === "function" ? lazyUnknownNote(sheets)
+        : (typeof fxUnknownNote === "function" ? fxUnknownNote(sheets) : "");
+    } catch (e) { unknownNote = ""; }
     if (unknownNote) msg += ". " + unknownNote;
     saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
     return true;   /* SH40a */
@@ -281,6 +333,8 @@ function xlsxBuildSheet(XLSX, grid, sheet) {
 function xlsxBuildBook(XLSX) {
   var wb = XLSX.utils.book_new();
   var used = {}, i, name, sh;
+  /* SH49: every sheet converted and calculated first, so the file is the same as an eager open */
+  if (typeof ensureAllSheetsLoaded === "function") ensureAllSheetsLoaded();
   for (i = 0; i < workbook.sheets.length; i++) {
     sh = workbook.sheets[i];
     name = uniqueName((sh.name || "Sheet").replace(/[\\\/?*\[\]:]/g, " ").slice(0, 31) || "Sheet1", used);

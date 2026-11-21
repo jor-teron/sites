@@ -612,5 +612,19 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Limit: TRUE / FALSE are not numbers in arithmetic here (`ISERROR(B1)*1` is `#ERR`); count with `IF(ISERROR(B1),1,0)`.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh45-iserror.cjs`.
 
+## SH49: load xlsx sheets one at a time
+
+- **Open converts only the first sheet.** SheetJS still reads the file once (`XLSX.read` options unchanged; that is SH47). `xlsxSheetsFromBookLazy` converts sheet 1 and makes every other sheet a placeholder: its name is in the tab bar (italic, tooltip "loads when opened"), `sheet.lazy` is the key of its raw SheetJS worksheet in `SHEET_LAZY.raw`, and its cells are empty. New file `spreadsheet_lazy.js`.
+- **First switch converts and calculates.** `switchSheet` (also pointing at a tab while typing a formula) and Duplicate call `ensureSheetReady(i)`.
+- **Cross-sheet formulas give the same values as before.** `recalcAll` first converts every placeholder that a loaded formula names (`lazyBeforeRecalc`, following names from sheet to sheet). A sheet named only while a formula runs (`INDIRECT("S"&A1&"!B1")`) is converted from `findSheetIndex` and the recalc runs again (`recalcAllCore` is the old recalc).
+- **Everything that needs every sheet loads them first:** Save / Save As / Export xlsx / ods / xlsm (`xlsxBuildBook`), the .hos capture, Find / Replace, rename / delete / move sheet, insert / delete rows and columns, `serializeWorkbook`. The output is the same as before SH49.
+- **(d) cached values:** a converted cell gets the file's cached value at once; the recalc that follows replaces it, as before.
+- **The SH35 "Not supported yet" note** reads placeholder formulas from the raw worksheets, so it is the same and nothing is converted.
+- **Undo** keeps placeholders. **Save fingerprint:** a placeholder, or a converted sheet whose formulas and styles still equal the file, is named by its key, so opening a sheet is not a change and an unedited file is not written back. File > Close counts a placeholder as content.
+- **Behaviour differences:** the open toast counts skipped cells (outside A-FZ x 1000) for the first sheet only and adds "some cells ... in other sheets will be skipped" when another sheet is too big. The first switch to a sheet is slower (convert + recalc of the loaded sheets). Raw worksheets stay in memory for the session so undo can restore placeholders.
+- **Timing (headless Chrome, desktop, median of 3):** multi.xlsx (10 x 1000 x 15, cross-sheet refs) open-to-paint 1459 -> 1062 ms; first switch 327 -> 433 ms. big.xlsx (5 x 20000 x 15) about 5410 -> 5160 ms (XLSX.read is about 4.5 s of that; SH47 targets it); first switch 381 -> 465 ms.
+- Old lines kept as `(before SH49)` comments. Title and `SHEET_VERSION` are SH49; `?v=SH49` on formula, state, storage, settings, undo, rows, sheets, data, xlsx, lazy, hos, saveformat, empty and spreadsheet.css.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh49-lazy-sheets.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

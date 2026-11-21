@@ -36,6 +36,8 @@ function lineHasData(axis, k) {
 /* Adjust formulas on every sheet that point at the active (changed) sheet. */
 function adjustAll(axis, at, delta) {
   var si, r, c, sh, target = workbook.active;
+  /* SH49: not-yet-loaded xlsx sheets are converted first so their formulas shift too */
+  if (typeof lazyLoadAll === "function") lazyLoadAll();
   for (si = 0; si < workbook.sheets.length; si++) {
     sh = workbook.sheets[si];
     /* (before SH24) for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {

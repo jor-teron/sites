@@ -419,11 +419,13 @@ test('wiring: title, VERSION, ?v= tokens, script order, readme', function () {
     /* (before SH42) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|40|41)').test(live), f); */
     /* (before SH44) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-2])').test(live), f); */
     /* (before SH45) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-4])').test(live), f); */
-    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-5])').test(live), f);
+    /* (before SH49) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-5])').test(live), f); */
+    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-5]|49)').test(live), f);
   }
   /* (before SH35) assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v=SH33')); */
   assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v='));
-  assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') < live.indexOf('spreadsheet_saveformat.js?v=SH33'));
+  /* (before SH49) assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') < live.indexOf('spreadsheet_saveformat.js?v=SH33')); */
+  assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') < live.indexOf('spreadsheet_saveformat.js?v='))   // SH49: saveformat token;
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH33";') !== -1);
   const readme = read('spreadsheet_readme.md');
   const sec = readme.slice(readme.indexOf('## SH33'));

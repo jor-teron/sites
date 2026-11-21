@@ -917,7 +917,23 @@ function evalFormula(f, row, col) {
  * is evaluated again. That second pass is skipped when nothing spilled, so a
  * normal edit stays one evaluation per formula.
  */
+/* SH49: xlsx sheets load one at a time (spreadsheet_lazy.js). Before the pass, every
+   placeholder sheet that a loaded formula names is converted; a sheet first named while
+   a formula runs (INDIRECT) is converted from findSheetIndex and the pass runs again,
+   so the values equal an eager open. Without spreadsheet_lazy.js this is one pass. */
 function recalcAll() {
+  var L = typeof SHEET_LAZY !== "undefined" ? SHEET_LAZY : null, n = 0;
+  if (L && typeof lazyBeforeRecalc === "function") lazyBeforeRecalc();
+  do {
+    if (L) { L.grew = false; L.inRecalc = true; }
+    try { recalcAllCore(); } finally { if (L) L.inRecalc = false; }
+    n++;
+  } while (L && L.grew && n < 25);
+  if (L) L.stale = false;
+}
+
+/* (before SH49) function recalcAll() { */
+function recalcAllCore() {
   var sheets = workbook.sheets, ns = sheets.length;
   var r, c, k, i, f, si, d, dr, dc, dsi, pred;
   /* (before SH24) dense arrays of length sheets*ROWS*COLS (one slot per cell, empty or not):

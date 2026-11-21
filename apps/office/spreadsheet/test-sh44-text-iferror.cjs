@@ -112,7 +112,8 @@ test('wiring: version SH44, ?v= tokens, readme', () => {
   assert.ok(html.indexOf('<!-- (before SH44) <title>Spreadsheet SH42</title> -->') !== -1);
   const l = live(html);
   /* (before SH45) for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH44') !== -1, f); */
-  for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH44') !== -1 || l.indexOf(f + '?v=SH45') !== -1, f);   // SH45: formula, functions, settings
+  /* (before SH49) for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH44') !== -1 || l.indexOf(f + '?v=SH45') !== -1, f);   // SH45: formula, functions, settings */
+  for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH44') !== -1 || l.indexOf(f + '?v=SH45') !== -1 || l.indexOf(f + '?v=SH49') !== -1, f);   // SH45: formula, functions, settings
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH44";') !== -1);
   assert.ok(read('spreadsheet_functions.js').indexOf('/* (before SH44) out += String(x); */') !== -1);
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH44') !== -1);

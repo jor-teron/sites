@@ -250,6 +250,8 @@ function dataUsedOrSel() {
 }
 
 function dataLiveSheets() {
+  /* SH49: Find / Replace see every sheet, including xlsx sheets not loaded yet */
+  if (typeof ensureAllSheetsLoaded === "function") ensureAllSheetsLoaded();
   return workbook.sheets;
 }
 
