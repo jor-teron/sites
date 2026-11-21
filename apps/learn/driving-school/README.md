@@ -31,7 +31,7 @@ Loads shared/theme/hub_theme.js without modifying it. Header uses LearnHubBar.
 `core/` is DOM-free UMD and unit-testable with Node. `ui/` owns canvas, input and
 storage. No dependencies/build step. Art and 128 px icon are original code/PIL.
 
-Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad,score,ds6.test}.cjs`.
+Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad,score,ds6.test,ds7.test}.cjs`.
 Browser harness: `node apps/learn/driving-school/tests/browser.cjs` after starting
 `python3 -m http.server 8829` at the repository root. Requires puppeteer externally.
 Only `?test` exposes the deterministic test interface. No lesson is auto-completed.
@@ -213,3 +213,32 @@ Lambert material, so each car is ONE mesh.
 Eight cars (4 town + 4 open-road pool) add about 2,500 triangles; the scene drops 16 meshes
 (open road 45 → 37, scene max 58 → 50). No textures, no shadows, nothing loaded at runtime.
 Tests: `tests/ds6.test.cjs`. No browser or real-phone check of the new look yet.
+
+## DS-7 · Higher quality trees
+A visual upgrade of the trees that already exist (the open-road scenery and the ring of trees
+around the town and practice lot). Where trees stand, how many and how tall is unchanged.
+
+Each tree was one plain 6-sided cone. Now there are three low-poly types, each with a trunk:
+- **Conifer**: three stacked cones in three greens (mostly on ghat roads).
+- **Broadleaf** (like neem or mango): two round, slightly flattened canopies (most common).
+- **Palm**: a tall slim trunk with eight drooping fronds (village roads and some highways).
+
+Every tree also gets a small width spread (0.85–1.15), a random turn and a slight colour tint,
+all worked out from its position, so a rebuilt chunk looks the same. Road scenery entries
+now carry their road type (`road`) to pick the mix; positions and heights are identical.
+
+`core/treemodel.js` (DOM-free, three.js-free) merges each type into one flat-shaded triangle
+list with vertex colours. `ui/road3d.js` draws each type as one InstancedMesh (600 trees in
+total, as before), and `ui/scene3d.js` draws the town ring as two (conifer and broadleaf).
+All share one double-sided Lambert vertex-colour material per area. No textures, no shadows.
+
+| Per tree | Draw | Triangles |
+| --- | --- | --- |
+| DS-6 | 1 cone | 12 |
+| DS-7 conifer | instanced | 40 |
+| DS-7 broadleaf | instanced | 50 |
+| DS-7 palm | instanced | 34 |
+
+Meshes: open road 37 → 39 (three tree InstancedMeshes instead of one), town ring 1 → 2, scene
+max 50 → 53. Worst case 600 trees ≈ 30,000 triangles (was 7,200), still in one draw per type.
+Tests: `tests/ds7.test.cjs`. No browser or real-phone check of the new look yet.

@@ -53,3 +53,12 @@ DS-6: Node 82/82 passing (`basics`, `roads`, `exam`, `cockpit`, `scene3d`, `ui-s
 symmetric; unit normals pointing out of each part; sRGB to linear colours, paint only on the
 body; in the scene every AI car is one mesh sharing one double-sided Lambert vertex-colour
 material (1 mesh / 316 triangles per car, was 3 meshes / 36 triangles). No browser run.
+
+DS-7: Node 88/88 passing (adds `ds7.test`). New: three tree types (conifer with three stacked
+cones, broadleaf with two canopies, palm with fronds), each with a trunk and under 100
+triangles (40 / 50 / 34, was a 12-triangle cone); base at y = 0, unit height, centred
+crown; unit normals, foliage facing out, cone undersides down, fronds up; the type mix
+follows the road type (ghat mostly conifer, village palms, highway broadleaf) and is
+deterministic; width spread and tint stay in range; scenery positions are unchanged and
+carry their road type; in the scene each type is one InstancedMesh sharing one material,
+600 trees at most, and every placed tree is drawn. No browser run.
