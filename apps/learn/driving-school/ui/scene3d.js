@@ -3,7 +3,8 @@
    build and update the whole scene in tests. Every material is double-sided because the
    mirrors flip their projection (a real mirror shows a left-right reversed picture).
    DS-3: the open road (ui/road3d.js) is a third area beside the lot and the town.
-   DS-6: AI cars are merged low-poly models (core/carmodel.js), one mesh each. */
+   DS-6: AI cars are merged low-poly models (core/carmodel.js), one mesh each.
+   DS-7: trees are merged low-poly types (core/treemodel.js), one InstancedMesh per type. */
 import { createDrive } from './road3d.js';
 export function createWorld(THREE, M, opts = {}) {
   const scene = new THREE.Scene(), DS = THREE.DoubleSide;
@@ -33,7 +34,16 @@ export function createWorld(THREE, M, opts = {}) {
   const ground = flat(scene, 1400, 1400, '#6f9a6c', 130, 120, 0);
   const trees = [];
   for (let i = 0; i < 44; i++) { const a = i / 44 * Math.PI * 2, r = 175 + (i % 4) * 14; trees.push([130 + Math.cos(a) * r, 120 + Math.sin(a) * r * .9, 6 + (i % 3) * 2]); }
-  const treeRing = instanced(scene, new THREE.ConeGeometry(2.6, 1, 6), lit('#3f7a4a'), trees, (o, t) => { o.position.set(t[0], t[2] / 2, t[1]); o.scale.set(1, t[2], 1); });
+  // DS-7: the ring mixes conifers and round broadleaf trees (core/treemodel.js), one InstancedMesh per type.
+  const treeRing = new THREE.Group(), treeMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: DS }), tint = [1, 1, 1];
+  scene.add(treeRing);
+  for (const type of ['conifer', 'broadleaf']) {
+    const a = M.buildTreeArrays(type), g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(a.position, 3)); g.setAttribute('normal', new THREE.BufferAttribute(a.normal, 3)); g.setAttribute('color', new THREE.BufferAttribute(a.color, 3));
+    const mine = trees.filter(t => M.treeKind(t[0], t[1], 'town') === type);
+    const m = instanced(treeRing, g, treeMat, mine, (o, t) => { const k = 1.3 * M.treeSpread(t[0], t[1]); o.position.set(t[0], 0, t[1]); o.rotation.y = M.treeHash(t[1], t[0]) * 6.283; o.scale.set(k, t[2], k); });
+    mine.forEach((t, i) => { M.treeTint(t[0], t[1], tint); m.setColorAt(i, new THREE.Color(tint[0], tint[1], tint[2])); });
+  }
 
   // Practice lot.
   const lot = new THREE.Group(), L = M.lotLayout(); scene.add(lot);

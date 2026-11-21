@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const D = Object.assign({}, require('../core/physics.js'), require('../core/lessons.js'), require('../core/town.js'),
-  require('../core/rules.js'), require('../core/roadgen.js'), require('../core/roadrules.js'), require('../core/exam.js'), require('../core/session.js'), require('../core/cockpit.js'), require('../core/carmodel.js'));
+  require('../core/rules.js'), require('../core/roadgen.js'), require('../core/roadrules.js'), require('../core/exam.js'), require('../core/session.js'), require('../core/cockpit.js'), require('../core/carmodel.js'), require('../core/treemodel.js'));
 const load = p => import(pathToFileURL(path.join(__dirname, p)).href);
 
 test('three.js r170 copy in learn/common/vendor loads', async () => {

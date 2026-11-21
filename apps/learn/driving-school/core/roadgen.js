@@ -266,11 +266,11 @@
         if (j % 4 === 1) for (const side of [1, -1]) if (R() < .7) put(out.houses, p, side, half + 7 + R() * 3, { w: 8 + R() * 6, d: 8, ht: 6 + R() * 9, c: R() * 4 | 0 });
       } else if (p.type === 'highway') {
         if (j % 12 === 0) put(out.poles, p, 1, half + 2);
-        if (j % 3 === 0) for (const side of [1, -1]) if (R() < .45) put(out.trees, p, side, half + 6 + R() * 8, { ht: 5 + R() * 4 });
+        if (j % 3 === 0) for (const side of [1, -1]) if (R() < .45) put(out.trees, p, side, half + 6 + R() * 8, { ht: 5 + R() * 4, road: 'highway' });
       } else if (p.type === 'ghat') {
-        if (j % 2 === 0) for (const side of [1, -1]) if (R() < .6) put(out.trees, p, side, half + 3 + R() * 9, { ht: 6 + R() * 6 });
+        if (j % 2 === 0) for (const side of [1, -1]) if (R() < .6) put(out.trees, p, side, half + 3 + R() * 9, { ht: 6 + R() * 6, road: 'ghat' });
       } else {
-        if (j % 3 === 0) for (const side of [1, -1]) if (R() < .55) put(out.trees, p, side, half + 3 + R() * 7, { ht: 4 + R() * 4 });
+        if (j % 3 === 0) for (const side of [1, -1]) if (R() < .55) put(out.trees, p, side, half + 3 + R() * 7, { ht: 4 + R() * 4, road: 'village' });
         if (j % 9 === 4 && R() < .6) put(out.houses, p, R() < .5 ? 1 : -1, half + 6 + R() * 2, { w: 5, d: 5, ht: 3, c: 4 });
       }
     });
