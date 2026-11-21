@@ -24,7 +24,15 @@
  * fxScanUnknown lists the functions an opened workbook uses that this app lacks.
  * SH42: CONCATENATE(text1, text2, ...) (same as CONCAT, fxConcatArgs); ranges are joined
  * row by row and the first error value is the result.
+ * SH44: fxNumberText: CONCAT / CONCATENATE / TEXTJOIN join numbers at 15 significant digits.
  */
+
+/* SH44: a number as text the way a formula result or & shows it: roundNum (15 significant
+   digits, SPREADSHEET_CONFIG.precision) then String, so 0.1+0.2 is "0.3". Other values unchanged. */
+function fxNumberText(x) {
+  if (typeof x === "number") return String(typeof roundNum === "function" ? roundNum(x) : x);
+  return x;
+}
 
 /* SH42: CONCAT / CONCATENATE. Each argument in order: a range (or a spilled array) is read
    row by row, a blank is "", numbers and dates are joined as the cell shows its value text
@@ -36,7 +44,8 @@ function fxConcatArgs(args) {
     if (Array.isArray(x)) { for (var k = 0; k < x.length; k++) add(x[k]); return; }
     if (typeof x === "boolean") x = x ? "TRUE" : "FALSE";
     if (typeof isErrorValue === "function" && isErrorValue(x)) fail(x);
-    out += String(x);
+    /* (before SH44) out += String(x); */
+    out += fxNumberText(x);   /* SH44: 0.1+0.2 joins as 0.3 */
   }
   /* The error comes back as the value (not thrown), so an outer IFERROR can see it. */
   try {
@@ -381,13 +390,15 @@ function evalFunc(name, args, at) {
           v = list[a0];
           if (isErrorValue(v)) fail(v);
           if (skip && (v === "" || v == null)) continue;
-          parts.push(v == null ? "" : String(v));
+          /* (before SH44) parts.push(v == null ? "" : String(v)); */
+          parts.push(v == null ? "" : fxNumberText(v));   /* SH44 */
         }
       } else {
         v = evalExpr(args[i]);
         if (isErrorValue(v)) fail(v);
         if (skip && (v === "" || v == null)) continue;
-        parts.push(v == null ? "" : String(v));
+        /* (before SH44) parts.push(v == null ? "" : String(v)); */
+        parts.push(v == null ? "" : fxNumberText(v));   /* SH44 */
       }
     }
     return parts.join(delim);

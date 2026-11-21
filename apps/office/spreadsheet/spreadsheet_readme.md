@@ -594,5 +594,13 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Title and `SHEET_VERSION` are SH42; `?v=SH42` on formula, functions and settings.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh42-concatenate.cjs`.
 
+## SH44: IFERROR around text functions; CONCAT numbers at 15 digits
+
+- **IFERROR sees errors inside functions.** Calls run innermost first, so before SH44 an error inside `LEN(B1)`, `UPPER(1/0)`, `LEFT(B1,3)` or `SUM(B1)` failed the whole cell and `IFERROR(..., "bad")` never ran. `evalExpr` now catches the `CellError` of each call and keeps its error text as the call's result (non-`CellError` exceptions still throw).
+- Without IFERROR the cell still shows the error: an error result used in math or `&` fails as before, and an error result passed straight into another function (`LEN(UPPER(B1))`) is that function's result (`fxErrorArg`; `IFERROR`, `IFNA`, `ISBLANK`, `ISERROR`, `ISERR`, `ISNA` see it instead). A typed `"#DIV/0!"` string stays plain text.
+- **Numbers in CONCAT / CONCATENATE / TEXTJOIN** go through `fxNumberText` (`roundNum`, 15 significant digits, as a formula result and `&` do): `CONCATENATE("n=",0.1+0.2)` is `n=0.3`, `1/3` joins as `0.333333333333333`.
+- Title and `SHEET_VERSION` are SH44; `?v=SH44` on formula, functions and settings.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh44-text-iferror.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
