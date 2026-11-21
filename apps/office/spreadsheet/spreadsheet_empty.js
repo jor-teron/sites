@@ -138,6 +138,7 @@
     var i, r, c, rows, row, store, cell;
     if (!sheets || !sheets.length) return true;
     for (i = 0; i < sheets.length; i++) {
+      if (sheets[i] && sheets[i].lazy != null) return false;   /* SH49: an xlsx sheet not loaded yet has content */
       rows = sheets[i] && sheets[i].cells;
       if (!rows) continue;
       for (r = 0; r < rows.length; r++) {

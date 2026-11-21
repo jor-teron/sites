@@ -277,7 +277,8 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
     /* (before SH42) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
     /* (before SH44) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
     /* (before SH45) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
-    assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1, f);   // SH39: config, hos; SH40a: xlsx
+    /* (before SH49) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
+    assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1 || live.indexOf(f + '?v=SH49') !== -1, f);   // SH39: config, hos; SH40a: xlsx
   }
   /* (before SH37) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js'); */
   /* (before SH40) assert.ok(/spreadsheet_settings\.js\?v=SH3[5-9]/.test(live), 'spreadsheet_settings.js'); */
@@ -285,7 +286,8 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
   /* (before SH42) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|40|41)/.test(live), 'spreadsheet_settings.js'); */
   /* (before SH44) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-2])/.test(live), 'spreadsheet_settings.js'); */
   /* (before SH45) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-4])/.test(live), 'spreadsheet_settings.js'); */
-  assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-5])/.test(live), 'spreadsheet_settings.js');
+  /* (before SH49) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-5])/.test(live), 'spreadsheet_settings.js'); */
+  assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-5]|49)/.test(live), 'spreadsheet_settings.js');
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH35";') !== -1);
   const readme = read('spreadsheet_readme.md');
   assert.ok(readme.indexOf('## SH35') !== -1);

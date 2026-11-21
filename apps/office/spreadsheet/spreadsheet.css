@@ -349,6 +349,8 @@ th.frozen-cell, td.row-num.frozen-cell { background: var(--head); }
   cursor: pointer;
 }
 .sheet-tab:hover { background: var(--hover); }
+/* SH49: a sheet from an opened file that loads when it is first opened */
+.sheet-tab.sheet-tab-lazy { font-style: italic; opacity: 0.8; }
 .sheet-tab.on {
   background: var(--on);
   color: var(--on-text, var(--text));

@@ -21,6 +21,8 @@ function afterSheetOp() {
 
 function switchSheet(i) {
   if (i < 0 || i >= workbook.sheets.length) return;
+  /* SH49: an xlsx sheet not loaded yet is converted and calculated first (also when pointing at its tab) */
+  if (typeof ensureSheetReady === "function") ensureSheetReady(i);
   /* SH22: a formula draft is open (or already pointing): only switch the view, keep editing */
   if (typeof pointOnTab === "function" && pointOnTab(i)) return;
   if (i === workbook.active) { renderSheetTabs(); return; }
@@ -47,6 +49,7 @@ function addSheet() {
 function duplicateSheet(idx) {
   if (idx == null) idx = workbook.active;
   if (workbook.sheets.length >= CFG.sheets.max) { setStatus(TXT.sheetMax); return; }
+  if (typeof ensureSheetReady === "function") ensureSheetReady(idx);   /* SH49: copy a converted sheet */
   var src = workbook.sheets[idx], copy, r, c;
   undoRecord("sheet-dup");
   stashSheetView();
@@ -94,6 +97,8 @@ function duplicateSheet(idx) {
 
 function rewriteAllFormulas(oldName, newName) {
   var si, r, c, sh;
+  /* SH49: not-yet-loaded xlsx sheets are converted first so their formulas are rewritten too (rename, delete) */
+  if (typeof lazyLoadAll === "function") lazyLoadAll();
   for (si = 0; si < workbook.sheets.length; si++) {
     sh = workbook.sheets[si];
     /* (before SH24) for (r = 0; r < ROWS; r++) for (c = 0; c < COLS; c++) {
@@ -165,6 +170,7 @@ function confirmDeleteSheet(idx) {
 
 function moveSheet(idx, to) {
   if (to < 0 || to >= workbook.sheets.length || to === idx) return;
+  if (typeof ensureAllSheetsLoaded === "function") ensureAllSheetsLoaded();   /* SH49 */
   undoRecord("sheet-move");
   stashSheetView();
   var sh = workbook.sheets.splice(idx, 1)[0];
@@ -493,6 +499,12 @@ function renderSheetTabs() {
     tab.textContent = workbook.sheets[i].name;
     tab.dataset.i = String(i);
     tab.title = workbook.sheets[i].name;
+    /* SH49: a sheet from an opened file that is not loaded yet (loads when opened) */
+    if (workbook.sheets[i].lazy != null) {
+      tab.className += " sheet-tab-lazy";
+      tab.dataset.lazy = "1";
+      tab.title = workbook.sheets[i].name + " (loads when opened)";
+    }
     tab.addEventListener("click", function (ev) {
       if (ev.detail === 0) switchSheet(parseInt(ev.currentTarget.dataset.i, 10));
       else switchSheet(parseInt(ev.currentTarget.dataset.i, 10));

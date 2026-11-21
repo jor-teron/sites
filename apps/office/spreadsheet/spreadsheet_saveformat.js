@@ -131,7 +131,14 @@
     var H = root.SHEET_HOS_FORMAT;
     try {
       if (H && H.capture && H.pack) {
-        var p = H.pack(H.capture());
+        /* (before SH49) var p = H.pack(H.capture()); */
+        /* SH49: a not-yet-loaded xlsx sheet (or a loaded one still equal to the file) is named by
+           its key, so loading a sheet is not a change */
+        var cap = H.capture({ sig: true }), si;
+        var p = H.pack(cap);
+        for (si = 0; cap && cap.sheets && si < cap.sheets.length && si < p.sheets.length; si++) {
+          if (cap.sheets[si].lazyTok) p.sheets[si].cells = cap.sheets[si].lazyTok;
+        }
         p.created = 0; p.updated = 0;
         return JSON.stringify(p);
       }

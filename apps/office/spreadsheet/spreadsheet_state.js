@@ -365,7 +365,13 @@ function emptyGrid() {
 function findSheetIndex(name) {
   var n = String(name || "").toLowerCase(), i;
   for (i = 0; i < workbook.sheets.length; i++) {
-    if (workbook.sheets[i].name.toLowerCase() === n) return i;
+    /* (before SH49) if (workbook.sheets[i].name.toLowerCase() === n) return i; */
+    if (workbook.sheets[i].name.toLowerCase() === n) {
+      /* SH49: a formula reaching a not-yet-loaded xlsx sheet during a recalc converts it first */
+      if (workbook.sheets[i].lazy != null && typeof SHEET_LAZY !== "undefined" && SHEET_LAZY.inRecalc &&
+          typeof lazySheetLoad === "function") lazySheetLoad(i);
+      return i;
+    }
   }
   return -1;
 }

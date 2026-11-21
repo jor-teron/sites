@@ -26,6 +26,7 @@ function serializeSheet(s) {
 }
 
 function serializeWorkbook() {
+  if (typeof ensureAllSheetsLoaded === "function") ensureAllSheetsLoaded();   /* SH49 */
   stashSheetView();
   return {
     v: 4,
