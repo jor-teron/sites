@@ -175,7 +175,8 @@ test('wiring: version SH41, ?v= tokens, readme, old code kept as comments', () =
   assert.ok(html.indexOf('<!-- (before SH41) <title>Spreadsheet SH40a</title> -->') !== -1);
   const l = live(html);
   /* (before SH42) for (const f of ['spreadsheet_grid.js', 'spreadsheet_resize.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH41') !== -1, f); */
-  for (const f of ['spreadsheet_grid.js', 'spreadsheet_resize.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH41') !== -1 || (f === 'spreadsheet_settings.js' && l.indexOf(f + '?v=SH42') !== -1), f);   // SH42: settings
+  /* (before SH44) for (const f of ['spreadsheet_grid.js', 'spreadsheet_resize.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH41') !== -1 || (f === 'spreadsheet_settings.js' && l.indexOf(f + '?v=SH42') !== -1), f);   // SH42: settings */
+  for (const f of ['spreadsheet_grid.js', 'spreadsheet_resize.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH41') !== -1 || (f === 'spreadsheet_settings.js' && (l.indexOf(f + '?v=SH42') !== -1 || l.indexOf(f + '?v=SH44') !== -1)), f);   // SH42: settings
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH41";') !== -1);
   const grid = read('spreadsheet_grid.js');
   assert.ok(grid.indexOf('/* (before SH41) function buildVirtualTable(spec) { */') !== -1);

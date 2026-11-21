@@ -399,6 +399,20 @@ function fxStripPrefixes(s) {
   return String(s).replace(/(^|[^A-Za-z0-9_.$'!])(?:_xlfn\.|_xlws\.|com\.microsoft\.)+(?=[A-Za-z])/gi, "$1");
 }
 
+/* SH44: functions that look at an error argument instead of passing it on. */
+var FX_ERROR_AWARE = { IFERROR: 1, IFNA: 1, ISBLANK: 1, ISERROR: 1, ISERR: 1, ISNA: 1 };
+/* SH44: the first error result of an earlier inner call (bag index marked in errMark) used as
+   an argument of this call, or null. A typed "#DIV/0!" string is plain text and is not marked.
+   Error-aware functions (IFERROR, ...) get null so they see the error themselves. Pure. */
+function fxErrorArg(argsText, errMark, name, bag) {
+  var re = /__S(\d+)__/g, m, nm = String(name || "").toUpperCase();
+  if (FX_ERROR_AWARE[nm]) return null;
+  while ((m = re.exec(String(argsText))) !== null) {
+    if (errMark[m[1]]) return bag[parseInt(m[1], 10)];
+  }
+  return null;
+}
+
 function evalExpr(expr) {
   var s, bag, m, name, inside, addr, n, out;
 
@@ -445,6 +459,7 @@ function evalExpr(expr) {
   //   }
   // }
   var guard = 0, call, repl, liftRanges, av;
+  var errMark = {}, errArg;   /* SH44: bag indexes that hold an error result of an inner call */
   while (guard++ < 40) {
     call = findFormulaCall(s);
     if (!call) break;
@@ -452,7 +467,21 @@ function evalExpr(expr) {
     /* put string literals back WITH their quotes so each argument stays a string */
     inside = call.args.replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
     /* (before SH16): out = evalFunc(name, splitArgs(inside)); */
-    out = evalFunc(name, splitArgs(inside), { r: evalRow, c: evalCol, si: evalSheetIdx });
+    /* (before SH44) out = evalFunc(name, splitArgs(inside), { r: evalRow, c: evalCol, si: evalSheetIdx });
+       An error inside a function (LEN(B1) with B1 #DIV/0!, UPPER(1/0)) was thrown past an outer
+       IFERROR, because calls run innermost first and IFERROR only saw the cell fail. */
+    /* SH44: a CellError becomes its error text here (kept as a string below), so an outer IFERROR
+       sees it; without IFERROR the text still fails the cell when it is used, or is the result. */
+    errArg = fxErrorArg(call.args, errMark, name, bag);
+    if (errArg !== null) out = errArg;   /* SH44: LEN(UPPER(B1)) stays #DIV/0!, not LEN("#DIV/0!") */
+    else {
+      try {
+        out = evalFunc(name, splitArgs(inside), { r: evalRow, c: evalCol, si: evalSheetIdx });
+      } catch (e) {
+        if (!(e instanceof CellError)) throw e;
+        out = e.value;
+      }
+    }
     /* SH13: any function may return a 2D array. 1×1 is already unwrapped. */
     if (isSpillArray(out)) {
       evalArrays.push(out);
@@ -464,6 +493,7 @@ function evalExpr(expr) {
       if (typeof out === "boolean") out = out ? "TRUE" : "FALSE";
       if (typeof out === "string") {
         bag.push(out);
+        if (isErrorValue(out)) errMark[bag.length - 1] = true;   /* SH44: an error result, not typed text */
         repl = "__S" + (bag.length - 1) + "__";
       } else {
         repl = String(out);

@@ -133,7 +133,8 @@ test('html: empty panel, script and stylesheet, version SH40', () => {
   assert.ok(l.indexOf('spreadsheet_empty.css?v=SH40') !== -1);
   /* (before SH41) assert.ok(l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
   /* (before SH42) assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
-  assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1);
+  /* (before SH44) assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
+  assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH44') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1);
   assert.ok(html.indexOf('<title>Spreadsheet SH40</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH40) <title>Spreadsheet SH39</title> -->') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH40";') !== -1);
