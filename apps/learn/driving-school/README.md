@@ -31,7 +31,7 @@ Loads shared/theme/hub_theme.js without modifying it. Header uses LearnHubBar.
 `core/` is DOM-free UMD and unit-testable with Node. `ui/` owns canvas, input and
 storage. No dependencies/build step. Art and 128 px icon are original code/PIL.
 
-Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad}.cjs`.
+Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad,score,ds6.test}.cjs`.
 Browser harness: `node apps/learn/driving-school/tests/browser.cjs` after starting
 `python3 -m http.server 8829` at the repository root. Requires puppeteer externally.
 Only `?test` exposes the deterministic test interface. No lesson is auto-completed.
@@ -190,3 +190,26 @@ there is nothing beyond the verge). No oncoming traffic on the open road. The
 roundabout is a straight-through crossing of a single road (no other exits). Ghat
 hairpins appear on endless routes only. Lesson text still names keyboard keys.
 No browser or real-device check of DS-3 yet.
+
+## DS-6 · Higher quality traffic cars
+A visual upgrade of the AI cars that already exist (town lessons, mock test and the open
+road's roundabout and junction cars). Their behaviour, routes and rules are unchanged.
+
+Each car is now a small low-poly model instead of three plain boxes: body, tinted windows
+with a sloping windscreen, roof, front and rear bumpers, headlights, tail lights, white
+number plates, door mirrors and four 8-sided wheels with hub caps. There are three shapes
+(hatchback, sedan, SUV) and eight paint colours; the town and the open road mix them.
+
+`core/carmodel.js` (DOM-free, three.js-free) lists the parts and merges them into one
+flat-shaded triangle list with per-vertex colours (sRGB converted to linear). `ui/scene3d.js`
+turns that into one BufferGeometry per colour and shape (cached) and one shared, double-sided
+Lambert material, so each car is ONE mesh.
+
+| Per car | Meshes | Triangles |
+| --- | --- | --- |
+| DS-5 | 3 | 36 |
+| DS-6 | 1 | 316 |
+
+Eight cars (4 town + 4 open-road pool) add about 2,500 triangles; the scene drops 16 meshes
+(open road 45 → 37, scene max 58 → 50). No textures, no shadows, nothing loaded at runtime.
+Tests: `tests/ds6.test.cjs`. No browser or real-phone check of the new look yet.

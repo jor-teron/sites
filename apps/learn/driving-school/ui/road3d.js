@@ -20,7 +20,7 @@ export function createDrive(THREE, M, opts = {}) {
   const faceGeo = new THREE.PlaneGeometry(1.3, 1.3), faces = new Map();
   const housePalette = ['#c69172', '#718eb4', '#d7c7a0', '#a589a9', '#b58d5c'].map(col);
   const islands = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.CylinderGeometry(M.ROUND.island, M.ROUND.island + .3, .5, 20), lit('#587f63')); m.visible = false; group.add(m); return m; });
-  const cars = ['#e3b85f', '#df798b', '#a8abd9', '#e3e5da'].map(c => { const m = opts.carMesh(c); m.visible = false; group.add(m); return m; });
+  const cars = ['#6fa8c9', '#c95f4a', '#7fae7a', '#5a5f66'].map((c, i) => { const m = opts.carMesh(c, i + 1); m.visible = false; group.add(m); return m; });   // DS-6 models
   const walkers = [0, 1].map(() => { const m = opts.walker(); m.visible = false; group.add(m); return m; });
   const chunks = new Map();
   let road = null, side = 'left', key = '';
