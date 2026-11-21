@@ -1,5 +1,29 @@
 # Changes
 
+## v6.1 (model selection)
+- New `module/providers.sh`: model aliases `g35` (gemini-3.5-flash-lite, the
+  default), `g31` (gemini-3.1-flash-lite), `llama`
+  (meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo, DeepInfra) and `nemo`
+  (mistralai/Mistral-Nemo-Instruct-2407, DeepInfra); full IDs also work.
+- Flags: `--model X` (all companions), `--models A,B` (one per companion;
+  count must match), `--models list`. Without them everything runs on `g35`
+  exactly as in v6.0 (presets v1-v4/ai2ai unchanged).
+- DeepInfra via its OpenAI-compatible endpoint with the same tools as Gemini;
+  key in `DEEPINFRA_API_KEY` (env, `.env` or prompt). Only the keys of the
+  providers in use are required. Requests and replies are converted per
+  provider (`build_request`, `reply_message`): DeepInfra messages are reduced
+  to standard fields, tool-call arguments are always JSON strings, missing
+  call ids are filled in. Gemini's path is unchanged.
+- Pace per provider: Gemini keeps the preset gap (5 s; 4.35 s v4/ai2ai),
+  all-DeepInfra defaults to 2 s (`DEEPINFRA_GAP`), mixed runs use the Gemini
+  gap for everyone. `--gap` overrides.
+- Models are saved in `.run/flags` (`models=`) and reused by `--continue`
+  (`--model/--models` on continue is an error). Older experiments continue on
+  `g35`. Timeline and summary headers list each companion's model when they
+  differ; every companion log keeps its `Model:` line.
+- Env: `DEEPINFRA_API_KEY`, `DEEPINFRA_GAP`, `DEEPINFRA_API_URL`. Help,
+  MANUAL.md (section 4a) and README updated.
+
 ## v6.0 (logs/ folder)
 - Each experiment keeps its logs in `<exp>/logs/`: `log.md` / `log-N.md`
   (one companion), `timeline-N.md`, `log-<name>-N.md`, `summary-N.md`.

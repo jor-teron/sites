@@ -57,7 +57,7 @@ write_summary() {
   discovery_scan
   {
     echo "# $NAME, session $SESSION summary ($AGENT_LABEL)"
-    echo "Model: $MODEL. Users: ${USERS[*]}$([ "$SOLO" = 1 ] && echo ' (SOLO control)'). Limit ${TIME_LIMIT}s, gap ${REQUEST_GAP}s."
+    echo "$(models_header). Users: ${USERS[*]}$([ "$SOLO" = 1 ] && echo ' (SOLO control)'). Limit ${TIME_LIMIT}s, gap ${REQUEST_GAP}s."
     echo "Ended at $(clock) after $(elapsed_s)s."
     echo
     for k in "${!USERS[@]}"; do

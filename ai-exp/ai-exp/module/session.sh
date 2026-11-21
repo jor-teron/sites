@@ -218,7 +218,7 @@ run_loop() {
       continue
     fi
 
-    if ! reply="$("$JQ" -ce '.choices[0].message' "$REPLY_FILE" 2>/dev/null)"; then
+    if ! reply="$(reply_message 2>/dev/null)"; then
       note "API error: response had no message"
       continue
     fi
