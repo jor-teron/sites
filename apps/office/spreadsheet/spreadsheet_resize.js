@@ -196,9 +196,92 @@ function cellTextWidthPx(merges, r, c) {
   return w;
 }
 
+/* ---------- SH46: render cache ----------
+ * autoColWidth (one layout read of #sheet-wrap and a loop over every column) ran once per
+ * cell: in the row-height autofit and in paintCell. Now it runs once per render pass
+ * (sheetPassBegin / sheetPassEnd around sheetPrefix and renderViewport).
+ * Automatic row heights (autoFitRowHeight) are memoised per sheet. The memo key is
+ * SHEET_RCACHE.ver (bumped by sheetRenderDirty on undoRecord, afterChange, recalcAll,
+ * paintAll, applyRowHeights and a settings change) plus every other input of the fit:
+ * column widths / hidden columns / the automatic width (sheetWidthSig), wrap-by-default,
+ * the default font size and the row-height config. A hand-set height or a hidden row is
+ * read live, as before. */
+var SHEET_RCACHE = {
+  ver: 1, pass: 0, autoW: null, passKey: null,
+  memos: typeof WeakMap === "function" ? new WeakMap() : null,
+  stats: { autoColWidth: 0, rowFit: 0, rowHit: 0 }
+};
+
+/* Something that changes row heights may have changed: drop the memoised heights. */
+function sheetRenderDirty() { SHEET_RCACHE.ver++; }
+
+function sheetPassBegin() {
+  if (SHEET_RCACHE.pass++ === 0) { SHEET_RCACHE.autoW = null; SHEET_RCACHE.passKey = null; }
+}
+function sheetPassEnd() {
+  SHEET_RCACHE.pass = Math.max(0, SHEET_RCACHE.pass - 1);
+  if (!SHEET_RCACHE.pass) { SHEET_RCACHE.autoW = null; SHEET_RCACHE.passKey = null; }
+}
+
+/* Pure: one text for the column widths a row fit depends on ("h" hidden, "a" automatic). */
+function sheetWidthSig(widths, hidden, autoW, n) {
+  var out = [], c;
+  for (c = 0; c < n; c++) out.push(hidden && hidden[c] ? "h" : (widths && widths[c] ? String(widths[c]) : "a"));
+  return String(autoW) + ":" + out.join(",");
+}
+
+/* Pure: memo key for automatic row heights. */
+function rowFitKey(ver, widthSig, wrapDef, fontPx, cfg) {
+  cfg = cfg || {};
+  return [ver, wrapDef ? 1 : 0, fontPx, cfg.auto, cfg.min, cfg.max, widthSig].join("|");
+}
+
+/* Pure: the memo when it was made for this key and grid, else a new empty one. */
+function rowFitMemoFor(memo, key, grid) {
+  if (memo && memo.key === key && memo.grid === grid) return memo;
+  return { key: key, grid: grid, h: [] };
+}
+
+/* The automatic column width, read once per render pass. */
+function sheetAutoW() {
+  if (SHEET_RCACHE.pass > 0) {
+    if (SHEET_RCACHE.autoW == null) SHEET_RCACHE.autoW = autoColWidth();
+    return SHEET_RCACHE.autoW;
+  }
+  return autoColWidth();
+}
+
+function sheetRowFitKeyNow() {
+  var key;
+  if (SHEET_RCACHE.pass > 0 && SHEET_RCACHE.passKey) return SHEET_RCACHE.passKey;
+  key = rowFitKey(SHEET_RCACHE.ver,
+    sheetWidthSig(typeof colWidths !== "undefined" ? colWidths : null, typeof hiddenCols !== "undefined" ? hiddenCols : null, sheetAutoW(), COLS),
+    sheetWrapDefault(), defaultSheetFontSize(), rowHeightCfg());
+  if (SHEET_RCACHE.pass > 0) SHEET_RCACHE.passKey = key;
+  return key;
+}
+
+/* autoFitRowHeight(r) through the per-sheet memo. */
+function cachedAutoFitRowHeight(r) {
+  var s = typeof workbook !== "undefined" && workbook && workbook.sheets && workbook.sheets[workbook.active];
+  var memo, old, h;
+  if (!s || !SHEET_RCACHE.memos) return autoFitRowHeight(r);
+  old = SHEET_RCACHE.memos.get(s);
+  memo = rowFitMemoFor(old, sheetRowFitKeyNow(), typeof cells !== "undefined" ? cells : null);
+  if (memo !== old) SHEET_RCACHE.memos.set(s, memo);
+  h = memo.h[r];
+  if (h === undefined) {
+    h = autoFitRowHeight(r);
+    memo.h[r] = h;
+    SHEET_RCACHE.stats.rowFit++;
+  } else SHEET_RCACHE.stats.rowHit++;
+  return h;
+}
+
 function colWidthPx(c) {
   if (typeof colWidths !== "undefined" && colWidths && colWidths[c]) return colWidths[c];
-  if (typeof autoColWidth === "function") return autoColWidth();
+  /* (before SH46) if (typeof autoColWidth === "function") return autoColWidth(); */
+  if (typeof autoColWidth === "function") return sheetAutoW();
   return (typeof CFG !== "undefined" && CFG.colWidth && CFG.colWidth.auto) ? CFG.colWidth.auto : 100;
 }
 
@@ -214,7 +297,8 @@ function usedRowHeight(r) {
     h = heights[r];
     if (typeof h === "number" && h > 0) return h;
   }
-  return autoFitRowHeight(r);
+  /* (before SH46) return autoFitRowHeight(r); */
+  return cachedAutoFitRowHeight(r);   /* SH46: memoised per sheet */
 }
 
 function autoFitRowHeight(r) {
@@ -281,6 +365,7 @@ function fitSelectedRowHeights() {
 }
 
 function autoColWidth() {
+  SHEET_RCACHE.stats.autoColWidth++;   /* SH46 */
   var wrap = document.getElementById("sheet-wrap");
   var free = (wrap ? wrap.clientWidth : 1200) - CFG.colWidth.rowHead;
   var fixed = 0, nAuto = 0, c;
@@ -324,6 +409,7 @@ function applyRowHeights() {
     if (typeof layoutFrozenVirtual === "function") layoutFrozenVirtual();
     return;
   }
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();   /* SH46 */
   if (typeof renderViewport === "function" && document.getElementById("sheet-sizer")) {
     renderViewport(true);
     return;

@@ -8,7 +8,10 @@
  * renderViewport always clears SHEET_VIEW.inside (try / finally).
  */
 
-var SHEET_VIEW = { bufR: 8, bufC: 4, key: "", inside: false, lock: 0, raf: 0, printing: false, spec: null, met: null, hold: null, wired: false };
+/* (before SH46) var SHEET_VIEW = { bufR: 8, bufC: 4, key: "", inside: false, lock: 0, raf: 0, printing: false, spec: null, met: null, hold: null, wired: false }; */
+/* SH46: batch / pending: renderViewport inside sheetRenderBatch only marks a render; one full
+   render runs when the batch ends. full counts full redraws (table rebuilt). */
+var SHEET_VIEW = { bufR: 8, bufC: 4, key: "", inside: false, lock: 0, raf: 0, printing: false, spec: null, met: null, hold: null, wired: false, batch: 0, pending: false, full: 0 };
 var SHEET_DOM = { heads: [], rows: [] };
 
 function sheetHeadH() { return 30; }
@@ -28,14 +31,41 @@ function sheetRowPx(r) {
 }
 
 /* Prefix sums of row heights and column widths. Index i is the start of row/col i. */
+/* SH46: one render pass (automatic column width read once; row heights from the memo). */
 function sheetPrefix() {
   var rowY = new Array(ROWS + 1), colX = new Array(COLS + 1);
-  var y = 0, x = 0, i;
-  rowY[0] = 0;
-  for (i = 0; i < ROWS; i++) { y += sheetRowPx(i); rowY[i + 1] = y; }
-  colX[0] = 0;
-  for (i = 0; i < COLS; i++) { x += sheetColPx(i); colX[i + 1] = x; }
+  var y = 0, x = 0, i, P = typeof sheetPassBegin === "function";
+  if (P) sheetPassBegin();
+  try {
+    rowY[0] = 0;
+    for (i = 0; i < ROWS; i++) { y += sheetRowPx(i); rowY[i + 1] = y; }
+    colX[0] = 0;
+    for (i = 0; i < COLS; i++) { x += sheetColPx(i); colX[i + 1] = x; }
+  } finally { if (P) sheetPassEnd(); }
   return { rowY: rowY, colX: colX, headH: sheetHeadH(), headW: sheetHeadW(), totalH: y, totalW: x };
+}
+
+/* SH46: run fn with renders held; the first renderViewport inside marks one full render,
+   which runs once when the outermost batch ends (afterChange, sheet switch, open, undo). */
+function sheetRenderBatch(fn) {
+  sheetRenderHold();
+  try { return fn(); }
+  finally { sheetRenderRelease(); }
+}
+function sheetRenderHold() {
+  SHEET_VIEW.batch = (SHEET_VIEW.batch || 0) + 1;
+  return true;
+}
+function sheetRenderRelease() {
+  SHEET_VIEW.batch--;
+  if (SHEET_VIEW.batch <= 0) {
+    SHEET_VIEW.batch = 0;
+    if (SHEET_VIEW.pending) {
+      SHEET_VIEW.pending = false;
+      renderViewport(true);
+      if (typeof renderCharts === "function") renderCharts();   /* chart layer follows the new scroll size */
+    }
+  }
 }
 
 /* SH41: drawn height of row r from the prefix sums (the same number the scroll box uses). */
@@ -395,7 +425,17 @@ function syncVirtualWidths() {
   if (SHEET_VIEW.spec) syncVirtualBox(m, SHEET_VIEW.spec);
 }
 
+/* SH46: held inside sheetRenderBatch; otherwise one render pass around the old body. */
 function renderViewport(force) {
+  var P;
+  if (SHEET_VIEW.batch > 0) { SHEET_VIEW.pending = true; return; }
+  P = typeof sheetPassBegin === "function";
+  if (P) sheetPassBegin();
+  try { renderViewportCore(force); } finally { if (P) sheetPassEnd(); }
+}
+
+/* (before SH46) function renderViewport(force) { */
+function renderViewportCore(force) {
   var wrap = document.getElementById("sheet-wrap"), m, spec;
   if (!wrap || SHEET_VIEW.inside) return;
   if (!document.getElementById("sheet-sizer")) ensureSheetChrome();
@@ -409,6 +449,7 @@ function renderViewport(force) {
   SHEET_VIEW.inside = true;
   SHEET_VIEW.key = spec.key;
   SHEET_VIEW.spec = spec;
+  SHEET_VIEW.full++;   /* SH46 */
   /* (before SH41) the steps below ran without try / finally, so one error left
      SHEET_VIEW.inside true and scrolling never redrew again.
   buildVirtualTable(spec);
@@ -949,6 +990,7 @@ function paintAll() {
 }
 */
 function paintAll() {
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();   /* SH46: styles may have changed row heights */
   if (SHEET_VIEW.inside) { paintRendered(); return; }
   renderViewport(true);
 }

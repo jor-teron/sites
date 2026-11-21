@@ -239,6 +239,9 @@ function importXlsxFile(file, o) {
       SHEET_HOS.detach();
       SHEET_HOS.skipWrite = true;
     }
+    /* SH46: afterChange, applyWidths and highlightSel below share one full render */
+    var held = typeof sheetRenderHold === "function" ? sheetRenderHold() : false;
+    try {
     afterChange();
     if (typeof saveStore === "function") clearTimeout(saveStore._t);
     var saved = Promise.resolve();
@@ -259,6 +262,7 @@ function importXlsxFile(file, o) {
     if (typeof applyWidths === "function") applyWidths();
     if (typeof renderSheetTabs === "function") renderSheetTabs();
     highlightSel();
+    } finally { if (held) sheetRenderRelease(); }
     var msg = "Loaded " + sheets.length + " sheet" + (sheets.length === 1 ? "" : "s");
     if (cutSheets) msg += " (" + cutSheets + " extra sheet" + (cutSheets === 1 ? "" : "s") + " not opened; max " + ((CFG.sheets && CFG.sheets.max) || 20) + ")";
     /* (before SH24) if (dropped) msg += ", " + dropped + " cells outside A–Z × " + ROWS + " skipped"; */

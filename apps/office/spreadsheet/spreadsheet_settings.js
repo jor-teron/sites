@@ -41,7 +41,8 @@ var SHEET_THEME_KEY = "spreadsheet_theme";      // resolved 'dark' | 'light' for
 /* (before SH44) var SHEET_VERSION = "SH42";                      // legacy: "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 /* (before SH45) var SHEET_VERSION = "SH44";                      // legacy: "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 /* (before SH49) var SHEET_VERSION = "SH45";                      // legacy: "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
-var SHEET_VERSION = "SH49";                      // legacy: "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
+/* (before SH46) var SHEET_VERSION = "SH49";                      // legacy: "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
+var SHEET_VERSION = "SH46";                      // legacy: "SH49" / "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
 var SHEET_FONTS = ["Segoe UI", "Arial", "Calibri", "Times New Roman", "Consolas"];
 /* (before HO3) var SHEET_SIZES = [11, 12, 13, 14, 16, 18];   // px */
 var SHEET_SIZES = [9, 10, 11, 12, 14, 16, 18];   // HO3: Settings default size, in pt
@@ -99,6 +100,7 @@ function sheetApplyTheme() {
 
 function sheetApplySetting(k) {
   var s = SHEET_SETTINGS.s, b = document.body;
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();   /* SH46: font / wrap settings change row heights */
   /* legacy (SH1): if (!k || k === "theme") OfficeTheme.apply(OfficeTheme.isDark(s.theme), { lightClass: "sheet-light", key: SHEET_THEME_KEY }); */
   if (!k || k === "theme") sheetApplyTheme();
   if (!k || k === "gridlines") b.classList.toggle("sheet-no-grid", !s.gridlines);

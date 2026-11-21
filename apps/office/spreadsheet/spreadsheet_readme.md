@@ -626,5 +626,15 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Old lines kept as `(before SH49)` comments. Title and `SHEET_VERSION` are SH49; `?v=SH49` on formula, state, storage, settings, undo, rows, sheets, data, xlsx, lazy, hos, saveformat, empty and spreadsheet.css.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh49-lazy-sheets.cjs`.
 
+## SH46: faster grid rendering (cached widths and row heights)
+
+- **Automatic column width once per render.** `autoColWidth` (a layout read of `#sheet-wrap` plus a loop over all 182 columns) ran for every cell: in the row-height autofit and in `paintCell`'s wrap check. `colWidthPx` now uses `sheetAutoW()`, read once per render pass (`sheetPassBegin` / `sheetPassEnd` around `sheetPrefix` and `renderViewport`). Outside a pass (a one-off caller) it is read live, as before.
+- **Automatic row heights are memoised per sheet** (`cachedAutoFitRowHeight`, a WeakMap per sheet object in `SHEET_RCACHE`). Key (`rowFitKey`): `SHEET_RCACHE.ver` plus the column widths / hidden columns / automatic width (`sheetWidthSig`), wrap by default, the default font size and the row-height config, and the sheet's cell grid. `sheetRenderDirty()` bumps `ver` on `undoRecord` (every edit), `afterChange`, `recalcAll` (values, spills, SH49 sheet loads), `paintAll` (style changes: wrap, font size, format), `applyRowHeights`, undo / redo and a settings change. A hand-set height, a hidden or filtered row are read live. Scrolling and moving the selection change none of these, so a scroll frame only sums the cached heights.
+- **One full render per change.** `sheetRenderBatch` holds `renderViewport` while `afterChange`, a sheet switch, an undo / redo and the xlsx open run; the first request is kept and one forced render runs at the end (the chart layer is refreshed after it). Before, an open drew the table 4 times and a switch 2 times.
+- **Rendering is the same.** Prefix sums, row heights (SH39 wrap, SH41 drawn heights), frozen rows and widths are equal to the uncached computation (tests, and a before / after screenshot of a wrapped, frozen sheet with set widths and a set height that differs only in the version label).
+- **Timing (headless Chrome, desktop, median of 3, before -> after):** fit.xlsx open-to-paint 567 -> 245 ms; multi.xlsx 1030 -> 676 ms, first switch 464 -> 135 ms; one20k.xlsx 1571 -> 1215 ms; big.xlsx 5006 -> 4736 ms (XLSX.read is most of it; SH47), first switch 526 -> 170 ms. A scroll frame 165-202 -> 12-14 ms. autoColWidth calls per open 46764 -> 2. Full renders per open 4 -> 2 (one is the blank grid when the empty panel closes, before the file is read; the opened workbook draws once).
+- Old lines kept as `(before SH46)` comments. Title and `SHEET_VERSION` are SH46 (after SH49); `?v=SH46` on grid, resize, logic, sheets, undo, formula, settings and xlsx.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh46-render-cache.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
