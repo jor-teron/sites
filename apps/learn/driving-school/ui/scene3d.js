@@ -4,7 +4,8 @@
    mirrors flip their projection (a real mirror shows a left-right reversed picture).
    DS-3: the open road (ui/road3d.js) is a third area beside the lot and the town.
    DS-6: AI cars are merged low-poly models (core/carmodel.js), one mesh each.
-   DS-7: trees are merged low-poly types (core/treemodel.js), one InstancedMesh per type. */
+   DS-7: trees are merged low-poly types (core/treemodel.js), one InstancedMesh per type.
+   DS-8: town buildings are merged models (core/buildingmodel.js), one mesh each. */
 import { createDrive } from './road3d.js';
 export function createWorld(THREE, M, opts = {}) {
   const scene = new THREE.Scene(), DS = THREE.DoubleSide;
@@ -60,6 +61,8 @@ export function createWorld(THREE, M, opts = {}) {
   let townSide = null, signalLamps = [], aiCars = [], walkers = [];
   // DS-6: one merged, vertex-coloured mesh per car (body, windows, roof, bumpers, lights, plates,
   // mirrors, wheels) from core/carmodel.js; geometry cached per colour + shape, one shared material.
+  const vcGeometry = a => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(a.position, 3)); g.setAttribute('normal', new THREE.BufferAttribute(a.normal, 3)); g.setAttribute('color', new THREE.BufferAttribute(a.color, 3)); g.computeBoundingSphere(); return g; };
+  const buildingMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: DS });   // DS-8
   const carGeos = new Map(), carMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: DS });
   function carMesh(color, variant = 1) {
     const name = M.carVariantOf(variant), key = color + name;
@@ -96,9 +99,12 @@ export function createWorld(THREE, M, opts = {}) {
       flat(town, w, .2, 0, x + w / 2, y, .075, 0, paint); flat(town, w, .2, 0, x + w / 2, y + d, .075, 0, paint);
       flat(town, .2, d, 0, x, y + d / 2, .075, 0, paint); flat(town, .2, d, 0, x + w, y + d / 2, .075, 0, paint);
     }
+    // DS-8: each town building is one merged vertex-colour mesh (windows, parapet, tank, entrance,
+    // signboard; awnings on SHOPS) from core/buildingmodel.js. Same 22 x 15 m footprint and height.
     T.buildings.forEach(([x, y, name, color], i) => {
-      const h = 7 + (i % 3) * 3, b = new THREE.Mesh(new THREE.BoxGeometry(22, h, 15), lit(color)); b.position.set(x + 11, h / 2, y + 7.5); town.add(b);
-      sprite(town, label(name, { bg: '#ffffff', fg: '#203040' }), x + 11, h + 1.4, y + 7.5, 8, 2);
+      const h = M.townBuildingHeight(i), a = M.townBuildingArrays(name, color, h, M.frontFace(x, y, 22, 15, T.roads));
+      const b = new THREE.Mesh(vcGeometry(a), buildingMat); b.name = 'building'; b.position.set(x + 11, 0, y + 7.5); town.add(b);
+      sprite(town, label(name, { bg: '#ffffff', fg: '#203040' }), x + 11, h + 2, y + 7.5, 8, 2);   // DS-8: 0.6 m higher, clear of the new parapet
     });
     // Traffic signal for eastbound traffic: faces west (towards the approaching driver).
     const S = T.signal, pole = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, 3.2, 6), lit('#2b3238')); pole.position.set(S.x, 1.6, S.y); town.add(pole);

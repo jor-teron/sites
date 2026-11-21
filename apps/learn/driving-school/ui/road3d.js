@@ -19,7 +19,11 @@ export function createDrive(THREE, M, opts = {}) {
   const treeGeo = type => { const a = M.buildTreeArrays(type), g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(a.position, 3)); g.setAttribute('normal', new THREE.BufferAttribute(a.normal, 3)); g.setAttribute('color', new THREE.BufferAttribute(a.color, 3)); return g; };
   const treeKinds = {}; for (const t of M.TREE_TYPES) { const m = treeKinds[t] = pool(treeGeo(t), treeMat, TREE_CAP); m.setColorAt(0, tintCol.setRGB(1, 1, 1)); }   // colour buffer from the start
   const poles = pool(up(new THREE.CylinderGeometry(.09, .12, 1, 5)), lit('#59626a'), 160);
-  const houses = pool(up(new THREE.BoxGeometry(1, 1, 1)), lit('#ffffff'), 220);
+  // DS-8: houses are four merged unit models (2, 3 or 4 floors with terrace and tank; village hut with
+  // thatch), one InstancedMesh each, 220 in total as before. Instance colour paints the walls.
+  const HOUSE_CAP = 220, houseMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: DS }), white = col('#ffffff');
+  const houseKinds = {};
+  for (const k of M.HOUSE_TYPES) { const a = M.houseArrays(k), g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(a.position, 3)); g.setAttribute('normal', new THREE.BufferAttribute(a.normal, 3)); g.setAttribute('color', new THREE.BufferAttribute(a.color, 3)); const m = houseKinds[k] = pool(g, houseMat, HOUSE_CAP); m.setColorAt(0, white); }
   const posts = pool(up(new THREE.CylinderGeometry(.05, .05, 1, 5)), lit('#30383e'), 60);
   const faceGeo = new THREE.PlaneGeometry(1.3, 1.3), faces = new Map();
   const housePalette = ['#c69172', '#718eb4', '#d7c7a0', '#a589a9', '#b58d5c'].map(col);
@@ -88,7 +92,7 @@ export function createDrive(THREE, M, opts = {}) {
   }
   function dropChunk(k) { const c = chunks.get(k); for (const m of c.meshes) { group.remove(m); m.geometry.dispose(); } chunks.delete(k); }
   function refill() {
-    let treeTotal = 0; for (const t of M.TREE_TYPES) treeKinds[t].count = 0; poles.count = houses.count = posts.count = 0; for (const f of faces.values()) f.count = 0;
+    let treeTotal = 0; for (const t of M.TREE_TYPES) treeKinds[t].count = 0; let houseTotal = 0; for (const k of M.HOUSE_TYPES) houseKinds[k].count = 0; poles.count = posts.count = 0; for (const f of faces.values()) f.count = 0;
     const set = (mesh, cap, fn) => { if (mesh.count >= cap) return; o.position.set(0, 0, 0); o.rotation.set(0, 0, 0); o.scale.set(1, 1, 1); fn(o); o.updateMatrix(); mesh.setMatrixAt(mesh.count++, o.matrix); };
     const sg = side === 'right' ? -1 : 1;
     for (const c of chunks.values()) {
@@ -99,7 +103,12 @@ export function createDrive(THREE, M, opts = {}) {
         M.treeTint(t.x, t.y, tint); m.setColorAt(i, tintCol.setRGB(tint[0], tint[1], tint[2])); treeTotal++;
       }
       for (const t of c.scenery.poles) set(poles, 160, q => { q.position.set(t.x, t.h, t.y); q.scale.set(1, 6, 1); });
-      for (const t of c.scenery.houses) { const i = houses.count; set(houses, 220, q => { q.position.set(t.x, t.h * .4 - .1, t.y); q.rotation.y = -t.dir; q.scale.set(t.w, t.ht, t.d); }); if (i < houses.count) houses.setColorAt(i, housePalette[t.c % housePalette.length]); }
+      for (const t of c.scenery.houses) {
+        if (houseTotal >= HOUSE_CAP) break;
+        const m = houseKinds[M.houseKind(t)], i = m.count;
+        set(m, HOUSE_CAP, q => { q.position.set(t.x, t.h * .4 - .1, t.y); q.rotation.y = -t.dir; q.scale.set(t.w, t.ht, t.d); });
+        m.setColorAt(i, t.c === 4 ? white : housePalette[t.c % housePalette.length]); houseTotal++;   // huts carry their own mud and thatch colours
+      }
       for (const g of c.signs) {
         const p = M.pointAtS(road, g.s); if (!p) continue;
         const [x, , z] = lp(p, sg * (p.width / 2 + 1.4)), face = faceFor(g.kind, g.text);
@@ -107,7 +116,7 @@ export function createDrive(THREE, M, opts = {}) {
         set(face, 16, q => { q.position.set(x, p.h + 2.6, z); q.rotation.y = Math.atan2(-Math.cos(p.dir), -Math.sin(p.dir)); });
       }
     }
-    for (const m of [...Object.values(treeKinds), poles, houses, posts, ...faces.values()]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+    for (const m of [...Object.values(treeKinds), poles, ...Object.values(houseKinds), posts, ...faces.values()]) { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
   }
   function reset(r, sd) {
     for (const k of [...chunks.keys()]) dropChunk(k);
@@ -128,5 +137,5 @@ export function createDrive(THREE, M, opts = {}) {
     cars.forEach((m, i) => { const ai = w.cars[i]; m.visible = !!ai; if (ai) { m.position.set(ai.x, ai.h || 0, ai.y); m.rotation.y = -ai.heading; } });
     walkers.forEach((m, i) => { const p = w.pedestrians[i]; m.visible = !!p; if (p) m.position.set(p.x, p.h || 0, p.y); });
   }
-  return { group, update, reset, trees: treeKinds, get chunkCount() { return chunks.size; }, get chunkKeys() { return [...chunks.keys()]; } };
+  return { group, update, reset, trees: treeKinds, houses: houseKinds, get chunkCount() { return chunks.size; }, get chunkKeys() { return [...chunks.keys()]; } };
 }
