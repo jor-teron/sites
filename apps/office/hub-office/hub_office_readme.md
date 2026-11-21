@@ -22,7 +22,7 @@ The unified Start Center and multi-document tabbed container for the **Hub Offic
 <!-- (before HO7) HO6 was a minimalist Start Page: Open file on top, a New row of five icons, a Recent list, and a Supported formats link. Suite cards were removed. -->
 HO7 brings the suite cards back under a Hub Office header:
 - A **Hub Office** heading and the line "Write, calculate, present and organise. Files save on this device."
-- One card per suite (Writer, Spreadsheet, Presentation, Base, Tables), with the icon, name, a short description, and format chips grouped as Open, Save and Export. The native save format is marked. Clicking a card, or its Open button, opens a blank document in a new tab.
+- One card per suite (Writer, Spreadsheet, Presentation, Base, Tables), with the icon, name, a short description, and format chips grouped as Open, Save and Export. The native save format is marked. Clicking a card opens a blank document in a new tab. (before HO15) Clicking a card, or its Open button, opens a blank document in a new tab.
 - **Open file** (Ctrl+O) and a drop hint sit under the cards. Drop a file anywhere on the Start Page; a subtle overlay appears while dragging.
 - **Recent**: a plain list of up to 8 files, with the app icon, name and a relative time. An empty list shows one quiet line.
 - **Settings** (HO9; moved in HO13): <!-- (before HO13) a compact section under Recent, --> now on its own Settings page (`#view-settings`), opened from the Settings tile, one line per setting (font and size, paper and units, date and number format, autosave, save location, your name). Values are stored in `localStorage` key `hubOffice.settings` via `../shared/office-shared-settings.js`. They are defaults for new documents only; each app's own settings still win, and already-open documents are not restyled. Suites do not read these yet.
@@ -35,9 +35,10 @@ Files already on the Hub local drive (Documents) open through `#drive=…&file=�
 <!-- (before HO13) - `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent, Settings), dynamic document view container. -->
 - `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent; the old Settings section is commented out), HO13 Settings view (`#view-settings`, heading, `#btn-settings-close`, the same `#ho-settings` controls), dynamic document view container. Loads `../shared/office-hubbar.js`, `../shared/office-docname.js`, `../shared/office-newdoc.js` and `../shared/office-shared-settings.js`.
 - `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO7 Start Page cards and Open/drop area, HO8 Home button and empty-row hide, HO9 Settings rows, HO11 tab-title ellipsis, HO13 Settings page, Close button and tile.
-- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO12 new-blank-tab URLs (`?new=1` via `office-newdoc.js`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. HO13 Settings tile and tab (`openSettingsTab`, `closeSettingsTab`). HO14 close-tab rule. Version constant: `HO14`. (before HO14) Version constant: `HO13`. (before HO13) Version constant: `HO12b`. (before HO12b) Version constant: `HO12`.
+- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO12 new-blank-tab URLs (`?new=1` via `office-newdoc.js`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. HO13 Settings tile and tab (`openSettingsTab`, `closeSettingsTab`). HO14 close-tab rule. HO15 tile-only opening. Version constant: `HO15`. (before HO15) Version constant: `HO14`. (before HO14) Version constant: `HO13`. (before HO13) Version constant: `HO12b`. (before HO12b) Version constant: `HO12`.
 - `hub_office_icon.png`: 128x128 RGBA suite icon.
 - `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, formatChipGroups, tab creation/switching/closing, Untitled/file-name labels, extension routing, and the Settings section.
+- `tests/ho15-tiles.test.cjs`: HO15 tiles with no Open buttons, no tab-bar +, tile click / Enter / Space open the right tab or Settings.
 - `tests/ho14-tabs.test.cjs`: HO14 close-tab rule (never Settings for a closed document) and Home leaving Settings open.
 - `tests/ho13-settings.test.cjs`: HO13 Settings tab placement, single instance, close-to-Home, tab-row visibility, Home-only title bar, and the Settings page markup.
 - `tests/ho10-titlebar.test.cjs`: Pure compose / prefix / cap / File-from-tabs / update-patch tests for the HO10 relay.
@@ -78,6 +79,12 @@ node --test apps/office/shared/tests/ho12-newdoc.test.cjs
 node --test apps/office/shared/tests/ho12b-untitled.test.cjs
 node --test apps/office/writer/test/test-ho12b-untitled.cjs
 ```
+
+## HO15 — tiles open on tap; duplicate buttons removed
+- Suite cards no longer have the `➕ Open <app>` button, and the Settings tile no longer has `⚙️ Open Settings`. Both did the same as tapping the tile. Tap, click, Enter or Space on a tile still opens it (`role="button"`, `aria-label` kept). The old code is commented `(before HO15)`.
+- The tab-bar `+` (`#btn-add-tab`, new Writer document) is commented out in the HTML, its handler and `.ho-tab-add` CSS too. There was no keyboard shortcut for a new document; Ctrl+O (Open) is unchanged. Use the Writer tile for a new document.
+- Tiles look tappable: pointer cursor, hover, focus ring and a pressed (`:active`) state; on touch screens the hover colour is dropped so only the press shows. The bottom padding is even without the actions row.
+- Version constant and cache tokens: `HO15`. Tests: `tests/ho15-tiles.test.cjs`.
 
 ## HO14 — closing a document never jumps to Settings
 - `nextTabAfterClose`: closing a document goes to the nearest document tab on its left; if there is none, it goes to the Start Page. It never returns the Settings tab for a closed document. Closing Settings still goes to the Start Page. (before HO14) a closed document went to whatever tab sat before it in the strip, which could be Settings.

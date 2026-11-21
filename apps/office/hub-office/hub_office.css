@@ -156,6 +156,7 @@ html, body {
   display: none;
 }
 
+/* (before HO15)
 .ho-tab-add {
   width: 28px;
   height: 28px;
@@ -176,6 +177,7 @@ html, body {
   background: var(--ho-surface-hover);
   color: var(--ho-text);
 }
+*/
 
 /* HO8: standalone Home button in the tab row. Hidden in Hub once
    body.hub-titlebar is set, because Home then lives in the title bar. */
@@ -313,7 +315,7 @@ body.hub-titlebar .ho-home-btn {
 
 .ho-btn-primary:focus-visible,
 .ho-card:focus-visible,
-.ho-btn-new:focus-visible,
+/* (before HO15) .ho-btn-new:focus-visible, */
 .ho-home-btn:focus-visible,
 .ho-recent-row:focus-visible,
 .ho-settings select:focus-visible,
@@ -348,6 +350,41 @@ body.hub-titlebar .ho-home-btn {
 .ho-card:hover {
   border-color: var(--ho-accent);
   background: var(--ho-surface-hover);
+}
+
+/* HO15: the whole tile is the button now (no Open row), so make it read
+   as tappable and keep the bottom even without the actions row. */
+.ho-card {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  padding-bottom: 16px;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.ho-card:focus-visible {
+  border-color: var(--ho-focus);
+  background: var(--ho-surface-hover);
+}
+
+.ho-card:active {
+  border-color: var(--ho-accent);
+  background: color-mix(in srgb, var(--ho-accent) 10%, var(--ho-surface));
+}
+
+.ho-card > :last-child {
+  margin-bottom: 0;
+}
+
+@media (hover: none) {
+  .ho-card:hover {
+    border-color: var(--ho-border);
+    background: var(--ho-surface);
+  }
+  .ho-card:active {
+    border-color: var(--ho-accent);
+    background: color-mix(in srgb, var(--ho-accent) 10%, var(--ho-surface));
+  }
 }
 
 .ho-card-header {
@@ -424,6 +461,7 @@ body.hub-titlebar .ho-home-btn {
   font-weight: 700;
 }
 
+/* (before HO15)
 .ho-card-actions {
   display: flex;
   align-items: center;
@@ -453,6 +491,7 @@ body.hub-titlebar .ho-home-btn {
   color: var(--ho-accent-ink);
   border-color: var(--ho-accent);
 }
+*/
 
 /* Open file / drop area under the cards */
 .ho-open-box {

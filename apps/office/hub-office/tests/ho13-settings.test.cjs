@@ -235,7 +235,8 @@ test('HTML: Settings page holds every setting, with Close; Start Page has none l
   const html = live(raw);
   assert.ok(raw.includes('(before HO13)'), 'old markup is commented with a (before HO13) marker');
   /* (before HO14) assert.ok(html.includes('content="HO13"') && html.includes('hub_office.js?v=HO13') && html.includes('hub_office.css?v=HO13')); */
-  assert.ok(html.includes('content="HO14"') && html.includes('hub_office.js?v=HO14') && html.includes('hub_office.css?v=HO14'));
+  /* (before HO15) assert.ok(html.includes('content="HO14"') && html.includes('hub_office.js?v=HO14') && html.includes('hub_office.css?v=HO14')); */
+  assert.ok(html.includes('content="HO15"') && html.includes('hub_office.js?v=HO15') && html.includes('hub_office.css?v=HO15'));
   const startAt = html.indexOf('id="view-start"');
   const settingsAt = html.indexOf('id="view-settings"');
   assert.ok(startAt > 0 && settingsAt > startAt, 'Settings view exists after the Start Page');
