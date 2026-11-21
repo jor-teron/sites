@@ -33,11 +33,14 @@ html.light .dc-go { color: #fff; }
 .dc-more[open] summary::before { transform: rotate(90deg); }
 .dc-more summary:hover { background: var(--panel2); }
 .dc-more > ol { margin-top: 6px; }
+.dc-forms { margin: 0; color: var(--muted); }
+.dc-forms .dc-lab { font-size: 0.95rem; }
+.dc-more > .dc-rel { margin-top: 6px; }
 .dc-def { font-size: 1.02rem; }
 .dc-ex { color: var(--muted); font-style: italic; margin-top: 2px; }
 .dc-rel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
 .dc-lab { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
-.dc-chip { min-height: 36px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel2); color: var(--accent); }
+.dc-chip { min-height: 44px; max-width: 100%; overflow-wrap: anywhere; text-align: left; padding: 0 12px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel2); color: var(--accent); }
 .dc-chip:hover { border-color: var(--accent); }
 .dc-wod { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; text-align: left; border-radius: 16px; border: 1px solid var(--line); border-left: 6px solid var(--accent); background: var(--panel); }
 .dc-wod b { font-size: 1.6rem; } .dc-wod i { color: var(--muted); }
