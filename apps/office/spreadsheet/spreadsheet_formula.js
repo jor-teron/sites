@@ -930,6 +930,7 @@ function recalcAll() {
     n++;
   } while (L && L.grew && n < 25);
   if (L) L.stale = false;
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();   /* SH46: values (and spills) changed row heights */
 }
 
 /* (before SH49) function recalcAll() { */

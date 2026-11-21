@@ -10,7 +10,15 @@
 /**
  * Recalc, repaint and save after any change to cells
  */
+/* SH46: one full render per change (the steps below asked for 2-3), heights re-fitted once. */
 function afterChange() {
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();
+  if (typeof sheetRenderBatch === "function") return sheetRenderBatch(afterChangeCore);
+  return afterChangeCore();
+}
+
+/* (before SH46) function afterChange() { */
+function afterChangeCore() {
   recalcAll();
   if (typeof applyFilters === "function") applyFilters();
   /* (before SH18)

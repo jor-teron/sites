@@ -420,7 +420,8 @@ test('wiring: title, VERSION, ?v= tokens, script order, readme', function () {
     /* (before SH44) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-2])').test(live), f); */
     /* (before SH45) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-4])').test(live), f); */
     /* (before SH49) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-5])').test(live), f); */
-    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-5]|49)').test(live), f);
+    /* (before SH46) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-5]|49)').test(live), f); */
+    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(3[3-9]|4[0-6]|49)').test(live), f);
   }
   /* (before SH35) assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v=SH33')); */
   assert.ok(live.indexOf('spreadsheet_xlsm.js?v=SH33') > live.indexOf('spreadsheet_xlsx.js?v='));

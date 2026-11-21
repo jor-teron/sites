@@ -54,6 +54,7 @@ function undoSnapshot() {
 
 function undoRecord(tag) {
   var now = Date.now();
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();   /* SH46: an edit follows */
   if (UNDO_MERGE_TAGS.indexOf(tag) !== -1 && tag === UNDO.lastTag && now - UNDO.lastTime < CFG.undo.mergeMs) {
     UNDO.lastTime = now;
     return;
@@ -66,7 +67,15 @@ function undoRecord(tag) {
   undoButtons();
 }
 
+/* SH46: one full render per undo / redo */
 function undoRestore(snap) {
+  if (typeof sheetRenderDirty === "function") sheetRenderDirty();
+  if (typeof sheetRenderBatch === "function") return sheetRenderBatch(function () { undoRestoreCore(snap); });
+  return undoRestoreCore(snap);
+}
+
+/* (before SH46) function undoRestore(snap) { */
+function undoRestoreCore(snap) {
   var d = JSON.parse(snap), i, r, c, sh, src, used = {};
   workbook.sheets = [];
   for (i = 0; i < d.sheets.length; i++) {

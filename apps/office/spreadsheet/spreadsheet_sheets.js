@@ -5,7 +5,14 @@
  * (Sum, Average, Count). In-app dialogs only.
  */
 
+/* SH46: one full render per sheet operation */
 function afterSheetOp() {
+  if (typeof sheetRenderBatch === "function") return sheetRenderBatch(afterSheetOpCore);
+  return afterSheetOpCore();
+}
+
+/* (before SH46) function afterSheetOp() { */
+function afterSheetOpCore() {
   bindActiveSheet();
   if (typeof applyFilters === "function") applyFilters();
   if (typeof applyWidths === "function") applyWidths();
@@ -26,12 +33,24 @@ function switchSheet(i) {
   /* SH22: a formula draft is open (or already pointing): only switch the view, keep editing */
   if (typeof pointOnTab === "function" && pointOnTab(i)) return;
   if (i === workbook.active) { renderSheetTabs(); return; }
+  /* (before SH46) the steps below ran unbatched (blurEditing could render once more).
   blurEditing();
   stashSheetView();
   workbook.active = i;
   bindActiveSheet();
   restoreSheetView();
   afterSheetOp();
+  */
+  function go() {
+    blurEditing();
+    stashSheetView();
+    workbook.active = i;
+    bindActiveSheet();
+    restoreSheetView();
+    afterSheetOp();
+  }
+  if (typeof sheetRenderBatch === "function") sheetRenderBatch(go);   /* SH46: one full render */
+  else go();
 }
 
 function addSheet() {
