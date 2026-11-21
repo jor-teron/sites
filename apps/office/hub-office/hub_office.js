@@ -1,5 +1,7 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO14: closing a document goes to the nearest document tab to its
+/* HO15: the tiles open on tap; the duplicate '➕ Open <app>' and
+   '⚙️ Open Settings' buttons and the tab-bar + are gone.
+   HO14: closing a document goes to the nearest document tab to its
    left, else Home. It never lands on the Settings tab.
    HO13: a Settings tile after Tables opens one Settings tab, always
    right after Home in the tab strip. The Settings page holds all the
@@ -41,7 +43,8 @@
   /* (before HO12b) const VERSION = 'HO12'; */
   /* (before HO13) const VERSION = 'HO12b'; */
   /* (before HO14) const VERSION = 'HO13'; */
-  const VERSION = 'HO14';
+  /* (before HO15) const VERSION = 'HO14'; */
+  const VERSION = 'HO15';
 
   const SUITES = [
     {
@@ -974,6 +977,8 @@
         fmts.appendChild(g);
       });
 
+      /* (before HO15) the card ended with a '➕ Open <app>' button that
+         called the same openApp as tapping the card:
       const actions = document.createElement('div');
       actions.className = 'ho-card-actions';
 
@@ -991,7 +996,8 @@
       });
       actions.appendChild(btnNew);
 
-      card.append(header, desc, fmts, actions);
+      card.append(header, desc, fmts, actions); */
+      card.append(header, desc, fmts);
       grid.appendChild(card);
     });
 
@@ -1034,6 +1040,7 @@
     desc.className = 'ho-card-desc';
     desc.textContent = 'Font, paper, date and number format, autosave, save location and your name.';
 
+    /* (before HO15) a '⚙️ Open Settings' button did the same as tapping the tile:
     const actions = document.createElement('div');
     actions.className = 'ho-card-actions';
     const btn = document.createElement('button');
@@ -1050,7 +1057,8 @@
     });
     actions.appendChild(btn);
 
-    card.append(header, desc, actions);
+    card.append(header, desc, actions); */
+    card.append(header, desc);
     grid.appendChild(card);
   }
 
@@ -1199,10 +1207,12 @@
       btnHome.addEventListener('click', () => switchTab('start'));
     }
 
+    /* (before HO15) the tab-bar + opened a new Writer document. The button
+       is commented out in the HTML; this stays null-safe if it returns.
     const btnAddTab = document.getElementById('btn-add-tab');
     if (btnAddTab) {
       btnAddTab.addEventListener('click', () => createDocTab('writer'));
-    }
+    } */
 
     /* HO13: Settings page Close button, and Escape inside the page. */
     const btnSettingsClose = document.getElementById('btn-settings-close');

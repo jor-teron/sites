@@ -110,6 +110,7 @@ function load() { return loadWithDom().HO; }
 const T = (id, type) => ({ id: id, type: type });
 const ids = (tabs) => JSON.parse(JSON.stringify(tabs.map((t) => t.id)));
 
+/* (before HO15)
 test('VERSION is HO14 and the page cache tokens match', () => {
   const HO = load();
   assert.equal(HO.VERSION, 'HO14');
@@ -118,6 +119,16 @@ test('VERSION is HO14 and the page cache tokens match', () => {
   assert.ok(html.includes('hub_office.js?v=HO14'));
   assert.ok(html.includes('hub_office.css?v=HO14'));
   assert.ok(html.includes('<title>Hub Office HO14</title>'));
+});
+*/
+test('VERSION is HO15 and the page cache tokens match', () => {
+  const HO = load();
+  assert.equal(HO.VERSION, 'HO15');
+  const html = fs.readFileSync(HTML_PATH, 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  assert.ok(html.includes('content="HO15"'));
+  assert.ok(html.includes('hub_office.js?v=HO15'));
+  assert.ok(html.includes('hub_office.css?v=HO15'));
+  assert.ok(html.includes('<title>Hub Office HO15</title>'));
 });
 
 test('nextTabAfterClose: [start, settings, doc-1] close doc-1 -> start', () => {
