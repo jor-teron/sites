@@ -2,7 +2,8 @@
    text/sign textures come from optional opts.label / opts.sign factories, so Node can
    build and update the whole scene in tests. Every material is double-sided because the
    mirrors flip their projection (a real mirror shows a left-right reversed picture).
-   DS-3: the open road (ui/road3d.js) is a third area beside the lot and the town. */
+   DS-3: the open road (ui/road3d.js) is a third area beside the lot and the town.
+   DS-6: AI cars are merged low-poly models (core/carmodel.js), one mesh each. */
 import { createDrive } from './road3d.js';
 export function createWorld(THREE, M, opts = {}) {
   const scene = new THREE.Scene(), DS = THREE.DoubleSide;
@@ -47,12 +48,18 @@ export function createWorld(THREE, M, opts = {}) {
   // Town (lessons 7-13 and the mock test).
   const town = new THREE.Group(); scene.add(town);
   let townSide = null, signalLamps = [], aiCars = [], walkers = [];
-  function carMesh(color) {
-    const g = new THREE.Group(), body = lit(color);
-    const b = new THREE.Mesh(new THREE.BoxGeometry(4.2, .8, 1.8), body); b.position.y = .6; g.add(b);
-    const cab = new THREE.Mesh(new THREE.BoxGeometry(2.2, .65, 1.6), lit('#25343f')); cab.position.set(-.3, 1.32, 0); g.add(cab);
-    const lamp = new THREE.Mesh(new THREE.BoxGeometry(.08, .22, 1.5), basic('#b8323d')); lamp.position.set(-2.12, .75, 0); g.add(lamp);
-    return g;
+  // DS-6: one merged, vertex-coloured mesh per car (body, windows, roof, bumpers, lights, plates,
+  // mirrors, wheels) from core/carmodel.js; geometry cached per colour + shape, one shared material.
+  const carGeos = new Map(), carMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: DS });
+  function carMesh(color, variant = 1) {
+    const name = M.carVariantOf(variant), key = color + name;
+    let g = carGeos.get(key);
+    if (!g) {
+      const a = M.buildCarArrays(color, name); g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(a.position, 3)); g.setAttribute('normal', new THREE.BufferAttribute(a.normal, 3));
+      g.setAttribute('color', new THREE.BufferAttribute(a.color, 3)); g.computeBoundingSphere(); carGeos.set(key, g);
+    }
+    return new THREE.Mesh(g, carMat);
   }
   function buildTown(side) {
     town.clear(); townSide = side; signalLamps = []; aiCars = []; walkers = [];
@@ -96,7 +103,7 @@ export function createWorld(THREE, M, opts = {}) {
       const face = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), tex ? new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: DS }) : basic(sg.kind === 'stop' ? '#c83e42' : '#ffffff'));
       face.position.set(sg.x, 2.7, sg.y); face.rotation.y = sg.kind === 'stop' ? Math.PI : -Math.PI / 2; town.add(face);
     }
-    ['#e3b85f', '#df798b', '#e3e5da', '#a8abd9'].forEach(c => { const m = carMesh(c); m.visible = false; town.add(m); aiCars.push(m); });
+    ['#e3b85f', '#df798b', '#e3e5da', '#a8abd9'].forEach((c, i) => { const m = carMesh(c, i); m.visible = false; town.add(m); aiCars.push(m); });
     for (let i = 0; i < 2; i++) { const g = walkerMesh(); g.visible = false; town.add(g); walkers.push(g); }
   }
   function walkerMesh() {

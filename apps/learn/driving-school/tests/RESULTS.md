@@ -46,3 +46,10 @@ road, keep left (both traffic sides), speed limit, speed breaker, zebra pedestri
 roundabout give way and wrong way; the Open road group, route box and both modes run in
 the stub UI; the 3D open road keeps 3–5 chunks, drops old ones and stays under 600 meshes
 (max 58 while driving, 114 with every area built). No browser run; no visual check.
+
+DS-6: Node 82/82 passing (`basics`, `roads`, `exam`, `cockpit`, `scene3d`, `ui-stub`,
+`openroad`, `score`, `ds6.test`). New: three car shapes with 4 wheels + hub caps, 2 head and
+2 tail lights, 2 bumpers, windows and roof; car sits on y = 0, faces +x, real-car size and
+symmetric; unit normals pointing out of each part; sRGB to linear colours, paint only on the
+body; in the scene every AI car is one mesh sharing one double-sided Lambert vertex-colour
+material (1 mesh / 316 triangles per car, was 3 meshes / 36 triangles). No browser run.
