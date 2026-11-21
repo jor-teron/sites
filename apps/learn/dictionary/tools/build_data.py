@@ -5,8 +5,16 @@ Converts the Open English WordNet (OEWN, CC BY 4.0) WN-LMF XML release into smal
 JSON shards that the Dictionary app loads on demand.
 
 Usage (from the repo root):
-  python3 apps/learn/dictionary/tools/build_data.py [english-wordnet-YYYY.xml.gz]
-With no argument the 2025 release is downloaded from GitHub into /tmp first.
+  python3 apps/learn/dictionary/tools/build_data.py [english-wordnet-YYYY.xml.gz] [wordnet.zip | index.sense]
+With no arguments the 2025 OEWN release and the Princeton WordNet 3.0 files (NLTK's wordnet.zip, for
+index.sense) are downloaded from GitHub into /tmp first.
+
+DC-1a common meanings first: OEWN has no usage counts, so each sense is matched to its Princeton
+WordNet 3.0 sense key (oewn-bank__1.17.01.. -> bank%1:17:01::) and takes that key's tag count (how often
+the sense was seen in the SemCor corpus, from index.sense). A word's senses are stored most-used first
+across all parts of speech; ties keep the OEWN order, with capitalised entries (Book = the Bible,
+Light = the Quaker belief) after lower-case ones. The app shows parts of speech in first-seen order,
+so the part of speech of the most common sense comes first.
 
 Output in apps/learn/dictionary/data/ (all minified JSON):
   manifest.json   {v, words, forms, split:[prefixes split by one more letter], src}
@@ -22,6 +30,7 @@ import gzip, json, os, re, sys, urllib.request
 import xml.etree.ElementTree as ET
 
 URL = 'https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz'
+PWN_URL = 'https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/corpora/wordnet.zip'
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'data')
 SPLIT_KB = 600
@@ -48,6 +57,37 @@ def shard_key(k, split):
     return p
 
 
+# OEWN escapes in sense ids (only the ones that can appear in a lemma)
+ESC = {'-ap-': "'", '-ex-': '!', '-cm-': ',', '-cl-': ':', '-pl-': '+', '-sl-': '/', '-lp-': '(', '-rp-': ')',
+       '-ct-': '.', '-qu-': '?', '-am-': '&', '-at-': '@', '-sc-': ';', '-dl-': '$', '-cr-': '^', '-sq-': ' '}
+
+
+def pwn_key(sid):
+    """OEWN sense id -> Princeton sense key: oewn-bank__1.17.01.. -> bank%1:17:01::"""
+    if not sid.startswith('oewn-') or '__' not in sid:
+        return ''
+    lem, rest = sid[5:].rsplit('__', 1)
+    for e, c in ESC.items():
+        lem = lem.replace(e, c)
+    return lem.lower() + '%' + rest.replace('.', ':')
+
+
+def tag_counts(src):
+    """{sense key: tag count} from WordNet 3.0 index.sense (plain file or inside NLTK's wordnet.zip)."""
+    if src.endswith('.zip'):
+        import zipfile
+        with zipfile.ZipFile(src) as z:
+            text = z.read('wordnet/index.sense').decode('utf-8')
+    else:
+        text = open(src, encoding='utf-8').read()
+    out = {}
+    for line in text.splitlines():
+        p = line.split()
+        if len(p) >= 4 and p[3] != '0':
+            out[p[0]] = int(p[3])
+    return out
+
+
 def dump(obj):
     return json.dumps(obj, ensure_ascii=False, separators=(',', ':'))
 
@@ -57,6 +97,11 @@ def main():
     if not os.path.exists(src):
         print('downloading', URL)
         urllib.request.urlretrieve(URL, src)
+    csrc = sys.argv[2] if len(sys.argv) > 2 else '/tmp/pwn30-wordnet.zip'
+    if not os.path.exists(csrc):
+        print('downloading', PWN_URL)
+        urllib.request.urlretrieve(PWN_URL, csrc)
+    counts = tag_counts(csrc)
     entries = {}   # entry id -> (lemma, pos, [(sense id, synset id)], ipa, [forms])
     sense_lemma = {}   # sense id -> lemma
     antonyms = {}   # sense id -> [target sense ids]
@@ -97,6 +142,7 @@ def main():
         k = norm(word)
         lst = words.setdefault(k, [])
         p = 'a' if pos == 's' else pos
+        proper = 1 if word[:1].isupper() else 0
         for sid, syn in senses:
             d, ex, mem = synsets.get(syn, ('', [], []))
             if not d:
@@ -114,14 +160,15 @@ def main():
             row = [p, d, ex[:MAX_EX], syns[:MAX_SYN], ants[:MAX_ANT]]
             while row and row[-1] == []:
                 row.pop()
-            lst.append(row)
+            lst.append(((-counts.get(pwn_key(sid), 0), proper, len(lst)), row))
         if pr and k not in ipa:
             ipa[k] = pr
         for f in fl:
             fk = norm(f)
             if fk != k:
                 forms.setdefault(fk, k)
-    words = {k: v for k, v in words.items() if v}
+    words = {k: [r for _, r in sorted(v)] for k, v in words.items() if v}   # most used first (DC-1a)
+    print('senses with a tag count:', sum(1 for e in entries.values() for sid, _ in e[2] if pwn_key(sid) in counts))
     forms = {f: k for f, k in forms.items() if f not in words and k in words}
 
     # group into first-letter buckets, split the big ones

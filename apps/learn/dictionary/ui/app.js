@@ -1,9 +1,9 @@
-/* Dictionary DC-1 — screens: search box with prefix suggestions, the entry (word, IPA, Hear it, senses grouped by part of
-   speech with examples and tappable synonyms / opposites), not-found suggestions, home (word of the day + recent searches)
+/* Dictionary DC-1 / DC-1a — screens: search box with prefix suggestions, the entry (word, IPA, Hear it, senses grouped by part of
+   speech, most common first, top 3 each with the rest under More meanings; examples and tappable synonyms / opposites), not-found suggestions, home (word of the day + recent searches)
    and About (credits). Data: data/*.json shards made by tools/build_data.py, fetched only when needed and kept in memory.
    The looked-up word lives in the URL hash (#apple) so Back works. Saves: learn.dictionary.recent (last 20 words). */
 (() => {
-  const D = window.DictCore, store = LRN.store, VER = 'DC1', KEY = 'learn.dictionary.recent';
+  const D = window.DictCore, store = LRN.store, VER = 'DC1a', KEY = 'learn.dictionary.recent';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -85,11 +85,15 @@
       r.ipa ? h('span', { class: 'dc-ipa' }, '/' + r.ipa + '/') : null,
       canSpeak ? h('button', { type: 'button', class: 'lrn-qc dc-hear', onclick: () => speak(r.word) }, '🔊 Hear it') : null);
     const note = r.from ? msg('“' + r.from + '” is a form of “' + r.word + '”.', 'dc-note') : null;
-    const groups = D.group(r.senses).map(g => h('section', { class: 'dc-pos' }, h('h3', null, g.name),
-      h('ol', null, g.senses.map(s => h('li', null, h('div', { class: 'dc-def' }, s.def),
-        s.ex.map(x => h('div', { class: 'dc-ex' }, '“' + x + '”')),
-        s.syn.length ? h('div', { class: 'dc-rel' }, h('span', { class: 'dc-lab' }, 'Similar:'), s.syn.map(wordBtn)) : null,
-        s.ant.length ? h('div', { class: 'dc-rel' }, h('span', { class: 'dc-lab' }, 'Opposite:'), s.ant.map(wordBtn)) : null)))));
+    const sense = s => h('li', null, h('div', { class: 'dc-def' }, s.def),
+      s.ex.map(x => h('div', { class: 'dc-ex' }, '“' + x + '”')),
+      s.syn.length ? h('div', { class: 'dc-rel' }, h('span', { class: 'dc-lab' }, 'Similar:'), s.syn.map(wordBtn)) : null,
+      s.ant.length ? h('div', { class: 'dc-rel' }, h('span', { class: 'dc-lab' }, 'Opposite:'), s.ant.map(wordBtn)) : null);
+    // DC-1a: most common meanings first; the rest of each part of speech folds under "More meanings" (numbering continues)
+    const groups = D.layout(r.senses, 3).map(g => h('section', { class: 'dc-pos' }, h('h3', null, g.name),
+      h('ol', null, g.top.map(sense)),
+      g.more.length ? h('details', { class: 'dc-more' }, h('summary', null, g.more.length + ' more ' + g.name + ' meaning' + (g.more.length > 1 ? 's' : '')),
+        h('ol', { start: String(g.top.length + 1) }, g.more.map(sense))) : null));
     return [top, note, ...groups];
   }
 
@@ -119,7 +123,7 @@
     return [h('h2', { class: 'dc-word', tabindex: '-1' }, 'About'),
       h('p', null, 'An offline English dictionary with about ' + (man.words ? Math.round(man.words / 1000) + ',000' : '120,000') + ' words and phrases. Type a word, pick a suggestion or tap any similar word to look it up. Hear it uses the voice built into your device.'),
       h('p', null, 'Word data: ', h('a', { href: 'https://en-word.net/', target: '_blank', rel: 'noopener' }, 'Open English WordNet'), ' ' + (man.v || '').replace('oewn-', '') + ' by the Open English WordNet team, licensed under ',
-        h('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener' }, 'CC BY 4.0'), '. Converted to small files for this app (shortened examples and synonym lists).'),
+        h('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener' }, 'CC BY 4.0'), '. Converted to small files for this app (shortened examples and synonym lists). Meanings are listed most common first, using the usage counts from Princeton WordNet 3.0.'),
       h('p', null, 'Open English WordNet is based on Princeton WordNet 3.0. WordNet 3.0 Copyright 2006 by Princeton University. All rights reserved.'),
       h('p', null, h('a', { href: 'LICENSE-OEWN.txt', target: '_blank' }, 'Full licence and credits'))];
   }

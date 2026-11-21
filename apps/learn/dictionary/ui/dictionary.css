@@ -26,6 +26,13 @@ html.light .dc-go { color: #fff; }
 .dc-pos { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); }
 .dc-pos h3 { margin: 0 0 6px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
 .dc-pos ol { margin: 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 10px; }
+.dc-more { margin-top: 8px; }
+.dc-more summary { min-height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 4px; cursor: pointer; color: var(--accent); font-weight: 600; list-style: none; border-radius: 10px; }
+.dc-more summary::-webkit-details-marker { display: none; }
+.dc-more summary::before { content: '▸'; transition: transform .15s; }
+.dc-more[open] summary::before { transform: rotate(90deg); }
+.dc-more summary:hover { background: var(--panel2); }
+.dc-more > ol { margin-top: 6px; }
 .dc-def { font-size: 1.02rem; }
 .dc-ex { color: var(--muted); font-style: italic; margin-top: 2px; }
 .dc-rel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }

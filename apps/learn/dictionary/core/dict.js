@@ -1,6 +1,6 @@
-/* Dictionary DC-1 — pure logic (no DOM, no fetch): word normalising, which data shard holds a word, prefix search,
+/* Dictionary DC-1 / DC-1a — pure logic (no DOM, no fetch): word normalising, which data shard holds a word, prefix search,
    simple word-ending guesses (dogs -> dog), closest-word suggestions (edit distance), word of the day, recent list
-   and grouping senses by part of speech. Classic script: window.DictCore in the page, module.exports for node --test.
+   grouping senses by part of speech, and the common-meanings-first layout (top senses + More meanings). Classic script: window.DictCore in the page, module.exports for node --test.
    Shard rules match tools/build_data.py (shard_key): first letter a-z else '0', plus one more char per split prefix. */
 (function (root) {
   'use strict';
@@ -104,8 +104,20 @@
     return out;
   }
 
+  // DC-1a common meanings first: the data lists a word's senses most-used first (tools/build_data.py), so group() puts the
+  // part of speech of the most common sense first. Each part of speech shows its first n senses; the rest go under
+  // "More meanings". A short tail (1 extra) is shown too rather than hiding a single sense behind a tap.
+  function layout(senses, n) {
+    n = n || 3;
+    return group(senses).map(function (g) {
+      var cut = g.senses.length <= n + 1 ? g.senses.length : n;
+      return { pos: g.pos, name: g.name, top: g.senses.slice(0, cut), more: g.senses.slice(cut) };
+    });
+  }
+
   var api = { POS: POS, norm: norm, letter: letter, shardKey: shardKey, prefix: prefix, stems: stems, dist: dist,
-    suggest: suggest, dayNumber: dayNumber, wordOfDay: wordOfDay, addRecent: addRecent, group: group };
+    suggest: suggest, dayNumber: dayNumber, wordOfDay: wordOfDay, addRecent: addRecent, group: group,
+    layout: layout };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DictCore = api;
 })(this);
