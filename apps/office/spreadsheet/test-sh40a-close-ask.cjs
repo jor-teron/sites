@@ -213,7 +213,8 @@ test('wiring: version SH40a, ?v= tokens, readme, old Close kept as a comment', (
   assert.ok(html.indexOf('<title>Spreadsheet SH40a</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH40a) <title>Spreadsheet SH40</title> -->') !== -1);
   const l = live(html);
-  for (const f of ['spreadsheet_settings.js', 'spreadsheet_xlsx.js', 'spreadsheet_filemenu.js', 'spreadsheet_empty.js']) assert.ok(l.indexOf(f + '?v=SH40a') !== -1, f);
+  /* (before SH41) for (const f of ['spreadsheet_settings.js', 'spreadsheet_xlsx.js', 'spreadsheet_filemenu.js', 'spreadsheet_empty.js']) assert.ok(l.indexOf(f + '?v=SH40a') !== -1, f); */
+  for (const f of ['spreadsheet_settings.js', 'spreadsheet_xlsx.js', 'spreadsheet_filemenu.js', 'spreadsheet_empty.js']) assert.ok(l.indexOf(f + '?v=SH40a') !== -1 || (f === 'spreadsheet_settings.js' && l.indexOf(f + '?v=SH41') !== -1), f);   // SH41: settings
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH40a";') !== -1);
   assert.ok(read('spreadsheet_filemenu.js').indexOf('/* (before SH40a)\n  /* File > Close') !== -1);
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH40a') !== -1);

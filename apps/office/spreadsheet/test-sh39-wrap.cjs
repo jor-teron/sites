@@ -194,7 +194,8 @@ test('wiring: render, toolbar, Alt+Enter, settings, version', () => {
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
   for (const f of ['spreadsheet_config.js', 'spreadsheet_settings.js', 'spreadsheet_edit.js', 'spreadsheet_style.js', 'spreadsheet_rows.js', 'spreadsheet_resize.js', 'spreadsheet_hos.js']) {
     /* (before SH40) assert.ok(live.indexOf(f + '?v=SH39') !== -1, f); */
-    assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1, f);
+    /* (before SH41) assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1, f); */
+    assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1 || live.indexOf(f + '?v=SH41') !== -1, f);
   }
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH39') !== -1);
 });

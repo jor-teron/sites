@@ -575,5 +575,14 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Old `closeWorkbook` and the old `importXlsxFile` lines kept as `(before SH40a)` comments. Title and `SHEET_VERSION` are SH40a; `?v=SH40a` on settings, xlsx, filemenu and empty.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh40a-close-ask.cjs`.
 
+## SH41: rows draw at their fitted height
+
+- **Bug:** an opened file showed only about 14 rows, then blank grid. `sheetPrefix` / `viewSpec` sized the scroll box and picked the drawn rows from the fitted (SH39 wrap) heights, but `buildVirtualTable` left every data row at the CSS 30px, so the drawn rows ran out early.
+- **Fix:** `buildVirtualTable(spec, m)` sets each drawn row's height from the prefix (`sheetRowSpanPx(m, r)` = `m.rowY[r+1] - m.rowY[r]`). Frozen rows line up for the same reason.
+- **Tighter wrap estimate:** `wrapTextOverflows` uses `wrapTextWidthEm` (narrow marks 0.3em, digits 0.55em, letters 0.52em, capitals 0.62em, wide 0.9em, CJK 1em) instead of a flat 0.6em, so dates and short numbers stay one line (30px rows).
+- `renderViewport` clears `SHEET_VIEW.inside` in `finally`, so one error mid-draw no longer stops scrolling redraws.
+- Old lines kept as `(before SH41)` comments. Title and `SHEET_VERSION` are SH41; `?v=SH41` on grid, resize and settings.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh41-row-heights.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
