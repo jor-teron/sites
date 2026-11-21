@@ -18,7 +18,8 @@ you give appropriate credit, link to the licence and say if changes were
 made. The data is provided as-is, without warranties.
 
 Open English WordNet is derived from Princeton WordNet 3.0, whose licence
-follows.
+follows. This app also uses the Princeton WordNet 3.0 sense tag counts
+(index.sense) to list the most common meanings of a word first.
 
 Princeton WordNet 3.0 licence
 -----------------------------
