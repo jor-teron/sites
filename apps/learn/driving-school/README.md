@@ -31,7 +31,7 @@ Loads shared/theme/hub_theme.js without modifying it. Header uses LearnHubBar.
 `core/` is DOM-free UMD and unit-testable with Node. `ui/` owns canvas, input and
 storage. No dependencies/build step. Art and 128 px icon are original code/PIL.
 
-Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad,score,ds6.test,ds7.test}.cjs`.
+Tests: `node --test apps/learn/driving-school/tests/{basics,roads,exam,cockpit,scene3d,ui-stub,openroad,score,ds6.test,ds7.test,ds8.test}.cjs`.
 Browser harness: `node apps/learn/driving-school/tests/browser.cjs` after starting
 `python3 -m http.server 8829` at the repository root. Requires puppeteer externally.
 Only `?test` exposes the deterministic test interface. No lesson is auto-completed.
@@ -242,3 +242,38 @@ All share one double-sided Lambert vertex-colour material per area. No textures,
 Meshes: open road 37 → 39 (three tree InstancedMeshes instead of one), town ring 1 → 2, scene
 max 50 → 53. Worst case 600 trees ≈ 30,000 triangles (was 7,200), still in one draw per type.
 Tests: `tests/ds7.test.cjs`. No browser or real-phone check of the new look yet.
+
+## DS-8 · Higher quality houses and town buildings
+A visual upgrade of the buildings that already exist. Where they stand, their footprints,
+heights and numbers are unchanged (`core/roadgen.js`, `core/cockpit.js` and the map view are
+untouched; house transforms are the same position, turn and (w, ht, d) scale as before).
+
+Open-road houses were plain coloured boxes. Now there are four models in the same unit box:
+- **2, 3 and 4-floor houses** (picked by the house's existing height): flat terrace roof with a
+  low parapet and a black water tank, a window row per floor, floor bands and a front door, on
+  both long sides. The old house colours still paint the walls (instance colour).
+- **Village hut** (the existing small huts): mud walls, a door, a small window and a
+  thatch-style pitched roof, in its own colours.
+
+The four town buildings keep their 22 × 15 m walls and heights and gain a terrace parapet,
+window rows on every side (a water tank on the roof), an entrance with doors and a small
+canopy, and a signboard on the side that faces the nearest road. **SHOPS** has shutters and
+red-and-white striped awnings; **CLINIC** has a green cross (not the protected red cross);
+**PARK** has green trellis panels and no tank. Only the canopy and awnings reach out from
+the front wall (up to 1.6 m); the label above each building moved up 0.6 m to clear the parapet.
+
+`core/buildingmodel.js` (DOM-free, three.js-free) merges each model into one flat-shaded
+triangle list with vertex colours. `ui/road3d.js` draws each house model as one InstancedMesh
+(220 houses in total, as before); `ui/scene3d.js` draws each town building as one mesh. One
+shared double-sided Lambert vertex-colour material per area. No textures, no shadows.
+
+| Per building | Draw | Triangles |
+| --- | --- | --- |
+| DS-7 house / town building | box | 12 |
+| DS-8 house, 2 / 3 / 4 floors | instanced | 104 / 120 / 136 |
+| DS-8 village hut | instanced | 24 |
+| DS-8 SCHOOL / PARK / SHOPS / CLINIC | 1 mesh each | 252 / 160 / 340 / 256 |
+
+Meshes: open road 39 → 42 (four house InstancedMeshes instead of one), town unchanged (4).
+Worst case 220 houses ≈ 30,000 triangles (was 2,640); the town adds about 1,000.
+Tests: `tests/ds8.test.cjs`. No browser or real-phone check of the new look yet.

@@ -5,7 +5,7 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const C = require('../core/carmodel.js');
 const D = Object.assign({}, require('../core/physics.js'), require('../core/lessons.js'), require('../core/town.js'), require('../core/rules.js'),
-  require('../core/roadgen.js'), require('../core/roadrules.js'), require('../core/exam.js'), require('../core/session.js'), require('../core/cockpit.js'), require('../core/treemodel.js'), C);
+  require('../core/roadgen.js'), require('../core/roadrules.js'), require('../core/exam.js'), require('../core/session.js'), require('../core/cockpit.js'), require('../core/treemodel.js'), require('../core/buildingmodel.js'), C);
 const load = p => import(pathToFileURL(path.join(__dirname, p)).href);
 const OLD_TRIS = 36, OLD_MESHES = 3;   // DS-5 car: three boxes, three meshes
 
@@ -64,7 +64,7 @@ test('DS-6: scene cars are one mesh each with a shared double-sided vertex-colou
   const { createWorld } = await load('../ui/scene3d.js');
   const w = createWorld(THREE, D), prefs = { side: 'left', auto: false };
   const def = D.roadLessons('left')[0], s = D.session(def, prefs); w.update(s, prefs, 0);
-  const town = []; w.town.traverse(o => { if (o.isMesh && !o.isInstancedMesh && o.material.vertexColors) town.push(o); });
+  const town = []; w.town.traverse(o => { if (o.isMesh && !o.isInstancedMesh && o.name !== 'building' && o.material.vertexColors) town.push(o); });
   const road = []; w.drive.group.traverse(o => { if (o.isMesh && !o.isInstancedMesh && o.material.vertexColors) road.push(o); });
   assert.equal(town.length, 4, 'town AI cars'); assert.equal(road.length, 4, 'open-road car pool');
   const all = town.concat(road);

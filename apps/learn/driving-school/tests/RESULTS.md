@@ -62,3 +62,12 @@ follows the road type (ghat mostly conifer, village palms, highway broadleaf) an
 deterministic; width spread and tint stay in range; scenery positions are unchanged and
 carry their road type; in the scene each type is one InstancedMesh sharing one material,
 600 trees at most, and every placed tree is drawn. No browser run.
+
+DS-8: Node 93/93 passing (adds `ds8.test`). New: four house models (2/3/4 floors, hut) fill
+the old unit box (footprint within 1%, height 1, base y = 0) with 24-136 triangles; house kind
+comes from existing data (c = 4 hut, floors by height) and all four appear on real roads;
+terrace houses have walls, glass, door, parapet and tank, huts mud and thatch; town buildings
+keep 22 x 15 m walls and their heights, face the nearest road, and only the canopy/awnings
+reach out (< 1.65 m); SHOPS awnings + shutters, CLINIC green cross only, PARK trellis and
+no tank; in the scene every placed house is drawn by its model (220 max) with the old
+unit-box transform, and the 4 town buildings are single meshes at the old centres. No browser run.

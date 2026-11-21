@@ -6,7 +6,7 @@ const { pathToFileURL } = require('node:url');
 const T = require('../core/treemodel.js');
 const D = Object.assign({}, require('../core/physics.js'), require('../core/lessons.js'), require('../core/town.js'), require('../core/rules.js'),
   require('../core/roadgen.js'), require('../core/roadrules.js'), require('../core/exam.js'), require('../core/session.js'), require('../core/cockpit.js'),
-  require('../core/carmodel.js'), T);
+  require('../core/carmodel.js'), require('../core/buildingmodel.js'), T);
 const load = p => import(pathToFileURL(path.join(__dirname, p)).href);
 const OLD_TRIS = 12;   // DS-6 and before: three.js ConeGeometry(r, 1, 6) = 6 side + 6 base triangles
 
@@ -73,7 +73,7 @@ test('DS-7: scene trees are one InstancedMesh per type with a shared vertex-colo
   const THREE = await load('../../common/vendor/three/three.module.min.js');
   const { createWorld } = await load('../ui/scene3d.js');
   const w = createWorld(THREE, D), prefs = { side: 'left', auto: true };
-  const ring = []; w.scene.traverse(o => { if (o.isInstancedMesh && o.material.vertexColors && o.parent !== w.drive.group) ring.push(o); });
+  const ring = []; w.scene.traverse(o => { if (o.isInstancedMesh && o.material.vertexColors && o.parent !== w.drive.group && o.parent !== w.town) ring.push(o); });
   assert.equal(ring.length, 2, 'town ring: conifer + broadleaf'); assert.equal(ring.reduce((n, m) => n + m.count, 0), 44, 'same 44 ring trees');
   assert(ring.every(m => m.instanceColor), 'ring trees tinted');
   const kinds = Object.values(w.drive.trees); assert.equal(kinds.length, 3);
