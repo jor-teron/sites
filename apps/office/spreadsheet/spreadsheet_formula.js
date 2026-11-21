@@ -329,6 +329,10 @@ function evalCond(s) {
     return cmp(op, left, right);
   }
   left = evalExpr(s);
+  /* (before SH45) return !!(left && left !== 0 && left !== ERR);
+     A FALSE from an inner call (ISERROR, ISBLANK, AND, NOT) comes back as the text "FALSE",
+     which was truthy, so IF(ISERROR(A1),"e","ok") and IF(FALSE,...) took the TRUE branch. */
+  if (left === false || (typeof left === "string" && left.toUpperCase() === "FALSE")) return false;   /* SH45 */
   return !!(left && left !== 0 && left !== ERR);
 }
 
@@ -401,6 +405,8 @@ function fxStripPrefixes(s) {
 
 /* SH44: functions that look at an error argument instead of passing it on. */
 var FX_ERROR_AWARE = { IFERROR: 1, IFNA: 1, ISBLANK: 1, ISERROR: 1, ISERR: 1, ISNA: 1 };
+/* SH45: these get an inner error result as a bare error token (see fxErrorOf). */
+var FX_ERROR_BARE = { ISERROR: 1, ISERR: 1, ISNA: 1 };
 /* SH44: the first error result of an earlier inner call (bag index marked in errMark) used as
    an argument of this call, or null. A typed "#DIV/0!" string is plain text and is not marked.
    Error-aware functions (IFERROR, ...) get null so they see the error themselves. Pure. */
@@ -465,7 +471,13 @@ function evalExpr(expr) {
     if (!call) break;
     name = call.name;
     /* put string literals back WITH their quotes so each argument stays a string */
-    inside = call.args.replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; });
+    /* (before SH45) inside = call.args.replace(/__S(\d+)__/g, function (x, i) { return '"' + bag[parseInt(i, 10)] + '"'; }); */
+    /* SH45: for ISERROR / ISERR / ISNA an inner call's error result goes in bare (#N/A, not "#N/A"),
+       so it stays an error while a typed "#N/A" string stays text. */
+    inside = call.args.replace(/__S(\d+)__/g, function (x, i) {
+      if (errMark[i] && FX_ERROR_BARE[String(name).toUpperCase()]) return bag[parseInt(i, 10)];
+      return '"' + bag[parseInt(i, 10)] + '"';
+    });
     /* (before SH16): out = evalFunc(name, splitArgs(inside)); */
     /* (before SH44) out = evalFunc(name, splitArgs(inside), { r: evalRow, c: evalCol, si: evalSheetIdx });
        An error inside a function (LEN(B1) with B1 #DIV/0!, UPPER(1/0)) was thrown past an outer

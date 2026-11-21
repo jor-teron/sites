@@ -176,8 +176,12 @@ test('a formula or argument that starts and ends with "..." but joins strings is
 
 /* ---------- #NAME? ---------- */
 test('a function this app does not have is #NAME?, a known one with bad input is not', () => {
+  /* (before SH45) ISERROR was not a function here, so =ISERROR(Z1) was #NAME? too.
   assert.deepEqual(ev(['=FOO(1)', '=offset(A1,1,0)', '=IFERROR(FOO(1),"x")', '=Z1', '=STDEV.S(A1:A2)', '=ISERROR(Z1)']),
     ['#NAME?', '#NAME?', 'x', '#NAME?', '#NAME?', '#NAME?']);
+  */
+  assert.deepEqual(ev(['=FOO(1)', '=offset(A1,1,0)', '=IFERROR(FOO(1),"x")', '=Z1', '=STDEV.S(A1:A2)', '=ISERROR(Z1)']),
+    ['#NAME?', '#NAME?', 'x', '#NAME?', '#NAME?', 'TRUE']);   // SH45: ISERROR sees Z1's #NAME?
   /* a known function with bad input keeps its own error (#ERR here, as before SH35) */
   assert.deepEqual(ev(['=SQRT("x")']), ['#ERR']);
   assert.ok(C.isErrorValue('#NAME?'));
@@ -272,14 +276,16 @@ test('wiring: title, VERSION, ?v= tokens, readme', () => {
     /* (before SH40a) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1, f); */
     /* (before SH42) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
     /* (before SH44) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
-    assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1, f);   // SH39: config, hos; SH40a: xlsx
+    /* (before SH45) assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1, f);   // SH39: config, hos; SH40a: xlsx */
+    assert.ok(live.indexOf(f + '?v=SH35') !== -1 || live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40a') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1, f);   // SH39: config, hos; SH40a: xlsx
   }
   /* (before SH37) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH35') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH36') !== -1, 'spreadsheet_settings.js'); */
   /* (before SH40) assert.ok(/spreadsheet_settings\.js\?v=SH3[5-9]/.test(live), 'spreadsheet_settings.js'); */
   /* (before SH41) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|40)/.test(live), 'spreadsheet_settings.js'); */
   /* (before SH42) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|40|41)/.test(live), 'spreadsheet_settings.js'); */
   /* (before SH44) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-2])/.test(live), 'spreadsheet_settings.js'); */
-  assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-4])/.test(live), 'spreadsheet_settings.js');
+  /* (before SH45) assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-4])/.test(live), 'spreadsheet_settings.js'); */
+  assert.ok(/spreadsheet_settings\.js\?v=SH(3[5-9]|4[0-5])/.test(live), 'spreadsheet_settings.js');
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH35";') !== -1);
   const readme = read('spreadsheet_readme.md');
   assert.ok(readme.indexOf('## SH35') !== -1);

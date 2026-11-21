@@ -122,6 +122,9 @@ ARRAYS / SPILL (SH13, extended in SH14)
 LOGIC
   IF(condition, then, [else])   omitted else returns ""
   ISBLANK(cell)
+  ISERROR(value)          TRUE for any error
+  ISERR(value)            TRUE for any error except #N/A
+  ISNA(value)             TRUE only for #N/A
   IFERROR(value, fallback)
   AND(cond, ...)
   OR(cond, ...)

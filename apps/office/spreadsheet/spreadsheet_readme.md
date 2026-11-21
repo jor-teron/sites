@@ -602,5 +602,15 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Title and `SHEET_VERSION` are SH44; `?v=SH44` on formula, functions and settings.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh44-text-iferror.cjs`.
 
+## SH45: ISERROR, ISERR, ISNA
+
+- `ISERROR(value)` is TRUE for any error (`#DIV/0!`, `#N/A`, `#VALUE!`, `#REF!`, `#NAME?`, `#NUM!`, `#NULL!`, and this app's `#ERR`, `#LOOP!`, `#SPILL!`, `#CALC!`); `ISERR(value)` is TRUE for any error except `#N/A`; `ISNA(value)` only for `#N/A`. They return TRUE / FALSE like `ISBLANK` and `AND`.
+- They see errors from a cell ref (`ISERROR(B1)`), an expression (`ISERROR(1/0)`, `ISERROR(B1+1)`) and an inner call (`ISNA(VLOOKUP(...))`). An inner call's error result is passed in bare (`#N/A`, not `"#N/A"`; `FX_ERROR_BARE` in `spreadsheet_formula.js`), so a typed string stays text: `ISERROR("#DIV/0!")` is FALSE. (`IFERROR` is unchanged and still treats a typed `"#DIV/0!"` as an error.) A cell holding the text `#N/A` reads as an error, as before.
+- `fxErrorOf(arg)` gives the argument's error or null; `fxIsErrorKind(name, err)` is the pure rule.
+- **IF fix:** `IF` treated the text `"FALSE"` from an inner call as true, so `IF(ISERROR(A1),...)`, `IF(ISBLANK(A1),...)`, `IF(AND(1,0),...)` and even `IF(FALSE,...)` took the TRUE branch. `evalCond` now reads FALSE as false. `=IF(ISERROR(B1),"e","ok")` is `e` when B1 is an error and `ok` when it is not.
+- Catalog / autocomplete entries (Logic) and `FUNCTIONS.txt` lines. Title and `SHEET_VERSION` are SH45; `?v=SH45` on formula, functions and settings.
+- Limit: TRUE / FALSE are not numbers in arithmetic here (`ISERROR(B1)*1` is `#ERR`); count with `IF(ISERROR(B1),1,0)`.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh45-iserror.cjs`.
+
 ## Legacy
 IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png

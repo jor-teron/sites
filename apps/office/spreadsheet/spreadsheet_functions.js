@@ -25,6 +25,7 @@
  * SH42: CONCATENATE(text1, text2, ...) (same as CONCAT, fxConcatArgs); ranges are joined
  * row by row and the first error value is the result.
  * SH44: fxNumberText: CONCAT / CONCATENATE / TEXTJOIN join numbers at 15 significant digits.
+ * SH45: ISERROR, ISERR, ISNA (fxErrorOf, fxIsErrorKind).
  */
 
 /* SH44: a number as text the way a formula result or & shows it: roundNum (15 significant
@@ -32,6 +33,33 @@
 function fxNumberText(x) {
   if (typeof x === "number") return String(typeof roundNum === "function" ? roundNum(x) : x);
   return x;
+}
+
+/* SH45: "#NULL!" is not an error this engine makes, but ISERROR / ISERR know it (Excel). */
+function fxIsErrorText(v) {
+  return (typeof isErrorValue === "function" && isErrorValue(v)) || v === "#NULL!";
+}
+/* SH45: the error an argument gives, or null. A bare error token (an inner call's error, put in
+   bare by evalExpr for ISERROR / ISERR / ISNA) is that error; a ref to an error cell or 1/0 throws
+   a CellError; a single quoted literal such as "#DIV/0!" is typed text, not an error. */
+function fxErrorOf(arg) {
+  var s = String(arg == null ? "" : arg).trim(), v;
+  if (fxIsErrorText(s)) return s;
+  try {
+    v = evalExpr(s);
+  } catch (e) {
+    if (typeof CellError === "function" && e instanceof CellError) return e.value;
+    throw e;
+  }
+  if (/^"(?:[^"]|"")*"$/.test(s)) return null;
+  return fxIsErrorText(v) ? v : null;
+}
+/* SH45: pure. name ISERROR / ISERR / ISNA, err the error text or null. */
+function fxIsErrorKind(name, err) {
+  if (err == null || err === "") return false;
+  if (name === "ISNA") return err === "#N/A";
+  if (name === "ISERR") return err !== "#N/A";
+  return true;
 }
 
 /* SH42: CONCAT / CONCATENATE. Each argument in order: a range (or a spilled array) is read
@@ -171,6 +199,12 @@ function evalFunc(name, args, at) {
     } catch (e) {
       return evalExpr(args[1]);
     }
+  }
+
+  /* SH45: ISERROR (any error), ISERR (any error but #N/A), ISNA (#N/A only). */
+  if (n === "ISERROR" || n === "ISERR" || n === "ISNA") {
+    if (args.length < 1) return ERR;
+    return fxIsErrorKind(n, fxErrorOf(args[0]));
   }
 
   if (n === "ISBLANK") {
@@ -1931,6 +1965,9 @@ var FX_CATALOG = [
   { name: "IF", cat: "Logic", sig: "IF(condition, then, [else])", hint: "Return one value if a condition is true, another if false." },
   { name: "IFERROR", cat: "Logic", sig: "IFERROR(value, fallback)", hint: "If value is an error, return the fallback." },
   { name: "ISBLANK", cat: "Logic", sig: "ISBLANK(cell)", hint: "TRUE if the cell is empty." },
+  { name: "ISERROR", cat: "Logic", sig: "ISERROR(value)", hint: "TRUE if value is any error (#DIV/0!, #N/A, #VALUE!, ...)." },   /* SH45 */
+  { name: "ISERR", cat: "Logic", sig: "ISERR(value)", hint: "TRUE if value is an error other than #N/A." },   /* SH45 */
+  { name: "ISNA", cat: "Logic", sig: "ISNA(value)", hint: "TRUE if value is #N/A (for example a lookup that found nothing)." },   /* SH45 */
   { name: "AND", cat: "Logic", sig: "AND(cond, ...)", hint: "TRUE if every argument is true." },
   { name: "OR", cat: "Logic", sig: "OR(cond, ...)", hint: "TRUE if any argument is true." },
   { name: "NOT", cat: "Logic", sig: "NOT(cond)", hint: "Reverse a TRUE / FALSE value." },
