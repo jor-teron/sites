@@ -4,6 +4,8 @@
  * SH24: the table draws only the visible rows and columns (plus a small
  * buffer, and any frozen rows or columns). #sheet-sizer is the full scroll
  * size, so the scrollbar still covers A..FZ × 1..1000.
+ * SH41: drawn rows get their height from the prefix sums (sheetRowSpanPx), and
+ * renderViewport always clears SHEET_VIEW.inside (try / finally).
  */
 
 var SHEET_VIEW = { bufR: 8, bufC: 4, key: "", inside: false, lock: 0, raf: 0, printing: false, spec: null, met: null, hold: null, wired: false };
@@ -34,6 +36,12 @@ function sheetPrefix() {
   colX[0] = 0;
   for (i = 0; i < COLS; i++) { x += sheetColPx(i); colX[i + 1] = x; }
   return { rowY: rowY, colX: colX, headH: sheetHeadH(), headW: sheetHeadW(), totalH: y, totalW: x };
+}
+
+/* SH41: drawn height of row r from the prefix sums (the same number the scroll box uses). */
+function sheetRowSpanPx(m, r) {
+  if (!m || !m.rowY || r < 0 || r + 1 >= m.rowY.length) return 0;
+  return Math.max(0, m.rowY[r + 1] - m.rowY[r]);
 }
 
 /* Smallest index whose end is past px. prefix[i] is the start, prefix[n] the total. */
@@ -262,8 +270,12 @@ function ensureSheetChrome() {
   return sizer;
 }
 
-function buildVirtualTable(spec) {
-  var sizer = ensureSheetChrome(), table, colgroup, col, tr, th, td, grip, i, j, item, r, cols, rows;
+/* (before SH41) function buildVirtualTable(spec) { */
+/* SH41: m = sheetPrefix(); each drawn row gets its height from m.rowY, so the drawn block
+   matches the scroll box. Before, data rows stayed at the CSS 30px while the prefix used the
+   fitted (SH39 wrap) heights, so the rows ran out early and the rest of the view was blank. */
+function buildVirtualTable(spec, m) {
+  var sizer = ensureSheetChrome(), table, colgroup, col, tr, th, td, grip, i, j, item, r, cols, rows, h;
   if (!sizer) return;
   table = sizer.querySelector("table." + CLS.table);
   SHEET_VIEW.hold = captureSheetEdit();
@@ -314,6 +326,8 @@ function buildVirtualTable(spec) {
     }
     r = item;
     tr.dataset.r = String(r);
+    h = m ? sheetRowSpanPx(m, r) : sheetRowPx(r);   /* SH41 */
+    if (h > 0) tr.style.height = h + "px";
     td = document.createElement("td");
     td.className = CLS.rowNum;
     td.textContent = String(r + 1);
@@ -395,6 +409,8 @@ function renderViewport(force) {
   SHEET_VIEW.inside = true;
   SHEET_VIEW.key = spec.key;
   SHEET_VIEW.spec = spec;
+  /* (before SH41) the steps below ran without try / finally, so one error left
+     SHEET_VIEW.inside true and scrolling never redrew again.
   buildVirtualTable(spec);
   syncVirtualBox(m, spec);
   layoutFrozenVirtual();
@@ -404,6 +420,19 @@ function renderViewport(force) {
   highlightSel();
   restoreSheetEdit(SHEET_VIEW.hold);
   SHEET_VIEW.inside = false;
+  */
+  try {
+    buildVirtualTable(spec, m);   /* SH41: rows take their heights from m */
+    syncVirtualBox(m, spec);
+    layoutFrozenVirtual();
+    if (typeof applyMerges === "function") applyMerges();
+    paintRendered();
+    if (typeof dataRenderFilterButtons === "function") dataRenderFilterButtons();
+    highlightSel();
+    restoreSheetEdit(SHEET_VIEW.hold);
+  } finally {
+    SHEET_VIEW.inside = false;
+  }
 }
 
 function onSheetScroll() {

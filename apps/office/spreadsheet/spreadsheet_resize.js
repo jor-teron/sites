@@ -127,8 +127,9 @@ function setExplicitWrap(st, on) {
   st.nowrap = !on;
   return st;
 }
-/* True when the text needs more than one line in widthPx (a line break, or longer than the
- * column at ~0.6em per character). Short text short-circuits, so plain cells stay cheap. */
+/* (before SH41) True when the text needs more than one line in widthPx (a line break, or longer
+ * than the column at ~0.6em per character). 0.6em was too wide: "2026-01-03" at 16px in a 100px
+ * column counted as two lines, so most imported rows fitted to 46px.
 function wrapTextOverflows(text, widthPx, fontSize) {
   var fs, charsPerLine;
   text = text == null ? "" : String(text);
@@ -137,6 +138,38 @@ function wrapTextOverflows(text, widthPx, fontSize) {
   fs = fontSize || SHEET_DEFAULT_FONT_PX;
   charsPerLine = Math.max(1, Math.floor(Math.max(1, (widthPx || 100) - 12) / Math.max(1, fs * 0.6)));
   return text.length > charsPerLine;
+}
+*/
+/* SH41: rough width of one line of text in em (pure). Narrow marks and spaces ~0.3em,
+ * digits 0.55em, wide capitals 0.9em, other letters 0.52em, CJK / emoji 1em. */
+var SHEET_WRAP_NARROW = " .,:;'|!il-()[]/\\\"`jtfr";   /* digits (1 too) stay 0.55em: tabular */
+var SHEET_WRAP_WIDE = "MWmw@%&";
+function wrapTextWidthEm(text) {
+  var em = 0, i, ch, code;
+  text = text == null ? "" : String(text);
+  for (i = 0; i < text.length; i++) {
+    ch = text.charAt(i);
+    code = text.charCodeAt(i);
+    if (code >= 0x2E80) em += 1;
+    else if (SHEET_WRAP_NARROW.indexOf(ch) !== -1) em += 0.3;
+    else if (code >= 48 && code <= 57) em += 0.55;
+    else if (SHEET_WRAP_WIDE.indexOf(ch) !== -1) em += 0.9;
+    else if (code >= 65 && code <= 90) em += 0.62;
+    else em += 0.52;
+  }
+  return em;
+}
+/* True when the text needs more than one line in widthPx (a line break, or wider than the
+ * column less 12px padding). Pure; short text short-circuits, so plain cells stay cheap. */
+function wrapTextOverflows(text, widthPx, fontSize) {
+  var fs, room;
+  text = text == null ? "" : String(text);
+  if (!text) return false;
+  if (text.indexOf("\n") !== -1 || text.indexOf("\r") !== -1) return true;
+  fs = fontSize || SHEET_DEFAULT_FONT_PX;
+  room = Math.max(1, (widthPx || 100) - 12);
+  if (text.length * fs <= room) return false;   /* fits even at the widest (1em) */
+  return wrapTextWidthEm(text) * fs > room;
 }
 /* "Wrap text by default" setting (SHEET_SETTINGS.s.wrapDefault); missing = on. */
 function sheetWrapDefault() {
