@@ -139,7 +139,8 @@ test('wiring: version SH42, ?v= tokens, readme, old CONCAT kept as a comment', (
   assert.ok(html.indexOf('<!-- (before SH42) <title>Spreadsheet SH41</title> -->') !== -1);
   const l = live(html);
   /* (before SH44) for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH42') !== -1, f); */
-  for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH42') !== -1 || l.indexOf(f + '?v=SH44') !== -1, f);   // SH44: formula, functions, settings
+  /* (before SH45) for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH42') !== -1 || l.indexOf(f + '?v=SH44') !== -1, f);   // SH44: formula, functions, settings */
+  for (const f of ['spreadsheet_formula.js', 'spreadsheet_functions.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH42') !== -1 || l.indexOf(f + '?v=SH44') !== -1 || l.indexOf(f + '?v=SH45') !== -1, f);   // SH44: formula, functions, settings
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH42";') !== -1);
   assert.ok(read('spreadsheet_functions.js').indexOf('/* (before SH42) CONCAT joined each argument as text') !== -1);
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH42') !== -1);
