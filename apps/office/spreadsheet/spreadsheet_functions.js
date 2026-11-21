@@ -22,7 +22,40 @@
  * like Excel ($A$1, A$1, $A1, A1, R1C1 style, 'My Sheet'!$A$1); INDIRECT reads it
  * back. A name that is not a function here is #NAME? (it was #ERR).
  * fxScanUnknown lists the functions an opened workbook uses that this app lacks.
+ * SH42: CONCATENATE(text1, text2, ...) (same as CONCAT, fxConcatArgs); ranges are joined
+ * row by row and the first error value is the result.
  */
+
+/* SH42: CONCAT / CONCATENATE. Each argument in order: a range (or a spilled array) is read
+   row by row, a blank is "", numbers and dates are joined as the cell shows its value text
+   (String(value), as CONCAT did), TRUE / FALSE as text. The first error value is the result. */
+function fxConcatArgs(args) {
+  var out = "", i, j, list, v;
+  function add(x) {
+    if (x == null) return;
+    if (Array.isArray(x)) { for (var k = 0; k < x.length; k++) add(x[k]); return; }
+    if (typeof x === "boolean") x = x ? "TRUE" : "FALSE";
+    if (typeof isErrorValue === "function" && isErrorValue(x)) fail(x);
+    out += String(x);
+  }
+  /* The error comes back as the value (not thrown), so an outer IFERROR can see it. */
+  try {
+    for (i = 0; i < args.length; i++) {
+      /* a range or ref never holds a double quote; text such as "!" must not be read as Sheet!A1 */
+      list = String(args[i]).indexOf('"') === -1 ? rangeValues(args[i], false) : null;
+      if (list) {
+        for (j = 0; j < list.length; j++) add(list[j]);
+      } else {
+        v = evalExpr(args[i]);
+        add(v);
+      }
+    }
+  } catch (e) {
+    if (typeof CellError === "function" && e instanceof CellError) return e.value;
+    throw e;
+  }
+  return out;
+}
 
 /**
  * Compare two values for IF conditions
@@ -195,11 +228,17 @@ function evalFunc(name, args, at) {
     return t.slice(-a1);
   }
 
+  /* (before SH42) CONCAT joined each argument as text; a range argument was #ERR and
+     CONCATENATE was #NAME?.
   if (n === "CONCAT") {
     t = "";
     for (i = 0; i < args.length; i++) t += String(evalExpr(args[i]));
     return t;
   }
+  */
+  /* SH42: CONCATENATE is Excel's classic name for CONCAT. Both join every argument in order;
+     a range is read row by row, blanks are empty text, an error value is the result. */
+  if (n === "CONCAT" || n === "CONCATENATE") return fxConcatArgs(args);
 
   if (n === "TODAY") {
     v = new Date();
@@ -1915,6 +1954,7 @@ var FX_CATALOG = [
   { name: "FIND", cat: "Text", sig: "FIND(find_text, within_text, [start])", hint: "1-based position of find_text (case-sensitive). #VALUE! if not found." },
   { name: "SUBSTITUTE", cat: "Text", sig: "SUBSTITUTE(text, old, new, [instance])", hint: "Replace old with new. Instance replaces only that occurrence." },
   { name: "CONCAT", cat: "Text", sig: "CONCAT(text, ...)", hint: "Join text values." },
+  { name: "CONCATENATE", cat: "Text", sig: "CONCATENATE(text1, text2, ...)", hint: "Join text values (classic Excel name for CONCAT)." },   /* SH42 */
   { name: "TEXTJOIN", cat: "Text", sig: "TEXTJOIN(delimiter, ignore_empty, text, ...)", hint: "Join text with a delimiter. ignore_empty TRUE skips blanks." },
   { name: "TEXT", cat: "Text", sig: "TEXT(value, format)", hint: "Format a number or date as text. Examples: 0.00, 0%, yyyy-mm-dd, dd/mm/yyyy." },
   { name: "CHAR", cat: "Text", sig: "CHAR(number)", hint: "The character for a code from 1 to 255. CHAR(10) is a line break. CHAR(65) is A. A code outside that range is #VALUE!." },
