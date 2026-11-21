@@ -35,9 +35,10 @@ Files already on the Hub local drive (Documents) open through `#drive=…&file=�
 <!-- (before HO13) - `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent, Settings), dynamic document view container. -->
 - `hub_office.html`: Document tab bar (with a standalone Home button), Start Page view (cards, Open/drop, Recent; the old Settings section is commented out), HO13 Settings view (`#view-settings`, heading, `#btn-settings-close`, the same `#ho-settings` controls), dynamic document view container. Loads `../shared/office-hubbar.js`, `../shared/office-docname.js`, `../shared/office-newdoc.js` and `../shared/office-shared-settings.js`.
 - `hub_office.css`: Responsive design, Hub OS dark/light variables, tab strip styling, HO7 Start Page cards and Open/drop area, HO8 Home button and empty-row hide, HO9 Settings rows, HO11 tab-title ellipsis, HO13 Settings page, Close button and tile.
-- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO12 new-blank-tab URLs (`?new=1` via `office-newdoc.js`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. HO13 Settings tile and tab (`openSettingsTab`, `closeSettingsTab`). Version constant: `HO13`. (before HO13) Version constant: `HO12b`. (before HO12b) Version constant: `HO12`.
+- `hub_office.js`: Tab management (`createDocTab`, `switchTab`, `closeTab`), HO12 new-blank-tab URLs (`?new=1` via `office-newdoc.js`), HO11 document-name tab labels (`applyDocName`), H49 Home-button wiring (HO8a: labelled, left-aligned), HO10 title-bar relay for the active document's quick buttons, FORMAT_TABLE, formatChipGroups, extension router, recent files loader, and HO9 Settings form. HO13 Settings tile and tab (`openSettingsTab`, `closeSettingsTab`). HO14 close-tab rule. Version constant: `HO14`. (before HO14) Version constant: `HO13`. (before HO13) Version constant: `HO12b`. (before HO12b) Version constant: `HO12`.
 - `hub_office_icon.png`: 128x128 RGBA suite icon.
 - `tests/hub_office.test.cjs`: Test suite verifying FORMAT_TABLE, formatChipGroups, tab creation/switching/closing, Untitled/file-name labels, extension routing, and the Settings section.
+- `tests/ho14-tabs.test.cjs`: HO14 close-tab rule (never Settings for a closed document) and Home leaving Settings open.
 - `tests/ho13-settings.test.cjs`: HO13 Settings tab placement, single instance, close-to-Home, tab-row visibility, Home-only title bar, and the Settings page markup.
 - `tests/ho10-titlebar.test.cjs`: Pure compose / prefix / cap / File-from-tabs / update-patch tests for the HO10 relay.
 
@@ -77,6 +78,11 @@ node --test apps/office/shared/tests/ho12-newdoc.test.cjs
 node --test apps/office/shared/tests/ho12b-untitled.test.cjs
 node --test apps/office/writer/test/test-ho12b-untitled.cjs
 ```
+
+## HO14 — closing a document never jumps to Settings
+- `nextTabAfterClose`: closing a document goes to the nearest document tab on its left; if there is none, it goes to the Start Page. It never returns the Settings tab for a closed document. Closing Settings still goes to the Start Page. (before HO14) a closed document went to whatever tab sat before it in the strip, which could be Settings.
+- Home (title bar or tab row) still calls `switchTab('start')`: the Start Page becomes active and the Settings tab stays open in the strip, inactive.
+- Version constant and cache tokens: `HO14`. Tests: `tests/ho14-tabs.test.cjs`.
 
 ## HO12b — Untitled N everywhere, names without extension, focus on tab switch
 

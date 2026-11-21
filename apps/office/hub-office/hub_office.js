@@ -1,5 +1,7 @@
 /* Hub Office Suite Start Center — hub_office.js */
-/* HO13: a Settings tile after Tables opens one Settings tab, always
+/* HO14: closing a document goes to the nearest document tab to its
+   left, else Home. It never lands on the Settings tab.
+   HO13: a Settings tile after Tables opens one Settings tab, always
    right after Home in the tab strip. The Settings page holds all the
    Hub Office settings (moved from the Start Page with the same ids and
    storage key) and has a Close button. The title bar shows Home only
@@ -38,7 +40,8 @@
   /* (before HO12) const VERSION = 'HO11'; */
   /* (before HO12b) const VERSION = 'HO12'; */
   /* (before HO13) const VERSION = 'HO12b'; */
-  const VERSION = 'HO13';
+  /* (before HO14) const VERSION = 'HO13'; */
+  const VERSION = 'HO14';
 
   const SUITES = [
     {
@@ -230,7 +233,7 @@
   /* Which tab to show after closing the active tab. `tabs` is the list
      before removal. Settings always goes back to Home; a document keeps
      the old rule (the tab before it in the strip, else the first). */
-  function nextTabAfterClose(tabs, closedId) {
+  /* (before HO14) function nextTabAfterClose(tabs, closedId) {
     const list = Array.isArray(tabs) ? tabs : [];
     if (closedId === SETTINGS_TAB_ID) return 'start';
     const idx = list.findIndex((t) => t && t.id === closedId);
@@ -238,6 +241,23 @@
     const rest = list.filter((t, i) => i !== idx);
     const next = rest[Math.max(0, idx - 1)] || rest[0];
     return next ? next.id : 'start';
+  } */
+  /* HO14: a closed document goes to the nearest document tab on its left,
+     else Home. It never returns Settings (or Home's record by position).
+     A tab with no type counts as a document unless it is Home or Settings. */
+  function isDocTabRecord(t) {
+    if (!t || t.id === 'start' || t.id === SETTINGS_TAB_ID) return false;
+    return t.type === 'doc' || !t.type;
+  }
+  function nextTabAfterClose(tabs, closedId) {
+    const list = Array.isArray(tabs) ? tabs : [];
+    if (closedId === SETTINGS_TAB_ID) return 'start';
+    const idx = list.findIndex((t) => t && t.id === closedId);
+    if (idx < 0) return 'start';
+    for (let i = idx - 1; i >= 0; i--) {
+      if (isDocTabRecord(list[i])) return list[i].id;
+    }
+    return 'start';
   }
 
   /* Title-bar relay only applies to a document tab (not Home or Settings). */

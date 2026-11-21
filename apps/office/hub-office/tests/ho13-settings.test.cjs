@@ -132,7 +132,8 @@ test('nextTabAfterClose: Settings goes Home, documents keep the old rule', () =>
   assert.equal(HO.nextTabAfterClose(tabs, 'settings'), 'start');
   assert.equal(HO.nextTabAfterClose([{ id: 'start' }, { id: 'settings' }], 'settings'), 'start');
   assert.equal(HO.nextTabAfterClose(tabs, 'doc-2'), 'doc-1');
-  assert.equal(HO.nextTabAfterClose(tabs, 'doc-1'), 'settings');
+  /* (before HO14) assert.equal(HO.nextTabAfterClose(tabs, 'doc-1'), 'settings'); */
+  assert.equal(HO.nextTabAfterClose(tabs, 'doc-1'), 'start', 'HO14: a closed document never lands on Settings');
   assert.equal(HO.nextTabAfterClose([{ id: 'start' }, { id: 'doc-1' }], 'doc-1'), 'start');
   assert.equal(HO.nextTabAfterClose([{ id: 'start' }, { id: 'doc-1' }, { id: 'doc-2' }], 'doc-1'), 'start');
   assert.equal(HO.nextTabAfterClose(tabs, 'missing'), 'start');
@@ -233,7 +234,8 @@ test('HTML: Settings page holds every setting, with Close; Start Page has none l
   const raw = fs.readFileSync(HTML_PATH, 'utf8');
   const html = live(raw);
   assert.ok(raw.includes('(before HO13)'), 'old markup is commented with a (before HO13) marker');
-  assert.ok(html.includes('content="HO13"') && html.includes('hub_office.js?v=HO13') && html.includes('hub_office.css?v=HO13'));
+  /* (before HO14) assert.ok(html.includes('content="HO13"') && html.includes('hub_office.js?v=HO13') && html.includes('hub_office.css?v=HO13')); */
+  assert.ok(html.includes('content="HO14"') && html.includes('hub_office.js?v=HO14') && html.includes('hub_office.css?v=HO14'));
   const startAt = html.indexOf('id="view-start"');
   const settingsAt = html.indexOf('id="view-settings"');
   assert.ok(startAt > 0 && settingsAt > startAt, 'Settings view exists after the Start Page');

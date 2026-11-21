@@ -51,12 +51,14 @@ function loadScript(customWindow = {}) {
 }
 
 /* (before HO13) test('VERSION is HO12b and SUITES cover all 5 office applications', () => { */
-test('VERSION is HO13 and SUITES cover all 5 office applications', () => {
+/* (before HO14) test('VERSION is HO13 and SUITES cover all 5 office applications', () => { */
+test('VERSION is HO14 and SUITES cover all 5 office applications', () => {
   const HO = loadScript();
   assert.ok(HO, 'HubOffice exported');
   /* (before HO12b) assert.equal(HO.VERSION, 'HO12'); */
   /* (before HO13) assert.equal(HO.VERSION, 'HO12b'); */
-  assert.equal(HO.VERSION, 'HO13');
+  /* (before HO14) assert.equal(HO.VERSION, 'HO13'); */
+  assert.equal(HO.VERSION, 'HO14');
   assert.equal(HO.SUITES.length, 5);
 
   const ids = JSON.parse(JSON.stringify(HO.SUITES.map((s) => s.id)));
