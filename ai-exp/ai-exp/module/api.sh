@@ -1,16 +1,19 @@
-# Gemini via an OpenAI-compatible chat completions endpoint, plus the
-# conversation file the session appends to.
+# Chat completions calls (Gemini and DeepInfra, both OpenAI-compatible; the
+# per-provider parts are in providers.sh) plus the conversation file the
+# session appends to.
 
-load_api_key() {
-  API_KEY="${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}"
-  [ -n "$API_KEY" ] || API_KEY="$(env_value GEMINI_API_KEY)"
-  [ -n "$API_KEY" ] || API_KEY="$(env_value GOOGLE_API_KEY)"
-  if [ -z "$API_KEY" ] && [ -t 0 ]; then
-    read -r -s -p "Gemini API key (input hidden): " API_KEY
-    echo
-  fi
-  [ -n "$API_KEY" ] || fail "No API key found. Set GEMINI_API_KEY, put it in .env next to the script, or type it when asked."
-}
+# load_api_key (before v6.1): Gemini-only key load; replaced by
+# load_provider_keys in providers.sh.
+# load_api_key() {
+#   API_KEY="${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}"
+#   [ -n "$API_KEY" ] || API_KEY="$(env_value GEMINI_API_KEY)"
+#   [ -n "$API_KEY" ] || API_KEY="$(env_value GOOGLE_API_KEY)"
+#   if [ -z "$API_KEY" ] && [ -t 0 ]; then
+#     read -r -s -p "Gemini API key (input hidden): " API_KEY
+#     echo
+#   fi
+#   [ -n "$API_KEY" ] || fail "No API key found. Set GEMINI_API_KEY, put it in .env next to the script, or type it when asked."
+# }
 
 write_tools_file() {
   local all
@@ -74,12 +77,15 @@ add_message() {
 ask_ai() {
   local body http errf
   errf="$RUN_DIR/curl.err"
-  body="$("$JQ" -c --arg model "$MODEL" --slurpfile tools "$TOOLS_FILE" \
-          '{model: $model, messages: ., tools: $tools[0]}' "$MSGS")" \
-    || { echo "could not build the API request"; return 1; }
+  # (before v6.1) Gemini-only request body; replaced by build_request in providers.sh.
+  # body="$("$JQ" -c --arg model "$MODEL" --slurpfile tools "$TOOLS_FILE" \
+  #         '{model: $model, messages: ., tools: $tools[0]}' "$MSGS")" \
+  #   || { echo "could not build the API request"; return 1; }
+  body="$(build_request)" || { echo "could not build the API request"; return 1; }
+  # (before v6.1) the curl URL was "$API_URL"; CALL_URL is set by provider_activate.
   http="$("$CURL" -sS -o "$REPLY_FILE" -w '%{http_code}' --max-time "$1" \
           -H "Authorization: Bearer $API_KEY" -H "Content-Type: application/json" \
-          -d "$body" "$API_URL" 2>"$errf")" || true
+          -d "$body" "${CALL_URL:-$API_URL}" 2>"$errf")" || true
   if [ "$http" != "200" ]; then
     echo "HTTP ${http:-none}: $(head -c 300 "$REPLY_FILE" 2>/dev/null) $(head -c 200 "$errf" 2>/dev/null)"
     return 1

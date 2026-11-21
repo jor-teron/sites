@@ -144,6 +144,7 @@ write_tools_file_multi() {
 
 select_person() {
   CUR="$1"; WHO="${USERS[$CUR]}"
+  provider_activate "$CUR"
   MSGS="$RUN_DIR/messages-$WHO-$SESSION.json"
   LOG="$LOG_DIR/log-$WHO-$SESSION.md"
   TURN="${P_TURN[$CUR]}"

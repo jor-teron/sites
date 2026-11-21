@@ -1,6 +1,6 @@
 # shellcheck shell=bash source-path=SCRIPTDIR
 # shellcheck disable=SC2034,SC2329  # variables/wrappers are read/called by the sourced modules
-# Command-line flags and presets (v5). agent.sh sources this file and calls
+# Command-line flags and presets (v5; model selection v6.1). agent.sh sources this file and calls
 #   flags_main "$@"
 # which parses flags, applies a preset, loads saved flags on --continue (or
 # infers them for experiments made by the old versions/), validates, sets
@@ -8,8 +8,11 @@
 # and runs it. One companion -> main.sh/run_agent; two companions or --solo
 # -> companion/turns modules with shared-cage.sh or separate-cages.sh.
 
-FLAG_KEYS="preset companions separate shared_folder shared_localhost time gap names solo end_session text_end search memory"
-SETUP_KEYS="preset companions separate shared_folder shared_localhost solo names memory"
+# shellcheck source=providers.sh
+source "$AI_EXP_ROOT/module/providers.sh"
+
+FLAG_KEYS="preset companions separate shared_folder shared_localhost time gap names solo end_session text_end search memory models"
+SETUP_KEYS="preset companions separate shared_folder shared_localhost solo names memory models"
 HELP_TOPICS="flags presets continue env all"
 
 flag_fail() { echo "Error: $*" >&2; echo "Run: ${AGENT_CMD:-agent.sh} --help   (or --help all)" >&2; exit 1; }
@@ -32,7 +35,7 @@ preset_values() {
 help_short() {
   local c="${AGENT_CMD:-agent.sh}"
   cat <<EOF
-ai-exp: run Gemini companions in offline BusyBox cages.
+ai-exp: run AI companions (Gemini or DeepInfra models) in offline BusyBox cages.
 
 Usage:
   $c <name> ["prompt"] [flags]          new experiment (flags anywhere)
@@ -48,11 +51,14 @@ Common flags:
   --time S  --gap S            session seconds (150) / seconds between requests (5)
   --names "a b"  --solo        companion names / one-companion control at multi pace
   --end-session --text-end --search --no-nudge --no-memory
+  --model M                    model for everyone: g35 (default) g31 llama nemo, or a full ID
+  --models A,B                 one model per companion, in order; --models list shows them all
 
 Examples:
   $c exp1 "Explore and keep notes"            # one companion, v2 behavior
   $c pair1 --ai2ai                            # two companions, separate cages + links
   $c ctl1 --ai2ai --solo                      # control run for pair1
+  $c mix1 --ai2ai --models llama,g35          # two companions on different models
   $c -c pair1 --time 600                      # continue with a longer session
 
 Manual: MANUAL.md
@@ -72,7 +78,15 @@ Flags (explicit flag > env var > preset > default):
   --time S              session seconds, whole number              env TIME_LIMIT (150)
   --gap S               seconds between requests, >= 1; up to 3 decimals
                         with 2 companions or --solo                env REQUEST_GAP (5)
+                        default by model: Gemini = preset gap (5; 4.35 v4/ai2ai); all
+                        DeepInfra = 2 (env DEEPINFRA_GAP); mixed = the Gemini gap
   --names "a b"         companion names (lowercase)                env NAMES
+  --model M             model for every companion: g35 (default) | g31 | llama | nemo,
+                        or a full model ID                         env AI_MODEL (Gemini only)
+  --models A,B          one model per companion in order (count must match the
+                        companions; --solo takes one); "--models list" prints
+                        aliases, IDs, providers and exits. Not with --model.
+                        Saved with the experiment, can't change on --continue.
   --solo                control: one companion at the multi pace   env SOLO=1
   --end-session         add the end_session tool                   env ENABLE_END_SESSION=1
   --text-end            a reply with no tool call ends the session env ENABLE_TEXT_END=1
@@ -99,7 +113,8 @@ Continue:
   Settings are saved in <exp>/.run/flags and reused by --continue.
   Allowed on continue: --time --gap --end-session --text-end --nudge --no-nudge --search, a prompt.
   Errors on continue: --preset --ai2ai --companions --separate --shared-folder --shared-localhost
-                      --solo --names --memory --no-memory --journal --no-journal
+                      --solo --names --memory --no-memory --journal --no-journal --model --models
+  Models are saved too (key "models"); experiments made before v6.1 continue on g35.
   Old experiments without .run/flags: preset inferred (cages/ -> v4, cage/ + .run/names -> v3,
   log-N.md -> v2, log.md -> v1, which cannot be continued).
   Logs are in <exp>/logs/; pre-v6 folders keep top-level logs.
@@ -110,7 +125,9 @@ Env vars (defaults; flags override): TIME_LIMIT REQUEST_GAP NAMES NAME_POOL SOLO
   ENABLE_END_SESSION ENABLE_TEXT_END ENABLE_SEARCH
 Env only: CMD_TIMEOUT CMD_KILL_GRACE MAX_OUTPUT MAX_JOURNAL MAX_SEARCHES SEARCH_RESULTS
   MAX_PROCS AI_MODEL API_URL API_TIMEOUT_FLOOR EXPERIMENTS_DIR BUSYBOX
-  GEMINI_API_KEY / GOOGLE_API_KEY (or .env), TAVILY_API_KEY
+  DEEPINFRA_GAP DEEPINFRA_API_URL
+  GEMINI_API_KEY / GOOGLE_API_KEY, DEEPINFRA_API_KEY (or .env), TAVILY_API_KEY
+  Only the keys of the providers you actually use are needed.
 AGENT_VERSION is no longer supported: use --preset vN.
 EOF
     ;;
@@ -157,10 +174,10 @@ flags_main() {
         if [ $# -gt 0 ] && [[ " $HELP_TOPICS " == *" $1 "* ]]; then help_topic "$1"; else help_short; fi
         exit 0 ;;
       -c|--continue) cont=1 ;;
-      --preset|--companions|--time|--gap|--names)
+      --preset|--companions|--time|--gap|--names|--model|--models)
         [ $# -gt 0 ] || flag_fail "$a needs a value."
         F[${a#--}]="$1"; shift ;;
-      --preset=*|--companions=*|--time=*|--gap=*|--names=*)
+      --preset=*|--companions=*|--time=*|--gap=*|--names=*|--model=*|--models=*)
         k="${a%%=*}"; F[${k#--}]="${a#*=}" ;;
       --ai2ai) F[preset]=ai2ai ;;
       --separate) F[separate]=1 ;;
@@ -178,6 +195,7 @@ flags_main() {
       *) pos+=("$a") ;;
     esac
   done
+  if [ "${F[models]:-}" = list ] || [ "${F[model]:-}" = list ]; then models_list; exit 0; fi
   [ "${#pos[@]}" -ge 1 ] || { help_short >&2; exit 1; }
   [ "${#pos[@]}" -le 2 ] || flag_fail "Too many arguments: ${pos[*]} (quote the prompt)."
   NAME="${pos[0]}"; PROMPT_ARG="${pos[1]:-}"; PROMPT_SET=$(( ${#pos[@]} == 2 ))
@@ -189,6 +207,7 @@ flags_main() {
     for k in $SETUP_KEYS; do
       [ -n "${F[$k]+x}" ] && flag_fail "--${k//_/-}$([ "$k" = memory ] && echo /--no-memory) changes the setup and can't be used with --continue (the setup is saved in $exp/.run/flags)."
     done
+    [ -n "${F[model]+x}" ] && flag_fail "--model changes the setup and can't be used with --continue (the models are saved in $exp/.run/flags)."
     [ -d "$exp" ] || flag_fail "No experiment called '$NAME' in $exp_root."
     if [ -f "$exp/.run/flags" ]; then
       while IFS='=' read -r k v; do
@@ -215,6 +234,11 @@ flags_main() {
     else R[$k]="${S[$k]:-}"; fi
   done
   R[preset]="${S[preset]}"
+  FLAG_MODEL_ONE="${F[model]:-}"   # --model X (same model for all); --models is F[models]
+  [ -z "$FLAG_MODEL_ONE" ] || [ -z "${F[models]:-}" ] || flag_fail "Use --model (everyone) or --models (one per companion), not both."
+  FLAG_GAP_GIVEN=0
+  { [ -n "${F[gap]+x}" ] || [ -n "$(flag_env gap)" ]; } && FLAG_GAP_GIVEN=1
+  FLAG_CONT="$cont"
   FLAG_SOLO_WITH_TWO=0
   [ "${F[companions]:-}" = 2 ] && [ "${R[solo]}" = 1 ] && FLAG_SOLO_WITH_TWO=1
   flags_validate R
@@ -237,6 +261,7 @@ flags_validate() {
     case "${r[$k]}" in 0|1) ;; *) flag_fail "${k//_/-} must be 0 or 1 (got: ${r[$k]})." ;; esac
   done
   [ "$FLAG_SOLO_WITH_TWO" = 1 ] && flag_fail "--solo runs one companion; drop --companions 2."
+  flags_models "$1"
   case "${r[preset]}" in v3|v4|ai2ai)
     [ "${r[companions]}" = 1 ] && [ "${r[solo]}" != 1 ] \
       && flag_fail "--companions 1 with preset ${r[preset]}: use --solo for a one-companion control, or --preset v2." ;;
@@ -265,6 +290,34 @@ flags_validate() {
   FLAGS_MULTI=$multi
 }
 
+# Resolve --model/--models/saved/AI_MODEL into full IDs in r[models] (comma list,
+# one per companion) and pick the default gap for the providers used.
+flags_models() {
+  local -n r="$1"
+  local count=1 list="${r[models]}" lenient="" i w all_di=1
+  local -a items=()
+  [ "${r[solo]}" = 1 ] || count="${r[companions]}"
+  if [ -n "$FLAG_MODEL_ONE" ]; then
+    list=""; for (( i=0; i<count; i++ )); do list+="${list:+,}$FLAG_MODEL_ONE"; done
+  fi
+  if [ -z "$list" ]; then            # nothing chosen or saved: AI_MODEL env, else g35
+    lenient=lenient; w="${AI_MODEL:-$DEFAULT_MODEL_ALIAS}"
+    for (( i=0; i<count; i++ )); do list+="${list:+,}$w"; done
+  fi
+  IFS=',' read -r -a items <<<"$list"
+  [ "${#items[@]}" = "$count" ] || flag_fail "--models needs $count model$([ "$count" = 1 ] || echo s) for $count companion$([ "$count" = 1 ] || echo s) (got ${#items[@]}: $list). Try: --models list"
+  r[models]=""
+  for w in "${items[@]}"; do
+    resolve_model "$w" "$lenient" || flag_fail "Unknown model '$w'. Known: $(printf '%s ' "${PROVIDER_MODELS[@]%%|*}")or a full ID. Try: --models list"
+    r[models]+="${r[models]:+,}$RM_ID"
+    [ "$RM_PROV" = deepinfra ] || all_di=0
+  done
+  # Default gap: all DeepInfra -> DEEPINFRA_GAP. Gemini or mixed -> keep the preset gap
+  # (the slowest provider sets the pace for everyone). --gap / REQUEST_GAP always win.
+  if [ "$FLAG_GAP_GIVEN" = 0 ] && [ "$FLAG_CONT" = 0 ] && [ "$all_di" = 1 ]; then r[gap]="$DEEPINFRA_GAP"; fi
+  return 0
+}
+
 # Set the variables the modules read.
 flags_apply() {
   local -n r="$1"
@@ -273,6 +326,11 @@ flags_apply() {
   ENABLE_CONTINUE="${r[memory]}"
   SEPARATE="${r[separate]}"; SHARE_FOLDER="${r[shared_folder]}"; SHARE_LOCALHOST="${r[shared_localhost]}"
   PRESET="${r[preset]}"
+  MODEL_IDS=(); MODEL_PROVS=()
+  local w
+  while IFS= read -r w; do
+    resolve_model "$w" lenient; MODEL_IDS+=("$RM_ID"); MODEL_PROVS+=("$RM_PROV")
+  done < <(tr ',' '\n' <<<"${r[models]}")
   case "$PRESET" in v1|v2|v3|v4) AGENT_LABEL="agent-$PRESET" ;; *) AGENT_LABEL="agent-v5-$PRESET" ;; esac
   # Multi prompt says "no internet access" when loopback is shared, except preset v4 (exact v4 text).
   NO_NET_TEXT="there is no network"

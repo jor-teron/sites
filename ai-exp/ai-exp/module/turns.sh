@@ -53,7 +53,7 @@ take_turn() {
   P_TURN[$CUR]=$(( P_TURN[$CUR] + 1 )); TURN="${P_TURN[$CUR]}"
   left="$(seconds_left)"; [ "$left" -lt "$API_TIMEOUT_FLOOR" ] && left="$API_TIMEOUT_FLOOR"
   if ! err="$(ask_ai "$left")"; then note "API error: $err"; tl "- $(clock) **$WHO** (API error: $(one_line "$err" 200))"; return; fi
-  if ! reply="$("$JQ" -ce '.choices[0].message' "$REPLY_FILE" 2>/dev/null)"; then
+  if ! reply="$(reply_message 2>/dev/null)"; then
     note "API error: response had no message"; tl "- $(clock) **$WHO** (API error: no message)"; return
   fi
   add_message "$reply"
@@ -117,7 +117,7 @@ run_multi() {
   require_host_tools
   NSENTER="$(find_tool nsenter)" || fail "nsenter not found. Install it: sudo apt install util-linux"
   init_cage_tz
-  load_api_key
+  load_provider_keys
   if [ "$ENABLE_SEARCH" = 1 ]; then load_tavily_key; else TAVILY_KEY=""; fi
   prepare_multi
   start_shared_cage
@@ -128,7 +128,7 @@ run_multi() {
   local user_msg="${PROMPT:-You can begin.}"
   : > "$TIMELINE"
   tl "# $NAME, session $SESSION ($AGENT_LABEL)"
-  tl "Model: $MODEL. Users: ${USERS[*]}$([ "$SOLO" = 1 ] && echo ' (SOLO control)'). Started $(date '+%Y-%m-%d %H:%M:%S'), ends $END_TEXT (${TIME_LIMIT}s)."
+  tl "$(models_header). Users: ${USERS[*]}$([ "$SOLO" = 1 ] && echo ' (SOLO control)'). Started $(date '+%Y-%m-%d %H:%M:%S'), ends $END_TEXT (${TIME_LIMIT}s)."
   tl "Prompt: ${PROMPT:-(none)}"; tl ""
   for k in "${!USERS[@]}"; do
     who="${USERS[$k]}"; P_TURN[$k]=0; P_ACTIVE[$k]=1; P_END[$k]=""

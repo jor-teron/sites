@@ -21,7 +21,8 @@ run_agent() {
   validate_config
   require_host_tools
   init_cage_tz
-  load_api_key
+  load_provider_keys
+  provider_activate 0
   if [ "$ENABLE_SEARCH" = 1 ]; then load_tavily_key; else TAVILY_KEY=""; fi
   prepare_experiment
   verify_cage
