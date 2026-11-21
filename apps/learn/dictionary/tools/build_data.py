@@ -16,6 +16,14 @@ across all parts of speech; ties keep the OEWN order, with capitalised entries (
 Light = the Quaker belief) after lower-case ones. The app shows parts of speech in first-seen order,
 so the part of speech of the most common sense comes first.
 
+DC-4 word families and phrases: each shard also has
+  "r": {word: [[family words<=MAX_FAM], [phrases<=MAX_PHR]]}   (trailing empty list dropped)
+Family = words linked to any sense of the word by WordNet derivation / pertainym / participle links
+(both directions: happy -> happiness, happily) plus opposites that contain the word (unhappy).
+Phrases = lower-case multi-word or hyphenated entries that have the word as one of their parts
+(run -> run out, bank -> bank account). Both lists: most used first (summed tag counts), then
+shorter, then a-z. Irregular forms (ran, went) come from the OEWN <Form> list and sit in "g": {word: [forms]}.
+
 Output in apps/learn/dictionary/data/ (all minified JSON):
   manifest.json   {v, words, forms, split:[prefixes split by one more letter], src}
   d_<key>.json    {"w": {word: [[pos, definition, [examples<=2], [synonyms<=6], [antonyms]], ...]},
@@ -35,6 +43,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'data')
 SPLIT_KB = 600
 MAX_EX, MAX_SYN, MAX_ANT = 2, 6, 4
+MAX_FAM, MAX_PHR = 12, 16
+FAMILY_REL = ('derivation', 'pertainym', 'participle')
 WOD_N = 1000
 
 
@@ -105,6 +115,7 @@ def main():
     entries = {}   # entry id -> (lemma, pos, [(sense id, synset id)], ipa, [forms])
     sense_lemma = {}   # sense id -> lemma
     antonyms = {}   # sense id -> [target sense ids]
+    links = []   # (sense id, target sense id) for FAMILY_REL (DC-4)
     synsets = {}   # synset id -> (definition, [examples], [member entry ids])
     version = ''
     op = gzip.open if src.endswith('.gz') else open
@@ -127,6 +138,7 @@ def main():
                     ants = [r.get('target') for r in s.findall('SenseRelation') if r.get('relType') == 'antonym']
                     if ants:
                         antonyms[sid] = ants
+                    links.extend((sid, r.get('target')) for r in s.findall('SenseRelation') if r.get('relType') in FAMILY_REL)
                 forms = [f.get('writtenForm') for f in el.findall('Form')]
                 entries[el.get('id')] = (word, pos, senses, pr.text if pr is not None else '', forms)
                 el.clear()
@@ -138,12 +150,16 @@ def main():
     ent_lemma = {eid: e[0] for eid, e in entries.items()}
 
     words, ipa, forms = {}, {}, {}
+    wcount, lower, irregular = {}, set(), {}   # DC-4: summed tag count per word, words with a lower-case entry, word -> [forms]
     for eid, (word, pos, senses, pr, fl) in entries.items():
         k = norm(word)
         lst = words.setdefault(k, [])
         p = 'a' if pos == 's' else pos
         proper = 1 if word[:1].isupper() else 0
+        if not proper:
+            lower.add(k)
         for sid, syn in senses:
+            wcount[k] = wcount.get(k, 0) + counts.get(pwn_key(sid), 0)
             d, ex, mem = synsets.get(syn, ('', [], []))
             if not d:
                 continue
@@ -167,7 +183,38 @@ def main():
             fk = norm(f)
             if fk != k:
                 forms.setdefault(fk, k)
+                if fk not in irregular.setdefault(k, []):
+                    irregular[k].append(fk)
     words = {k: [r for _, r in sorted(v)] for k, v in words.items() if v}   # most used first (DC-1a)
+    # DC-4 word family and phrases
+    sense_word = {sid: norm(sense_lemma[sid]) for sid in sense_lemma}
+    fam = {}
+    for a, b in links:
+        wa, wb = sense_word.get(a), sense_word.get(b)
+        if wa and wb and wa != wb and wa in words and wb in words:
+            fam.setdefault(wa, set()).add(wb)
+            fam.setdefault(wb, set()).add(wa)
+    for sid, ts in antonyms.items():
+        wa = sense_word.get(sid)
+        for t in ts:
+            wb = sense_word.get(t)
+            if wa and wb and wa != wb and wa in wb and wb in words:   # happy -> unhappy (not happy -> sad)
+                fam.setdefault(wa, set()).add(wb)
+    phr = {}
+    for k in words:
+        if k in lower and (' ' in k or '-' in k):
+            for t in set(re.split(r'[ -]+', k)):
+                if t and t != k and t in words:
+                    phr.setdefault(t, []).append(k)
+    rank = lambda w: (-wcount.get(w, 0), len(w.split()), len(w), w)
+    rel = {}
+    for k in words:
+        f = sorted(fam.get(k, ()), key=rank)[:MAX_FAM]
+        x = sorted(phr.get(k, ()), key=rank)[:MAX_PHR]
+        if f or x:
+            rel[k] = [f, x] if x else [f]
+    irregular = {k: v for k, v in irregular.items() if k in words}
+    print('family', sum(1 for v in rel.values() if v[0]), 'phrases', sum(1 for v in rel.values() if len(v) > 1), 'irregular', len(irregular))
     print('senses with a tag count:', sum(1 for e in entries.values() for sid, _ in e[2] if pwn_key(sid) in counts))
     forms = {f: k for f, k in forms.items() if f not in words and k in words}
 
@@ -175,17 +222,21 @@ def main():
     def bucket(keyfn):
         b = {}
         for k, v in words.items():
-            b.setdefault(keyfn(k), {'w': {}, 'p': {}, 'f': {}})['w'][k] = v
+            b.setdefault(keyfn(k), {'w': {}, 'p': {}, 'f': {}, 'r': {}, 'g': {}})['w'][k] = v
             if k in ipa:
                 b[keyfn(k)]['p'][k] = ipa[k]
+            if k in rel:
+                b[keyfn(k)]['r'][k] = rel[k]
+            if k in irregular:
+                b[keyfn(k)]['g'][k] = irregular[k]
         for f, k in forms.items():
-            b.setdefault(keyfn(f), {'w': {}, 'p': {}, 'f': {}})['f'][f] = k
+            b.setdefault(keyfn(f), {'w': {}, 'p': {}, 'f': {}, 'r': {}, 'g': {}})['f'][f] = k
         return b
 
     split = set()
     while True:   # split any shard over SPLIT_KB by one more letter, until none is (or it cannot split further)
         final = bucket(lambda k: shard_key(k, split))
-        big = {key for key, sh in final.items() if key != '0' and not key.endswith('_') and len(dump(sh).encode()) > SPLIT_KB * 1024}
+        big = {key for key, sh in final.items() if key != '0' and not key.endswith('_') and len(dump({n: sh[n] for n in 'wpf'}).encode()) > SPLIT_KB * 1024}   # DC-4: r/g not counted, so shard names stay as in DC-1
         if not big:
             break
         split |= big

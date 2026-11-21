@@ -1,6 +1,7 @@
-/* Dictionary DC-1 / DC-1a — pure logic (no DOM, no fetch): word normalising, which data shard holds a word, prefix search,
+/* Dictionary DC-1 / DC-1a / DC-4 — pure logic (no DOM, no fetch): word normalising, which data shard holds a word, prefix search,
    simple word-ending guesses (dogs -> dog), closest-word suggestions (edit distance), word of the day, recent list
-   grouping senses by part of speech, and the common-meanings-first layout (top senses + More meanings). Classic script: window.DictCore in the page, module.exports for node --test.
+   grouping senses by part of speech, the common-meanings-first layout (top senses + More meanings), and DC-4 word
+   family / phrases / irregular forms read from a shard. Classic script: window.DictCore in the page, module.exports for node --test.
    Shard rules match tools/build_data.py (shard_key): first letter a-z else '0', plus one more char per split prefix. */
 (function (root) {
   'use strict';
@@ -115,9 +116,29 @@
     });
   }
 
+  // DC-4 word family and phrases. A shard has "r": {word: [[family], [phrases]]} and "g": {word: [irregular forms]}
+  // (tools/build_data.py, lists already most-used first). related() reads them for one word, cleaning anything odd;
+  // cap() splits a list into the first n and the rest (a single extra item is shown rather than hidden).
+  function strList(x, self) {
+    var out = [];
+    (Array.isArray(x) ? x : []).forEach(function (w) { w = norm(w); if (w && w !== self && out.indexOf(w) < 0) out.push(w); });
+    return out;
+  }
+  function related(shard, word) {
+    var k = norm(word), r = shard && shard.r && shard.r[k], g = shard && shard.g && shard.g[k];
+    r = Array.isArray(r) ? r : [];
+    return { family: strList(r[0], k), phrases: strList(r[1], k), forms: strList(g, k) };
+  }
+  function cap(list, n) {
+    list = Array.isArray(list) ? list : [];
+    n = n || 8;
+    var cut = list.length <= n + 1 ? list.length : n;
+    return { top: list.slice(0, cut), more: list.slice(cut) };
+  }
+
   var api = { POS: POS, norm: norm, letter: letter, shardKey: shardKey, prefix: prefix, stems: stems, dist: dist,
     suggest: suggest, dayNumber: dayNumber, wordOfDay: wordOfDay, addRecent: addRecent, group: group,
-    layout: layout };
+    layout: layout, related: related, cap: cap };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DictCore = api;
 })(this);

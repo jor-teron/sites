@@ -1,9 +1,10 @@
-/* Dictionary DC-1 / DC-1a — screens: search box with prefix suggestions, the entry (word, IPA, Hear it, senses grouped by part of
-   speech, most common first, top 3 each with the rest under More meanings; examples and tappable synonyms / opposites), not-found suggestions, home (word of the day + recent searches)
+/* Dictionary DC-1 / DC-1a / DC-4 — screens: search box with prefix suggestions, the entry (word, IPA, Hear it, senses grouped by part of
+   speech, most common first, top 3 each with the rest under More meanings; examples and tappable synonyms / opposites;
+   DC-4 irregular forms, Word family and Phrases chips), not-found suggestions, home (word of the day + recent searches)
    and About (credits). Data: data/*.json shards made by tools/build_data.py, fetched only when needed and kept in memory.
    The looked-up word lives in the URL hash (#apple) so Back works. Saves: learn.dictionary.recent (last 20 words). */
 (() => {
-  const D = window.DictCore, store = LRN.store, VER = 'DC1a', KEY = 'learn.dictionary.recent';
+  const D = window.DictCore, store = LRN.store, VER = 'DC4', KEY = 'learn.dictionary.recent';
   const root = document.getElementById('app');
   const h = (tag, attrs, ...kids) => {
     const el = document.createElement(tag);
@@ -23,12 +24,12 @@
   async function find(w) {   // -> {word, senses, ipa, from} or null
     await ready;
     const k = D.norm(w), sh = await shard(k);
-    if (sh.w[k]) return { word: k, senses: sh.w[k], ipa: (sh.p || {})[k] || '' };
+    if (sh.w[k]) return { word: k, senses: sh.w[k], ipa: (sh.p || {})[k] || '', rel: D.related(sh, k) };
     const base = (sh.f || {})[k];
     const tries = base ? [base] : D.stems(k);
     for (const b of tries) {
       const s2 = await shard(b);
-      if (s2.w[b]) return { word: b, senses: s2.w[b], ipa: (s2.p || {})[b] || '', from: k };
+      if (s2.w[b]) return { word: b, senses: s2.w[b], ipa: (s2.p || {})[b] || '', from: k, rel: D.related(s2, b) };
     }
     return null;
   }
@@ -94,7 +95,14 @@
       h('ol', null, g.top.map(sense)),
       g.more.length ? h('details', { class: 'dc-more' }, h('summary', null, g.more.length + ' more ' + g.name + ' meaning' + (g.more.length > 1 ? 's' : '')),
         h('ol', { start: String(g.top.length + 1) }, g.more.map(sense))) : null));
-    return [top, note, ...groups];
+    // DC-4: irregular forms (plain text), word family and phrases (tappable chips; phrases show 8, rest under a tap)
+    const rel = r.rel || { family: [], phrases: [], forms: [] };
+    const forms = rel.forms.length ? h('p', { class: 'dc-forms' }, h('span', { class: 'dc-lab' }, 'Forms: '), rel.forms.join(', ')) : null;
+    const fam = rel.family.length ? h('section', { class: 'dc-pos dc-fam' }, h('h3', null, 'Word family'), h('div', { class: 'dc-rel' }, rel.family.map(wordBtn))) : null;
+    const pc = D.cap(rel.phrases, 8);
+    const phr = rel.phrases.length ? h('section', { class: 'dc-pos dc-phr' }, h('h3', null, 'Phrases'), h('div', { class: 'dc-rel' }, pc.top.map(wordBtn)),
+      pc.more.length ? h('details', { class: 'dc-more' }, h('summary', null, pc.more.length + ' more phrase' + (pc.more.length > 1 ? 's' : '')), h('div', { class: 'dc-rel' }, pc.more.map(wordBtn))) : null) : null;
+    return [top, note, forms, ...groups, fam, phr];
   }
 
   async function notFound(w) {
@@ -123,7 +131,7 @@
     return [h('h2', { class: 'dc-word', tabindex: '-1' }, 'About'),
       h('p', null, 'An offline English dictionary with about ' + (man.words ? Math.round(man.words / 1000) + ',000' : '120,000') + ' words and phrases. Type a word, pick a suggestion or tap any similar word to look it up. Hear it uses the voice built into your device.'),
       h('p', null, 'Word data: ', h('a', { href: 'https://en-word.net/', target: '_blank', rel: 'noopener' }, 'Open English WordNet'), ' ' + (man.v || '').replace('oewn-', '') + ' by the Open English WordNet team, licensed under ',
-        h('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener' }, 'CC BY 4.0'), '. Converted to small files for this app (shortened examples and synonym lists). Meanings are listed most common first, using the usage counts from Princeton WordNet 3.0.'),
+        h('a', { href: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', rel: 'noopener' }, 'CC BY 4.0'), '. Converted to small files for this app (shortened examples and synonym lists; word families from WordNet word links, phrases from entries that contain the word). Meanings are listed most common first, using the usage counts from Princeton WordNet 3.0.'),
       h('p', null, 'Open English WordNet is based on Princeton WordNet 3.0. WordNet 3.0 Copyright 2006 by Princeton University. All rights reserved.'),
       h('p', null, h('a', { href: 'LICENSE-OEWN.txt', target: '_blank' }, 'Full licence and credits'))];
   }
