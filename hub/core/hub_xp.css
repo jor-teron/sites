@@ -80,7 +80,8 @@ html.hub-xp .wm-btn {
 html.hub-xp .wm-gear { display: none; }
 html.hub-xp .wm-win.has-settings .wm-gear { display: inline-flex; }
 html.hub-xp .wm-btn:hover { background: var(--xp-btn); filter: brightness(1.15); }
-html.hub-xp .wm-btn:active { filter: brightness(0.9); }
+/* (before H171) html.hub-xp .wm-btn:active { filter: brightness(0.9); } */
+html.hub-xp .wm-btn:active { filter: brightness(0.9); transform: none; }   /* H171: XP press is colour, not scale */
 html.hub-xp .wm-close-btn, html.hub-xp .wm-close-btn:hover { background: var(--xp-close); color: #fff; }
 html.hub-xp .wm-win:not(.wm-active) .wm-btn { opacity: 0.82; }
 html.hub-xp .wm-bar .wm-gb { color: inherit; }
@@ -339,3 +340,25 @@ html.hub-xp:not(.hub-light) .hub-side-panel, html.hub-xp:not(.hub-light) #ctrl-p
 /* received-file balloons: a dim balloon instead of XP yellow */
 html.hub-xp:not(.hub-light) #hub-notify .hn-card, html.hub-xp:not(.hub-light) .hn-more { background: #3a3726; color: #f3eccb; border-color: #6b6440; }
 html.hub-xp:not(.hub-light) .hn-text, html.hub-xp:not(.hub-light) .hn-meta, html.hub-xp:not(.hub-light) .hn-close { color: #d8d0ac; }
+
+
+/* H171: XP press feedback is a darker / inset look, no scale (classic Luna). */
+html.hub-xp #wm-start:active, html.hub-xp body:not(.wm-desktop) #header .cat-btn:active {
+  background: var(--xp-start); filter: brightness(0.85); transform: none;
+}
+html.hub-xp .wm-task:active, html.hub-xp #wm-showdesk:active, html.hub-xp #wm-search:active,
+html.hub-xp #wm-fs:active, html.hub-xp .wm-meter:active, html.hub-xp .wm-ws button:active,
+html.hub-xp .wm-osk-btn:active, html.hub-xp .wm-tray .ctrl-btn:active,
+html.hub-xp .ctrl-btn:active, html.hub-xp .gb-tab:active, html.hub-xp .gb-qbtn:active,
+html.hub-xp .gb-fold-btn:active, html.hub-xp .gb-tabmenu-it:active {
+  filter: brightness(0.88); transform: none;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.45);
+}
+html.hub-xp .menu .menu-cat:active, html.hub-xp .menu button.app:active,
+html.hub-xp .menu-fly .fly-app:active, html.hub-xp .menu-fly .fly-row:active,
+html.hub-xp .ctx-item:active:not(:disabled) {
+  background: var(--xp-sel); color: #fff; filter: brightness(0.92); transform: none;
+}
+html.hub-xp .tile-app:active, html.hub-xp .drv:active {
+  filter: brightness(0.9); transform: none;
+}

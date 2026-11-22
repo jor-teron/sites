@@ -177,10 +177,14 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
   background: transparent; color: inherit;
   font: inherit; font-size: calc(var(--wm-title-h) * 0.55); line-height: 1;
   cursor: pointer;
-  transition: background 0.12s ease, transform 0.12s ease;
+  /* (before H171) transition: background 0.12s ease, transform 0.12s ease; */
+  transition: background 0.08s ease;   /* H171: instant press, no transform delay */
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
 }
 .wm-btn:hover { background: var(--wm-hover); }
-.wm-btn:active { transform: scale(0.9); }
+/* (before H171) .wm-btn:active { transform: scale(0.9); } */
+.wm-btn:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
 .wm-close-btn:hover { background: #e5484d; color: #fff; }
 .wm-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* H16: settings gear, only for apps that send hub-app-caps {settings:true} */
@@ -221,6 +225,7 @@ body.wm-desktop #wm-taskbar {
   user-select: none;
   --tb-btn: calc(var(--wm-task-h) - 8px);
   --tb-ico: calc(var(--wm-task-h) * 0.46);
+  touch-action: manipulation;   /* H171: no double-tap zoom delay on the bar */
 }
 #wm-start, .wm-task {
   height: var(--tb-btn);
@@ -234,11 +239,15 @@ body.wm-desktop #wm-taskbar {
   font: inherit;
   font-size: calc(var(--wm-task-h) * 0.33);
   cursor: pointer;
-  transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
+  /* (before H171) transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1); */
+  transition: background 0.08s ease;   /* H171: instant press, no transform delay */
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
 }
 #wm-start { padding: 0 12px 0 6px; font-weight: 700; font-size: calc(var(--wm-task-h) * 0.35); }
 #wm-start:hover, #wm-start[aria-expanded="true"] { background: var(--wm-hi); }
-#wm-start:active, .wm-task:active { transform: scale(0.94); }
+/* (before H171) #wm-start:active, .wm-task:active { transform: scale(0.94); } */
+#wm-start:active, .wm-task:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
 .wm-start-logo { width: calc(var(--tb-ico) + 4px); height: calc(var(--tb-ico) + 4px); border-radius: 6px; }
 .wm-tasks { flex: 1; min-width: 0; display: flex; gap: 4px; overflow: hidden; }
 .wm-task { padding: 0 10px 0 7px; max-width: 200px; min-width: 0; position: relative; }
@@ -261,12 +270,16 @@ body.wm-desktop #wm-taskbar {
 #wm-showdesk, #wm-search, #wm-fs {   /* H48b: Search button shares the Show Desktop look */
   width: var(--tb-btn); height: var(--tb-btn); flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
   border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; padding: 0;
-  transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
+  /* (before H171) transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1); */
+  transition: background 0.08s ease;   /* H171: instant press, no transform delay */
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
 }
 #wm-showdesk svg, #wm-search svg, #wm-fs svg { width: var(--tb-ico); height: var(--tb-ico); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 #wm-showdesk:hover, #wm-search:hover, #wm-fs:hover { background: var(--wm-hover); }
 #wm-showdesk.on, #wm-fs.on { background: var(--wm-hi); color: var(--accent); }
-#wm-showdesk:active, #wm-search:active, #wm-fs:active { transform: scale(0.88, 0.82); }
+/* (before H171) #wm-showdesk:active, #wm-search:active, #wm-fs:active { transform: scale(0.88, 0.82); } */
+#wm-showdesk:active, #wm-search:active, #wm-fs:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
 #wm-showdesk:focus-visible, #wm-search:focus-visible, #wm-fs:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 html.hub-fsbtn-off #wm-taskbar #wm-fs { display: none !important; }   /* H144: Settings → Desktop, also hidden in JS when unsupported */
 
@@ -332,14 +345,24 @@ html.hub-motion-off *, html.hub-motion-off *::before, html.hub-motion-off *::aft
 @media (prefers-reduced-motion: reduce) {
   .wm-win.wm-pop { animation: none; }
   #wm-start, #wm-showdesk, #wm-search, #wm-fs, .wm-task, .wm-btn { transition: none; }
+  /* H171: colour-only press; no scale */
+  #wm-start:active, .wm-task:active, #wm-showdesk:active, #wm-search:active, #wm-fs:active,
+  .wm-btn:active, .wm-meter:active, .wm-ws button:active,
+  .gb-tab:active, .gb-qbtn:active, .gb-fold-btn:active, .gb-tabmenu-it:active { transform: none; }
 }
 
 /* Optional busy meter left of the clock (hub_traymeter.js; Settings → Desktop) */
 .wm-meter { display: flex; align-items: center; gap: 4px; height: calc(var(--wm-task-h) - 8px); padding: 0 6px; margin: 0 2px; border: 0;
   border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: calc(var(--wm-task-h) * 0.3);
-  font-variant-numeric: tabular-nums; cursor: pointer; transition: transform .18s cubic-bezier(.34,1.56,.64,1); }
+  font-variant-numeric: tabular-nums; cursor: pointer;
+  /* (before H171) transition: transform .18s cubic-bezier(.34,1.56,.64,1); */
+  transition: background 0.08s ease;   /* H171: instant press */
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
+}
 .wm-meter:hover { background: var(--wm-hover); color: var(--text); }
-.wm-meter:active { transform: scale(.9, .84); }
+/* (before H171) .wm-meter:active { transform: scale(.9, .84); } */
+.wm-meter:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
 .wm-meter canvas { width: 36px; height: calc(var(--wm-task-h) * 0.4); }
 .wm-meter span { min-width: 3ch; text-align: right; }
 
@@ -366,12 +389,16 @@ html.hub-motion-reduced #wm-snap-pv, html.hub-motion-off #wm-snap-pv { animation
   width: calc(var(--tb-btn) * 0.96); height: calc(var(--tb-btn) * 0.6); padding: 0;
   border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--muted);
   font: inherit; font-size: calc(var(--wm-task-h) * 0.3); font-weight: 700; cursor: pointer;
-  transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
+  /* (before H171) transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1); */
+  transition: background 0.08s ease;   /* H171: instant press, no transform delay */
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
 }
 .wm-ws button:hover { background: var(--wm-hover); color: var(--text); }
 .wm-ws button.on { background: var(--wm-hi); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
 .wm-ws button.has:not(.on) { color: var(--text); }   /* has windows */
-.wm-ws button:active { transform: scale(0.86, 0.8); }
+/* (before H171) .wm-ws button:active { transform: scale(0.86, 0.8); } */
+.wm-ws button:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
 .wm-ws button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 600px) { body.wm-desktop #hub-notify.hn-bottom-right { bottom: calc(var(--wm-task-h) + 8px); } }
 
@@ -439,3 +466,31 @@ html.hub-motion-off.hub-leave-blur::after { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   html.hub-leave-blur::after { transition: none; }
 }
+
+
+/* H171: quicker taps on title-bar extras and tray buttons (touch-action already on Start / tasks /
+   show-desk / search / fullscreen / window buttons / meter / workspaces above). Instant press:
+   slight darken + scale 0.97, no transform delay. Layout unchanged (transform does not affect flow). */
+.gb-tab, .gb-qbtn, .gb-fold-btn, .gb-tabmenu-it, .wm-tray .ctrl-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.gb-tab:active, .gb-qbtn:active:not(:disabled), .gb-fold-btn:active, .gb-tabmenu-it:active,
+.wm-tray .ctrl-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+}
+html.hub-motion-reduced #wm-start:active, html.hub-motion-reduced .wm-task:active,
+html.hub-motion-reduced #wm-showdesk:active, html.hub-motion-reduced #wm-search:active,
+html.hub-motion-reduced #wm-fs:active, html.hub-motion-reduced .wm-btn:active,
+html.hub-motion-reduced .wm-meter:active, html.hub-motion-reduced .wm-ws button:active,
+html.hub-motion-reduced .gb-tab:active, html.hub-motion-reduced .gb-qbtn:active,
+html.hub-motion-reduced .gb-fold-btn:active, html.hub-motion-reduced .gb-tabmenu-it:active,
+html.hub-motion-reduced .wm-tray .ctrl-btn:active,
+html.hub-motion-off #wm-start:active, html.hub-motion-off .wm-task:active,
+html.hub-motion-off #wm-showdesk:active, html.hub-motion-off #wm-search:active,
+html.hub-motion-off #wm-fs:active, html.hub-motion-off .wm-btn:active,
+html.hub-motion-off .wm-meter:active, html.hub-motion-off .wm-ws button:active,
+html.hub-motion-off .gb-tab:active, html.hub-motion-off .gb-qbtn:active,
+html.hub-motion-off .gb-fold-btn:active, html.hub-motion-off .gb-tabmenu-it:active,
+html.hub-motion-off .wm-tray .ctrl-btn:active { transform: none; }   /* H171: colour only */

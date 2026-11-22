@@ -12,8 +12,10 @@
   display: flex; flex-direction: column; animation: ctx-pop .24s cubic-bezier(.34,1.56,.64,1);
 }
 .ctx-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 9px;
-  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent; }   /* H171 */
 .ctx-item:hover, .ctx-item:focus-visible, .ctx-item:focus { background: color-mix(in srgb, var(--accent, #6ea8fe) 24%, transparent); outline: none; }
+.ctx-item:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
 .ctx-item:disabled { opacity: .4; cursor: default; background: transparent; }
 .ctx-item.danger { color: var(--ctx-bad, #f87171); }
 .ctx-item, .ctx { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -23,4 +25,5 @@
 .ctx-sep { height: 1px; margin: 4px 8px; background: var(--ctx-line, rgba(255,255,255,.1)); }
 @media (pointer: coarse) { .ctx-item { min-height: 48px; font-size: 15px; } }
 @keyframes ctx-pop { from { transform: scale(.9, .8); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .ctx { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ctx { animation: none; } .ctx-item:active { transform: none; } }   /* H171: colour only */
+html.hub-motion-reduced .ctx-item:active, html.hub-motion-off .ctx-item:active { transform: none; }   /* H171 */

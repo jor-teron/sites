@@ -286,3 +286,19 @@ html.hub-glass:not(.hub-light) .wm-body, html.hub-glass:not(.hub-light) .wm-body
 html.hub-glass:not(.hub-light) .wm-body:has(> iframe[src*="apps/system/"]) { background: rgba(8, 10, 14, 0.22); }
 html.hub-glass:not(.hub-light) .wm-body > iframe[src*="apps/system/"] { background: transparent; }
 html.hub-glass:not(.hub-light).hub-glass-solid .wm-body:has(> iframe[src*="apps/system/"]) { background: rgb(18, 20, 27); }
+
+
+/* H171: Glass press feedback — a slightly stronger glass hover + the default 0.97 scale
+   (scale is dropped under prefers-reduced-motion / Hub motion reduce, same as the default theme). */
+html.hub-glass #wm-start:active, html.hub-glass .wm-task:active,
+html.hub-glass #wm-showdesk:active, html.hub-glass #wm-search:active, html.hub-glass #wm-fs:active,
+html.hub-glass .wm-btn:active, html.hub-glass .wm-meter:active, html.hub-glass .wm-ws button:active,
+html.hub-glass .wm-osk-btn:active, html.hub-glass .wm-tray .ctrl-btn:active,
+html.hub-glass .ctrl-btn:active, html.hub-glass .cat-btn:active,
+html.hub-glass .gb-tab:active, html.hub-glass .gb-qbtn:active, html.hub-glass .gb-fold-btn:active,
+html.hub-glass .gb-tabmenu-it:active, html.hub-glass .menu .menu-cat:active,
+html.hub-glass .menu button.app:active, html.hub-glass .menu-fly .fly-app:active,
+html.hub-glass .menu-fly .fly-row:active, html.hub-glass .ctx-item:active:not(:disabled) {
+  background: var(--gl-hover);
+  filter: brightness(0.92);
+}
