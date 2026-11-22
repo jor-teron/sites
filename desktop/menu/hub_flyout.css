@@ -164,6 +164,15 @@
   background: var(--wm-hi, rgba(110, 168, 254, 0.16));
   color: var(--text);
 }
+/* H171: quicker taps on flyout app and section rows */
+.menu-fly .fly-app, .menu-fly .fly-row {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.menu-fly .fly-app:active, .menu-fly .fly-row:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+}
 .menu-fly .icon {
   width: 22px; height: 22px; flex: 0 0 22px;
   border-radius: 4px;
@@ -264,4 +273,7 @@ html.hub-glass .menu-fly .fly-row.fly-on { background: var(--wm-hi); color: var(
   .menu-fly .fly-app, .menu-fly .fly-row { transition: none; }   / * H150: + .fly-row * /
 */
   .menu-fly .fly-row { transition: none; }   /* H154: .fly-app has no transition now (as .menu button.app) */
+  .menu-fly .fly-app:active, .menu-fly .fly-row:active { transform: none; }   /* H171: colour only */
 }
+html.hub-motion-reduced .menu-fly .fly-app:active, html.hub-motion-reduced .menu-fly .fly-row:active,
+html.hub-motion-off .menu-fly .fly-app:active, html.hub-motion-off .menu-fly .fly-row:active { transform: none; }   /* H171 */

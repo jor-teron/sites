@@ -381,3 +381,27 @@ body.hub-menu-open #app-frame { pointer-events: none; }
 }
 html.hub-motion-off #hub-app-missing .hub-missing-btn:active,
 html.hub-motion-reduced #hub-app-missing .hub-missing-btn:active { transform: none; }
+
+
+/* H171: quicker taps on the Start menu, Phone Start button, home tiles and tray / header buttons.
+   No double-tap zoom delay, no grey flash; instant press is a slight darken + scale 0.97.
+   prefers-reduced-motion and the Hub motion setting drop the scale (colour only). Layout unchanged. */
+.cat-btn, .menu .menu-cat, .menu button.app, .tile-app, .header-right .ctrl-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-btn:active, .menu .menu-cat:active, .menu button.app:active, .tile-app:active,
+.header-right .ctrl-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-btn:active, .menu .menu-cat:active, .menu button.app:active, .tile-app:active,
+  .header-right .ctrl-btn:active { transform: none; }
+}
+html.hub-motion-reduced .cat-btn:active, html.hub-motion-reduced .menu .menu-cat:active,
+html.hub-motion-reduced .menu button.app:active, html.hub-motion-reduced .tile-app:active,
+html.hub-motion-reduced .header-right .ctrl-btn:active,
+html.hub-motion-off .cat-btn:active, html.hub-motion-off .menu .menu-cat:active,
+html.hub-motion-off .menu button.app:active, html.hub-motion-off .tile-app:active,
+html.hub-motion-off .header-right .ctrl-btn:active { transform: none; }

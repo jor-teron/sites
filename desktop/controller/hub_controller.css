@@ -96,12 +96,19 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
 }
 .ctrl-btn:hover {
   color: var(--text);
   background: rgba(255,255,255,0.00);
   border-color: var(--line);
 }
+.ctrl-btn:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
+@media (prefers-reduced-motion: reduce) {
+  .ctrl-btn:active { transform: none; }
+}
+html.hub-motion-reduced .ctrl-btn:active, html.hub-motion-off .ctrl-btn:active { transform: none; }
 
 .ctrl-btn img {
 height: 33px;

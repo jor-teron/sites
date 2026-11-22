@@ -115,8 +115,16 @@ html.hub-motion-off #hub-osk .kk.active, html.hub-motion-reduced #hub-osk .kk.ac
   min-width: var(--tb-btn, 32px); height: var(--tb-btn, 32px); padding: 0 4px; margin-right: 4px;
   border: 0; border-radius: 9px; background: transparent; color: var(--text); cursor: pointer;
   font: inherit; font-size: calc(var(--wm-task-h) * 0.5); line-height: 1;
-  transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1);
+  /* (before H171) transition: background 0.12s ease, transform 0.15s cubic-bezier(.3,1.6,.5,1); */
+  transition: background 0.08s ease;   /* H171: instant press, no transform delay */
+  touch-action: manipulation;   /* H171 */
+  -webkit-tap-highlight-color: transparent;   /* H171 */
 }
 .wm-osk-btn:hover { background: var(--wm-hover); }
 .wm-osk-btn.on { background: var(--wm-hi); color: var(--accent); }
-.wm-osk-btn:active { transform: scale(0.88, 0.82); }
+/* (before H171) .wm-osk-btn:active { transform: scale(0.88, 0.82); } */
+.wm-osk-btn:active { transform: scale(0.97); filter: brightness(0.92); }   /* H171 */
+@media (prefers-reduced-motion: reduce) {
+  .wm-osk-btn:active { transform: none; }   /* H171: colour only */
+}
+html.hub-motion-reduced .wm-osk-btn:active, html.hub-motion-off .wm-osk-btn:active { transform: none; }
