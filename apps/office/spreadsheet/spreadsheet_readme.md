@@ -626,6 +626,16 @@ SH40 closed silently in the Hub, so an `.xlsx` / `.ods` / `.csv` opened through 
 - Old lines kept as `(before SH49)` comments. Title and `SHEET_VERSION` are SH49; `?v=SH49` on formula, state, storage, settings, undo, rows, sheets, data, xlsx, lazy, hos, saveformat, empty and spreadsheet.css.
 - **Tests:** `node --test apps/office/spreadsheet/test-sh49-lazy-sheets.cjs`.
 
+## SH47: open reads only the first 1000 rows of each sheet
+
+- **`sheetRows` on every workbook read.** `importXlsxFile` (xlsx, xlsm, xls, ods) calls `XLSX.read(data, xlsxReadOpts())`, which adds `sheetRows: ROWS` (`CFG.grid.rows`, 1000; not a literal). SheetJS stops parsing each sheet at that row, so rows the grid could never show are not read at all. The SH49 placeholders come from the same single read, so a sheet converted later is capped the same way.
+- **The open toast names the cut sheets.** `xlsxRowCapHits(list, cap)` (pure) reads each sheet's original range from `ws["!fullref"]` (set by SheetJS when sheetRows cut the sheet), or `ws["!ref"]` when a reader ignored sheetRows, and returns `{ name, rows }` for every sheet over the cap, placeholders included. `xlsxRowCapNote` turns them into one sentence added to the open toast: "Only the first 1000 rows were opened (Sheet1 had 20,000; Data had 5,000)." Converting a cut placeholder later (switching to it, a formula pointing at it) repeats its note in the status bar.
+- The old "N cells outside A–FZ × 1000 skipped" count now covers only columns past FZ: rows past 1000 are no longer read, so they are named by the row note instead.
+- **CSV open is unchanged** (`parseCsv` / `importCsvText` / `openCsvFile`, no SheetJS).
+- **Timing (median of 3, before -> after):** headless Chrome open-to-paint one20k.xlsx 1207 -> 389 ms (XLSX.read 884 -> 208 ms); big.xlsx (5 × 20k rows) 4667 -> 1155 ms (read 4108 -> 922 ms); fit.xlsx 278 -> 306 ms (1000 rows, nothing to cut; noise). Node vm import: one20k 1505 -> 453 ms (read 1237 -> 281 ms, heap 114 -> 33 MB); big 6239 -> 1372 ms (heap 325 -> 74 MB); fit 248 -> 253 ms.
+- Old lines kept as `(before SH47)` comments. Title and `SHEET_VERSION` are SH47; `?v=SH47` on xlsx, lazy and settings.
+- **Tests:** `node --test apps/office/spreadsheet/test-sh47-row-cap.cjs`.
+
 ## SH46: faster grid rendering (cached widths and row heights)
 
 - **Automatic column width once per render.** `autoColWidth` (a layout read of `#sheet-wrap` plus a loop over all 182 columns) ran for every cell: in the row-height autofit and in `paintCell`'s wrap check. `colWidthPx` now uses `sheetAutoW()`, read once per render pass (`sheetPassBegin` / `sheetPassEnd` around `sheetPrefix` and `renderViewport`). Outside a pass (a one-off caller) it is read live, as before.

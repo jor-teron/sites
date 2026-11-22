@@ -29,6 +29,10 @@
  * Save writes back to the same .xlsm with them. Macros are not run or shown.
  * SH35: the open toast adds "Not supported yet: NAME, ... (n cells)" when a
  * formula uses a function this app does not have.
+ * SH47: XLSX.read gets sheetRows = ROWS (CFG.grid.rows), so rows past the grid are not
+ * parsed at all. A sheet that had more rows (ws["!fullref"], or "!ref" when the reader
+ * ignored sheetRows) is named in the open toast: "Only the first 1000 rows were opened
+ * (Sheet1 had 20,000)." (xlsxRowCapHits / xlsxRowCapNote, pure). CSV open is unchanged.
  * SH49: open converts and calculates only the first sheet; the others are
  * placeholders converted on first use (spreadsheet_lazy.js). Export / Save build
  * the book after ensureAllSheetsLoaded, so the file is the same as before.
@@ -138,6 +142,49 @@ function xlsxFillGrid(XLSX, ws, grid, o) {
   return dropped;
 }
 
+/* ---------- SH47: row cap ---------- */
+/* Read options for opening a workbook: rows past the grid (ROWS) are not parsed. */
+function xlsxReadOpts() {
+  var cap = typeof ROWS === "number" && ROWS > 0 ? ROWS : ((CFG.grid && CFG.grid.rows) || 1000);
+  return { type: "array", cellFormula: true, sheetRows: cap };
+}
+
+/* Pure: last row number (1-based) of an A1 range like "A1:O20000"; 0 when unreadable. */
+function xlsxRefRows(ref) {
+  var m, end;
+  if (typeof ref !== "string" || !ref) return 0;
+  end = ref.split(":").pop();
+  m = /^\$?[A-Za-z]{0,3}\$?(\d+)$/.exec(end.trim());
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+/* Pure: sheets [{ name, ws }] -> [{ name, rows }] for every sheet that had more than cap
+   rows. The original range is ws["!fullref"] (SheetJS sets it when sheetRows cut the
+   sheet); without it, ws["!ref"] (a reader that ignored sheetRows). */
+function xlsxRowCapHits(list, cap) {
+  var out = [], i, ws, rows;
+  for (i = 0; list && i < list.length; i++) {
+    ws = list[i] && list[i].ws;
+    if (!ws) continue;
+    rows = xlsxRefRows(ws["!fullref"]) || xlsxRefRows(ws["!ref"]);
+    if (rows > cap) out.push({ name: String(list[i].name), rows: rows });
+  }
+  return out;
+}
+
+/* Pure: 20000 -> "20,000". */
+function xlsxGroupNum(n) {
+  return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/* Pure: "Only the first 1000 rows were opened (Sheet1 had 20,000; Data had 5,000)." or "". */
+function xlsxRowCapNote(hits, cap) {
+  var parts = [], i;
+  if (!hits || !hits.length) return "";
+  for (i = 0; i < hits.length; i++) parts.push(hits[i].name + " had " + xlsxGroupNum(hits[i].rows));
+  return "Only the first " + cap + " rows were opened (" + parts.join("; ") + ").";
+}
+
 function xlsxIsWorkbookName(name) {
   /* (before SH33) return /\.(xlsx|xls|ods)$/i.test(String(name || "")); */
   return /\.(xlsx|xlsm|xls|ods)$/i.test(String(name || ""));
@@ -215,7 +262,8 @@ function importXlsxFile(file, o) {
   /* (before SH40a) Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) { ... }) returned nothing. */
   /* SH40a: returns Promise<boolean> so a failed open can go back to the empty panel (spreadsheet_empty.js). */
   return Promise.all([xlsxLoad(), file.arrayBuffer()]).then(function (res) {
-    var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true });
+    /* (before SH47) var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true }); */
+    var XLSX = res[0], wb = XLSX.read(res[1], xlsxReadOpts());   /* SH47: sheetRows = ROWS */
     /* (before SH49) var loaded = xlsxSheetsFromBook(XLSX, wb); */
     var loaded = typeof xlsxSheetsFromBookLazy === "function" && typeof lazyRegister === "function"
       ? xlsxSheetsFromBookLazy(XLSX, wb, 0) : xlsxSheetsFromBook(XLSX, wb);   /* SH49: first sheet only */
@@ -277,6 +325,16 @@ function importXlsxFile(file, o) {
         : (typeof fxUnknownNote === "function" ? fxUnknownNote(sheets) : "");
     } catch (e) { unknownNote = ""; }
     if (unknownNote) msg += ". " + unknownNote;
+    /* SH47: sheets cut at the row cap, placeholders (SH49) included: their raw worksheets carry !fullref */
+    var capNote = "";
+    try {
+      var capList = [], ci;
+      for (ci = 0; ci < sheets.length && wb.SheetNames && ci < wb.SheetNames.length; ci++) {
+        capList.push({ name: sheets[ci].name, ws: wb.Sheets[wb.SheetNames[ci]] });
+      }
+      capNote = xlsxRowCapNote(xlsxRowCapHits(capList, ROWS), ROWS);
+    } catch (e) { capNote = ""; }
+    if (capNote) msg += ". " + capNote;
     saved.then(function () { xlsxToast(msg); }, function () { xlsxToast(msg); });
     return true;   /* SH40a */
   /* (before SH40a) }).catch(function (e) { xlsxToast("Could not open file: " + e.message); }); */
