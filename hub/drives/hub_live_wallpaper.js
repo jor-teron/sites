@@ -19,6 +19,7 @@
  * Governance & Performance:
  *   - 30 FPS cap via timestamp delta in requestAnimationFrame
  *   - Auto-pause on tab hidden, screen locked (hub-locked), or break locked (hub-break)
+ *   - H167: also paused while the boot splash covers the desk (html.hub-splash); resumes when it ends
  *   - Settings live preview attachment via attachPreview(canvasEl, id)
  *   // - Accessibility: respects prefers-reduced-motion and sites-hub.motion ('reduced' / 'off')
  *   //   by drawing a single static frame and stopping animation   (before H158a)
@@ -925,7 +926,10 @@
     if (typeof document === 'undefined') return false;
     if (document.hidden) return true;
     const root = document.documentElement;
-    if (root && (root.classList.contains('hub-locked') || root.classList.contains('hub-break'))) return true;
+    // if (root && (root.classList.contains('hub-locked') || root.classList.contains('hub-break'))) return true;   (before H167)
+    // H167: also hold the loop while the H159 boot splash hides the desk (html.hub-splash), so restoring windows
+    // get the CPU. The first frame is still drawn; the html class observer resumes it when the splash ends.
+    if (root && (root.classList.contains('hub-locked') || root.classList.contains('hub-break') || root.classList.contains('hub-splash'))) return true;
     const body = document.body;
     const isDesktop = body && body.classList.contains('wm-desktop');
     const empty = document.getElementById('empty');

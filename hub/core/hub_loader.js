@@ -8,6 +8,11 @@
  *   3. osk      hub/osk/* + kb_common (on-screen keyboard)                — next idle
  *   4. viewer   hub_viewer.js + hub_viewer_pdf.js                         — next idle
  *   5. saver    hub_saver.js (R49 clock screen saver, idle timer)         — next idle
+ * H167 (faster boot): tray    shared/perf/busy_meter.js + hub/drives/hub_traymeter.js (taskbar busy
+ *               meter, off by default) — first idle moment, ONLY when Settings has it on
+ *               ('sites-hub.trayMeter' = '1'); off = never loaded. Turning it on later (Settings'
+ *               {type:'hub-prefs'} message or the storage event) loads it at once; hub_traymeter.js then
+ *               reads the pref itself, so it looks and works exactly as before, just after first paint.
  * On demand (loaded at once, then the action runs): ⌨ tray button and Ctrl+Alt+K (osk),
  * Ctrl+Alt+arrows (snap), HubViewer.open / pushAndShow (viewer), OSK saved as shown (osk).
  * API: window.HubLoader.load(name) → Promise; .loaded(name); .failed(name) → files that did not load.
@@ -23,7 +28,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261121b';
+  const V = '20261122a';
   const DELAY = 1500;
   const BATCHES = {
     drives: ['shared/google/google.css', 'hub/drives/hub_drives.css',
@@ -38,9 +43,11 @@
       'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js'],
     viewer: ['hub/viewer/hub_viewer_pdf.js', 'hub/viewer/hub_viewer.js'],
     saver: ['hub/core/hub_saver.js'],   // R49
+    tray: ['shared/perf/busy_meter.js', 'hub/drives/hub_traymeter.js'],   // H167: was in desktop.html before first paint
   };
   const done = {}, busy = {}, fails = {}, good = new Set();   // R58: good = files that loaded
-  const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };
+  // const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };   (before H167)
+  const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer', tray: 'the busy meter' };
 
   /** One file; scripts run in order because each waits for the one before. */
   function one(src, name) {
@@ -136,6 +143,12 @@
     window.HubViewer = { stub: true, open: later('open'), pushAndShow: later('pushAndShow') };
   }
 
+  // ---- H167: taskbar busy meter only when it is on (was always parsed before the first paint) ----
+  const meterOn = () => { try { return localStorage.getItem('sites-hub.trayMeter') === '1'; } catch (_) { return false; } };
+  const tryTray = () => { if (!done.tray && meterOn() && document.getElementById('wm-taskbar')) load('tray'); };
+  window.addEventListener('storage', (e) => { if (!e.key || e.key === 'sites-hub.trayMeter') tryTray(); });
+  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'hub-prefs') setTimeout(tryTray, 0); });
+
   // ---- background batches ----
   const idle = (fn, t) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: t || 2000 }) : setTimeout(fn, 50));
   let saved = false;
@@ -144,6 +157,7 @@
   // start after the page 'load' event, so the background batches never hold up first paint
   function start() {
     idle(() => load('drives'), 500);
+    idle(tryTray, 500);   // H167
     setTimeout(() => idle(() => load('snap')
       .then(() => new Promise((r) => idle(r))).then(() => load('osk'))
       .then(() => new Promise((r) => idle(r))).then(() => load('viewer'))
