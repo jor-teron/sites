@@ -105,6 +105,22 @@ html.hub-glass .wm-body:has(> iframe[src*="apps/system/"]) {
 }
 html.hub-glass .wm-body > iframe[src*="apps/system/"] { background: transparent; }
 html.hub-glass.hub-glass-solid .wm-body:has(> iframe[src*="apps/system/"]) { background: rgb(30, 34, 44); }
+/* H169: disable Glass backdrop-filter blur and heavy shadows on the dragging / resizing window */
+html.hub-glass .wm-win.wm-dragging,
+html.hub-glass .wm-win.wm-dragging.wm-active {
+  box-shadow: none;
+}
+html.hub-glass .wm-win.wm-dragging .wm-bar,
+html.hub-glass .wm-win.wm-dragging.wm-active .wm-bar {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gl-gloss), var(--gl-solid);
+}
+html.hub-glass .wm-win.wm-dragging .wm-body:has(> iframe[src*="apps/system/"]) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--gl-solid);
+}
 html.hub-glass .wm-close-btn:hover { text-shadow: none; background: #e81123; color: #fff; }
 
 /* ---------- Desktop taskbar (blur on ::before: no backdrop root for anything inside) ---------- */
@@ -285,7 +301,8 @@ html.hub-glass:not(.hub-light).hub-glass-solid {
 html.hub-glass:not(.hub-light) .wm-body, html.hub-glass:not(.hub-light) .wm-body iframe { background: #1b1f28; }   /* while an app loads */
 html.hub-glass:not(.hub-light) .wm-body:has(> iframe[src*="apps/system/"]) { background: rgba(8, 10, 14, 0.22); }
 html.hub-glass:not(.hub-light) .wm-body > iframe[src*="apps/system/"] { background: transparent; }
-html.hub-glass:not(.hub-light).hub-glass-solid .wm-body:has(> iframe[src*="apps/system/"]) { background: rgb(18, 20, 27); }
+html.hub-glass:not(.hub-light).hub-glass-solid .wm-body:has(> iframe[src*="apps/system/"]),
+html.hub-glass:not(.hub-light) .wm-win.wm-dragging .wm-body:has(> iframe[src*="apps/system/"]) { background: rgb(18, 20, 27); }
 
 
 /* H171: Glass press feedback — a slightly stronger glass hover + the default 0.97 scale

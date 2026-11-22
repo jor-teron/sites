@@ -196,6 +196,18 @@ body.wm-desktop #wm-desk { display: block; position: absolute; inset: 0; overflo
 /* while dragging / resizing, or while the Hub menu is open, iframes must not eat the pointer */
 body.wm-dragging .wm-body iframe, body.hub-menu-open .wm-body iframe { pointer-events: none; }
 body.wm-dragging { cursor: grabbing; user-select: none; }
+/* H169: drop heavy window shadows and blur while dragging / resizing */
+.wm-win.wm-dragging,
+.wm-win.wm-dragging.wm-active,
+html.hub-light .wm-win.wm-dragging,
+html.hub-light .wm-win.wm-dragging.wm-active {
+  box-shadow: none;
+}
+.wm-win.wm-dragging .wm-bar,
+.wm-win.wm-dragging .wm-body {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 
 /* resize handles (8 px edges, 16 px corners) */
 .wm-rz { position: absolute; z-index: 2; touch-action: none; }
