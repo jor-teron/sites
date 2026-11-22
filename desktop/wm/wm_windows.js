@@ -169,6 +169,7 @@
 
   function minimise(w) {
     if (!w || w.min) return;
+    cancelDrag(w);   // H169
     w.min = true;
     w.el.classList.add('wm-min');
     if (active === w) setActive(topVisible(w)); else changed();
@@ -182,6 +183,7 @@
   }
   /** Maximise on / off (clears a snap: restoring goes back to the size from before). */
   function setMax(w, on) {
+    cancelDrag(w);   // H169: clean up active drag/resize if maximised mid-drag
     w.max = !!on;
     w.snap = '';
     w.el.classList.toggle('wm-max', w.max);
@@ -191,6 +193,7 @@
   }
   /** Snap to the left / right half ('l' | 'r'), or '' = back to the normal size. */
   function setSnap(w, side) {
+    cancelDrag(w);   // H169
     side = side === 'l' || side === 'r' ? side : '';
     w.snap = side;
     w.max = false;
@@ -246,12 +249,14 @@
   function close(w, o) {
     const i = wins.indexOf(w);
     if (i < 0) return;
+    cancelDrag(w, true);   // H169: never park/destroy with active drag or pending rAF
     wins.splice(i, 1);
     if (!(o && o.park && park(w))) destroy(w);
     if (active === w) setActive(topVisible()); else changed();
   }
   /** H168: the old close teardown (gamebar off, frame blanked, element removed). */
   function destroy(w) {
+    cancelDrag(w, true);   // H169
     clearTimeout(w.parkT);
     const j = parked.indexOf(w);
     if (j >= 0) parked.splice(j, 1);
@@ -355,37 +360,96 @@
     }
   }
 
-  /** Drag helper: pointer capture on el; onMove(dx, dy, ev) from the start point; onEnd(ev). */
-  function dragOn(el, onStart, onMove, onEnd) {
+  function cancelDrag(w, noCommit) {
+    if (w && w._cancelDrag) w._cancelDrag(!!noCommit);
+  }
+
+  /** H169: drag helper — pointermove only stores latest coords; one rAF per frame calls onFrame;
+   *  pointerup, pointercancel, lostpointercapture, window blur, and cancelDrag(w) all clean up. */
+  // (before H169) function dragOn(el, onStart, onMove, onEnd) {
+  //   el.addEventListener('pointerdown', (e) => {
+  //     // Legacy: if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab')) return;
+  //     if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab, .gb-qbtn')) return;   // H49 quick buttons
+  //     e.preventDefault();
+  //     const sx = e.clientX, sy = e.clientY;
+  //     if (onStart(e) === false) return;
+  //     el.setPointerCapture(e.pointerId);
+  //     document.body.classList.add('wm-dragging');
+  //     const move = (ev) => onMove(ev.clientX - sx, ev.clientY - sy, ev);
+  //     const up = (ev) => {
+  //       document.body.classList.remove('wm-dragging');
+  //       if (onEnd) onEnd(ev);
+  //       el.removeEventListener('pointermove', move);
+  //       el.removeEventListener('pointerup', up);
+  //       el.removeEventListener('pointercancel', up);
+  //     };
+  //     el.addEventListener('pointermove', move);
+  //     el.addEventListener('pointerup', up);
+  //     el.addEventListener('pointercancel', up);
+  //   });
+  // }
+  function dragOn(el, w, onStart, onFrame, onEnd) {
+    const sched = (fn) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : setTimeout(fn, 16));
+    const unsched = (id) => (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id));
     el.addEventListener('pointerdown', (e) => {
       // Legacy: if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab')) return;
       if (e.button !== 0 || e.target.closest('.wm-btn, .gb-btn, .gb-tab, .gb-qbtn')) return;   // H49 quick buttons
       e.preventDefault();
-      const sx = e.clientX, sy = e.clientY;
+      cancelDrag(w, true);
       if (onStart(e) === false) return;
-      el.setPointerCapture(e.pointerId);
+      const sx = e.clientX, sy = e.clientY;
+      try { if (el.setPointerCapture) el.setPointerCapture(e.pointerId); } catch (_) { /* synthetic / unsupported */ }
+      w.el.classList.remove('wm-pop');
       document.body.classList.add('wm-dragging');
-      const move = (ev) => onMove(ev.clientX - sx, ev.clientY - sy, ev);
-      const up = (ev) => {
-        document.body.classList.remove('wm-dragging');
-        if (onEnd) onEnd(ev);
-        el.removeEventListener('pointermove', move);
-        el.removeEventListener('pointerup', up);
-        el.removeEventListener('pointercancel', up);
+      w.el.classList.add('wm-dragging');
+      let rafId = 0, lastEv = null, moved = false, ended = false;
+      const move = (ev) => {
+        if (ended) return;
+        lastEv = ev;
+        moved = true;
+        if (!rafId) {
+          rafId = sched(() => {
+            rafId = 0;
+            if (ended || !lastEv) return;
+            onFrame(lastEv.clientX - sx, lastEv.clientY - sy, lastEv);
+          });
+        }
       };
+      const finish = (ev, noCommit) => {
+        if (ended) return;
+        ended = true;
+        if (w._cancelDrag === cancel) w._cancelDrag = null;
+        if (rafId) { unsched(rafId); rafId = 0; }
+        document.body.classList.remove('wm-dragging');
+        w.el.classList.remove('wm-dragging');
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerup', onUp);
+        el.removeEventListener('pointercancel', onLost);
+        el.removeEventListener('lostpointercapture', onLost);
+        window.removeEventListener('blur', onBlur);
+        try { if (el.hasPointerCapture && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+        if (onEnd) {
+          const isUp = !!(ev && ev.type === 'pointerup');
+          const coordEv = isUp && isFinite(ev.clientX) && isFinite(ev.clientY) ? ev : (lastEv || ev);
+          const dx = moved && coordEv && isFinite(coordEv.clientX) ? coordEv.clientX - sx : 0;
+          const dy = moved && coordEv && isFinite(coordEv.clientY) ? coordEv.clientY - sy : 0;
+          onEnd(isUp ? ev : { type: 'pointercancel' }, { moved, dx, dy, ev: coordEv, noCommit: !!noCommit });
+        }
+      };
+      const onUp = (ev) => finish(ev, false);
+      const onLost = (ev) => finish(ev, false);
+      const onBlur = () => finish({ type: 'pointercancel' }, false);
+      const cancel = (noCommit) => finish({ type: 'pointercancel' }, !!noCommit);
+      w._cancelDrag = cancel;
       el.addEventListener('pointermove', move);
-      el.addEventListener('pointerup', up);
-      el.addEventListener('pointercancel', up);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onLost);
+      el.addEventListener('lostpointercapture', onLost);
+      window.addEventListener('blur', onBlur);
     });
   }
 
-  /** fit: keep the whole window on screen (restored sessions), else just a grab-able part. */
-  // R22: w.pref = the size / place the user (or the saved session) chose. Screen-resize clamps
-  // only change w.rect (what is shown, keep=true), so windows grow back when room returns
-  // instead of shrinking a little more on every browser resize. The session saves w.pref.
-  function setRect(w, x, y, wd, ht, fit, keep) {
-    const d = deskRect();
-    const raw = { x, y, w: wd, h: ht };   // R22: a restored session keeps its full saved size
+  function clampRect(d, x, y, wd, ht, fit) {
     wd = Math.max(MIN_W, Math.min(wd, d.width));
     ht = Math.max(MIN_H, Math.min(ht, d.height));
     if (fit) {
@@ -395,6 +459,17 @@
       x = Math.max(80 - wd, Math.min(x, d.width - 80));   // keep a grab-able part on screen
       y = Math.max(0, Math.min(y, d.height - 36));
     }
+    return { x, y, w: wd, h: ht };
+  }
+
+  /** fit: keep the whole window on screen (restored sessions), else just a grab-able part. */
+  // R22: w.pref = the size / place the user (or the saved session) chose. Screen-resize clamps
+  // only change w.rect (what is shown, keep=true), so windows grow back when room returns
+  // instead of shrinking a little more on every browser resize. The session saves w.pref.
+  function setRect(w, x, y, wd, ht, fit, keep) {
+    const d = deskRect();
+    const raw = { x, y, w: wd, h: ht };   // R22: a restored session keeps its full saved size
+    ({ x, y, w: wd, h: ht } = clampRect(d, x, y, wd, ht, fit));
     Object.assign(w.rect, { x, y, w: wd, h: ht });
     if (!keep) w.pref = fit ? raw : { x, y, w: wd, h: ht };   // R22
     saveSoon();
@@ -516,7 +591,7 @@
 
     // Move by the title bar. A maximised / snapped window gets its old size back under the
     // pointer once it really moves (a plain click on the bar keeps it as it is).
-    let start = null, freed = true;
+    let start = null, base = null, dr = null, br = null, freed = true;
     const hook = (k, ev) => { const h = HubWM.dragHook; if (h && typeof h[k] === 'function') h[k](w, ev); };
     // R35: snapping (wm_snap.js) is a deferred batch (hub_loader.js, ~1.5 s idle, later on a slow
     // connection). Before it was in, HubWM.dragHook was null, so an early drag never snapped, showed
@@ -524,43 +599,60 @@
     // window open (below) and on a title-bar press. hook() reads HubWM.dragHook live, so a drag
     // that is already under way snaps once the file arrives mid-drag.
     const wantSnap = () => { if (!HubWM.dragHook && window.HubLoader) window.HubLoader.load('snap'); };
-    dragOn(bar, () => {
+    const unmaxForDrag = (dx, dy, ev) => {
+      if (Math.abs(dx) + Math.abs(dy) < 6) return false;
+      freed = true;
+      const box = br || el.getBoundingClientRect(), ratio = (ev.clientX - box.left) / Math.max(1, box.width);
+      w.max = false; w.snap = '';
+      el.classList.remove('wm-max', 'wm-snap-l', 'wm-snap-r');
+      setMaxBtn(w);
+      // keep the grabbed point under the pointer: start so that start + d = pointer - ratio * w
+      start = { x: ev.clientX - dr.left - w.rect.w * ratio - dx, y: ev.clientY - dr.top - 14 - dy, w: w.rect.w, h: w.rect.h };
+      changed();
+      return true;
+    };
+    // (before H169) dragOn(bar, () => {
+    //   wantSnap();   // R35
+    //   freed = !(w.max || w.snap);
+    //   start = Object.assign({}, w.rect);
+    // }, (dx, dy, ev) => {
+    //   ...
+    //   setRect(w, r.x, r.y, r.w, r.h);
+    //   hook('move', ev);
+    // }, (ev) => { if (freed) hook('end', ev); });
+    dragOn(bar, w, () => {
       wantSnap();   // R35
       freed = !(w.max || w.snap);
       start = Object.assign({}, w.rect);
+      base = { x: parseFloat(el.style.left) || w.rect.x, y: parseFloat(el.style.top) || w.rect.y };
+      dr = deskRect();
+      br = freed ? null : el.getBoundingClientRect();
+      el.style.willChange = 'transform';
     }, (dx, dy, ev) => {
-      if (!freed) {
-        if (Math.abs(dx) + Math.abs(dy) < 6) return;
-        freed = true;
-        const dr = deskRect(), br = el.getBoundingClientRect(), ratio = (ev.clientX - br.left) / Math.max(1, br.width);
-        w.max = false; w.snap = '';
-        el.classList.remove('wm-max', 'wm-snap-l', 'wm-snap-r');
-        setMaxBtn(w);
-        // keep the grabbed point under the pointer: start so that start + d = pointer - ratio * w
-        start = { x: ev.clientX - dr.left - w.rect.w * ratio - dx, y: ev.clientY - dr.top - 14 - dy, w: w.rect.w, h: w.rect.h };
-        changed();
-      }
+      if (!freed && !unmaxForDrag(dx, dy, ev)) return;
       let r = { x: start.x + dx, y: start.y + dy, w: start.w, h: start.h };
       const dh = HubWM.dragHook;
       if (dh && dh.adjust) r = dh.adjust(w, r, ev, '') || r;   // magnetic edges (wm_snap.js)
-      setRect(w, r.x, r.y, r.w, r.h);
+      const c = clampRect(dr, r.x, r.y, r.w, r.h, false);
+      el.style.transform = 'translate3d(' + (c.x - base.x) + 'px, ' + (c.y - base.y) + 'px, 0)';
       hook('move', ev);
-    }, (ev) => { if (freed) hook('end', ev); });
+    }, (ev, info) => {
+      el.style.transform = '';
+      el.style.willChange = '';
+      if (!info.noCommit && info.moved && (freed || unmaxForDrag(info.dx, info.dy, info.ev))) {
+        let r = { x: start.x + info.dx, y: start.y + info.dy, w: start.w, h: start.h };
+        const dh = HubWM.dragHook;
+        if (dh && dh.adjust) r = dh.adjust(w, r, info.ev, '') || r;
+        setRect(w, r.x, r.y, r.w, r.h);
+      }
+      if (freed) hook('end', ev);
+    });
 
-    // Resize by edges / corners
+    // Resize by edges / corners (H169: batch size/edge updates per rAF; commit on release)
     el.querySelectorAll('.wm-rz').forEach((h) => {
       const dir = h.dataset.dir;
-      let r0 = null;
-      dragOn(h, () => {
-        if (w.max) return false;
-        if (w.snap) {   // resizing a snapped window: it keeps its snapped place as its new size
-          const dr = deskRect(), br = el.getBoundingClientRect();
-          w.snap = ''; el.classList.remove('wm-snap-l', 'wm-snap-r'); setMaxBtn(w);
-          setRect(w, br.left - dr.left, br.top - dr.top, br.width, br.height);
-          changed();
-        }
-        r0 = Object.assign({}, w.rect);
-      }, (dx, dy, ev) => {
+      let r0 = null, rdr = null;
+      const calc = (dx, dy, ev) => {
         let { x, y, w: wd, h: ht } = r0;
         if (dir.includes('e')) wd = r0.w + dx;
         if (dir.includes('s')) ht = r0.h + dy;
@@ -571,8 +663,31 @@
           const r = dh.adjust(w, { x, y, w: wd, h: ht }, ev, dir);
           if (r && r.w >= MIN_W && r.h >= MIN_H) ({ x, y, w: wd, h: ht } = r);
         }
-        setRect(w, x, y, wd, ht);
-      }, () => { const dh = HubWM.dragHook; if (dh && dh.done) dh.done(w); });
+        return clampRect(rdr, x, y, wd, ht, false);
+      };
+      // (before H169) dragOn(h, ..., (dx, dy, ev) => { ... setRect(w, x, y, wd, ht); }, () => { ... });
+      dragOn(h, w, () => {
+        if (w.max) return false;
+        if (w.snap) {   // resizing a snapped window: it keeps its snapped place as its new size
+          const d0 = deskRect(), b0 = el.getBoundingClientRect();
+          w.snap = ''; el.classList.remove('wm-snap-l', 'wm-snap-r'); setMaxBtn(w);
+          setRect(w, b0.left - d0.left, b0.top - d0.top, b0.width, b0.height);
+          changed();
+        }
+        r0 = Object.assign({}, w.rect);
+        rdr = deskRect();
+      }, (dx, dy, ev) => {
+        const c = calc(dx, dy, ev), s = el.style;
+        s.width = c.w + 'px'; s.height = c.h + 'px';
+        if (dir.includes('w') || c.x !== r0.x) s.left = c.x + 'px';
+        if (dir.includes('n') || c.y !== r0.y) s.top = c.y + 'px';
+      }, (ev, info) => {
+        if (!info.noCommit && info.moved) {
+          const c = calc(info.dx, info.dy, info.ev);
+          setRect(w, c.x, c.y, c.w, c.h);
+        }
+        const dh = HubWM.dragHook; if (dh && dh.done) dh.done(w);
+      });
     });
 
     // Cascade new windows from the top-left
