@@ -31,8 +31,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261122b';
-const CACHE = 'hub-shell-v188';  // 2026-11-22b: H171
+const V = '20261122c';
+const CACHE = 'hub-shell-v189';  // 2026-11-22c: H168
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
@@ -55,6 +55,7 @@ const SHELL = [
  
   // (before H129b) 'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
   'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js', 'desktop/wm/wm_workspaces.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/
+  'desktop/wm/wm_warm.js',   // H168: app warm-up on hover / press
   // (before H129b) 'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
   // (before H129c) 'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
   'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'desktop/controller/hub_controller_config.js', 'desktop/notify/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/   (H129c: → desktop/)
