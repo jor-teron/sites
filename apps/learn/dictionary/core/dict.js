@@ -1,6 +1,6 @@
-/* Dictionary DC-1 / DC-1a / DC-4 — pure logic (no DOM, no fetch): word normalising, which data shard holds a word, prefix search,
+/* Dictionary DC-1 / DC-1a / DC-4 / DC-1b — pure logic (no DOM, no fetch): word normalising, which data shard holds a word, prefix search,
    simple word-ending guesses (dogs -> dog), closest-word suggestions (edit distance), word of the day, recent list
-   grouping senses by part of speech, the common-meanings-first layout (top senses + More meanings), and DC-4 word
+   grouping senses by part of speech, the top-senses layout (top senses + More meanings), and DC-4 word
    family / phrases / irregular forms read from a shard. Classic script: window.DictCore in the page, module.exports for node --test.
    Shard rules match tools/build_data.py (shard_key): first letter a-z else '0', plus one more char per split prefix. */
 (function (root) {
@@ -105,8 +105,8 @@
     return out;
   }
 
-  // DC-1a common meanings first: the data lists a word's senses most-used first (tools/build_data.py), so group() puts the
-  // part of speech of the most common sense first. Each part of speech shows its first n senses; the rest go under
+  // DC-1a layout, DC-1b order: the data lists a word's senses in Open English WordNet order, parts of speech with the most
+  // senses first (tools/build_data.py), and group() keeps that first-seen order. Each part of speech shows its first n senses; the rest go under
   // "More meanings". A short tail (1 extra) is shown too rather than hiding a single sense behind a tap.
   function layout(senses, n) {
     n = n || 3;
@@ -117,7 +117,7 @@
   }
 
   // DC-4 word family and phrases. A shard has "r": {word: [[family], [phrases]]} and "g": {word: [irregular forms]}
-  // (tools/build_data.py, lists already most-used first). related() reads them for one word, cleaning anything odd;
+  // (tools/build_data.py, lists already most-used-in-OEWN first). related() reads them for one word, cleaning anything odd;
   // cap() splits a list into the first n and the rest (a single extra item is shown rather than hidden).
   function strList(x, self) {
     var out = [];

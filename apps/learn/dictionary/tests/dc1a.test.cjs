@@ -1,5 +1,5 @@
-// Dictionary DC-1a: common meanings first. Pure layout logic (top senses + More meanings) and a data check that the
-// shards list everyday senses first. Run: node --test apps/learn/dictionary/tests/dc1a.test.cjs
+// Dictionary DC-1a layout (top senses + More meanings) and a data check on meaning order (DC-1b: Open English WordNet
+// order, parts of speech with the most senses first). Run: node --test apps/learn/dictionary/tests/dc1a.test.cjs
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
@@ -50,15 +50,15 @@ test('data: everyday meanings come first', () => {
   assert.deepStrictEqual(posOrder(senses('run')).slice(0, 2), ['v', 'n']);
   assert.match(senses('run')[0][1], /move fast by using one's feet/);
   assert.match(senses('book')[0][1], /written work/);   // not "the sacred writings" (capitalised Book)
-  assert.match(senses('light')[0][1], /electromagnetic radiation/);   // not the Quaker "Light"
+  assert.match(senses('light').find(s => s[0] === 'n')[1], /electromagnetic radiation/);   // not the Quaker "Light"
   assert.strictEqual(senses('set')[0][0], 'v');
   assert.strictEqual(senses('well')[0][0], 'r');
   assert.strictEqual(senses('play')[0][0], 'v');
   assert.strictEqual(senses('fly')[0][0], 'v');
-  assert.match(senses('kind')[0][1], /category/);
+  assert.match(senses('kind').find(s => s[0] === 'n')[1], /category/);   // DC-1b: adjective (more senses) now shows first
 });
 
-test('data: within a part of speech the Princeton first sense stays first', () => {
+test('data: within a part of speech the OEWN first sense stays first', () => {
   assert.match(senses('bank')[0][1], /sloping land/);
   assert.match(senses('bank')[1][1], /financial institution/);
   assert.match(senses('date')[0][1], /day of the month/);

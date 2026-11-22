@@ -5,24 +5,22 @@ Converts the Open English WordNet (OEWN, CC BY 4.0) WN-LMF XML release into smal
 JSON shards that the Dictionary app loads on demand.
 
 Usage (from the repo root):
-  python3 apps/learn/dictionary/tools/build_data.py [english-wordnet-YYYY.xml.gz] [wordnet.zip | index.sense]
-With no arguments the 2025 OEWN release and the Princeton WordNet 3.0 files (NLTK's wordnet.zip, for
-index.sense) are downloaded from GitHub into /tmp first.
+  python3 apps/learn/dictionary/tools/build_data.py [english-wordnet-YYYY.xml.gz]
+With no argument the 2025 OEWN release is downloaded from GitHub into /tmp first. OEWN is the only source.
 
-DC-1a common meanings first: OEWN has no usage counts, so each sense is matched to its Princeton
-WordNet 3.0 sense key (oewn-bank__1.17.01.. -> bank%1:17:01::) and takes that key's tag count (how often
-the sense was seen in the SemCor corpus, from index.sense). A word's senses are stored most-used first
-across all parts of speech; ties keep the OEWN order, with capitalised entries (Book = the Bible,
-Light = the Quaker belief) after lower-case ones. The app shows parts of speech in first-seen order,
-so the part of speech of the most common sense comes first.
+DC-1b meaning order (OEWN only): within one part of speech a word's senses keep the order OEWN itself
+lists them in (its own sense order for that lemma and part of speech). Parts of speech are ordered by how
+many senses OEWN gives the word in each (run: verb 40+ before noun), ties in OEWN order (a, n, r, v).
+Capitalised entries (Book = the Bible, Light = the Quaker belief) come after lower-case ones. The app
+shows parts of speech in first-seen order and the first 3 senses of each (DC-1a layout).
 
 DC-4 word families and phrases: each shard also has
   "r": {word: [[family words<=MAX_FAM], [phrases<=MAX_PHR]]}   (trailing empty list dropped)
 Family = words linked to any sense of the word by WordNet derivation / pertainym / participle links
 (both directions: happy -> happiness, happily) plus opposites that contain the word (unhappy).
 Phrases = lower-case multi-word or hyphenated entries that have the word as one of their parts
-(run -> run out, bank -> bank account). Both lists: most used first (summed tag counts), then
-shorter, then a-z. Irregular forms (ran, went) come from the OEWN <Form> list and sit in "g": {word: [forms]}.
+(run -> run out, bank -> bank account). Both lists: most used first (how often the word appears in
+OEWN's own definitions and examples), then more OEWN senses, then shorter, then a-z. Irregular forms (ran, went) come from the OEWN <Form> list and sit in "g": {word: [forms]}.
 
 Output in apps/learn/dictionary/data/ (all minified JSON):
   manifest.json   {v, words, forms, split:[prefixes split by one more letter], src}
@@ -38,7 +36,6 @@ import gzip, json, os, re, sys, urllib.request
 import xml.etree.ElementTree as ET
 
 URL = 'https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz'
-PWN_URL = 'https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/corpora/wordnet.zip'
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.path.dirname(HERE), 'data')
 SPLIT_KB = 600
@@ -67,37 +64,6 @@ def shard_key(k, split):
     return p
 
 
-# OEWN escapes in sense ids (only the ones that can appear in a lemma)
-ESC = {'-ap-': "'", '-ex-': '!', '-cm-': ',', '-cl-': ':', '-pl-': '+', '-sl-': '/', '-lp-': '(', '-rp-': ')',
-       '-ct-': '.', '-qu-': '?', '-am-': '&', '-at-': '@', '-sc-': ';', '-dl-': '$', '-cr-': '^', '-sq-': ' '}
-
-
-def pwn_key(sid):
-    """OEWN sense id -> Princeton sense key: oewn-bank__1.17.01.. -> bank%1:17:01::"""
-    if not sid.startswith('oewn-') or '__' not in sid:
-        return ''
-    lem, rest = sid[5:].rsplit('__', 1)
-    for e, c in ESC.items():
-        lem = lem.replace(e, c)
-    return lem.lower() + '%' + rest.replace('.', ':')
-
-
-def tag_counts(src):
-    """{sense key: tag count} from WordNet 3.0 index.sense (plain file or inside NLTK's wordnet.zip)."""
-    if src.endswith('.zip'):
-        import zipfile
-        with zipfile.ZipFile(src) as z:
-            text = z.read('wordnet/index.sense').decode('utf-8')
-    else:
-        text = open(src, encoding='utf-8').read()
-    out = {}
-    for line in text.splitlines():
-        p = line.split()
-        if len(p) >= 4 and p[3] != '0':
-            out[p[0]] = int(p[3])
-    return out
-
-
 def dump(obj):
     return json.dumps(obj, ensure_ascii=False, separators=(',', ':'))
 
@@ -107,11 +73,6 @@ def main():
     if not os.path.exists(src):
         print('downloading', URL)
         urllib.request.urlretrieve(URL, src)
-    csrc = sys.argv[2] if len(sys.argv) > 2 else '/tmp/pwn30-wordnet.zip'
-    if not os.path.exists(csrc):
-        print('downloading', PWN_URL)
-        urllib.request.urlretrieve(PWN_URL, csrc)
-    counts = tag_counts(csrc)
     entries = {}   # entry id -> (lemma, pos, [(sense id, synset id)], ipa, [forms])
     sense_lemma = {}   # sense id -> lemma
     antonyms = {}   # sense id -> [target sense ids]
@@ -150,7 +111,7 @@ def main():
     ent_lemma = {eid: e[0] for eid, e in entries.items()}
 
     words, ipa, forms = {}, {}, {}
-    wcount, lower, irregular = {}, set(), {}   # DC-4: summed tag count per word, words with a lower-case entry, word -> [forms]
+    lower, irregular = set(), {}   # DC-4: words with a lower-case entry, word -> [forms]
     for eid, (word, pos, senses, pr, fl) in entries.items():
         k = norm(word)
         lst = words.setdefault(k, [])
@@ -159,7 +120,6 @@ def main():
         if not proper:
             lower.add(k)
         for sid, syn in senses:
-            wcount[k] = wcount.get(k, 0) + counts.get(pwn_key(sid), 0)
             d, ex, mem = synsets.get(syn, ('', [], []))
             if not d:
                 continue
@@ -176,7 +136,7 @@ def main():
             row = [p, d, ex[:MAX_EX], syns[:MAX_SYN], ants[:MAX_ANT]]
             while row and row[-1] == []:
                 row.pop()
-            lst.append(((-counts.get(pwn_key(sid), 0), proper, len(lst)), row))
+            lst.append((proper, p, len(lst), row))   # len(lst): OEWN order
         if pr and k not in ipa:
             ipa[k] = pr
         for f in fl:
@@ -185,7 +145,16 @@ def main():
                 forms.setdefault(fk, k)
                 if fk not in irregular.setdefault(k, []):
                     irregular[k].append(fk)
-    words = {k: [r for _, r in sorted(v)] for k, v in words.items() if v}   # most used first (DC-1a)
+    def order(v):   # DC-1b: lower-case before capitalised; parts of speech by OEWN sense count; OEWN order within
+        cased = 1 if all(x[0] for x in v) else 0
+        n, first = {}, {}
+        for proper, p, i, _ in v:
+            first.setdefault(p, i)
+            if proper <= cased:
+                n[p] = n.get(p, 0) + 1
+        rank = {p: r for r, p in enumerate(sorted(first, key=lambda p: (-n.get(p, 0), 'anrv'.find(p) % 9, first[p])))}
+        return [row for _, _, _, row in sorted(v, key=lambda x: (x[0], rank[x[1]], x[2]))]
+    words = {k: order(v) for k, v in words.items() if v}
     # DC-4 word family and phrases
     sense_word = {sid: norm(sense_lemma[sid]) for sid in sense_lemma}
     fam = {}
@@ -206,7 +175,19 @@ def main():
             for t in set(re.split(r'[ -]+', k)):
                 if t and t != k and t in words:
                     phr.setdefault(t, []).append(k)
-    rank = lambda w: (-wcount.get(w, 0), len(w.split()), len(w), w)
+    # DC-1b: how often a word or phrase is used inside OEWN's own definitions and examples (hyphens read as spaces)
+    keyof = lambda w: re.sub(r'[ -]+', ' ', w)
+    want = {keyof(w) for w in set().union(*fam.values(), *phr.values())}
+    used = {}
+    for d, ex, _ in synsets.values():
+        for text in [d] + ex:
+            t = re.findall(r"[a-z0-9']+", text.lower().replace('-', ' '))
+            for n in range(1, 5):
+                for i in range(len(t) - n + 1):
+                    g = ' '.join(t[i:i + n])
+                    if g in want:
+                        used[g] = used.get(g, 0) + 1
+    rank = lambda w: (-used.get(keyof(w), 0), -len(words[w]), len(w.split()), len(w), w)
     rel = {}
     for k in words:
         f = sorted(fam.get(k, ()), key=rank)[:MAX_FAM]
@@ -215,7 +196,6 @@ def main():
             rel[k] = [f, x] if x else [f]
     irregular = {k: v for k, v in irregular.items() if k in words}
     print('family', sum(1 for v in rel.values() if v[0]), 'phrases', sum(1 for v in rel.values() if len(v) > 1), 'irregular', len(irregular))
-    print('senses with a tag count:', sum(1 for e in entries.values() for sid, _ in e[2] if pwn_key(sid) in counts))
     forms = {f: k for f, k in forms.items() if f not in words and k in words}
 
     # group into first-letter buckets, split the big ones
