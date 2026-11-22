@@ -63,9 +63,9 @@ test('data: phrases contain the word, common first, capped', () => {
   for (const p of ['run out', 'run into']) assert.ok(run.includes(p), 'run -> ' + p);
   assert.ok(run.length <= 16);
   assert.ok(run.every(p => p.split(/[ -]+/).includes('run')));
-  assert.ok(rel('bank').phrases.includes('bank account'));
-  assert.ok(rel('light').phrases.includes('light year'));
-  assert.ok(rel('light').phrases.indexOf('light bulb') < rel('light').phrases.indexOf('zodiacal light'));
+  assert.strictEqual(rel('bank').phrases[0], 'bank account');   // DC-1b: most used in OEWN's own definitions first
+  assert.ok(rel('light').phrases.includes('speed of light'));
+  assert.ok(rel('set').phrases.indexOf('set up') < rel('set').phrases.indexOf('set afire'));
 });
 
 test('data: irregular forms, every linked word exists, shard names as before', () => {
