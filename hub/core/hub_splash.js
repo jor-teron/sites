@@ -196,6 +196,7 @@
     const loaded = new Set();
     let gone = false;
     let ticking = 0;
+    let markedReady = false;   // H166: one hub-boot-ready mark
 
     function now() {
       return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
@@ -221,6 +222,7 @@
       if (barEl) barEl.setAttribute('aria-valuenow', String(Math.round(frac * 100)));
       if (countEl) countEl.textContent = total > 0 ? (n + ' of ' + total) : '';
       if (hintEl) hintEl.hidden = !showStillLoading(elapsed(), ready);
+      if (ready && !markedReady) { markedReady = true; try { performance.mark('hub-boot-ready'); } catch (_) { /* H166 */ } }
       if (ready && canDismiss(elapsed(), true)) fadeOut();
     }
 
@@ -234,6 +236,7 @@
     function fadeOut() {
       if (gone) return;
       gone = true;
+      try { performance.mark('hub-boot-shown'); } catch (_) { /* H166 */ }
       unbind();
       if (hintEl) hintEl.hidden = true;
       if (noMotion()) { finish(); return; }

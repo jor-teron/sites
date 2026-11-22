@@ -507,7 +507,12 @@
     });
     el.addEventListener('pointerleave', () => clearTimeout(hoverT));
     el.addEventListener('animationend', () => el.classList.remove('wm-pop'));
-    frame.addEventListener('load', () => { el.classList.remove('has-settings', 'hover-tabs'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); try { window.dispatchEvent(new CustomEvent('hub-wm-frame-load', { detail: { id: w.id } })); } catch (_) { /* H159 splash */ } });
+    // (before H166) frame.addEventListener('load', () => { el.classList.remove('has-settings', 'hover-tabs'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame); try { window.dispatchEvent(new CustomEvent('hub-wm-frame-load', { detail: { id: w.id } })); } catch (_) { /* H159 splash */ } });
+    frame.addEventListener('load', () => {
+      el.classList.remove('has-settings', 'hover-tabs'); hookFrame(w); if (window.__hubInjectCtx) window.__hubInjectCtx(frame);
+      try { performance.mark('hub-app-open-end-' + w.id); performance.measure('hub-app-open', 'hub-app-open-start-' + w.id, 'hub-app-open-end-' + w.id); } catch (_) { /* H166: marks are optional */ }
+      try { window.dispatchEvent(new CustomEvent('hub-wm-frame-load', { detail: { id: w.id } })); } catch (_) { /* H159 splash */ }
+    });
 
     // Move by the title bar. A maximised / snapped window gets its old size back under the
     // pointer once it really moves (a plain click on the bar keeps it as it is).
@@ -589,6 +594,7 @@
     showWs(w);
     desk.appendChild(el);
     wins.push(w);
+    try { performance.mark('hub-app-open-start-' + w.id); } catch (_) { /* H166: harmless when perf is off */ }
     frame.src = o.url;
     if (!o.restore || !o.min) wantSnap();   // R35: a visible window → bring snapping in now
     if (o.restore) {

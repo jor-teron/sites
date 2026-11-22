@@ -628,8 +628,11 @@
       try {
         const n = (window.HubWM && wmOn()) ? window.HubWM.list().length : 0;
         const d = { restored: !!restored, total: n };
+        try { performance.mark('hub-desktop-started'); } catch (_) { /* H166 */ }
         window.dispatchEvent(new CustomEvent('hub-desktop-started', { detail: d }));
         if (window.HubSplash && typeof window.HubSplash.onDesktopStarted === 'function') window.HubSplash.onDesktopStarted(d);
+        // H166: no splash (pref off / ?join= / not top) → desktop is already visible
+        try { if (!document.documentElement.classList.contains('hub-splash')) { performance.mark('hub-boot-ready'); performance.mark('hub-boot-shown'); } } catch (_) { /* H166 */ }
       } catch (_) { /* splash optional */ }
     }
     let app = id ? appForId(id) : null;
