@@ -176,7 +176,8 @@ test("wiring: title, VERSION, ?v= tokens, readme", function () {
   /* (before SH45) if (!/spreadsheet_settings\.js\?v=SH(3[6-9]|4[0-4])/.test(live)) throw new Error("settings.js cache token is not SH36 or later"); */
   /* (before SH49) if (!/spreadsheet_settings\.js\?v=SH(3[6-9]|4[0-5])/.test(live)) throw new Error("settings.js cache token is not SH36 or later"); */
   /* (before SH46) if (!/spreadsheet_settings\.js\?v=SH(3[6-9]|4[0-5]|49)/.test(live)) throw new Error("settings.js cache token is not SH36 or later"); */
-  if (!/spreadsheet_settings\.js\?v=SH(3[6-9]|4[0-6]|49)/.test(live)) throw new Error("settings.js cache token is not SH36 or later");
+  /* (before SH47) if (!/spreadsheet_settings\.js\?v=SH(3[6-9]|4[0-6]|49)/.test(live)) throw new Error("settings.js cache token is not SH36 or later"); */
+  if (!/spreadsheet_settings\.js\?v=SH(3[6-9]|4[0-7]|49)/.test(live)) throw new Error("settings.js cache token is not SH36 or later");
   if (settings.indexOf('var SHEET_VERSION = "SH36";') < 0) throw new Error("SHEET_VERSION is not SH36");
   if (settings.indexOf('/* (before SH36) var SHEET_VERSION = "SH35";') < 0) throw new Error("old SHEET_VERSION was not kept");
   if (readme.indexOf("## SH36") < 0) throw new Error("readme is missing the SH36 note");

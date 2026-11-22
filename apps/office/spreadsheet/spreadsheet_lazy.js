@@ -1,7 +1,10 @@
 /*
  * spreadsheet_lazy.js  (SH49)
  * Open .xlsx / .xlsm / .ods / .xls one sheet at a time.
- * SheetJS still reads the whole file once (XLSX.read options are unchanged). The
+ * SheetJS still reads the whole file once (SH47: with sheetRows = ROWS). The
+ * SH47: converting a placeholder that was cut at the row cap repeats the note in the
+ * status bar ("Only the first 1000 rows were opened (S3 had 20,000)."). The open toast
+ * already named it.
  * first sheet is converted and calculated on open. Every other sheet is a
  * placeholder: its name is in the tab bar, sheet.lazy holds a key into
  * SHEET_LAZY.raw (the SheetJS worksheet, kept in memory), and its cells are empty.
@@ -151,6 +154,13 @@ function lazySheetLoad(i) {
   ent = SHEET_LAZY.raw[id];
   delete sh.lazy;
   if (ent && typeof xlsxFillGrid === "function") xlsxFillGrid(ent.XLSX, ent.ws, sh.cells, { cached: true });
+  /* SH47: this sheet had more rows than the grid */
+  if (ent && typeof xlsxRowCapHits === "function" && typeof setStatus === "function") {
+    try {
+      var capNote = xlsxRowCapNote(xlsxRowCapHits([{ name: sh.name, ws: ent.ws }], ROWS), ROWS);
+      if (capNote) setStatus(capNote);
+    } catch (e) {}
+  }
   sh.lazyClean = id;
   SHEET_LAZY.stale = true;
   if (SHEET_LAZY.inRecalc) SHEET_LAZY.grew = true;
