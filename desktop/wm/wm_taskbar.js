@@ -342,7 +342,8 @@
         ...HubWM.wsItems(w),
         { label: w.min ? 'Restore' : 'Minimise', icon: w.min ? '\u2750' : '\u2013', action: () => (w.min ? HubWM.focus(w) : HubWM.minimise(w)) },
         { sep: true },
-        { label: 'Close', icon: '\u00D7', danger: true, action: () => HubWM.close(w) }
+        // (before H168) { label: 'Close', icon: '\u00D7', danger: true, action: () => HubWM.close(w) }
+        { label: 'Close', icon: '\u00D7', danger: true, action: () => HubWM.close(w, { park: true }) }   // H168: may park for an instant reopen (wm_windows.js)
       ], b);
     }, { touch: true });
     C.add('#wm-start', (b) => at([

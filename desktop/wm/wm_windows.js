@@ -62,6 +62,20 @@
  * (same page only, e.g. Files' #drive=…&path=…); apps can ask for a save with a same-origin
  * postMessage {type:'hub-wm-save'}; the Hub also saves when the page is hidden / closed. hub.js calls HubWM.restoreSession(resolve)
  * on start-up / when Desktop mode comes back; windows are clamped into the current screen.
+ * H168 instant reopen ("parking"): closing a window with its × button, its title-bar menu or the
+ *   taskbar's Close (HubWM.close(w, { park: true })) may keep it loaded but hidden for 30 s
+ *   (PARK_MS, at most PARK_MAX = 2 windows). Opening the same app again in that time (same url, not
+ *   "New window", no other window of it open) brings that window straight back instead of loading
+ *   the app again. A parked window is not in wins: no taskbar / Alt+Tab / session / task list /
+ *   __hubAppFrames entry. After 30 s (or when a third one is parked, the mode leaves Desktop,
+ *   closeAll, or the app is opened another way) it is destroyed exactly as a close did before.
+ *   Only same-origin, loaded apps under PARK_OK (apps/tools/, apps/learn/, apps/system/ except
+ *   Settings) are parked, never games / media / office / lab / connectivity (sound, camera, calls,
+ *   documents). Skipped too: a playing <audio> / <video>, a very large page (> 15000 nodes),
+ *   navigator.deviceMemory <= 2, localStorage 'sites-hub.reopenCache' = '0', or an app that sent
+ *   hub-app-caps { park: false }. On park the app's <audio> / <video> are paused, speech is
+ *   cancelled and it gets {type:'hub-hidden'}; on reopen {type:'hub-shown'}.
+ *   Other closes (System Monitor, closeAll, a removed app, HubWM.close(w)) destroy at once as before.
  */
 (function () {
   'use strict';
@@ -219,14 +233,98 @@
     return [{ label: 'Move to workspace ' + to, icon: to === 1 ? '\u2460' : '\u2461', action: () => moveToWs(w, to) }];
   }
 
-  function close(w) {
+  // (before H168) function close(w) {
+  //   const i = wins.indexOf(w);
+  //   if (i < 0) return;
+  //   wins.splice(i, 1);
+  //   if (w.gb) w.gb.destroy();
+  //   try { w.frame.src = 'about:blank'; } catch (_) { /* ignore */ }
+  //   w.el.remove();
+  //   if (active === w) setActive(topVisible()); else changed();
+  // }
+  // H168: o.park = true (× button / title-bar menu / taskbar Close) may park the window (see the header)
+  function close(w, o) {
     const i = wins.indexOf(w);
     if (i < 0) return;
     wins.splice(i, 1);
-    if (w.gb) w.gb.destroy();
+    if (!(o && o.park && park(w))) destroy(w);
+    if (active === w) setActive(topVisible()); else changed();
+  }
+  /** H168: the old close teardown (gamebar off, frame blanked, element removed). */
+  function destroy(w) {
+    clearTimeout(w.parkT);
+    const j = parked.indexOf(w);
+    if (j >= 0) parked.splice(j, 1);
+    if (w.gb) { try { w.gb.destroy(); } catch (_) { /* ignore */ } w.gb = null; }
     try { w.frame.src = 'about:blank'; } catch (_) { /* ignore */ }
     w.el.remove();
-    if (active === w) setActive(topVisible()); else changed();
+  }
+
+  // ---- H168: instant reopen (parked windows) ----
+  const PARK_MS = 30000, PARK_MAX = 2, PARK_NODES = 15000;
+  const PARK_OK = /^(apps\/tools\/|apps\/learn\/|apps\/system\/)/;
+  const PARK_NO = /^apps\/system\/settings\//;   // R38: Settings re-reads itself on open (HubSettingsFresh)
+  const parked = [];
+  const post = (w, type) => { try { w.frame.contentWindow.postMessage({ type }, location.protocol === 'file:' ? '*' : location.origin); } catch (_) { /* gone */ } };
+  function parkable(w) {
+    try { if (localStorage.getItem('sites-hub.reopenCache') === '0') return false; } catch (_) { /* blocked */ }
+    if (typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 2) return false;
+    if (w.noPark || !PARK_OK.test(String(w.key || '')) || PARK_NO.test(String(w.key || ''))) return false;
+    let doc = null;
+    try { doc = w.frame.contentDocument; } catch (_) { doc = null; }
+    if (!doc || !doc.documentElement || doc.readyState !== 'complete') return false;   // cross-origin / still loading
+    try { if (doc.location.href === 'about:blank') return false; } catch (_) { return false; }
+    if (doc.getElementsByTagName('*').length > PARK_NODES) return false;
+    const media = Array.from(doc.querySelectorAll('audio, video'));
+    if (media.some((m) => !m.paused && !m.ended)) return false;   // be safe: something is playing
+    return true;
+  }
+  function park(w) {
+    if (!parkable(w)) return false;
+    try {
+      const doc = w.frame.contentDocument;
+      doc.querySelectorAll('audio, video').forEach((m) => { try { m.pause(); } catch (_) { /* ignore */ } });
+      const sy = w.frame.contentWindow.speechSynthesis;
+      if (sy && (sy.speaking || sy.pending)) sy.cancel();
+    } catch (_) { return false; }
+    try { if (document.activeElement === w.frame) w.frame.blur(); } catch (_) { /* ignore */ }
+    clearTimeout(hoverT);
+    w.el.classList.add('wm-parked');
+    w.el.style.display = 'none';
+    w.el.setAttribute('aria-hidden', 'true');
+    post(w, 'hub-hidden');
+    parked.push(w);
+    while (parked.length > PARK_MAX) destroy(parked[0]);
+    w.parkT = setTimeout(() => destroy(w), PARK_MS);
+    return true;
+  }
+  /** Drop parked windows (all, or one app's) for good. */
+  function flushParked(key) { parked.slice().forEach((p) => { if (!key || p.key === key) destroy(p); }); }
+  /** A parked window of this app that can come straight back for o (else null; stale ones are dropped). */
+  function unpark(o) {
+    const p = parked.find((x) => x.key === o.key);
+    if (!p) return null;
+    let ok = p.url === o.url;
+    if (ok) {
+      try {
+        const l = p.frame.contentWindow.location, base = new URL(p.url, document.baseURI);
+        ok = l.origin === base.origin && l.pathname === base.pathname;
+      } catch (_) { ok = false; }
+    }
+    if (!ok) { destroy(p); return null; }
+    clearTimeout(p.parkT);
+    parked.splice(parked.indexOf(p), 1);
+    p.inst = 1; p.name = p.baseName;
+    p.titleEl.textContent = p.name; p.frame.title = p.name; p.el.setAttribute('aria-label', p.name);
+    p.ws = curWs; p.min = false;
+    p.el.classList.remove('wm-parked', 'wm-min');
+    p.el.style.display = '';
+    p.el.removeAttribute('aria-hidden');
+    showWs(p);
+    wins.push(p);
+    post(p, 'hub-shown');
+    focus(p);
+    return p;
   }
 
   // H16: cogwheel for the title bar settings button
@@ -332,6 +430,9 @@
       focus(found);
       return found;
     }
+    // H168: same app parked a moment ago → bring it straight back; any other open of it drops the parked one
+    if (!o.restore && !same.length && !o.newInstance) { const p = unpark(o); if (p) return p; }
+    if (parked.length) flushParked(o.key);
     let inst = o.restore ? (o.inst || 1) : 1;
     if (!o.restore) while (same.some((x) => x.inst === inst)) inst++;
     const d = deskRect();
@@ -386,7 +487,8 @@
     });
     minB.addEventListener('click', () => minimise(w));
     maxB.addEventListener('click', () => toggleMax(w));
-    closeB.addEventListener('click', () => close(w));
+    // (before H168) closeB.addEventListener('click', () => close(w));
+    closeB.addEventListener('click', () => close(w, { park: true }));   // H168: may park for an instant reopen
     // Legacy: bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn, .gb-tab')) toggleMax(w); });
     bar.addEventListener('dblclick', (e) => { if (!e.target.closest('.wm-btn, .gb-btn, .gb-tab, .gb-qbtn')) toggleMax(w); });   // H49
     w.bar = bar;
@@ -503,7 +605,11 @@
     get ws() { return curWs; },
     dragHook: null,   // set by wm_snap.js
     deskRect,
-    closeAll() { wins.slice().forEach(close); },
+    // (before H168) closeAll() { wins.slice().forEach(close); },
+    closeAll() { wins.slice().forEach((w) => close(w)); flushParked(); },   // H168: never parks; drops parked windows too
+    /** H168: parked windows (hidden, for an instant reopen) — count only, for tests / System Monitor. */
+    parkedCount() { return parked.length; },
+    flushParked,
     /** Show Desktop: minimise the current workspace's windows. */
     minimiseAll() { wins.forEach((w) => { if (!w.min && onWs(w)) { w.min = true; w.el.classList.add('wm-min'); } }); setActive(null); },
     focusActive() { if (active) focusFrameOf(active); },
@@ -547,7 +653,8 @@
         { label: 'Minimise', icon: '\u2013', action: () => minimise(w) },
         { label: w.max || w.snap ? 'Restore' : 'Maximise', icon: w.max || w.snap ? '\u2750' : '\u25A2', action: () => toggleMax(w) },
         { sep: true },
-        { label: 'Close', icon: '\u00D7', danger: true, action: () => close(w) }
+        // (before H168) { label: 'Close', icon: '\u00D7', danger: true, action: () => close(w) }
+        { label: 'Close', icon: '\u00D7', danger: true, action: () => close(w, { park: true }) }   // H168
       ];
     }, { touch: true });
   }
@@ -601,10 +708,12 @@
       if (w) {
         w.el.classList.toggle('has-settings', e.data.settings === true);
         w.el.classList.toggle('hover-tabs', e.data.hoverTabs === true);   // H17: read by hub-gamebar.js
+        if (e.data.park === false) w.noPark = true;   // H168: the app asks never to be parked
       }
     }
   });
   window.addEventListener('pagehide', () => { clearTimeout(saveT); saveNow(); });
+  window.addEventListener('hub-wm-mode', (e) => { if (!e.detail || e.detail.mode !== 'desktop') flushParked(); });   // H168
   document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(saveT); saveNow(); } });
   // Keep windows reachable after the screen shrinks; R22: re-fit from w.pref (keep=true) so
   // they grow back to the chosen size when the screen grows again
