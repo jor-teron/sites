@@ -20,7 +20,9 @@
  *     (R25 did that), so an edited icon / wallpaper still shows within a day. Fonts: cache first (RUNTIME).
  *   · H165: apps/learn/dictionary and apps/learn/blood-group shell files are in SHELL, so they
  *     open offline on a first visit. Dictionary data shards under apps/learn/dictionary/data/ are
- *     not precached (about 7.6 MB gzipped); they use cache-first after the first fetch (RUNTIME).
+ *     not precached (about 7.6 MB gzipped); they use cache-first after the first fetch.
+ *     H173: those shards live in DICT (hub-dict-1), not RUNTIME; a data rebuild bumps DICT only.
+ *     Activate deletes stale hub-dict-* caches and purges leftover dictionary data from hub-rt-1.
  *   · navigations not in a cache when offline: hub/update/hub_offline.html.
  *   · H129d: a navigation to / is the index.html shell copy; one to the removed /hub.html gets that same copy.
  * R16c: message {type:'refresh'} re-fetches every SHELL file (cache:'reload') and replaces the
@@ -31,9 +33,10 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261122c';
-const CACHE = 'hub-shell-v189';  // 2026-11-22c: H168
+const V = '20261122d';
+const CACHE = 'hub-shell-v190';  // 2026-11-22d: H173
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
+const DICT = 'hub-dict-1';      // H173: dictionary letter data; a data rebuild bumps only this number
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
 //   '__hub_dirty__'  shell files a background refresh replaced (the 09:00 refresh reports them)
 //   '__hub_failed__' shell files the install could not fetch (retried, see below)
@@ -170,7 +173,18 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()   // R58: 'hub-meta' is kept (R16c–R57 deleted it here)
-    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME)).map((k) => caches.delete(k))))
+    // (before H173) .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME)).map((k) => caches.delete(k))))
+    .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('hub-shell-') && k !== CACHE) || (k.startsWith('hub-rt-') && k !== RUNTIME) || (k.startsWith('hub-dict-') && k !== DICT)).map((k) => caches.delete(k))))
+    .then(async () => {   // H173: one-time purge of Dictionary data left in RUNTIME
+      try {
+        const rt = await caches.open(RUNTIME);
+        const reqs = await rt.keys();
+        await Promise.all(reqs.filter((r) => {
+          try { return new URL(r.url).pathname.includes('/apps/learn/dictionary/data/'); }
+          catch (_) { return String(r.url || '').includes('/apps/learn/dictionary/data/'); }
+        }).map((r) => rt.delete(r)));
+      } catch (_) { /* ignore */ }
+    })
     .then(() => self.clients.claim()));
 });
 
@@ -294,10 +308,12 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   // H165: Dictionary data shards are not in SHELL (too large to precache). Cache-first after the first
-  // fetch, stored in RUNTIME under the bare URL, so a letter file used once still opens offline.
+  // fetch, so a letter file used once still opens offline.
   // (before H165) these paths used the general apps/ network-first rule below
+  // H173: stored in DICT (not RUNTIME) under the bare URL, so a data rebuild can drop stale shards.
   if (path.includes('/apps/learn/dictionary/data/')) {
-    e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; })));
+    // (before H173) e.respondWith(caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(RUNTIME, bare, res); return res; })));
+    e.respondWith(caches.open(DICT).then((c) => c.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => { if (ok(res)) put(DICT, bare, res); return res; }))));
     return;
   }
   if (nav || path.includes('/apps/') || /\.(html?|css|m?js|json|txt|md|webmanifest)$/i.test(path) || path.endsWith('/')) {
