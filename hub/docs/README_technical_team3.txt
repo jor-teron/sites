@@ -18,7 +18,7 @@
 Added 14 Nov 2026. This is the way of working for every area. Follow it
 before the older notes below.
 
-1. ONE BUILDER PER CATEGORY. Each builder owns one folder and its CSV
+1. ONE OWNER PER CATEGORY. Each area owns one folder and its CSV
    rows, so there are no cross-team conflicts and it knows its code by
    heart. Shared engine and catalog files keep ONE clear owner (Hub wins
    conflicts).
@@ -54,9 +54,11 @@ before the older notes below.
    the tests and an http smoke test (never port 8811), opens a PR and
    merges with a merge commit. Then report the PR link and merge SHA.
    Same recipe every time, no thinking needed.
-   Note: some areas can push directly from the box (Hub does); either
+   Note: some areas could push directly from the box (Hub did until
+   22 Nov). Since about 08:30 IST on 22 Nov the box GitHub token is dead,
+   so every area uses the cloud push job until Jor replaces it. Either
    way, merge origin/main in (no rebase or force push) and use a merge
-   commit.
+   commit. (Updated 22 Nov 2026.)
 
 8. LATE CHANGES RIDE ALONG. If Jor tweaks something mid-push, steer the
    running push step with an extra patch instead of starting over.
@@ -88,6 +90,9 @@ before the older notes below.
    7. Known bugs and backlog
    8. Care notes for Team 1 and Team 2
    9. Learn category: plan and finalized topics (added in D3)
+   Later dated sections (appended at the end, newest last):
+     Team 3 week wrap-up (ends 1 Nov), week close (1-7 Nov),
+     14 Nov, and TEAM 3 WEEK CLOSE 15-22 Nov 2026 (added 22 Nov).
 
 
 ================================================================================
@@ -985,7 +990,7 @@ kept.
 -- H78: Redirect pages, no flash (31 Oct 2026) --
 - My 9 redirect pages (root index.html, apps/system/, apps/system/about/
   index + about / contact / feedback.html, apps/system/devbench/,
-  hub/controller/ index + dpad.html) now copy Hub Apps Builder's IX1
+  hub/controller/ index + dpad.html) now copy the Apps area's IX1
   pattern (apps/index_redirects_readme.md): head script location.replace
   keeps ?query and #hash (About always goes to #about), meta refresh and
   the "Open …" link only in <noscript>, so no body text flashes.
@@ -1047,7 +1052,7 @@ NV-S2 (hub.html ?v= labels)
 - Settings > Do Not Disturb (sec_dnd.js, after Hub bar): Do Not Disturb and
   Favourites still ring; parent.HubDnd when present, else the keys.
 - Phone quick panel: tile 'Do Not Disturb' (on = lit).
-- App builder: read window.parent.HubDnd (or top) if present, else
+- App code: read window.parent.HubDnd (or top) if present, else
   localStorage 'sites-hub.dnd' === '1' + the 'storage' event.
 - hub/core/hub_attention.js (both pages). App frame -> window.parent,
   same origin, sender must be one of the page's iframes:
@@ -1084,7 +1089,7 @@ NV-S2 (hub.html ?v= labels)
   device-local key 'shared-link-device-code' (not synced); a saved value
   that is not 5 digits is replaced. Settings > Devices > Device name shows
   "This device's number: 12345" (#device-code).
-- App builder: read window.parent.SharedLink (or your own loaded link_core.js)
+- App code: read window.parent.SharedLink (or your own loaded link_core.js)
   .LOBBY / .CODE_LEN / .isCode instead of hardcoding '0000' / \d{4};
   Telephone can use SharedLinkDevices.code() as the phone number. The
   number is not yet in the HubMesh roster and has no clash check (Telephone
@@ -1112,7 +1117,7 @@ NV-S2 (hub.html ?v= labels)
   it on send and receive (private meshes too): to '*' only, data.type
   'chat', data.from = the sending device, text 1-2000, id <= 80, name <= 40.
   Normal per-sender rate limit (60/s, burst 120) and 240 KiB limit apply.
-- Mesh message API for app builders (new):
+- Mesh message API for app authors (new):
     HubMesh.broadcast({t:'<channel>', ...data}) → {ok, via} | {ok:false,
       reason} ('stopped' | 'type' | 'public' | 'shape' | 'size' | 'rate');
       t = channel name /^[a-z][a-z0-9-]{0,31}$/, not 'invite'; the rest of
@@ -1126,11 +1131,11 @@ NV-S2 (hub.html ?v= labels)
 - Bubble: own messages (SharedChat.isMine) no longer count as unread.
 - Unchanged: Pooh Chat paths / files, the {sharedLink:'chat'} relay, bubble
   UI, barPooh, notices, notifcenter mapping. No ?v=, build or CACHE change.
-- phone/ (Hub Phone Builder): phone.html would need shared/link/link_chat.js
+- phone/ (Phone area): phone.html would need shared/link/link_chat.js
   and a small relay like hub_chat.js (init with HubMesh.broadcast, onMsg
   'chat' → SharedChat.add, and the {sharedLink:'chat'} frame listener) to
   give Pooh Chat inside the phone page a working chat.
-- Pooh Chat standalone (Hub Apps Builder, PC1): load link_core / link_devices /
+- Pooh Chat standalone (Apps area, PC1): load link_core / link_devices /
   hub_mesh / link_chat itself, HubMesh.start('00000' or the private code),
   and use the same 'chat' channel and message shape; only when NOT inside
   a Hub (a Hub frame keeps relaying through the parent).
@@ -1146,7 +1151,7 @@ NV-S2 (hub.html ?v= labels)
   bumped, so the install fills the same hub-shell-v127 cache.
 - hub/build.txt line 2 corrected to hub-shell-v127 (was still v126).
 - Only the list in hub_sw.js is changed; no phone/ files are edited. When
-  Hub Phone Builderadds or renames a phone/ file, it must also be added here.
+  the Phone area adds or renames a phone/ file, it must also be added here.
 
 -- H86: Pooh Chat in a desktop window can send (1 Nov 2026) --
 - hub/link/hub_chat.js: the {sharedLink:'chat', text} relay listener used to
@@ -1157,29 +1162,29 @@ NV-S2 (hub.html ?v= labels)
   checks #app-frame as before plus any on-screen desktop window showing
   Pooh Chat; a minimised / hidden window does not count.
 - Pooh Chat files unchanged (release-4 postMessage relay). No ?v=, build or
-  CACHE change. Found by Hub Apps Builderwhile testing PC1.
+  CACHE change. Found by the Apps area while testing PC1.
 
 
 ==============================================================================
 == TEAM 3 WEEK WRAP-UP (ends Sun 1 Nov 2026, IST)
 ==============================================================================
-Collected at the end of the Team 3 week from every Team 3 builder, in its own
+Collected at the end of the Team 3 week from every Team 3 area, in that area's own
 words, for the next team. Each part lists: releases merged, apps made,
 edits made, bugs found, bugs fixed, parked work, future releases and what
 is left for the next team. Main at collection time: 5581298.
 
 Contents:
-  1. Hub Main Builder(hub.html, hub/, shared/, apps/system/, ai/ai-exp pushes)
-  2. Hub Apps Builder(apps/* except system, tv/)
-  3. Hub Phone Builder(/phone.html, phone/)
-  4. Hub Games Builder(games, learn)
-  5. Ai Experiment sandbox (ai/ai-exp)
-  6. Hub OS.js Builder
+  1. Hub area (hub.html, hub/, shared/, apps/system/, ai/ai-exp pushes)
+  2. Apps area (apps/* except system, tv/)
+  3. Phone area (/phone.html, phone/)
+  4. Games area (games, learn)
+  5. AI experiment area (ai/ai-exp)
+  6. OS.js area
 
 ------------------------------------------------------------------------------
--- Team 3 wrap-up part 1: Hub Main Builder(hub.html, hub/, shared/, apps/system/, ai/ai-exp pushes) --
+-- Team 3 wrap-up part 1: Hub area (hub.html, hub/, shared/, apps/system/, ai/ai-exp pushes) --
 ------------------------------------------------------------------------------
-=== Hub Main Builder- Team 3 week wrap-up (31 Oct - 1 Nov 2026) ===
+=== Hub area - Team 3 week wrap-up (31 Oct - 1 Nov 2026) ===
 Sources: hub/docs/README_technical_team3.txt, hub/docs/build_history_2026.txt,
 git log --merges on main (5581298), chat context.
 
@@ -1216,7 +1221,7 @@ H85   PR #359  1 Nov   Offline cache covers /phone.html + phone files + DND/
                        attention/dialog files; build.txt fixed to v127.
 H86   PR #360  1 Nov   Pooh Chat in a desktop window can send (relay accepted
                        from any pooh-chat iframe).
-ai/ai-exp PRs pushed/merged for Ai Experiment sandbox (details from that builder):
+ai/ai-exp PRs pushed/merged for AI experiment area (details from that area):
   #365 refactor (agent.sh launcher, module/), #366 v3 shared cage,
   #367 v3 split of multi.sh, #368 v4 separate cages, #369 MANUAL.md,
   #370 v5 single agent.sh with flags (v1-v4 removed). All 1 Nov.
@@ -1236,10 +1241,10 @@ as Team 3 is unconfirmed.
 
 3. EDITS MADE (non-release / housekeeping)
 - ?v= label cleanup: NV-S1 (apps/system), NV-S2 (hub.html), PR #345 (phone/).
-- Redirect-only index.html rule applied to Main Builderpages (H78).
+- Redirect-only index.html rule applied to Hub pages (H78).
 - Docs: cache-list note that new phone/ files must be added to hub_sw.js
   SHELL (H85); README_technical_team3 sections for H75-H86.
-- Coordinated the 4-Builderpush/merge order (H86 > Apps #361-363 > Phone #364 >
+- Coordinated the 4-area push/merge order (H86 > Apps #361-363 > Phone #364 >
   Games nothing pending).
 
 4. BUGS FOUND
@@ -1247,9 +1252,9 @@ as Team 3 is unconfirmed.
 - hub/build.txt said v126 while cache was v127 (H85).
 - dialog/DND/attention files and phone page missing from offline cache (H85).
 - Desktop Pooh Chat sends dropped: hub_chat.js only trusted #app-frame
-  (found by Hub Apps Builder; fixed H86).
+  (found by Apps area; fixed H86).
 - ~60 s 'joining' delay when two pages open within ~2 s; messages sent in the
-  gap lost, no backfill (Hub Apps Builder; not fixed).
+  gap lost, no backfill (Apps area; not fixed).
 - Wallpaper bug (from notes; details unconfirmed).
 
 5. BUGS FIXED
@@ -1278,15 +1283,15 @@ as Team 3 is unconfirmed.
 - Next Hub id: H87.
 - Messages app (apps/connectivity/messages/messages.html) needs entries in
   hub/core/hub_catalog.js and hub_appindex.js, id likely 'messages'; waits
-  for Jor's go. Hub Phone Builderthen matches its dock default ('message').
+  for Jor's go. the Phone area then matches its dock default ('message').
 
 8. LEFT FOR THE NEXT TEAM
 Ownership:
-- Hub Main Builder: hub.html, index.html, sw.js, hub/, shared/, apps/system/,
-  ai/ai-exp (pushes for Ai Experiment sandbox).
-- Hub Phone Builder: /phone.html and phone/ (PH prefix).
-- Hub Apps Builder: other apps/* and tv/.
-- Hub Games Builder: games (and learn).
+- Hub area: hub.html, index.html, sw.js, hub/, shared/, apps/system/,
+  ai/ai-exp (pushes for AI experiment area).
+- Phone area: /phone.html and phone/ (PH prefix).
+- Apps area: other apps/* and tv/.
+- Games area: games (and learn).
 Rules:
 - Each folder's index.html is a redirect only.
 - No ?v= on new links.
@@ -1301,11 +1306,11 @@ Key APIs:
 - HubMesh.broadcast / onMsg / room / linked, 'chat' channel.
 
 ------------------------------------------------------------------------------
--- Team 3 wrap-up part 2: Hub Apps Builder(apps/* except system, tv/) --
+-- Team 3 wrap-up part 2: Apps area (apps/* except system, tv/) --
 ------------------------------------------------------------------------------
-TEAM 3 WEEK WRAP-UP - HUB APPS Builder(Apps area)
+TEAM 3 WEEK WRAP-UP - APPS AREA
 Written 1 Nov 2026, 11:45 IST. Covers 30 Oct - 1 Nov 2026 (PR #262 to #363).
-The earlier Team 3 week (22-24 Oct) was reported to Hub Main Builderon 24 Oct.
+The earlier Team 3 week (22-24 Oct) was reported to the Hub area on 24 Oct.
 Area: apps/* except games, learn and system; apps/office/shared/; root tv/.
 Testing this week: mostly syntax + smoke only (Jor's rule). Real-device
 tests were not done for any connectivity app.
@@ -1376,7 +1381,7 @@ Main after my last merge: dc6bb77.
 - Calendar Maker (CM1-CM20), Tools.
 - Messages (MS1), Connectivity: apps/connectivity/messages/messages.html.
 - Imported from Netlify (NI1): Altimeter, Password Generator, Rock Paper
-  Scissors, Sudoku (the games went to Hub Games Builder's area).
+  Scissors, Sudoku (the games went to the Games area's area).
 
 == Edits made ==
 - ?v= cache labels removed across my area (NV1-NV3, AG-F7). Rule: never
@@ -1396,13 +1401,13 @@ Main after my last merge: dc6bb77.
 - CM20: Calendar Maker Holidays 3 columns hid buttons; phone tab bar made
   the page 507px wide.
 - Pooh Chat inside the desktop Hub dropped sends (hub_chat.js only
-  accepted #app-frame) - Hub Main Builder's area.
+  accepted #app-frame) - the Hub area's area.
 - Older open item: Draftly orientation saved under localStorage key
   'undefined' (from 22 Oct, not re-checked).
 
 == Bugs fixed ==
 - DF15-B1 (#281), HPS3-B1 (#304), overlay (FX1 #357), CM20 (#361).
-- Pooh Chat desktop send: fixed by Hub Main Builderas H86 (#360).
+- Pooh Chat desktop send: fixed by the Hub area as H86 (#360).
 
 == Parked releases or ideas ==
 - WB2: Whiteboard on 00000 with host Allow/Deny and trusted devices.
@@ -1431,8 +1436,8 @@ Main after my last merge: dc6bb77.
 == Left for the next team ==
 - Unpushed work: none. All my branches are merged.
 - Messages catalog: Messages is not yet in hub/core/hub_catalog.js or
-  hub/core/hub_appindex.js (Hub Main Builder), and has no phone/ dock icon
-  (Hub Phone Builder). Jor decides. Suggested id: messages, Connectivity,
+  hub/core/hub_appindex.js (Hub area), and has no phone/ dock icon
+  (Phone area). Jor decides. Suggested id: messages, Connectivity,
   path apps/connectivity/messages/messages.html, icon messages_icon.png.
 - Messages uses its own PeerJS lobby jtsites-<code>-msg-* because HubMesh
   on public 00000 only allows the 'chat' channel. History key
@@ -1447,9 +1452,9 @@ Main after my last merge: dc6bb77.
 - APK plan belongs to Team 1, not Team 3.
 
 ------------------------------------------------------------------------------
--- Team 3 wrap-up part 3: Hub Phone Builder(/phone.html, phone/) --
+-- Team 3 wrap-up part 3: Phone area (/phone.html, phone/) --
 ------------------------------------------------------------------------------
-TEAM 3 WEEK WRAP-UP: PHONE (Hub Phone Builder)
+TEAM 3 WEEK WRAP-UP: PHONE (Phone area)
 Scope: /phone.html (site root) and phone/ (phone.css, phone_app.js,
 phone_apps.js, phone_gesture.js, phone_save.js, phone_notify.js, README.md).
 phone/index.html is only a redirect to /phone.html.
@@ -1465,7 +1470,7 @@ RELEASES MERGED
 - PH5 (PR #364, main 721351e): home cleanup (TV only on home; dock is
   Message, Telephone, Camera; saved layout moved once), clock higher,
   lighter dock.
-Phone work done by Hub Main Builderin the same week: H79 (phone page at
+Phone work done by the Hub area in the same week: H79 (phone page at
 /phone.html on the Hub link stack), H80 (shared settings/theme), H81 (Hub
 dialogs and notices on phone), H82 (HubDnd + attention call card), H85
 (phone files in the hub_sw.js offline cache).
@@ -1523,23 +1528,23 @@ FUTURE RELEASES PLANNED
 
 LEFT FOR THE NEXT TEAM
 - Messages dock id: phone dock default and Jor's migrated save use
-  'message'. Hub Apps Builder's folder is apps/connectivity/messages, not in
-  hub_appindex yet (Hub Main Builder's file, waiting for Jor's go). If the id
+  'message'. the Apps area's folder is apps/connectivity/messages, not in
+  hub_appindex yet (the Hub area's file, waiting for Jor's go). If the id
   ends up 'messages', change the one string in phone_save.js DEFAULTS and
   map the old id in the save (one-line follow-up). Until then the Message
   icon is hidden on the dock.
-- Tell Hub Main Builderwhenever a phone/ file is added or renamed, so
+- Tell the Hub area whenever a phone/ file is added or renamed, so
   hub_sw.js precache stays right.
-- Open report from Hub Apps Builder: something covers the first device-list
+- Open report from Apps area: something covers the first device-list
   row in Video Chat; if it happens only in /phone.html, check the phone
   shell's frame layout.
-- Telephone's #notify-hint overlap fix (FX1) belongs to Hub Apps Builder.
+- Telephone's #notify-hint overlap fix (FX1) belongs to Apps area.
 - Unpushed work: none. All phone work is merged to main.
 
 ------------------------------------------------------------------------------
--- Team 3 wrap-up part 4: Hub Games Builder(games, learn) --
+-- Team 3 wrap-up part 4: Games area (games, learn) --
 ------------------------------------------------------------------------------
-HUB GAMES Builder- TEAM 3 WEEK WRAP-UP
+GAMES AREA - TEAM 3 WEEK WRAP-UP
 Scope: apps/games/**, apps/learn/** and their CSVs (repo jor-teron/sites).
 Period: 21 Oct to 1 Nov 2026 (IST). Times are merge times, IST.
 Source: git merge history on origin/main plus my own notes.
@@ -1645,7 +1650,7 @@ Lab: Image Gen (IG1, IG3), Vision (VS1).
 - Folder structure: almost every game moved to index.html redirect +
   <name>.html + ui/ core/ assets/ (restructure set, NIX-G1, NIX-G2).
 - No-flash themed redirects on all Games and Learn index.html (NIX-G1,
-  NIX-L1; Games redirect pages IX6 #337 were done by Hub Apps Builder).
+  NIX-L1; Games redirect pages IX6 #337 were done by Apps area).
 - ?v= cache labels removed (NV-G1, NV-L1). Release ids now live only in
   commit, PR title, chat and <title>.
 - Learn title bar across 13 apps (TB-TEST, TB-KIT, TB-HBE).
@@ -1703,10 +1708,10 @@ Lab: Image Gen (IG1, IG3), Vision (VS1).
 - apps/lab/aoe-rts/aoe-rts.html links to the Games aoe-rts.html.
 
 ------------------------------------------------------------------------------
--- Team 3 wrap-up part 5: Ai Experiment sandbox (ai/ai-exp) --
+-- Team 3 wrap-up part 5: AI experiment area (ai/ai-exp) --
 ------------------------------------------------------------------------------
-TEAM 3 WEEK WRAP-UP: ai/ai-exp (AI agent experiment)
-From: Ai Experiment sandbox Builder. Date: 2026-11-01 (IST)
+TEAM 3 WEEK WRAP-UP: ai/ai-exp (AI companion experiment)
+From: the AI experiment area. Date: 2026-11-01 (IST)
 Repo: jor-teron/sites, folder ai/ai-exp/. main is at 5581298 (v5).
 
 RELEASES MERGED
@@ -1798,9 +1803,9 @@ LEFT FOR THE NEXT TEAM
   * Is a DEEPINFRA_API_KEY set up?
 
 ------------------------------------------------------------------------------
--- Team 3 wrap-up part 6: Hub OS.js Builder--
+-- Team 3 wrap-up part 6: OS.js area --
 ------------------------------------------------------------------------------
-TEAM 3 WEEK WRAP-UP - Hub OS.js Builder(owner of os/)
+TEAM 3 WEEK WRAP-UP - OS.js area (owner of os/)
 Written 2026-11-01 IST. Scope: os/ folder in jor-teron/sites only.
 
 Releases merged
@@ -1837,13 +1842,13 @@ Bugs found
 Bugs fixed
 - OS3 panel class clash: class renamed, fixed before the PR was opened.
 - OS.js build: NODE_OPTIONS=--openssl-legacy-provider npm run build, then
-  npm run package:discover, then npm run serve. Worked on the Builderbox;
+  npm run package:discover, then npm run serve. Worked on the box;
   Jor has not confirmed it fixed his machine.
 
 Parked releases or ideas
 - OS4: theme (parked by Jor, depends on Hub look and feel).
 - OS5: Hub launcher link to os/ (parked by Jor; apps/system/ belongs to
-  Hub Main Builder, so the link is theirs to add).
+  Hub area, so the link is theirs to add).
 - Optional storage.listAll(prefix) to bring back the old flat list.
   Offered, no decision.
 
@@ -1862,9 +1867,9 @@ Left for the next team
 - Open questions for Jor: Go on v86 Linux (OS6)? Add listAll back? Did
   the build fix solve his local OS.js?
 - Full upstream OS.js was installed for testing at /workspace/osjs on
-  the Builderbox (about 250 MB, mostly node_modules). It is not in the repo
+  the box (about 250 MB, mostly node_modules). It is not in the repo
   and not part of the site.
-- Hub Main Builder: when OS5 is unparked, add the launcher link in
+- Hub area: when OS5 is unparked, add the launcher link in
   apps/system/ pointing at os/index.html.
 
 -- End of Team 3 week wrap-up --
@@ -1972,8 +1977,8 @@ Loaded after hub_keys.js through hub_core.js link part (current desktop shell
 is desktop/desktop.html, not the retired hub.html); also available on phone.
 Standalone: load hub_keys.js then hub_api.js. New helper in SW SHELL; no V,
 CACHE or hub/build.txt bump. Full public API and examples: hub/hubapi.readme.md.
-Existing Agent/OCR/Vision unchanged. Adoption belongs to a follow-up with Hub
-Apps Bot. No tools, streaming, retries, model selection or usage ledger here.
+Existing Agent/OCR/Vision unchanged. Adoption belongs to a follow-up in the
+Apps area. No tools, streaming, retries, model selection or usage ledger here.
 Testing passed: node --check on hub_api.js, hub_core.js and hub_sw.js; short
 offline Playwright smoke (21 assertions: all chat providers, shapes, search,
 vision, missing-key Settings path, safe HTTP/network/abort errors, missing
@@ -2023,8 +2028,8 @@ HubAPI additions (hub_api.js, chat() contract unchanged):
 - search({depth:'advanced'}) + credits field (shape otherwise same);
   fetchPage({url, depth?, maxChars?}) = Tavily extract -> {url, depth, text,
   length, trimmed, credits}. httpError now sets e.status.
-Agent adoption (thin adapter over chatAdvanced / search / fetchPage) is Hub Apps
-Bot's follow-up; apps/lab/agent untouched. No V, CACHE or build.txt bump.
+Agent adoption (thin adapter over chatAdvanced / search / fetchPage) is the Apps
+area's follow-up; apps/lab/agent untouched. No V, CACHE or build.txt bump.
 Guide: hub/hubapi.readme.md.
 Testing: node --check on every changed JS; offline Playwright smoke at 390 px
 (33 assertions: UI add/list/rename/Test/delete, stable id, no key in DOM or
@@ -2102,7 +2107,7 @@ What changed
   no visible row and HubAPI never reads or sends them. Users manually re-enter
   a provider through Add provider. sites-hub.providers remains excluded from
   profile export/sync. No V, CACHE or build.txt bump.
-- Agent companion cleanup is being done locally by Hub Apps Bot under the same
+- Agent companion cleanup is being done locally in the Apps area under the same
   instruction; it must use visible svc_ providers instead of the removed slots.
 
 Files: hub/core/hub_keys.js, hub/core/hub_api.js,
@@ -2120,7 +2125,7 @@ zero live API calls. Local commit only, awaiting Jor's Push.
 ------------------------------------------------------------------------------
 -- H134g: HubAPI data-URL images (6 Nov 2026) --
 ------------------------------------------------------------------------------
-Approved: Jor: Go for H134g in Hub Main Bot.
+Approved: Jor: Go for H134g.
 
 What
 - imageBlob now accepts data:image/(png|jpeg|jpg|webp|gif);base64 (DeepInfra
@@ -2473,3 +2478,577 @@ apps/tools/vDesktop, apps/games/hero-builder, apps/lab/pdf-viewer-old.
   undecided. Cleaning up merged branches needs Jor's OK.
 
 -- End of Team 3, 14 Nov 2026 --
+
+
+==============================================================================
+== TEAM 3 WEEK CLOSE (Sun 15 Nov - Sun 22 Nov 2026, IST)
+==============================================================================
+Written 22 Nov 2026 as a docs-only change (no build bump; docs never bump
+the Hub build). Times are IST, taken from the merge commits on origin/main.
+Main when written: d8f88400 (build 20261122c / hub-shell-v189; the last
+merge, DC-1b #731, is Learn and did not bump the Hub).
+PR N = https://github.com/jor-teron/sites/pull/N
+
+This week's notes are written as one team. Each area reported its own
+list; Hub engine facts and the PR list were re-checked on main. Merges
+built by other teams this week (Hub H150-H163, #669 splash restyle, Team 5
+wallpaper and Hub Office suite work) are listed by number in C ("Other
+merges this week") for completeness; their detail stays in
+README_technical_team1.txt, README_technical_team2.txt,
+README_technical_team5.txt and hub/docs/hub_readme.md.
+
+Contents of this section
+  A. How we work fast (reminder) and Rules of the repo
+  B. Hub engine releases this week
+  C. Shipped this week, per area (Learn, Office, Apps, Games, AI experiment)
+  D. In progress / not pushed
+  E. Planned (with ids)
+  F. Parked (with reasons)
+  G. Open questions for Jor
+  H. Known issues and action items
+  I. Care notes for Teams 1 and 2, per area
+  J. Late entry: Apps, 10-11 Nov 2026
+
+------------------------------------------------------------------------------
+A. HOW WE WORK FAST (reminder) AND RULES OF THE REPO
+------------------------------------------------------------------------------
+How we work fast is the 10-point list at the top of this file. It still
+holds. In short: one owner per area; small named releases with letter
+follow-ups; discuss first, then build only on Jor's word; a fresh worktree
+per release; read only what you touch; pure logic with tiny node tests;
+one fixed push pipeline; late changes ride along; short reports that
+always mention a pending push; static, phone-first apps.
+
+Jor's words, exactly:
+  plain id / "plan"  -> give the plan and a time estimate, then wait.
+  "Code"             -> build and commit locally. Nothing is pushed.
+  "Push"             -> push, open the PR and merge it.
+  "Code n push"      -> both.
+  "Park X"           -> stop; X stays listed under Parked with the date.
+
+Rules of the repo
+1. Git
+   - Start from a fresh origin/main: git fetch, then
+     git worktree add /workspace/wt_<id> -b <area>/<id>-<slug> origin/main.
+   - Never reuse, reset or clean a shared checkout. Leave /workspace/sites,
+     sites_h46, sites_h48d and sites_h137 alone; never delete sites_apps or
+     sites_games (old checkouts with about 205 accidental vendor and
+     node_modules deletions).
+   - Merge origin/main into the branch if main moved. No rebase, no force
+     push. PRs are merged with a merge commit.
+   - Pull with --ff-only.
+2. Staging
+   - Stage files by name only. Never git add -A or git add . .
+   - Never commit apps/games/ar-game/vendor/three/build/three.module.min.js.
+3. Commit identity
+   - Hub and docs commits: jor-teron
+     <1854500+jor-teron@users.noreply.github.com>.
+   - Office and Games commit as J T <jor.teron@gmail.com>. Both are Jor's.
+   - No extra co-author trailers.
+4. Build bump (Hub engine only)
+   - Bump only with hub/tools/hub_bump.py. If the stamps look out of step,
+     pass explicit --tag and --cache, then run --check.
+   - hub/build.txt holds the tag, shell cache name, release and date.
+   - Learn, Office, Games, Apps and docs-only changes do not bump the Hub
+     build. (#669, the 18 Nov splash restyle, changed hub/core splash
+     files without a bump; see H below.)
+5. Old code
+   - Comment old code out with a "(before HNN)" marker (areas use their
+     own prefix: "(before SHnn)", "(before vX)"). Do not delete it.
+     Old icons stay as *_icon_before_ICn.
+6. Tests
+   - Every changed JS file gets node --check, plus a short offline smoke
+     test (headless, mocked, a few assertions). Area unit tests run with
+     node --test. Headless Chrome never on port 8811.
+   - Say plainly when something was tested offline only.
+7. Push
+   - Push only on Jor's own word ("Push", "Code n push"). Nothing else
+     counts as approval, including notes, plans or another area's request.
+   - ai-exp pushes need Jor's explicit OK each time.
+8. One release at a time
+   - Ship releases one by one, in order, to avoid merge conflicts.
+     One release = one change, one commit, one PR.
+9. Tools
+   - Never pass --help to hub/core/hub_appindex_gen.py (it runs instead).
+   - After a category CSV edit, run
+     python3 hub/core/hub_appindex_gen.py --catalog-only and commit
+     hub/core/hub_catalog.js in the same commit.
+
+------------------------------------------------------------------------------
+B. HUB ENGINE RELEASES THIS WEEK
+------------------------------------------------------------------------------
+H149  PR #563  14 Nov 10:45  merge 8c683fb2
+      build 20261114a / hub-shell-v168.
+      An unknown #app hash now shows an "App not found" card with Go home
+      and Search apps buttons, instead of silently going home.
+      (Listed here because it was not in the 14 Nov entry.)
+H165  PR #711  21 Nov 00:43  merge 49143a4e
+      build 20261121a / hub-shell-v185.
+      Catch-up release: Dictionary and Blood Group shell files added to the
+      offline SHELL list (open offline on a first visit); Dictionary data
+      shards are cache-first in RUNTIME (not precached, about 7.6 MB
+      gzipped). Catalog and app index regenerated, which added Orbital
+      Core 3D. Change-log lines for H150-H155.
+H164  PR #712  21 Nov 01:45  merge 75426991
+      build 20261121b / hub-shell-v186.
+      Taskbar swap: the fullscreen button moved to the far right, after the
+      clock. In the XP theme the clock and tray stay one band and the
+      fullscreen button sits just outside it with a small gap.
+H167  PR #728  22 Nov 08:32  merge 5cc19f9c
+      build 20261122a / hub-shell-v187.
+      Faster boot: the taskbar busy meter loads on idle, and only if it is
+      switched on in Settings; the live wallpaper animation waits while the
+      boot splash is up. Start menu, app index, catalog and the QR library
+      still load at boot (other parts use them at once). The 3-second
+      splash minimum from H159a is kept. Nothing looks different. Pushed
+      by the cloud push job from the local commit (box token dead).
+H171  PR #729  22 Nov 09:29  merge 76c0152f
+      build 20261122b / hub-shell-v188.
+      Quicker taps: taskbar, Start menu, desktop icons, tray, window
+      controls and right-click menus react at once, with no double-tap
+      zoom delay and a quick press effect. XP darkens instead of
+      shrinking; reduce-motion keeps it colour-only. Dragging and layout
+      unchanged.
+H168  PR #730  22 Nov 09:35  merge 74a05a1a
+      build 20261122c / hub-shell-v189.
+      Faster app opens: an app's files are warmed up on hover or long-press
+      of its icon (new desktop/wm/wm_warm.js), and recently closed windows
+      are kept hidden for a short while so reopening them is instant.
+
+All six passed node --check and the offline smoke tests. None was
+re-checked on a real phone. Do a hard refresh to pick up 20261122c.
+
+------------------------------------------------------------------------------
+C. SHIPPED THIS WEEK, PER AREA
+------------------------------------------------------------------------------
+-- Learn (no Hub build bumps) --
+Earlier in the week:
+  AL-1  #593  Assamese Letters (chart, audio, tracing, matras, joined
+              letters, numbers, words, games).
+  CFS-1 #600  CampCraft School moved into Learn (old Lab copy removed by
+              LB3).
+  DS-2a #601, DS-3 #602, DS-4 #603, DS-4a #604, DS-4b #605, DS-5 #606
+              Driving School steps.
+  EL-1  #607  English Letters.
+  PS1a-PS1g #615-#621  Physics Lab (bounce, ramps and boxes, drag, meters,
+              experiments, finish).
+  DC-1  #665  Offline Dictionary.
+Blood Group app (20 Nov):
+  BG-1  #701  Blood Group app (ABO/Rh, India frequencies).
+  BG-2  #702  Donation view: 8x8 chart and India donor rules.
+  BG-3  #703  Family puzzle with Punnett odds.
+  BG-3a #704  Opt-in tabs in apps/learn/shared/learn-hubbar.js, mirrored to
+              the Hub title bar.
+  BG-3b #705  Family tab Mum/Dad chip picker; viewport media queries fixed
+              (they measured the desktop, not the Hub window).
+  BG-5  #708  Myths tab.
+  BG-6  #709  Health tab.
+  BG-6a #710  Normal ranges, CBC explainer, Hb checker.
+21 Nov:
+  DS-6  #720  Driving School traffic cars as 1-mesh models (3 shapes,
+              8 colours).
+  DS-7  #721  Better trees.
+  DS-8  #722  Better houses and buildings.
+  DC-1a #723  Dictionary: common meanings first (WordNet 3.0 counts),
+              plus "more meanings".
+  DC-4  #724  Dictionary: irregular forms, word family, phrases.
+22 Nov:
+  DC-1b #731  09:46  merge d8f88400 (commits 08f4e1a2, 50382c8a).
+              Dictionary without Princeton WordNet: meanings follow Open
+              English WordNet's own order (OEWN ranking only) and the
+              Princeton credit is removed. The top-3 view, word family and
+              phrases stay. 25 tests. 08f4e1a2 is the code change;
+              50382c8a regenerates the data, checked against the expected
+              checksum (83fac14d...d120c). It keeps the same 425 data file
+              names, so existing users need the Hub cache fix in H.2.
+
+-- Office (apps/office/**, no Hub build bumps) --
+17-18 Nov, file formats and Start Page:
+  HOP1 #640 Slides renamed Presentation, saves .hop. HOB1 #641 Base
+  backups save .hob. SL11 #642 / BS10 #643 save to device and Hub
+  Documents. DW7 #647, PN1 #648, BS11 #649 open .odt/.odp/.odb. SH27 #650
+  Spreadsheet opens/exports .ods. DW8 #651, PN2 #652, BS12 #653 export
+  .odt/.odp/.odb. HO6 #656, HO7 #657 minimalist Start Page with cards.
+  HO8 #662, HO8a #663 Start Page becomes a labelled Home button in the
+  title bar. HO9 #664 common settings on the Start Page. HO10 #666 active
+  document's Undo/Redo/Save/Print/File move to the title bar. HO11 #667
+  tabs show the document name. SH29 #668, SH30 #670, SH31 #671
+  SPELLNUMBER (WORLD/INR/USA/UK, country and currency codes, paise/cents).
+  HO12 #672 new tabs start a blank document. PN4 #673, BS14 #674 drop
+  legacy .hslides/.hbase. DW9 #675 Writer opens .txt. DW11 #676, DW11a
+  #678 header/footer pictures incl. docx/odt export. HO12b #677 Untitled N
+  naming, names without extension, tab focus. DW12 #679 Writer saves
+  straight to .docx/.odt. SH32 #680 Spreadsheet saves straight to
+  .xlsx/.ods/.csv. DW13 #681, DW13b #682, DW13c #683 picture copy/paste,
+  drag-drop, letterhead header/footer. SH33 #684 open/save .xlsm keeping
+  macros. SH35 #686 ADDRESS() and an unsupported-functions note on open.
+20 Nov, menus and close:
+  SH34 #688, DW14 #689, DW14a #690, DW15 #691, SH36 #692, DW16 #693,
+  SH37 #694, SH38 #695, DW17 #696, SH39 #697, DW18 #698, DW19 #699,
+  SH40 #700 (File menus, rulers, Close and "nothing open" states, wrap
+  text by default, faster arrow keys). HO13 #706 Hub Office Settings page.
+  SH40a #707 Close asks before dropping edits that can't be saved back.
+21-22 Nov, spreadsheet fixes and speed:
+  SH41 #713 rows draw at fitted height (fixes blank rows after about 14).
+  SH42 #714 CONCATENATE(). HO14 #715 closing a document never jumps to
+  Settings. SH44 #716 IFERROR catches text-function errors; CONCAT numbers
+  at 15 digits. SH45 #717 ISERROR/ISERR/ISNA, IF treats FALSE correctly.
+  SH49 #718 lazy sheet-by-sheet xlsx load. SH46 #719 render cache (scroll
+  frame about 180 ms to 13 ms). HO15 #725 duplicate Open buttons and the
+  tab-bar + removed. SH47 #727 xlsx read capped at 1000 rows (sheetRows)
+  with a note naming cut sheets; a 20k-row open went from 1.2 s to 0.39 s.
+
+-- Apps (apps/ except games, learn, office, system) --
+  RY1   #598  Relay app (Hub relay setup, health check, shared address).
+  WWW1  #599  Web Browser (tabs, address/search, bookmarks, history).
+  WWW2b-d #610-#612  Browser through the relay: sessions per device,
+              real address after redirects, Reader, relay test report.
+  LB3   #614  Lab cleanup (old redirect stubs and the old CampCraft copy).
+  WX1a-f #622-#627  Weather Forecast (7-day, hourly chart, chips, units
+              and place, finish).
+  #629 Settings section order and #630 Disk network drives (both touch
+  apps/system). No Apps-area release since 14 Nov needed a Hub build.
+
+-- Games --
+  No Games release this week. The only Games change on main is Team 5's
+  Orbital Core 3D (apps/games/orbital-core/), committed straight to main
+  with no PR in 5 commits on 18-19 Nov: 4b9a0a52 add, aecf24f9 pan hang and
+  A* fix, 18b48b0f 4 towers and 5 aliens, 0a1c7f4e boot and old-save fix,
+  fe21d5ce mountain clipping fix.
+  Checked on main 74a05a1a: Orbital Core 3D IS in games-apps.csv,
+  hub/core/hub_catalog.js and hub/core/hub_appindex.js (added by the H165
+  regen). An older note saying it is missing from the catalog is out of
+  date. It is NOT yet in GAME_PREFIXES in
+  apps/games/common/settings/games-settings.js, and its CSV description is
+  98 characters (the limit is 90).
+
+-- AI experiment (ai-exp) --
+  v6.1  #726  21 Nov  merge ef20f51e. Provider and model selection:
+              --model X, --models A,B, --models list. Aliases: g35
+              (gemini-3.5-flash-lite, default), g31, llama (Llama 3.1 8B
+              Turbo) and nemo (Mistral Nemo 12B) via DeepInfra
+              (DEEPINFRA_API_KEY). Restored the exec bit on agent.sh.
+  Not a PR: Jor moved the project from ai/ai-exp/ to ai-exp/ai-exp/
+  himself (cbaf7dfd "Add AI experiment", 21 Nov) and set the default model
+  to 3.5. The ai/ai-exp/ deletion came from ab5cf16 "Add MCP server demo"
+  (13 Nov, pushed straight to main).
+  Earlier history for reference: v6.0 logs/ folder #417 (6 Nov); v5 flags
+  #370, MANUAL #369, v3/v4 #365-#368 (1 Nov).
+
+-- Other merges this week (built by other teams; listed for completeness) --
+Docs:  #592 Team 3 doc, 14 Nov update (14 Nov 18:01); #613 Team 1 week
+       notes 10-17 Nov (17 Nov); #637 Team 5 shift handover (17 Nov);
+       #685 and #687 Team 5 README limited to Team 5 work (20 Nov).
+Hub:   H150 #594 Start menu sections step; H151 #595 shared search core;
+       H152 #596 Settings search box; H153 #597 App Hub search box (all
+       15 Nov). H154 #608 flyouts match the Start menu; H155 #609
+       Favourites list (16 Nov). H156 #638 flyout skips a single-section
+       step; H157 #639 lock-core test no longer hard-codes the cache
+       version; H158 #644, H158a #645, H158b #646 live wallpaper on the
+       desktop, with Motion off, 5 styles (17 Nov). H159 #654 and H159a
+       #655 boot splash while apps restore, 3 s minimum; H161 #658 Base and
+       Presentation file icons in Files; H162 #659 plain text title-bar
+       item; H163 #660 catalog and app index regenerated; H160 #661 desktop
+       analog clock (18 Nov 00:55-02:33). #669 splash restyle (18 Nov,
+       see H.4).
+Team 5 (direct commits merged as PRs, 17 Nov): #631, #632, #633 Live
+       wallpapers group in Settings, previews and animated swatches;
+       #634, #635, #636 Hub Office Start Center, tabbed suite container,
+       iframe path fix.
+Office: SH25 #628 grid context menu with row/column insert and delete
+       (17 Nov).
+Ranges above already cover #610-#612 (WWW2b-d), #615-#621 (PS1a-g) and
+#622-#627 (WX1a-f).
+
+------------------------------------------------------------------------------
+D. IN PROGRESS / NOT PUSHED
+------------------------------------------------------------------------------
+Nothing is in progress in any area. Hub, Learn, Office, Apps, Games and
+AI experiment have no open PRs and no unpushed commits. The last two
+merges were H168 (#730, 09:35) and DC-1b (#731, 09:46) on 22 Nov.
+The Team 3 notes for 10-11 Nov are folded in at J below; the full copy
+stays in hub/docs/README_technical_team3_draft.txt.
+
+------------------------------------------------------------------------------
+E. PLANNED (each waits for Jor's "Code")
+------------------------------------------------------------------------------
+Hub (responsiveness plan, 22 Nov; H170 and H172 are parked, so the next
+new Hub id is H173):
+  H166  ?perf=1 debug overlay: boot time, app open time, stalled frames.
+        About 30 min. Do first; it measures what to fix next.
+  H169  Smoother window drag and resize: CSS transforms batched per frame,
+        commit the size on release, no Glass blur while dragging. About
+        1 h; the riskiest of the set.
+  Later, from Team 5's roadmap: H158c high-DPI support, a clock chime.
+Learn:
+  DC-2 Hindi meanings, DC-3 saved words and quiz, DC-5 better word of the
+  day, LRN4 (merge apps/learn/shared into common/, learn-hubbar.js to
+  common/ui/, about 21 script paths), LRN3a, NP8.
+Office (speed polish):
+  SH55 open xlsx using cached values, skip the first full recalc (about
+  110-140 ms on heavy sheets). DW20 lazy-load Writer export/open/mail-merge
+  modules (about 337 KB off startup). Optional: SH48 progress toast for big
+  files, SH56 incremental recalc, Worker parse, DW21 faster first layout
+  for long documents, SH57 compact .hos JSON.
+Apps:
+  LB1 move Transcribe, PhoneKey and vDesktop from Tools to Lab and list
+  them in Lab and the Hub.
+Games:
+  SWAP-1b Sweet Swap animations (about 2 h); AoE Ages (discussion only).
+  Orbital Core follow-ups: add 'orbital-core' to GAME_PREFIXES (save key
+  sites-hub.orbital-core); cut the CSV description under 90 characters;
+  ideas: leaderboard via Hub profile sync, lighter Three.js textures for
+  low-end phones. Next free ids: SHIP-3, AF-5, SNK-T2, SI-T2, SNL-3,
+  SUDO-P2, SC-2a, Garden Guard 1b, Jigsaw 1b. Waiting on Jor: Aeroplane
+  review, more Browser FPS maps.
+AI experiment:
+  Nothing queued. v6.1 passed mock tests only (models 45/45, presets 6/6,
+  help sync); not yet live-tested with real Gemini or DeepInfra keys.
+  Llama may write tool calls as plain text.
+
+------------------------------------------------------------------------------
+F. PARKED (only Jor restarts these)
+------------------------------------------------------------------------------
+Hub:
+  H170  lighter background work (pause wallpaper/clock when hidden, cut
+        effects on low-end phones). Parked by Jor, 22 Nov.
+  H172  fingerprint unlock (WebAuthn passkey, local unlock only, PIN stays
+        as fallback, HTTPS and a sensor needed). Parked by Jor, 22 Nov.
+  From the Team 2 handover, still open, no go yet:
+  H130, H131; PIN retry limit; H139b; H98; Connect-link gate; Start-up
+  manager; RL1 follow-ups (Web MCP and Remote onto hub/relay);
+  hub_sw offline precache for new games and Learn apps (waits on Jor's OK
+  because it grows the offline cache).
+  Correction (checked on main, 22 Nov): two items from the old handover
+  list are no longer parked on the Hub side.
+  - Base and Slides file icons: done in H161 (#658, 18 Nov), Base and
+    Presentation file icons in Files.
+  - Notely title-bar text: the Hub side is done in H162 (#659, 18 Nov), a
+    plain text item in the title bar. Notely still sends its word count
+    as a disabled button with no icon (notely_readme.md), so switching it
+    to the H162 text item is a small Office follow-up, not yet planned.
+Learn:
+  DC-6  Dictionary data that updates itself without a Hub release
+        (versioned data folder plus manifest.json, a "Check for update"
+        button, optional weekly auto-check). Parked by Jor, 22 Nov.
+  BG-4 Blood Group quiz (Jor); FM-1a-FM-1c and CS3 (waiting for go-ahead;
+  FM-1a Flag Master moved from Games to Learn). Older: First Aid visuals,
+  Ocean Floor, Flags and Countries, Technology topic.
+Office:
+  SH50 grid starts at 500 rows and grows (parked so speed work goes first).
+  SH51-SH54 merge follow-ups (read merges on xlsx/ods import, Merge &
+  Center / Merge Across, warn before losing values, merges over hidden
+  rows). Merge and unmerge already work since SH11.
+Apps:
+  RL1 (Web MCP and Remote onto hub/relay); AG41 duplicate btnPick fix;
+  AG43 leftovers (photo history budget, search cache, long-chat render);
+  Agent long chats on 4 GB PCs (needs a new id); MCP2.3 Web MCP review
+  fixes; MCP3, PH18, PH3, PH2, VNC2, VNC3, AG22, PW3, IV1/IV2, LL3, PV3,
+  WB1-WB4, NVIDIA NIM / saved providers. A few leftover tiled icons (Draw,
+  Paint, Phone in Media). PE1 was cancelled.
+Games:
+  SB1b Sling Birds levels, NTR1a Neon Trails, ARQ1f AoE fog of war, HEX 2D,
+  NIX-G4 Island Alpha, Hero Builder, Osmos AI, DMQ1c, game sounds.
+  Deprioritised or waiting on design decisions.
+AI experiment:
+  Browser version (v86 / Hub terminal wasm BusyBox): parked indefinitely,
+  Jor has no server.
+
+------------------------------------------------------------------------------
+G. OPEN QUESTIONS FOR JOR
+------------------------------------------------------------------------------
+ 1. Code Lab is listed in both Lab and Learn. Which one keeps it?
+ 2. Rename the "Blood Groups" app?
+ 3. India Rh-negative figure: the app says about 1.5%; some surveys say
+    5-7%. Which figure do we show?
+ 4. DS-8: is the shop awning size right?
+ 5. DC-4: hide rare words in the word family list?
+ 6. pdf-viewer-old: give it a listing, or keep it hidden?
+ 7. hero-builder (199 committed node_modules files, not in the CSV) and
+    the leftover contra-alpha: keep, move or remove? Also a blank line in
+    games-apps.csv.
+ 8. Hero Builder listing: Games owns it; should it be listed?
+ 9. Orbital Core: OK to add 'orbital-core' to GAME_PREFIXES and shorten its
+    CSV description (98 -> under 90 characters)?
+10. Cleaning up merged remote and local branches (needs Jor's OK).
+11. DC-1b: should the Dictionary's About keep a one-line license note,
+    "derived from Princeton WordNet 3.0"?
+
+------------------------------------------------------------------------------
+H. KNOWN ISSUES AND ACTION ITEMS
+------------------------------------------------------------------------------
+1. Box GitHub token is dead since about 08:30 IST, 22 Nov. The file is
+   /home/box/.secrets/gh_sites_token; the GitHub API answers 401 and box
+   pushes fail with "Invalid username or token". Until Jor replaces it
+   with a fine-grained token (Contents read/write and Pull requests
+   read/write on jor-teron/sites), push through the cloud push job
+   (H167, H171 and H168 went that way). Never write a token value in a
+   doc, commit or message.
+2. Stale Dictionary data for existing users. Checked in
+   hub/update/hub_sw.js on main 74a05a1a: Dictionary data
+   (apps/learn/dictionary/data/*) is served cache-first from the RUNTIME
+   cache 'hub-rt-1' and is never refetched once cached. On activate the
+   service worker deletes only old 'hub-shell-*' caches and any 'hub-rt-*'
+   cache whose name is not 'hub-rt-1', so 'hub-rt-1' survives every shell
+   bump (CACHE is now hub-shell-v189; RUNTIME is still hub-rt-1).
+   DC-1a and DC-4 changed the contents but kept the file names, so anyone
+   who opened the Dictionary before 21 Nov keeps the old data. DC-1b
+   (#731, merged 22 Nov 09:46) adds to this: it rewrote the same 425 data
+   files under the same names, so existing users still see the older
+   (Princeton-ordered) meanings for every letter file they opened before,
+   until a Hub release ships the cache fix below. New users get the
+   DC-1b data.
+   A normal shell bump (CACHE hub-shell-vNNN) does NOT fix this. The fix needs a Hub
+   release that either moves the data to its own versioned cache (for
+   example 'hub-dict-<n>', deleted on activate when the number changes)
+   or adds a data version to the shard URLs. Bumping RUNTIME would also
+   work but drops every cached app page and image.
+3. Live site not verified. Nobody has yet confirmed that GitHub Pages
+   serves the current shell (20261122c / hub-shell-v189). Check
+   hub/build.txt on the live site after a hard refresh.
+4. #669 (18 Nov, splash restyle: radial glow, floating logo, gradient
+   title, pill progress bar) changed hub/core splash files without a
+   build bump, and carried an extra co-author trailer. It merged after
+   H160, so it only reached users with the next bump (H165, 21 Nov). Future Hub changes
+   must go through hub_bump.py.
+5. Hub changes this week were tested offline only (node --check plus
+   headless smoke). Real-phone checks are still owed for H164, H167, H171
+   and H168.
+6. ai-exp v6.1 is not live-tested with real keys (see E).
+
+------------------------------------------------------------------------------
+I. CARE NOTES FOR TEAMS 1 AND 2, PER AREA
+------------------------------------------------------------------------------
+Whole repo
+- Read How we work fast at the top first. One release at a time.
+- Only Jor's own words approve a push.
+- Stage by name; merge commits; no rebase or force push.
+- Moved apps keep redirect pages at their old paths and the same
+  saved-data keys.
+
+Hub engine
+- Bump with hub/tools/hub_bump.py only; --check after.
+- Comment old code with "(before HNN)".
+- Never pass --help to hub_appindex_gen.py.
+- The splash keeps its 3-second minimum (H159a); the busy meter is
+  idle-loaded (H167); press feedback lives in the H171 CSS; warm-up and
+  instant reopen live in desktop/wm/wm_warm.js (H168).
+- Before pushing from the box, check the token works; if not, use the
+  cloud push job.
+
+Learn
+- Dictionary data files are single huge lines; a patch can reach about
+  46 MB. Push code-only patches and regenerate the data on the other side
+  with python3 apps/learn/dictionary/tools/build_data.py, then check the
+  sha256 over the sorted files (LC_ALL=C sort) matches.
+- After editing learn-apps.csv, run
+  python3 hub/core/hub_appindex_gen.py --catalog-only and commit
+  hub_catalog.js in the same commit. Remove stray non-Learn rows (for
+  example Orbital Core 3D) by hand from the Learn part of the diff.
+- Driving School 3D budget: under 400 meshes, Lambert/basic materials, no
+  shadows or textures, InstancedMesh for repeats; it must run on weak
+  phones.
+- Learn needs no Hub build bump. Weather Simulator belongs to Apps.
+
+Office
+- Grid cap ROWS=1000 comes from CFG.grid.rows; xlsx import reads only that
+  many rows (SH47). CSV keeps the first 1000 too.
+- Lazy sheets (SH49): call the ensure-all-sheets-loaded step before save,
+  export or find. Unloaded tabs show in italics.
+- Render cache (SH46): one full render per action; invalidate it when
+  column widths or row heights change.
+- SheetJS CE does not read or write cell styles; only .hos keeps full
+  styling.
+- Known gaps: TRUE/FALSE don't work in arithmetic; ISBLANK(UPPER(errcell))
+  gives #REF!; xlsx import ignores merges.
+- One release per PR from a fresh worktree; "(before XNN)" markers; merge
+  commits; tests with node --test. Office never edits hub/, root shared/,
+  apps/system or the catalogs.
+
+Apps
+- Icon style: plain transparent 128 px PNG with a #1c1f24 outline and no
+  tile. Connectivity icons are colourful.
+- Lab moves (MV2, MV3) keep redirect pages at the old paths; saved-data
+  keys are unchanged.
+- Office is its own area since 20 Nov; the Apps area no longer edits
+  apps/office/**.
+- /workspace/sites_apps has about 205 old vendor/node_modules deletions:
+  never git add -A there; pull with --ff-only.
+- Do not edit the Agent app's app/api/hub/* (AG37 tests pin those bytes).
+  Each Agent release bumps agent_sw.js VER and keeps an "AGnn Legacy" line.
+
+Games
+- Orbital Core 3D is an ES-module game: it will not open over file://.
+  Test it over http.
+- /workspace/sites_games is an old detached checkout with about 205
+  accidental deletions: never reset, clean or git add -A there; use
+  worktrees from origin/main.
+- Games commits as J T <jor.teron@gmail.com>.
+- LB3 already removed apps/lab/aeroplane and island-demo.
+- Weather Simulator belongs to Apps, not Games.
+
+AI experiment
+- The path is now ai-exp/ai-exp/ (not ai/ai-exp/). Run ./agent.sh; see
+  --help, --help all and MANUAL.md.
+- The Hub team needs Jor's explicit OK for each ai-exp push.
+- Code only on "Code"/"Do..."; most of the time it is discussion. Big
+  releases are split into smaller parts, each with its own PR.
+- Companions get normal names and are never told they are AI or that
+  other companions exist.
+- Gemini is on the free tier (15 requests a minute) and the key is shared
+  with Jor's chat app: keep --gap at 5 s or more.
+- Old experiments continue with their saved flags (.run/flags);
+  --model/--models can't be combined with --continue.
+- "(before vX)" markers; stage by name; merge, never rebase.
+
+------------------------------------------------------------------------------
+J. LATE ENTRY: APPS, 10-11 NOV 2026 (10 Nov 22:32 to 11 Nov 00:47 IST)
+------------------------------------------------------------------------------
+These notes were written into the Team 2 file by mistake and never
+committed here. Full text: hub/docs/README_technical_team3_draft.txt.
+
+Merged:
+AG42  PR #524  10 Nov 23:35  merge 1ea7e8f3.
+      In-app confirm (HR.confirm, native <dialog> showModal) replaces five
+      browser confirm() calls: delete chat, delete picture, remove
+      knowledge doc, semantic-index consent, delete index. After a delete
+      the image viewer rebuilds, so it no longer keeps a dead URL.
+      Service worker agent-ag42. Tests 210 -> 215.
+HO2   PR #525  11 Nov 00:31  merge 4aa4f6f5.
+      Touched apps/office/shared on Jor's explicit go. Draftly and Notely
+      show a sticky "Couldn't save" card. Notepad autosaves at 400 ms and
+      flushes on pagehide (fixes an empty overwrite). OfficeDialog gains
+      alert and showModal and replaces browser alert/confirm in Paper
+      Scan, Print and Notely (fallbacks commented out in Draftly,
+      Spreadsheet and office-settings). Auto theme in Draftly and Base
+      follows sites-hub.theme. jsPDF, html2canvas, html-docx and jsQR are
+      lazy loaded. 39 files, 475 Office checks.
+NL4   PR #526  11 Nov 00:42  merge e89e0a93.
+      Notely Open and Download in the Hub window bar via HubTitleBar
+      (nl_hubbar.js). Standalone is unchanged.
+
+Found in review after AG40, not fixed, not approved:
+AG41 (about 15-20 min): a duplicate btnPick id (agent.html:60 and :141)
+      breaks Pick folder; Enter during a reply stops it; stopping between
+      tool calls leaves unanswered tool calls and breaks OpenAI/Gemini
+      history; a mid-stream disconnect loses the reply and can switch to
+      the Browser model.
+AG43 (about 20-30 min): photos are not counted in the history budget
+      (resent each step); the chat-search cache is unbounded with photos;
+      long-chat redraw is slow and the Steps pane is unbounded; the Tavily
+      key field is dead.
+Low:  two forever timers (summaryview, conview); write_file approval runs
+      before the trash check; {t} is replaced in user text in logs.js;
+      chat-index writes happen outside the save lock; weak AG38/AG39
+      version tests.
+
+Still waiting from the Team 2 list: duplicate vendor files (pdf.js in OCR
+and shared; jsQR in 7 places); NL5 more Notely window-bar buttons (NL5
+later merged as #558 on 14 Nov); DF23, NL3, OC1, DF19-22, MM7, IV1-2,
+LL3, WB1-4; optional move of Web MCP and Remote to RL1.
+
+Care: OfficeDialog is the shared Office dialog; HubTitleBar is the
+window-bar pattern. H136 (startup "number in use" fix) was tested offline
+only; hard-refresh and retest.
+
+-- End of Team 3 week close, 15-22 Nov 2026 --
