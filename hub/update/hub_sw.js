@@ -33,8 +33,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261122d';
-const CACHE = 'hub-shell-v190';  // 2026-11-22d: H173
+const V = '20261122e';
+const CACHE = 'hub-shell-v191';  // 2026-11-22e: H166
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const DICT = 'hub-dict-1';      // H173: dictionary letter data; a data rebuild bumps only this number
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
@@ -117,6 +117,7 @@ const SHELL = [
   'hub/core/hub_break.js', 'hub/core/hub_break.css',   // H65: Computer break lock (hub.html loads them)
   'hub/core/hub_lock_core.js', 'hub/core/hub_lock.js', 'hub/core/hub_lock.css', 'shared/vendor/peerjs.min.js',   // H142: PIN lock screen (desktop.html loads them; PeerJS only while locked)
   'hub/core/hub_splash.js', 'hub/core/hub_splash.css',   // H159: boot splash while the desktop restores open apps
+  'hub/core/hub_perf.js',   // H166: ?perf=1 debug overlay (lazy-loaded from desktop.html only when the flag is set)
   'hub/core/hub_clock.js', 'hub/core/hub_clock.css',   // H160: desktop analog clock
   'unlock.html', 'hub/core/hub_unlock.js',   // H142: the phone unlock page (its QR path needs internet anyway); H143: + fingerprint / Add phone
   'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js', 'phone/hidden-apps.csv',   // H85: the phone look opens offline too
