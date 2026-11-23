@@ -290,7 +290,10 @@
     state: () => ({ on: store.isOn(), hasPin: store.hasPin(), locked: isLocked, phone: !!session, method: store.method(), phones: store.keys().length, pinShown })
   };
   // every load of the Hub page while Activate is on (no idle auto-lock)
-  if (store.isOn()) lock(); else root.classList.remove('hub-locked');
+  // (before H175) if (store.isOn()) lock(); else root.classList.remove('hub-locked');
+  // H175: auto-lock only on a real page boot (stage 1 wrote these tags, __hubLockBoot).
+  // Loading the files later from Settings must not lock until 'Lock now' / the next load.
+  if (store.isOn() && window.__hubLockBoot) lock(); else if (!store.isOn()) root.classList.remove('hub-locked');
   // the PIN removed / Activate turned off in another tab (both need the PIN there): open up here too
   window.addEventListener('storage', (e) => { if ((!e.key || e.key.indexOf('hub-lock.') === 0) && isLocked && !store.isOn()) unlock(); });
 })();

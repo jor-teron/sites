@@ -37,7 +37,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261123a';
+  const V = '20261123b';
   const DELAY = 1500;
   const BATCHES = {
     // H174: Start menu first, then Connect, wallpaper last among the visible stages
@@ -95,12 +95,19 @@
     tray: ['shared/perf/busy_meter.js', 'hub/drives/hub_traymeter.js'],   // H167: was in desktop.html before first paint
     // H174: clock + update were blocking tags in desktop.html; now after the wallpaper batch
     clock: ['hub/core/hub_clock.css', 'hub/core/hub_clock.js'],
-    update: ['hub/update/hub_update.css', 'hub/update/hub_update.js']
+    update: ['hub/update/hub_update.css', 'hub/update/hub_update.js'],
+    // H175: optional theme / lock / break / eye — not in the staged chain; loaded at boot only when
+    // already on, or later via ensure() when Settings turns them on (no reload).
+    glass: ['hub/core/hub_glass.css'],
+    xp: ['hub/core/hub_xp.css'],
+    lock: ['hub/core/hub_lock.css', 'hub/core/hub_lock_core.js', 'hub/core/hub_lock.js'],
+    break: ['hub/core/hub_break.css', 'hub/core/hub_break.js'],
+    eye: ['hub/core/hub_eye.js']
   };
   const done = {}, busy = {}, fails = {}, good = new Set();   // R58: good = files that loaded
   // const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer' };   (before H167)
   // const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer', tray: 'the busy meter' };   (before H174)
-  const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer', tray: 'the busy meter', menu: 'the Start menu', connect: 'Connect', wallpaper: 'the wallpaper', clock: 'the clock', update: 'updates' };
+  const LABEL = { saver: 'the screen saver', drives: 'the Files pane', snap: 'window snapping', osk: 'the on-screen keyboard', viewer: 'the viewer', tray: 'the busy meter', menu: 'the Start menu', connect: 'Connect', wallpaper: 'the wallpaper', clock: 'the clock', update: 'updates', glass: 'Glass', xp: 'XP', lock: 'the lock screen', break: 'Computer break', eye: 'Eye comfort' };
 
   /** H174: live wallpaper engine only when the saved id is live:… (no download otherwise). */
   function filesOf(name) {
@@ -126,11 +133,20 @@
       (css ? document.head : document.body).appendChild(el);
     });
   }
+  /** H175: a file already written as a boot tag (conditional Glass / lock / …) counts as loaded. */
+  function already(src) {
+    if (good.has(src)) return true;
+    const sel = /\.css$/.test(src)
+      ? 'link[href*="' + src + '"]'
+      : 'script[src*="' + src + '"]';
+    try { if (document.querySelector(sel)) { good.add(src); return true; } } catch (_) { /* old */ }
+    return false;
+  }
   function load(name) {
     if (busy[name]) return busy[name];
     fails[name] = [];
     if (name === 'menu') window.__ctxInAppManual = true;   // (before H174) inline tag in desktop.html before ctx_in_app.js
-    const files = filesOf(name).filter((f) => !good.has(f));   // R58: retry keeps the batch order
+    const files = filesOf(name).filter((f) => !already(f));   // R58: retry keeps the batch order; H175: skip boot tags
     busy[name] = files.reduce((p, f) => p.then(() => one(f, name)), Promise.resolve())
       .then(() => {
         if (fails[name] && fails[name].length) { busy[name] = null; return; }   // R28: next use retries
@@ -161,7 +177,53 @@
     clearTimeout(noteT);
     noteT = setTimeout(() => { noteEl.hidden = true; }, 6000);
   }
-  window.HubLoader = { load, need, loaded: (n) => !!done[n], failed: (n) => (fails[n] || []).slice() };
+  function ensure(name) { return load(name); }   // H175: on-demand theme / lock / break / eye (no failure note)
+  window.HubLoader = { load, need, ensure, loaded: (n) => !!done[n], failed: (n) => (fails[n] || []).slice() };
+
+  // H175: Settings › Screen lock talks to window.HubLock (parent). If the lock files were not
+  // part of stage 1 (feature off at boot), a stub loads them on demand, then forwards the call.
+  // Auto-lock on script load still only happens when __hubLockBoot is set (a real page boot).
+  function lockStub() {
+    if (window.HubLock && !window.HubLock._stub) return;
+    const fwd = (name) => function () {
+      const a = arguments;
+      return ensure('lock').then(() => {
+        const L = window.HubLock;
+        if (!L || L._stub || typeof L[name] !== 'function') return;
+        return L[name].apply(L, a);
+      });
+    };
+    window.HubLock = { _stub: true, isOn: () => false, hasPin: () => false, locked: () => false,
+      lockNow: fwd('lockNow'), apply: fwd('apply'), setOn: fwd('setOn'), setPin: fwd('setPin'),
+      removePin: fwd('removePin'), verify: fwd('verify'), keys: () => [], method: () => 'pin',
+      methodReady: () => false, setMethod: fwd('setMethod'), addKey: fwd('addKey'),
+      removeKey: fwd('removeKey'), state: () => ({ on: false, hasPin: false, locked: false }) };
+  }
+  function wantLock() { try { return localStorage.getItem('hub-lock.on') === '1' && !!localStorage.getItem('hub-lock.pin'); } catch (_) { return false; } }
+  function wantBreak() {
+    try {
+      if (localStorage.getItem('sites-hub.breakOn') === '1') return true;
+      const end = +localStorage.getItem('hub-break.breakEnd') || 0;
+      return end > Date.now();
+    } catch (_) { return false; }
+  }
+  function wantEye() { try { const m = localStorage.getItem('sites-hub.eyeMode') || ''; return m === 'always' || m === 'sched'; } catch (_) { return false; } }
+  function wantXp() { try { const t = localStorage.getItem('sites-hub.theme') || ''; return t === 'xp' || localStorage.getItem('sites-hub.xp') === '1'; } catch (_) { return false; } }
+  function wantGlass() { try { const t = localStorage.getItem('sites-hub.theme') || ''; return !wantXp() && (t === 'glass' || localStorage.getItem('sites-hub.glass') === '1'); } catch (_) { return false; } }
+  function syncOptional() {
+    if (wantXp()) ensure('xp');
+    else if (wantGlass()) ensure('glass');
+    if (wantLock()) ensure('lock');
+    if (wantBreak()) ensure('break').then(() => { if (window.HubBreak) window.HubBreak.apply(); });
+    if (wantEye()) ensure('eye').then(() => { if (window.HubEye) window.HubEye.apply(); });
+  }
+  lockStub();
+  window.addEventListener('storage', (e) => {
+    if (!e.key || e.key.indexOf('sites-hub.') === 0 || e.key.indexOf('hub-lock.') === 0 || e.key.indexOf('hub-break.') === 0) syncOptional();
+  });
+  window.addEventListener('message', (e) => {
+    if (e.origin === location.origin && e.data && e.data.type === 'hub-prefs') syncOptional();
+  });
 
   // ---- on demand: keys pressed before the module is in (Hub page + same-origin apps) ----
   const seen = new WeakSet();   // R29: one replay per key event

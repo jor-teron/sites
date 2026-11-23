@@ -146,6 +146,11 @@
     // root.classList.toggle('hub-glass-solid', glass && get('glassSolid') === '1');   (before H104)
     root.classList.toggle('hub-glass', glass && !xp);
     root.classList.toggle('hub-glass-solid', glass && !xp && get('glassSolid') === '1');
+    // H175: load the matching theme CSS if it was not part of stage 1 (Settings switch, no reload)
+    if (window.HubLoader) {
+      if (xp) window.HubLoader.ensure('xp');
+      else if (glass) window.HubLoader.ensure('glass');
+    }
     root.classList.toggle('hub-hover-focus', get('hoverFocus') === '1');
     root.classList.toggle('hub-snap-off', get('snapEdges') === '0');
     root.classList.toggle('hub-magnet-off', get('snapMagnet') === '0');
@@ -172,8 +177,16 @@
     const m = get('wmMode') || 'auto';
     if (window.HubMode && window.HubMode.pref !== m) window.HubMode.setPref(m);
     // H63: Eye comfort (hub_eye.js, loaded after this file; it also checks its schedule every minute)
+    // H175: load eye / break on demand when Settings turns them on (they were off-by-default at boot)
+    const eyeMode = get('eyeMode');
+    if (window.HubLoader && (eyeMode === 'always' || eyeMode === 'sched') && !window.HubEye) {
+      window.HubLoader.ensure('eye').then(() => { if (window.HubEye) window.HubEye.apply(); });
+    }
     if (window.HubEye) window.HubEye.apply();
     // H65: Computer break (hub_break.js, loaded after this file; it ticks every second while on)
+    if (window.HubLoader && get('breakOn') === '1' && !window.HubBreak) {
+      window.HubLoader.ensure('break').then(() => { if (window.HubBreak) window.HubBreak.apply(); });
+    }
     if (window.HubBreak) window.HubBreak.apply();
     // H144: fullscreen button visibility (wm_taskbar.js; default on). The close prompt reads its key live.
     root.classList.toggle('hub-fsbtn-off', get('showFsBtn') === '0');
@@ -185,15 +198,33 @@
   // H174: built-in night gradient (hub_wallpapers.js 'night') — no image download in stage 1
   const NIGHT_BG = 'linear-gradient(180deg, #0B1033 0%, #26307A 25%, #5562C4 50%, #26307A 75%, #0B1033 100%)';
   const NIGHT_COLOR = '#0B1033';
+  // H175: static colour / CSS gradient for a live:… id, so stage 1 can paint it before the engine
+  // (hub_live_wallpaper.js) arrives in the wallpaper batch. Same values as HUB_LIVE_WALLPAPERS.
+  const LIVE_STATIC = {
+    'live:aurora': { color: '#071525', image: 'linear-gradient(180deg, #04151c 0%, #0a3d45 40%, #1a1c52 75%, #1b1540 100%)' },
+    'live:waves': { color: '#080c16', image: 'linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%)' },
+    'live:constellation': { color: '#030712', image: 'linear-gradient(135deg, #030712 0%, #0b1124 50%, #050814 100%)' },
+    'live:synthwave': { color: '#1e082b', image: 'linear-gradient(180deg, #1e082b 0%, #701a75 50%, #06b6d4 100%)' }
+  };
+  function liveStaticOf(id) {
+    let v = String(id || '');
+    if (v === 'live:circadian' || v === 'live:rain' || v === 'live:lava' || v === 'live:geo') v = 'live:aurora';
+    if (v === 'waves' || v === 'living-waves') v = 'live:waves';
+    if (v === 'constellation') v = 'live:constellation';
+    if (v === 'synthwave') v = 'live:synthwave';
+    if (v.indexOf('live:') !== 0) return null;
+    return LIVE_STATIC[v] || { color: NIGHT_COLOR, image: NIGHT_BG };
+  }
   function paintFallback() {
     const empty = document.getElementById('empty');
     if (!empty) return;
     const s = empty.style;
-    s.backgroundColor = NIGHT_COLOR;
-    s.backgroundImage = NIGHT_BG;
-    s.backgroundSize = '100% 300%';
-    s.backgroundPosition = '';
-    s.animationName = '';
+    const live = liveStaticOf(get('wallpaper'));
+    s.backgroundColor = live ? live.color : NIGHT_COLOR;
+    s.backgroundImage = live ? (live.image || 'none') : NIGHT_BG;
+    s.backgroundSize = live ? 'cover' : '100% 300%';
+    s.backgroundPosition = live ? 'center' : '';
+    s.animationName = live ? 'none' : '';
     empty.classList.remove('wp-light');
   }
   function applyWallpaper() {
@@ -209,6 +240,15 @@
       window.HubLiveWallpaper.set(v);
       s.backgroundColor = w.color || '#081426';
       s.backgroundImage = 'none';
+      s.animationName = 'none';
+      lastMine = '';
+    } else if (isLive && !window.HubLiveWallpaper) {
+      // H175: engine not in yet — keep the static colour / gradient; do not start an image download
+      const st = liveStaticOf(v) || { color: (w && w.color) || NIGHT_COLOR, image: (w && w.image) || NIGHT_BG };
+      s.backgroundColor = st.color;
+      s.backgroundImage = st.image || 'none';
+      s.backgroundSize = 'cover';
+      s.backgroundPosition = 'center';
       s.animationName = 'none';
       lastMine = '';
     } else {

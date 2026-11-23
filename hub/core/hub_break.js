@@ -255,6 +255,7 @@
   function stopTimer() { if (timer) { clearInterval(timer); timer = 0; } }
   function apply() {
     if (on() || num('breakEnd')) { ensureTimer(); tick(); } else { stopTimer(); unlock(); put('breakStart', ''); put('breakSeen', ''); }
+    document.documentElement.classList.remove('hub-break-pending');   // H175: inline hide until this overlay is in
   }
   function locked() { const t = timing(); return !t.grace && !!t.end && Date.now() < t.end; }
   function state() {

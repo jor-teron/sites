@@ -215,6 +215,7 @@
     // While open, let clicks pass through the app iframe so "click outside" reaches the hub
     // (same idea as the Windows Start menu closing when you click the desktop).
     document.body.classList.toggle('hub-menu-open', open);
+    if (open) fillMenuIcons();   // H175: category / app icons start loading only once Start is first opened
     if (open && !was) prepareMenu();
   }
   // H174: wm_taskbar.js opens Start after need('menu') without toggling closed if already open.
@@ -678,6 +679,29 @@
     loadApp(app, Object.assign({}, o, { hash: 'cat=' + encodeURIComponent(cat) }));
   }
 
+  // H175: Start menu icons are not fetched until Start is opened the first time (data-src until then).
+  let menuIconsReady = false;
+  function menuIcon(img, url) {
+    img.alt = '';
+    if (menuIconsReady) img.src = url;
+    else img.setAttribute('data-src', url);
+    img.addEventListener('error', () => img.classList.add('missing'));
+  }
+  function fillMenuIcons() {
+    if (menuIconsReady) {
+      menu.querySelectorAll('img[data-src]').forEach((img) => {
+        const u = img.getAttribute('data-src');
+        if (u) { img.src = u; img.removeAttribute('data-src'); }
+      });
+      return;
+    }
+    menuIconsReady = true;
+    menu.querySelectorAll('img[data-src]').forEach((img) => {
+      const u = img.getAttribute('data-src');
+      if (u) { img.src = u; img.removeAttribute('data-src'); }
+    });
+  }
+
   function renderMenu(apps) {
     menu.innerHTML = '';
     const { order, map } = groupByCategory(visibleSorted(apps));
@@ -698,9 +722,8 @@
         head.dataset.page = '1';
         const cimg = document.createElement('img');
         cimg.className = 'cat-icon';
-        cimg.alt = '';
-        cimg.src = iconPathFor(CAT_PAGES[cat]);
-        cimg.addEventListener('error', () => cimg.classList.add('missing'));
+        // (before H175) cimg.src = iconPathFor(CAT_PAGES[cat]);
+        menuIcon(cimg, iconPathFor(CAT_PAGES[cat]));
         const cname = document.createElement('span');
         cname.className = 'cat-name';
         cname.textContent = cat;
@@ -731,10 +754,9 @@
 
         const img = document.createElement('img');
         img.className = 'icon';
-        img.alt = '';
         img.loading = 'lazy';
-        img.src = iconFor(app);
-        img.addEventListener('error', () => img.classList.add('missing'));
+        // (before H175) img.src = iconFor(app);
+        menuIcon(img, iconFor(app));
 
         const span = document.createElement('span');
         span.textContent = app.name;

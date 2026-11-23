@@ -299,16 +299,24 @@ test('keys stay out of profile / sync, and the SW shell lists the new files with
   assert.match(read('shared/link/link_core.js'), /if \(window\.Peer\) return Promise\.resolve\(window\.Peer\);/);
   // desktop only: lock files in desktop.html, right after hub_break.js; not in phone.html
   const desk = read('desktop/desktop.html');
-  const iBreak = desk.indexOf('<script src="hub/core/hub_break.js">');
-  const iCore = desk.indexOf('<script src="hub/core/hub_lock_core.js">');
-  const iLock = desk.indexOf('<script src="hub/core/hub_lock.js">');
-  assert.ok(iBreak > 0 && iCore > iBreak && iLock > iCore);
+  // (before H175) const iBreak = desk.indexOf('<script src="hub/core/hub_break.js">');
+  // (before H175) const iCore = desk.indexOf('<script src="hub/core/hub_lock_core.js">');
+  // (before H175) const iLock = desk.indexOf('<script src="hub/core/hub_lock.js">');
+  // (before H175) assert.ok(iBreak > 0 && iCore > iBreak && iLock > iCore);
+  // H175: lock / break are no longer always-on stage-1 tags; order is kept in the boot write and the lock batch.
+  const iBreak = desk.indexOf("js('hub/core/hub_break.js')");
+  const iCore = desk.indexOf("js('hub/core/hub_lock_core.js')");
+  const iLock = desk.indexOf("js('hub/core/hub_lock.js')");
+  assert.ok(iBreak > 0 && iCore > iBreak && iLock > iCore, 'boot write keeps break then lock_core then lock');
   // assert.ok(desk.indexOf('<script src="shared/vendor/qrcode.js">') < iLock);   (before H174)
   // H174: qrcode.js moves to the menu batch; lock / break script order in desktop.html is unchanged.
   const loader = read('hub/core/hub_loader.js');
   const iMenu = loader.indexOf('menu:');
   const iQr = loader.indexOf("'shared/vendor/qrcode.js'");
   assert.ok(iMenu !== -1 && iQr > iMenu, 'qrcode.js is in the menu batch');
+  const iLockB = loader.indexOf('lock:');
+  assert.ok(iLockB !== -1 && loader.indexOf("'hub/core/hub_lock_core.js'") > iLockB);
+  assert.ok(loader.indexOf("'hub/core/hub_lock_core.js'") < loader.indexOf("'hub/core/hub_lock.js'"));
   assert.equal(/<script[^>]+peerjs/.test(desk), false, 'PeerJS is not a page script (lazy only)');
   assert.equal(/hub_lock/.test(read('phone.html')), false);
 });
