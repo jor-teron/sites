@@ -4,10 +4,16 @@
  * Everything else is loaded here, in this order:
  *   1. menu      Start menu, flyout, catalog, hub.js, workspaces, settings, dialogs
  *                — starts as soon as stage 1 is in (need('menu') if Start is used earlier)
+ *                H178: when the batch is in, signals HubSplash.onMenuReady (splash may then hide
+ *                once 5 s have also elapsed and the static fallback wallpaper is painted)
  *   2. connect   HubCore link + mesh files, controller, panels, gamebar, pointer / receive /
  *                remote, scan, notify, dnd, attention, profile / api / keys and their CSS
+ *                (before H178) started as soon as the menu batch finished
+ *                H178: starts only after the splash is gone AND restored / just-opened app
+ *                windows have finished loading (iframe load), or after a 15 s cap
  *   3. wallpaper wallpapers.js + hub_wallpapers.js (and hub_live_wallpaper.js only if the
  *                saved id is live:…); then HubPrefs.applyWallpaper()
+ *                — last visible stage; swaps the selected image / live over the fallback
  *   4. drives    Google sign-in + Drive (shared/google/*), fs_drives, hub_drives, hub_phonekey
  *                — first idle moment after the wallpaper batch
  *   5. snap      wm_snap.js (edge snap, magnet, Ctrl+Alt+arrows)          — ~1.5 s idle
@@ -37,7 +43,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261123d';
+  const V = '20261123e';
   const DELAY = 1500;
   const BATCHES = {
     // H174: Start menu first, then Connect, wallpaper last among the visible stages
@@ -151,6 +157,7 @@
       .then(() => {
         if (fails[name] && fails[name].length) { busy[name] = null; return; }   // R28: next use retries
         done[name] = true;
+        if (name === 'menu') signalMenuReady();   // H178: splash can hide once Start is usable (need or staged)
         if (name === 'osk' && window.HubOSK) { const p = document.querySelector('.wm-osk-btn[data-stub]'); if (p) p.remove(); }   // R27
         if (name === 'wallpaper' && window.HubPrefs && typeof window.HubPrefs.applyWallpaper === 'function') window.HubPrefs.applyWallpaper();
       });
@@ -296,10 +303,105 @@
   // else window.addEventListener('load', start, { once: true });
   // H174: stage 1 is already in (this file is the last stage-1 tag). Start menu → connect →
   // wallpaper at once (do not wait for window 'load'). Existing idle batches follow wallpaper.
+  // H178: same visible order, but connect is gated until the splash is gone and restored /
+  // just-opened app windows have loaded (or the 15 s cap). Wallpaper stays last among visible stages.
+  const CONNECT_WAIT_MS = 15000;   // H178: cap so a stuck iframe never blocks Connect
   function signalStage1() {
     if (!document.getElementById('wm-taskbar')) return;
     if (window.HubSplash && typeof window.HubSplash.onStage1Ready === 'function') window.HubSplash.onStage1Ready();
     try { window.dispatchEvent(new CustomEvent('hub-stage1-ready')); } catch (_) { /* old */ }
+  }
+  function signalMenuReady() {
+    if (window.HubSplash && typeof window.HubSplash.onMenuReady === 'function') window.HubSplash.onMenuReady();
+    try { window.dispatchEvent(new CustomEvent('hub-menu-ready')); } catch (_) { /* old */ }
+  }
+  function splashIsGone() {
+    if (window.HubSplash && typeof window.HubSplash.state === 'function') {
+      try {
+        const st = window.HubSplash.state();
+        if (st && st.gone) return true;
+      } catch (_) { /* ignore */ }
+    }
+    try {
+      if (!document.documentElement.classList.contains('hub-splash') && !document.getElementById('hub-splash')) return true;
+    } catch (_) { return true; }
+    return false;
+  }
+  function waitSplashGone() {
+    return new Promise((resolve) => {
+      if (splashIsGone()) { resolve(); return; }
+      let t = 0;
+      const onGone = function () {
+        if (!splashIsGone()) return;
+        window.removeEventListener('hub-splash-gone', onGone);
+        if (t) { clearInterval(t); t = 0; }
+        resolve();
+      };
+      window.addEventListener('hub-splash-gone', onGone);
+      t = setInterval(onGone, 100);
+    });
+  }
+  function frameHasApp(f) {
+    if (!f) return true;
+    try {
+      const href = (f.contentWindow && f.contentWindow.location && f.contentWindow.location.href) || '';
+      if (href && href !== 'about:blank' && href !== 'about:srcdoc' && href.indexOf('about:blank') !== 0) return true;
+      return false;
+    } catch (_) {
+      // cross-origin: a 'load' event (hub-wm-frame-load) is the signal
+      return !!(f.getAttribute && f.getAttribute('data-hub-connect-loaded') === '1');
+    }
+  }
+  function pendingAppFrames() {
+    if (!window.HubWM || typeof window.HubWM.list !== 'function') return [];
+    const list = window.HubWM.list() || [];
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+      const w = list[i];
+      if (w && w.frame && !frameHasApp(w.frame)) out.push(w);
+    }
+    return out;
+  }
+  function markFrameLoaded(id) {
+    if (!window.HubWM || typeof window.HubWM.list !== 'function') return;
+    const list = window.HubWM.list() || [];
+    for (let i = 0; i < list.length; i++) {
+      const w = list[i];
+      if (w && w.id === id && w.frame && w.frame.setAttribute) w.frame.setAttribute('data-hub-connect-loaded', '1');
+    }
+  }
+  function waitForAppWindows() {
+    const started = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    function now() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
+    return new Promise((resolve) => {
+      let settled = false;
+      let cap = 0;
+      function done() {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener('hub-wm-frame-load', onFrame);
+        window.removeEventListener('hub-wm-change', check);
+        window.removeEventListener('hub-wm-session-restored', check);
+        if (cap) { clearTimeout(cap); cap = 0; }
+        resolve();
+      }
+      function check() {
+        if (now() - started >= CONNECT_WAIT_MS) { done(); return; }
+        if (pendingAppFrames().length === 0) { done(); return; }
+      }
+      function onFrame(e) {
+        if (e && e.detail && e.detail.id != null) markFrameLoaded(e.detail.id);
+        check();
+      }
+      window.addEventListener('hub-wm-frame-load', onFrame);
+      window.addEventListener('hub-wm-change', check);
+      window.addEventListener('hub-wm-session-restored', check);
+      cap = setTimeout(done, CONNECT_WAIT_MS);
+      check();
+    });
+  }
+  function afterSplashAndRestore() {
+    return waitSplashGone().then(() => waitForAppWindows());
   }
   function afterWallpaper() {
     idle(() => load('drives'), 500);
@@ -314,7 +416,12 @@
   }
   function startStaged() {
     signalStage1();
-    load('menu').then(() => load('connect')).then(() => load('wallpaper')).then(afterWallpaper);
+    // (before H178) load('menu').then(() => load('connect')).then(() => load('wallpaper')).then(afterWallpaper);
+    // H178: menu first (signals splash); then wait for splash gone + restored / opened windows (15 s cap); then connect; wallpaper last.
+    load('menu').then(() => {
+      if (done.menu) signalMenuReady();
+      return afterSplashAndRestore().then(() => load('connect'));
+    }).then(() => load('wallpaper')).then(afterWallpaper);
   }
   startStaged();
 })();

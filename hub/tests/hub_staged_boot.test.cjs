@@ -96,7 +96,10 @@ test('H174: hub_loader.js batch order is menu → connect → wallpaper, then ex
   assert.ok(names.includes('tray'));
   assert.ok(names.includes('clock'));
   assert.ok(names.includes('update'));
-  assert.match(src, /load\('menu'\)\.then\(\(\) => load\('connect'\)\)\.then\(\(\) => load\('wallpaper'\)\)\.then\(afterWallpaper\)/);
+  // (before H178) assert.match(src, /load\('menu'\)\.then\(\(\) => load\('connect'\)\)\.then\(\(\) => load\('wallpaper'\)\)\.then\(afterWallpaper\)/);
+  assert.match(src, /\(before H178\) load\('menu'\)\.then\(\(\) => load\('connect'\)\)\.then\(\(\) => load\('wallpaper'\)\)\.then\(afterWallpaper\)/);
+  assert.match(src, /afterSplashAndRestore\(\)\.then\(\(\) => load\('connect'\)\)/);
+  assert.match(src, /load\('wallpaper'\)\)\.then\(afterWallpaper\)/);
   assert.match(src, /afterWallpaper/);
   assert.match(src, /load\('drives'\)/);
   assert.match(src, /HubUpdate\.register/);
@@ -150,14 +153,21 @@ test('H174: menu batch has hub.js, flyout, catalog; live wallpaper only for live
 test('H174: splash min is 5000 ms and isReady does not wait on restore', () => {
   const S = require('../core/hub_splash.js');
   assert.equal(S.SHOW_MIN_MS, 5000);
-  assert.equal(S.isReady(false, 0, 0), false);
-  assert.equal(S.isReady(true, 0, 0), true);
-  assert.equal(S.isReady(true, 0, 5), true);
-  assert.equal(S.isReady(true, 2, 5), true);
+  // (before H178) isReady(coreReady, restored, total) was true as soon as coreReady was true:
+  // assert.equal(S.isReady(false, 0, 0), false);
+  // assert.equal(S.isReady(true, 0, 0), true);
+  // assert.equal(S.isReady(true, 0, 5), true);
+  // assert.equal(S.isReady(true, 2, 5), true);
+  // H178: isReady(coreReady, menuReady, fallbackReady) — all three required; restore is not an argument.
+  assert.equal(S.isReady(false, true, true), false);
+  assert.equal(S.isReady(true, true, true), true);
+  assert.equal(S.isReady(true, false, true), false);
+  assert.equal(S.isReady(true, true, false), false);
   assert.equal(S.canDismiss(4999, true), false);
   assert.equal(S.canDismiss(5000, true), true);
   const src = read('hub/core/hub_splash.js');
   assert.match(src, /onStage1Ready/);
+  assert.match(src, /onMenuReady/);
   assert.match(src, /\/\/ const SHOW_MIN_MS = 3000;/);
 });
 
