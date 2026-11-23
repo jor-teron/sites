@@ -65,7 +65,8 @@
       /* (before HO6) tagline: 'Calculations & Analysis' */
       desc: 'Formulas, multi-sheet calculation, and CSV/XLSX import and export.',
       icon: '../spreadsheet/spreadsheet_icon.png',
-      url: '../spreadsheet/',
+      /* (before SH58) url: '../spreadsheet/', (went through index.html redirect before opening spreadsheet.html) */
+      url: '../spreadsheet/spreadsheet.html',
       rootUrl: 'apps/office/spreadsheet/'
     },
     {

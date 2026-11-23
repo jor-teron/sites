@@ -1930,6 +1930,23 @@ function fxSpellNumber(args) {
     if (isErrorValue(style)) return style;
   }
   if (typeof SPELLNUMBER === "undefined" || !SPELLNUMBER || typeof SPELLNUMBER.spell !== "function") {
+    if (typeof SHEET_LOADER !== "undefined" && SHEET_LOADER.ensureSpellnumber && !fxSpellNumber._failed) {
+      if (!fxSpellNumber._loading) {
+        fxSpellNumber._loading = true;
+        SHEET_LOADER.ensureSpellnumber().then(function () {
+          fxSpellNumber._loading = false;
+          if (typeof recalcAll === "function") recalcAll();
+          if (typeof paintAll === "function") paintAll();
+          if (typeof updateStats === "function") updateStats();
+        }, function () {
+          fxSpellNumber._loading = false;
+          fxSpellNumber._failed = true;
+          if (typeof recalcAll === "function") recalcAll();
+          if (typeof paintAll === "function") paintAll();
+        });
+      }
+      return "";
+    }
     return ERR;
   }
   return SPELLNUMBER.spell(n, style);

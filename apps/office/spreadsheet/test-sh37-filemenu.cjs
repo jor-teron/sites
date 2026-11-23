@@ -138,10 +138,13 @@ test('wiring: title, VERSION, ?v= tokens, script order, readme', () => {
   assert.ok(html.indexOf('<title>Spreadsheet SH37</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH37) <title>Spreadsheet SH36</title> -->') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH37";') !== -1);
-  /* (before SH40) assert.ok(/spreadsheet_filemenu\.js\?v=SH3[7-9]/.test(live)); */
-  assert.ok(/spreadsheet_filemenu\.js\?v=SH(3[7-9]|40)/.test(live));
-  assert.ok(live.search(/spreadsheet_filemenu\.js/) > live.indexOf('spreadsheet_saveformat.js'));
-  assert.ok(/spreadsheet_toolbar\.js\?v=SH3[7-9]/.test(live));
-  assert.ok(/spreadsheet_ribbon\.css\?v=SH3[7-9]/.test(live));
+  /* (before SH58) assert.ok(/spreadsheet_filemenu\.js\?v=SH(3[7-9]|40)/.test(live)); */
+  assert.ok(/spreadsheet_filemenu\.js\?v=SH(3[7-9]|40|58)/.test(live));
+  /* (before SH58) assert.ok(live.search(/spreadsheet_filemenu\.js/) > live.indexOf('spreadsheet_saveformat.js')); */
+  assert.ok(live.search(/spreadsheet_filemenu\.js/) > live.indexOf('spreadsheet_hos.js') && read('spreadsheet_loader.js').indexOf('spreadsheet_saveformat.js') !== -1);
+  /* (before SH58) assert.ok(/spreadsheet_toolbar\.js\?v=SH3[7-9]/.test(live)); */
+  assert.ok(/spreadsheet_toolbar\.js\?v=SH(3[7-9]|58)/.test(live));
+  /* (before SH58) assert.ok(/spreadsheet_ribbon\.css\?v=SH3[7-9]/.test(live)); */
+  assert.ok(/spreadsheet_ribbon\.css\?v=SH(3[7-9]|58)/.test(live));
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH37') !== -1);
 });

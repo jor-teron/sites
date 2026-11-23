@@ -201,7 +201,8 @@ test('wiring: render, toolbar, Alt+Enter, settings, version', () => {
     /* (before SH49) assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1 || live.indexOf(f + '?v=SH41') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1, f); */
     /* (before SH46) assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1 || live.indexOf(f + '?v=SH41') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1 || live.indexOf(f + '?v=SH49') !== -1, f); */
     /* (before SH47) assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1 || live.indexOf(f + '?v=SH41') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1 || live.indexOf(f + '?v=SH49') !== -1 || live.indexOf(f + '?v=SH46') !== -1, f); */
-    assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1 || live.indexOf(f + '?v=SH41') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1 || live.indexOf(f + '?v=SH49') !== -1 || live.indexOf(f + '?v=SH46') !== -1 || live.indexOf(f + '?v=SH47') !== -1, f);
+    /* (before SH58) assert.ok(live.indexOf(f + '?v=SH39') !== -1 || live.indexOf(f + '?v=SH40') !== -1 || live.indexOf(f + '?v=SH41') !== -1 || live.indexOf(f + '?v=SH42') !== -1 || live.indexOf(f + '?v=SH44') !== -1 || live.indexOf(f + '?v=SH45') !== -1 || live.indexOf(f + '?v=SH49') !== -1 || live.indexOf(f + '?v=SH46') !== -1 || live.indexOf(f + '?v=SH47') !== -1, f); */
+    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(39|40|41|42|44|45|46|47|49|58)').test(live), f);
   }
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH39') !== -1);
 });

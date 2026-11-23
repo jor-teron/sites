@@ -337,7 +337,7 @@
       created: session && session.created ? session.created : now,
       updated: now,
       active: (typeof workbook !== 'undefined' && workbook) ? workbook.active : 0,
-      page: (typeof pageSetup !== 'undefined') ? pageSetup : null,
+      page: (typeof pageSetup !== 'undefined') ? pageSetup : (root && root._sheetPendingPage ? root._sheetPendingPage : null),
       settings: {},
       sheets: sheets
     };
@@ -412,6 +412,7 @@
       selMode = sel[4] || 'cell';
     }
     if (typeof pageSetup !== 'undefined') pageSetup = Hos.pageOf(doc.page);
+    else if (root) root._sheetPendingPage = doc.page ? Hos.pageOf(doc.page) : null;
     if (typeof applyPageSetup === 'function') applyPageSetup();
     if (typeof UNDO !== 'undefined') {
       UNDO.past = [];
@@ -431,6 +432,32 @@
     if (typeof updateStats === 'function') updateStats();
     if (typeof highlightSel === 'function') highlightSel();
     if (typeof syncStyleUi === 'function') syncStyleUi();
+    /* SH58: preload lazy features used by the opened .hos workbook */
+    if (root && root.SHEET_LOADER) {
+      var L = root.SHEET_LOADER;
+      var hasCharts = sheets.some(function (sh) { return sh.charts && sh.charts.length > 0; });
+      var hasData = sheets.some(function (sh) { return (sh.filters && sh.filters.on) || (sh.validations && sh.validations.length > 0); });
+      var pg = Hos.pageOf(doc.page), defPg = Hos.pageOf({});
+      var hasPage = !!(doc.page && (pg.orientation !== defPg.orientation || pg.paper !== defPg.paper ||
+        pg.margins !== defPg.margins || pg.gridlines !== defPg.gridlines || pg.headings !== defPg.headings || pg.fit !== defPg.fit));
+      if (hasCharts && typeof renderCharts !== 'function' && L.ensureCharts) {
+        L.ensureCharts().then(function () { if (typeof renderCharts === 'function') renderCharts(); });
+      }
+      if (hasData && typeof applyFilters !== 'function' && L.ensureData) {
+        L.ensureData().then(function () {
+          if (typeof applyFilters === 'function') {
+            for (var fi = 0; fi < workbook.sheets.length; fi++) applyFilters(fi);
+          }
+          if (typeof applyRowHeights === 'function') applyRowHeights();
+          if (typeof paintAll === 'function') paintAll();
+          if (typeof dataRenderFilterButtons === 'function') dataRenderFilterButtons();
+          if (typeof dataRenderValidBtn === 'function') dataRenderValidBtn();
+        });
+      }
+      if (hasPage && typeof initPageSetup !== 'function' && L.ensurePage) {
+        L.ensurePage();
+      }
+    }
     /* SH35: one short note naming functions this app does not have. Shown after the
        open toast so that one does not cover it. */
     var note = '';
@@ -541,7 +568,11 @@
         });
         if (saveAsBtn) saveAsBtn.addEventListener('click', function () {
           if (typeof saveStore === 'function') clearTimeout(saveStore._t);
-          session.save({ explicit: true, saveAs: true });
+          if (!root.SHEET_SAVEFMT && root.SHEET_LOADER && root.SHEET_LOADER.ensureXlsx) {
+            root.SHEET_LOADER.ensureXlsx().then(function () { session.save({ explicit: true, saveAs: true }); });
+          } else {
+            session.save({ explicit: true, saveAs: true });
+          }
         });
         function hasFile(e) {
           return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1;
@@ -557,7 +588,11 @@
         });
         window.addEventListener('pagehide', flush);
         window.addEventListener('beforeunload', flush);
-        session.start();
+        var L = root.SHEET_LOADER;
+        var startP = (L && L.needsXlsxForHash && L.needsXlsxForHash(root.location && root.location.hash))
+          ? L.ensureXlsx().then(function () { return session.start(); })
+          : session.start();
+        root.SHEET_BOOT_START = startP;
       });
     }
   }

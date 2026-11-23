@@ -43,7 +43,8 @@ var SHEET_THEME_KEY = "spreadsheet_theme";      // resolved 'dark' | 'light' for
 /* (before SH49) var SHEET_VERSION = "SH45";                      // legacy: "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 /* (before SH46) var SHEET_VERSION = "SH49";                      // legacy: "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
 /* (before SH47) var SHEET_VERSION = "SH46";                      // legacy: "SH49" / "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
-var SHEET_VERSION = "SH47";                      // legacy: "SH46" / "SH49" / "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
+/* (before SH58) var SHEET_VERSION = "SH47";                      // legacy: "SH46" / "SH49" / "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9" */
+var SHEET_VERSION = "SH58";                      // legacy: "SH47" / "SH46" / "SH49" / "SH45" / "SH44" / "SH42" / "SH41" / "SH40a" / "SH40" / "SH39" / "SH38" / "SH37" / "SH36" / "SH35" / "SH33" / "SH32" / "SH31" / "SH30" / "SH29" / "SH27" / "SH24" / "SH23" / "SH22" / "SH19" / "SH21" / "SH18" / "SH14" / "SH13" / "SH12" / "SH11" / "SH10" / "SH9"
 var SHEET_FONTS = ["Segoe UI", "Arial", "Calibri", "Times New Roman", "Consolas"];
 /* (before HO3) var SHEET_SIZES = [11, 12, 13, 14, 16, 18];   // px */
 var SHEET_SIZES = [9, 10, 11, 12, 14, 16, 18];   // HO3: Settings default size, in pt
@@ -142,6 +143,11 @@ function initSheetSettings() {
     /* (before SH39) defaults: { theme: "auto", ss1: true, ho3: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: SHEET_DEFAULT_FONT_SIZE, hoverTabs: true, ribbonCollapsed: false }, */
     defaults: { theme: "auto", ss1: true, ho3: true, gridlines: true, formulaBar: true, font: "Segoe UI", fontSize: SHEET_DEFAULT_FONT_SIZE, hoverTabs: true, ribbonCollapsed: false, wrapDefault: true },
     gearBtn: document.getElementById("settingsBtn"),
+    /* SH58: build settings panel & load office-settings.css only on first open. */
+    lazy: true,
+    beforeOpen: function () {
+      return typeof SHEET_LOADER !== "undefined" && SHEET_LOADER.ensureSettingsCss ? SHEET_LOADER.ensureSettingsCss() : null;
+    },
     validate: function (s) {
       /* SS1 one-time move: SH1 saved the old default 'dark' for everyone, so pre-SS1 settings start on Auto */
       var raw = null; try { raw = JSON.parse(localStorage.getItem(SHEET_SETTINGS_KEY) || "null"); } catch (e) {}

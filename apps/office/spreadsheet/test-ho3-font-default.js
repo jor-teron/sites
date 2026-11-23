@@ -68,6 +68,8 @@ function makeCtx(saved) {
   return ctx;
 }
 function selectOptions(ctx) {
+  /* SH58: Settings panel builds lazily on first open (ensure()). */
+  if (ctx.SHEET_SETTINGS && typeof ctx.SHEET_SETTINGS.ensure === "function") ctx.SHEET_SETTINGS.ensure();
   /* the "Default size" select built by OfficeSettings: find the <select> whose options mention pt */
   var found = null;
   (function walk(n) {

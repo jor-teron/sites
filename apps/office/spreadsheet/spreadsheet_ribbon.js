@@ -27,7 +27,12 @@ function initRibbon() {
     storageKey: RIBBON_TAB_KEY,
     tabsEl: tabsEl,
     fileBtn: document.getElementById("of-file-btn"),
-    fileMenu: document.getElementById("of-file-menu")
+    fileMenu: document.getElementById("of-file-menu"),
+    onTab: function (id) {
+      if (id === "page" && typeof SHEET_LOADER !== "undefined" && SHEET_LOADER.ensurePage && typeof initPageSetup !== "function") {
+        SHEET_LOADER.ensurePage();
+      }
+    }
   });
   /* DF13: hover opens tabs / File menu (shared ../shared/office-hover.js). */
   if (typeof OfficeHover !== "undefined") {

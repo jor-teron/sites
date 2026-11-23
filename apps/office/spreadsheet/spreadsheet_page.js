@@ -17,7 +17,8 @@ var PAGE_DEFAULTS = {
 var pageSetup = Object.assign({}, PAGE_DEFAULTS);
 
 function loadPageSetup() {
-  var d = null;
+  var d = (typeof window !== "undefined" && window._sheetPendingPage) ? window._sheetPendingPage : null;
+  if (typeof window !== "undefined") window._sheetPendingPage = null;
   /* (before HOS1) localStorage sheet-v4-page, then sheet-v3-page, then sheet-v2-page:
   var raw;
   try {
@@ -88,6 +89,10 @@ function fitForPrint() {
 }
 
 function initPageSetup() {
+  if (typeof window !== "undefined") {
+    if (window._sheetPageInited) return;
+    window._sheetPageInited = true;
+  }
   var panel = document.getElementById("of-panel-page");
   loadPageSetup();
   applyPageSetup();

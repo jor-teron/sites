@@ -130,7 +130,8 @@ test('html: empty panel, script and stylesheet, version SH40', () => {
   for (const id of ['sheet-empty-panel', 'sheet-empty-new', 'sheet-empty-open', 'sheet-empty-recent']) assert.ok(l.indexOf('id="' + id + '"') !== -1, id);
   assert.ok(/id="sheet-empty-panel"[^>]*hidden/.test(l));
   /* (before SH49) assert.ok(l.indexOf('spreadsheet_empty.js?v=SH40') > l.indexOf('spreadsheet_filemenu.js?v=SH40'), 'empty.js after filemenu.js'); */
-  assert.ok(l.indexOf('spreadsheet_empty.js?v=') > l.indexOf('spreadsheet_filemenu.js?v=SH40'), 'empty.js after filemenu.js');   // SH49: empty.js token
+  /* (before SH58) assert.ok(l.indexOf('spreadsheet_empty.js?v=') > l.indexOf('spreadsheet_filemenu.js?v=SH40'), 'empty.js after filemenu.js'); */
+  assert.ok(l.indexOf('spreadsheet_empty.js?v=') > l.indexOf('spreadsheet_filemenu.js?v='), 'empty.js after filemenu.js');
   assert.ok(l.indexOf('spreadsheet_empty.css?v=SH40') !== -1);
   /* (before SH41) assert.ok(l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
   /* (before SH42) assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
@@ -139,7 +140,8 @@ test('html: empty panel, script and stylesheet, version SH40', () => {
   /* (before SH49) assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH44') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH45') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
   /* (before SH46) assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH44') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH45') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH49') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
   /* (before SH47) assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH44') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH45') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH49') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH46') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1); */
-  assert.ok((l.indexOf('spreadsheet_settings.js?v=SH40') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH41') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH42') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH44') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH45') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH49') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH46') !== -1 || l.indexOf('spreadsheet_settings.js?v=SH47') !== -1) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1);
+  /* (before SH58) ... */
+  assert.ok(/spreadsheet_settings\.js\?v=SH(40|41|42|44|45|46|47|49|58)/.test(l) && l.indexOf('spreadsheet_quick.js?v=SH40') !== -1);
   assert.ok(html.indexOf('<title>Spreadsheet SH40</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH40) <title>Spreadsheet SH39</title> -->') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH40";') !== -1);

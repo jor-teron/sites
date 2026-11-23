@@ -194,7 +194,8 @@ test('wiring: version SH46, ?v= tokens, readme, old code kept as comments', () =
   const l = live(html);
   for (const f of ['spreadsheet_grid.js', 'spreadsheet_resize.js', 'spreadsheet_logic.js', 'spreadsheet_sheets.js', 'spreadsheet_undo.js',
     /* (before SH47) 'spreadsheet_formula.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js']) assert.ok(l.indexOf(f + '?v=SH46') !== -1, f); */
-    'spreadsheet_formula.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js']) assert.ok(l.indexOf(f + '?v=SH46') !== -1 || l.indexOf(f + '?v=SH47') !== -1, f);
+    /* (before SH58) 'spreadsheet_formula.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js']) assert.ok(l.indexOf(f + '?v=SH46') !== -1 || l.indexOf(f + '?v=SH47') !== -1, f); */
+    'spreadsheet_formula.js', 'spreadsheet_settings.js', 'spreadsheet_xlsx.js']) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(46|47|58)').test(l + '\n' + read('spreadsheet_loader.js')), f);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH46";') !== -1);
   assert.ok(read('spreadsheet_resize.js').indexOf('/* (before SH46) return autoFitRowHeight(r); */') !== -1);
   assert.ok(read('spreadsheet_grid.js').indexOf('/* (before SH46) function renderViewport(force) { */') !== -1);

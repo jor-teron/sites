@@ -223,8 +223,11 @@ test('wiring: version SH47, ?v= tokens, readme, old code kept as comments', () =
   assert.ok(html.indexOf('<title>Spreadsheet SH47</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH47) <title>Spreadsheet SH46</title> -->') !== -1);
   const l = live(html);
-  for (const f of ['spreadsheet_xlsx.js', 'spreadsheet_lazy.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH47') !== -1, f);
-  assert.ok(l.indexOf('spreadsheet_lazy.js?v=') > l.indexOf('spreadsheet_xlsx.js?v='));
+  const loader = read('spreadsheet_loader.js');   /* SH58: xlsx/lazy moved to lazy loader */
+  /* (before SH58) for (const f of ['spreadsheet_xlsx.js', 'spreadsheet_lazy.js', 'spreadsheet_settings.js']) assert.ok(l.indexOf(f + '?v=SH47') !== -1, f); */
+  for (const f of ['spreadsheet_xlsx.js', 'spreadsheet_lazy.js', 'spreadsheet_settings.js']) assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(47|58)').test(l + '\n' + loader), f);
+  /* (before SH58) assert.ok(l.indexOf('spreadsheet_lazy.js?v=') > l.indexOf('spreadsheet_xlsx.js?v=')); */
+  assert.ok(loader.indexOf('spreadsheet_lazy.js?v=') !== -1 && loader.indexOf('spreadsheet_xlsx.js?v=') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH47";') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('/* (before SH47) var SHEET_VERSION = "SH46";') !== -1);
   assert.ok(read('spreadsheet_xlsx.js').indexOf('/* (before SH47) var XLSX = res[0], wb = XLSX.read(res[1], { type: "array", cellFormula: true }); */') !== -1);
