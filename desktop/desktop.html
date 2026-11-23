@@ -19,7 +19,7 @@
        scanning it, which keeps its own choice) and not when this page is inside a frame. -->
   <script>try { if (window === top && !/[?&]join=/.test(location.search)) localStorage.setItem('sites-hub.mode', 'desktop'); } catch (_) { /* blocked */ }</script>
   <!-- H166: ?perf=1 debug overlay. Tiny check only; hub_perf.js is not fetched unless the flag is set. -->
-  <script>try { if (/(?:^|[?&])perf=1(?:&|$)/.test(location.search)) { var s = document.createElement('script'); s.src = 'hub/core/hub_perf.js?v=20261122f'; s.async = true; document.head.appendChild(s); } } catch (_) { /* blocked */ }</script>
+  <script>try { if (/(?:^|[?&])perf=1(?:&|$)/.test(location.search)) { var s = document.createElement('script'); s.src = 'hub/core/hub_perf.js?v=20261123a'; s.async = true; document.head.appendChild(s); } } catch (_) { /* blocked */ }</script>
   <script>if (/^https?:$/.test(location.protocol)) { const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l); }</script>
   <meta name="theme-color" content="#0B1033" />
   <link rel="apple-touch-icon" href="shared/image/hub_icon_192.png" />
@@ -27,31 +27,27 @@
        file below carries ?v=HUB_VERSION. When you change hub_main.css / hub_controller.css / hub_notification.css /
        hub*.js / hub_apps.js / hub_tiles.js (or vendor/),
        bump the version with: python3 hub/tools/hub_bump.py --release NAME (README_technical section 13).
-       It replaces every "?v=20261122f" in this file (and the other 7 build places, H129a) with today's IST date
+       It replaces every "?v=20261123a" in this file (and the other 7 build places, H129a) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
+  <!-- H174: only stage-1 CSS is render-blocking here (taskbar first). Other styles load with the
+       menu / connect / wallpaper / update batches in hub_loader.js. Old tags are kept as comments. -->
   <link rel="stylesheet" href="hub/core/hub_main.css" />
-  <!-- <link rel="stylesheet" href="hub/controller/hub_controller.css" />   (before H129c) -->
-  <link rel="stylesheet" href="desktop/controller/hub_controller.css" />
-  <!-- <link rel="stylesheet" href="hub/viewer/hub_notification.css" />   (before H129c) -->
-  <link rel="stylesheet" href="desktop/notify/hub_notification.css" />
+  <!-- (before H174) <link rel="stylesheet" href="desktop/controller/hub_controller.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="desktop/notify/hub_notification.css" /> -->
   <link rel="stylesheet" href="shared/style/no-scrollbar.css" />
-  <link rel="stylesheet" href="shared/link/link.css" />
-  <!-- <link rel="stylesheet" href="hub/link/hub_chat.css" />   (before H129c) -->
-  <link rel="stylesheet" href="desktop/panels/hub_chat.css" />
-  <!-- H27: Devices + Pooh Chat as full-height side panels -->
-  <!-- <link rel="stylesheet" href="hub/link/hub_panels.css" />   (before H129c) -->
-  <link rel="stylesheet" href="desktop/panels/hub_panels.css" />
-  <!-- H66: Notification Centre 🔔 + side panel -->
-  <!-- <link rel="stylesheet" href="hub/viewer/hub_notifcenter.css" />   (before H129c) -->
-  <link rel="stylesheet" href="desktop/notify/hub_notifcenter.css" />
+  <!-- (before H174) <link rel="stylesheet" href="shared/link/link.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="desktop/panels/hub_chat.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="desktop/panels/hub_panels.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="desktop/notify/hub_notifcenter.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="desktop/menu/hub_flyout.css" /> -->
   <!-- <link rel="stylesheet" href="hub/menu/hub_flyout.css" />   (before H129b) -->
-  <link rel="stylesheet" href="desktop/menu/hub_flyout.css" />
   <!-- <link rel="stylesheet" href="hub/wm/wm.css" />   (before H129b) -->
   <link rel="stylesheet" href="desktop/wm/wm.css" />
-  <link rel="stylesheet" href="shared/dialog/dialog.css" />
-  <link rel="stylesheet" href="shared/ctxmenu/ctxmenu.css" />
-  <link rel="stylesheet" href="hub/update/hub_update.css" />
+  <!-- (before H174) <link rel="stylesheet" href="shared/dialog/dialog.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="shared/ctxmenu/ctxmenu.css" /> -->
+  <!-- (before H174) <link rel="stylesheet" href="hub/update/hub_update.css" /> -->
   <!-- H61: Glass theme (html.hub-glass, Settings › Look); last so it overrides the files above -->
+  <!-- H174: Glass / XP / lock CSS stay as blocking tags (conditional load is H175). -->
   <link rel="stylesheet" href="hub/core/hub_glass.css" />
   <!-- H104: XP theme (html.hub-xp, Settings › Look); after Glass so it overrides the files above -->
   <link rel="stylesheet" href="hub/core/hub_xp.css" />
@@ -61,14 +57,15 @@
        exists, html.hub-locked hides the page before the first paint; hub_lock.js then draws the lock (or drops the class). -->
   <link rel="stylesheet" href="hub/core/hub_lock.css" />
   <script>try { if (localStorage.getItem('hub-lock.on') === '1' && localStorage.getItem('hub-lock.pin')) document.documentElement.classList.add('hub-locked'); } catch (_) { /* blocked */ }</script>
-  <!-- H159: Boot splash covers the desk while last-session windows restore. Tiny inline so there is
-       no flash of the desktop; hub_splash.js fills the layer and dismisses it. Off when
-       Settings › Look › Show boot splash is off (sites-hub.bootSplash = '0'). Not for ?join=. -->
-  <link rel="stylesheet" href="hub/core/hub_splash.css?v=20261122f" />
-  <link rel="stylesheet" href="hub/core/hub_clock.css?v=20261122f" />
+  <!-- H159: Boot splash covers the desk. Tiny inline so there is no flash; hub_splash.js fills the layer
+       and dismisses it. Off when Settings › Look › Show boot splash is off (sites-hub.bootSplash = '0'). Not for ?join=. -->
+  <!-- H174: splash lifts when 5 s have elapsed AND stage 1 (taskbar) is ready; it does not wait for
+       restored windows, the Start menu, Connect, or a wallpaper photo. -->
+  <link rel="stylesheet" href="hub/core/hub_splash.css?v=20261123a" />
+  <!-- (before H174) <link rel="stylesheet" href="hub/core/hub_clock.css?v=20261123a" /> -->
   <style>html.hub-splash{background:#070d18}html.hub-splash.hub-splash-light{background:#f1f5f9}html.hub-splash>body{visibility:hidden!important}#hub-splash{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;visibility:visible;background:inherit}</style>
   <script>try { if (window === top && !/[?&]join=/.test(location.search) && localStorage.getItem('sites-hub.bootSplash') !== '0') { var r = document.documentElement; r.classList.add('hub-splash'); if (localStorage.getItem('sites-hub.theme') !== 'dark') r.classList.add('hub-splash-light'); var d = document.createElement('div'); d.id = 'hub-splash'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Hub'); d.setAttribute('aria-busy', 'true'); r.appendChild(d); } } catch (_) { /* blocked */ }</script>
-  <script src="hub/core/hub_splash.js?v=20261122f"></script>
+  <script src="hub/core/hub_splash.js?v=20261123a"></script>
 </head>
 <body>
   <header id="header">
@@ -148,128 +145,72 @@
       allow="camera; microphone; fullscreen; autoplay; clipboard-read; clipboard-write; gamepad; screen-wake-lock; picture-in-picture; display-capture; accelerometer; gyroscope"></iframe>
   </div>
 
+  <!-- H174: stage-1 scripts only (real tags, not document.write). Menu / connect / wallpaper
+       and the older deferred batches load from hub/core/hub_loader.js. Old tags kept below as comments. -->
   <!-- One-connection release: role first (phone remote Hub joins instead of hosting) -->
   <!-- <script src="hub/core/hub_role.js"></script>   (before H127; now the first file of hub_core.js part 'boot', below) -->
-  <script src="shared/vendor/qrcode.js"></script>
+  <!-- (before H174) <script src="shared/vendor/qrcode.js"></script> -->
   <!-- Hub config: menu label (HUB_MENU_LABEL) + category CSVs for the flyout -->
   <script src="hub/core/hub_config.js"></script>
-  <script src="hub/core/hub_appindex.js"></script>
-  <!-- R47: generated copy of every category CSV (window.SITES_CSV) for file:// / no server; tiny, sync, before the menu -->
-  <script src="hub/core/hub_catalog.js"></script>
-  <!-- Settings app choices (wallpaper, sizes, accent, theme, motion) applied live -->
-  <script src="shared/wallpaper/wallpapers.js"></script>
-  <script src="hub/drives/hub_wallpapers.js"></script>
-  <script src="hub/drives/hub_live_wallpaper.js?v=20261122f"></script>
-  <!-- <script src="hub/core/hub_prefs.js?v=20261122f"></script> -->
-  <!-- <script src="hub/core/hub_daynight.js?v=20261122f"></script> --><!-- H63: day / night schedule helper (Eye comfort; H64 Auto theme later) -->
-  <!-- H64: hub_daynight.js + hub_autotheme.js now load before hub_prefs.js, so the first paint has the Auto theme -->
-  <!-- <script src="hub/core/hub_daynight.js"></script> --><!-- H63: day / night schedule helper (Eye comfort, H64 Auto theme)   (before H127) -->
-  <!-- <script src="hub/core/hub_autotheme.js"></script> --><!-- H64: Auto theme (Light by day, Dark by night)   (before H127) -->
-  <!-- <script src="hub/core/hub_prefs.js"></script>   (before H127) -->
-  <!-- H127: Hub core entry (screen-free core: role, theme / accent, settings, link + mesh). Part 'boot' here =
-       hub_role.js, hub_daynight.js, hub_autotheme.js, hub_prefs.js (same order; nothing above reads __hubRemote).
-       Parts 'link' and 'mesh' start further down at their old places, so the script order is unchanged. -->
-  <script src="hub/core/hub_core.js" data-parts="boot"></script>
+  <!-- (before H174) <script src="hub/core/hub_appindex.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_catalog.js"></script> -->
+  <!-- (before H174) <script src="shared/wallpaper/wallpapers.js"></script> -->
+  <!-- (before H174) <script src="hub/drives/hub_wallpapers.js"></script> -->
+  <!-- (before H174) <script src="hub/drives/hub_live_wallpaper.js?v=20261123a"></script> -->
+  <!-- H174: boot part files are real tags (before H174: hub_core.js data-parts="boot" + document.write) -->
+  <!-- (before H174) <script src="hub/core/hub_core.js" data-parts="boot"></script> -->
+  <script src="hub/core/hub_role.js"></script>
+  <script src="hub/core/hub_daynight.js"></script>
+  <script src="hub/core/hub_autotheme.js"></script>
+  <script src="hub/core/hub_prefs.js"></script>
   <script src="hub/core/hub_eye.js"></script><!-- H63: Eye comfort warm layer + 🌙 -->
   <script src="hub/core/hub_break.js"></script><!-- H65: Computer break (25 / 5 Hub lock); early, so a reload mid-break locks at once -->
   <script src="hub/core/hub_lock_core.js"></script><!-- H142: PIN lock core (PIN hash, Activate switch, one-time phone session) -->
   <script src="hub/core/hub_lock.js"></script><!-- H142: PIN lock screen; right after the break, so a locked Hub shows nothing first. PeerJS only loads while locked -->
-  <!-- Desktop mode (big screen + mouse): windows + taskbar; Phone mode = the single frame -->
   <!-- <script src="hub/wm/wm_mode.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_mode.js"></script>
-  <!-- Our own right-click / long-press menus (shared/ctxmenu); modules below register theirs -->
-  <script src="shared/ctxmenu/ctxmenu.js"></script>
-  <script>window.__ctxInAppManual = true;</script>
-  <script src="shared/ctxmenu/ctx_in_app.js"></script>
-  <!-- <script src="hub/menu/hub_ctx.js"></script>   (before H129b) -->
-  <script src="desktop/menu/hub_ctx.js"></script>
+  <!-- (before H174) <script src="shared/ctxmenu/ctxmenu.js"></script> -->
+  <!-- (before H174) <script>window.__ctxInAppManual = true;</script> -->
+  <!-- (before H174) <script src="shared/ctxmenu/ctx_in_app.js"></script> -->
+  <!-- (before H174) <script src="desktop/menu/hub_ctx.js"></script> -->
   <!-- <script src="hub/wm/wm_windows.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_windows.js"></script>
-  <script src="hub/core/hub_clock.js?v=20261122f"></script><!-- H160: desktop analog clock -->
+  <!-- (before H174) <script src="hub/core/hub_clock.js?v=20261123a"></script> -->
   <!-- <script src="hub/wm/wm_taskbar.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_taskbar.js"></script>
-  <!-- R10: two workspaces (Desktop mode); snapping is in hub_loader.js (R16a) -->
-  <!-- <script src="hub/wm/wm_workspaces.js"></script>   (before H129b) -->
-  <script src="desktop/wm/wm_workspaces.js"></script>
-  <!-- Optional taskbar busy meter (off by default; Settings → Desktop) -->
-  <!-- <script src="shared/perf/busy_meter.js"></script>
-  <script src="hub/drives/hub_traymeter.js"></script>   (before H167) -->
-  <!-- H167: faster boot: the busy meter is no longer parsed before the first paint. hub_loader.js loads it
-       (batch 'tray') at the first idle moment when it is switched on, or the moment Settings turns it on. -->
-  <!-- App list + home tiles (plain JS data, work over http and file://) -->
-  <script src="hub/core/hub_apps.js"></script>
-  <!-- <script src="hub/menu/hub_tiles.js"></script>   (before H129b) -->
-  <script src="desktop/menu/hub_tiles.js"></script>
-  <script src="hub/core/hub.js?v=20261122f"></script>
-  <!-- Desktop mouse only: GNOME 2 style category flyout (CSV parser shared with the category pages) -->
-  <script src="shared/tiles/tiles.js"></script>
-  <script src="shared/favorites/favorites.js"></script>
-  <!-- <script src="hub/menu/hub_flyout.js"></script>   (before H129b) -->
-  <script src="desktop/menu/hub_flyout.js"></script>
-  <!-- <script src="hub/menu/hub_ctx_menus.js"></script>   (before H129b) -->
-  <script src="desktop/menu/hub_ctx_menus.js"></script>
-  <!-- <script src="hub/menu/hub_settings.js"></script>   (before H129b) -->
-  <script src="desktop/menu/hub_settings.js"></script>
-  <script src="desktop/wm/wm_warm.js"></script><!-- H168: warm an app's page on hover / press (faster opens) -->
-  <script src="shared/dialog/dialog.js"></script>
-  <script src="hub/core/hub_dialog_bridge.js"></script><!-- H75: app frames ask the Hub to draw their dialogs -->
-  <script src="desktop/mode/hub_osmode.js"></script><!-- H129d: Switch to Phone | Touch / Choose mode… (HubOsMode) -->
-  <!-- Phone controller: settings, trackpad pointer, received-file cards, phone → hub files -->
-  <!-- <script src="hub/controller/hub_controller_config.js"></script>   (before H129c) -->
-  <script src="desktop/controller/hub_controller_config.js"></script>
-  <!-- <script src="hub/viewer/hub_notify.js?v=20261027h26"></script>   (before H66) -->
-  <!-- <script src="hub/viewer/hub_notify.js"></script>   (before H129c) -->
-  <script src="desktop/notify/hub_notify.js"></script>
-  <!-- H66: Notification Centre history + Do Not Disturb + 🔔 panel (window.HubNotifCenter; hub_notify.js saves into it) -->
-  <script src="hub/core/hub_dnd.js"></script><!-- H82: Hub-wide Do Not Disturb (HubDnd) -->
-  <!-- <script src="hub/viewer/hub_notifcenter.js"></script>   (before H129c) -->
-  <script src="desktop/notify/hub_notifcenter.js"></script>
-  <script src="hub/core/hub_attention.js"></script><!-- H82: app call pop-up (sharedLink attention) -->
-  <!-- H28: one key store for API keys (window.HubKeys; apps call window.top.HubKeys, Settings → API Keys) -->
-  <!-- <script src="hub/core/hub_keys.js"></script>   (before H127; now in hub_core.js part 'link') -->
-  <!-- H30.1: Hub settings saved to the connected folder (hub/hub-profile/hub.json; window.HubProfile) -->
-  <!-- <script src="hub/core/hub_profile.js"></script>   (before H127; now in hub_core.js part 'link') -->
-  <!-- <script src="hub/link/hub_pointer.js"></script>   (before H129c) -->
-  <script src="desktop/link/hub_pointer.js"></script>
-  <!-- <script src="hub/link/hub_receive.js"></script>   (before H129c) -->
-  <script src="desktop/link/hub_receive.js"></script>
-  <!-- SharedLink: one connection layer (PeerJS from the pinned CDN url in link_core.js) -->
-  <!-- <script src="shared/link/link_core.js"></script>   (before H127)
-  <script src="shared/link/link_devices.js"></script>
-  <script src="shared/link/link_files.js"></script>
-  <script src="shared/link/link_ui.js"></script>
-  <script src="shared/link/link_chat.js"></script> -->
-  <!-- H127: core part 'link' = hub_keys.js, hub_profile.js (moved down past hub_pointer / hub_receive, which use neither),
-       link_core.js, link_devices.js, link_files.js, link_ui.js, link_chat.js -->
-  <script>HubCore.load('link');</script>
-  <!-- <script src="hub/controller/hub_textedit.js"></script>   (before H129c) -->
-  <script src="desktop/controller/hub_textedit.js"></script>
-  <!-- <script src="hub/controller/hub-controller.js"></script>   (before H129c) -->
-  <script src="desktop/controller/hub-controller.js"></script>
-  <!-- <script src="hub/link/hub_link.js"></script>   (before H127)
-  <script src="hub/link/hub_sync.js"></script> H29.1: Send profile to a connected device
-  <script src="shared/link/hub_mesh.js"></script> H50: Hub mesh core (one shared connection per Connect Code)
-  <script src="hub/link/hub_meshlog.js"></script> H69: mesh connection log for the Mesh Viewer app
-  <script src="hub/link/hub_meshlink.js"></script> H50: start / stop the mesh with the Connect Code link
-  <script src="hub/link/hub_line.js"></script> H91: Hub Line (calls / messages to this device's number over the mesh)
-  <script src="hub/link/hub_trust.js"></script> H97: HubTrust passcode pairing
-  <script src="hub/link/hub_linkstate.js"></script> -->
-  <!-- H127: core part 'mesh' (after hub-controller.js, as before) = hub_link.js, hub_sync.js, hub_mesh.js, hub_meshlog.js,
-       hub_meshlink.js, hub_line.js, hub_trust.js, hub_linkstate.js -->
-  <script>HubCore.load('mesh');</script>
-  <script src="shared/link/link_scan.js"></script>
-  <!-- <script src="hub/link/hub_remote.js"></script>   (before H129c) -->
-  <script src="desktop/link/hub_remote.js"></script>
-  <!-- <script src="hub/link/hub_chat.js"></script>   (before H129c) -->
-  <script src="desktop/panels/hub_chat.js"></script>
-  <!-- <script src="hub/link/hub_panels.js"></script>   (before H129c) -->
-  <script src="desktop/panels/hub_panels.js"></script>
-  <script src="hub/core/hub_titlebar.js?v=20261122f"></script>
-  <!-- <script src="hub/link/hub-gamebar.js"></script>   (before H129c) -->
-  <script src="desktop/gamebar/hub-gamebar.js"></script>
-  <!-- PWA service worker (root sw.js) + stale-shell guard / Check for update -->
-  <script src="hub/update/hub_update.js"></script>
-  <!-- R16a: everything not needed for the first paint (Drive, snap, keyboard, Viewer) loads here, after idle -->
+  <!-- (before H174) <script src="desktop/wm/wm_workspaces.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_apps.js"></script> -->
+  <!-- (before H174) <script src="desktop/menu/hub_tiles.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub.js?v=20261123a"></script> -->
+  <!-- (before H174) <script src="shared/tiles/tiles.js"></script> -->
+  <!-- (before H174) <script src="shared/favorites/favorites.js"></script> -->
+  <!-- (before H174) <script src="desktop/menu/hub_flyout.js"></script> -->
+  <!-- (before H174) <script src="desktop/menu/hub_ctx_menus.js"></script> -->
+  <!-- (before H174) <script src="desktop/menu/hub_settings.js"></script> -->
+  <!-- (before H174) <script src="desktop/wm/wm_warm.js"></script> -->
+  <!-- (before H174) <script src="shared/dialog/dialog.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_dialog_bridge.js"></script> -->
+  <!-- (before H174) <script src="desktop/mode/hub_osmode.js"></script> -->
+  <!-- (before H174) <script src="desktop/controller/hub_controller_config.js"></script> -->
+  <!-- (before H174) <script src="desktop/notify/hub_notify.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_dnd.js"></script> -->
+  <!-- (before H174) <script src="desktop/notify/hub_notifcenter.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_attention.js"></script> -->
+  <!-- (before H174) <script src="desktop/link/hub_pointer.js"></script> -->
+  <!-- (before H174) <script src="desktop/link/hub_receive.js"></script> -->
+  <!-- (before H174) <script>HubCore.load('link');</script> -->
+  <!-- (before H174) <script src="desktop/controller/hub_textedit.js"></script> -->
+  <!-- (before H174) <script src="desktop/controller/hub-controller.js"></script> -->
+  <!-- (before H174) <script>HubCore.load('mesh');</script> -->
+  <!-- (before H174) <script src="shared/link/link_scan.js"></script> -->
+  <!-- (before H174) <script src="desktop/link/hub_remote.js"></script> -->
+  <!-- (before H174) <script src="desktop/panels/hub_chat.js"></script> -->
+  <!-- (before H174) <script src="desktop/panels/hub_panels.js"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_titlebar.js?v=20261123a"></script> -->
+  <!-- (before H174) <script src="desktop/gamebar/hub-gamebar.js"></script> -->
+  <!-- (before H174) <script src="hub/update/hub_update.js"></script> -->
+  <!-- PWA service worker (root sw.js) + stale-shell guard / Check for update: H174 loads hub_update.js
+       after the wallpaper batch and registers the worker at idle (hub_loader.js). -->
   <script src="hub/core/hub_loader.js"></script>
 </body>
 </html>

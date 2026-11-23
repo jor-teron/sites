@@ -1,16 +1,17 @@
 /*
- * H159 Boot splash (hub/core/hub_splash.js) — covers the Hub desktop while it restores the
- * app windows left open last session. It does not fetch or prefetch any apps itself.
+ * H159 Boot splash (hub/core/hub_splash.js) — covers the Hub desktop while stage 1 boots.
+ * H174: it no longer waits for restored windows, the Start menu, Connect, or a wallpaper photo.
+ * It does not fetch or prefetch any apps itself.
  *
  * Shown only on the desktop shell (desktop/desktop.html). Not inside apps, not on ?join=
  * (phone-link) pages, and not on phone/. A tiny inline <head> script (like html.hub-locked)
  * adds html.hub-splash and an empty #hub-splash before the first paint, so the desk does
  * not flash. This file fills the layer, tracks real restore progress, and dismisses it.
  *
- * Progress is windows restored N of M plus core ready (hub.js has started and, in Desktop
- * mode, called restoreWm). No windows to restore → ready once the desktop shell is ready.
- * The first 10 seconds cannot be skipped. When everything is ready the splash fades out
- * (even before 10 s). After 10 s, if it is still not ready, the splash stays on, shows
+ * Progress may still show windows restored N of M plus stage-1 ready, but ready itself
+ * (H174) is only stage 1 (the working taskbar). The first 10 seconds cannot be skipped
+ * while not ready. When stage 1 is ready the splash fades out once SHOW_MIN_MS has elapsed
+ * (even before 10 s). After 10 s, if stage 1 is still not ready, the splash stays on, shows
  * "Still loading… press any key to continue", and a key or click dismisses it; loading
  * continues in the background. No auto-dismiss while not ready.
  *
@@ -21,15 +22,17 @@
  *
  * API: window.HubSplash (also module.exports in Node): shouldShow, canDismiss,
  *   showStillLoading, progressFraction, isReady, prefEnabled, sessionTotal, isAppDocument,
- *   MIN_MS, SHOW_MIN_MS, STILL_MSG, onDesktopStarted, state.
+ *   MIN_MS, SHOW_MIN_MS, STILL_MSG, onDesktopStarted, onStage1Ready, state.
  * H159a: a window counts only once its iframe has the app document (not about:blank).
- *   The splash stays at least 3 s even if ready earlier.
+ *   (before H174) The splash stayed at least 3 s even if ready earlier.
+ * H174: the splash stays at least 5 s, and lifts when 5 s have elapsed AND stage 1 is ready.
  */
 (function (global) {
   'use strict';
 
   const MIN_MS = 10000;
-  const SHOW_MIN_MS = 3000; // H159a: never fade before 3 s, even if ready earlier
+  // const SHOW_MIN_MS = 3000; // H159a: never fade before 3 s, even if ready earlier   (before H174)
+  const SHOW_MIN_MS = 5000; // H174: never fade before 5 s, even if stage 1 is ready earlier
   const STILL_MSG = 'Still loading\u2026 press any key to continue';
 
   function prefEnabled(v) {
@@ -46,7 +49,7 @@
   }
 
   /**
-   * Ready → auto fade only after showMinMs (H159a: 3 s; was immediate before H159a).
+   * Ready → auto fade only after showMinMs (H174: 5 s; H159a: 3 s; was immediate before H159a).
    * Not ready → only after minMs (10 s, user key/click); never auto.
    */
   // function canDismiss(elapsedMs, ready, minMs) {
@@ -82,8 +85,10 @@
   }
 
   function isReady(coreReady, restored, total) {
-    if (!coreReady) return false;
-    return (restored | 0) >= Math.max(0, total | 0);
+    // (before H174) if (!coreReady) return false;
+    // (before H174) return (restored | 0) >= Math.max(0, total | 0);
+    // H174: ready once stage 1 (taskbar) is in; do not wait for restored windows.
+    return !!coreReady;
   }
 
   function sessionTotal(data) {
@@ -114,6 +119,9 @@
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   window.HubSplash = api;
+  // H174: hub_loader.js may signal stage 1 before boot() binds the real handler (DOMContentLoaded).
+  let stage1Pending = false;
+  api.onStage1Ready = function () { stage1Pending = true; };
 
   function readPref() {
     try { return localStorage.getItem('sites-hub.bootSplash'); } catch (_) { return ''; }
@@ -324,6 +332,11 @@
       watchFrames();
       paint();
     }
+    // H174: stage 1 (working taskbar) is enough for ready; restoreWm may still run later (menu batch).
+    function onStage1Ready() {
+      coreReady = true;
+      paint();
+    }
 
     const mo = new MutationObserver(raise);
     try { mo.observe(root, { childList: true }); } catch (_) { /* old */ }
@@ -332,6 +345,7 @@
     ticking = setInterval(function () { if (gone) { clearInterval(ticking); ticking = 0; return; } paint(); }, 200);
 
     window.addEventListener('hub-desktop-started', function (e) { onDesktopStarted(e.detail || {}); });
+    window.addEventListener('hub-stage1-ready', function () { onStage1Ready(); });
     window.addEventListener('hub-wm-session-restored', function (e) {
       if (e && e.detail && typeof e.detail.count === 'number' && !coreReady) total = e.detail.count;
       watchFrames();
@@ -340,6 +354,8 @@
     window.addEventListener('hub-wm-change', watchFrames);
 
     api.onDesktopStarted = onDesktopStarted;
+    api.onStage1Ready = onStage1Ready;
+    if (stage1Pending || document.getElementById('wm-taskbar')) onStage1Ready();
     api.state = function () {
       return {
         coreReady: coreReady,

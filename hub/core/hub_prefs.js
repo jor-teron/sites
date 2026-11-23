@@ -1,6 +1,9 @@
 /*
  * Hub preferences (hub/core/hub_prefs.js) — applies the Settings app's choices (apps/system/settings) to
- * the Hub, live. Loaded right after hub_config.js / hub_wallpapers.js.
+ * the Hub, live. Loaded in stage 1 (H174) after hub_config / theme; wallpaper files come later.
+ * H174: apply() paints theme, accent and the bar at once, plus a built-in night-gradient
+ * fallback on #empty (no image download). applyWallpaper() runs the saved photo / live /
+ * XP hills only after the wallpaper batch (hub_loader.js).
  *
  * localStorage keys (all optional; empty = default):
  *   sites-hub.wallpaper  wallpaper id, 'pic:<file>' (picture, image URL used directly),
@@ -150,38 +153,11 @@
     root.classList.toggle('hub-motion-reduced', mo === 'reduced');
     root.classList.toggle('hub-motion-off', mo === 'off');
     // wallpaper
-    const empty = document.getElementById('empty');
-    if (empty && window.hubWallpaper) {
-      // const v = get('wallpaper'), w = window.hubWallpaper(v);   (before H104)
-      const v = get('wallpaper') || (window.hubWallpaperDefault ? window.hubWallpaperDefault() : ''), w = window.hubWallpaper(v);   // H104: XP's own default
-      const s = empty.style;
-      const isLive = !!(w && w.live) || (typeof v === 'string' && v.startsWith('live:'));
-      if (isLive && window.HubLiveWallpaper) {
-        window.HubLiveWallpaper.set(v);
-        s.backgroundColor = w.color || '#081426';
-        s.backgroundImage = 'none';
-        s.animationName = 'none';
-        lastMine = '';
-      } else {
-        if (window.HubLiveWallpaper) window.HubLiveWallpaper.stop();
-        s.backgroundColor = w.color || '#000';
-        // s.backgroundImage = w.image || 'none';   (before H132b)
-        // H132b: XP in Dark shows its own default (Green hills) dimmed, so the night desktop is not bright
-        const xpDim = xp && !get('wallpaper') && !root.classList.contains('hub-light') && !!w.image;
-        s.backgroundImage = xpDim ? 'linear-gradient(rgba(6, 14, 42, 0.5), rgba(6, 14, 42, 0.5)), ' + w.image : (w.image || 'none');
-        if (w.mine && window.hubWallpaperMine) {   // Your picture: Local drive file → object URL
-          window.hubWallpaperMine(v !== lastMine).then((u) => {
-            if (get('wallpaper') === v && u) { s.backgroundImage = 'url("' + u + '")'; s.backgroundSize = 'cover'; }
-          });
-        }
-        lastMine = w.mine ? v : '';
-        s.backgroundSize = w.slide ? '100% 300%' : (w.image ? 'cover' : '');
-        s.backgroundPosition = w.slide ? '' : 'center';
-        s.animationName = w.slide ? '' : 'none';
-      }
-      empty.classList.toggle('wp-light', !!w.light);
-      if (window.HubLiveWallpaper && isLive) window.HubLiveWallpaper.checkState();
-    }
+    // (before H174) if (empty && window.hubWallpaper) { … paint saved photo / live / XP hills now … }
+    // H174: theme / accent / bar apply now; a night-gradient fallback paints at once (no image).
+    // The saved photo, live engine, or XP hills wait for applyWallpaper() after the wallpaper batch.
+    if (window.hubWallpaper) applyWallpaper();
+    else paintFallback();
     // AH1-F1: Phone mode Home button target (hub.js __hubHome reads the key on every click; H6-B1: not the Desktop Show desktop button)
     const hb = document.getElementById('home-btn');
     if (hb) { const t = get('homeBtn') === 'apphub' ? 'App Hub' : 'Home'; hb.title = t; hb.setAttribute('aria-label', t); }
@@ -206,7 +182,57 @@
     if (window.HubClock) window.HubClock.apply();
   }
 
-  window.HubPrefs = { get, apply, BAR, barOn };   // H52: + BAR, barOn
+  // H174: built-in night gradient (hub_wallpapers.js 'night') — no image download in stage 1
+  const NIGHT_BG = 'linear-gradient(180deg, #0B1033 0%, #26307A 25%, #5562C4 50%, #26307A 75%, #0B1033 100%)';
+  const NIGHT_COLOR = '#0B1033';
+  function paintFallback() {
+    const empty = document.getElementById('empty');
+    if (!empty) return;
+    const s = empty.style;
+    s.backgroundColor = NIGHT_COLOR;
+    s.backgroundImage = NIGHT_BG;
+    s.backgroundSize = '100% 300%';
+    s.backgroundPosition = '';
+    s.animationName = '';
+    empty.classList.remove('wp-light');
+  }
+  function applyWallpaper() {
+    const empty = document.getElementById('empty');
+    if (!empty) return;
+    if (!window.hubWallpaper) { paintFallback(); return; }
+    const xpNow = get('theme') === 'xp' || get('xp') === '1';
+    // const v = get('wallpaper'), w = window.hubWallpaper(v);   (before H104)
+    const v = get('wallpaper') || (window.hubWallpaperDefault ? window.hubWallpaperDefault() : ''), w = window.hubWallpaper(v);   // H104: XP's own default
+    const s = empty.style;
+    const isLive = !!(w && w.live) || (typeof v === 'string' && v.startsWith('live:'));
+    if (isLive && window.HubLiveWallpaper) {
+      window.HubLiveWallpaper.set(v);
+      s.backgroundColor = w.color || '#081426';
+      s.backgroundImage = 'none';
+      s.animationName = 'none';
+      lastMine = '';
+    } else {
+      if (window.HubLiveWallpaper) window.HubLiveWallpaper.stop();
+      s.backgroundColor = w.color || '#000';
+      // s.backgroundImage = w.image || 'none';   (before H132b)
+      // H132b: XP in Dark shows its own default (Green hills) dimmed, so the night desktop is not bright
+      const xpDim = xpNow && !get('wallpaper') && !root.classList.contains('hub-light') && !!w.image;
+      s.backgroundImage = xpDim ? 'linear-gradient(rgba(6, 14, 42, 0.5), rgba(6, 14, 42, 0.5)), ' + w.image : (w.image || 'none');
+      if (w.mine && window.hubWallpaperMine) {   // Your picture: Local drive file → object URL
+        window.hubWallpaperMine(v !== lastMine).then((u) => {
+          if (get('wallpaper') === v && u) { s.backgroundImage = 'url("' + u + '")'; s.backgroundSize = 'cover'; }
+        });
+      }
+      lastMine = w.mine ? v : '';
+      s.backgroundSize = w.slide ? '100% 300%' : (w.image ? 'cover' : '');
+      s.backgroundPosition = w.slide ? '' : 'center';
+      s.animationName = w.slide ? '' : 'none';
+    }
+    empty.classList.toggle('wp-light', !!w.light);
+    if (window.HubLiveWallpaper && isLive) window.HubLiveWallpaper.checkState();
+  }
+
+  window.HubPrefs = { get, apply, applyWallpaper, BAR, barOn };   // H52: + BAR, barOn; H174: + applyWallpaper
   apply();
   window.addEventListener('storage', (e) => { if (!e.key || e.key.indexOf(P) === 0) apply(); });
   window.addEventListener('message', (e) => {

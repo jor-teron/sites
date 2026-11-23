@@ -33,8 +33,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261122f';
-const CACHE = 'hub-shell-v192';  // 2026-11-22f: H169
+const V = '20261123a';
+const CACHE = 'hub-shell-v193';  // 2026-11-23a: H174
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const DICT = 'hub-dict-1';      // H173: dictionary letter data; a data rebuild bumps only this number
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):

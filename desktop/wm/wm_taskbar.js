@@ -227,6 +227,31 @@
   const isOpen = () => menu.classList.contains('open');
   let openT = 0, closeT = 0, hoverOpened = false, hoverAt = 0;
 
+  // H174: Start before the menu batch is in → show "Loading menu…" and HubLoader.need('menu').
+  function showMenuLoading() {
+    if (!menu.querySelector('#hub-menu-loading')) {
+      const p = document.createElement('div');
+      p.id = 'hub-menu-loading';
+      p.setAttribute('role', 'status');
+      p.textContent = 'Loading menu…';
+      menu.appendChild(p);
+    }
+    menu.hidden = false;
+    menu.classList.add('open');
+    start.setAttribute('aria-expanded', 'true');
+  }
+  function requestStart() {
+    if (window.HubLoader && !window.HubLoader.loaded('menu')) {
+      showMenuLoading();
+      window.HubLoader.need('menu').then((ok) => {
+        if (!ok) return;
+        if (typeof window.__hubOpenStartMenu === 'function') window.__hubOpenStartMenu();
+        else if (!isOpen()) catBtn.click();
+      });
+      return;
+    }
+    catBtn.click();
+  }
   start.addEventListener('click', (e) => {
     e.stopPropagation();
     clearTimeout(openT); clearTimeout(closeT);
@@ -234,7 +259,16 @@
       hoverOpened = false;                              // pin it
       if (Date.now() - hoverAt < PIN_MS) return;        // the click that "opens" a hover-opened menu
     }
-    catBtn.click();
+    // H174: closing while the menu batch is still loading (hub.js not in yet)
+    if (isOpen() && window.HubLoader && !window.HubLoader.loaded('menu')) {
+      menu.classList.remove('open');
+      menu.hidden = true;
+      start.setAttribute('aria-expanded', 'false');
+      const loadEl = menu.querySelector('#hub-menu-loading');
+      if (loadEl) loadEl.remove();
+      return;
+    }
+    requestStart();
   });
 
   /** Pointer inside Start, the menu or its flyout? */
@@ -249,7 +283,7 @@
         clearTimeout(openT);
         openT = setTimeout(() => {
           if (isOpen()) return;
-          catBtn.click();
+          requestStart();
           hoverOpened = isOpen();
           hoverAt = Date.now();
         }, OPEN_MS);
