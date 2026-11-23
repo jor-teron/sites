@@ -417,6 +417,9 @@ function page(store) {
     crypto: webcrypto, Peer,
     qrcode: () => ({ addData(u) { this.u = u; }, make() {}, createSvgTag() { return '<svg></svg>'; } })
   };
+  // H175: page() is a real page-boot of the lock scripts (see hub_lock_screen.test.cjs).
+  // (before H175) lock.js always called lock() at parse when store.isOn(); now it gates on __hubLockBoot.
+  win.__hubLockBoot = true;
   class CustomEvent { constructor(type, init) { this.type = type; this.detail = init && init.detail; } }
   const ctx = { window: win, document: doc, localStorage: win.localStorage, location: { protocol: 'https:', href: doc.baseURI + 'desktop/desktop.html' },
     navigator: { onLine: true }, CustomEvent, URL, TextEncoder, TextDecoder, btoa, atob, console, Uint8Array, Promise,

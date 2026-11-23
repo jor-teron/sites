@@ -19,7 +19,7 @@
        scanning it, which keeps its own choice) and not when this page is inside a frame. -->
   <script>try { if (window === top && !/[?&]join=/.test(location.search)) localStorage.setItem('sites-hub.mode', 'desktop'); } catch (_) { /* blocked */ }</script>
   <!-- H166: ?perf=1 debug overlay. Tiny check only; hub_perf.js is not fetched unless the flag is set. -->
-  <script>try { if (/(?:^|[?&])perf=1(?:&|$)/.test(location.search)) { var s = document.createElement('script'); s.src = 'hub/core/hub_perf.js?v=20261123a'; s.async = true; document.head.appendChild(s); } } catch (_) { /* blocked */ }</script>
+  <script>try { if (/(?:^|[?&])perf=1(?:&|$)/.test(location.search)) { var s = document.createElement('script'); s.src = 'hub/core/hub_perf.js?v=20261123b'; s.async = true; document.head.appendChild(s); } } catch (_) { /* blocked */ }</script>
   <script>if (/^https?:$/.test(location.protocol)) { const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l); }</script>
   <meta name="theme-color" content="#0B1033" />
   <link rel="apple-touch-icon" href="shared/image/hub_icon_192.png" />
@@ -27,7 +27,7 @@
        file below carries ?v=HUB_VERSION. When you change hub_main.css / hub_controller.css / hub_notification.css /
        hub*.js / hub_apps.js / hub_tiles.js (or vendor/),
        bump the version with: python3 hub/tools/hub_bump.py --release NAME (README_technical section 13).
-       It replaces every "?v=20261123a" in this file (and the other 7 build places, H129a) with today's IST date
+       It replaces every "?v=20261123b" in this file (and the other 7 build places, H129a) with today's IST date
        (YYYYMMDD, add a letter for a second deploy the same day, e.g. 20260928b). -->
   <!-- H174: only stage-1 CSS is render-blocking here (taskbar first). Other styles load with the
        menu / connect / wallpaper / update batches in hub_loader.js. Old tags are kept as comments. -->
@@ -47,25 +47,54 @@
   <!-- (before H174) <link rel="stylesheet" href="shared/ctxmenu/ctxmenu.css" /> -->
   <!-- (before H174) <link rel="stylesheet" href="hub/update/hub_update.css" /> -->
   <!-- H61: Glass theme (html.hub-glass, Settings › Look); last so it overrides the files above -->
-  <!-- H174: Glass / XP / lock CSS stay as blocking tags (conditional load is H175). -->
-  <link rel="stylesheet" href="hub/core/hub_glass.css" />
-  <!-- H104: XP theme (html.hub-xp, Settings › Look); after Glass so it overrides the files above -->
-  <link rel="stylesheet" href="hub/core/hub_xp.css" />
-  <!-- H65: Computer break lock (hub/core/hub_break.js); follows Light / Dark / Glass -->
-  <link rel="stylesheet" href="hub/core/hub_break.css" />
-  <!-- H142: PIN lock screen (hub/core/hub_lock.js); off by default. When Settings › Screen lock › Activate is on and a PIN
-       exists, html.hub-locked hides the page before the first paint; hub_lock.js then draws the lock (or drops the class). -->
-  <link rel="stylesheet" href="hub/core/hub_lock.css" />
-  <script>try { if (localStorage.getItem('hub-lock.on') === '1' && localStorage.getItem('hub-lock.pin')) document.documentElement.classList.add('hub-locked'); } catch (_) { /* blocked */ }</script>
+  <!-- (before H175) <link rel="stylesheet" href="hub/core/hub_glass.css" /> -->
+  <!-- (before H175) <link rel="stylesheet" href="hub/core/hub_xp.css" /> -->
+  <!-- (before H175) <link rel="stylesheet" href="hub/core/hub_break.css" /> -->
+  <!-- (before H175) <link rel="stylesheet" href="hub/core/hub_lock.css" /> -->
+  <!-- (before H175) <script>try { if (localStorage.getItem('hub-lock.on') === '1' && localStorage.getItem('hub-lock.pin')) document.documentElement.classList.add('hub-locked'); } catch (_) { /* blocked */ }</script> -->
+  <!-- H175: Glass / XP / lock / break CSS only when that feature is saved (same localStorage keys as hub_prefs /
+       lock / break). document.write while <head> is still parsing keeps the sheet render-blocking (no flash).
+       Lock-on still covers the desk before first paint (html.hub-locked + inline hide). Mid-break uses
+       html.hub-break-pending until hub_break.js paints the overlay. Settings can load these on demand
+       via HubLoader.ensure (no reload). -->
+  <style>html.hub-locked,html.hub-break-pending{background:#080b14}html.hub-locked>body,html.hub-break-pending>body{visibility:hidden!important}</style>
+  <script>
+  try {
+    var r = document.documentElement;
+    var g = function (k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+    var th = g('sites-hub.theme');
+    var xp = (th === 'xp' || g('sites-hub.xp') === '1');
+    var glass = (th === 'glass' || g('sites-hub.glass') === '1');
+    if (th !== 'dark') r.classList.add('hub-light');   // H60a: unset = Light (same as hub_prefs.apply)
+    if (xp) r.classList.add('hub-xp');
+    else if (glass) {
+      r.classList.add('hub-glass');
+      if (g('sites-hub.glassSolid') === '1') r.classList.add('hub-glass-solid');
+    }
+    var locked = (g('hub-lock.on') === '1' && !!g('hub-lock.pin'));
+    if (locked) { r.classList.add('hub-locked'); window.__hubLockBoot = true; }
+    var midBreak = (+g('hub-break.breakEnd') || 0) > Date.now();
+    var breakOn = (g('sites-hub.breakOn') === '1' || midBreak);
+    if (midBreak) r.classList.add('hub-break-pending');
+    var eyeMode = g('sites-hub.eyeMode');
+    var eyeOn = (eyeMode === 'always' || eyeMode === 'sched');
+    window.__hubBootPaths = { xp: !!xp, glass: !!(!xp && glass), locked: !!locked, breakOn: !!breakOn, midBreak: !!midBreak, eyeOn: !!eyeOn };
+    function sheet(href) { var q = '"'; document.write('<link rel="stylesheet" href=' + q + href + '?v=20261123b' + q + ' />'); }
+    if (xp) sheet('hub/core/hub_xp.css');
+    else if (glass) sheet('hub/core/hub_glass.css');
+    if (breakOn) sheet('hub/core/hub_break.css');
+    if (locked) sheet('hub/core/hub_lock.css');
+  } catch (_) { /* blocked */ }
+  </script>
   <!-- H159: Boot splash covers the desk. Tiny inline so there is no flash; hub_splash.js fills the layer
        and dismisses it. Off when Settings › Look › Show boot splash is off (sites-hub.bootSplash = '0'). Not for ?join=. -->
   <!-- H174: splash lifts when 5 s have elapsed AND stage 1 (taskbar) is ready; it does not wait for
        restored windows, the Start menu, Connect, or a wallpaper photo. -->
-  <link rel="stylesheet" href="hub/core/hub_splash.css?v=20261123a" />
-  <!-- (before H174) <link rel="stylesheet" href="hub/core/hub_clock.css?v=20261123a" /> -->
+  <link rel="stylesheet" href="hub/core/hub_splash.css?v=20261123b" />
+  <!-- (before H174) <link rel="stylesheet" href="hub/core/hub_clock.css?v=20261123b" /> -->
   <style>html.hub-splash{background:#070d18}html.hub-splash.hub-splash-light{background:#f1f5f9}html.hub-splash>body{visibility:hidden!important}#hub-splash{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;visibility:visible;background:inherit}</style>
   <script>try { if (window === top && !/[?&]join=/.test(location.search) && localStorage.getItem('sites-hub.bootSplash') !== '0') { var r = document.documentElement; r.classList.add('hub-splash'); if (localStorage.getItem('sites-hub.theme') !== 'dark') r.classList.add('hub-splash-light'); var d = document.createElement('div'); d.id = 'hub-splash'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Hub'); d.setAttribute('aria-busy', 'true'); r.appendChild(d); } } catch (_) { /* blocked */ }</script>
-  <script src="hub/core/hub_splash.js?v=20261123a"></script>
+  <script src="hub/core/hub_splash.js?v=20261123b"></script>
 </head>
 <body>
   <header id="header">
@@ -156,17 +185,29 @@
   <!-- (before H174) <script src="hub/core/hub_catalog.js"></script> -->
   <!-- (before H174) <script src="shared/wallpaper/wallpapers.js"></script> -->
   <!-- (before H174) <script src="hub/drives/hub_wallpapers.js"></script> -->
-  <!-- (before H174) <script src="hub/drives/hub_live_wallpaper.js?v=20261123a"></script> -->
+  <!-- (before H174) <script src="hub/drives/hub_live_wallpaper.js?v=20261123b"></script> -->
   <!-- H174: boot part files are real tags (before H174: hub_core.js data-parts="boot" + document.write) -->
   <!-- (before H174) <script src="hub/core/hub_core.js" data-parts="boot"></script> -->
   <script src="hub/core/hub_role.js"></script>
   <script src="hub/core/hub_daynight.js"></script>
   <script src="hub/core/hub_autotheme.js"></script>
   <script src="hub/core/hub_prefs.js"></script>
-  <script src="hub/core/hub_eye.js"></script><!-- H63: Eye comfort warm layer + 🌙 -->
-  <script src="hub/core/hub_break.js"></script><!-- H65: Computer break (25 / 5 Hub lock); early, so a reload mid-break locks at once -->
-  <script src="hub/core/hub_lock_core.js"></script><!-- H142: PIN lock core (PIN hash, Activate switch, one-time phone session) -->
-  <script src="hub/core/hub_lock.js"></script><!-- H142: PIN lock screen; right after the break, so a locked Hub shows nothing first. PeerJS only loads while locked -->
+  <!-- (before H175) <script src="hub/core/hub_eye.js"></script> -->
+  <!-- (before H175) <script src="hub/core/hub_break.js"></script> -->
+  <!-- (before H175) <script src="hub/core/hub_lock_core.js"></script> -->
+  <!-- (before H175) <script src="hub/core/hub_lock.js"></script> -->
+  <!-- H175: eye / break / lock JS only when that feature is on (or a break is in progress). document.write
+       while the body is still parsing keeps the same order and timing as the old tags. HubLoader.ensure
+       loads them later if Settings turns a feature on (no reload). -->
+  <script>
+  (function () {
+    var p = window.__hubBootPaths || {};
+    function js(src) { var q = '"'; document.write('<script src=' + q + src + '?v=20261123b' + q + '><\/script>'); }
+    if (p.eyeOn) js('hub/core/hub_eye.js');
+    if (p.breakOn) js('hub/core/hub_break.js');
+    if (p.locked) { js('hub/core/hub_lock_core.js'); js('hub/core/hub_lock.js'); }
+  })();
+  </script>
   <!-- <script src="hub/wm/wm_mode.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_mode.js"></script>
   <!-- (before H174) <script src="shared/ctxmenu/ctxmenu.js"></script> -->
@@ -175,13 +216,13 @@
   <!-- (before H174) <script src="desktop/menu/hub_ctx.js"></script> -->
   <!-- <script src="hub/wm/wm_windows.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_windows.js"></script>
-  <!-- (before H174) <script src="hub/core/hub_clock.js?v=20261123a"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_clock.js?v=20261123b"></script> -->
   <!-- <script src="hub/wm/wm_taskbar.js"></script>   (before H129b) -->
   <script src="desktop/wm/wm_taskbar.js"></script>
   <!-- (before H174) <script src="desktop/wm/wm_workspaces.js"></script> -->
   <!-- (before H174) <script src="hub/core/hub_apps.js"></script> -->
   <!-- (before H174) <script src="desktop/menu/hub_tiles.js"></script> -->
-  <!-- (before H174) <script src="hub/core/hub.js?v=20261123a"></script> -->
+  <!-- (before H174) <script src="hub/core/hub.js?v=20261123b"></script> -->
   <!-- (before H174) <script src="shared/tiles/tiles.js"></script> -->
   <!-- (before H174) <script src="shared/favorites/favorites.js"></script> -->
   <!-- (before H174) <script src="desktop/menu/hub_flyout.js"></script> -->
@@ -206,7 +247,7 @@
   <!-- (before H174) <script src="desktop/link/hub_remote.js"></script> -->
   <!-- (before H174) <script src="desktop/panels/hub_chat.js"></script> -->
   <!-- (before H174) <script src="desktop/panels/hub_panels.js"></script> -->
-  <!-- (before H174) <script src="hub/core/hub_titlebar.js?v=20261123a"></script> -->
+  <!-- (before H174) <script src="hub/core/hub_titlebar.js?v=20261123b"></script> -->
   <!-- (before H174) <script src="desktop/gamebar/hub-gamebar.js"></script> -->
   <!-- (before H174) <script src="hub/update/hub_update.js"></script> -->
   <!-- PWA service worker (root sw.js) + stale-shell guard / Check for update: H174 loads hub_update.js

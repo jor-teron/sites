@@ -75,6 +75,9 @@ function page(opts) {
     qrcode: () => ({ addData(u) { this.u = u; }, make() {}, createSvgTag() { return '<svg data-u="' + this.u + '"></svg>'; } })
   };
   if (o.peer) win.Peer = Peer;
+  // H175: page() is a real page-boot of the lock scripts, so auto-lock must still run when Activate is on.
+  // (before H175) lock.js always called lock() at parse when store.isOn(); now it gates on __hubLockBoot.
+  win.__hubLockBoot = true;
   class CustomEvent { constructor(type, init) { this.type = type; this.detail = init && init.detail; } }
   const ctx = {
     window: win, document: doc, localStorage: win.localStorage, location: { protocol: o.protocol || 'https:', href: doc.baseURI + 'desktop/desktop.html' },

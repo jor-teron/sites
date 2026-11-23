@@ -17,17 +17,16 @@ function realTags(html, re) {
   return out;
 }
 
-test('H174: stage-1 CSS in desktop.html is only the taskbar / theme / splash / lock set', () => {
+// test('H174: stage-1 CSS in desktop.html is only the taskbar / theme / splash / lock set', () => {
+//   const allowed = [..., 'hub/core/hub_glass.css', 'hub/core/hub_xp.css', 'hub/core/hub_break.css', 'hub/core/hub_lock.css', ...];
+// });   (before H175)
+test('H174: stage-1 CSS in desktop.html is only the taskbar / splash set (H175: Glass / XP / lock / break are conditional)', () => {
   const html = read('desktop/desktop.html');
   const css = realTags(html, /<link\s+rel="stylesheet"\s+href="([^"?]+)(?:\?[^"]*)?"\s*\/>/);
   const allowed = [
     'hub/core/hub_main.css',
     'shared/style/no-scrollbar.css',
     'desktop/wm/wm.css',
-    'hub/core/hub_glass.css',
-    'hub/core/hub_xp.css',
-    'hub/core/hub_break.css',
-    'hub/core/hub_lock.css',
     'hub/core/hub_splash.css'
   ];
   assert.deepEqual(css, allowed);
@@ -49,6 +48,7 @@ test('H174: stage-1 CSS in desktop.html is only the taskbar / theme / splash / l
   }
 });
 
+// test('H174: stage-1 scripts ... hub_eye.js, hub_break.js, hub_lock_core.js, hub_lock.js ...');   (before H175)
 test('H174: stage-1 scripts in desktop.html are real tags (not document.write); later files are comments', () => {
   const html = read('desktop/desktop.html');
   const scripts = realTags(html, /<script\s+src="([^"?]+)(?:\?[^"]*)?"\s*>/);
@@ -59,10 +59,6 @@ test('H174: stage-1 scripts in desktop.html are real tags (not document.write); 
     'hub/core/hub_daynight.js',
     'hub/core/hub_autotheme.js',
     'hub/core/hub_prefs.js',
-    'hub/core/hub_eye.js',
-    'hub/core/hub_break.js',
-    'hub/core/hub_lock_core.js',
-    'hub/core/hub_lock.js',
     'desktop/wm/wm_mode.js',
     'desktop/wm/wm_windows.js',
     'desktop/wm/wm_taskbar.js',

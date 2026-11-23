@@ -44,7 +44,8 @@
     const shown = markTime('hub-boot-shown');
     const started = markTime('hub-desktop-started');
     const boot = shown != null ? shown : (ready != null ? ready : started);
-    const splashMin = (global.HubSplash && global.HubSplash.SHOW_MIN_MS) || 3000;
+    // const splashMin = (global.HubSplash && global.HubSplash.SHOW_MIN_MS) || 3000;   (before H175)
+    const splashMin = (global.HubSplash && global.HubSplash.SHOW_MIN_MS) || 5000;   // H175: match SHOW_MIN_MS
     return { boot: boot, ready: ready, shown: shown, started: started, splashMin: splashMin };
   }
 
