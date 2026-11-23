@@ -5,6 +5,8 @@
    ROLE: Selection, execCommand, font, paste, legacy mark cleanup.
          DW23: Enter (insertParagraph) carries ruler indents, line
          spacing and alignment onto the new paragraph.
+         DW24: setAlign writes text-align on the enclosing block(s)
+         so Shift+Enter lines stay in one paragraph.
    DEPENDS: Writer.config, Writer.ui, Writer.indent (optional, DW23)
    ISOLATION: Commands no-op if no editor is focused.
    ============================================================ */
@@ -109,6 +111,85 @@ Writer.editor.insertLineBreak = function insertLineBreak() {
   sel.addRange(r);
   var host = br.parentElement && br.parentElement.closest('.' + Writer.config.editorClass);
   if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
+};
+
+
+/* DW24: alignment is a paragraph style, not an execCommand. Chrome's
+   justify* treats a <br> as a paragraph break and would split a
+   Shift+Enter line out into its own block. */
+Writer.editor.ALIGN_BLOCKS = 'p,div,li,h1,h2,h3,h4,h5,h6,blockquote,td,th';
+Writer.editor.alignNames = { left: 'left', center: 'center', right: 'right', justify: 'justify',
+  justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
+
+Writer.editor.alignValue = function alignValue(el) {
+  if (!el) return '';
+  var a = (el.style && el.style.textAlign) || (el.getAttribute && el.getAttribute('align')) || '';
+  a = String(a).toLowerCase().replace(/\s+/g, '');
+  if (a === 'middle') a = 'center';
+  if (a === 'justify' || a === 'center' || a === 'right' || a === 'left') return a;
+  return '';
+};
+
+Writer.editor.alignBlockOf = function alignBlockOf(node) {
+  var el = node && (node.nodeType === 1 ? node : node.parentElement);
+  if (!el || !Writer.editor.isInEditor(el)) return null;
+  var b = el.closest(Writer.editor.ALIGN_BLOCKS);
+  if (!b || b.classList.contains(Writer.config.editorClass) || b.classList.contains('dr-pagebreak')) return null;
+  if (!b.closest('.' + Writer.config.editorClass)) return null;
+  return b;
+};
+
+/* Innermost blocks touched by the selection (same idea as Writer.spacing.blocks). */
+Writer.editor.alignBlocks = function alignBlocks() {
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return [];
+  var r = sel.getRangeAt(0);
+  var first = Writer.editor.alignBlockOf(r.startContainer);
+  if (sel.isCollapsed) return first ? [first] : [];
+  var host = (first || r.commonAncestorContainer);
+  host = host.nodeType === 1 ? host : host.parentElement;
+  var ed = host && host.closest('.' + Writer.config.editorClass);
+  if (!ed) return first ? [first] : [];
+  var all = ed.querySelectorAll(Writer.editor.ALIGN_BLOCKS), out = [], i;
+  for (i = 0; i < all.length; i++) {
+    var b = all[i];
+    if (b.classList.contains('dr-pagebreak') || (r.intersectsNode && !r.intersectsNode(b))) continue;
+    if (b.querySelector(Writer.editor.ALIGN_BLOCKS)) continue;
+    out.push(b);
+  }
+  if (!out.length && first) out.push(first);
+  return out;
+};
+
+Writer.editor.alignAtCaret = function alignAtCaret() {
+  var bl = Writer.editor.alignBlocks(), i, v;
+  if (!bl.length) return '';
+  v = Writer.editor.alignValue(bl[0]);
+  for (i = 1; i < bl.length; i++) if (Writer.editor.alignValue(bl[i]) !== v) return '';
+  return v;
+};
+
+/* kind is left|center|right|justify (or a justify* execCommand name).
+   Already-aligned blocks stay as they are (no toggle off). */
+Writer.editor.setAlign = function setAlign(kind) {
+  var v = Writer.editor.alignNames[kind] || kind;
+  if (!/^(left|center|right|justify)$/.test(v)) return;
+  Writer.editor.focusEditor();
+  if (Writer.editor.restoreSelection) Writer.editor.restoreSelection();
+  var bl = Writer.editor.alignBlocks();
+  if (!bl.length) return;
+  bl.forEach(function (b) {
+    if (b.removeAttribute && b.getAttribute && b.getAttribute('align')) b.removeAttribute('align');
+    b.style.textAlign = v;
+  });
+  /* Style-only change: the incremental reflow only notices moved nodes, so lay out fully. */
+  if (Writer.pages && Writer.pages.layoutAll) Writer.pages.layoutAll();
+  if (Writer.app && Writer.app.ready) {
+    clearTimeout(Writer.app.inputTimer);
+    Writer.app.inputTimer = setTimeout(function () { Writer.storage.save(); }, Writer.config.inputDebounceMs);
+  }
+  if (Writer.ui) Writer.ui.updateToolbarState();
+  Writer.editor.saveSelection();
 };
 
 /* Run a contenteditable command, then refresh toolbar and pages. */

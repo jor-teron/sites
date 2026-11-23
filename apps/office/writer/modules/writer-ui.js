@@ -118,10 +118,15 @@ Writer.ui.updateToolbarState = function updateToolbarState() {
       var n = document.getElementById(b[0]);
       if (n) n.classList.toggle('active', document.queryCommandState(b[1]));
     });
-    if (alignLeftBtn) alignLeftBtn.classList.toggle('active', document.queryCommandState('justifyLeft'));
-    if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter'));
-    if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight'));
-    if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', document.queryCommandState('justifyFull'));
+    /* (before DW24) if (alignLeftBtn) alignLeftBtn.classList.toggle('active', document.queryCommandState('justifyLeft')); */
+    /* (before DW24) if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter')); */
+    /* (before DW24) if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight')); */
+    /* (before DW24) if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', document.queryCommandState('justifyFull')); */
+    var al = Writer.editor && Writer.editor.alignAtCaret ? Writer.editor.alignAtCaret() : '';
+    if (alignLeftBtn) alignLeftBtn.classList.toggle('active', al === 'left');
+    if (alignCenterBtn) alignCenterBtn.classList.toggle('active', al === 'center');
+    if (alignRightBtn) alignRightBtn.classList.toggle('active', al === 'right');
+    if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', al === 'justify');
   } catch (e) {}
   Writer.ui.syncFontSelects();
   if (Writer.lists) Writer.lists.syncSuffix();

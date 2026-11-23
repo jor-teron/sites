@@ -235,12 +235,14 @@ test('writer.html title is DW19; config release is DW19; old ids are kept as com
   const html = read('writer.html');
   /* (before DW22) assert.ok(/<title>Writer DW19<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW23) assert.ok(/<title>Writer DW(19|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(19|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW24) assert.ok(/<title>Writer DW(19|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(19|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW19) <title>Writer DW18</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
   /* (before DW22) assert.ok(/release:\s*'DW19'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW23) assert.ok(/release:\s*'DW(19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(19|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW24) assert.ok(/release:\s*'DW(19|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(19|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW19) release: 'DW18', */") !== -1);
   assert.ok(read('modules/writer-ruler.js').indexOf('(before DW19) only the dragged side moved') !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW19') !== -1);

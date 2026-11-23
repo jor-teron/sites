@@ -300,7 +300,8 @@ test('writer.html wires the odt reader and the combined Open menu', function () 
   /* (before DW19) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8)<\/title>/.test(live)); */
   /* (before DW22) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)<\/title>/.test(live)); */
   /* (before DW23) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23)<\/title>/.test(live));
+  /* (before DW24) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW7) <title>Writer DF25</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW8) <title>Writer DW7</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
