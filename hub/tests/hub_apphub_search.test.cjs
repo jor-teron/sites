@@ -59,7 +59,13 @@ test('index.html: shared files before apphub.js, css linked; SW shell has them',
   assert.ok(core > 0 && bar > core && app > bar, [core, bar, app].join(','));
   assert.ok(html.includes('href="../../../shared/search/search_bar.css"'));
   const sw = read('hub/update/hub_sw.js');
-  ['shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css'].forEach((f) => assert.ok(sw.includes("'" + f + "'"), f));
+  // (before H176) ['shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css'].forEach((f) => assert.ok(sw.includes("'" + f + "'"), f));
+  // H176: search files are no longer in the live first-install SHELL (App Hub caches them on first open via hub-rt-1).
+  const listed = Array.from(sw.slice(sw.indexOf('const SHELL = ['), sw.indexOf('];', sw.indexOf('const SHELL = ['))).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').matchAll(/'([^']+)'/g), (m) => m[1]);
+  ['shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css'].forEach((f) => {
+    assert.equal(listed.includes(f), false, f + ' left first-install SHELL');
+    assert.ok(sw.includes("'" + f + "'"), f + ' kept in (before H176) comment');
+  });
 });
 
 test('without the shared files apphub.js still runs (no box)', () => {

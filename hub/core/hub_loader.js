@@ -37,7 +37,7 @@
  */
 (function () {
   'use strict';
-  const V = '20261123c';
+  const V = '20261123d';
   const DELAY = 1500;
   const BATCHES = {
     // H174: Start menu first, then Connect, wallpaper last among the visible stages

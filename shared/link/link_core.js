@@ -2,8 +2,8 @@
   Project: sites (shared)
   File: shared/link/link_core.js
   Role: SharedLink core. One PeerJS connection layer for every app.
-  - PEERJS_URL is the ONE place PeerJS is pinned; loadPeer() injects it when
-    window.Peer is missing. PeerJS default config only (no iceServers): the
+  - PEERJS_URL is the ONE place PeerJS is pinned (H176: local shared/vendor/peerjs.min.js,
+    unpkg 1.5.4 only if that load fails); loadPeer() injects it when window.Peer is missing. PeerJS default config only (no iceServers): the
     default list includes the PeerJS TURN relay, needed behind CGNAT.
   - host({prefix, code, codeKey, onLegacy, alias}): alias (H92) = private Gamepad pad code on a 2nd peer id.
     H136: unavailable-id does not mean another device owns the number. The saved code is kept and registration
@@ -61,7 +61,19 @@
     return;
   }
 
-  var PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+  // (before H176) var PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+  var PEERJS_UNPKG = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';   // fallback only if the local file fails
+  function peerjsLocalUrl() {
+    try {
+      var scripts = document.scripts || [];
+      for (var i = 0; i < scripts.length; i++) {
+        var src = scripts[i].src || '';
+        if (/link_core\.js(\?|$)/.test(src)) return new URL('../vendor/peerjs.min.js', src).href;
+      }
+      return new URL('shared/vendor/peerjs.min.js', document.baseURI).href;
+    } catch (_) { return 'shared/vendor/peerjs.min.js'; }
+  }
+  var PEERJS_URL = peerjsLocalUrl();
   var ID_RETRY_MS = [1000, 2000, 3000, 5000, 5000, 8000, 10000, 10000, 15000, 15000];
   var NET_RETRY_MS = [2000, 4000, 8000, 15000, 30000];
 
@@ -78,17 +90,25 @@
     });
   }
 
-  /* Load PeerJS once from the pinned CDN url. Resolves with window.Peer. */
+  /* Load PeerJS once from the local vendor file (H176). Resolves with window.Peer.
+     If the local file fails, fall back to the pinned unpkg 1.5.4 URL. */
   function loadPeer() {
     if (window.Peer) return Promise.resolve(window.Peer);
     if (loading) return loading;
     loading = new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = PEERJS_URL;
-      s.async = true;
-      s.onload = function () { window.Peer ? resolve(window.Peer) : reject(new Error('PeerJS missing')); };
-      s.onerror = function () { loading = null; reject(new Error('PeerJS load failed')); };
-      document.head.appendChild(s);
+      function inject(url, isFallback) {
+        var s = document.createElement('script');
+        s.src = url;
+        s.async = true;
+        s.onload = function () { window.Peer ? resolve(window.Peer) : reject(new Error('PeerJS missing')); };
+        s.onerror = function () {
+          if (!isFallback) { inject(PEERJS_UNPKG, true); return; }
+          loading = null;
+          reject(new Error('PeerJS load failed'));
+        };
+        document.head.appendChild(s);
+      }
+      inject(PEERJS_URL, false);
     });
     return loading;
   }
