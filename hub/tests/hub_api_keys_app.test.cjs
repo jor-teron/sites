@@ -149,7 +149,14 @@ test('System catalog/index, local dependencies, CSS and offline shell register t
   assert.equal(cat.SITES_CSV.System, source('apps/system/system-apps.csv'));
   assert.ok(Object.values(idx.HUB_APP_INDEX).some((v) => v[1] === 'apps/system/api-keys/' && v[2] === 'API Keys'));
   const shell = source('hub/update/hub_sw.js');
-  for (const file of ['index.html', 'api-keys.js', 'api-keys.css', 'api-keys_icon.png']) assert.ok(shell.includes("'apps/system/api-keys/" + file + "'"));
+  // (before H176) for (const file of ['index.html', 'api-keys.js', 'api-keys.css', 'api-keys_icon.png']) assert.ok(shell.includes("'apps/system/api-keys/" + file + "'"));
+  // H176: only the Start icon stays in the first-install SHELL; the app shell is cached on first open (hub-rt-1).
+  const listed = Array.from(shell.slice(shell.indexOf('const SHELL = ['), shell.indexOf('];', shell.indexOf('const SHELL = ['))).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').matchAll(/'([^']+)'/g), (m) => m[1]);
+  assert.ok(listed.includes('apps/system/api-keys/api-keys_icon.png'), 'Start icon stays in SHELL');
+  for (const file of ['index.html', 'api-keys.js', 'api-keys.css']) {
+    assert.equal(listed.includes('apps/system/api-keys/' + file), false, file + ' left first-install SHELL');
+    assert.ok(shell.includes("'apps/system/api-keys/" + file + "'"), file + ' kept in (before H176) comment');
+  }
   assert.ok(!source('apps/system/settings/sec_keys.js').includes('HubProviders.secret'));
   assert.ok(!source('apps/system/settings/settings.css').includes('.prov-row'));
   assert.ok(source('apps/system/settings/settings.css').includes('.key-input')); // shared consumers

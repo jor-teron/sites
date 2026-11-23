@@ -1,9 +1,10 @@
 /*
  * Hub service worker (loaded by the root /sw.js stub, so its scope is the whole site).
  * R16b: cache-first shell + "Update ready" notice.
- * Install (a new build = a new CACHE name): precache the shell (SHELL), every file fetched with
- * cache:'reload' so the browser's HTTP cache can't hand back an old copy. A new worker WAITS
- * (only the very first install activates at once); hub_update.js shows "Update ready · Reload"
+ * Install (a new build = a new CACHE name): precache the shell (SHELL).
+ * (before H176) every file fetched with cache:'reload' so the browser's HTTP cache can't hand back an old copy.
+ * H176: install uses the default HTTP cache so files the page already downloaded (staged boot) are not refetched.
+ * A new worker WAITS (only the very first install activates at once); hub_update.js shows "Update ready · Reload"
  * and posts {type:'skip-waiting'} when Jor clicks Reload. Activate deletes old hub-shell-* caches.
  * Fetch (same-origin GET only; cross-origin — Google APIs / OAuth / Drive, PeerJS signalling,
  * CDNs — is never touched; no-store / reload requests and Range requests pass straight through):
@@ -18,8 +19,11 @@
  *     request. R58: a cached image is re-fetched in the background at most once per worker lifetime,
  *     and only when the cached copy is over a day old (its Date header), not on every request
  *     (R25 did that), so an edited icon / wallpaper still shows within a day. Fonts: cache first (RUNTIME).
- *   · H165: apps/learn/dictionary and apps/learn/blood-group shell files are in SHELL, so they
- *     open offline on a first visit. Dictionary data shards under apps/learn/dictionary/data/ are
+ *   · (before H176) H165: apps/learn/dictionary and apps/learn/blood-group shell files were in SHELL,
+ *     so they opened offline on a first visit.
+ *     H176: those app shells (and Phone, Terminal, wallpaper photos, App Hub, Mesh Viewer, API Keys,
+ *     the notifications app, duplicate jsQR copies) are no longer precached; the first open stores
+ *     them in RUNTIME (hub-rt-1). Dictionary data shards under apps/learn/dictionary/data/ are
  *     not precached (about 7.6 MB gzipped); they use cache-first after the first fetch.
  *     H173: those shards live in DICT (hub-dict-1), not RUNTIME; a data rebuild bumps DICT only.
  *     Activate deletes stale hub-dict-* caches and purges leftover dictionary data from hub-rt-1.
@@ -33,8 +37,8 @@
  *   ones; a file that then loads is cleared from the list. Activate keeps 'hub-meta'.
  * Release: bump V + CACHE here AND the ?v= in the root sw.js (so the browser sees a new worker).
  */
-const V = '20261123c';
-const CACHE = 'hub-shell-v195';  // 2026-11-23c: H177
+const V = '20261123d';
+const CACHE = 'hub-shell-v196';  // 2026-11-23d: H176
 const RUNTIME = 'hub-rt-1';     // app pages / images opened at least once (kept across releases)
 const DICT = 'hub-dict-1';      // H173: dictionary letter data; a data rebuild bumps only this number
 // R16c / R58: tiny bookkeeping cache, kept across releases (activate never deletes it):
@@ -42,93 +46,129 @@ const DICT = 'hub-dict-1';      // H173: dictionary letter data; a data rebuild 
 //   '__hub_failed__' shell files the install could not fetch (retried, see below)
 const META = 'hub-meta';
 const SHELL = [
+  // (before H176) previous first-install SHELL (229 entries). Dropped paths are cached on first open via hub-rt-1:
+  // (before H176) 'index.html', 'desktop/desktop.html', 'hub/index.html', 'desktop/index.html', 'desktop/mode/hub_osmode.js',
+  // (before H176) 'manifest.webmanifest', 'hub/core/hub_main.css', 'desktop/controller/hub_controller.css',
+  // (before H176) 'desktop/notify/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css',
+  // (before H176) 'desktop/panels/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',
+  // (before H176) 'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js',
+  // (before H176) 'hub/core/hub_apps.js', 'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js',
+  // (before H176) 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js',
+  // (before H176) 'hub/drives/hub_wallpapers.js', 'hub/drives/hub_live_wallpaper.js', 'desktop/menu/hub_settings.js',
+  // (before H176) 'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js',
+  // (before H176) 'desktop/wm/wm_workspaces.js', 'desktop/wm/wm_warm.js', 'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js',
+  // (before H176) 'hub/drives/hub_traymeter.js', 'desktop/controller/hub_controller_config.js', 'desktop/notify/hub_notify.js',
+  // (before H176) 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js', 'desktop/link/hub_pointer.js',
+  // (before H176) 'desktop/link/hub_receive.js', 'desktop/link/hub_remote.js', 'desktop/controller/hub-controller.js',
+  // (before H176) 'desktop/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js', 'desktop/panels/hub_chat.js',
+  // (before H176) 'desktop/gamebar/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js',
+  // (before H176) 'hub/core/hub_loader.js', 'hub/core/hub_saver.js', 'hub/controller/kb_common.js', 'hub/osk/osk_layout.js',
+  // (before H176) 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css', 'shared/style/no-scrollbar.css',
+  // (before H176) 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js', 'shared/fs/fs_drives.js',
+  // (before H176) 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js',
+  // (before H176) 'shared/fs/webdav_fs.js', 'shared/fs/webdav_accounts.js', 'shared/fs/sftp_fs.js', 'shared/fs/sftp_accounts.js',
+  // (before H176) 'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js',
+  // (before H176) 'shared/google/gdrive_connect.js', 'shared/google/google_gis.js', 'shared/google/phonekey.js',
+  // (before H176) 'shared/google/google.css', 'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js',
+  // (before H176) 'shared/dialog/dialog.js', 'shared/dialog/dialog.css', 'shared/tiles/tiles.js', 'shared/tiles/tiles.css',
+  // (before H176) 'shared/favorites/favorites.js', 'shared/theme/hub_theme.js', 'shared/theme/hub_glass_apps.css', 'hub/core/hub_xp.css',
+  // (before H176) 'shared/theme/hub_xp_apps.css', 'shared/wallpaper/hub_hills.jpg', 'shared/wallpaper/thumbs/hub_hills.webp',
+  // (before H176) 'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js',
+  // (before H176) 'shared/link/link_chat.js', 'shared/link/link_scan.js', 'shared/link/link.css', 'shared/image/hub_icon_192.png',
+  // (before H176) 'shared/image/hub_icon_512.png', 'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png',
+  // (before H176) 'apps/media/media_icon.png', 'apps/office/office_icon.png', 'apps/connectivity/connectivity_icon.png',
+  // (before H176) 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/learn/learn_icon.png', 'apps/system/system_icon.png',
+  // (before H176) 'apps/system/settings/settings_icon.png', 'apps/system/apphub/', 'apps/system/apphub/index.html',
+  // (before H176) 'apps/system/apphub/apphub.js', 'apps/system/apphub/apphub.css', 'apps/system/apphub/apphub_icon.png',
+  // (before H176) 'shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css',
+  // (before H176) 'apps/system/files/files_icon.png', 'apps/system/disk/disk_icon.png',
+  // (before H176) 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png',
+  // (before H176) 'hub/controller/controller_qr_icon.png', 'apps/office/writer/writer_icon.png',
+  // (before H176) 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg', 'apps/office/base/base_icon.png',
+  // (before H176) 'apps/office/slides/slides_icon.png', 'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv',
+  // (before H176) 'apps/media/media-apps.csv', 'apps/office/office-apps.csv', 'apps/connectivity/connectivity-apps.csv',
+  // (before H176) 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'apps/learn/learn-apps.csv', 'apps/system/system-apps.csv',
+  // (before H176) 'hub/version.txt', 'hub/update/hub_offline.html', 'apps/system/terminal/terminal_bb.js',
+  // (before H176) 'apps/system/terminal/terminal_etc.js', 'apps/system/terminal/bin/busybox.js', 'apps/system/terminal/bin/busybox.wasm',
+  // (before H176) 'apps/system/terminal/terminal_worker.js', 'apps/system/terminal/terminal_rc.js', 'desktop/panels/hub_panels.css',
+  // (before H176) 'desktop/panels/hub_panels.js', 'apps/system/api-keys/index.html', 'apps/system/api-keys/api-keys.js',
+  // (before H176) 'apps/system/api-keys/api-keys.css', 'apps/system/api-keys/api-keys_icon.png', 'hub/core/hub_credentials.js',
+  // (before H176) 'hub/core/hub_keys.js', 'hub/keys.readme.md', 'hub/core/hub_embeddings.js', 'hub/core/hub_api.js',
+  // (before H176) 'hub/core/hub_providers.js', 'hub/core/hub_profile.js', 'hub/link/hub_sync.js', 'shared/link/hub_mesh.js',
+  // (before H176) 'hub/link/hub_meshlink.js', 'hub/link/hub_line.js', 'hub/link/hub_trust.js', 'hub/link/hub_meshlog.js',
+  // (before H176) 'hub/core/hub_core.js', 'apps/system/mesh-viewer/', 'apps/system/mesh-viewer/index.html',
+  // (before H176) 'apps/system/mesh-viewer/mv.js', 'apps/system/mesh-viewer/mv.css', 'apps/system/mesh-viewer/mesh-viewer_icon.png',
+  // (before H176) 'desktop/notify/hub_notifcenter.js', 'desktop/notify/hub_notifcenter.css', 'apps/system/notifications/',
+  // (before H176) 'apps/system/notifications/index.html', 'apps/system/notifications/nc.js', 'apps/system/notifications/nc.css',
+  // (before H176) 'apps/system/notifications/notifications_icon.png', 'hub/controller/vendor/jsQR.js', 'hub/core/hub_dialog_bridge.js',
+  // (before H176) 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js', 'hub/core/hub_break.js', 'hub/core/hub_break.css',
+  // (before H176) 'hub/core/hub_lock_core.js', 'hub/core/hub_lock.js', 'hub/core/hub_lock.css', 'shared/vendor/peerjs.min.js',
+  // (before H176) 'hub/core/hub_splash.js', 'hub/core/hub_splash.css', 'hub/core/hub_perf.js', 'hub/core/hub_clock.js',
+  // (before H176) 'hub/core/hub_clock.css', 'unlock.html', 'hub/core/hub_unlock.js', 'phone.html', 'phone/', 'phone/index.html',
+  // (before H176) 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js',
+  // (before H176) 'phone/phone_app.js', 'phone/hidden-apps.csv', 'phone/phone_connect.js', 'phone/vendor/jsQR.js',
+  // (before H176) 'apps/learn/dictionary/', 'apps/learn/dictionary/index.html', 'apps/learn/dictionary/dictionary.html',
+  // (before H176) 'apps/learn/dictionary/dictionary_icon.png', 'apps/learn/dictionary/core/dict.js', 'apps/learn/dictionary/ui/app.js',
+  // (before H176) 'apps/learn/dictionary/ui/dictionary.css', 'apps/learn/blood-group/', 'apps/learn/blood-group/index.html',
+  // (before H176) 'apps/learn/blood-group/blood-group.html', 'apps/learn/blood-group/blood-group_icon.png',
+  // (before H176) 'apps/learn/blood-group/core/blood.js', 'apps/learn/blood-group/ui/app.js', 'apps/learn/blood-group/ui/blood.css',
+  // (before H176) 'apps/learn/common/ui/learn.css', 'apps/learn/common/core/state.js', 'apps/learn/shared/learn-hubbar.js',
   // 'hub.html',   // H129a: now the tiny redirect to desktop/desktop.html (kept, so an offline hub.html link still lands)   (before H129d: removed)
-  'index.html',   // H129d: the mode entry (Desktop / Phone | Touch cards, saved-mode redirect); also answers / and old hub.html links
-  'desktop/desktop.html',   // H129a: the desktop Hub page
-  'hub/index.html',   // H129e: the standalone Hub About page
-  'desktop/index.html',   // H129a: desktop/ (folder index): tiny redirect to desktop.html
-  'desktop/mode/hub_osmode.js',   // H129d: Switch to Phone | Touch / Choose mode… (HubOsMode)
-  'manifest.webmanifest',
   // (before H129b) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'hub/menu/hub_flyout.css', 'hub/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css
   // (before H129c) 'hub/core/hub_main.css', 'hub/controller/hub_controller.css', 'hub/viewer/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'hub/link/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',
-  'hub/core/hub_main.css', 'desktop/controller/hub_controller.css', 'desktop/notify/hub_notification.css', 'desktop/menu/hub_flyout.css', 'desktop/wm/wm.css', 'desktop/panels/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',   // H61: + hub_glass.css   (H129b: hub/wm, hub/menu → desktop/)   (H129c: → desktop/)
   // (before H64) 'hub/core/hub_role.js', ... 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js
   // (before H129b) 'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'hub/menu/hub_tiles.js', 'hub/core/hub.js', 'hub/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js
-  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js', 'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js', 'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/drives/hub_live_wallpaper.js', 'desktop/menu/hub_settings.js',   // H63: + hub_daynight.js, hub_eye.js; H64: + hub_autotheme.js   (H129b: hub/wm, hub/menu → desktop/)   // H158: + hub_live_wallpaper.js (was missing from the shell cache, so a stale desktop.html / first load could run without the engine)
- 
   // (before H129b) 'hub/wm/wm_mode.js', 'hub/wm/wm_windows.js', 'hub/wm/wm_taskbar.js', 'hub/wm/wm_snap.js', 'hub/wm/wm_workspaces.js',
-  'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js', 'desktop/wm/wm_workspaces.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/
-  'desktop/wm/wm_warm.js',   // H168: app warm-up on hover / press
   // (before H129b) 'hub/menu/hub_ctx.js', 'hub/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
   // (before H129c) 'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'hub/controller/hub_controller_config.js', 'hub/viewer/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',
-  'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js', 'hub/drives/hub_traymeter.js', 'desktop/controller/hub_controller_config.js', 'desktop/notify/hub_notify.js', 'hub/viewer/hub_viewer.js', 'hub/viewer/hub_viewer_pdf.js',   // H129b: desktop window parts moved to desktop/wm/, desktop/menu/   (H129c: → desktop/)
   // (before H129c) 'hub/link/hub_pointer.js', 'hub/link/hub_receive.js', 'hub/link/hub_remote.js', 'hub/controller/hub-controller.js', 'hub/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
-  'desktop/link/hub_pointer.js', 'desktop/link/hub_receive.js', 'desktop/link/hub_remote.js', 'desktop/controller/hub-controller.js', 'desktop/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',   // H129c: desktop shell files → desktop/
   // (before H129c) 'hub/link/hub_chat.js', 'hub/link/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',
-  'desktop/panels/hub_chat.js', 'desktop/gamebar/hub-gamebar.js', 'hub/drives/hub_drives.js', 'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js',   // H129c: desktop shell files → desktop/
-  'hub/controller/kb_common.js', 'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
-  'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
-  'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js', 'shared/fs/webdav_fs.js', 'shared/fs/webdav_accounts.js',
-  'shared/fs/sftp_fs.js', 'shared/fs/sftp_accounts.js',   // H119
-  'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js', 'shared/google/google_gis.js', 'shared/google/phonekey.js', 'shared/google/google.css',
-  'shared/ctxmenu/ctxmenu.js', 'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
-  'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'shared/favorites/favorites.js',
-  'shared/theme/hub_theme.js',   // H22
-  'shared/theme/hub_glass_apps.css',   // H103
-  'hub/core/hub_xp.css', 'shared/theme/hub_xp_apps.css', 'shared/wallpaper/hub_hills.jpg', 'shared/wallpaper/thumbs/hub_hills.webp',   // H104: XP theme + its default wallpaper
-  'shared/link/link_core.js', 'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link_chat.js', 'shared/link/link_scan.js', 'shared/link/link.css',
-  'shared/image/hub_icon_192.png', 'shared/image/hub_icon_512.png',
   // Start menu / taskbar / home icons and the app lists, so a first visit also works offline
-  'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png', 'apps/media/media_icon.png', 'apps/office/office_icon.png',
-  'apps/connectivity/connectivity_icon.png', 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/learn/learn_icon.png', 'apps/system/system_icon.png', 'apps/system/settings/settings_icon.png',
-  'apps/system/apphub/', 'apps/system/apphub/index.html', 'apps/system/apphub/apphub.js', 'apps/system/apphub/apphub.css', 'apps/system/apphub/apphub_icon.png',   // AH2: the category pages live here now, so the first offline visit works
-  'shared/search/search_core.js', 'shared/search/search_bar.js', 'shared/search/search_bar.css',   // H153: App Hub search box works offline too
-  'apps/system/files/files_icon.png', 'apps/system/disk/disk_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png', 'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png',
   /* (before DF25) 'apps/office/draftly/draftly_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg', */  // H148
   /* (before H161) 'apps/office/writer/writer_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg',   // H148: Files Office format thumbnails (.how / .hos / .hot) */
-  'apps/office/writer/writer_icon.png', 'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg',   // H148
-  'apps/office/base/base_icon.png', 'apps/office/slides/slides_icon.png',   // H161: Files Base / Presentation file icons
-  'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv', 'apps/office/office-apps.csv',
-  'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv', 'apps/learn/learn-apps.csv', 'apps/system/system-apps.csv', 'hub/version.txt',
-  'hub/update/hub_offline.html',
-  'apps/system/terminal/terminal_bb.js', 'apps/system/terminal/terminal_etc.js', 'apps/system/terminal/bin/busybox.js', 'apps/system/terminal/bin/busybox.wasm',   // T5: BusyBox works offline
-  'apps/system/terminal/terminal_worker.js', 'apps/system/terminal/terminal_rc.js',   // T7: the BusyBox worker (+ T6 settings file) work offline
   // (before H129c) 'hub/link/hub_panels.css', 'hub/link/hub_panels.js',
-  'desktop/panels/hub_panels.css', 'desktop/panels/hub_panels.js',   // H27   (H129c: → desktop/)
-  'apps/system/api-keys/index.html', 'apps/system/api-keys/api-keys.js',
-  'apps/system/api-keys/api-keys.css', 'apps/system/api-keys/api-keys_icon.png', // H138b
-  'hub/core/hub_credentials.js', 'hub/core/hub_keys.js', 'hub/keys.readme.md',   // H28
-  'hub/core/hub_embeddings.js', // H139a: bounded embedding adapters
-  'hub/core/hub_api.js',   // H134b: shared AI request helper
-  'hub/core/hub_providers.js',   // H134c: custom AI services store
-  'hub/core/hub_profile.js',   // H30.1
-  'hub/link/hub_sync.js',   // H29.1
-  'shared/link/hub_mesh.js', 'hub/link/hub_meshlink.js',   // H50
-  'hub/link/hub_line.js',   // H91: Hub Line
-  'hub/link/hub_trust.js',   // H97: HubTrust
-  'hub/link/hub_meshlog.js',   // H69: mesh connection log (hub.html loads it)
-  'hub/core/hub_core.js',   // H127: Hub core entry (loads role, theme, settings, link + mesh in order)
-  'apps/system/mesh-viewer/', 'apps/system/mesh-viewer/index.html', 'apps/system/mesh-viewer/mv.js', 'apps/system/mesh-viewer/mv.css', 'apps/system/mesh-viewer/mesh-viewer_icon.png',   // H69: Mesh Viewer opens offline too (the log and roster live in the Hub page)
   // (before H129c) 'hub/viewer/hub_notifcenter.js', 'hub/viewer/hub_notifcenter.css',
-  'desktop/notify/hub_notifcenter.js', 'desktop/notify/hub_notifcenter.css',   // H66: Notification Centre (hub.html loads them)   (H129c: → desktop/)
-  'apps/system/notifications/', 'apps/system/notifications/index.html', 'apps/system/notifications/nc.js', 'apps/system/notifications/nc.css', 'apps/system/notifications/notifications_icon.png',   // H66: the Notification Centre app opens offline too
-  'hub/controller/vendor/jsQR.js',   // H59: the 🎮 pop-up's 📷 camera scanner (lazy-loaded) works offline
-  'hub/core/hub_dialog_bridge.js', 'hub/core/hub_dnd.js', 'hub/core/hub_attention.js',   // H85: H81/H82 engine files (hub.html + phone.html load them)
-  'hub/core/hub_break.js', 'hub/core/hub_break.css',   // H65: Computer break lock (hub.html loads them)
-  'hub/core/hub_lock_core.js', 'hub/core/hub_lock.js', 'hub/core/hub_lock.css', 'shared/vendor/peerjs.min.js',   // H142: PIN lock screen (desktop.html loads them; PeerJS only while locked)
-  'hub/core/hub_splash.js', 'hub/core/hub_splash.css',   // H159: boot splash while the desktop restores open apps
-  'hub/core/hub_perf.js',   // H166: ?perf=1 debug overlay (lazy-loaded from desktop.html only when the flag is set)
-  'hub/core/hub_clock.js', 'hub/core/hub_clock.css',   // H160: desktop analog clock
-  'unlock.html', 'hub/core/hub_unlock.js',   // H142: the phone unlock page (its QR path needs internet anyway); H143: + fingerprint / Add phone
-  'phone.html', 'phone/', 'phone/index.html', 'phone/phone.css', 'phone/phone_notify.js', 'phone/phone_save.js', 'phone/phone_apps.js', 'phone/phone_gesture.js', 'phone/phone_app.js', 'phone/hidden-apps.csv',   // H85: the phone look opens offline too
-  'phone/phone_connect.js', 'phone/vendor/jsQR.js',   // H129b: PH14 Connect sheet + its QR reader, so phone.html's Connect works offline
-  'apps/learn/dictionary/', 'apps/learn/dictionary/index.html', 'apps/learn/dictionary/dictionary.html',
-  'apps/learn/dictionary/dictionary_icon.png', 'apps/learn/dictionary/core/dict.js',
-  'apps/learn/dictionary/ui/app.js', 'apps/learn/dictionary/ui/dictionary.css',   // H165: Dictionary shell (not data/)
-  'apps/learn/blood-group/', 'apps/learn/blood-group/index.html', 'apps/learn/blood-group/blood-group.html',
-  'apps/learn/blood-group/blood-group_icon.png', 'apps/learn/blood-group/core/blood.js',
-  'apps/learn/blood-group/ui/app.js', 'apps/learn/blood-group/ui/blood.css',   // H165: Blood Group shell
-  'apps/learn/common/ui/learn.css', 'apps/learn/common/core/state.js', 'apps/learn/shared/learn-hubbar.js',   // H165: shared Learn files both apps load
+  'index.html', 'desktop/desktop.html', 'desktop/index.html', 'desktop/mode/hub_osmode.js', 'manifest.webmanifest',
+  'hub/core/hub_main.css', 'desktop/controller/hub_controller.css', 'desktop/notify/hub_notification.css', 'desktop/menu/hub_flyout.css',
+  'desktop/wm/wm.css', 'desktop/panels/hub_chat.css', 'hub/drives/hub_drives.css', 'hub/update/hub_update.css', 'hub/core/hub_glass.css',
+  'hub/core/hub_role.js', 'hub/core/hub_config.js', 'hub/core/hub_appindex.js', 'hub/core/hub_catalog.js', 'hub/core/hub_apps.js',
+  'desktop/menu/hub_tiles.js', 'hub/core/hub.js', 'desktop/menu/hub_flyout.js', 'hub/core/hub_prefs.js', 'hub/core/hub_daynight.js',
+  'hub/core/hub_autotheme.js', 'hub/core/hub_eye.js', 'hub/drives/hub_wallpapers.js', 'hub/drives/hub_live_wallpaper.js',
+  'desktop/menu/hub_settings.js', 'desktop/wm/wm_mode.js', 'desktop/wm/wm_windows.js', 'desktop/wm/wm_taskbar.js', 'desktop/wm/wm_snap.js',
+  'desktop/wm/wm_workspaces.js', 'desktop/wm/wm_warm.js', 'desktop/menu/hub_ctx.js', 'desktop/menu/hub_ctx_menus.js',
+  'hub/drives/hub_traymeter.js', 'desktop/controller/hub_controller_config.js', 'desktop/notify/hub_notify.js', 'hub/viewer/hub_viewer.js',
+  'hub/viewer/hub_viewer_pdf.js', 'desktop/link/hub_pointer.js', 'desktop/link/hub_receive.js', 'desktop/link/hub_remote.js',
+  'desktop/controller/hub-controller.js', 'desktop/controller/hub_textedit.js', 'hub/link/hub_link.js', 'hub/link/hub_linkstate.js',
+  'desktop/panels/hub_chat.js', 'hub/core/hub_titlebar.js', 'desktop/gamebar/hub-gamebar.js', 'hub/drives/hub_drives.js',
+  'hub/link/hub_phonekey.js', 'hub/update/hub_update.js', 'hub/core/hub_loader.js', 'hub/core/hub_saver.js', 'hub/controller/kb_common.js',
+  'hub/osk/osk_layout.js', 'hub/osk/osk_board.js', 'hub/osk/osk_drag.js', 'hub/osk/osk.js', 'hub/osk/osk.css',
+  'shared/style/no-scrollbar.css', 'shared/wallpaper/wallpapers.js', 'shared/perf/busy_meter.js', 'shared/vendor/qrcode.js',
+  'shared/fs/fs_drives.js', 'shared/fs/fs_ops.js', 'shared/fs/fs_ref.js', 'shared/fs/filetypes.js', 'shared/fs/thumbs_store.js',
+  'shared/fs/webdav_fs.js', 'shared/fs/webdav_accounts.js', 'shared/fs/sftp_fs.js', 'shared/fs/sftp_accounts.js',
+  'shared/google/google_config.js', 'shared/google/google_auth.js', 'shared/google/gdrive_fs.js', 'shared/google/gdrive_connect.js',
+  'shared/google/google_gis.js', 'shared/google/phonekey.js', 'shared/google/google.css', 'shared/ctxmenu/ctxmenu.js',
+  'shared/ctxmenu/ctxmenu.css', 'shared/ctxmenu/ctx_in_app.js', 'shared/dialog/dialog.js', 'shared/dialog/dialog.css',
+  'shared/tiles/tiles.js', 'shared/tiles/tiles.css', 'shared/favorites/favorites.js', 'hub/core/hub_xp.css', 'shared/link/link_core.js',
+  'shared/link/link_devices.js', 'shared/link/link_files.js', 'shared/link/link_ui.js', 'shared/link/link_chat.js',
+  'shared/link/link_scan.js', 'shared/link/link.css', 'shared/image/hub_icon_192.png', 'shared/image/hub_icon_512.png',
+  'apps/favorite/favorite_icon.png', 'apps/games/games_icon.png', 'apps/media/media_icon.png', 'apps/office/office_icon.png',
+  'apps/connectivity/connectivity_icon.png', 'apps/tools/tools_icon.png', 'apps/lab/lab_icon.png', 'apps/learn/learn_icon.png',
+  'apps/system/system_icon.png', 'apps/system/settings/settings_icon.png', 'apps/system/apphub/apphub_icon.png',
+  'apps/system/files/files_icon.png', 'apps/system/disk/disk_icon.png', 'apps/connectivity/qr-scanner/qr-scanner_icon.png',
+  'hub/controller/controller_icon.png', 'hub/controller/controller_qr_icon.png', 'apps/office/writer/writer_icon.png',
+  'apps/office/spreadsheet/spreadsheet_icon.png', 'apps/office/tables/tables_icon.svg', 'apps/office/base/base_icon.png',
+  'apps/office/slides/slides_icon.png', 'apps/favorite/favorite-apps.csv', 'apps/games/games-apps.csv', 'apps/media/media-apps.csv',
+  'apps/office/office-apps.csv', 'apps/connectivity/connectivity-apps.csv', 'apps/tools/tools-apps.csv', 'apps/lab/lab-apps.csv',
+  'apps/learn/learn-apps.csv', 'apps/system/system-apps.csv', 'hub/version.txt', 'hub/update/hub_offline.html',
+  'desktop/panels/hub_panels.css', 'desktop/panels/hub_panels.js', 'apps/system/api-keys/api-keys_icon.png', 'hub/core/hub_credentials.js',
+  'hub/core/hub_keys.js', 'hub/core/hub_embeddings.js', 'hub/core/hub_api.js', 'hub/core/hub_providers.js', 'hub/core/hub_profile.js',
+  'hub/link/hub_sync.js', 'shared/link/hub_mesh.js', 'hub/link/hub_meshlink.js', 'hub/link/hub_line.js', 'hub/link/hub_trust.js',
+  'hub/link/hub_meshlog.js', 'apps/system/mesh-viewer/mesh-viewer_icon.png', 'desktop/notify/hub_notifcenter.js',
+  'desktop/notify/hub_notifcenter.css', 'apps/system/notifications/notifications_icon.png', 'hub/core/hub_dialog_bridge.js',
+  'hub/core/hub_dnd.js', 'hub/core/hub_attention.js', 'hub/core/hub_break.js', 'hub/core/hub_break.css', 'hub/core/hub_lock_core.js',
+  'hub/core/hub_lock.js', 'hub/core/hub_lock.css', 'shared/vendor/peerjs.min.js', 'hub/core/hub_splash.js', 'hub/core/hub_splash.css',
+  'hub/core/hub_perf.js', 'hub/core/hub_clock.js', 'hub/core/hub_clock.css', 'unlock.html', 'hub/core/hub_unlock.js',   // H166: + hub_perf.js
+  'apps/learn/dictionary/dictionary_icon.png', 'apps/learn/blood-group/blood-group_icon.png',
 ];
 const OFFLINE = 'hub/update/hub_offline.html';
 const abs = (p) => new URL(p, self.registration.scope).href;
@@ -144,9 +184,12 @@ async function metaList(key) {
 async function setMetaList(key, list) {
   try { const m = await caches.open(META); if (list.length) await m.put(key, new Response(JSON.stringify(list))); else await m.delete(key); } catch (_) { /* ignore */ }
 }
-/** Fetch one shell file into the cache (bypassing the HTTP cache); true when stored. */
+/** Fetch one shell file into the cache; true when stored.
+ *  (before H176) fetch(new Request(abs(p), { cache: 'reload' }))
+ *  H176: default HTTP cache — files the page already has (staged boot, max-age=600) are not refetched. */
 function fetchShell(c, p) {
-  return fetch(new Request(abs(p), { cache: 'reload' }))
+  // (before H176) return fetch(new Request(abs(p), { cache: 'reload' }))
+  return fetch(new Request(abs(p)))
     .then((res) => (res.ok ? c.put(abs(p), res).then(() => true) : false)).catch(() => false);
 }
 /** R58: re-fetch the shell files the install missed; returns the ones still missing. */
