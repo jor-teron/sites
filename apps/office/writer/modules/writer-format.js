@@ -4,6 +4,7 @@
    PROJECT: Writer
    ROLE: Home-tab formatting wiring: B/I/U/S, super/sub, align,
          font and list selects, Ctrl shortcuts, toolbar sync.
+         DW24: align buttons and Ctrl+L/E/R/J call setAlign.
    DEPENDS: config, editor, ui, lists (optional)
    ============================================================ */
 
@@ -27,9 +28,14 @@ Writer.format.onKey = function onKey(e) {
     if (key === 'u') Writer.editor.execCmd('underline');
     return;
   }
-  if (key === 'j' && !e.shiftKey) { e.preventDefault(); Writer.editor.execCmd('justifyFull'); return; }   /* DF1 */
+  /* (before DW24) if (key === 'j' && !e.shiftKey) { e.preventDefault(); Writer.editor.execCmd('justifyFull'); return; } */
   if (key === 'x' && e.shiftKey) { e.preventDefault(); Writer.editor.execCmd('strikeThrough'); return; }
   if (e.shiftKey) return;
+  /* DW24: body-editor alignment. Ctrl+Shift+L/E/R stay with the header/footer. */
+  if (key === 'j') { e.preventDefault(); Writer.editor.setAlign('justify'); return; }
+  if (key === 'e') { e.preventDefault(); Writer.editor.setAlign('center'); return; }
+  if (key === 'l') { e.preventDefault(); Writer.editor.setAlign('left'); return; }
+  if (key === 'r') { e.preventDefault(); Writer.editor.setAlign('right'); return; }
   if (e.key === '.' || e.code === 'Period') { e.preventDefault(); Writer.editor.setScript('superscript'); }
   else if (e.key === ',' || e.code === 'Comma') { e.preventDefault(); Writer.editor.setScript('subscript'); }
 };
@@ -45,14 +51,19 @@ Writer.format.bind = function bind() {
   on('strikeBtn', function () { Writer.editor.execCmd('strikeThrough'); });
   on('superBtn', function () { Writer.editor.setScript('superscript'); });
   on('subBtn', function () { Writer.editor.setScript('subscript'); });
-  on('alignLeftBtn', function () { Writer.editor.execCmd('justifyLeft'); });
-  on('alignCenterBtn', function () { Writer.editor.execCmd('justifyCenter'); });
-  on('alignRightBtn', function () { Writer.editor.execCmd('justifyRight'); });
-  on('alignJustifyBtn', function () { Writer.editor.execCmd('justifyFull'); });
+  /* (before DW24) on('alignLeftBtn', function () { Writer.editor.execCmd('justifyLeft'); }); */
+  /* (before DW24) on('alignCenterBtn', function () { Writer.editor.execCmd('justifyCenter'); }); */
+  /* (before DW24) on('alignRightBtn', function () { Writer.editor.execCmd('justifyRight'); }); */
+  /* (before DW24) on('alignJustifyBtn', function () { Writer.editor.execCmd('justifyFull'); }); */
+  on('alignLeftBtn', function () { Writer.editor.setAlign('left'); });
+  on('alignCenterBtn', function () { Writer.editor.setAlign('center'); });
+  on('alignRightBtn', function () { Writer.editor.setAlign('right'); });
+  on('alignJustifyBtn', function () { Writer.editor.setAlign('justify'); });
 
   var fontFamilySelect = document.getElementById('fontFamilySelect');
   if (fontFamilySelect) {
     fontFamilySelect.addEventListener('change', function (e) {
+      Writer.editor.restoreSelection();
       Writer.editor.setFontFamily(e.target.value);
     });
   }

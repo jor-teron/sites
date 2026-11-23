@@ -111,17 +111,36 @@ Writer.ui.updateToolbarState = function updateToolbarState() {
   var alignRightBtn = document.getElementById('alignRightBtn');
   var alignJustifyBtn = document.getElementById('alignJustifyBtn');
   try {
-    if (boldBtn) boldBtn.classList.toggle('active', document.queryCommandState('bold'));
-    if (italicBtn) italicBtn.classList.toggle('active', document.queryCommandState('italic'));
-    if (underlineBtn) underlineBtn.classList.toggle('active', document.queryCommandState('underline'));
+    var pend = null;
+    if (Writer.editor && Writer.editor.pendingSpanAt) {
+      var sel0 = window.getSelection();
+      var r0 = sel0 && sel0.rangeCount ? sel0.getRangeAt(0) : null;
+      var an = (sel0 && sel0.anchorNode) || (r0 && r0.startContainer);
+      if (an) {
+        var p0 = Writer.editor.pendingSpanAt(an);
+        if (p0 && Writer.editor.isPendingEmpty(p0)) pend = p0;
+      }
+    }
+    var pendBold = pend && pend.style && pend.style.fontWeight ? (pend.style.fontWeight === 'bold' ? true : (pend.style.fontWeight === 'normal' ? false : null)) : null;
+    var pendItalic = pend && pend.style && pend.style.fontStyle ? (pend.style.fontStyle === 'italic' ? true : (pend.style.fontStyle === 'normal' ? false : null)) : null;
+    var pDec = pend && pend.style ? String(pend.style.textDecorationLine || pend.style.textDecoration || '').toLowerCase() : '';
+    var pendUnderline = pDec ? (pDec.indexOf('underline') >= 0 ? true : (pDec.indexOf('none') >= 0 ? false : null)) : null;
+    if (boldBtn) boldBtn.classList.toggle('active', pendBold !== null ? pendBold : document.queryCommandState('bold'));
+    if (italicBtn) italicBtn.classList.toggle('active', pendItalic !== null ? pendItalic : document.queryCommandState('italic'));
+    if (underlineBtn) underlineBtn.classList.toggle('active', pendUnderline !== null ? pendUnderline : document.queryCommandState('underline'));
     [['strikeBtn', 'strikeThrough'], ['superBtn', 'superscript'], ['subBtn', 'subscript']].forEach(function (b) {
       var n = document.getElementById(b[0]);
       if (n) n.classList.toggle('active', document.queryCommandState(b[1]));
     });
-    if (alignLeftBtn) alignLeftBtn.classList.toggle('active', document.queryCommandState('justifyLeft'));
-    if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter'));
-    if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight'));
-    if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', document.queryCommandState('justifyFull'));
+    /* (before DW24) if (alignLeftBtn) alignLeftBtn.classList.toggle('active', document.queryCommandState('justifyLeft')); */
+    /* (before DW24) if (alignCenterBtn) alignCenterBtn.classList.toggle('active', document.queryCommandState('justifyCenter')); */
+    /* (before DW24) if (alignRightBtn) alignRightBtn.classList.toggle('active', document.queryCommandState('justifyRight')); */
+    /* (before DW24) if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', document.queryCommandState('justifyFull')); */
+    var al = Writer.editor && Writer.editor.alignAtCaret ? Writer.editor.alignAtCaret() : '';
+    if (alignLeftBtn) alignLeftBtn.classList.toggle('active', al === 'left');
+    if (alignCenterBtn) alignCenterBtn.classList.toggle('active', al === 'center');
+    if (alignRightBtn) alignRightBtn.classList.toggle('active', al === 'right');
+    if (alignJustifyBtn) alignJustifyBtn.classList.toggle('active', al === 'justify');
   } catch (e) {}
   Writer.ui.syncFontSelects();
   if (Writer.lists) Writer.lists.syncSuffix();

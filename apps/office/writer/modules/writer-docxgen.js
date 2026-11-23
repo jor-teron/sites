@@ -311,7 +311,7 @@ Writer.docxgen = (function () {
   /* Plain text -> run XML pieces. ws: CSS white-space of the context. */
   Gen.prototype.textRuns = function (text, ctx) {
     var pre = /^(pre|pre-wrap|pre-line|break-spaces)$/.test(ctx.ws);
-    text = text.replace(/\r\n?/g, '\n');
+    text = text.replace(/\r\n?/g, '\n').replace(/\u200b/g, '');
     if (!pre) text = text.replace(/[ \t\n\f]+/g, ' ');
     else if (ctx.ws === 'pre-line') text = text.replace(/[ \t]+/g, ' ');
     if (!text) return null;

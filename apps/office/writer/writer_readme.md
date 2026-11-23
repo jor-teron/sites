@@ -429,3 +429,29 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - Page Setup typed values (Custom margins dialog) are unchanged and stay independent.
 - Pure math: `Writer.ruler.linkMargins({ side, start, dx, w, linked, alt, min, max, minText })` → `{ left, right, linked, tip }`; `Writer.ruler.tipLabel`, `Writer.ruler.linkedFrom(settings)`.
 - Test: `node --test apps/office/writer/test/test-dw19-margins.cjs`.
+
+## DW22 — paste from Word no longer adds a blank line after each line
+
+- 23 Nov 2026 IST. Copying from a DOCX (Word, LibreOffice or Google Docs) and pasting into Writer no longer turns each line into two. Word's clipboard HTML puts pretty-print whitespace between `<p>` tags; the sanitizer kept those as space text nodes, and `flow.normalize` wrapped each space in a blank paragraph. The editor's `white-space: pre-wrap` made that blank line obvious.
+- The sanitizer now drops whitespace-only top-level text nodes between blocks, strips a trailing top-level `<br>` (Google Docs' Apple-interchange-newline, which sat after those spaces so the old trim missed it), and strips a trailing `<br>` inside a non-empty `<p>` (Word Online / some LibreOffice pastes). Intentional empty paragraphs mid-paste and spaces inside a paragraph are kept.
+- Plain-text paste (Ctrl+Shift+V or "Paste as text") normalises `\r\n` / `\r` to `\n` and treats a single trailing newline as a terminator, like header/footer paste and DW9 `.txt` open. `Writer.editor.plainText`.
+- Header / footer paste already normalised line endings and is unchanged. The Hub Office Writer tab uses the same `writer-paste.js`.
+- Code: `modules/writer-paste.js` (`tidyBox`, `stripTrailingBr`, `isWs`), `modules/writer-editor.js` (`plainText`). Test: `node --test apps/office/writer/test/test-dw22-paste.cjs`.
+## DW23 — Enter keeps the ruler indents, line spacing and alignment on the new line
+
+- 23 Nov 2026 IST. Pressing Enter after a paragraph with ruler indents (left, first-line / hanging, or right), line spacing, or alignment now carries those onto the new paragraph, like Word. Writer used to leave that to `execCommand('insertParagraph')`, which does not reliably copy `margin-left` / `margin-right` / `line-height`, and `flow.normalize` could wrap a leftover newline under `pre-wrap` in a bare unstyled `<p>`.
+- Before Enter, the current block's inline `margin-left`, `margin-right`, `text-indent`, `line-height`, `text-align` and `align` are snapshotted; after the command they are applied to the block at the caret (harmless if the browser already cloned them). A leftover top-level `\n` or `<br>` is wrapped in a `<p>` first, the same way `normalize` would. List items are left alone. `id` and `data-cont` are never copied. Shift+Enter and Ctrl+Enter are unchanged.
+- Code: `modules/writer-indent.js` (`paraStyle`, `applyParaStyle`, `wrapLoose`, `blockForEnter`), `modules/writer-editor.js` (`insertParagraph`). Test: `node --test apps/office/writer/test/test-dw23-enter-indent.cjs`.
+
+## DW24 — aligning a line keeps Shift+Enter lines in one paragraph
+
+- 23 Nov 2026 IST. With the caret on one of several Shift+Enter lines in a paragraph, Align Centre (or Left / Right / Justify) no longer splits that line out as its own paragraph. Chrome's `execCommand('justify*')` treats a `<br>` as a paragraph boundary and moves that slice into a new block; Writer now sets `text-align` on the enclosing HTML block instead, like Word, so all the lines stay together.
+- `Writer.editor.setAlign('left'|'center'|'right'|'justify')` applies to every innermost block the selection touches (`p`, headings, `li`, `td`/`th`, …), removes a leftover `align` attribute, and does not toggle an already-set alignment off. The four Home buttons and Ctrl+L / E / R / J call it. The button state follows the block's `text-align` or `align`, not `queryCommandState`. Undo is one history step. Layout and autosave follow the line-spacing path. Header and footer alignment is unchanged (including Ctrl+Shift+L / E / R).
+- Code: `modules/writer-editor.js` (`setAlign`, `alignBlocks`, `alignAtCaret`), `modules/writer-format.js`, `modules/writer-ui.js`, `modules/writer-history.js`. Test: `node --test apps/office/writer/test/test-dw24-align.cjs`.
+
+## DW25 — new text keeps the font size, font and style you set, including after Enter
+
+- 23 Nov 2026 IST. Changing font size or font family with nothing selected (caret only) now sticks when you start typing, instead of dropping back to 12pt Times New Roman after the 40ms pagination reflow clears Blink's internal typing state.
+- With a collapsed caret, `Writer.editor.applyFontSize` and `Writer.editor.setFontFamily` insert a `<span data-pending-style="1">` holding a zero-width space (`\u200B`) and keep the caret inside it through `flow.reflow` / `restoreCaret`. Once real text arrives (after IME `compositionend` when composing), the `\u200B` and `data-pending-style` marker are stripped cleanly with caret offset preserved. Moving the caret away (`selectionchange`, `ArrowLeft`, or Backspace) removes an untyped pending span; Undo removes it as one step; save and exports (`.how`, IndexedDB, DOCX, ODT, PDF) strip any pending spans and `\u200B`. Selecting text keeps the existing mark-and-rewrite path.
+- Pressing **Enter** (`insertParagraph`) or **Shift+Enter** (`insertLineBreak`) inside formatted text now carries the inline character formatting — font size, font family, bold, italic, underline and text colour — onto the new line via the same pending-span mechanism (never copying `id` or `data-cont`, and keeping DW23 paragraph styles and DW24 alignment).
+- Code: `modules/writer-editor.js`, `modules/writer-format.js`, `modules/writer-ui.js`, `modules/writer-storage.js`, `modules/writer-how.js`, `modules/writer-export.js`, `modules/writer-pdfgen.js`, `modules/writer-docxgen.js`, `modules/writer-odtgen.js`. Test: `node --test apps/office/writer/test/test-dw25-typing-style.cjs`.

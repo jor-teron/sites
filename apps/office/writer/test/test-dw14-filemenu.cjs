@@ -113,7 +113,11 @@ test('writer.html File menu: new order, one Open..., one Export...', () => {
   /* (before DW17) assert.ok(/<title>Writer DW1(4|4a|5|6)<\/title>/.test(src)); */
   /* (before DW18) assert.ok(/<title>Writer DW1(4|4a|5|6|7)<\/title>/.test(src)); */
   /* (before DW19) assert.ok(/<title>Writer DW1(4|4a|5|6|7|8)<\/title>/.test(src)); */
-  assert.ok(/<title>Writer DW1(4|4a|5|6|7|8|9)<\/title>/.test(src));
+  /* (before DW22) assert.ok(/<title>Writer DW1(4|4a|5|6|7|8|9)<\/title>/.test(src)); */
+  /* (before DW23) assert.ok(/<title>Writer DW(1(4|4a|5|6|7|8|9)|22)<\/title>/.test(src)); */
+  /* (before DW24) assert.ok(/<title>Writer DW(1(4|4a|5|6|7|8|9)|22|23)<\/title>/.test(src)); */
+  /* (before DW25) assert.ok(/<title>Writer DW(1(4|4a|5|6|7|8|9)|22|23|24)<\/title>/.test(src)); */
+  assert.ok(/<title>Writer DW(1(4|4a|5|6|7|8|9)|22|23|24|25)<\/title>/.test(src));
   assert.ok(!/\?v=/.test(html), 'no cache-bust query');
 });
 
@@ -141,5 +145,9 @@ test('docs.js and export.js keep the old wiring as comments and bind the new con
   /* (before DW17) assert.ok(/release:\s*'DW1(4|4a|5|6)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW18) assert.ok(/release:\s*'DW1(4|4a|5|6|7)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW1(4|4a|5|6|7|8)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW1(4|4a|5|6|7|8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW22) assert.ok(/release:\s*'DW1(4|4a|5|6|7|8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  /* (before DW23) assert.ok(/release:\s*'DW(1(4|4a|5|6|7|8|9)|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  /* (before DW24) assert.ok(/release:\s*'DW(1(4|4a|5|6|7|8|9)|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  /* (before DW25) assert.ok(/release:\s*'DW(1(4|4a|5|6|7|8|9)|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(1(4|4a|5|6|7|8|9)|22|23|24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });

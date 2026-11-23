@@ -433,11 +433,19 @@ test('Quick Access: Save / Undo / Print are off while empty; Close is bound', ()
 test('writer.html title is DW18; config release is DW18; old ids are kept as comments', () => {
   const html = read('writer.html');
   /* (before DW19) assert.ok(/<title>Writer DW18<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW1(8|9)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW22) assert.ok(/<title>Writer DW1(8|9)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  /* (before DW23) assert.ok(/<title>Writer DW(1(8|9)|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  /* (before DW24) assert.ok(/<title>Writer DW(1(8|9)|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  /* (before DW25) assert.ok(/<title>Writer DW(1(8|9)|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(1(8|9)|22|23|24|25)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW18) <title>Writer DW17</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
   /* (before DW19) assert.ok(/release:\s*'DW18'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW1(8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW22) assert.ok(/release:\s*'DW1(8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  /* (before DW23) assert.ok(/release:\s*'DW(1(8|9)|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  /* (before DW24) assert.ok(/release:\s*'DW(1(8|9)|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  /* (before DW25) assert.ok(/release:\s*'DW(1(8|9)|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(1(8|9)|22|23|24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW18) release: 'DW17', */") !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW18') !== -1);
 });

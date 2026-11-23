@@ -159,7 +159,7 @@ Writer.storage.save = function save() {
   var name = Writer.storage.fillNameIfEmpty();
   var holder = document.createElement('div');
   holder.innerHTML = Writer.pages.combinedHtml();
-  if (Writer.editor) Writer.editor.stripMarks(holder);
+  if (Writer.editor) { Writer.editor.stripMarks(holder); if (Writer.editor.stripPending) Writer.editor.stripPending(holder); }
   var html = holder.innerHTML;
   /* DF3: never store a blank, never-saved document. */
   if (Writer.storage.isBlankUnsaved(html)) return Promise.resolve(name);

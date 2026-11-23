@@ -218,7 +218,9 @@ Writer.history.wrap = function wrap(obj, name) {
 Writer.history.init = function init() {
   var h = Writer.history;
   var e;
-  var list = ['execCmd', 'setFontFamily', 'applyFontSize', 'onPaste', 'insertLineBreak', 'setScript'];
+  /* (before DW23) var list = ['execCmd', 'setFontFamily', 'applyFontSize', 'onPaste', 'insertLineBreak', 'setScript']; */
+  /* (before DW24) var list = ['execCmd', 'setFontFamily', 'applyFontSize', 'onPaste', 'insertLineBreak', 'insertParagraph', 'setScript']; */
+  var list = ['execCmd', 'setFontFamily', 'applyFontSize', 'onPaste', 'insertLineBreak', 'insertParagraph', 'setAlign', 'setScript'];
   for (e = 0; e < list.length; e++) h.wrap(Writer.editor, list[e]);
   h.wrap(Writer.lists, 'apply');
   h.wrap(Writer.lists, 'applySuffix');
