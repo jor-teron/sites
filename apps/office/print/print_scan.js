@@ -143,7 +143,7 @@ const PrintScan = (function () {
     if (loadJsQR.pending) return loadJsQR.pending;
     loadJsQR.pending = new Promise(function (resolve, reject) {
       var s = document.createElement('script');
-      s.src = 'vendor/jsQR.js';
+      s.src = '../shared/vendor/jsQR.js';
       s.onload = function () { resolve(); };
       s.onerror = function () { loadJsQR.pending = null; reject(new Error('jsQR')); };
       document.head.appendChild(s);

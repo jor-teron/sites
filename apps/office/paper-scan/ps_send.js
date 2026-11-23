@@ -60,7 +60,7 @@
     /* (before HO2) vendor/jsQR.js was a script tag on page open. */
     loadJsQR.pending = new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'vendor/jsQR.js';
+      s.src = '../shared/vendor/jsQR.js';
       s.onload = () => resolve();
       s.onerror = () => { loadJsQR.pending = null; reject(new Error('jsQR')); };
       document.head.appendChild(s);

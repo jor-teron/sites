@@ -2,7 +2,7 @@
  * Project: sketchbook
  * File: sk_export.js
  * Role: Download the current page as PNG, whole sketchbook as PDF (local
- *   vendor/jspdf.umd.min.js). Both include the crumple wrinkles (SVG → Image → drawn over the page, multiply).
+ *   ../shared/vendor/jspdf.umd.min.js). Both include the crumple wrinkles (SVG → Image → drawn over the page, multiply).
  */
 // Current canvas + the page's wrinkles → data URL (wrinkles drawn with multiply, like on screen)
 async function pageDataUrl(page, type, quality) {
@@ -26,7 +26,7 @@ async function downloadPNG() {
   link.click();
 }
 
-// Download whole sketchbook as PDF (uses local vendor/jspdf.umd.min.js)
+// Download whole sketchbook as PDF (uses ../shared/vendor/jspdf.umd.min.js)
 async function downloadPDF() {
   if (typeof window.jspdf === 'undefined') {
     alert('PDF library loading... try again in a moment.');
