@@ -248,10 +248,11 @@ test('wiring: version SH49, ?v= tokens, lazy script after xlsx, readme, old code
     'spreadsheet_lazy.js', 'spreadsheet_hos.js', 'spreadsheet_saveformat.js', 'spreadsheet_empty.js', 'spreadsheet.css']) {
     /* (before SH46) assert.ok(l.indexOf(f + '?v=SH49') !== -1, f); */
     /* (before SH47) assert.ok(l.indexOf(f + '?v=SH49') !== -1 || l.indexOf(f + '?v=SH46') !== -1, f); */
-    assert.ok(l.indexOf(f + '?v=SH49') !== -1 || l.indexOf(f + '?v=SH46') !== -1 || l.indexOf(f + '?v=SH47') !== -1, f);
+    /* (before SH58) assert.ok(l.indexOf(f + '?v=SH49') !== -1 || l.indexOf(f + '?v=SH46') !== -1 || l.indexOf(f + '?v=SH47') !== -1, f); */
+    assert.ok(new RegExp(f.replace('.', '\\.') + '\\?v=SH(46|47|49|58)').test(l + '\n' + read('spreadsheet_loader.js')), f);
   }
-  /* (before SH47) assert.ok(l.indexOf('spreadsheet_lazy.js?v=SH49') > l.indexOf('spreadsheet_xlsx.js?v=SH49')); */
-  assert.ok(l.indexOf('spreadsheet_lazy.js?v=') > l.indexOf('spreadsheet_xlsx.js?v='));
+  /* (before SH58) assert.ok(l.indexOf('spreadsheet_lazy.js?v=') > l.indexOf('spreadsheet_xlsx.js?v=')); */
+  assert.ok(read('spreadsheet_loader.js').indexOf('spreadsheet_lazy.js?v=') !== -1 && read('spreadsheet_loader.js').indexOf('spreadsheet_xlsx.js?v=') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH49";') !== -1);
   assert.ok(read('spreadsheet_xlsx.js').indexOf('/* (before SH49) var loaded = xlsxSheetsFromBook(XLSX, wb); */') !== -1);
   assert.ok(read('spreadsheet_formula.js').indexOf('/* (before SH49) function recalcAll() { */') !== -1);

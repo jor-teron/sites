@@ -720,3 +720,34 @@ td.cell.spill-mark {
   .sheet-chart-bar, .sheet-chart-h { display: none !important; }
   .sheet-chart { box-shadow: none; break-inside: avoid; }
 }
+
+/* SH58: loading hint, pre-ready control state, and static first-paint grid */
+.sheet-loading-hint {
+  position: fixed;
+  top: 132px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 14px var(--shadow);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+body:not(.sheet-loading) .sheet-loading-hint,
+.sheet-loading-hint[hidden] {
+  display: none;
+}
+body.sheet-loading [data-boot-wait] {
+  opacity: 0.55;
+  cursor: progress;
+}
+.sheet-boot-grid td.cell {
+  min-width: var(--cell-min);
+  width: var(--cell-min);
+  height: var(--cell-h);
+}

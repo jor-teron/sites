@@ -125,5 +125,8 @@ function parseCsv(text, sep) {
  * Print via browser dialog (Save as PDF there)
  */
 function printSheet() {
+  if (typeof SHEET_LOADER !== "undefined" && SHEET_LOADER.ensurePage && typeof initPageSetup !== "function") {
+    return SHEET_LOADER.ensurePage().then(function () { window.print(); });
+  }
   window.print();
 }

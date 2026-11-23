@@ -74,7 +74,14 @@ function wireUi() {
     }
     /* (before SH27) if (/\.xlsx?$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; } */
     /* (before SH33) if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; } */
-    if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xlsm|xls|ods)$/i.test(file.name)) { importXlsxFile(file); ev.target.value = ""; return; }
+    if (typeof xlsxIsWorkbookName === "function" ? xlsxIsWorkbookName(file.name) : /\.(xlsx|xlsm|xls|ods)$/i.test(file.name)) {
+      if (typeof importXlsxFile === "function") importXlsxFile(file);
+      else if (typeof SHEET_LOADER !== "undefined" && SHEET_LOADER.ensureXlsx) {
+        SHEET_LOADER.ensureXlsx().then(function () { if (typeof importXlsxFile === "function") importXlsxFile(file); });
+      }
+      ev.target.value = "";
+      return;
+    }
     /* (before SH32) a .csv was read into the active sheet of the open workbook:
     var reader = new FileReader();
     reader.onload = function () { importCsvText(String(reader.result)); };
@@ -83,6 +90,13 @@ function wireUi() {
     if (typeof SHEET_SAVEFMT !== "undefined" && SHEET_SAVEFMT.openCsvFile) {
       /* SH32: a .csv opens as its own workbook and Save writes back to it. */
       SHEET_SAVEFMT.openCsvFile(file);
+      ev.target.value = "";
+      return;
+    }
+    if (/\.csv$/i.test(file.name) && typeof SHEET_LOADER !== "undefined" && SHEET_LOADER.ensureXlsx) {
+      SHEET_LOADER.ensureXlsx().then(function () {
+        if (typeof SHEET_SAVEFMT !== "undefined" && SHEET_SAVEFMT.openCsvFile) SHEET_SAVEFMT.openCsvFile(file);
+      });
       ev.target.value = "";
       return;
     }
@@ -141,8 +155,24 @@ var SHEET_TEXTS = [
   ["Blue", "#0070c0"], ["Dark blue", "#002060"], ["Purple", "#7030a0"]
 ];
 var SHEET_COLOUR = {};
+function syncColourBars() {
+  [["fill", "#ffff00", null], ["text", "#ff0000", "var(--text)"]].forEach(function (p) {
+    var bar = document.getElementById(p[0] + "-colour-bar");
+    if (!bar) return;
+    var v = null;
+    try { v = localStorage.getItem("spreadsheet.last-" + p[0] + "-colour"); } catch (e) {}
+    var col = v === "none" ? null : (v || p[1]);
+    bar.style.background = col || p[2] || "transparent";
+    bar.classList.toggle("none", !col && !p[2]);
+  });
+}
 function wireColours() {
-  if (typeof OfficeColour === "undefined" || !document.getElementById("fill-colour-btn")) return;
+  if (SHEET_COLOUR._wired) return;
+  if (typeof OfficeColour === "undefined" || !document.getElementById("fill-colour-btn")) {
+    syncColourBars();
+    return;
+  }
+  SHEET_COLOUR._wired = true;
   [["fill", SHEET_FILLS, "#ffff00", null, "bg"], ["text", SHEET_TEXTS, "#ff0000", "var(--text)", "color"]].forEach(function (p) {
     SHEET_COLOUR[p[0]] = OfficeColour.create({
       btn: document.getElementById(p[0] + "-colour-btn"), arrow: document.getElementById(p[0] + "-colour-arrow"),

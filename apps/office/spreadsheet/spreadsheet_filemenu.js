@@ -116,7 +116,16 @@
   function H() { return root.SHEET_HOS || null; }
   function EM() { return root.SHEET_EMPTY || null; }   /* SH40 */
   function isEmptyNow() { var e = EM(); return !!(e && e.isEmpty && e.isEmpty()); }
-  function inHub() { var f = F(); return !!(f && f.inHub && f.inHub()); }
+  function inHub() {
+    var f = F();
+    if (f && f.inHub) return !!f.inHub();
+    return !!(root.OfficeNative && root.OfficeNative.inHub && root.OfficeNative.inHub());
+  }
+  function canLocalFs() {
+    var f = F();
+    if (f && f.canLocal) return !!f.canLocal();
+    return !!(root.FsDrives && root.FsDrives.hasLocal);
+  }
   function toast(msg) {
     if (typeof root.setStatus === 'function') root.setStatus(msg);
     if (root.OfficeNotify && root.OfficeNotify.show) root.OfficeNotify.show(msg);
@@ -135,6 +144,13 @@
     if (kind === 'workbook' || kind === 'csv') {
       var f = F();
       if (f && f.openAny) return Promise.resolve(f.openAny(file, h ? { handle: h } : {}));
+      if (root.SHEET_LOADER && root.SHEET_LOADER.ensureXlsx) {
+        return root.SHEET_LOADER.ensureXlsx().then(function () {
+          var ff = F();
+          if (ff && ff.openAny) return ff.openAny(file, h ? { handle: h } : {});
+          return false;
+        });
+      }
       return Promise.resolve(false);
     }
     toast('Choose a .hos, .xlsx, .xlsm, .xls, .ods or .csv file to open it');
@@ -292,10 +308,7 @@
     if (f && f.format && f.format !== 'hos') return { format: f.format, dest: f.dest || null, owner: 'fmt' };
     return { format: 'hos', dest: (s && s.dest) || null, owner: 'hos' };
   }
-  function hubLocal() {
-    var f = F();
-    return !!(f && f.inHub && f.inHub() && f.canLocal && f.canLocal());
-  }
+  function hubLocal() { return !!(inHub() && canLocalFs()); }
   function fileFor(fmt, stem) {
     var f = F();
     if (f && f.fileName) return f.fileName(stem, fmt);
@@ -387,7 +400,7 @@
     var f = F(), s = H();
     var name = f && f.currentName ? f.currentName() : (s && s.stemName ? s.stemName() : '');
     var t = target();
-    var plan = M.deletePlan({ name: name, inHub: f && f.inHub && f.inHub(), canLocal: f && f.canLocal && f.canLocal(),
+    var plan = M.deletePlan({ name: name, inHub: inHub(), canLocal: canLocalFs(),
       hasFile: !!diskTarget(t),
       folder: t.dest && t.dest.kind === 'hub' && t.dest.path ? t.dest.path : '' });
     var D = root.OfficeDialog;
@@ -440,12 +453,12 @@
   M.closeInfo = function closeInfo() {
     var f = F(), s = H(), em = EM();
     var t = target();
-    var hub = !!(f && f.inHub && f.inHub());
+    var hub = inHub();
     var info = {
       inHub: hub,
       willWrite: em && em.flushWrites ? em.flushWrites({
         inHub: hub,
-        canLocal: !!(f && f.canLocal && f.canLocal()),
+        canLocal: canLocalFs(),
         destKind: t.dest ? t.dest.kind : '',
         format: t.format
       }) : true,
@@ -605,8 +618,11 @@
       if (choice === 'saveas') {
         if (!s || !s.save) return false;
         if (typeof root.saveStore === 'function') clearTimeout(root.saveStore._t);
+        var prep = (!F() && root.SHEET_LOADER && root.SHEET_LOADER.ensureXlsx)
+          ? root.SHEET_LOADER.ensureXlsx()
+          : Promise.resolve();
         /* The existing Save As flow (name + format box); close only after it wrote. */
-        return Promise.resolve(s.save({ explicit: true, saveAs: true })).then(function (res) {
+        return prep.then(function () { return s.save({ explicit: true, saveAs: true }); }).then(function (res) {
           if (!(res && res.wrote)) return false;
           return finish(false);
         }, function () { return false; });

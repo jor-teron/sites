@@ -243,8 +243,8 @@ test('html: Rename and Delete fill the SH37 slots; wiring SH38', () => {
   assert.ok(html.indexOf('<title>Spreadsheet SH38</title>') !== -1);
   assert.ok(html.indexOf('<!-- (before SH38) <title>Spreadsheet SH37</title> -->') !== -1);
   assert.ok(read('spreadsheet_settings.js').indexOf('var SHEET_VERSION = "SH38";') !== -1);
-  /* (before SH40) assert.ok(live.indexOf('spreadsheet_filemenu.js?v=SH38') !== -1); */
-  assert.ok(live.indexOf('spreadsheet_filemenu.js?v=SH38') !== -1 || live.indexOf('spreadsheet_filemenu.js?v=SH40') !== -1);
+  /* (before SH58) assert.ok(live.indexOf('spreadsheet_filemenu.js?v=SH38') !== -1 || live.indexOf('spreadsheet_filemenu.js?v=SH40') !== -1); */
+  assert.ok(/spreadsheet_filemenu\.js\?v=SH(38|40|58)/.test(live));
   /* (before SH39) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH38') !== -1); */
   /* (before SH40) assert.ok(live.indexOf('spreadsheet_settings.js?v=SH38') !== -1 || live.indexOf('spreadsheet_settings.js?v=SH39') !== -1); */
   /* (before SH41) assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40)/.test(live)); */
@@ -254,7 +254,8 @@ test('html: Rename and Delete fill the SH37 slots; wiring SH38', () => {
   /* (before SH49) assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40|41|42|44|45)/.test(live)); */
   /* (before SH46) assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40|41|42|44|45|49)/.test(live)); */
   /* (before SH47) assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40|41|42|44|45|46|49)/.test(live)); */
-  assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40|41|42|44|45|46|47|49)/.test(live));
+  /* (before SH58) assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40|41|42|44|45|46|47|49)/.test(live)); */
+  assert.ok(/spreadsheet_settings\.js\?v=SH(38|39|40|41|42|44|45|46|47|49|58)/.test(live));
   /* The old clear handler is kept for phone / fallback. */
   assert.ok(read('spreadsheet_toolbar.js').indexOf('onBtn("btn-clear"') !== -1);
   assert.ok(read('spreadsheet_readme.md').indexOf('## SH38') !== -1);

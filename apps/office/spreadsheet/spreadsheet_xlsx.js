@@ -462,7 +462,9 @@ if (typeof SHEET_INIT !== "undefined") {
   });
 }
 
-if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded", function () {
+function bindXlsxUi() {
+  if (SHEET_XLSX._uiBound || typeof document === "undefined") return;
+  SHEET_XLSX._uiBound = true;
   var b = document.getElementById("btn-export-xlsx");
   if (b) b.addEventListener("click", exportXlsx);
   var o = document.getElementById("btn-export-ods");
@@ -492,4 +494,8 @@ if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded
     if (hp && hp.then) hp.then(function (h) { go(h && h.kind === "file" ? h : null); }, function () { go(null); });
     else go(null);
   });
-});
+}
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindXlsxUi);
+  else bindXlsxUi();
+}

@@ -24,6 +24,21 @@ function afterSheetOpCore() {
   renderSheetTabs();
   saveStore();
   syncStyleUi();
+  if (typeof SHEET_LOADER !== "undefined" && workbook && workbook.sheets) {
+    var cur = workbook.sheets[workbook.active];
+    if (cur && cur.charts && cur.charts.length > 0 && typeof renderCharts !== "function" && SHEET_LOADER.ensureCharts) {
+      SHEET_LOADER.ensureCharts().then(function () { if (typeof renderCharts === "function") renderCharts(); });
+    }
+    if (cur && ((cur.filters && cur.filters.on) || (cur.validations && cur.validations.length > 0)) && typeof applyFilters !== "function" && SHEET_LOADER.ensureData) {
+      SHEET_LOADER.ensureData().then(function () {
+        if (typeof applyFilters === "function") applyFilters();
+        if (typeof applyRowHeights === "function") applyRowHeights();
+        if (typeof paintAll === "function") paintAll();
+        if (typeof dataRenderFilterButtons === "function") dataRenderFilterButtons();
+        if (typeof dataRenderValidBtn === "function") dataRenderValidBtn();
+      });
+    }
+  }
 }
 
 function switchSheet(i) {
