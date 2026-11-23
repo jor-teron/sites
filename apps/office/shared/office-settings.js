@@ -65,11 +65,23 @@ var OfficeSettings = (function () {
       x.addEventListener('click', S.close);
       scrim.addEventListener('click', S.close);
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') S.close(); });
-      if (o.gearBtn) {
-        o.gearBtn.setAttribute('aria-haspopup', 'dialog'); o.gearBtn.setAttribute('aria-expanded', 'false');
-        o.gearBtn.setAttribute('aria-controls', 'settingsPanel');
-        o.gearBtn.addEventListener('click', function () { p.hidden ? S.open() : S.close(); });
-      }
+      S.bindGear();
+    };
+
+    /* DW26: bind the gear button even when panel construction is lazy. */
+    S.bindGear = function () {
+      if (!o.gearBtn || S.gearBound) return;
+      S.gearBound = true;
+      o.gearBtn.setAttribute('aria-haspopup', 'dialog'); o.gearBtn.setAttribute('aria-expanded', 'false');
+      o.gearBtn.setAttribute('aria-controls', 'settingsPanel');
+      o.gearBtn.addEventListener('click', function () { (!S.panel || S.panel.hidden) ? S.open() : S.close(); });
+    };
+
+    S.ensure = function () {
+      if (S.panel) return true;
+      S.build();
+      if (S.panel && o.onBuild) o.onBuild(S);
+      return !!S.panel;
     };
 
     S.row = function (r) {
@@ -104,10 +116,16 @@ var OfficeSettings = (function () {
         else { x.el.setAttribute('aria-pressed', String(!!v)); x.el.classList.toggle('active', !!v); }
       });
     };
+    /* (before DW26) S.open assumed S.panel was already built. */
     S.open = function () {
-      S.syncForm(); S.panel.hidden = false; S.scrim.hidden = false;
-      if (o.gearBtn) o.gearBtn.setAttribute('aria-expanded', 'true');
-      S.closeBtn.focus();
+      var show = function () {
+        if (!S.ensure()) return;
+        S.syncForm(); S.panel.hidden = false; S.scrim.hidden = false;
+        if (o.gearBtn) o.gearBtn.setAttribute('aria-expanded', 'true');
+        S.closeBtn.focus();
+      };
+      if (o.beforeOpen) return Promise.resolve(o.beforeOpen()).then(show);
+      show();
     };
     S.close = function () {
       if (!S.panel || S.panel.hidden) return;
@@ -132,8 +150,12 @@ var OfficeSettings = (function () {
     };
 
     S.load();
-    S.build();
-    S.syncForm();
+    S.bindGear();
+    /* (before DW26) always called S.build(); S.syncForm(); */
+    if (!o.lazy) {
+      S.build();
+      S.syncForm();
+    }
     return S;
   }
   return { create: create };

@@ -86,11 +86,32 @@ Writer.hf.partEmpty = function partEmpty(part) {
 /* Load a document's header / footer. A document saved before this
    feature (no `hf`) starts from the old global page-number setting.
    DW13c: old 3-slot headers are migrated by writer-hfimg.js normalize. */
+Writer.hf._hasData = function _hasData(saved) {
+  if (!saved || typeof saved !== 'object') return false;
+  if (Array.isArray(saved.head) && saved.head.some(function (x) { return String(x || '').trim(); })) return true;
+  if (Array.isArray(saved.foot) && saved.foot.some(function (x) { return String(x || '').trim(); })) return true;
+  if (saved.pic && (saved.pic.head || saved.pic.foot)) return true;
+  if (saved.img && ((saved.img.head && saved.img.head.some(Boolean)) || (saved.img.foot && saved.img.foot.some(Boolean)))) return true;
+  return false;
+};
+
 Writer.hf.set = function set(saved) {
   var I = Writer.hfimg, d = Writer.hf.blank();
   var ok = saved && typeof saved === 'object' && Array.isArray(saved.head) && Array.isArray(saved.foot);
   if (ok && I) {
+    Writer.hf._pendingSaved = null;
     d = I.normalize(saved);
+  } else if (ok && !I) {
+    /* DW26: keep saved header/footer pending and load writer-hfimg.js when non-empty. */
+    if (Writer.hf._hasData(saved) && Writer.vendor && Writer.vendor.ensureHfimg) {
+      Writer.hf._pendingSaved = saved;
+      Writer.vendor.ensureHfimg().then(function () {
+        if (Writer.hf._pendingSaved === saved) {
+          Writer.hf._pendingSaved = null;
+          Writer.hf.set(saved);
+        }
+      });
+    }
   } else if (Writer.breaks && Writer.breaks.loadNumbers) {
     var n = Writer.breaks.loadNumbers();
     /* (before DW13c) if (n.on) d.foot[n.pos === 'right' ? 2 : 1] = '{page}'; */
@@ -376,8 +397,13 @@ Writer.hf.onPicFile = function onPicFile() {
   H.pickFor = null;
   if (!f || !a) return;
   if (!/^image\//.test(f.type || '')) { H.note('That file is not a picture.'); return; }
-  var max = I ? I.MAX_PX : 600;
-  Writer.image.load(f, max).then(function (src) {
+  var needHfimg = !I && Writer.vendor && Writer.vendor.ensureHfimg ? Writer.vendor.ensureHfimg() : Promise.resolve();
+  needHfimg.then(function () {
+    I = Writer.hfimg;
+    var max = I ? I.MAX_PX : 600;
+    return Writer.image.load(f, max);
+  }).then(function (src) {
+    I = Writer.hfimg;
     var old = H.pic(a.part);
     /* (before DW13c) H.setPic(a.part, a.k, { src: src, size: old ? old.size : 'M' }); */
     H.setPic(a.part, { src: src, h: old ? old.h : (I ? I.DEFAULT_H : 14), a: old ? old.a : 'c' });
@@ -446,6 +472,9 @@ Writer.hf.changed = function changed() {
 
 Writer.hf.enter = function enter(part, slot) {
   var H = Writer.hf;
+  if (!Writer.hfimg && Writer.vendor && Writer.vendor.ensureHfimg) {
+    Writer.vendor.ensureHfimg().then(function () { if (Writer.hf) { H.render(); H.syncPicTools(); } });
+  }
   if (!H.editing) {
     H.editing = true;
     document.body.classList.add('hf-editing');

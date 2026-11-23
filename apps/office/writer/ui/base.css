@@ -28,3 +28,29 @@ body {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* DW26: loading hint and pre-ready button state while scripts & document load. */
+.loading-hint {
+  position: fixed;
+  top: calc(var(--toolbar-h, 48px) + var(--ribbon-h, 52px) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-muted, #64748b);
+  border: 1px solid var(--border-subtle, rgba(15, 23, 42, 0.12));
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+body:not(.writer-loading) .loading-hint,
+.loading-hint[hidden] {
+  display: none;
+}
+body.writer-loading [data-boot-wait] {
+  opacity: 0.55;
+  cursor: progress;
+}

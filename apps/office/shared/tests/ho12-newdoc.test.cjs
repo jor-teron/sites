@@ -115,13 +115,15 @@ test('createDocTab adds ?new=1 for a new blank tab and keeps a file-open hash cl
   const HO = loadHub();
   const blank = HO.createDocTab('writer');
   /* (before HO12b) assert.equal(blank.url, '../writer/?new=1'); */
-  assert.equal(blank.url, '../writer/?new=1&untitled=1');
+  /* (before DW26) assert.equal(blank.url, '../writer/?new=1&untitled=1'); */
+  assert.equal(blank.url, '../writer/writer.html?new=1&untitled=1');
   const named = HO.createDocTab('spreadsheet', { title: 'Budget.hos' });
   assert.equal(named.url, '../spreadsheet/?new=1');
   const opened = HO.createDocTab('writer', {
     title: 'Letter.how',
     hash: 'drive=local&path=Documents&file=Letter.how'
   });
-  assert.equal(opened.url, '../writer/#drive=local&path=Documents&file=Letter.how');
+  /* (before DW26) assert.equal(opened.url, '../writer/#drive=local&path=Documents&file=Letter.how'); */
+  assert.equal(opened.url, '../writer/writer.html#drive=local&path=Documents&file=Letter.how');
   assert.ok(!opened.url.includes('new=1'));
 });

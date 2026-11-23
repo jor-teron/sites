@@ -78,7 +78,8 @@ Writer.pages.createNewPage = function createNewPage(index) {
   ed.contentEditable = 'true';
   /* (before DF21) ed.spellcheck = false; */
   /* DF21: new pages follow the Spelling setting (writer-write.js). */
-  ed.spellcheck = !!(Writer.write && Writer.write.spellOn && Writer.write.spellOn());
+  /* (before DW26) ed.spellcheck = !!(Writer.write && Writer.write.spellOn && Writer.write.spellOn()); */
+  ed.spellcheck = !!(Writer.write && Writer.write.spellOn ? Writer.write.spellOn() : (Writer.settings && Writer.settings.s && Writer.settings.s.spellcheck));
   ed.setAttribute('data-placeholder', cfg.placeholder);
 
   var pn = document.createElement('div');

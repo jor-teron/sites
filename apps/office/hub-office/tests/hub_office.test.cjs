@@ -240,7 +240,8 @@ test('createDocTab opens new tab and switches active view', () => {
   assert.equal(tab.appId, 'writer');
   /* (before HO12) assert.equal(tab.url, '../writer/'); */
   /* (before HO12b) assert.equal(tab.url, '../writer/?new=1'); — a named tab has no Untitled number */
-  assert.equal(tab.url, '../writer/?new=1');
+  /* (before DW26) assert.equal(tab.url, '../writer/?new=1'); */
+  assert.equal(tab.url, '../writer/writer.html?new=1');
   assert.equal(HO.openTabs.length, 2);
   assert.equal(HO.getActiveTabId(), tab.id);
 
@@ -324,8 +325,9 @@ test('HO12b: Untitled N skips open tabs with that number and is passed as &untit
   const HO = loadScript();
   const w1 = HO.createDocTab('writer');
   const w2 = HO.createDocTab('writer');
-  assert.equal(w1.url, '../writer/?new=1&untitled=1');
-  assert.equal(w2.url, '../writer/?new=1&untitled=2');
+  /* (before DW26) assert.equal(w1.url, '../writer/?new=1&untitled=1'); */
+  assert.equal(w1.url, '../writer/writer.html?new=1&untitled=1');
+  assert.equal(w2.url, '../writer/writer.html?new=1&untitled=2');
   HO.closeTab(w1.id);
   const w3 = HO.createDocTab('writer');
   assert.equal(w3.title, 'Untitled 1', 'a closed number is reused');

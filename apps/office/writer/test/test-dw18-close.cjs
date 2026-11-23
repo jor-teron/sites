@@ -424,7 +424,7 @@ test('Quick Access: Save / Undo / Print are off while empty; Close is bound', ()
   const q = live(read('modules/writer-quick.js'));
   assert.ok(/canSave: function \(\) \{ return !\(D\.empty && D\.empty\.isEmpty\(\)\); \}/.test(q));
   assert.ok(/canUndo: function \(\) \{ return !\(D\.empty && D\.empty\.isEmpty\(\)\) && D\.history\.canUndo\(\); \}/.test(q));
-  assert.ok(/print: function \(\) \{ if \(D\.empty && D\.empty\.isEmpty\(\)\) \{[^}]*No document open/.test(q));
+  assert.ok(/print: function \(\) \{\s*if \(D\.empty && D\.empty\.isEmpty\(\)\) \{[^}]*No document open/.test(q));
   const d = live(DOCS);
   assert.ok(d.indexOf("Writer.ui.onClick('closeDocBtn', function () { Writer.docs.closeDoc(); });") !== -1);
   assert.ok(DOCS.indexOf("(before DW18) ['load:loadDocument'") !== -1);
@@ -437,7 +437,7 @@ test('writer.html title is DW18; config release is DW18; old ids are kept as com
   /* (before DW23) assert.ok(/<title>Writer DW(1(8|9)|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW24) assert.ok(/<title>Writer DW(1(8|9)|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW25) assert.ok(/<title>Writer DW(1(8|9)|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(1(8|9)|22|23|24|25)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  assert.ok(/<title>Writer DW(1(8|9)|22|23|24|25|26)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW18) <title>Writer DW17</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
   /* (before DW19) assert.ok(/release:\s*'DW18'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -445,7 +445,7 @@ test('writer.html title is DW18; config release is DW18; old ids are kept as com
   /* (before DW23) assert.ok(/release:\s*'DW(1(8|9)|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW24) assert.ok(/release:\s*'DW(1(8|9)|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW25) assert.ok(/release:\s*'DW(1(8|9)|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(1(8|9)|22|23|24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  assert.ok(/release:\s*'DW(1(8|9)|22|23|24|25|26)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW18) release: 'DW17', */") !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW18') !== -1);
 });

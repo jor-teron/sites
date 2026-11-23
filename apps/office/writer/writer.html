@@ -40,42 +40,51 @@
   <!-- (before DW23) <title>Writer DW22</title> -->
   <!-- (before DW24) <title>Writer DW23</title> -->
   <!-- (before DW25) <title>Writer DW24</title> -->
-  <title>Writer DW25</title>
+  <!-- (before DW26) <title>Writer DW25</title> -->
+  <title>Writer DW26</title>
   <meta name="theme-color" content="#5b5bf0">
   <!-- (before DF25) <link rel="icon" href="draftly_icon.png"> -->
   <link rel="icon" href="writer_icon.png">
+  <!-- DW26: core CSS blocks first paint; secondary CSS loads non-blocking;
+       print.css uses media="print"; 5 feature CSS files load lazily via writer-vendor.js. -->
   <link rel="stylesheet" href="ui/fonts.css">
   <link rel="stylesheet" href="ui/theme.css">
   <link rel="stylesheet" href="../shared/office-theme.css">
   <link rel="stylesheet" href="ui/base.css">
   <link rel="stylesheet" href="ui/toolbar.css">
   <link rel="stylesheet" href="../shared/office-tools.css">
-  <link rel="stylesheet" href="ui/popups.css">
-  <link rel="stylesheet" href="../shared/office-dialog.css">
+  <link rel="stylesheet" href="ui/popups.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="../shared/office-dialog.css" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="ui/workspace.css">
   <link rel="stylesheet" href="ui/ribbon.css">
   <link rel="stylesheet" href="ui/page.css">
   <link rel="stylesheet" href="ui/editor.css">
-  <link rel="stylesheet" href="ui/marks.css">
-  <link rel="stylesheet" href="../shared/office-notify.css">
-  <link rel="stylesheet" href="ui/print.css">
+  <link rel="stylesheet" href="ui/marks.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="../shared/office-notify.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="ui/print.css" media="print">
   <link rel="stylesheet" href="../shared/office-colour.css">
-  <link rel="stylesheet" href="ui/find.css">
   <link rel="stylesheet" href="ui/statusbar.css">
   <link rel="stylesheet" href="ui/ruler.css">
-  <link rel="stylesheet" href="ui/table.css">
-  <link rel="stylesheet" href="ui/image.css">
-  <link rel="stylesheet" href="ui/format.css">
-  <link rel="stylesheet" href="ui/headerfooter.css">
-  <link rel="stylesheet" href="ui/margins.css">
-  <link rel="stylesheet" href="ui/merge.css">
-  <link rel="stylesheet" href="../shared/office-settings.css">
+  <link rel="stylesheet" href="ui/table.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="ui/image.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="ui/format.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="ui/headerfooter.css" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="../shared/office-collapse.css">
   <link rel="stylesheet" href="../shared/office-quick.css">
-  <link rel="stylesheet" href="ui/write.css">
   <link rel="stylesheet" href="ui/empty.css"><!-- DW18: no document open panel -->
 </head>
-<body>
+<body class="writer-loading">
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('writer_settings');
+        var mode = raw ? (JSON.parse(raw) || {}).theme : null;
+        if (!mode) mode = localStorage.getItem('writer_theme') === 'dark' ? 'dark' : localStorage.getItem('sites-hub.theme');
+        var dark = mode === 'dark' || (mode === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) { document.body.classList.add('dark'); document.documentElement.classList.add('of-dark'); }
+      } catch (e) {}
+    })();
+  </script>
 
   <!-- ============================================================
        TOP BAR: File button, document name, ribbon tabs, theme.
@@ -371,6 +380,7 @@
        (#pagesScaler holds the scaled size, #pages is laid out at true A4)
        ============================================================ -->
   <main class="workspace" id="workspace">
+    <div class="loading-hint" id="loadingHint" role="status" aria-live="polite">Loading…</div>
     <!-- DW18: shown instead of the page when no document is open (writer-empty.js) -->
     <section class="empty-panel" id="emptyPanel" aria-labelledby="emptyTitle" hidden>
       <div class="empty-card">
@@ -459,85 +469,89 @@
   -->
   <!-- DF8 Settings panel: built by ../shared/office-settings.js from modules/writer-settings.js -->
 
-  <script src="../shared/office-icons.js"></script>
+  <!-- DW26: keep toolbar/ribbon/status buttons inert & queue clicks until app is ready. -->
+  <script>
+    (function () {
+      var b = document.body;
+      if (!b || !b.classList.contains('writer-loading')) return;
+      window.__writerBootQueue = [];
+      var els = document.querySelectorAll('.toolbar button, nav.ribbon button, .status-bar button, #fileMenu button, .toolbar select, nav.ribbon select, .status-bar select, #fileMenu select');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (el.disabled) continue;
+        el.setAttribute('data-boot-wait', '1');
+        if (el.tagName === 'SELECT') el.disabled = true;
+        else el.setAttribute('aria-disabled', 'true');
+      }
+      window.__writerBootOnClick = function (e) {
+        if (!b.classList.contains('writer-loading')) return;
+        var btn = e.target && e.target.closest ? e.target.closest('button, [role="button"], [role="tab"], [role="menuitem"]') : null;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (btn && !btn.disabled && window.__writerBootQueue.length < 32) {
+          window.__writerBootQueue.push(btn);
+        }
+      };
+      document.addEventListener('click', window.__writerBootOnClick, true);
+    })();
+  </script>
+
+  <!-- DW26: core scripts load with defer in exact dependency order so the UI paints first;
+       21 optional modules (export, import, merge, hfimg, find, review helpers) load on demand
+       via modules/writer-vendor.js. -->
+  <script src="../shared/office-icons.js" defer></script>
   <!-- (before DF25) <script src="modules/draftly-vendor.js"></script>; every modules/writer-*.js tag below was modules/draftly-*.js -->
-  <script src="modules/writer-vendor.js"></script>
+  <script src="modules/writer-vendor.js" defer></script>
 
   <!-- Modules. Order matters. app.js boots last. -->
-  <script src="../shared/office-dialog.js"></script>
-  <script src="../shared/office-page.js"></script>
-  <script src="../shared/office-notify.js"></script>
-  <script src="../shared/office-theme.js"></script>
-  <script src="../shared/office-settings.js"></script>
-  <script src="../shared/office-hover.js"></script>
-  <script src="../shared/office-collapse.js"></script>
-  <script src="../shared/office-colour.js"></script>
-  <script src="../shared/office-hubbar.js"></script>
-  <script src="../shared/office-docname.js"></script>
-  <script src="../shared/office-newdoc.js"></script>
-  <script src="../shared/office-quick.js"></script>
-  <script src="modules/writer-config.js"></script>
-  <script src="modules/writer-storage.js"></script>
-  <script src="modules/writer-settings.js"></script>
-  <script src="modules/writer-ui.js"></script>
-  <script src="modules/writer-dialog.js"></script>
-  <script src="modules/writer-editor.js"></script>
-  <script src="modules/writer-pages.js"></script>
-  <script src="modules/writer-flow.js"></script>
-  <script src="modules/writer-flow-blocks.js"></script>
-  <script src="modules/writer-marks.js"></script>
-  <script src="modules/writer-export.js"></script>
-  <script src="modules/writer-pdf.js"></script>
-  <script src="modules/writer-pdfgen.js"></script>
-  <script src="modules/writer-lists.js"></script>
-  <script src="modules/writer-view.js"></script>
-  <script src="modules/writer-history.js"></script>
-  <script src="modules/writer-breaks.js"></script>
-  <script src="modules/writer-colour.js"></script>
-  <script src="modules/writer-wordcount.js"></script>
-  <script src="modules/writer-find.js"></script>
-  <script src="modules/writer-table.js"></script>
-  <script src="modules/writer-tableresize.js"></script>
-  <script src="modules/writer-image.js"></script>
-  <script src="modules/writer-paste.js"></script>
-  <script src="modules/writer-spacing.js"></script>
-  <script src="modules/writer-zoom.js"></script>
-  <script src="modules/writer-hfimg.js"></script>
-  <script src="modules/writer-headerfooter.js"></script>
-  <script src="modules/writer-margins.js"></script>
-  <script src="modules/writer-ruler.js"></script>
-  <script src="modules/writer-indent.js"></script>
-  <script src="modules/writer-empty.js"></script><!-- DW18: no document open state -->
-  <script src="modules/writer-docs.js"></script>
-  <script src="modules/writer-format.js"></script>
-  <script src="modules/writer-ribbon.js"></script>
-  <!-- MM1 / MM3 mail merge: Hub drive access (shared/fs, plain scripts as in the Viewer), CSV, Excel reader, ZIP, engine, screen -->
-  <script src="../../../shared/fs/fs_drives.js"></script>
-  <script src="../../../shared/fs/fs_ops.js"></script>
-  <script src="../../../shared/fs/fs_ref.js"></script>
-  <script src="modules/writer-csv.js"></script>
-  <script src="modules/writer-numfmt.js"></script>
-  <script src="modules/writer-xlsx.js"></script>
-  <script src="modules/writer-hos.js"></script><!-- MM8: Spreadsheet .hos reader for Merge -->
-  <script src="modules/writer-zip.js"></script>
-  <!-- DW8 LibreOffice .odt writer; uses writer-zip.js -->
-  <script src="modules/writer-odtgen.js"></script>
-  <!-- MM6 real DOCX writer (WordprocessingML); uses writer-zip.js -->
-  <script src="modules/writer-docxgen.js"></script>
-  <script src="modules/writer-docxread.js"></script>
-  <script src="modules/writer-odtread.js"></script>
-  <script src="modules/writer-txt.js"></script>
-  <!-- DW13b: picture files dropped onto the page or a header / footer slot (called from writer-docxopen.js) -->
-  <script src="modules/writer-imgdrop.js"></script>
-  <script src="modules/writer-docxopen.js"></script>
-  <script src="modules/writer-merge.js"></script>
-  <script src="modules/writer-merge-ui.js"></script>
-  <script src="modules/writer-how.js"></script>
-  <script src="modules/writer-hub.js"></script>
-  <script src="modules/writer-quick.js"></script>
-  <!-- DF21 writing helpers: text rules (no DOM), then the Review tab wiring -->
-  <script src="modules/writer-writetext.js"></script>
-  <script src="modules/writer-write.js"></script>
-  <script src="modules/writer-app.js"></script>
+  <script src="../shared/office-dialog.js" defer></script>
+  <script src="../shared/office-page.js" defer></script>
+  <script src="../shared/office-notify.js" defer></script>
+  <script src="../shared/office-theme.js" defer></script>
+  <script src="../shared/office-settings.js" defer></script>
+  <script src="../shared/office-hover.js" defer></script>
+  <script src="../shared/office-collapse.js" defer></script>
+  <script src="../shared/office-colour.js" defer></script>
+  <script src="../shared/office-hubbar.js" defer></script>
+  <script src="../shared/office-docname.js" defer></script>
+  <script src="../shared/office-newdoc.js" defer></script>
+  <script src="../shared/office-quick.js" defer></script>
+  <script src="modules/writer-config.js" defer></script>
+  <script src="modules/writer-storage.js" defer></script>
+  <script src="modules/writer-settings.js" defer></script>
+  <script src="modules/writer-ui.js" defer></script>
+  <script src="modules/writer-dialog.js" defer></script>
+  <script src="modules/writer-editor.js" defer></script>
+  <script src="modules/writer-pages.js" defer></script>
+  <script src="modules/writer-flow.js" defer></script>
+  <script src="modules/writer-flow-blocks.js" defer></script>
+  <script src="modules/writer-marks.js" defer></script>
+  <script src="modules/writer-lists.js" defer></script>
+  <script src="modules/writer-view.js" defer></script>
+  <script src="modules/writer-history.js" defer></script>
+  <script src="modules/writer-breaks.js" defer></script>
+  <script src="modules/writer-colour.js" defer></script>
+  <script src="modules/writer-wordcount.js" defer></script>
+  <script src="modules/writer-table.js" defer></script>
+  <script src="modules/writer-tableresize.js" defer></script>
+  <script src="modules/writer-image.js" defer></script>
+  <script src="modules/writer-paste.js" defer></script>
+  <script src="modules/writer-spacing.js" defer></script>
+  <script src="modules/writer-zoom.js" defer></script>
+  <script src="modules/writer-headerfooter.js" defer></script>
+  <script src="modules/writer-margins.js" defer></script>
+  <script src="modules/writer-ruler.js" defer></script>
+  <script src="modules/writer-indent.js" defer></script>
+  <script src="modules/writer-empty.js" defer></script><!-- DW18: no document open state -->
+  <script src="modules/writer-docs.js" defer></script>
+  <script src="modules/writer-format.js" defer></script>
+  <script src="modules/writer-ribbon.js" defer></script>
+  <script src="../../../shared/fs/fs_drives.js" defer></script>
+  <script src="../../../shared/fs/fs_ops.js" defer></script>
+  <script src="../../../shared/fs/fs_ref.js" defer></script>
+  <script src="modules/writer-how.js" defer></script>
+  <script src="modules/writer-hub.js" defer></script>
+  <script src="modules/writer-quick.js" defer></script>
+  <script src="modules/writer-app.js" defer></script>
 </body>
 </html>

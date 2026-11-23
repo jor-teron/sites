@@ -55,7 +55,8 @@
          formats and btnLabel listed on the card. */
       desc: 'Word processor with page layout, typography and tables.',
       icon: '../writer/writer_icon.png',
-      url: '../writer/',
+      /* (before DW26) url: '../writer/', (went through index.html redirect before opening writer.html) */
+      url: '../writer/writer.html',
       rootUrl: 'apps/office/writer/'
     },
     {

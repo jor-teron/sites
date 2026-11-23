@@ -34,6 +34,12 @@ Writer.ribbon.selectTab = function selectTab(name, focus) {
   }
   try { localStorage.setItem(Writer.ribbon.storageKeyTab, name); } catch (e) {}
   if (name === 'page' && Writer.view) Writer.view.syncPagePanel();
+  /* DW26: load lazy tab extras on first switch to that tab. */
+  if (Writer.vendor) {
+    if (name === 'merge' && !Writer.mergeUi && Writer.vendor.ensureMerge) Writer.vendor.ensureMerge();
+    else if (name === 'review' && !Writer.write && Writer.vendor.ensureWrite) Writer.vendor.ensureWrite();
+    else if (name === 'page' && Writer.vendor.ensureMarginsCss) Writer.vendor.ensureMarginsCss();
+  }
 };
 
 Writer.ribbon.isFileOpen = function () {

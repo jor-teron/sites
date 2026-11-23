@@ -235,17 +235,24 @@ Writer.ruler.end = function end() {
   R.sync();
 };
 
+/* DW26: settings panel builds lazily, so bind #rulerToggle when built. */
+Writer.ruler.bindToggle = function bindToggle() {
+  var R = Writer.ruler, btn = R.el('rulerToggle');
+  if (!btn || btn._rulerBound) return;
+  btn._rulerBound = true;
+  btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  btn.addEventListener('click', function (e) { e.preventDefault(); R.set(!R.on, true); });
+  btn.setAttribute('aria-pressed', String(!!R.on));
+  btn.classList.toggle('active', !!R.on);
+};
+
 Writer.ruler.init = function init() {
   var R = Writer.ruler;
   R.build();
   /* Follow zoom / paper / orientation: every one of them ends in view.fit(). */
   var fit = Writer.view.fit;
   Writer.view.fit = function () { var out = fit.apply(this, arguments); R.sync(); return out; };
-  var btn = R.el('rulerToggle');
-  if (btn) {
-    btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
-    btn.addEventListener('click', function (e) { e.preventDefault(); R.set(!R.on, true); });
-  }
+  R.bindToggle();
   var stored = null;
   try { stored = localStorage.getItem(R.KEY); } catch (e) {}
   R.set(stored === '1', false);

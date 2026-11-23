@@ -192,7 +192,9 @@ test('chooser, Browse and #mmFile list .hos, not .how; script order', function (
   assert.ok(!/'\.how'/.test(ui), 'a Writer .how is not listed as merge data');
   var m = html.match(/<input type="file" id="mmFile" accept="([^"]+)" hidden>\s*<\/div>/);
   assert.ok(m && m[1].split(',').indexOf('.hos') !== -1 && m[1].indexOf('.how') === -1, 'mmFile accept');
-  var a = html.indexOf('<script src="modules/writer-csv.js">'), b = html.indexOf('<script src="modules/writer-hos.js">'), c = html.indexOf('<script src="modules/writer-merge.js">');
+  /* (before DW26) writer-csv.js, writer-hos.js, writer-merge.js were static script tags in writer.html. */
+  var vendor = read('apps/office/writer/modules/writer-vendor.js');
+  var a = vendor.indexOf("modules/writer-csv.js"), b = vendor.indexOf("modules/writer-hos.js"), c = vendor.indexOf("modules/writer-merge.js");
   assert.ok(a > 0 && b > a && c > b, 'writer-hos.js loads after writer-csv.js and before writer-merge.js');
   assert.ok(!/writer\.html\?v=|modules\/writer-[a-z-]+\.js\?v=/.test(html), 'no ?v= on Writer');
 });

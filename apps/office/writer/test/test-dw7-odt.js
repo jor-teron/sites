@@ -302,7 +302,7 @@ test('writer.html wires the odt reader and the combined Open menu', function () 
   /* (before DW23) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live)); */
   /* (before DW24) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23)<\/title>/.test(live)); */
   /* (before DW25) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24|25)<\/title>/.test(live));
+  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24|25|26)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW7) <title>Writer DF25</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW8) <title>Writer DW7</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
@@ -310,8 +310,11 @@ test('writer.html wires the odt reader and the combined Open menu', function () 
   /* (before DW14) assert.ok(live.indexOf('accept=".docx,.odt,') !== -1); */
   assert.ok(live.indexOf('Open...') !== -1);
   assert.ok(live.indexOf('accept=".how,.docx,.odt,') !== -1);
-  assert.ok(live.indexOf('src="modules/writer-odtread.js"') !== -1);
-  assert.ok(live.indexOf('src="modules/writer-odtread.js"') < live.indexOf('src="modules/writer-docxopen.js"'));
+  /* (before DW26) writer-odtread.js and writer-docxopen.js were static script tags in writer.html. */
+  const vendor = fs.readFileSync(path.join(DIR, 'modules/writer-vendor.js'), 'utf8');
+  assert.ok(live.indexOf('src="modules/writer-vendor.js"') !== -1);
+  assert.ok(vendor.indexOf('modules/writer-odtread.js') !== -1);
+  assert.ok(vendor.indexOf('modules/writer-docxopen.js') !== -1);
   assert.ok(!/\?v=/.test(html), 'no cache-bust query');
   const open = fs.readFileSync(path.join(DIR, 'modules/writer-docxopen.js'), 'utf8');
   assert.ok(open.indexOf('isOdt') !== -1);

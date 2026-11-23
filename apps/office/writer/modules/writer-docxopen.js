@@ -165,7 +165,10 @@ Writer.docxopen.pickTypes = function pickTypes() {
 };
 
 Writer.docxopen.bind = function bind() {
-  var D = Writer.docxopen, btn = document.getElementById('openDocxBtn'), inp = document.getElementById('docxFile');
+  var D = Writer.docxopen;
+  if (D._bound) return;
+  D._bound = true;
+  var btn = document.getElementById('openDocxBtn'), inp = document.getElementById('docxFile');
   if (btn && inp) {
     btn.addEventListener('click', function () {
       if (Writer.ribbon && Writer.ribbon.setFile) Writer.ribbon.setFile(false);

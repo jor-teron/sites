@@ -894,10 +894,12 @@ test('save and export (combinedHtml, DOCX, ODT) strip ZWSP and empty pending spa
 test('source & version: DW25 in config, writer.html, readme; format.js restores selection; save/pdf strip pending', () => {
   const html = read('writer.html');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.ok(/<title>Writer DW25<\/title>/.test(live));
+  /* (before DW26) assert.ok(/<title>Writer DW25<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(25|26)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW25) <title>Writer DW24</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
-  assert.ok(/release:\s*'DW25'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW26) assert.ok(/release:\s*'DW25'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(25|26)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW25) release: 'DW24', */") !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW25') !== -1);
   const fmt = read('modules/writer-format.js').replace(/\/\*[\s\S]*?\*\//g, '');
