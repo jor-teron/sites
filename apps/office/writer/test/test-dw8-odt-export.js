@@ -250,7 +250,8 @@ test('writer.html wires Export ODT next to Export DOCX and loads odtgen', functi
   /* (before DW22) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)<\/title>/.test(live)); */
   /* (before DW23) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live)); */
   /* (before DW24) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24)<\/title>/.test(live));
+  /* (before DW25) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23|24|25)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW8) <title>Writer DW7</title> -->') !== -1);
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
   /* (before DW14) assert.ok(live.indexOf('Export ODT') !== -1); */
@@ -289,7 +290,8 @@ test('writer.html wires Export ODT next to Export DOCX and loads odtgen', functi
   /* (before DW22) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW23) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW24) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW25) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22|23|24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 if (fs.existsSync('/usr/bin/soffice') || fs.existsSync('/usr/bin/libreoffice')) {

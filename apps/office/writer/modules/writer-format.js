@@ -63,6 +63,7 @@ Writer.format.bind = function bind() {
   var fontFamilySelect = document.getElementById('fontFamilySelect');
   if (fontFamilySelect) {
     fontFamilySelect.addEventListener('change', function (e) {
+      Writer.editor.restoreSelection();
       Writer.editor.setFontFamily(e.target.value);
     });
   }

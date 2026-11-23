@@ -489,6 +489,7 @@ Writer.pdfgen = (function () {
     var h = Writer.pages && Writer.pages.combinedHtml ? Writer.pages.combinedHtml() : Writer.flow.joinedHtml();
     var d = document.createElement('div'); d.innerHTML = h;
     if (Writer.editor && Writer.editor.stripMarks) Writer.editor.stripMarks(d);
+    if (Writer.editor && Writer.editor.stripPending) Writer.editor.stripPending(d);
     return d.innerHTML;
   }
   /* (before DW11) function hfData() { return Writer.hf && !Writer.hf.isEmpty() ? { head: Writer.hf.data.head.slice(), foot: Writer.hf.data.foot.slice() } : null; } */

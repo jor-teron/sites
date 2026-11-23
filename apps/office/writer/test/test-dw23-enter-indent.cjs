@@ -320,11 +320,13 @@ test('writer.html title is DW23; config release is DW23; old ids are kept as com
   const html = read('writer.html');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
   /* (before DW24) assert.ok(/<title>Writer DW23<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW(23|24)<\/title>/.test(live));
+  /* (before DW25) assert.ok(/<title>Writer DW(23|24)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(23|24|25)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW23) <title>Writer DW22</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
   /* (before DW24) assert.ok(/release:\s*'DW23'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW25) assert.ok(/release:\s*'DW(23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(23|24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW23) release: 'DW22', */") !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW23') !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW22') !== -1);

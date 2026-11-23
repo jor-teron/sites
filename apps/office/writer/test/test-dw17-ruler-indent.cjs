@@ -182,13 +182,15 @@ test('writer.html title is DW17; config release is DW17; old ids are kept as com
   /* (before DW22) assert.ok(/<title>Writer DW1(7|8|9)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW23) assert.ok(/<title>Writer DW(1(7|8|9)|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW24) assert.ok(/<title>Writer DW(1(7|8|9)|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(1(7|8|9)|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW25) assert.ok(/<title>Writer DW(1(7|8|9)|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(1(7|8|9)|22|23|24|25)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW17) <title>Writer DW16</title> -->') !== -1);
   /* (before DW18) assert.ok(/release:\s*'DW17'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW1(7|8)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW22) assert.ok(/release:\s*'DW1(7|8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW23) assert.ok(/release:\s*'DW(1(7|8|9)|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW24) assert.ok(/release:\s*'DW(1(7|8|9)|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(1(7|8|9)|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW25) assert.ok(/release:\s*'DW(1(7|8|9)|22|23|24)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(1(7|8|9)|22|23|24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("(before DW17) release: 'DW16'") !== -1);
 });

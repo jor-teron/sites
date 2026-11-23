@@ -325,7 +325,7 @@
 
   /* Consecutive spaces / tabs / nbsp become ODF text:s / text:tab. */
   function textBits(t) {
-    t = String(t || '').replace(/\r\n|\r/g, '\n');
+    t = String(t || '').replace(/\r\n|\r/g, '\n').replace(/\u200b/g, '');
     var out = '', i = 0, n = t.length, ch, run, tag;
     while (i < n) {
       ch = t.charAt(i);

@@ -275,6 +275,7 @@
     var holder = document.createElement('div');
     holder.innerHTML = S.pages && S.pages.combinedHtml ? S.pages.combinedHtml() : '';
     if (S.editor && S.editor.stripMarks) S.editor.stripMarks(holder);
+    if (S.editor && S.editor.stripPending) S.editor.stripPending(holder);
     var orient = document.body.classList.contains(cfg.landscapeClass) ? 'landscape' : 'portrait';
     var numbers = (S.breaks && S.breaks.loadNumbers) ? S.breaks.loadNumbers() : { on: false, pos: 'center' };
     var now = Date.now();
@@ -311,6 +312,7 @@
     if (editor) {
       editor.innerHTML = doc.html || '<p><br></p>';
       if (S.editor && S.editor.stripMarks) S.editor.stripMarks(editor);
+      if (S.editor && S.editor.stripPending) S.editor.stripPending(editor);
     }
     How.created = doc.created || Date.now();
     setAuto(''); /* HO12b: an opened document keeps its own name */

@@ -47,10 +47,11 @@ Writer.editor.saveSelection = function saveSelection() {
 /* Put the caret back. Focus the last editor if needed. */
 Writer.editor.restoreSelection = function restoreSelection() {
   var editor = Writer.editor.activeEditor || document.querySelector('.' + Writer.config.editorClass);
-  if (Writer.editor.savedRange) {
+  var sr = Writer.editor.savedRange;
+  if (sr && sr.startContainer && sr.startContainer.isConnected !== false && Writer.editor.isInEditor(sr.startContainer)) {
     var sel = window.getSelection();
     sel.removeAllRanges();
-    sel.addRange(Writer.editor.savedRange);
+    sel.addRange(sr);
   } else if (editor) {
     editor.focus();
   }
@@ -85,15 +86,454 @@ Writer.editor.markLineBreaks = function markLineBreaks() {
   if (Writer.marks) Writer.marks.schedule();
 };
 
+/* DW25: pending caret-only typing style (ZWSP inside <span data-pending-style="1">). */
+Writer.editor.ZWSP = '\u200B';
+Writer.editor.PENDING_ATTR = 'data-pending-style';
+Writer.editor.FONT_TAG_PT = [0, 7.5, 10, 12, 13.5, 18, 24, 36];
+Writer.editor.isComposing = false;
+Writer.editor._settingPending = false;
+
+Writer.editor._selRange = function _selRange(sel) {
+  if (!sel || !sel.rangeCount) return null;
+  return sel.getRangeAt(0);
+};
+
+Writer.editor._isCollapsed = function _isCollapsed(sel, r) {
+  if (sel && typeof sel.isCollapsed === 'boolean') return sel.isCollapsed;
+  if (!r) return false;
+  if (typeof r.collapsed === 'boolean') return r.collapsed;
+  if (r.endContainer == null) return true;
+  return r.startContainer === r.endContainer && r.startOffset === r.endOffset;
+};
+
+Writer.editor._makeRange = function _makeRange(node, offset) {
+  if (typeof document.createRange === 'function') {
+    var r = document.createRange();
+    r.setStart(node, offset);
+    r.collapse(true);
+    return r;
+  }
+  return {
+    startContainer: node, startOffset: offset,
+    endContainer: node, endOffset: offset,
+    collapsed: true,
+    cloneRange: function () { return this; }
+  };
+};
+
+Writer.editor._insertNodeAtRange = function _insertNodeAtRange(range, node) {
+  if (range.insertNode) {
+    var sc0 = range.startContainer;
+    if (sc0 && sc0.nodeType === 3) {
+      var len0 = sc0.nodeValue ? sc0.nodeValue.length : 0;
+      if (range.startOffset >= len0) { sc0.parentNode.insertBefore(node, sc0.nextSibling); return; }
+      if (range.startOffset <= 0) { sc0.parentNode.insertBefore(node, sc0); return; }
+    }
+    range.insertNode(node);
+    return;
+  }
+  var sc = range.startContainer;
+  var so = range.startOffset || 0;
+  if (sc.nodeType === 3) {
+    var par = sc.parentNode;
+    var len = sc.nodeValue ? sc.nodeValue.length : 0;
+    if (so >= len) par.insertBefore(node, sc.nextSibling);
+    else if (so <= 0) par.insertBefore(node, sc);
+    else {
+      var after = sc.splitText ? sc.splitText(so) : null;
+      if (after) par.insertBefore(node, after);
+      else {
+        var rest = document.createTextNode(sc.nodeValue.slice(so));
+        sc.nodeValue = sc.nodeValue.slice(0, so);
+        par.insertBefore(rest, sc.nextSibling);
+        par.insertBefore(node, rest);
+      }
+    }
+  } else if (sc.nodeType === 1) {
+    var ref = (sc.childNodes && so < sc.childNodes.length) ? sc.childNodes[so] : null;
+    sc.insertBefore(node, ref);
+  }
+};
+
+Writer.editor.isPendingSpan = function isPendingSpan(node) {
+  return !!(node && node.nodeType === 1 && node.tagName === 'SPAN' &&
+    node.hasAttribute && node.hasAttribute(Writer.editor.PENDING_ATTR));
+};
+
+Writer.editor.isPendingEmpty = function isPendingEmpty(span) {
+  if (!span || span.nodeType !== 1) return false;
+  if (span.querySelector && span.querySelector('img, table, hr, svg, canvas, video, br')) return false;
+  return !(span.textContent || '').replace(/\u200b/g, '').length;
+};
+
+Writer.editor.pendingSpanAt = function pendingSpanAt(node) {
+  var cfg = Writer.config;
+  var cur = node && (node.nodeType === 1 ? node : (node.parentElement || node.parentNode));
+  while (cur && cur.nodeType === 1) {
+    if (cur.classList && cur.classList.contains(cfg.editorClass)) break;
+    if (Writer.editor.isPendingSpan(cur)) return cur;
+    if (/^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TD|TH)$/.test(cur.tagName)) break;
+    cur = cur.parentElement || cur.parentNode;
+  }
+  return null;
+};
+
+Writer.editor.inlineStyleAt = function inlineStyleAt(node, offset) {
+  if (!node || !Writer.editor.isInEditor(node)) return null;
+  var cfg = Writer.config;
+  var BLOCK = /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TABLE|TR|TD|TH|HR|FIGURE)$/;
+  var cur = node.nodeType === 1 ? node : (node.parentElement || node.parentNode);
+  if (node.nodeType === 1 && typeof offset === 'number' && offset > 0 && node.childNodes) {
+    var after = node.childNodes[offset];
+    var prev = node.childNodes[offset - 1];
+    if (prev && prev.nodeType === 1 && prev.tagName !== 'BR' && prev.tagName !== 'IMG' &&
+        !BLOCK.test(prev.tagName) && !(after && after.nodeType === 3 && after.nodeValue && after.nodeValue.length)) {
+      var p = prev;
+      while (p && p.lastChild && p.lastChild.nodeType === 1 &&
+             p.lastChild.tagName !== 'BR' && p.lastChild.tagName !== 'IMG' &&
+             !BLOCK.test(p.lastChild.tagName)) {
+        p = p.lastChild;
+      }
+      cur = p;
+    }
+  }
+  var chain = [];
+  while (cur && cur.nodeType === 1) {
+    if (cur.classList && cur.classList.contains(cfg.editorClass)) break;
+    if (BLOCK.test(cur.tagName)) break;
+    chain.unshift(cur);
+    cur = cur.parentElement || cur.parentNode;
+  }
+  if (!chain.length) return null;
+  var out = {}, i, el, s, v, dec;
+  for (i = 0; i < chain.length; i++) {
+    el = chain[i];
+    s = el.style || {};
+    if (el.tagName === 'B' || el.tagName === 'STRONG') out.bold = true;
+    else if (el.tagName === 'I' || el.tagName === 'EM') out.italic = true;
+    else if (el.tagName === 'U') out.underline = true;
+    else if (el.tagName === 'FONT') {
+      var fc = el.getAttribute && el.getAttribute('face');
+      var sz = parseInt(el.getAttribute && el.getAttribute('size'), 10);
+      var col = el.getAttribute && el.getAttribute('color');
+      if (fc) out.fontFamily = fc;
+      if (sz >= 1 && sz <= 7) out.fontSize = Writer.editor.FONT_TAG_PT[sz] + 'pt';
+      if (col) out.color = col;
+    }
+    if (s.fontSize) out.fontSize = s.fontSize;
+    if (s.fontFamily) out.fontFamily = s.fontFamily;
+    if (s.fontWeight) {
+      v = String(s.fontWeight).toLowerCase();
+      if (v === 'bold' || v === 'bolder' || parseInt(v, 10) >= 600) out.bold = true;
+      else if (v === 'normal' || v === 'lighter' || parseInt(v, 10) < 600) out.bold = false;
+    }
+    if (s.fontStyle) {
+      v = String(s.fontStyle).toLowerCase();
+      if (v === 'italic' || v === 'oblique') out.italic = true;
+      else if (v === 'normal') out.italic = false;
+    }
+    dec = String(s.textDecorationLine || s.textDecoration || '').toLowerCase();
+    if (dec) {
+      if (dec.indexOf('none') >= 0) out.underline = false;
+      if (dec.indexOf('underline') >= 0) out.underline = true;
+    }
+    if (s.color) out.color = s.color;
+  }
+  if (!out.bold) delete out.bold;
+  if (!out.italic) delete out.italic;
+  if (!out.underline) delete out.underline;
+  return Object.keys(out).length ? out : null;
+};
+
+Writer.editor._inlineStylesMatch = function _inlineStylesMatch(a, b) {
+  if (!b) return true;
+  if (!a) return false;
+  var norm = function (v) { return String(v || '').trim().toLowerCase().replace(/['"]/g, ''); };
+  if (b.fontSize && norm(a.fontSize) !== norm(b.fontSize)) return false;
+  if (b.fontFamily && norm(a.fontFamily) !== norm(b.fontFamily)) return false;
+  if (!!b.bold !== !!a.bold) return false;
+  if (!!b.italic !== !!a.italic) return false;
+  if (!!b.underline !== !!a.underline) return false;
+  if (b.color && norm(a.color) !== norm(b.color)) return false;
+  return true;
+};
+
+Writer.editor._applyStylesToSpan = function _applyStylesToSpan(span, styles) {
+  if (!span || !styles) return;
+  if (styles.fontSize != null) span.style.fontSize = styles.fontSize || '';
+  if (styles.fontFamily != null) span.style.fontFamily = styles.fontFamily || '';
+  if (styles.bold === true) span.style.fontWeight = 'bold';
+  else if (styles.bold === false) span.style.fontWeight = 'normal';
+  else if (styles.bold === '') span.style.fontWeight = '';
+  if (styles.italic === true) span.style.fontStyle = 'italic';
+  else if (styles.italic === false) span.style.fontStyle = 'normal';
+  else if (styles.italic === '') span.style.fontStyle = '';
+  if (styles.underline === true) span.style.textDecoration = 'underline';
+  else if (styles.underline === false) span.style.textDecoration = 'none';
+  else if (styles.underline === '') span.style.textDecoration = '';
+  if (styles.color != null) span.style.color = styles.color || '';
+};
+
+Writer.editor._isBlockWithoutText = function _isBlockWithoutText(block) {
+  if (!block) return true;
+  if (block.querySelector && block.querySelector('img, table, hr, svg, canvas, video')) return false;
+  return !(block.textContent || '').replace(/\u200b/g, '').length;
+};
+
+Writer.editor.applyPendingStyle = function applyPendingStyle(styles) {
+  if (!styles) return null;
+  var sel = window.getSelection();
+  var range = Writer.editor._selRange(sel);
+  if (!range || !Writer.editor._isCollapsed(sel, range)) return null;
+  if (!Writer.editor.isInEditor(range.startContainer)) return null;
+
+  Writer.editor._settingPending = true;
+  try {
+    var existing = Writer.editor.pendingSpanAt(range.startContainer);
+    if (existing && !Writer.editor.isPendingEmpty(existing)) {
+      existing.removeAttribute(Writer.editor.PENDING_ATTR);
+      existing = null;
+    }
+    var tn, r;
+    if (existing) {
+      Writer.editor._applyStylesToSpan(existing, styles);
+      tn = existing.firstChild;
+      if (!tn || tn.nodeType !== 3) {
+        tn = document.createTextNode(Writer.editor.ZWSP);
+        existing.appendChild(tn);
+      } else if (!tn.nodeValue || tn.nodeValue.indexOf(Writer.editor.ZWSP) === -1) {
+        tn.nodeValue = Writer.editor.ZWSP;
+      }
+      r = Writer.editor._makeRange(tn, tn.nodeValue.length);
+      if (sel.removeAllRanges) sel.removeAllRanges();
+      if (sel.addRange) sel.addRange(r);
+      return existing;
+    }
+
+    var span = document.createElement('span');
+    span.setAttribute(Writer.editor.PENDING_ATTR, '1');
+    Writer.editor._applyStylesToSpan(span, styles);
+    tn = document.createTextNode(Writer.editor.ZWSP);
+    span.appendChild(tn);
+    Writer.editor._insertNodeAtRange(range, span);
+    r = Writer.editor._makeRange(tn, tn.nodeValue.length);
+    if (sel.removeAllRanges) sel.removeAllRanges();
+    if (sel.addRange) sel.addRange(r);
+    return span;
+  } finally {
+    Writer.editor._settingPending = false;
+  }
+};
+
+Writer.editor.detachPendingAtCaret = function detachPendingAtCaret() {
+  var sel = window.getSelection();
+  var range = Writer.editor._selRange(sel);
+  if (!range || !Writer.editor._isCollapsed(sel, range)) return null;
+  var pend = Writer.editor.pendingSpanAt(range.startContainer);
+  if (!pend || !Writer.editor.isPendingEmpty(pend)) return null;
+  var snap = Writer.editor.inlineStyleAt(range.startContainer, range.startOffset);
+  var par = pend.parentNode;
+  if (!par) return snap;
+  var idx = Array.prototype.indexOf.call(par.childNodes, pend);
+  var prev = pend.previousSibling;
+  par.removeChild(pend);
+  var node = par, off = idx;
+  if (prev && prev.nodeType === 3) {
+    node = prev;
+    off = prev.nodeValue.length;
+  } else if (!par.firstChild && /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TD|TH)$/.test(par.tagName)) {
+    par.appendChild(document.createElement('br'));
+    node = par;
+    off = 0;
+  }
+  var r = Writer.editor._makeRange(node, off);
+  if (sel.removeAllRanges) sel.removeAllRanges();
+  if (sel.addRange) sel.addRange(r);
+  if (Writer.history && !Writer.history.applying && Writer.pages && Writer.pages.combinedHtml) {
+    var h = Writer.history;
+    if (h.undoStack && h.undoStack.length &&
+        Writer.pages.combinedHtml() === h.undoStack[h.undoStack.length - 1].html) {
+      h.undoStack.pop();
+      h.current = h.snapshot();
+      if (h.sync) h.sync();
+    }
+  }
+  return snap;
+};
+
+Writer.editor.resolvePendingSpans = function resolvePendingSpans(root) {
+  var scope = root || document;
+  var attr = Writer.editor.PENDING_ATTR;
+  var spans = scope.querySelectorAll ? scope.querySelectorAll('span[' + attr + ']') : [];
+  if (!spans.length) return false;
+  var sel = window.getSelection();
+  var range = Writer.editor._selRange(sel);
+  var anchorNode = range ? range.startContainer : (sel && sel.anchorNode);
+  var anchorOffset = range ? range.startOffset : ((sel && sel.anchorOffset) || 0);
+  var endNode = range ? range.endContainer : anchorNode;
+  var endOffset = range ? range.endOffset : anchorOffset;
+  var collapsed = Writer.editor._isCollapsed(sel, range);
+  var changed = false, i;
+  for (i = 0; i < spans.length; i++) {
+    var sp = spans[i];
+    if (Writer.editor.isPendingEmpty(sp)) continue;
+    var stack = [sp], n, j;
+    while (stack.length) {
+      n = stack.pop();
+      if (n.nodeType === 3) {
+        if (n.nodeValue && n.nodeValue.indexOf(Writer.editor.ZWSP) !== -1) {
+          if (anchorNode === n) {
+            var beforeStart = n.nodeValue.slice(0, anchorOffset).match(/\u200b/g);
+            if (beforeStart) anchorOffset = Math.max(0, anchorOffset - beforeStart.length);
+          }
+          if (endNode === n) {
+            var beforeEnd = n.nodeValue.slice(0, endOffset).match(/\u200b/g);
+            if (beforeEnd) endOffset = Math.max(0, endOffset - beforeEnd.length);
+          }
+          n.nodeValue = n.nodeValue.replace(/\u200b/g, '');
+          changed = true;
+        }
+      } else if (n.nodeType === 1 && n.childNodes) {
+        for (j = n.childNodes.length - 1; j >= 0; j--) stack.push(n.childNodes[j]);
+      }
+    }
+    sp.removeAttribute(attr);
+    changed = true;
+  }
+  if (changed && sel && anchorNode && Writer.editor.isInEditor(anchorNode)) {
+    try {
+      var r = Writer.editor._makeRange(anchorNode, Math.min(anchorOffset, anchorNode.nodeType === 3 ? anchorNode.nodeValue.length : anchorNode.childNodes.length));
+      if (!collapsed && endNode && r.setEnd) {
+        var emax = endNode.nodeType === 3 ? endNode.nodeValue.length : endNode.childNodes.length;
+        r.setEnd(endNode, Math.min(endOffset, emax));
+      }
+      if (sel.removeAllRanges) sel.removeAllRanges();
+      if (sel.addRange) sel.addRange(r);
+      Writer.editor.saveSelection();
+    } catch (e) {}
+  }
+  return changed;
+};
+
+Writer.editor.cleanupPendingSpans = function cleanupPendingSpans(keepSpan) {
+  if (Writer.editor._settingPending || Writer.editor.isComposing) return false;
+  if (Writer.flow && Writer.flow.busy) return false;
+  if (Writer.history && Writer.history.applying) return false;
+  var cfg = Writer.config;
+  var spans = document.querySelectorAll('.' + cfg.editorClass + ' span[' + Writer.editor.PENDING_ATTR + ']');
+  if (!spans.length) return false;
+  var removed = false, i;
+  for (i = spans.length - 1; i >= 0; i--) {
+    var sp = spans[i];
+    if (sp === keepSpan) continue;
+    if (!Writer.editor.isPendingEmpty(sp)) continue;
+    var cur = sp.parentNode;
+    sp.remove();
+    removed = true;
+    while (cur && cur.nodeType === 1 && !cur.firstChild && !(cur.classList && cur.classList.contains(cfg.editorClass))) {
+      if (/^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TD|TH)$/.test(cur.tagName)) {
+        cur.appendChild(document.createElement('br'));
+        break;
+      }
+      if (/^(B|STRONG|I|EM|U|S|STRIKE|DEL|SUP|SUB|SPAN|FONT)$/.test(cur.tagName)) {
+        var up = cur.parentNode;
+        cur.remove();
+        cur = up;
+      } else {
+        break;
+      }
+    }
+  }
+  if (removed && Writer.history && !Writer.history.applying && Writer.pages && Writer.pages.combinedHtml) {
+    var h = Writer.history;
+    if (h.undoStack && h.undoStack.length &&
+        Writer.pages.combinedHtml() === h.undoStack[h.undoStack.length - 1].html) {
+      h.undoStack.pop();
+      h.current = h.snapshot();
+      if (h.sync) h.sync();
+    }
+  }
+  return removed;
+};
+
+/* Strip ZWSP and empty pending spans on save / export / PDF. */
+Writer.editor.stripPending = function stripPending(root) {
+  if (!root) return;
+  var attr = Writer.editor.PENDING_ATTR;
+  var BLOCK = /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TD|TH)$/;
+  var INLINE = /^(B|STRONG|I|EM|U|S|STRIKE|DEL|SUP|SUB|SPAN|FONT)$/;
+  var spans = root.querySelectorAll ? root.querySelectorAll('span[' + attr + ']') : [];
+  var i;
+  for (i = spans.length - 1; i >= 0; i--) {
+    var sp = spans[i];
+    if (Writer.editor.isPendingEmpty(sp)) {
+      var cur = sp.parentNode;
+      sp.remove();
+      while (cur && cur !== root && cur.nodeType === 1 && !cur.firstChild) {
+        if (BLOCK.test(cur.tagName)) {
+          cur.appendChild(document.createElement('br'));
+          break;
+        }
+        if (INLINE.test(cur.tagName)) {
+          var up = cur.parentNode;
+          cur.remove();
+          cur = up;
+        } else {
+          break;
+        }
+      }
+    } else {
+      sp.removeAttribute(attr);
+    }
+  }
+  var cleanText = function (tn) {
+    if (!tn.nodeValue || tn.nodeValue.indexOf(Writer.editor.ZWSP) === -1) return;
+    tn.nodeValue = tn.nodeValue.replace(/\u200b/g, '');
+    if (!tn.nodeValue.length && tn.parentNode) {
+      var par = tn.parentNode;
+      tn.remove();
+      if (par !== root && par.nodeType === 1 && BLOCK.test(par.tagName) && !par.firstChild) {
+        par.appendChild(document.createElement('br'));
+      }
+    }
+  };
+  if (typeof document.createTreeWalker === 'function' && typeof NodeFilter !== 'undefined') {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    var nodes = [], n;
+    while ((n = w.nextNode())) {
+      if (n.nodeValue && n.nodeValue.indexOf(Writer.editor.ZWSP) !== -1) nodes.push(n);
+    }
+    for (i = 0; i < nodes.length; i++) cleanText(nodes[i]);
+  } else {
+    var walk = function (node) {
+      var c = node.firstChild, nxt;
+      while (c) {
+        nxt = c.nextSibling;
+        if (c.nodeType === 3) cleanText(c);
+        else if (c.nodeType === 1) walk(c);
+        c = nxt;
+      }
+    };
+    walk(root);
+  }
+};
+
 /* Shift+Enter: insert a real <br> (Chrome's insertLineBreak types "\n" under
-   pre-wrap). A trailing placeholder <br> keeps an empty last line visible. */
+   pre-wrap). A trailing placeholder <br> keeps an empty last line visible.
+   DW25: carries inline formatting onto the new line via pending span. */
 Writer.editor.insertLineBreak = function insertLineBreak() {
   var sel = window.getSelection();
   if (!sel || !sel.rangeCount) return;
   var range = sel.getRangeAt(0);
-  range.deleteContents();
+  var inlineSnap = Writer.editor.inlineStyleAt(range.startContainer, range.startOffset);
+  if (Writer.editor._isCollapsed(sel, range)) {
+    Writer.editor.detachPendingAtCaret();
+    sel = window.getSelection();
+    if (sel && sel.rangeCount) range = sel.getRangeAt(0);
+  }
+  if (range.deleteContents) range.deleteContents();
   var br = document.createElement('br');
-  range.insertNode(br);
+  Writer.editor._insertNodeAtRange(range, br);
   var n = br;
   var needsPlaceholder = true;
   while (n && !(n.classList && n.classList.contains(Writer.config.editorClass))) {
@@ -104,13 +544,20 @@ Writer.editor.insertLineBreak = function insertLineBreak() {
     if (n && n.nodeType === 1 && /^(P|DIV|LI|H[1-6]|BLOCKQUOTE|PRE|TD|TH)$/.test(n.tagName)) break;
   }
   if (needsPlaceholder) br.parentNode.insertBefore(document.createElement('br'), br.nextSibling);
-  var r = document.createRange();
-  r.setStartAfter(br);
-  r.collapse(true);
-  sel.removeAllRanges();
-  sel.addRange(r);
-  var host = br.parentElement && br.parentElement.closest('.' + Writer.config.editorClass);
-  if (host) host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
+  var idx = Array.prototype.indexOf.call(br.parentNode.childNodes, br) + 1;
+  var r = Writer.editor._makeRange(br.parentNode, idx);
+  if (sel.removeAllRanges) sel.removeAllRanges();
+  if (sel.addRange) sel.addRange(r);
+  if (inlineSnap && (needsPlaceholder || !Writer.editor._inlineStylesMatch(Writer.editor.inlineStyleAt(br.parentNode, idx), inlineSnap))) {
+    Writer.editor.applyPendingStyle(inlineSnap);
+  }
+  if (Writer.ui) Writer.ui.updateToolbarState();
+  Writer.editor.saveSelection();
+  var elHost = br.parentElement || br.parentNode;
+  var host = elHost && elHost.closest && elHost.closest('.' + Writer.config.editorClass);
+  if (host && host.dispatchEvent && typeof InputEvent !== 'undefined') {
+    host.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
+  }
 };
 
 
@@ -195,6 +642,26 @@ Writer.editor.setAlign = function setAlign(kind) {
 /* Run a contenteditable command, then refresh toolbar and pages. */
 Writer.editor.execCmd = function execCmd(command, value) {
   Writer.editor.focusEditor();
+  if (/^(bold|italic|underline)$/.test(command)) {
+    var sel = window.getSelection();
+    var r = Writer.editor._selRange(sel);
+    if (r && Writer.editor._isCollapsed(sel, r)) {
+      var pend = Writer.editor.pendingSpanAt(r.startContainer);
+      if (pend && Writer.editor.isPendingEmpty(pend)) {
+        var cur = Writer.editor.inlineStyleAt(r.startContainer, r.startOffset) || {};
+        var idx = pend.parentNode ? Array.prototype.indexOf.call(pend.parentNode.childNodes, pend) : 0;
+        var parentCur = pend.parentNode ? Writer.editor.inlineStyleAt(pend.parentNode, idx) : null;
+        var patch = {};
+        if (command === 'bold') patch.bold = cur.bold ? ((parentCur && parentCur.bold) ? false : '') : true;
+        if (command === 'italic') patch.italic = cur.italic ? ((parentCur && parentCur.italic) ? false : '') : true;
+        if (command === 'underline') patch.underline = cur.underline ? ((parentCur && parentCur.underline) ? false : '') : true;
+        Writer.editor.applyPendingStyle(patch);
+        if (Writer.ui) Writer.ui.updateToolbarState();
+        Writer.editor.saveSelection();
+        return;
+      }
+    }
+  }
   document.execCommand(command, false, value == null ? null : value);
   if (Writer.ui) Writer.ui.updateToolbarState();
   Writer.editor.saveSelection();
@@ -214,10 +681,17 @@ Writer.editor.setScript = function setScript(kind) {
   Writer.editor.execCmd(kind);
 };
 
-/* Apply a font family name to the current selection. */
+/* Apply a font family name to the current selection (DW25: pending span at caret). */
 Writer.editor.setFontFamily = function setFontFamily(name) {
+  var family = name || Writer.config.fontCommandName;
   Writer.editor.focusEditor();
-  document.execCommand('fontName', false, name || Writer.config.fontCommandName);
+  var sel = window.getSelection();
+  var range = Writer.editor._selRange(sel);
+  if (range && Writer.editor._isCollapsed(sel, range) && Writer.editor.isInEditor(range.startContainer)) {
+    Writer.editor.applyPendingStyle({ fontFamily: family });
+  } else {
+    document.execCommand('fontName', false, family);
+  }
   if (Writer.ui) Writer.ui.updateToolbarState();
   Writer.editor.saveSelection();
 };
@@ -228,11 +702,24 @@ Writer.editor.setTimesNewRoman = function setTimesNewRoman() {
 };
 
 /* Apply a real point size (8–36) to the selection.
-   execCommand only knows sizes 1–7, so mark with 7 and swap in a pt span. */
+   With a collapsed caret (DW25), insert a ZWSP pending span so new text inherits the size.
+   With selected text, mark with size 7 and swap in a pt span. */
 Writer.editor.applyFontSize = function applyFontSize(pt) {
   var size = parseInt(pt, 10);
   if (!size) return;
   Writer.editor.focusEditor();
+  var sel0 = window.getSelection();
+  var r0 = Writer.editor._selRange(sel0);
+  if (r0 && Writer.editor._isCollapsed(sel0, r0) && Writer.editor.isInEditor(r0.startContainer)) {
+    Writer.editor.applyPendingStyle({ fontSize: size + 'pt' });
+    if (Writer.ui) Writer.ui.updateToolbarState();
+    Writer.editor.saveSelection();
+    var host0 = Writer.editor.activeEditor;
+    if (host0 && host0.dispatchEvent && typeof InputEvent !== 'undefined') {
+      host0.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatFontSize' }));
+    }
+    return;
+  }
   try { document.execCommand('styleWithCSS', false, false); } catch (e) {}
   document.execCommand('fontSize', false, '7');
   var marks = document.querySelectorAll('.' + Writer.config.editorClass + ' font[size="7"]');
@@ -309,21 +796,43 @@ Writer.editor.onPaste = function onPaste(e) {
 
 
 /* DW23: Enter starts a new paragraph and copies the previous block's
-   indent, line spacing and alignment onto it (lists are left alone). */
+   indent, line spacing and alignment onto it (lists are left alone).
+   DW25: Enter also carries the caret's inline character formatting onto the new block. */
 Writer.editor.insertParagraph = function insertParagraph() {
   Writer.editor.focusEditor();
-  var I = Writer.indent, snap = null;
-  if (I && I.paraStyle && I.blockOf) {
-    var sel = window.getSelection();
-    if (sel && sel.rangeCount) {
-      var n = sel.getRangeAt(0).startContainer;
-      snap = I.paraStyle(I.blockOf(n, I.hostOf(n)));
+  var I = Writer.indent, snap = null, inlineSnap = null;
+  var sel = window.getSelection();
+  var r0 = Writer.editor._selRange(sel);
+  if (r0) {
+    if (I && I.paraStyle && I.blockOf) {
+      snap = I.paraStyle(I.blockOf(r0.startContainer, I.hostOf(r0.startContainer)));
     }
+    inlineSnap = Writer.editor.inlineStyleAt(r0.startContainer, r0.startOffset);
+    if (Writer.editor._isCollapsed(sel, r0)) Writer.editor.detachPendingAtCaret();
   }
   document.execCommand('insertParagraph', false, null);
-  if (snap && I && I.applyParaStyle) {
-    var next = I.blockForEnter ? I.blockForEnter() : null;
-    if (next) I.applyParaStyle(next, snap);
+  var next = (I && I.blockForEnter) ? I.blockForEnter() : null;
+  if (snap && I && I.applyParaStyle && next) I.applyParaStyle(next, snap);
+  if (inlineSnap) {
+    var sel1 = window.getSelection();
+    var r1 = Writer.editor._selRange(sel1);
+    if (r1 && Writer.editor.isInEditor(r1.startContainer)) {
+      var curBlock = next || Writer.editor.alignBlockOf(r1.startContainer);
+      var emptyBlock = Writer.editor._isBlockWithoutText(curBlock);
+      var curStyle = Writer.editor.inlineStyleAt(r1.startContainer, r1.startOffset);
+      if (emptyBlock || !Writer.editor._inlineStylesMatch(curStyle, inlineSnap)) {
+        if (emptyBlock && r1.startContainer.nodeType === 1 && r1.startOffset > 0 && r1.startContainer.childNodes) {
+          var prevBr = r1.startContainer.childNodes[r1.startOffset - 1];
+          var nextChild = r1.startContainer.childNodes[r1.startOffset];
+          if (prevBr && prevBr.tagName === 'BR' && !nextChild) {
+            var fixR = Writer.editor._makeRange(r1.startContainer, r1.startOffset - 1);
+            if (sel1.removeAllRanges) sel1.removeAllRanges();
+            if (sel1.addRange) sel1.addRange(fixR);
+          }
+        }
+        Writer.editor.applyPendingStyle(inlineSnap);
+      }
+    }
   }
   if (Writer.ui) Writer.ui.updateToolbarState();
   Writer.editor.saveSelection();
@@ -332,17 +841,72 @@ Writer.editor.insertParagraph = function insertParagraph() {
   }, Writer.config.paginationAfterInsertMs);
 };
 
-/* Enter / Shift+Enter, paste and focus from every page editor. */
+/* Enter / Shift+Enter, paste, pending-style cleanup and focus from every page editor. */
 Writer.editor.bind = function bind() {
   var cfg = Writer.config;
   /* Enter = new <p>, Shift+Enter = <br> line break. */
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !e.isComposing) {
+      if (Writer.editor.isInEditor(e.target)) {
+        var selL = window.getSelection();
+        var rL = Writer.editor._selRange(selL);
+        if (rL && Writer.editor._isCollapsed(selL, rL)) {
+          var pendL = Writer.editor.pendingSpanAt(rL.startContainer);
+          if (pendL && Writer.editor.isPendingEmpty(pendL)) Writer.editor.detachPendingAtCaret();
+        }
+      }
+      return;
+    }
     if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
     if (!Writer.editor.isInEditor(e.target)) return;
     e.preventDefault();
     if (e.shiftKey) Writer.editor.insertLineBreak();
     /* (before DW23) else Writer.editor.execCmd('insertParagraph'); */
     else Writer.editor.insertParagraph();
+  });
+  document.addEventListener('beforeinput', function (e) {
+    if (e.isComposing || Writer.editor.isComposing) return;
+    if (e.inputType !== 'deleteContentBackward') return;
+    if (!Writer.editor.isInEditor(e.target)) return;
+    var selB = window.getSelection();
+    var rB = Writer.editor._selRange(selB);
+    if (rB && Writer.editor._isCollapsed(selB, rB)) {
+      var pendB = Writer.editor.pendingSpanAt(rB.startContainer);
+      if (pendB && Writer.editor.isPendingEmpty(pendB)) Writer.editor.detachPendingAtCaret();
+    }
+  }, true);
+  document.addEventListener('compositionstart', function (e) {
+    if (Writer.editor.isInEditor(e.target)) Writer.editor.isComposing = true;
+  }, true);
+  document.addEventListener('compositionend', function (e) {
+    if (!Writer.editor.isInEditor(e.target)) return;
+    Writer.editor.isComposing = false;
+    var el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    var ed = el && el.closest && el.closest('.' + cfg.editorClass);
+    Writer.editor.resolvePendingSpans(ed || document);
+  }, true);
+  document.addEventListener('input', function (e) {
+    if (e.isComposing || Writer.editor.isComposing || e.inputType === 'insertCompositionText') return;
+    if (!Writer.editor.isInEditor(e.target)) return;
+    var el = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    var ed = el && el.closest && el.closest('.' + cfg.editorClass);
+    Writer.editor.resolvePendingSpans(ed || document);
+  }, true);
+  document.addEventListener('selectionchange', function () {
+    var active = document.activeElement;
+    if (!active || !active.classList || !active.classList.contains(cfg.editorClass)) return;
+    var selS = window.getSelection();
+    var rS = Writer.editor._selRange(selS);
+    if (!rS || !Writer.editor.isInEditor(rS.startContainer)) return;
+    var keep = null;
+    if (Writer.editor._isCollapsed(selS, rS)) {
+      keep = Writer.editor.pendingSpanAt(rS.startContainer);
+    } else {
+      var aP = Writer.editor.pendingSpanAt(rS.startContainer);
+      var bP = Writer.editor.pendingSpanAt(rS.endContainer);
+      if (aP && aP === bP) keep = aP;
+    }
+    Writer.editor.cleanupPendingSpans(keep);
   });
   /* Toolbar buttons never steal the caret. */
   document.querySelectorAll('.tool-btn').forEach(function (btn) {

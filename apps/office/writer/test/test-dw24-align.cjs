@@ -333,10 +333,12 @@ test('source: buttons and Ctrl+L/E/R/J call setAlign; no live execCommand justif
 test('writer.html title is DW24; config release is DW24; old ids are kept as comments', () => {
   const html = read('writer.html');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.ok(/<title>Writer DW24<\/title>/.test(live));
+  /* (before DW25) assert.ok(/<title>Writer DW24<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(24|25)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW24) <title>Writer DW23</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
-  assert.ok(/release:\s*'DW24'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW25) assert.ok(/release:\s*'DW24'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(24|25)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW24) release: 'DW23', */") !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW24') !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW23') !== -1);

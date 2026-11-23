@@ -22,7 +22,14 @@ Writer.export = {};
 /* Whole document as one HTML string: continuation pieces re-joined, no marks.
    No forced page breaks: Word re-paginates with the same page size and margins. */
 Writer.export.combinedHtml = function combinedHtml() {
-  return Writer.flow.joinedHtml();
+  var html = Writer.flow.joinedHtml();
+  if (Writer.editor && Writer.editor.stripPending && typeof document !== 'undefined') {
+    var holder = document.createElement('div');
+    holder.innerHTML = html;
+    Writer.editor.stripPending(holder);
+    return holder.innerHTML;
+  }
+  return html;
 };
 
 /* Word-HTML for DOCX: page-break markers become Word's page-break <br>.

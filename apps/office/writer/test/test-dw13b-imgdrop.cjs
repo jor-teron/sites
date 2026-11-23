@@ -253,7 +253,8 @@ test('release is DW13b; script loaded before writer-docxopen.js; no browser dial
   /* (before DW22) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW23) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW24) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW25) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22|23|24)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22|23|24|25)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW13b) <title>Writer DW13</title> -->') !== -1);
   assert.ok(html.indexOf('modules/writer-imgdrop.js') !== -1 && html.indexOf('modules/writer-imgdrop.js') < html.indexOf('modules/writer-docxopen.js'));
   /* (before DW13c) assert.ok(/release:\s*'DW13b'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -267,7 +268,8 @@ test('release is DW13b; script loaded before writer-docxopen.js; no browser dial
   /* (before DW22) assert.ok(/release:\s*'DW(13b|13c|14|14a|15|16|17|18|19)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW23) assert.ok(/release:\s*'DW(13b|13c|14|14a|15|16|17|18|19|22)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW24) assert.ok(/release:\s*'DW(13b|13c|14|14a|15|16|17|18|19|22|23)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(13b|13c|14|14a|15|16|17|18|19|22|23|24)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW25) assert.ok(/release:\s*'DW(13b|13c|14|14a|15|16|17|18|19|22|23|24)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(13b|13c|14|14a|15|16|17|18|19|22|23|24|25)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
   const src = DROP.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(src));
   assert.ok(!/\bfetch\s*\(/.test(src));
