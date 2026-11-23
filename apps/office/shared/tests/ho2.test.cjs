@@ -530,13 +530,16 @@ test('heavy libraries are not script tags on page open', function () {
   assert.ok(writer.indexOf('modules/writer-vendor.js') !== -1);
   /* (before DF25) var vendor = read('apps/office/draftly/modules/draftly-vendor.js'); */
   var vendor = read('apps/office/writer/modules/writer-vendor.js');
-  assert.ok(vendor.indexOf('vendor/jspdf.umd.min.js') !== -1);
+  /* (before HO16) assert.ok(vendor.indexOf('vendor/jspdf.umd.min.js') !== -1); */
+  assert.ok(vendor.indexOf('../shared/vendor/jspdf.umd.min.js') !== -1);
   assert.ok(vendor.indexOf('vendor/html2canvas.min.js') !== -1);
   assert.ok(vendor.indexOf('vendor/html-docx.js') !== -1);
   assert.ok(!/src="vendor\/jsQR\.js"/.test(liveScripts('apps/office/paper-scan/paper-scan.html')));
   assert.ok(!/src="vendor\/jsQR\.js"/.test(liveScripts('apps/office/print/print-send.html')));
-  assert.ok(read('apps/office/paper-scan/ps_send.js').indexOf('vendor/jsQR.js') !== -1);
-  assert.ok(read('apps/office/print/print_scan.js').indexOf('vendor/jsQR.js') !== -1);
+  /* (before HO16) assert.ok(read('apps/office/paper-scan/ps_send.js').indexOf('vendor/jsQR.js') !== -1); */
+  /* (before HO16) assert.ok(read('apps/office/print/print_scan.js').indexOf('vendor/jsQR.js') !== -1); */
+  assert.ok(read('apps/office/paper-scan/ps_send.js').indexOf('../shared/vendor/jsQR.js') !== -1);
+  assert.ok(read('apps/office/print/print_scan.js').indexOf('../shared/vendor/jsQR.js') !== -1);
 });
 
 Promise.all(pending).then(function () {

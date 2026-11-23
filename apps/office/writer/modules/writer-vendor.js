@@ -97,7 +97,7 @@ Writer.vendor = {
   },
   ensurePdf: function () {
     return Promise.all([
-      this.load('vendor/jspdf.umd.min.js'),
+      this.load('../shared/vendor/jspdf.umd.min.js'),
       this.load('vendor/html2canvas.min.js')
     ]);
   },

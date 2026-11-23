@@ -74,15 +74,19 @@ Dialogs, save notices, and Auto theme (see above). No vendor file was moved or d
 
 `office-shared-settings.js`: `OfficeSharedSettings` (`DEFAULTS`, `normalize`, `load`, `save`, `subscribe`) stores starting defaults for new documents in `hubOffice.settings` (font and size, paper and units, date and number format, autosave, save location, your name). Per-app settings still win and must not be copied into per-app keys. Already-open documents are not restyled. Suites do not read this key yet.
 
-Follow-up: these vendor files are byte-for-byte copies. A later release can point the apps at one copy.
+## HO16 — shared Office vendor libraries
+
+jsPDF 2.5.1, jsQR 1.4.0 and Kazuhiko Arase's qrcode.js used by more than one Office app now live in `vendor/` in this folder. Writer, Sketchbook, Print, Paper Scan and OCR load them from `../shared/vendor/…` (works on `file://`). Print still keeps PeerJS in `print/vendor/`. Writer still keeps a jsPDF copy in `writer/vendor/` for Invoice Maker until that app is pointed at the shared file.
+
+The remaining rows below are still byte-for-byte copies outside Office (or a temporary Writer jsPDF copy). A later release can point those apps at one copy, with their owners.
 
 | bytes | copies |
 | --- | --- |
 | 1133660 | `apps/office/ocr/vendor/pdf.worker.min.js`, `shared/vendor/pdfjs/pdf.worker.min.js` |
 | 377116 | `apps/office/ocr/vendor/pdf.min.js`, `shared/vendor/pdfjs/pdf.min.js` |
-| 364463 | `apps/office/writer/vendor/jspdf.umd.min.js` (DF25; was `apps/office/draftly/vendor/`), `apps/office/sketchbook/vendor/jspdf.umd.min.js` |
+| 364463 | `apps/office/shared/vendor/jspdf.umd.min.js`, `apps/office/writer/vendor/jspdf.umd.min.js` (kept for Invoice Maker; Writer itself loads the shared copy). (before HO16) also `apps/office/sketchbook/vendor/jspdf.umd.min.js` |
 <!-- (before MV2) sketchbook copy was `apps/lab/sketchbook/vendor/jspdf.umd.min.js` -->
-| 257127 | `apps/office/paper-scan/vendor/jsQR.js`, `apps/office/print/vendor/jsQR.js`, `apps/connectivity/filedrop/vendor/jsQR.js`, `apps/connectivity/pooh-chat/vendor/jsQR.js`, `apps/media/photo-editor-v2/vendor/jsQR.js`, `hub/controller/vendor/jsQR.js`, `phone/vendor/jsQR.js` |
+| 257127 | `apps/office/shared/vendor/jsQR.js`, `apps/connectivity/filedrop/vendor/jsQR.js`, `apps/connectivity/pooh-chat/vendor/jsQR.js`, `apps/media/photo-editor-v2/vendor/jsQR.js`, `hub/controller/vendor/jsQR.js`, `phone/vendor/jsQR.js`. (before HO16) also `apps/office/paper-scan/vendor/jsQR.js`, `apps/office/print/vendor/jsQR.js` |
 | 97630 | `apps/office/ocr/vendor/jszip.min.js`, `apps/connectivity/filedrop/vendor/jszip.min.js`, `shared/vendor/jszip.min.js` |
 | 92865 | `apps/office/print/vendor/peerjs.min.js`, `shared/vendor/peerjs.min.js` |
-| 56694 | `apps/office/print/vendor/qrcode.js`, `apps/office/ocr/vendor/qrcode.js`, `apps/connectivity/filedrop/vendor/qrcode.js`, `shared/vendor/qrcode.js` |
+| 56694 | `apps/office/shared/vendor/qrcode.js`, `apps/connectivity/filedrop/vendor/qrcode.js`, `shared/vendor/qrcode.js`. (before HO16) also `apps/office/print/vendor/qrcode.js`, `apps/office/ocr/vendor/qrcode.js` |
