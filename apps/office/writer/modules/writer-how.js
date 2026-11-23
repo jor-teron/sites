@@ -126,12 +126,15 @@
      File > Export DOCX / Export ODT (writer-export.js: writer-docxgen.js / writer-odtgen.js).
      X: Writer.export (a stub in tests). Resolves a Blob. */
   How.blobFor = function blobFor(fmt, X) {
-    X = X || (root && root.Writer && root.Writer.export);
     var gen = How.generatorFor(fmt);
-    return new Promise(function (resolve) {
+    var prep = (!X && gen !== 'how' && root && root.Writer && root.Writer.vendor && root.Writer.vendor.ensureExport)
+      ? root.Writer.vendor.ensureExport(gen)
+      : Promise.resolve();
+    return prep.then(function () {
+      X = X || (root && root.Writer && root.Writer.export);
       if (!X || gen === 'how') fail('This format cannot be written here.');
-      if (gen === 'docx') resolve(X.withDocx(function () { return X.makeDocxBlob(X.docxHtml()); }));
-      else resolve(X.makeOdtBlob(X.combinedHtml()));
+      if (gen === 'docx') return X.withDocx(function () { return X.makeDocxBlob(X.docxHtml()); });
+      return X.makeOdtBlob(X.combinedHtml());
     }).then(function (blob) {
       if (!blob) fail('Could not build the ' + How.FORMATS[gen].ext + ' file.');
       return blob;
@@ -756,16 +759,21 @@
     if (S.app) clearTimeout(S.app.inputTimer);
     return file.text().then(function (text) {
       var doc = How.parse(text);
+      var needHf = doc && doc.hf && S.hf && S.hf._hasData && S.hf._hasData(doc.hf) && !hfImg() && S.vendor && S.vendor.ensureHfimg
+        ? S.vendor.ensureHfimg().catch(function () {})
+        : Promise.resolve();
       /* Apply inside the save queue so a keystroke save cannot land between the flush and the new document. */
-      return enqueue(function () {
-        return saveNow({}).catch(function () {}).then(function () {
-          How.apply(doc);
+      return needHf.then(function () {
+        return enqueue(function () {
+          return saveNow({}).catch(function () {}).then(function () {
+            How.apply(doc);
           How.dest = dest || null;
           How.holdClash = '';
           How.format = 'how';   /* DW12 */
           How.savedSig = '';
-          if (!opts.quiet) toast('Opened ' + doc.name);
-          return true;
+            if (!opts.quiet) toast('Opened ' + doc.name);
+            return true;
+          });
         });
       });
     }).catch(function (e) {
@@ -795,13 +803,19 @@
     var key = window.FsRef.hash(ref);
     if (key === How.lastHash) return Promise.resolve(false);
     /* (before DW9) if (/\.(docx|odt)$/i.test(ref.name) && D().docxopen && D().docxopen.open) { */
-    if (/\.(docx|odt|txt)$/i.test(ref.name) && D().docxopen && D().docxopen.open) {
+    /* (before DW26) required D().docxopen to already be loaded upfront. */
+    var imp = String(ref.name).match(/\.(docx|odt|txt)$/i);
+    if (imp && ((D().docxopen && D().docxopen.open) || (D().vendor && D().vendor.ensureImport))) {
       How.lastHash = key;
+      var ext = imp[1].toLowerCase();
       return window.FsRef.resolve(ref).then(function (got) {
         return got.file.getFile().then(function (file) {
-          /* (before DW12) return D().docxopen.open(file).then(function (name) { return !!name; }); */
-          var dest = { kind: 'hub', drive: ref.drive, path: ref.path || '', name: ref.name };
-          return D().docxopen.open(file, { dest: dest }).then(function (name) { return !!name; });
+          var load = (D().docxopen && D().docxopen.open) ? Promise.resolve() : D().vendor.ensureImport(ext);
+          return load.then(function () {
+            /* (before DW12) return D().docxopen.open(file).then(function (name) { return !!name; }); */
+            var dest = { kind: 'hub', drive: ref.drive, path: ref.path || '', name: ref.name };
+            return D().docxopen.open(file, { dest: dest }).then(function (name) { return !!name; });
+          });
         });
       }).then(function (ok) {
         if (!ok) How.lastHash = '';

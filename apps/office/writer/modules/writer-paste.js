@@ -570,8 +570,11 @@ Writer.paste.onHfPaste = function onHfPaste(e) {
   var a = H.activeSlot();
   if (!a) return;
   var blob = src ? P.dataBlob(src) : file;
-  var max = Writer.hfimg ? Writer.hfimg.MAX_PX : 600;
-  Writer.image.load(blob, max).then(function (url) {
+  var needHfimg = !Writer.hfimg && Writer.vendor && Writer.vendor.ensureHfimg ? Writer.vendor.ensureHfimg() : Promise.resolve();
+  needHfimg.then(function () {
+    var max = Writer.hfimg ? Writer.hfimg.MAX_PX : 600;
+    return Writer.image.load(blob, max);
+  }).then(function (url) {
     /* (before DW13c) H.setPic(a.part, a.k, { src: url, size: 'M' }); */
     /* (before DW13c) if (!H.pics()[a.part][a.k]) H.note('That picture could not be used.'); */
     /* DW13c: the one picture on top of the header / footer block; a replaced picture keeps its height and alignment */

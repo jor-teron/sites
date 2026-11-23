@@ -95,6 +95,13 @@ Writer.settings.load = function load() {
   S.panel = OfficeSettings.create({
     key: S.KEY, defaults: S.defaults, migrate: S.migrate, sections: S.sections,
     gearBtn: document.getElementById('settingsBtn'),
+    /* DW26: build settings panel & load office-settings.css only on first open. */
+    lazy: true,
+    beforeOpen: function () { return Writer.vendor && Writer.vendor.ensureSettingsCss ? Writer.vendor.ensureSettingsCss() : null; },
+    onBuild: function () {
+      if (Writer.ruler && Writer.ruler.bindToggle) Writer.ruler.bindToggle();
+      if (Writer.find && Writer.find.bindStatusToggle) Writer.find.bindStatusToggle();
+    },
     validate: function (out) { if (['light', 'dark', 'auto'].indexOf(out.theme) === -1) out.theme = 'light'; },
     onChange: function (k) { S.apply(k); },
     onReset: function () { S.s = S.panel.s; S.apply(); S.apply('font'); },
@@ -182,8 +189,8 @@ Writer.settings.startBackup = function startBackup() {
 Writer.settings.autosave = function autosave() { return Writer.settings.s.autosave !== false; };
 
 /* ----- panel (OfficeSettings) ----- */
-Writer.settings.syncForm = function syncForm() { Writer.settings.panel.syncForm(); };
-Writer.settings.open = function open() { Writer.settings.panel.open(); };
+Writer.settings.syncForm = function syncForm() { if (Writer.settings.panel && Writer.settings.panel.panel) Writer.settings.panel.syncForm(); };
+Writer.settings.open = function open() { return Writer.settings.panel.open(); };
 Writer.settings.close = function close() { Writer.settings.panel.close(); };
 
 /* Wrap feature setters so ribbon / menu changes land in writer_settings too. */
@@ -230,7 +237,8 @@ Writer.settings.hook = function hook() {
 
 Writer.settings.bind = function bind() {
   var S = Writer.settings;
-  if (!S.panel || !S.panel.panel) return;
+  /* (before DW26) if (!S.panel || !S.panel.panel) return; */
+  if (!S.panel) return;
   S.hook();
   S.startBackup();
   S.syncForm();

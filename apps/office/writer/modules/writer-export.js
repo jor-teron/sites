@@ -304,8 +304,11 @@ Writer.export.exportDocx = function exportDocx() {
   var cfg = Writer.config;
   if (Writer.editor) Writer.editor.saveSelection();
 
+  var ready = (Writer.vendor && Writer.vendor.ensureExport && (!Writer.docxgen || !Writer.zip))
+    ? Writer.vendor.ensureExport('docx') : Promise.resolve();
   /* (before HO2) the try/catch called makeDocxBlob directly (html-docx already on the page). */
-  Writer.export.withDocx(function () {
+  return ready.then(function () {
+    return Writer.export.withDocx(function () {
     return Writer.export.makeDocxBlob(Writer.export.docxHtml());
   }).then(function (blob) {
     var url = URL.createObjectURL(blob);
@@ -320,8 +323,9 @@ Writer.export.exportDocx = function exportDocx() {
     if (Writer.ui) Writer.ui.showToast('DOCX exported successfully');
   }).catch(function () {
     if (Writer.ui) Writer.ui.showToast('Failed to export DOCX');
-  }).then(function () {
-    if (Writer.editor) Writer.editor.restoreSelection();
+    }).then(function () {
+      if (Writer.editor) Writer.editor.restoreSelection();
+    });
   });
 };
 
@@ -369,24 +373,33 @@ Writer.export.exportOdt = function exportOdt() {
     if (Writer.dialog && Writer.dialog.alert) Writer.dialog.alert({ title: 'Could not export ODT', message: msg });
     else if (Writer.ui) Writer.ui.showToast('Failed to export ODT');
   }
-  try {
-    if (!Writer.odtgen || !Writer.odtgen.build) throw new Error('ODT export is not available');
-    /* (before DW11a) the odtgen.build(...) call was here; it moved to makeOdtBlob (adds the header / footer). */
-    var blob = Writer.export.makeOdtBlob(Writer.export.combinedHtml());
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = (Writer.storage && Writer.storage.currentName()) || (cfg.docxFileName || 'document').replace(/\.docx$/, '');
-    if (a.download.indexOf('.odt') !== a.download.length - 4) a.download += '.odt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, cfg.docxUrlRevokeMs);
-    if (Writer.ui) Writer.ui.showToast('ODT exported successfully');
-  } catch (e) {
-    fail(e);
+  var run = function () {
+    try {
+      if (!Writer.odtgen || !Writer.odtgen.build) throw new Error('ODT export is not available');
+      /* (before DW11a) the odtgen.build(...) call was here; it moved to makeOdtBlob (adds the header / footer). */
+      var blob = Writer.export.makeOdtBlob(Writer.export.combinedHtml());
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = (Writer.storage && Writer.storage.currentName()) || (cfg.docxFileName || 'document').replace(/\.docx$/, '');
+      if (a.download.indexOf('.odt') !== a.download.length - 4) a.download += '.odt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, cfg.docxUrlRevokeMs);
+      if (Writer.ui) Writer.ui.showToast('ODT exported successfully');
+    } catch (e) {
+      fail(e);
+    }
+    if (Writer.editor) Writer.editor.restoreSelection();
+  };
+  if (Writer.vendor && Writer.vendor.ensureExport && (!Writer.odtgen || !Writer.zip)) {
+    return Writer.vendor.ensureExport('odt').then(run, function (e) {
+      fail(e);
+      if (Writer.editor) Writer.editor.restoreSelection();
+    });
   }
-  if (Writer.editor) Writer.editor.restoreSelection();
+  run();
 };
 
 /* File menu: Print / Export DOCX / Export ODT / Export PDF, and Ctrl+P. */
@@ -422,19 +435,28 @@ Writer.export.openChooser = function openChooser() {
 };
 
 Writer.export.bind = function bind() {
-  Writer.ui.onClick('printBtn', function () { Writer.export.printDocument(); });
-  Writer.ui.onClick('exportBtn', function () { Writer.export.openChooser(); });
-  /* (before DW14) Writer.ui.onClick('exportDocxBtn', function () { Writer.export.exportDocx(); });
-  Writer.ui.onClick('exportOdtBtn', function () { Writer.export.exportOdt(); });
-  Writer.ui.onClick('exportPdfBtn', function () { if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download(); }); */
-  Writer.ui.onClick('exportDocxBtn', function () { Writer.export.closeChooser(); Writer.export.exportDocx(); });
-  Writer.ui.onClick('exportOdtBtn', function () { Writer.export.closeChooser(); Writer.export.exportOdt(); });
-  /* Legacy (before MM4): image PDF only.
-  Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); }); */
-  Writer.ui.onClick('exportPdfBtn', function () {
-    Writer.export.closeChooser();
-    if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download();
-  });   /* MM4 / DF14 real-text PDF */
+  if (Writer.export._bound) return;
+  Writer.export._bound = true;
+  if (!(Writer.app && Writer.app._exportButtonsBound)) {
+    Writer.ui.onClick('printBtn', function () { Writer.export.printDocument(); });
+    Writer.ui.onClick('exportBtn', function () { Writer.export.openChooser(); });
+    /* (before DW14) Writer.ui.onClick('exportDocxBtn', function () { Writer.export.exportDocx(); });
+    Writer.ui.onClick('exportOdtBtn', function () { Writer.export.exportOdt(); });
+    Writer.ui.onClick('exportPdfBtn', function () { if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else Writer.pdf.download(); }); */
+    Writer.ui.onClick('exportDocxBtn', function () { Writer.export.closeChooser(); Writer.export.exportDocx(); });
+    Writer.ui.onClick('exportOdtBtn', function () { Writer.export.closeChooser(); Writer.export.exportOdt(); });
+    /* Legacy (before MM4): image PDF only.
+    Draftly.ui.onClick('exportPdfBtn', function () { Draftly.pdf.download(); }); */
+    Writer.ui.onClick('exportPdfBtn', function () {
+      Writer.export.closeChooser();
+      if (Writer.pdfgen) { Writer.pdfgen.exportDocument(); return; }
+      if (Writer.vendor && Writer.vendor.ensureExport) {
+        Writer.vendor.ensureExport('pdf').then(function () {
+          if (Writer.pdfgen) Writer.pdfgen.exportDocument(); else if (Writer.pdf) Writer.pdf.download();
+        });
+      } else if (Writer.pdf) Writer.pdf.download();
+    });   /* MM4 / DF14 real-text PDF */
+  }
   document.addEventListener('mousedown', function (e) {
     if (!Writer.export.isChooserOpen()) return;
     var menu = document.getElementById('exportMenu');

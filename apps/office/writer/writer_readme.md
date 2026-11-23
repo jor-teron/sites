@@ -11,7 +11,8 @@ Formerly Draftly. Since DF25 the folder is `apps/office/writer/`, the files are 
 <!-- (before DW14) The page title and `Writer.config.release` are `DW13c` (DW10 is kept for a later release). -->
 <!-- (before DW16) The page title and `Writer.config.release` are `DW14` (DW10 is kept for a later release). -->
 <!-- (before DW17) The page title and `Writer.config.release` are `DW16` (DW10 is kept for a later release). -->
-The page title and `Writer.config.release` are `DW17` (DW10 is kept for a later release).
+<!-- (before DW26) The page title and `Writer.config.release` are `DW17` (DW10 is kept for a later release). -->
+The page title and `Writer.config.release` are `DW26` (DW10 is kept for a later release).
 
 ## DW13c — letterhead header and footer (one full-width block, resizable picture, grows to fit)
 
@@ -455,3 +456,9 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - With a collapsed caret, `Writer.editor.applyFontSize` and `Writer.editor.setFontFamily` insert a `<span data-pending-style="1">` holding a zero-width space (`\u200B`) and keep the caret inside it through `flow.reflow` / `restoreCaret`. Once real text arrives (after IME `compositionend` when composing), the `\u200B` and `data-pending-style` marker are stripped cleanly with caret offset preserved. Moving the caret away (`selectionchange`, `ArrowLeft`, or Backspace) removes an untyped pending span; Undo removes it as one step; save and exports (`.how`, IndexedDB, DOCX, ODT, PDF) strip any pending spans and `\u200B`. Selecting text keeps the existing mark-and-rewrite path.
 - Pressing **Enter** (`insertParagraph`) or **Shift+Enter** (`insertLineBreak`) inside formatted text now carries the inline character formatting — font size, font family, bold, italic, underline and text colour — onto the new line via the same pending-span mechanism (never copying `id` or `data-cont`, and keeping DW23 paragraph styles and DW24 alignment).
 - Code: `modules/writer-editor.js`, `modules/writer-format.js`, `modules/writer-ui.js`, `modules/writer-storage.js`, `modules/writer-how.js`, `modules/writer-export.js`, `modules/writer-pdfgen.js`, `modules/writer-docxgen.js`, `modules/writer-odtgen.js`. Test: `node --test apps/office/writer/test/test-dw25-typing-style.cjs`.
+
+## DW26 — UI first, logic and extras load in the background
+
+- **First paint:** `writer.html` loads only the core stylesheets upfront (16 blocking stylesheets, `ui/print.css` as `media="print"`, 8 secondary stylesheets non-blocking via `media="print" onload="this.media='all'"`). All 51 core `<script>` tags use `defer` in dependency order so the toolbar, ribbon, blank page and status bar paint immediately, with a subtle `Loading…` hint and pre-ready button disabling + click queuing until `Writer.docs.load()` completes.
+- **On-demand extras (21 scripts + 5 stylesheets):** `modules/writer-vendor.js` loads export (`writer-export.js`, `writer-zip.js`, `writer-odtgen.js`, `writer-docxgen.js`, `writer-pdfgen.js`, `writer-pdf.js`), import/drag-drop (`writer-docxread.js`, `writer-odtread.js`, `writer-txt.js`, `writer-imgdrop.js`, `writer-docxopen.js`), mail merge (`writer-csv.js`, `writer-numfmt.js`, `writer-xlsx.js`, `writer-hos.js`, `writer-merge.js`, `writer-merge-ui.js`, `ui/merge.css`), header/footer images (`writer-hfimg.js`), Find & Replace (`writer-find.js`, `ui/find.css`), Review helpers (`writer-writetext.js`, `writer-write.js`, `ui/write.css`), custom margins CSS (`ui/margins.css`), and Settings panel (`../shared/office-settings.css` + lazy `OfficeSettings.create({ lazy: true })`) on first use. Word count and status bar stay in core (`writer-wordcount.js`).
+- **Hub Office:** `apps/office/hub-office/hub_office.js` opens `../writer/writer.html` directly instead of redirecting through `index.html`.

@@ -18,13 +18,13 @@ window.Writer = Writer;
 
 Writer.find = Writer.find || {};
 
-Writer.find.BLOCKS = /^(P|H[1-6]|LI|UL|OL|DIV|BLOCKQUOTE|PRE|TABLE|TR|TD|TH)$/;
-Writer.find.countMs = 300;
+Writer.find.BLOCKS = Writer.find.BLOCKS || /^(P|H[1-6]|LI|UL|OL|DIV|BLOCKQUOTE|PRE|TABLE|TR|TD|TH)$/;
+Writer.find.countMs = Writer.find.countMs || 300;
 
 /* ---------- text model ---------- */
 
 /* True for nodes whose text is not document text (marks, page breaks). */
-Writer.find.skip = function skip(el) {
+Writer.find.skip = Writer.find.skip || function skip(el) {
   if (!el || el.nodeType !== 1) return false;
   if (Writer.flow.isBreak(el)) return true;
   if (el.getAttribute('contenteditable') === 'false') return true;
@@ -33,7 +33,7 @@ Writer.find.skip = function skip(el) {
 };
 
 /* Leaf block pieces in document order: { el, text, map:[{node,start}], cont }. */
-Writer.find.blocks = function blocks() {
+Writer.find.blocks = Writer.find.blocks || function blocks() {
   var F = Writer.find;
   var out = [];
   var eds = Writer.flow.editors();
@@ -278,11 +278,20 @@ Writer.find.replaceAll = function replaceAll() {
 
 /* ---------- wiring ---------- */
 
+Writer.find.scheduleRefresh = function scheduleRefresh() {
+  var F = Writer.find;
+  clearTimeout(F._findTimer);
+  F._findTimer = setTimeout(function () { if (F.open) F.refresh(true); }, F.countMs);
+};
+
 Writer.find.init = function init() {
   var F = Writer.find;
-  if (!F.el('findBar') || !F.el('wordCountBtn')) return;
+  if (F._findBound || !F.el('findBar')) return;
+  F._findBound = true;
+  if (F.initWordCount && !F._wcBound) F.initWordCount();
   var noSteal = function (id, fn) {
     var b = F.el(id);
+    if (!b) return;
     b.addEventListener('mousedown', function (e) { if (id !== 'findInput') e.preventDefault(); });
     b.addEventListener('click', function (e) { e.preventDefault(); fn(); });
   };
@@ -297,8 +306,7 @@ Writer.find.init = function init() {
   });
   noSteal('replaceBtn', F.replace);
   noSteal('replaceAllBtn', F.replaceAll);
-  noSteal('findRibbonBtn', function () { F.show(false); });
-  noSteal('wordCountBtn', function () { F.togglePop(); });
+  if (!(Writer.app && Writer.app._findRibbonBound)) noSteal('findRibbonBtn', function () { F.show(false); });
 
   F.el('findInput').addEventListener('input', function () { F.refresh(); if (F.matches.length) F.reveal(); });
   F.el('findBar').addEventListener('keydown', function (e) {
@@ -317,39 +325,8 @@ Writer.find.init = function init() {
     else if (mod && !e.shiftKey && k === 'h') { e.preventDefault(); e.stopPropagation(); F.show(true); }
     else if (e.key === 'Escape') {
       if (F.open && Writer.editor.isInEditor(e.target)) { e.preventDefault(); F.hide(); }
-      if (!F.el('wordCountPop').hidden) F.togglePop(false);
     }
   }, true);
-
-  document.addEventListener('mousedown', function (e) {
-    var pop = F.el('wordCountPop');
-    if (!pop.hidden && !pop.contains(e.target) && e.target !== F.el('wordCountBtn')) F.togglePop(false);
-  });
-
-  /* Document edits: recount, and re-run the search if the bar is open. */
-  var findTimer = null;
-  document.addEventListener('input', function (e) {
-    if (!Writer.editor.isInEditor(e.target)) return;
-    F.scheduleCount();
-    if (F.open) { clearTimeout(findTimer); findTimer = setTimeout(function () { F.refresh(true); }, F.countMs); }
-  });
-  document.addEventListener('selectionchange', F.scheduleCount);
-  /* Pagination, undo, open and new all go through reflowAll / reflow. */
-  ['reflow', 'reflowAll'].forEach(function (name) {
-    var orig = Writer.flow[name];
-    Writer.flow[name] = function () {
-      var out = orig.apply(this, arguments);
-      F.scheduleCount();
-      if (F.open) { clearTimeout(findTimer); findTimer = setTimeout(function () { F.refresh(true); }, F.countMs); }
-      return out;
-    };
-  });
-  noSteal('statusBarToggle', function () {
-    F.setStatusBar(F.el('statusBarToggle').getAttribute('aria-pressed') !== 'true', true);
-  });
-  var stored = null;
-  try { stored = localStorage.getItem(F.STATUS_KEY); } catch (e) {}
-  F.setStatusBar(stored !== '0', false);
 };
 
 Writer.find.init();

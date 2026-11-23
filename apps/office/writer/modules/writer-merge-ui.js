@@ -530,6 +530,11 @@ Writer.mergeUi = { previewOn: false };
   }
 
   function runExport(fmt, pattern) {
+    /* DW26: load export/zip/docxgen lazily if not yet loaded. */
+    if (Writer.vendor && Writer.vendor.ensureExport && (!Writer.export || !Writer.zip || !Writer.docxgen)) {
+      Writer.vendor.ensureExport('docx').then(function () { runExport(fmt, pattern); });
+      return;
+    }
     var X = Writer.export, n = M.count(), map = M.index();
     var base = M.docHtml(), name = docName();
     var names = fmt === 'zip' ? M.fileNames(pattern, name) : null;
@@ -710,7 +715,13 @@ Writer.mergeUi = { previewOn: false };
     $('mmPrevBtn').addEventListener('click', function () { M.setRow(M.row - 1); });
     $('mmNextBtn').addEventListener('click', function () { M.setRow(M.row + 1); });
     $('mmExportBtn').addEventListener('click', exportDialog);
-    if ($('mmExportPdfBtn')) $('mmExportPdfBtn').addEventListener('click', function () { pdfDialog(false); });   /* MM4 */
+    if ($('mmExportPdfBtn')) $('mmExportPdfBtn').addEventListener('click', function () {
+      if (Writer.vendor && Writer.vendor.ensureExport && !Writer.pdfgen) {
+        Writer.vendor.ensureExport('pdf').then(function () { pdfDialog(false); });
+        return;
+      }
+      pdfDialog(false);
+    });   /* MM4 / DW26 */
     document.addEventListener('keydown', function (e) {
       if (!U.previewOn) return;
       if (e.key === 'Escape' && !document.querySelector('.mm-backdrop')) { e.preventDefault(); setPreview(false); }

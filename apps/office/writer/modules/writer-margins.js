@@ -47,6 +47,11 @@ Writer.margins.read = function read() {
 };
 
 Writer.margins.open = function open(show) {
+  /* DW26: load ui/margins.css on demand when opening custom margins. */
+  if (show && Writer.vendor && Writer.vendor.ensureMarginsCss && !Writer.margins._cssLoaded) {
+    Writer.margins._cssLoaded = true;
+    return Writer.vendor.ensureMarginsCss().then(function () { Writer.margins.open(true); });
+  }
   var shown = Writer.view.togglePop('marginDialog', 'customMarginsBtn', show);
   if (shown) {
     Writer.margins.fill();

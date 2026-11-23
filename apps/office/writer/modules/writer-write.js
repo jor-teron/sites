@@ -230,21 +230,25 @@ Writer.write = { focusOn: false };
   /* ---------- wiring ---------- */
 
   W.init = function init() {
+    if (W._bound) return;
+    W._bound = true;
     var on = D.ui && D.ui.onClick ? D.ui.onClick : function () {};
-    on('spellBtn', W.toggleSpell);
-    on('focusBtn', function () { W.setFocus(!W.focusOn); });
-    on('focusExitBtn', function () { W.setFocus(false); });
-    on('readAloudBtn', function () { W.readAloud(); });
+    if (!(D.app && D.app._writeButtonsBound)) {
+      on('spellBtn', W.toggleSpell);
+      on('focusBtn', function () { W.setFocus(!W.focusOn); });
+      on('focusExitBtn', function () { W.setFocus(false); });
+      on('readAloudBtn', function () { W.readAloud(); });
+      var cb = document.querySelectorAll('[data-case]');
+      for (var i = 0; i < cb.length; i++) {
+        (function (b) {
+          b.addEventListener('mousedown', function (e) { e.preventDefault(); });   /* keep the selection */
+          b.addEventListener('click', function (e) { e.preventDefault(); W.changeCase(b.getAttribute('data-case')); });
+        })(cb[i]);
+      }
+    }
     ['undo', 'redo', 'save'].forEach(function (id) {
       on('focus' + id.charAt(0).toUpperCase() + id.slice(1) + 'Btn', function () { if (window.OfficeQuick) OfficeQuick.run(id); });
     });
-    var cb = document.querySelectorAll('[data-case]');
-    for (var i = 0; i < cb.length; i++) {
-      (function (b) {
-        b.addEventListener('mousedown', function (e) { e.preventDefault(); });   /* keep the selection */
-        b.addEventListener('click', function (e) { e.preventDefault(); W.changeCase(b.getAttribute('data-case')); });
-      })(cb[i]);
-    }
     /* Esc ends focus mode unless something else (find, a menu, a dialog, header/footer) is open. */
     window.addEventListener('keydown', function (e) {
       if (!W.focusOn || e.key !== 'Escape' || e.defaultPrevented || busy()) return;

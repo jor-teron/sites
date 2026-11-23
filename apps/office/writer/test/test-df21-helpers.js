@@ -292,13 +292,12 @@ test('html wiring: Review tab, status items, scripts, title', function () {
     /* (before DW8) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW7</title>'] */
     /* (before DW9) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW8</title>'] */
     /* (before DW11) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW9</title>'] */
-    /* (before DW11a) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW11</title>'] */
-    'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW11a</title>']
+    /* (before DW26) 'src="modules/writer-writetext.js"', 'src="modules/writer-write.js"', 'href="ui/write.css"', '<title>Writer DW11a</title>' */
+    'src="modules/writer-vendor.js"', '<title>Writer DW26</title>']
     .forEach(function (s) { assert.ok(html.indexOf(s) !== -1, s); });
-  /* (before DF25) assert.ok(html.indexOf('draftly-writetext.js') < html.indexOf('draftly-write.js"')); */
-  assert.ok(html.indexOf('writer-writetext.js') < html.indexOf('writer-write.js"'));
-  /* (before DF25) assert.ok(html.indexOf('draftly-write.js"') < html.indexOf('draftly-app.js')); */
-  assert.ok(html.indexOf('writer-write.js"') < html.indexOf('writer-app.js'));
+  var vendor = read('apps/office/writer/modules/writer-vendor.js');
+  assert.ok(vendor.indexOf('ui/write.css') !== -1);
+  assert.ok(vendor.indexOf('modules/writer-writetext.js') < vendor.indexOf('modules/writer-write.js'));
   assert.ok(!/\?v=/.test(html), 'no ?v=');
   /* (before DF25) var hub = read('apps/office/draftly/modules/draftly-hub.js'); */
   var hub = read('apps/office/writer/modules/writer-hub.js');

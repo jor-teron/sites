@@ -545,7 +545,10 @@ Writer.docs.openPicked = function openPicked(file) {
     return;
   }
   if (kind === 'docx' || kind === 'odt' || kind === 'txt') {
-    if (Writer.docxopen) Writer.docxopen.open(file);
+    if (Writer.docxopen) { Writer.docxopen.open(file); return; }
+    if (Writer.vendor && Writer.vendor.ensureImport) {
+      return Writer.vendor.ensureImport(kind).then(function () { if (Writer.docxopen) Writer.docxopen.open(file); });
+    }
     return;
   }
   if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast('Choose a .how, .docx, .odt or .txt file to open it');
@@ -589,7 +592,12 @@ Writer.docs.openPickedHandle = function openPickedHandle(handle) {
     }
     if (kind === 'docx' || kind === 'odt' || kind === 'txt') {
       /* Same handle path DW12 used on Open .docx / .odt / .txt. A .txt still becomes a .how copy. */
-      if (Writer.docxopen) Writer.docxopen.open(file, { handle: handle });
+      if (Writer.docxopen) { Writer.docxopen.open(file, { handle: handle }); return; }
+      if (Writer.vendor && Writer.vendor.ensureImport) {
+        return Writer.vendor.ensureImport(kind).then(function () {
+          if (Writer.docxopen) Writer.docxopen.open(file, { handle: handle });
+        });
+      }
       return;
     }
     if (Writer.ui && Writer.ui.showToast) Writer.ui.showToast('Choose a .how, .docx, .odt or .txt file to open it');
@@ -652,6 +660,14 @@ Writer.docs.bind = function bind() {
   var openFile = document.getElementById('openFile');
   if (openFile) openFile.addEventListener('change', function () {
     if (openFile.files && openFile.files[0]) Writer.docs.openPicked(openFile.files[0]);
+  });
+  /* DW26: Ctrl/Cmd+O opens the picker while editing too (empty mode handles it in writer-empty.js). */
+  document.addEventListener('keydown', function (e) {
+    if (Writer.empty && Writer.empty.isEmpty()) return;
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+    if (String(e.key || '').toLowerCase() !== 'o') return;
+    e.preventDefault();
+    Writer.docs.openFromMenu();
   });
 
   /* Margins come from the Page panel preset (see Writer.docs.load). Drop the old free-form key. */

@@ -39,7 +39,11 @@
       return p.then(function (res) { return !(res && res.ok === false); });
     },
     /* (before DW18) print: function () { D.export.printDocument(); }, */
-    print: function () { if (D.empty && D.empty.isEmpty()) { if (D.ui && D.ui.showToast) D.ui.showToast('No document open'); return; } D.export.printDocument(); },
+    print: function () {
+      if (D.empty && D.empty.isEmpty()) { if (D.ui && D.ui.showToast) D.ui.showToast('No document open'); return; }
+      if (D.export && D.export.printDocument) { D.export.printDocument(); return; }
+      if (D.vendor && D.vendor.ensureExport) D.vendor.ensureExport('print').then(function () { if (D.export) D.export.printDocument(); });
+    },
     undoKey: function (ev) {
       var a = document.activeElement;
       if (D.editor.isInEditor(ev.target) || (a && a.classList && a.classList.contains(D.config.editorClass))) return true;
