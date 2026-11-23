@@ -133,31 +133,43 @@
       };
     });
   }
+  /** Apply CSV text: rebuild + save only when it changed. → list */
+  function applyCsv(cat, text) {
+    const h = hash(text), had = store.cats[cat];
+    if (had && had.h === h) return had.list;
+    const list = build(cat, text);
+    store.cats[cat] = { h, list };
+    save();
+    csvCache[cat] = Promise.resolve(list);
+    window.dispatchEvent(new CustomEvent('hub-startlist', { detail: { cat, rebuilt: true } }));
+    if (had && curRow && catOf(curRow) === cat && !fly.hidden) show(curRow);   // redraw the open flyout
+    return list;
+  }
   /** Read the CSV; rebuild + save only when it changed. → Promise<list | null> */
   function check(cat) {
     if (fresh[cat]) return fresh[cat];
     // R47: hub_catalog.js (window.SITES_CSV, generated from the CSVs) is the no-server copy. file:// →
     // use it at once (fetch of local files is blocked); http(s) → fetch the CSV as before and use the
     // catalog only if the fetch fails, so online behaviour is unchanged and CSV edits show at once.
+    // (before H174) https used fetch(..., { cache: 'no-cache' }) on the critical path.
+    // H174: https also uses the inlined catalog first (no cache:'no-cache' on the critical path).
+    // A background refresh after idle may still fetch the live CSV (refreshCat).
     const built = window.SITES_CSV && typeof window.SITES_CSV[cat] === 'string' ? window.SITES_CSV[cat] : null;
-    const read = (location.protocol === 'file:' && built != null) ? Promise.resolve(built)
-      : fetch(window.HUB_CAT_CSV[cat], { cache: 'no-cache' })
-        .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
-        .catch((e) => { if (built != null) return built; throw e; });
+    const read = (built != null) ? Promise.resolve(built)
+      : fetch(window.HUB_CAT_CSV[cat])
+        .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); });
     fresh[cat] = read
-      .then((t) => {
-        const h = hash(t), had = store.cats[cat];
-        if (had && had.h === h) return had.list;
-        const list = build(cat, t);
-        store.cats[cat] = { h, list };
-        save();
-        csvCache[cat] = Promise.resolve(list);
-        window.dispatchEvent(new CustomEvent('hub-startlist', { detail: { cat, rebuilt: true } }));
-        if (had && curRow && catOf(curRow) === cat && !fly.hidden) show(curRow);   // redraw the open flyout
-        return list;
-      })
+      .then((t) => applyCsv(cat, t))
       .catch(() => { delete fresh[cat]; return null; });
     return fresh[cat];
+  }
+  /** H174: after idle, refresh from the network (default HTTP cache, not no-cache). */
+  function refreshCat(cat) {
+    if (location.protocol === 'file:' || !window.HUB_CAT_CSV || !window.HUB_CAT_CSV[cat]) return Promise.resolve(null);
+    return fetch(window.HUB_CAT_CSV[cat])
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then((t) => applyCsv(cat, t))
+      .catch(() => null);
   }
   function loadCat(cat) {
     if (csvCache[cat]) return csvCache[cat];
@@ -172,7 +184,8 @@
   window.dispatchEvent(new Event('hub-startlist-ready'));   // R33b: hub.js starts its lookups now
 
   // warm every category once the Hub is idle, so the first Start → hover is instant
-  const warm = () => Object.keys(window.HUB_CAT_CSV || {}).forEach((c) => loadCat(c));
+  // H174: load the inlined catalog first, then refresh from the network in the background.
+  const warm = () => Object.keys(window.HUB_CAT_CSV || {}).forEach((c) => { loadCat(c); refreshCat(c); });
   const idle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 4000 }) : setTimeout(fn, 2000));
   if (document.readyState === 'complete') setTimeout(() => idle(warm), 2000);
   else window.addEventListener('load', () => setTimeout(() => idle(warm), 2000), { once: true });

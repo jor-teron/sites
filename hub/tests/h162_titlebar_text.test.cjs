@@ -118,10 +118,16 @@ test('H162: update patches a text label by id and leaves unknown ids and kind al
 });
 
 test('H162: desktop.html, gamebar, CSS and the technical readme wire in the text kind', () => {
-  const desk = fs.readFileSync(path.join(ROOT, 'desktop/desktop.html'), 'utf8');
-  const iCore = desk.indexOf('hub/core/hub_titlebar.js');
-  const iBar = desk.indexOf('desktop/gamebar/hub-gamebar.js');
-  assert.ok(iCore !== -1 && iBar !== -1 && iCore < iBar, 'hub_titlebar.js must load before hub-gamebar.js');
+  // (before H174) titlebar and gamebar were blocking tags in desktop.html
+  // const desk = fs.readFileSync(path.join(ROOT, 'desktop/desktop.html'), 'utf8');
+  // const iCore = desk.indexOf('hub/core/hub_titlebar.js');
+  // const iBar = desk.indexOf('desktop/gamebar/hub-gamebar.js');
+  // assert.ok(iCore !== -1 && iBar !== -1 && iCore < iBar, 'hub_titlebar.js must load before hub-gamebar.js');
+  const loader = fs.readFileSync(path.join(ROOT, 'hub/core/hub_loader.js'), 'utf8');
+  const iConn = loader.indexOf('connect:');
+  const iCore = loader.indexOf("'hub/core/hub_titlebar.js'");
+  const iBar = loader.indexOf("'desktop/gamebar/hub-gamebar.js'");
+  assert.ok(iConn !== -1 && iCore > iConn && iBar > iCore, 'hub_titlebar.js must load before hub-gamebar.js (connect batch)');
 
   const bar = fs.readFileSync(path.join(ROOT, 'desktop/gamebar/hub-gamebar.js'), 'utf8');
   assert.ok(bar.includes('HubTitleBarItems'), 'hub-gamebar.js uses the H162 helper');

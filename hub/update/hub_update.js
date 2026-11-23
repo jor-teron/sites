@@ -125,15 +125,25 @@
     });
     return reg;
   }
-  if (SW_OK) {
-    const hadController = !!navigator.serviceWorker.controller;
-    let reloading = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!hadController || !wanted || reloading) return;   // first install / not asked: no reload
-      reloading = true;
-      reloadNow();   // H144
-    });
-    regP = navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(watch).catch(() => null);
+  // (before H174) registered sw.js at parse (and schedule(5000) below). H174: HubLoader
+  // calls HubUpdate.register() after the wallpaper batch, at idle, so the SW install
+  // does not compete with the taskbar / menu / connect / wallpaper stages.
+  let registered = false;
+  function registerWorker() {
+    if (registered) return regP;
+    registered = true;
+    if (SW_OK) {
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || !wanted || reloading) return;   // first install / not asked: no reload
+        reloading = true;
+        reloadNow();   // H144
+      });
+      regP = navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(watch).catch(() => null);
+    }
+    startUpdateTimers();
+    return regP;
   }
 
   /** hub/version.txt → { version: 'v0.299', date: '2026-10-19' } (blank fields if unreadable). */
@@ -168,6 +178,7 @@
     opts = opts || {};
     if (location.protocol === 'file:') return { state: 'file', version: '', build: BUILD };   // R59: nothing to fetch on file://
     try {
+      await registerWorker();
       const nw = await latest();
       try { const r = await regP; if (r) await r.update(); } catch (_) { /* offline */ }
       try { const c = SW_OK && navigator.serviceWorker.controller; if (c) c.postMessage({ type: 'retry-failed' }); } catch (_) { /* none */ }   // R58
@@ -269,6 +280,7 @@
   let refreshAt = 0;   // H12: when the current run started (a stuck run stops blocking after 90 s)
   const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
   async function refresh() {
+    await registerWorker();
     if (refreshing && Date.now() - refreshAt < 90000) return { changed: [] };
     refreshing = true;
     refreshAt = Date.now();
@@ -340,10 +352,10 @@
     reloadNow();   // H144
   }
 
-  const api = window.HubUpdate = { build: BUILD, check, version: () => running, refresh, clearCache,
-    lastRefresh, last9, next9, nextRefresh: null, showNote: () => showNote(lastReg),
-    every, dueAt, due, dueRule, sixAfter, tick, schedule };   // H52
-  if (location.protocol.startsWith('http')) {
+  let timersOn = false;
+  function startUpdateTimers() {
+    if (timersOn || !location.protocol.startsWith('http')) return;
+    timersOn = true;
     // if (due()) setTimeout(() => { if (due()) refresh(); }, 5000);   // missed 09:00 → on this open (R16c, before H52)
     // schedule();
     schedule(5000);   // H52: first check 5 s after load (due → auto update), then the timer
@@ -352,4 +364,9 @@
     window.addEventListener('storage', (e) => { if (e.key === EVERY_KEY || e.key === LAST) schedule(); });
     window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'hub-prefs' && e.data.key === 'updEvery') schedule(); });
   }
+  const api = window.HubUpdate = { build: BUILD, check, version: () => running, refresh, clearCache,
+    lastRefresh, last9, next9, nextRefresh: null, showNote: () => showNote(lastReg),
+    every, dueAt, due, dueRule, sixAfter, tick, schedule, register: registerWorker };   // H52; H174: + register
+  // (before H174) if (location.protocol.startsWith('http')) { schedule(5000); … listeners … }
+  // H174: register() (from hub_loader.js, after wallpaper + idle) starts the worker and the timers.
 })();

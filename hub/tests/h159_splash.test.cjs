@@ -35,11 +35,20 @@ test('H159: canDismiss — ready fades even before 10s; not ready needs 10s (no 
   assert.equal(S.canDismiss(100, false, 400), false);
 });
 */
-test('H159a: canDismiss — ready waits 3 s; not ready needs 10 s (no auto, no skip before 10 s)', () => {
-  assert.equal(S.SHOW_MIN_MS, 3000);
+// test('H159a: canDismiss — ready waits 3 s; not ready needs 10 s (no auto, no skip before 10 s)', () => {
+//   assert.equal(S.SHOW_MIN_MS, 3000);
+//   assert.equal(S.canDismiss(0, true), false);
+//   assert.equal(S.canDismiss(2999, true), false);
+//   assert.equal(S.canDismiss(3000, true), true);
+//   assert.equal(S.canDismiss(5000, true), true);
+//   ...
+// });   (before H174)
+test('H174: canDismiss — ready waits 5 s; not ready needs 10 s (no auto, no skip before 10 s)', () => {
+  assert.equal(S.SHOW_MIN_MS, 5000);
   assert.equal(S.canDismiss(0, true), false);
   assert.equal(S.canDismiss(2999, true), false);
-  assert.equal(S.canDismiss(3000, true), true);
+  assert.equal(S.canDismiss(3000, true), false);
+  assert.equal(S.canDismiss(4999, true), false);
   assert.equal(S.canDismiss(5000, true), true);
   assert.equal(S.canDismiss(0, false), false);
   assert.equal(S.canDismiss(9999, false), false);
@@ -70,7 +79,8 @@ test('H159: still-loading hint only after 10s while not ready', () => {
   assert.equal(S.showStillLoading(0, true), false);
   assert.equal(S.STILL_MSG.includes('Still loading'), true);
   assert.equal(S.MIN_MS, 10000);
-  assert.equal(S.SHOW_MIN_MS, 3000);
+  // assert.equal(S.SHOW_MIN_MS, 3000);   (before H174)
+  assert.equal(S.SHOW_MIN_MS, 5000);
 });
 
 test('H159: progress fraction is core ready plus N of M windows', () => {
@@ -84,11 +94,18 @@ test('H159: progress fraction is core ready plus N of M windows', () => {
   assert.equal(S.progressFraction(false, -1, -3), 0);
 });
 
-test('H159: isReady — no windows means shell ready; otherwise all windows restored', () => {
+// test('H159: isReady — no windows means shell ready; otherwise all windows restored', () => {
+//   assert.equal(S.isReady(false, 0, 0), false);
+//   assert.equal(S.isReady(true, 0, 0), true);
+//   assert.equal(S.isReady(true, 3, 3), true);
+//   assert.equal(S.isReady(true, 2, 3), false);
+//   assert.equal(S.isReady(false, 3, 3), false);
+// });   (before H174)
+test('H174: isReady — stage 1 / core ready is enough; does not wait for restored windows', () => {
   assert.equal(S.isReady(false, 0, 0), false);
   assert.equal(S.isReady(true, 0, 0), true);
   assert.equal(S.isReady(true, 3, 3), true);
-  assert.equal(S.isReady(true, 2, 3), false);
+  assert.equal(S.isReady(true, 2, 3), true);
   assert.equal(S.isReady(false, 3, 3), false);
 });
 

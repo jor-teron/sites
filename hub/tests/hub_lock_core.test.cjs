@@ -303,7 +303,12 @@ test('keys stay out of profile / sync, and the SW shell lists the new files with
   const iCore = desk.indexOf('<script src="hub/core/hub_lock_core.js">');
   const iLock = desk.indexOf('<script src="hub/core/hub_lock.js">');
   assert.ok(iBreak > 0 && iCore > iBreak && iLock > iCore);
-  assert.ok(desk.indexOf('<script src="shared/vendor/qrcode.js">') < iLock);
+  // assert.ok(desk.indexOf('<script src="shared/vendor/qrcode.js">') < iLock);   (before H174)
+  // H174: qrcode.js moves to the menu batch; lock / break script order in desktop.html is unchanged.
+  const loader = read('hub/core/hub_loader.js');
+  const iMenu = loader.indexOf('menu:');
+  const iQr = loader.indexOf("'shared/vendor/qrcode.js'");
+  assert.ok(iMenu !== -1 && iQr > iMenu, 'qrcode.js is in the menu batch');
   assert.equal(/<script[^>]+peerjs/.test(desk), false, 'PeerJS is not a page script (lazy only)');
   assert.equal(/hub_lock/.test(read('phone.html')), false);
 });

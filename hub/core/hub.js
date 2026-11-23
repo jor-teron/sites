@@ -217,6 +217,8 @@
     document.body.classList.toggle('hub-menu-open', open);
     if (open && !was) prepareMenu();
   }
+  // H174: wm_taskbar.js opens Start after need('menu') without toggling closed if already open.
+  window.__hubOpenStartMenu = () => setOpen(true);
 
   /** Desktop mode with the window manager loaded (wm_mode.js + wm_windows.js). */
   const wmOn = () => !!(window.HubMode && window.HubMode.isDesktop() && window.HubWM);
@@ -1346,8 +1348,9 @@
   if (window.HubStartList) start();
   else {
     window.addEventListener('hub-startlist-ready', start, { once: true });
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
-    else start();
+    // (before H174) if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+    // (before H174) else start();
+    // H174: hub.js can load after DOMContentLoaded (menu batch). Do not start without HubStartList.
   }
   // Back / Forward (and hand-edited hashes): switch apps without adding entries.
   window.addEventListener('popstate', () => applyHash(false));
