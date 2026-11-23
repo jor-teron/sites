@@ -177,7 +177,8 @@ test('writer.html title is DW14a; docs.js keeps the old Open... click as a comme
   /* (before DW17) assert.ok(/<title>Writer DW1(4a|5|6)<\/title>/.test(src)); */
   /* (before DW18) assert.ok(/<title>Writer DW1(4a|5|6|7)<\/title>/.test(src)); */
   /* (before DW19) assert.ok(/<title>Writer DW1(4a|5|6|7|8)<\/title>/.test(src)); */
-  assert.ok(/<title>Writer DW1(4a|5|6|7|8|9)<\/title>/.test(src));
+  /* (before DW22) assert.ok(/<title>Writer DW1(4a|5|6|7|8|9)<\/title>/.test(src)); */
+  assert.ok(/<title>Writer DW(1(4a|5|6|7|8|9)|22)<\/title>/.test(src));
   assert.ok(html.indexOf('<!-- (before DW14a) <title>Writer DW14</title> -->') !== -1);
   assert.ok(docs.indexOf('(before DW14a)') !== -1);
   assert.ok(liveDocs.indexOf('Writer.docs.openFromMenu') !== -1);
@@ -190,5 +191,6 @@ test('writer.html title is DW14a; docs.js keeps the old Open... click as a comme
   /* (before DW17) assert.ok(/release:\s*'DW1(4a|5|6)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW18) assert.ok(/release:\s*'DW1(4a|5|6|7)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW1(4a|5|6|7|8)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW1(4a|5|6|7|8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW22) assert.ok(/release:\s*'DW1(4a|5|6|7|8|9)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(1(4a|5|6|7|8|9)|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });

@@ -429,3 +429,11 @@ IC6: icon redrawn plain without tile; old icon kept as *_icon_before_IC6.png
 - Page Setup typed values (Custom margins dialog) are unchanged and stay independent.
 - Pure math: `Writer.ruler.linkMargins({ side, start, dx, w, linked, alt, min, max, minText })` → `{ left, right, linked, tip }`; `Writer.ruler.tipLabel`, `Writer.ruler.linkedFrom(settings)`.
 - Test: `node --test apps/office/writer/test/test-dw19-margins.cjs`.
+
+## DW22 — paste from Word no longer adds a blank line after each line
+
+- 23 Nov 2026 IST. Copying from a DOCX (Word, LibreOffice or Google Docs) and pasting into Writer no longer turns each line into two. Word's clipboard HTML puts pretty-print whitespace between `<p>` tags; the sanitizer kept those as space text nodes, and `flow.normalize` wrapped each space in a blank paragraph. The editor's `white-space: pre-wrap` made that blank line obvious.
+- The sanitizer now drops whitespace-only top-level text nodes between blocks, strips a trailing top-level `<br>` (Google Docs' Apple-interchange-newline, which sat after those spaces so the old trim missed it), and strips a trailing `<br>` inside a non-empty `<p>` (Word Online / some LibreOffice pastes). Intentional empty paragraphs mid-paste and spaces inside a paragraph are kept.
+- Plain-text paste (Ctrl+Shift+V or "Paste as text") normalises `\r\n` / `\r` to `\n` and treats a single trailing newline as a terminator, like header/footer paste and DW9 `.txt` open. `Writer.editor.plainText`.
+- Header / footer paste already normalised line endings and is unchanged. The Hub Office Writer tab uses the same `writer-paste.js`.
+- Code: `modules/writer-paste.js` (`tidyBox`, `stripTrailingBr`, `isWs`), `modules/writer-editor.js` (`plainText`). Test: `node --test apps/office/writer/test/test-dw22-paste.cjs`.

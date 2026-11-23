@@ -84,7 +84,8 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   /* (before DW17) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6)<\/title>/.test(live)); */
   /* (before DW18) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7)<\/title>/.test(live)); */
   /* (before DW19) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)<\/title>/.test(live));
+  /* (before DW22) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW9) <title>Writer DW8</title> -->') !== -1);
   /* (before DW14) assert.ok(live.indexOf('Open .docx / .odt / .txt') !== -1); */
   /* (before DW14) assert.ok(live.indexOf('accept=".docx,.odt,.txt,') !== -1); */
@@ -113,7 +114,8 @@ test('writer.html wires .txt into the import Open picker and loads writer-txt.js
   /* (before DW17) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW18) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW22) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 test('docxopen and how.js accept .txt from the picker, drop and Hub hash', () => {

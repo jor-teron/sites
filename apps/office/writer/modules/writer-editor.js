@@ -196,12 +196,22 @@ Writer.editor.onPaste = function onPaste(e) {
 
 */
 
+/* Normalise clipboard plain text: CRLF / CR become LF, one trailing
+   newline is a terminator not a blank line (same idea as DW9 .txt open
+   and header/footer paste). Internal blank lines are kept. */
+Writer.editor.plainText = function plainText(text) {
+  text = String(text == null ? '' : text).replace(/\r\n?/g, '\n');
+  if (text.charAt(text.length - 1) === '\n') text = text.slice(0, -1);
+  return text;
+};
+
 /* Plain text paste (R7: takes the toolbar font), then reflow. */
 Writer.editor.pastePlain = function pastePlain(text) {
   var fontSelect = document.getElementById('fontFamilySelect');
   var font = fontSelect ? fontSelect.value : Writer.config.fontCommandName;
   Writer.editor.setFontFamily(font);
-  document.execCommand('insertText', false, text);
+  /* (before DW22) document.execCommand('insertText', false, text); */
+  document.execCommand('insertText', false, Writer.editor.plainText(text));
   Writer.editor.saveSelection();
   if (Writer.pages) Writer.pages.checkPagination();
 };

@@ -284,8 +284,41 @@ Writer.paste.sanitize = function sanitize(html, inCell) {
     if (e.hasAttribute('class') && e.getAttribute('class') !== 'dl-img-block') e.removeAttribute('class');
     if (e.hasAttribute('href') && !Writer.paste.safeHref(e.getAttribute('href'))) e.removeAttribute('href');
   });
-  while (box.lastChild && box.lastChild.nodeName === 'BR') box.removeChild(box.lastChild);
+  /* (before DW22) while (box.lastChild && box.lastChild.nodeName === 'BR') box.removeChild(box.lastChild); */
+  Writer.paste.tidyBox(box);
   return box.innerHTML.trim();
+};
+
+/* True for a text node that is only whitespace (including nbsp). */
+Writer.paste.isWs = function isWs(n) {
+  return !!(n && n.nodeType === 3 && !String(n.nodeValue || '').replace(/\u00a0/g, ' ').trim());
+};
+
+/* Drop a trailing <br> (and trailing whitespace) inside a non-empty paragraph.
+   An empty <p><br></p> is left alone, including mid-paste blank lines. */
+Writer.paste.stripTrailingBr = function stripTrailingBr(p) {
+  var meaningful = 0, n, kids = p.childNodes, i;
+  for (i = 0; i < kids.length; i++) {
+    n = kids[i];
+    if (n.nodeName === 'BR' || Writer.paste.isWs(n)) continue;
+    meaningful++;
+  }
+  if (!meaningful && !p.querySelector('img')) return;
+  while (p.lastChild && (p.lastChild.nodeName === 'BR' || Writer.paste.isWs(p.lastChild))) p.removeChild(p.lastChild);
+};
+
+/* After build: Word / LibreOffice / Google Docs put pretty-print whitespace
+   between block tags, and Docs leaves Apple-interchange-newline after it.
+   Those spaces became blank paragraphs under pre-wrap + flow.normalize.
+   Only top-level nodes are cleaned; spaces inside a paragraph stay. */
+Writer.paste.tidyBox = function tidyBox(box) {
+  var P = Writer.paste;
+  Array.prototype.slice.call(box.childNodes).forEach(function (n) {
+    if (P.isWs(n)) n.parentNode.removeChild(n);
+  });
+  while (box.lastChild && (box.lastChild.nodeName === 'BR' || P.isWs(box.lastChild))) box.removeChild(box.lastChild);
+  while (box.firstChild && P.isWs(box.firstChild)) box.removeChild(box.firstChild);
+  Array.prototype.forEach.call(box.querySelectorAll('p'), P.stripTrailingBr);
 };
 
 Writer.paste.inCell = function inCell() {

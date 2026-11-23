@@ -309,7 +309,8 @@ test('wiring: release DW13c, one block in the DOM code, align tools, no browser 
   /* (before DW17) assert.ok(/<title>Writer DW1(3c|4|4a|5|6)<\/title>/.test(live)); */
   /* (before DW18) assert.ok(/<title>Writer DW1(3c|4|4a|5|6|7)<\/title>/.test(live)); */
   /* (before DW19) assert.ok(/<title>Writer DW1(3c|4|4a|5|6|7|8)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW1(3c|4|4a|5|6|7|8|9)<\/title>/.test(live));
+  /* (before DW22) assert.ok(/<title>Writer DW1(3c|4|4a|5|6|7|8|9)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(1(3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW13c) <title>Writer DW13b</title> -->') !== -1);
   /* (before DW14) assert.ok(/release:\s*'DW13c'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW14a) assert.ok(/release:\s*'DW1(3c|4)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -318,7 +319,8 @@ test('wiring: release DW13c, one block in the DOM code, align tools, no browser 
   /* (before DW17) assert.ok(/release:\s*'DW1(3c|4|4a|5|6)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW18) assert.ok(/release:\s*'DW1(3c|4|4a|5|6|7)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW1(3c|4|4a|5|6|7|8)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW1(3c|4|4a|5|6|7|8|9)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW22) assert.ok(/release:\s*'DW1(3c|4|4a|5|6|7|8|9)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(1(3c|4|4a|5|6|7|8|9)|22)'/.test(read('modules/writer-config.js').replace(/\/\*[\s\S]*?\*\//g, '')));
   ['data-hf-align="l"', 'data-hf-align="c"', 'data-hf-align="r"'].forEach((s) => assert.ok(live.indexOf(s) !== -1, s));
   const hf = read('modules/writer-headerfooter.js').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(hf.indexOf("'hf-cell") === -1, 'no slot cells');
