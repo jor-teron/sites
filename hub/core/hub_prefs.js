@@ -226,6 +226,10 @@
     s.backgroundPosition = live ? 'center' : '';
     s.animationName = live ? 'none' : '';
     empty.classList.remove('wp-light');
+    // H178: tell the splash the static fallback colour / gradient is on the desk
+    try { window.__hubFallbackReady = true; } catch (_) { /* ignore */ }
+    if (window.HubSplash && typeof window.HubSplash.onFallbackReady === 'function') window.HubSplash.onFallbackReady();
+    try { window.dispatchEvent(new CustomEvent('hub-fallback-ready')); } catch (_) { /* old */ }
   }
   function applyWallpaper() {
     const empty = document.getElementById('empty');

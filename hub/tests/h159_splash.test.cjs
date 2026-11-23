@@ -101,12 +101,22 @@ test('H159: progress fraction is core ready plus N of M windows', () => {
 //   assert.equal(S.isReady(true, 2, 3), false);
 //   assert.equal(S.isReady(false, 3, 3), false);
 // });   (before H174)
-test('H174: isReady — stage 1 / core ready is enough; does not wait for restored windows', () => {
-  assert.equal(S.isReady(false, 0, 0), false);
-  assert.equal(S.isReady(true, 0, 0), true);
-  assert.equal(S.isReady(true, 3, 3), true);
-  assert.equal(S.isReady(true, 2, 3), true);
-  assert.equal(S.isReady(false, 3, 3), false);
+// test('H174: isReady — stage 1 / core ready is enough; does not wait for restored windows', () => {
+//   assert.equal(S.isReady(false, 0, 0), false);
+//   assert.equal(S.isReady(true, 0, 0), true);
+//   assert.equal(S.isReady(true, 3, 3), true);
+//   assert.equal(S.isReady(true, 2, 3), true);
+//   assert.equal(S.isReady(false, 3, 3), false);
+// });   (before H178)
+test('H178: isReady — stage 1 + menu + fallback; does not wait for restored windows', () => {
+  // isReady(coreReady, menuReady, fallbackReady)
+  assert.equal(S.isReady(false, true, true), false);
+  assert.equal(S.isReady(true, true, true), true);
+  assert.equal(S.isReady(true, false, true), false);
+  assert.equal(S.isReady(true, true, false), false);
+  assert.equal(S.isReady(false, false, false), false);
+  // truthy leftovers from older restored/total calls must not count as ready without all three
+  assert.equal(S.isReady(true, 0, 0), false);
 });
 
 test('H159: sessionTotal counts saved window keys only', () => {

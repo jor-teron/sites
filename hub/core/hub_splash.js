@@ -1,6 +1,10 @@
 /*
  * H159 Boot splash (hub/core/hub_splash.js) — covers the Hub desktop while stage 1 boots.
+ * (before H174) It waited for restored windows, the Start menu, Connect, or a wallpaper photo.
  * H174: it no longer waits for restored windows, the Start menu, Connect, or a wallpaper photo.
+ * H178: ready is stage 1 (taskbar) AND the Start menu batch (Start usable) AND the static
+ *   fallback wallpaper (default colour / gradient). It does not wait for restored app windows
+ *   or the selected wallpaper photo / live engine (those load after the splash).
  * It does not fetch or prefetch any apps itself.
  *
  * Shown only on the desktop shell (desktop/desktop.html). Not inside apps, not on ?join=
@@ -9,9 +13,10 @@
  * not flash. This file fills the layer, tracks real restore progress, and dismisses it.
  *
  * Progress may still show windows restored N of M plus stage-1 ready, but ready itself
- * (H174) is only stage 1 (the working taskbar). The first 10 seconds cannot be skipped
- * while not ready. When stage 1 is ready the splash fades out once SHOW_MIN_MS has elapsed
- * (even before 10 s). After 10 s, if stage 1 is still not ready, the splash stays on, shows
+ * (before H178, H174) is only stage 1 (the working taskbar).
+ * H178: ready is stage 1 AND menu ready AND fallback ready. The first 10 seconds cannot be skipped
+ * while not ready. When ready the splash fades out once SHOW_MIN_MS has elapsed
+ * (even before 10 s). After 10 s, if still not ready, the splash stays on, shows
  * "Still loading… press any key to continue", and a key or click dismisses it; loading
  * continues in the background. No auto-dismiss while not ready.
  *
@@ -22,10 +27,13 @@
  *
  * API: window.HubSplash (also module.exports in Node): shouldShow, canDismiss,
  *   showStillLoading, progressFraction, isReady, prefEnabled, sessionTotal, isAppDocument,
- *   MIN_MS, SHOW_MIN_MS, STILL_MSG, onDesktopStarted, onStage1Ready, state.
+ *   MIN_MS, SHOW_MIN_MS, STILL_MSG, onDesktopStarted, onStage1Ready, onMenuReady,
+ *   onFallbackReady, state.
  * H159a: a window counts only once its iframe has the app document (not about:blank).
  *   (before H174) The splash stayed at least 3 s even if ready earlier.
- * H174: the splash stays at least 5 s, and lifts when 5 s have elapsed AND stage 1 is ready.
+ * (before H178) H174: the splash stays at least 5 s, and lifts when 5 s have elapsed AND stage 1 is ready.
+ * H178: the splash stays at least 5 s, and lifts when 5 s have elapsed AND stage 1, the
+ *   Start menu, and the static fallback wallpaper are ready.
  */
 (function (global) {
   'use strict';
@@ -84,11 +92,16 @@
     return ((coreReady ? 1 : 0) + n) / (1 + m);
   }
 
-  function isReady(coreReady, restored, total) {
-    // (before H174) if (!coreReady) return false;
-    // (before H174) return (restored | 0) >= Math.max(0, total | 0);
-    // H174: ready once stage 1 (taskbar) is in; do not wait for restored windows.
-    return !!coreReady;
+  // function isReady(coreReady, restored, total) {
+  //   // (before H174) if (!coreReady) return false;
+  //   // (before H174) return (restored | 0) >= Math.max(0, total | 0);
+  //   // H174: ready once stage 1 (taskbar) is in; do not wait for restored windows.
+  //   return !!coreReady;
+  // }   (before H178)
+  function isReady(coreReady, menuReady, fallbackReady) {
+    // H178: ready once stage 1, the Start menu batch, and the static fallback wallpaper are in.
+    // Restored app windows are not part of ready (they load after the splash).
+    return !!coreReady && !!menuReady && !!fallbackReady;
   }
 
   function sessionTotal(data) {
@@ -120,8 +133,13 @@
 
   window.HubSplash = api;
   // H174: hub_loader.js may signal stage 1 before boot() binds the real handler (DOMContentLoaded).
+  // H178: the same pending-flag pattern for menu ready and the static fallback wallpaper.
   let stage1Pending = false;
+  let menuPending = false;
+  let fallbackPending = false;
   api.onStage1Ready = function () { stage1Pending = true; };
+  api.onMenuReady = function () { menuPending = true; };
+  api.onFallbackReady = function () { fallbackPending = true; };
 
   function readPref() {
     try { return localStorage.getItem('sites-hub.bootSplash'); } catch (_) { return ''; }
@@ -152,6 +170,8 @@
       document.documentElement.classList.remove('hub-splash', 'hub-splash-light');
       const stale = document.getElementById('hub-splash');
       if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+      // H178: connect waits for this so a pref-off / ?join= boot is not stuck
+      try { window.dispatchEvent(new CustomEvent('hub-splash-gone')); } catch (_) { /* old */ }
       return;
     }
 
@@ -200,6 +220,8 @@
 
     const startedAt = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     let coreReady = false;
+    let menuReady = false;
+    let fallbackReady = false;
     let total = sessionTotal(readSession());
     const loaded = new Set();
     let gone = false;
@@ -214,7 +236,8 @@
 
     function restoredCount() { return loaded.size; }
 
-    function readyNow() { return isReady(coreReady, restoredCount(), total); }
+    // (before H178) function readyNow() { return isReady(coreReady, restoredCount(), total); }
+    function readyNow() { return isReady(coreReady, menuReady, fallbackReady); }
 
     function raise() {
       if (gone || !el) return;
@@ -244,6 +267,7 @@
     function fadeOut() {
       if (gone) return;
       gone = true;
+      try { window.dispatchEvent(new CustomEvent('hub-splash-gone')); } catch (_) { /* H178 */ }
       try { performance.mark('hub-boot-shown'); } catch (_) { /* H166 */ }
       unbind();
       if (hintEl) hintEl.hidden = true;
@@ -332,9 +356,19 @@
       watchFrames();
       paint();
     }
-    // H174: stage 1 (working taskbar) is enough for ready; restoreWm may still run later (menu batch).
+    // (before H178) H174: stage 1 (working taskbar) is enough for ready; restoreWm may still run later (menu batch).
+    // H178: stage 1 is one of three ready signals (with menu + fallback). restoreWm still runs in the menu batch,
+    // and Connect waits for those windows after the splash is gone.
     function onStage1Ready() {
       coreReady = true;
+      paint();
+    }
+    function onMenuReady() {
+      menuReady = true;
+      paint();
+    }
+    function onFallbackReady() {
+      fallbackReady = true;
       paint();
     }
 
@@ -346,6 +380,8 @@
 
     window.addEventListener('hub-desktop-started', function (e) { onDesktopStarted(e.detail || {}); });
     window.addEventListener('hub-stage1-ready', function () { onStage1Ready(); });
+    window.addEventListener('hub-menu-ready', function () { onMenuReady(); });
+    window.addEventListener('hub-fallback-ready', function () { onFallbackReady(); });
     window.addEventListener('hub-wm-session-restored', function (e) {
       if (e && e.detail && typeof e.detail.count === 'number' && !coreReady) total = e.detail.count;
       watchFrames();
@@ -355,10 +391,16 @@
 
     api.onDesktopStarted = onDesktopStarted;
     api.onStage1Ready = onStage1Ready;
+    api.onMenuReady = onMenuReady;
+    api.onFallbackReady = onFallbackReady;
     if (stage1Pending || document.getElementById('wm-taskbar')) onStage1Ready();
+    if (menuPending) onMenuReady();
+    if (fallbackPending || (typeof window !== 'undefined' && window.__hubFallbackReady)) onFallbackReady();
     api.state = function () {
       return {
         coreReady: coreReady,
+        menuReady: menuReady,
+        fallbackReady: fallbackReady,
         restored: restoredCount(),
         total: total,
         elapsed: elapsed(),
