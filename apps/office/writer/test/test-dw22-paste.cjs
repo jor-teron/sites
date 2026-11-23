@@ -573,10 +573,12 @@ test('plainText: CRLF becomes LF; one trailing newline is a terminator', () => {
 test('writer.html title is DW22; config release is DW22; old ids are kept as comments', () => {
   const html = read('writer.html');
   const live = html.replace(/<!--[\s\S]*?-->/g, '');
-  assert.ok(/<title>Writer DW22<\/title>/.test(live));
+  /* (before DW23) assert.ok(/<title>Writer DW22<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(22|23)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW22) <title>Writer DW19</title> -->') !== -1);
   const cfg = read('modules/writer-config.js');
-  assert.ok(/release:\s*'DW22'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW23) assert.ok(/release:\s*'DW22'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   assert.ok(cfg.indexOf("/* (before DW22) release: 'DW19', */") !== -1);
   assert.ok(read('writer_readme.md').indexOf('## DW22') !== -1);
 });

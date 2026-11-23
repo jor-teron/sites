@@ -203,7 +203,8 @@ test('writer.html wires DW11: title, scripts, picture tools; no browser dialogs'
   /* (before DW18) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7)<\/title>/.test(live)); */
   /* (before DW19) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8)<\/title>/.test(live)); */
   /* (before DW22) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)<\/title>/.test(live)); */
-  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live));
+  /* (before DW23) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(live)); */
+  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23)<\/title>/.test(live));
   assert.ok(html.indexOf('<!-- (before DW11) <title>Writer DW9</title> -->') !== -1);
   assert.ok(live.indexOf('src="modules/writer-hfimg.js"') !== -1);
   assert.ok(live.indexOf('src="modules/writer-hfimg.js"') < live.indexOf('src="modules/writer-headerfooter.js"'));
@@ -224,7 +225,8 @@ test('writer.html wires DW11: title, scripts, picture tools; no browser dialogs'
   /* (before DW18) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW22) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW23) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   ['modules/writer-hfimg.js', 'modules/writer-headerfooter.js', 'modules/writer-pdfgen.js'].forEach((f) => {
     const src = fs.readFileSync(path.join(DIR, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     assert.ok(!/\b(alert|confirm|prompt)\s*\(/.test(src), 'no browser dialogs in ' + f);

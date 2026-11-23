@@ -236,7 +236,8 @@ test('DW11 export warning is gone; release is DW11a', () => {
   /* (before DW18) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW19) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW22) assert.ok(/<title>Writer DW1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW23) assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(1(1a|2|3|3b|3c|4|4a|5|6|7|8|9)|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW11a) <title>Writer DW11</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW12) assert.ok(/release:\s*'DW11a'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -251,7 +252,8 @@ test('DW11 export warning is gone; release is DW11a', () => {
   /* (before DW18) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW22) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW23) assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(11a|12|13|13b|13c|14|14a|15|16|17|18|19|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
 });
 
 const SOFFICE = fs.existsSync('/usr/bin/soffice') ? 'soffice' : (fs.existsSync('/usr/bin/libreoffice') ? 'libreoffice' : null);

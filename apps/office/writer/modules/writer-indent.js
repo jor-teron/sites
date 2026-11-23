@@ -11,6 +11,8 @@
          >= 2 cm of text. Undo via history.checkpoint + input.
          DW17: Word-style SVG shapes that scale with zoom (--rs from
          the ruler), a drag guide line, and I.positions (pure).
+         DW23: paraStyle / applyParaStyle / wrapLoose / blockForEnter
+         copy indent, spacing and alignment onto a new paragraph after Enter.
    DEPENDS: ruler, config, view, editor, history
    ============================================================ */
 
@@ -220,6 +222,84 @@ Writer.indent.apply = function apply(el, v) {
   var set = function (p, n) { el.style[p] = n ? n.toFixed(1) + 'cm' : ''; };
   set('marginLeft', v.left); set('marginRight', v.right); set('textIndent', v.first);
   if (!el.getAttribute('style')) el.removeAttribute('style');
+};
+
+
+/* DW23: paragraph format carried across Enter (inline values only).
+   Lists are skipped. id and data-cont are never copied. */
+Writer.indent.inList = function inList(el) {
+  if (!el) return false;
+  if (/^(LI|UL|OL)$/.test(el.tagName)) return true;
+  var cls = Writer.config && Writer.config.editorClass;
+  for (var n = el.parentNode; n && n.nodeType === 1; n = n.parentNode) {
+    if (/^(LI|UL|OL)$/.test(n.tagName)) return true;
+    if (cls && n.classList && n.classList.contains(cls)) break;
+  }
+  return false;
+};
+
+Writer.indent.paraStyle = function paraStyle(el) {
+  if (!el || !el.style || Writer.indent.inList(el)) return null;
+  var s = el.style, out = {}, n = 0;
+  if (s.marginLeft) { out.marginLeft = s.marginLeft; n++; }
+  if (s.marginRight) { out.marginRight = s.marginRight; n++; }
+  if (s.textIndent) { out.textIndent = s.textIndent; n++; }
+  if (s.lineHeight) { out.lineHeight = s.lineHeight; n++; }
+  if (s.textAlign) { out.textAlign = s.textAlign; n++; }
+  var al = el.getAttribute && el.getAttribute('align');
+  if (al) { out.align = al; n++; }
+  return n ? out : null;
+};
+
+Writer.indent.applyParaStyle = function applyParaStyle(el, snap) {
+  if (!el || !snap || !el.style || Writer.indent.inList(el)) return;
+  if (snap.marginLeft) el.style.marginLeft = snap.marginLeft;
+  if (snap.marginRight) el.style.marginRight = snap.marginRight;
+  if (snap.textIndent) el.style.textIndent = snap.textIndent;
+  if (snap.lineHeight) el.style.lineHeight = snap.lineHeight;
+  if (snap.textAlign) el.style.textAlign = snap.textAlign;
+  if (snap.align && el.setAttribute) el.setAttribute('align', snap.align);
+};
+
+/* Wrap a top-level leftover \\n / <br> (and following loose siblings) in a <p>,
+   the same way flow.normalize would, so Enter under pre-wrap can be styled. */
+Writer.indent.WRAP_BLOCK = /^(P|DIV|UL|OL|LI|H[1-6]|BLOCKQUOTE|PRE|TABLE|HR|FIGURE)$/;
+Writer.indent.wrapLoose = function wrapLoose(host, node) {
+  var BLOCK = Writer.indent.WRAP_BLOCK;
+  if (!host || !node) return null;
+  while (node && node.parentNode && node.parentNode !== host) node = node.parentNode;
+  if (!node || node === host) return null;
+  if (node.nodeType === 1 && BLOCK.test(node.tagName)) return node;
+  var p = document.createElement('p');
+  host.insertBefore(p, node);
+  p.appendChild(node);
+  var next = p.nextSibling, nxt;
+  while (next) {
+    nxt = next.nextSibling;
+    if (next.nodeType === 1 && BLOCK.test(next.tagName)) break;
+    if (next.nodeType === 3 && !next.nodeValue.length) { next.remove(); next = nxt; continue; }
+    if (next.nodeType !== 1 && next.nodeType !== 3) { next.remove(); next = nxt; continue; }
+    p.appendChild(next);
+    next = nxt;
+  }
+  return p;
+};
+
+/* Block at the caret after insertParagraph; wraps a leftover top-level \\n / <br>. */
+Writer.indent.blockForEnter = function blockForEnter() {
+  var I = Writer.indent, sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return null;
+  var r = sel.getRangeAt(0);
+  var host = I.hostOf(r.startContainer);
+  if (!host) return null;
+  var b = I.blockOf(r.startContainer, host);
+  if (b) return b;
+  var node = r.startContainer;
+  if (node === host) {
+    var i = r.startOffset;
+    node = (i < host.childNodes.length) ? host.childNodes[i] : host.lastChild;
+  }
+  return I.wrapLoose(host, node);
 };
 
 Writer.indent.end = function end() {

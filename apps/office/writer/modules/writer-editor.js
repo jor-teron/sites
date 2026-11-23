@@ -3,7 +3,9 @@
    DF25: was modules/draftly-editor.js (global Draftly is now Writer).
    PROJECT: Writer
    ROLE: Selection, execCommand, font, paste, legacy mark cleanup.
-   DEPENDS: Writer.config, Writer.ui
+         DW23: Enter (insertParagraph) carries ruler indents, line
+         spacing and alignment onto the new paragraph.
+   DEPENDS: Writer.config, Writer.ui, Writer.indent (optional, DW23)
    ISOLATION: Commands no-op if no editor is focused.
    ============================================================ */
 
@@ -224,6 +226,31 @@ Writer.editor.onPaste = function onPaste(e) {
   Writer.editor.pastePlain(cd.getData('text/plain'));
 };
 
+
+/* DW23: Enter starts a new paragraph and copies the previous block's
+   indent, line spacing and alignment onto it (lists are left alone). */
+Writer.editor.insertParagraph = function insertParagraph() {
+  Writer.editor.focusEditor();
+  var I = Writer.indent, snap = null;
+  if (I && I.paraStyle && I.blockOf) {
+    var sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      var n = sel.getRangeAt(0).startContainer;
+      snap = I.paraStyle(I.blockOf(n, I.hostOf(n)));
+    }
+  }
+  document.execCommand('insertParagraph', false, null);
+  if (snap && I && I.applyParaStyle) {
+    var next = I.blockForEnter ? I.blockForEnter() : null;
+    if (next) I.applyParaStyle(next, snap);
+  }
+  if (Writer.ui) Writer.ui.updateToolbarState();
+  Writer.editor.saveSelection();
+  setTimeout(function () {
+    if (Writer.pages) Writer.pages.checkPagination();
+  }, Writer.config.paginationAfterInsertMs);
+};
+
 /* Enter / Shift+Enter, paste and focus from every page editor. */
 Writer.editor.bind = function bind() {
   var cfg = Writer.config;
@@ -233,7 +260,8 @@ Writer.editor.bind = function bind() {
     if (!Writer.editor.isInEditor(e.target)) return;
     e.preventDefault();
     if (e.shiftKey) Writer.editor.insertLineBreak();
-    else Writer.editor.execCmd('insertParagraph');
+    /* (before DW23) else Writer.editor.execCmd('insertParagraph'); */
+    else Writer.editor.insertParagraph();
   });
   /* Toolbar buttons never steal the caret. */
   document.querySelectorAll('.tool-btn').forEach(function (btn) {

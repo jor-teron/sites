@@ -232,7 +232,8 @@ test('release is DW13; Writer picture keys in writer-image.js; no browser dialog
   /* (before DW18) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW19) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
   /* (before DW22) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
-  assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+  /* (before DW23) assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, ''))); */
+  assert.ok(/<title>Writer DW(13b|13c|14|14a|15|16|17|18|19|22|23)<\/title>/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
   assert.ok(html.indexOf('<!-- (before DW13) <title>Writer DW12</title> -->') !== -1);
   const cfg = fs.readFileSync(path.join(DIR, 'modules/writer-config.js'), 'utf8');
   /* (before DW13b) assert.ok(/release:\s*'DW13'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
@@ -245,7 +246,8 @@ test('release is DW13; Writer picture keys in writer-image.js; no browser dialog
   /* (before DW18) assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16|17)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW19) assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16|17|18)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
   /* (before DW22) assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16|17|18|19)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
-  assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
+  /* (before DW23) assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16|17|18|19|22)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, ''))); */
+  assert.ok(/release:\s*'DW(13|13b|13c|14|14a|15|16|17|18|19|22|23)'/.test(cfg.replace(/\/\*[\s\S]*?\*\//g, '')));
   const img = fs.readFileSync(path.join(DIR, 'modules/writer-image.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.ok(/e\.ctrlKey \|\| e\.metaKey/.test(img) && /selectNode\(I\.sel\)/.test(img));
   ['modules/writer-paste.js', 'modules/writer-image.js'].forEach((f) => {
