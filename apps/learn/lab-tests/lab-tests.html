@@ -3,31 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Lab & Scan Explainer LAB-1a</title>
-  <meta name="theme-color" content="#0f172a">
+  <title>Lab &amp; Scan Explainer</title>
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="lab-tests_icon.png">
   <script src="../../../shared/theme/hub_theme.js"></script>
   <link rel="stylesheet" href="../common/ui/learn.css">
   <link rel="stylesheet" href="ui/lab-tests.css">
 </head>
 <body>
-  <div class="app-container">
+  <header class="lrn-head">
+    <a class="back" href="../index.html" aria-label="Back to Learn">‹ Learn</a>
+    <h1>Lab &amp; Scan Explainer</h1>
+    <button type="button" id="btn-open-ocr" class="btn-primary">Scan / Upload Report</button>
+  </header>
 
-    <!-- Header -->
-    <header class="app-header">
-      <div class="brand-title">
-        <span class="brand-icon">🔬</span>
-        <div>
-          Lab & Scan Explainer
-          <span class="brand-sub">Medical test results interpreter & radiology report decoder</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button type="button" id="btn-open-ocr" class="btn-primary">
-          <span>📷</span> Scan / Upload Report
-        </button>
-      </div>
-    </header>
+  <div class="app-container">
 
     <!-- Medical Disclaimer Banner -->
     <div class="disclaimer-banner">
@@ -147,8 +138,11 @@
 
         <div class="hu-display">
           <div>
-            <div id="hu-tissue-display" style="font-size:1.15rem;font-weight:700;">Soft Tissue & Muscle</div>
-            <div id="hu-descDisplay" style="font-size:0.85rem;color:var(--text-muted);" id="hu-desc-display">Liver, spleen, pancreas, kidneys, and skeletal muscle. Medium soft gray.</div>
+            <div class="hu-name-row">
+              <div id="hu-val-display" class="hu-val-display">+40 HU</div>
+              <div id="hu-tissue-display" style="font-size:1.15rem;font-weight:700;">Soft Tissue &amp; Muscle</div>
+            </div>
+            <div id="hu-desc-display" style="font-size:0.85rem;color:var(--text-muted);">Liver, spleen, pancreas, kidneys, and skeletal muscle. Medium soft gray.</div>
           </div>
           <div id="hu-chip" class="hu-chip" style="background:#d1d5db;color:#111827;">+40 HU</div>
         </div>
