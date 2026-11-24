@@ -54,43 +54,37 @@ html:not(.dark) {
   padding: 1rem 1.25rem 3rem;
 }
 
-/* Header & Disclaimer */
-.app-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 1rem;
+/* Compact Learn title bar (LAB-1b) */
+.lrn-head {
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1.25rem;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--bg-surface);
 }
-
-.brand-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.5rem;
-  font-weight: 700;
+.lrn-head h1 {
+  font-size: 1.15rem;
   color: var(--text-main);
-  margin: 0;
 }
-
-.brand-icon {
-  font-size: 1.8rem;
-}
-
-.brand-sub {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  font-weight: 400;
-  display: block;
-}
-
-.header-actions {
-  display: flex;
-  gap: 0.5rem;
+.lrn-head .back {
+  flex: none;
+  min-height: 44px;
+  padding: 0 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-heading);
+  border-radius: 10px;
+  display: inline-flex;
   align-items: center;
+}
+.lrn-head .back:hover {
+  background: var(--bg-surface-elevated);
+}
+.lrn-head #btn-open-ocr {
+  flex: none;
+  margin-left: auto;
+  min-height: 44px;
 }
 
 .btn-secondary {
@@ -536,6 +530,21 @@ html:not(.dark) {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.hu-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.hu-val-display {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .hu-chip {
