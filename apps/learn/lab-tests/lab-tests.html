@@ -216,6 +216,26 @@
           Upload a photo of your lab slip or CT scan impression, or paste report text to extract values automatically.
         </p>
 
+        <fieldset class="ocr-mode" id="ocr-engine-choice">
+          <legend>How to read a photo</legend>
+          <label class="ocr-mode-opt">
+            <input type="radio" name="ocr-engine" id="ocr-engine-tesseract" value="tesseract" checked>
+            <span>On this phone (private)</span>
+          </label>
+          <label class="ocr-mode-opt">
+            <input type="radio" name="ocr-engine" id="ocr-engine-vision" value="vision">
+            <span>Google Vision (sends image to Google)</span>
+          </label>
+        </fieldset>
+        <p id="ocr-privacy-note" class="ocr-privacy-note">
+          On-phone mode keeps the photo on this device. Google Vision sends the image to Google. Pasted text stays on this device.
+        </p>
+        <p id="vision-key-hint" class="ocr-key-hint">
+          Google Vision uses the Cloud Vision key saved in
+          <a id="link-api-keys" href="../../system/api-keys/#keys/gvision">Hub › API Keys</a>
+          (gvision). If no key is saved, add it there, then come back. Or use on-phone mode or paste the text.
+        </p>
+
         <!-- Drop Zone -->
         <div id="drop-zone" class="drop-zone">
           <span style="font-size:2rem;">📄</span>
@@ -243,23 +263,6 @@
             <p style="font-size:0.82rem;color:var(--text-muted);margin:0.25rem;">Upload an image or paste text above to see extracted markers.</p>
           </div>
         </div>
-
-        <!-- Google Vision API Key Settings -->
-        <details style="margin-top:1.25rem;border-top:1px solid var(--border-color);padding-top:0.75rem;">
-          <summary style="font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--text-heading);">
-            ⚙️ Google Vision API Key Settings
-          </summary>
-          <div style="margin-top:0.5rem;">
-            <p style="font-size:0.75rem;color:var(--text-muted);margin:0 0 0.5rem;">
-              Your API key is saved exclusively in your personal browser's local storage and is never transmitted to any third-party server or committed to Git.
-            </p>
-            <div style="display:flex;gap:0.5rem;">
-              <input type="password" id="vision-api-key-input" class="form-input" placeholder="AIzaSy..." style="font-size:0.85rem;">
-              <button type="button" id="btn-save-api-key" class="btn-secondary">Save</button>
-            </div>
-            <div id="api-key-feedback" style="font-size:0.75rem;margin-top:0.35rem;"></div>
-          </div>
-        </details>
 
       </div>
     </div>

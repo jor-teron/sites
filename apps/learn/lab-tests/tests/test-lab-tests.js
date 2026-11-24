@@ -133,6 +133,8 @@ test('Regex parser extracts CBC and metabolic values from report text', () => {
 
   const hb = parsed.detectedLabTests.find(t => t.testId === 'hb');
   assert(hb && hb.value === 13.2, 'Hb should be 13.2');
+  assert.strictEqual(hb.unitId, 'g_dl');
+  assert.strictEqual(hb.unitKnown, true);
 
   const wbc = parsed.detectedLabTests.find(t => t.testId === 'wbc');
   assert(wbc && wbc.value === 8400, 'WBC should be 8400');
@@ -164,6 +166,43 @@ test('Regex parser extracts radiology impressions from scan text', () => {
   assert(termNames.some(t => t.includes('consolidation')), 'Should detect consolidation');
   assert(termNames.some(t => t.includes('pleural effusion')), 'Should detect pleural effusion');
   assert(termNames.some(t => t.includes('unremarkable')), 'Should detect unremarkable');
+});
+
+
+test('Parser maps Hemoglobin 145 g/L to unit g_l', () => {
+  const parsed = window.OCR_PARSER.parseReportText('Hemoglobin 145 g/L');
+  const hb = parsed.detectedLabTests.find(t => t.testId === 'hb');
+  assert(hb, 'Hb should be detected');
+  assert.strictEqual(hb.value, 145);
+  assert.strictEqual(hb.unitId, 'g_l');
+  assert.strictEqual(hb.unitKnown, true);
+});
+
+test('Parser maps Glucose 5.4 mmol/L to unit mmol_l', () => {
+  const parsed = window.OCR_PARSER.parseReportText('Glucose 5.4 mmol/L');
+  const g = parsed.detectedLabTests.find(t => t.testId === 'fasting_glucose');
+  assert(g, 'Glucose should be detected');
+  assert.strictEqual(g.value, 5.4);
+  assert.strictEqual(g.unitId, 'mmol_l');
+  assert.strictEqual(g.unitKnown, true);
+});
+
+test('Parser maps Platelets 2.5 lakh to unit lakh_mcl', () => {
+  const parsed = window.OCR_PARSER.parseReportText('Platelets 2.5 lakh');
+  const plt = parsed.detectedLabTests.find(t => t.testId === 'platelets');
+  assert(plt, 'Platelets should be detected');
+  assert.strictEqual(plt.value, 2.5);
+  assert.strictEqual(plt.unitId, 'lakh_mcl');
+  assert.strictEqual(plt.unitKnown, true);
+});
+
+test('Parser marks missing units as unread and uses the default', () => {
+  const parsed = window.OCR_PARSER.parseReportText('Hemoglobin 13.2');
+  const hb = parsed.detectedLabTests.find(t => t.testId === 'hb');
+  assert(hb, 'Hb should be detected');
+  assert.strictEqual(hb.value, 13.2);
+  assert.strictEqual(hb.unitId, 'g_dl');
+  assert.strictEqual(hb.unitKnown, false);
 });
 
 console.log(`\nTests Completed: ${passed} passed, ${failed} failed.`);

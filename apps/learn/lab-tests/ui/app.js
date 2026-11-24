@@ -56,9 +56,9 @@
     el.pasteTextInput = document.getElementById('paste-report-text');
     el.btnParsePasted = document.getElementById('btn-parse-pasted');
     el.detectedList = document.getElementById('detected-tests-list');
-    el.visionApiKeyInput = document.getElementById('vision-api-key-input');
-    el.btnSaveApiKey = document.getElementById('btn-save-api-key');
-    el.apiKeyFeedback = document.getElementById('api-key-feedback');
+    el.engineRadios = document.querySelectorAll('input[name="ocr-engine"]');
+    el.visionKeyHint = document.getElementById('vision-key-hint');
+    el.linkApiKeys = document.getElementById('link-api-keys');
   }
 
   function safeStep(name, fn) {
@@ -281,28 +281,60 @@
     });
   }
 
+  function selectedOcrEngine() {
+    var picked = document.querySelector('input[name="ocr-engine"]:checked');
+    return (picked && picked.value === 'vision') ? 'vision' : 'tesseract';
+  }
+
+  function setApiKeysHint(before, after) {
+    if (!el.visionKeyHint) return;
+    el.visionKeyHint.hidden = false;
+    el.visionKeyHint.textContent = '';
+    el.visionKeyHint.appendChild(document.createTextNode(before));
+    var a = document.createElement('a');
+    a.id = 'link-api-keys';
+    a.href = '../../system/api-keys/#keys/gvision';
+    a.textContent = 'Hub › API Keys';
+    a.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      if (window.OCR_PARSER && window.OCR_PARSER.openApiKeys) window.OCR_PARSER.openApiKeys();
+    });
+    el.visionKeyHint.appendChild(a);
+    el.visionKeyHint.appendChild(document.createTextNode(after));
+    el.linkApiKeys = a;
+  }
+
+  function refreshVisionHint() {
+    if (!el.visionKeyHint || !window.OCR_PARSER || !window.OCR_PARSER.getVisionKey) return;
+    var visionOn = selectedOcrEngine() === 'vision';
+    window.OCR_PARSER.getVisionKey(function (_, key) {
+      if (!el.visionKeyHint) return;
+      if (visionOn && !key) {
+        setApiKeysHint('No Cloud Vision key found. Add one in ', ' (gvision), then try again. Or switch to on-phone mode or paste the text.');
+      } else {
+        setApiKeysHint('Google Vision uses the Cloud Vision key saved in ', ' (gvision). If no key is saved, add it there, then come back. Or use on-phone mode or paste the text.');
+      }
+    });
+  }
+
   // --- OCR & Document Scanner ---
   function setupOCR() {
-    // Load saved API key
-    var savedKey = window.OCR_PARSER.getSavedApiKey();
-    if (savedKey) {
-      if (el.visionApiKeyInput) el.visionApiKeyInput.value = savedKey;
-      if (el.apiKeyFeedback) {
-        el.apiKeyFeedback.textContent = 'Active key stored privately in local browser storage.';
-        el.apiKeyFeedback.style.color = 'var(--color-normal)';
-      }
+    if (window.OCR_PARSER && window.OCR_PARSER.clearLegacyApiKey) {
+      window.OCR_PARSER.clearLegacyApiKey();
     }
 
-    if (el.btnSaveApiKey) {
-      el.btnSaveApiKey.addEventListener('click', function () {
-        var val = el.visionApiKeyInput ? el.visionApiKeyInput.value.trim() : '';
-        window.OCR_PARSER.saveApiKey(val);
-        if (el.apiKeyFeedback) {
-          el.apiKeyFeedback.textContent = val ? 'Saved successfully!' : 'Key removed.';
-          el.apiKeyFeedback.style.color = 'var(--color-normal)';
-        }
+    if (el.engineRadios) {
+      el.engineRadios.forEach(function (r) {
+        r.addEventListener('change', refreshVisionHint);
       });
     }
+    if (el.linkApiKeys) {
+      el.linkApiKeys.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        if (window.OCR_PARSER && window.OCR_PARSER.openApiKeys) window.OCR_PARSER.openApiKeys();
+      });
+    }
+    refreshVisionHint();
 
     if (el.openOcrBtn) {
       el.openOcrBtn.addEventListener('click', function () {
@@ -358,36 +390,48 @@
     }
   }
 
+  function applyOcrText(extractedText, successMsg) {
+    if (el.pasteTextInput) el.pasteTextInput.value = extractedText;
+    var results = window.OCR_PARSER.parseReportText(extractedText);
+    displayDetectedResults(results, successMsg);
+  }
+
   function handleImageFile(file) {
     if (!file.type.match(/^image\//)) {
       showOcrStatus('Please upload an image file (PNG, JPG, WebP).', 'error');
       return;
     }
 
-    showOcrStatus('Reading image file...', 'loading');
-    var reader = new FileReader();
-    reader.onload = function (evt) {
-      var base64 = evt.target.result;
-      var key = window.OCR_PARSER.getSavedApiKey();
+    var engine = selectedOcrEngine();
+    if (engine === 'vision') {
+      showOcrStatus('Reading image file…', 'loading');
+      var reader = new FileReader();
+      reader.onload = function (evt) {
+        showOcrStatus('Sending image to Google Vision…', 'loading');
+        window.OCR_PARSER.callGoogleVision(evt.target.result, null, function (err, extractedText) {
+          if (err) {
+            showOcrStatus('Vision OCR failed: ' + err.message, 'error');
+            return;
+          }
+          applyOcrText(extractedText, 'Google Vision finished.');
+        });
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
 
-      if (!key) {
-        showOcrStatus('No Google Vision API key found. Enter and save your key below to perform OCR, or paste report text directly.', 'error');
+    showOcrStatus('Loading on-phone OCR engine…', 'loading');
+    window.OCR_PARSER.recognizeWithTesseract(file, function (progress, status) {
+      var pct = Math.round((progress || 0) * 100);
+      var label = (status === 'recognizing text') ? 'Reading text… ' + pct + '%' : 'Loading on-phone OCR engine… ' + pct + '%';
+      showOcrStatus(label, 'loading');
+    }, function (err, extractedText) {
+      if (err) {
+        showOcrStatus('On-phone OCR failed: ' + err.message, 'error');
         return;
       }
-
-      showOcrStatus('Calling Google Vision API (DOCUMENT_TEXT_DETECTION)...', 'loading');
-      window.OCR_PARSER.callGoogleVision(base64, key, function (err, extractedText) {
-        if (err) {
-          showOcrStatus('Vision OCR failed: ' + err.message, 'error');
-          return;
-        }
-
-        if (el.pasteTextInput) el.pasteTextInput.value = extractedText;
-        var results = window.OCR_PARSER.parseReportText(extractedText);
-        displayDetectedResults(results, 'Vision OCR completed successfully!');
-      });
-    };
-    reader.readAsDataURL(file);
+      applyOcrText(extractedText, 'On-phone OCR finished.');
+    });
   }
 
   function showOcrStatus(msg, type) {
@@ -427,13 +471,22 @@
       var nameEl = document.createElement('strong');
       nameEl.textContent = tObj.name;
       info.appendChild(nameEl);
-      info.appendChild(document.createTextNode(': ' + dt.value + ' ' + tObj.defaultUnit));
+      var unitObj = (tObj.units || []).filter(function (u) { return u.id === dt.unitId; })[0];
+      var unitLabel = unitObj ? unitObj.label : (dt.unitId || tObj.defaultUnit || '');
+      info.appendChild(document.createTextNode(': ' + dt.value + (unitLabel ? ' ' + unitLabel : '')));
 
       var raw = document.createElement('div');
       raw.style.fontSize = '0.75rem';
       raw.style.color = 'var(--text-muted)';
       raw.textContent = dt.rawMatched || '';
       info.appendChild(raw);
+
+      if (!dt.unitKnown) {
+        var warn = document.createElement('div');
+        warn.className = 'ocr-unit-warn';
+        warn.textContent = 'unit not read - check';
+        info.appendChild(warn);
+      }
 
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -442,7 +495,7 @@
       btn.style.padding = '0.3rem 0.6rem';
       btn.textContent = 'Load into Form';
       btn.addEventListener('click', function () {
-        loadTestIntoForm(dt.testId, dt.value);
+        loadTestIntoForm(dt.testId, dt.value, dt.unitId);
         if (el.ocrModal) el.ocrModal.classList.remove('open');
       });
 
@@ -471,7 +524,7 @@
     });
   }
 
-  function loadTestIntoForm(testId, val) {
+  function loadTestIntoForm(testId, val, unitId) {
     var tObj = window.LAB_DATA.tests[testId];
     if (!tObj) return;
 
@@ -481,6 +534,10 @@
     if (el.categorySelect) el.categorySelect.value = currentCategory;
     populateTests(currentCategory);
     if (el.testSelect) el.testSelect.value = currentTestId;
+    if (el.unitSelect) {
+      var ok = (tObj.units || []).some(function (u) { return u.id === unitId; });
+      el.unitSelect.value = ok ? unitId : tObj.defaultUnit;
+    }
     if (el.valueInput) el.valueInput.value = val;
 
     // Switch to tab 1

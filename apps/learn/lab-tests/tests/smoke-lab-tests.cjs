@@ -1,5 +1,5 @@
 /**
- * LAB-1b non-browser smoke test for Lab & Scan Explainer.
+ * LAB-1c non-browser smoke test for Lab & Scan Explainer.
  * Run with: node tests/smoke-lab-tests.cjs
  * Uses the global jsdom install (npm root -g).
  */
@@ -72,7 +72,15 @@ JSDOM.fromFile(html, {
     const imgs = d.getElementById('detected-tests-list').querySelectorAll('img');
     assert.strictEqual(imgs.length, 0, 'parsed report text must not create an <img> element');
 
-    console.log('  ✓ jsdom smoke: tabs, HU slider, OCR modal, no injected img');
+    const tess = d.getElementById('ocr-engine-tesseract');
+    const vis = d.getElementById('ocr-engine-vision');
+    assert(tess && vis && tess.checked, 'on-phone OCR mode should be present and selected by default');
+    assert(d.getElementById('ocr-engine-choice'), 'OCR mode choice should be present');
+    assert(d.getElementById('ocr-privacy-note'), 'privacy note should be present');
+    assert(!d.getElementById('vision-api-key-input'), 'the app must not keep its own Vision key input');
+    assert(!d.getElementById('btn-save-api-key'), 'the app must not keep its own Vision key save button');
+
+    console.log('  ✓ jsdom smoke: tabs, HU slider, OCR modal, no injected img, OCR mode choice, no own key input');
     console.log('Smoke Completed: 1 passed, 0 failed.');
     w.close();
   });
