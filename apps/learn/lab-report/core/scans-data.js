@@ -1,5 +1,5 @@
 /**
- * Lab & Scan Explainer - Imaging & Radiology Reference Database (scans-data.js)
+ * Lab & Scan Report - Imaging & Radiology Reference Database (scans-data.js)
  * Covers CT Hounsfield Units, radiology terminology, body region anatomy,
  * and plain-language report decoding for patients.
  */

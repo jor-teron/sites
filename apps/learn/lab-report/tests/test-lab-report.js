@@ -1,6 +1,6 @@
 /**
- * Automated Unit Test Suite for Lab & Scan Explainer
- * Run with: node test-lab-tests.js
+ * Automated Unit Test Suite for Lab & Scan Report
+ * Run with: node test-lab-report.js
  */
 const assert = require('assert');
 const fs = require('fs');
@@ -29,7 +29,7 @@ function test(desc, fn) {
   }
 }
 
-console.log('--- Running Lab & Scan Explainer Tests ---');
+console.log('--- Running Lab & Scan Report Tests ---');
 
 // 1. Clinical Lab Data Evaluation Tests
 test('Hemoglobin normal evaluation for adult male', () => {

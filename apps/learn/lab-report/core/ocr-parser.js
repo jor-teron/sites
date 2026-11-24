@@ -1,5 +1,5 @@
 /**
- * Lab & Scan Explainer - OCR & Report Text Parser (ocr-parser.js)
+ * Lab & Scan Report - OCR & Report Text Parser (ocr-parser.js)
  * LAB-1c: on-phone Tesseract (Office OCR vendor, lazy-loaded), optional Google Vision
  * using the Hub API Keys 'gvision' key, and unit-aware report parsing.
  */
@@ -128,7 +128,7 @@
   }
 
   function tessUrl(rel) {
-    var base = (global.location && global.location.href) ? global.location.href : 'https://example.invalid/apps/learn/lab-tests/lab-tests.html';
+    var base = (global.location && global.location.href) ? global.location.href : 'https://example.invalid/apps/learn/lab-report/lab-report.html';
     return new URL(TESS_VENDOR + (rel || ''), base).href;
   }
 

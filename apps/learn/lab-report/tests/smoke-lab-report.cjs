@@ -1,6 +1,6 @@
 /**
- * LAB-1c non-browser smoke test for Lab & Scan Explainer.
- * Run with: node tests/smoke-lab-tests.cjs
+ * LAB-1c non-browser smoke test for Lab & Scan Report.
+ * Run with: node tests/smoke-lab-report.cjs
  * Uses the global jsdom install (npm root -g).
  */
 'use strict';
@@ -10,7 +10,7 @@ const assert = require('assert');
 const { execSync } = require('child_process');
 const { JSDOM, VirtualConsole } = require(execSync('npm root -g').toString().trim() + '/jsdom');
 
-const html = path.join(__dirname, '..', 'lab-tests.html');
+const html = path.join(__dirname, '..', 'lab-report.html');
 const errors = [];
 const vc = new VirtualConsole();
 vc.on('jsdomError', function (e) {
@@ -34,7 +34,7 @@ JSDOM.fromFile(html, {
   }).then(function () {
     const d = w.document;
     assert.strictEqual(errors.length, 0, 'jsdomError: ' + errors.join('; '));
-    assert.strictEqual(d.title, 'Lab & Scan Explainer');
+    assert.strictEqual(d.title, 'Lab & Scan Report');
 
     const tabs = Array.prototype.slice.call(d.querySelectorAll('.tab-btn'));
     assert.strictEqual(tabs.length, 3, 'expected three tab buttons');

@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<!-- Redirect entry point to lab-tests.html (keeps ?query and #hash). NIX-L1: no visible body; colours follow the Hub theme (sites-hub.theme, else the device setting). Legacy: meta refresh + location.replace; visible text in <body>. -->
+<!-- LAB-1d: Lab & Scan Report moved to apps/learn/lab-report/. This page only redirects there, keeping ?query and #hash (old bookmarks, pinned apps, desktop shortcuts). Not a copy of the app. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lab &amp; Scan Explainer</title>
-  <link rel="canonical" href="lab-tests.html">
+  <title>Lab &amp; Scan Report</title>
+  <link rel="canonical" href="../lab-report/lab-report.html">
   <style>html,body{margin:0;background:#fff;color:#202124}html.dark,html.dark body{background:#0f172a;color:#94a3b8}html.dark a{color:#38bdf8}</style>
   <script>
     (function () {
       var t = ''; try { t = localStorage.getItem('sites-hub.theme') || ''; } catch (_) { /* blocked */ }
       var dark = t ? t === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
       if (dark) document.documentElement.className = 'dark';
-      location.replace('lab-tests.html' + location.search + location.hash);
+      location.replace('../lab-report/lab-report.html' + location.search + location.hash);
     })();
   </script>
-  <noscript><meta http-equiv="refresh" content="0; url=lab-tests.html"></noscript>
+  <noscript><meta http-equiv="refresh" content="0; url=../lab-report/lab-report.html"></noscript>
 </head>
-<body><noscript><p><a href="lab-tests.html">Open Lab & Scan Explainer</a></p></noscript></body>
+<body><noscript><p><a href="../lab-report/lab-report.html">Open Lab &amp; Scan Report</a></p></noscript></body>
 </html>
