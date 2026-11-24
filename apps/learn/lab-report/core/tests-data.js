@@ -1,5 +1,5 @@
 /**
- * Lab & Scan Explainer - Clinical Reference Database (tests-data.js)
+ * Lab & Scan Report - Clinical Reference Database (tests-data.js)
  * Covers standard adult/child reference intervals, unit conversions,
  * clinical significance, common benign/lifestyle causes, and doctor discussion points.
  * Note: Educational purposes only.

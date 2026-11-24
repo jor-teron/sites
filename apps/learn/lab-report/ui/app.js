@@ -1,5 +1,5 @@
 /**
- * Lab & Scan Explainer - UI Controller (app.js)
+ * Lab & Scan Report - UI Controller (app.js)
  * Manages reactive forms, visual gauge needle positioning, radiology explorer,
  * OCR scan modal with Google Vision API, and theme synchronization.
  * LAB-1b: start-up is null-guarded so a missing element cannot block tabs or OCR.
@@ -65,7 +65,7 @@
     try {
       fn();
     } catch (err) {
-      console.warn('Lab Tests: ' + name + ' failed', err);
+      console.warn('Lab Report: ' + name + ' failed', err);
     }
   }
 
