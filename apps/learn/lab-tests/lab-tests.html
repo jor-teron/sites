@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Lab & Scan Explainer LAB-1a</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="lab-tests_icon.png">
+  <script src="../../../shared/theme/hub_theme.js"></script>
+  <link rel="stylesheet" href="../common/ui/learn.css">
+  <link rel="stylesheet" href="ui/lab-tests.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-title">
+        <span class="brand-icon">🔬</span>
+        <div>
+          Lab & Scan Explainer
+          <span class="brand-sub">Medical test results interpreter & radiology report decoder</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="btn-open-ocr" class="btn-primary">
+          <span>📷</span> Scan / Upload Report
+        </button>
+      </div>
+    </header>
+
+    <!-- Medical Disclaimer Banner -->
+    <div class="disclaimer-banner">
+      <span class="disclaimer-icon">⚠️</span>
+      <div>
+        <strong>Educational Guide Only:</strong> This application is designed to support health literacy and help patients understand medical terminology, units, and standard laboratory reference intervals. It is not medical advice, does not provide clinical diagnoses, and should never replace consultation with a qualified healthcare professional.
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav">
+      <button type="button" class="tab-btn active" data-tab="lab">🩸 Blood & Lab Tests</button>
+      <button type="button" class="tab-btn" data-tab="scans">🩻 CT & Radiology Scans</button>
+      <button type="button" class="tab-btn" data-tab="guide">📖 Lab Reading Guide</button>
+    </nav>
+
+    <!-- TAB 1: Blood & Lab Tests -->
+    <main id="tab-lab" class="tab-panel active">
+      <div class="grid-layout">
+
+        <!-- Form Card -->
+        <section class="card">
+          <h2 class="card-title"><span>📝</span> Enter Your Test Result</h2>
+
+          <!-- Category Select -->
+          <div class="form-group">
+            <label for="category-select" class="form-label">Test Category</label>
+            <select id="category-select" class="form-select"></select>
+          </div>
+
+          <!-- Test Select -->
+          <div class="form-group">
+            <label for="test-select" class="form-label">Specific Test / Biomarker</label>
+            <select id="test-select" class="form-select"></select>
+          </div>
+
+          <!-- Demographics Selector -->
+          <div class="form-group">
+            <label class="form-label">Patient Demographics (Reference Intervals)</label>
+            <div class="radio-pill-group">
+              <div class="radio-pill">
+                <input type="radio" id="demo-male" name="demographic" value="male" checked>
+                <label for="demo-male">Adult Male</label>
+              </div>
+              <div class="radio-pill">
+                <input type="radio" id="demo-female" name="demographic" value="female">
+                <label for="demo-female">Adult Female</label>
+              </div>
+              <div class="radio-pill">
+                <input type="radio" id="demo-child" name="demographic" value="child">
+                <label for="demo-child">Child</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Value & Unit Input -->
+          <div class="form-group">
+            <label for="test-value-input" class="form-label">Your Lab Value & Unit</label>
+            <div class="input-with-unit">
+              <input type="number" id="test-value-input" class="form-input" step="any" placeholder="e.g. 14.5">
+              <select id="unit-select" class="form-select"></select>
+            </div>
+            <!-- Preset Quick-Chips -->
+            <div class="presets-bar" id="presets-container"></div>
+          </div>
+        </section>
+
+        <!-- Evaluation & Results Card -->
+        <section class="card" id="result-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 class="card-title" style="margin:0;"><span>📊</span> Result Analysis</h2>
+            <div id="status-badge" class="result-status-badge badge-normal">Within Healthy Range</div>
+          </div>
+
+          <!-- Visual Range Gauge -->
+          <div class="gauge-box">
+            <div class="gauge-track">
+              <div id="gauge-pointer" class="gauge-pointer" style="left: 50%;"></div>
+            </div>
+            <div class="gauge-labels">
+              <span id="gauge-min-label">0</span>
+              <span class="normal-interval-marker">Healthy Range: <span id="gauge-normal-text">13.8 – 17.2 g/dL</span></span>
+              <span id="gauge-max-label">22+</span>
+            </div>
+          </div>
+
+          <!-- Explanations -->
+          <div class="info-section">
+            <div class="info-title">What This Test Measures</div>
+            <div id="what-is-it-text" class="info-body"></div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-title">What Your Value Indicates</div>
+            <div id="result-explanation-text" class="info-body"></div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-title">Questions to Ask Your Doctor</div>
+            <ul id="doctor-questions-list" class="doctor-questions-list"></ul>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- TAB 2: CT & Radiology Scans -->
+    <main id="tab-scans" class="tab-panel">
+      <!-- CT Hounsfield Units Explorer -->
+      <section class="hu-box">
+        <h2 class="card-title" style="margin-top:0;"><span>🎚️</span> CT Density & Hounsfield Units (HU) Explorer</h2>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 0.5rem;">
+          Computed Tomography (CT) scans measure the radio-density of each tissue in Hounsfield Units (HU), ranging from pure air (-1000 HU) to dense bone (+1000 HU).
+        </p>
+
+        <input type="range" id="hu-slider" class="hu-slider" min="-1000" max="1000" step="10" value="40">
+
+        <div class="hu-display">
+          <div>
+            <div id="hu-tissue-display" style="font-size:1.15rem;font-weight:700;">Soft Tissue & Muscle</div>
+            <div id="hu-descDisplay" style="font-size:0.85rem;color:var(--text-muted);" id="hu-desc-display">Liver, spleen, pancreas, kidneys, and skeletal muscle. Medium soft gray.</div>
+          </div>
+          <div id="hu-chip" class="hu-chip" style="background:#d1d5db;color:#111827;">+40 HU</div>
+        </div>
+      </section>
+
+      <!-- Radiology Terms Search -->
+      <section>
+        <div class="scan-search-box">
+          <input type="text" id="scan-search-input" class="form-input" placeholder="🔍 Search radiology terms (e.g. unremarkable, hypodense, ground-glass, effusion, cyst, nodule)...">
+        </div>
+        <div id="scan-terms-grid" class="terms-grid"></div>
+      </section>
+    </main>
+
+    <!-- TAB 3: Guide & Lab Literacy -->
+    <main id="tab-guide" class="tab-panel">
+      <div class="grid-layout">
+        <section class="card">
+          <h2 class="card-title"><span>📘</span> How to Read Your Lab Report</h2>
+          <div class="info-section">
+            <div class="info-title">1. Reference Intervals</div>
+            <div class="info-body">
+              Every laboratory establishes a "reference interval" based on 95% of healthy individuals tested in that laboratory. Because equipment, reagents, and calibration vary between diagnostic centers, always check the specific reference column on your personal slip.
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-title">2. Out-of-Range Flags (H, L, Asterisks)</div>
+            <div class="info-body">
+              Laboratories flag numbers outside their mathematical reference range with an "H" (High), "L" (Low), or an asterisk (*). Being slightly outside does not automatically mean a disease; benign fluctuations occur with hydration, stress, recent meals, or vigorous exercise.
+            </div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-title">3. Fasting Requirements</div>
+            <div class="info-body">
+              Tests like Fasting Blood Glucose, Lipid Profiles (Triglycerides), and certain metabolic panels require an 8–12 hour fast. Drinking plain water is usually encouraged to stay hydrated, as dehydration artificially concentrates blood cells and proteins.
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="card-title"><span>💡</span> Common Lab Panels Demystified</h2>
+          <div class="info-section">
+            <div class="info-title">CBC (Complete Blood Count)</div>
+            <div class="info-body">Counts red blood cells, hemoglobin (oxygen), white blood cells (immunity), and platelets (clotting). Gives an immediate overview of infection, inflammation, or anemia.</div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-title">KFT / RFT (Kidney Function Tests)</div>
+            <div class="info-body">Measures Creatinine, Blood Urea, and Electrolytes (Sodium, Potassium). Tells your doctor how efficiently the kidneys filter metabolic waste from the bloodstream.</div>
+          </div>
+
+          <div class="info-section">
+            <div class="info-title">LFT (Liver Function Tests)</div>
+            <div class="info-body">Evaluates liver cellular health through enzymes (SGPT/ALT, SGOT/AST, ALP) and bile processing (Total and Direct Bilirubin, Albumin).</div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- MODAL: OCR & Document Scanner -->
+    <div id="ocr-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">📷 Report Scanner & OCR</h3>
+          <button type="button" id="btn-close-ocr" class="close-btn">&times;</button>
+        </div>
+
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0;">
+          Upload a photo of your lab slip or CT scan impression, or paste report text to extract values automatically.
+        </p>
+
+        <!-- Drop Zone -->
+        <div id="drop-zone" class="drop-zone">
+          <span style="font-size:2rem;">📄</span>
+          <div style="font-weight:600;margin-top:0.5rem;">Click to upload or drag & drop report photo</div>
+          <p>PNG, JPG, WebP formats supported</p>
+          <input type="file" id="report-file-input" accept="image/*" style="display:none;">
+        </div>
+
+        <!-- OCR Status Box -->
+        <div id="ocr-status" class="ocr-status"></div>
+
+        <!-- Manual Paste Option -->
+        <div style="margin-top:1rem;">
+          <label class="form-label">Or Paste Digital Report Text</label>
+          <textarea id="paste-report-text" class="form-input" rows="3" placeholder="Paste test results text or CT impression text here..."></textarea>
+          <button type="button" id="btn-parse-pasted" class="btn-secondary" style="margin-top:0.5rem;width:100%;">
+            Parse Pasted Text
+          </button>
+        </div>
+
+        <!-- Detected Tests -->
+        <div style="margin-top:1.25rem;">
+          <div class="form-label">Recognized Results:</div>
+          <div id="detected-tests-list" style="background:var(--bg-input);border:1px solid var(--border-color);border-radius:var(--radius);max-height:160px;overflow-y:auto;padding:0.5rem;">
+            <p style="font-size:0.82rem;color:var(--text-muted);margin:0.25rem;">Upload an image or paste text above to see extracted markers.</p>
+          </div>
+        </div>
+
+        <!-- Google Vision API Key Settings -->
+        <details style="margin-top:1.25rem;border-top:1px solid var(--border-color);padding-top:0.75rem;">
+          <summary style="font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--text-heading);">
+            ⚙️ Google Vision API Key Settings
+          </summary>
+          <div style="margin-top:0.5rem;">
+            <p style="font-size:0.75rem;color:var(--text-muted);margin:0 0 0.5rem;">
+              Your API key is saved exclusively in your personal browser's local storage and is never transmitted to any third-party server or committed to Git.
+            </p>
+            <div style="display:flex;gap:0.5rem;">
+              <input type="password" id="vision-api-key-input" class="form-input" placeholder="AIzaSy..." style="font-size:0.85rem;">
+              <button type="button" id="btn-save-api-key" class="btn-secondary">Save</button>
+            </div>
+            <div id="api-key-feedback" style="font-size:0.75rem;margin-top:0.35rem;"></div>
+          </div>
+        </details>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="core/tests-data.js"></script>
+  <script src="core/scans-data.js"></script>
+  <script src="core/ocr-parser.js"></script>
+  <script src="../shared/learn-hubbar.js"></script>
+  <script src="ui/app.js"></script>
+</body>
+</html>

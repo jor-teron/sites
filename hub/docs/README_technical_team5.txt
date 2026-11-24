@@ -63,6 +63,14 @@ C. Terminal & BusyBox Architecture Clarification:
      * Stream chunking (40ms, 64KB) with 512 KB/s rate throttling (LIVE_RATE) and instant worker.terminate on Ctrl+C.
      * Selective MEMFS copy-in staging and diff write-back (32 MB / 3000 files limit).
 
+D. Lab & Scan Explainer (apps/learn/lab-tests/):
+   - Created standalone interactive medical lab & radiology report interpreter under Learn > Health:
+     * Blood & Lab Tests: Evaluates CBC, Blood Sugar/HbA1c, KFT/Creatinine, LFT, Lipid profile, Thyroid/TSH, Vitamins D/B12 against adult male/female/child clinical reference intervals.
+     * Visual Range Gauge: Dynamic needle positioning across low, normal, high, and critical intervals with plain-English clinical explanations and doctor questions.
+     * CT & Radiology Scanner: Interactive Hounsfield Units (-1000 to +1000 HU) radio-density slider and searchable radiology terminology dictionary (GGO, consolidation, atelectasis, effusion, calcification, unremarkable).
+     * Vision OCR & Report Parser: Google Cloud Vision API integration with client-isolated localStorage key storage and local regex extraction engine for automated slip recognition.
+     * Catalog & Standards: 100% vanilla JS/HTML/CSS, registered in apps/learn/learn-apps.csv under Health; 13/13 passing automated unit tests in apps/learn/lab-tests/tests/test-lab-tests.js.
+
 
 3. DESIGN DISCUSSIONS & DECISIONS
 ---------------------------------
