@@ -627,6 +627,50 @@ html:not(.dark) {
   font-size: 0.85rem;
 }
 
+
+.ocr-mode {
+  margin: 0.75rem 0 0.35rem;
+  padding: 0;
+  border: 0;
+}
+.ocr-mode legend {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-heading);
+  margin-bottom: 0.4rem;
+  padding: 0;
+}
+.ocr-mode-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 0.15rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.ocr-mode-opt input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+}
+.ocr-privacy-note,
+.ocr-key-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0.75rem;
+  line-height: 1.4;
+}
+.ocr-key-hint a {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+.ocr-unit-warn {
+  font-size: 0.75rem;
+  color: var(--color-warning);
+  margin-top: 0.15rem;
+}
+
 .ocr-status {
   padding: 0.75rem;
   border-radius: var(--radius);
