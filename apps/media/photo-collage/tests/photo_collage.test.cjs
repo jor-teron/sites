@@ -199,3 +199,75 @@ test('applySlotRotationAndFit applies transverse dimensions to 90 and 270 deg ro
   assert.equal(dummyImg.style.width, '100%');
   assert.equal(dummyImg.style.height, '100%');
 });
+
+test('serializeState generates versioned payload with complete photo and layout metadata', () => {
+  const p1 = PhotoCollage.createPhotoItem('data:image/png;base64,abc', 'vacation.jpg');
+  p1.rotation = 90;
+  p1.fit = 'contain';
+
+  const mockState = {
+    layout: '2-stack',
+    orientation: 'landscape',
+    paper: 'letter',
+    margin: 'wide',
+    bgColor: '#faf8f5',
+    manualPages: 3,
+    photos: [p1, null]
+  };
+
+  const payload = PhotoCollage.serializeState(mockState);
+  assert.equal(payload.version, 1);
+  assert.equal(payload.layout, '2-stack');
+  assert.equal(payload.orientation, 'landscape');
+  assert.equal(payload.paper, 'letter');
+  assert.equal(payload.margin, 'wide');
+  assert.equal(payload.bgColor, '#faf8f5');
+  assert.equal(payload.manualPages, 3);
+  assert.equal(payload.photos.length, 2);
+  assert.equal(payload.photos[0].name, 'vacation.jpg');
+  assert.equal(payload.photos[0].rotation, 90);
+  assert.equal(payload.photos[0].fit, 'contain');
+  assert.equal(payload.photos[1], null);
+  assert.ok(payload.savedAt > 0);
+});
+
+test('deserializeState hydrates target state accurately and sanitizes invalid values', () => {
+  const targetState = {
+    layout: '4-grid',
+    orientation: 'portrait',
+    paper: 'a4',
+    margin: 'normal',
+    bgColor: '#ffffff',
+    manualPages: 1,
+    photos: []
+  };
+
+  const record = {
+    layout: '2-split',
+    orientation: 'landscape',
+    paper: 'letter',
+    margin: 'small',
+    bgColor: '#181a1f',
+    manualPages: 2,
+    photos: [
+      { id: 'custom_1', src: 'data:img1', name: 'photo1.jpg', rotation: 270, fit: 'contain' }
+    ]
+  };
+
+  const ok = PhotoCollage.deserializeState(record, targetState);
+  assert.ok(ok);
+  assert.equal(targetState.layout, '2-split');
+  assert.equal(targetState.orientation, 'landscape');
+  assert.equal(targetState.paper, 'letter');
+  assert.equal(targetState.margin, 'small');
+  assert.equal(targetState.bgColor, '#181a1f');
+  assert.equal(targetState.manualPages, 2);
+  assert.equal(targetState.photos.length, 1);
+  assert.equal(targetState.photos[0].id, 'custom_1');
+  assert.equal(targetState.photos[0].rotation, 270);
+  assert.equal(targetState.photos[0].fit, 'contain');
+
+  // Rejects invalid payload gracefully
+  assert.equal(PhotoCollage.deserializeState(null, targetState), false);
+  assert.equal(PhotoCollage.deserializeState('string', targetState), false);
+});

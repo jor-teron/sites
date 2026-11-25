@@ -431,13 +431,18 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Resolved landscape 2-photo aspect ratio bug (3:1 panoramic slots in 2-stack) by dynamically inverting image element dimensions (width = slotHeight, height = slotWidth) on transverse rotations.
   * Aspect ratio fit mode toggle (Cover vs Contain) preserved across rotations with zero horizontal or vertical gaps.
   * Synchronized dynamic @media print slot millimeter dimensions for printed sheets.
+- Offline State Persistence (IndexedDB photo-collage-v1):
+  * Debounced auto-save (300 ms) automatically serializes photos (with rotations and fit modes), layout, orientation, paper size, margins, and page counts to IndexedDB ('photo-collage-v1' store 'state').
+  * Resumes seamless workspace state upon browser reload or accidental refresh.
+  * Clear All cleans up workspace and removes persisted record from IndexedDB.
+  * Graceful fallback to localStorage with quota-exceeded guards.
 - Print & PDF Export:
   * Native print stylesheet with @page and break-after: page isolating sheets without UI bars.
   * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).
 - Registry & Discoverability:
   * Registered in apps/media/media-apps.csv (Photo section) and hub/core/hub_catalog.js.
 - Verification:
-  * 13/13 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
+  * 17/17 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
 
 ================================================================================
  End of 4-Day Compendium - Team 5 (Boss / Builder)

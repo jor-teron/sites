@@ -74,6 +74,173 @@
     return removed;
   }
 
+  // Offline State Persistence (IndexedDB photo-collage-v1 + localStorage fallback)
+  const DB_NAME = 'photo-collage-v1';
+  const STORE_NAME = 'state';
+  const RECORD_KEY = 'current_edit';
+
+  function openDatabase() {
+    return new Promise(function (resolve, reject) {
+      if (typeof indexedDB === 'undefined') {
+        return reject(new Error('IndexedDB not supported'));
+      }
+      try {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = function (e) {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        req.onsuccess = function (e) {
+          resolve(e.target.result);
+        };
+        req.onerror = function (e) {
+          reject(e.target.error || new Error('Failed to open IndexedDB'));
+        };
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  function serializeState(st) {
+    if (!st) return null;
+    return {
+      version: 1,
+      layout: st.layout,
+      orientation: st.orientation,
+      paper: st.paper,
+      margin: st.margin,
+      bgColor: st.bgColor,
+      manualPages: st.manualPages,
+      photos: (st.photos || []).map(function (p) {
+        if (!p) return null;
+        return {
+          id: p.id,
+          src: p.src,
+          name: p.name,
+          rotation: p.rotation,
+          fit: p.fit
+        };
+      }),
+      savedAt: Date.now()
+    };
+  }
+
+  function deserializeState(record, targetState) {
+    if (!record || typeof record !== 'object' || !targetState) return false;
+    if (record.layout && LAYOUTS[record.layout]) targetState.layout = record.layout;
+    if (record.orientation && (record.orientation === 'portrait' || record.orientation === 'landscape')) {
+      targetState.orientation = record.orientation;
+    }
+    if (record.paper && PAPER_SIZES[record.paper]) targetState.paper = record.paper;
+    if (record.margin) targetState.margin = record.margin;
+    if (record.bgColor) targetState.bgColor = record.bgColor;
+    if (typeof record.manualPages === 'number') targetState.manualPages = Math.max(1, record.manualPages);
+    if (Array.isArray(record.photos)) {
+      targetState.photos = record.photos.map(function (p) {
+        if (!p || !p.src) return null;
+        return {
+          id: p.id || ('photo_' + Date.now()),
+          src: p.src,
+          name: p.name || 'Photo',
+          rotation: Number(p.rotation) || 0,
+          fit: p.fit === 'contain' ? 'contain' : 'cover'
+        };
+      });
+    }
+    return true;
+  }
+
+  function savePersistedState(st) {
+    const payload = serializeState(st);
+    if (!payload) return Promise.resolve(false);
+
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.put(payload, RECORD_KEY);
+          req.onsuccess = function () { resolve(true); };
+          req.onerror = function (e) { reject(e.target.error); };
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).catch(function () {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(DB_NAME, JSON.stringify(payload));
+          return true;
+        }
+      } catch (_) { /* blocked or quota exceeded */ }
+      return false;
+    });
+  }
+
+  function loadPersistedState() {
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        try {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.get(RECORD_KEY);
+          req.onsuccess = function (e) {
+            resolve(e.target.result || null);
+          };
+          req.onerror = function (e) {
+            reject(e.target.error);
+          };
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).catch(function () {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          const raw = localStorage.getItem(DB_NAME);
+          return raw ? JSON.parse(raw) : null;
+        }
+      } catch (_) { /* blocked */ }
+      return null;
+    });
+  }
+
+  function clearPersistedState() {
+    return openDatabase().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        try {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.delete(RECORD_KEY);
+          req.onsuccess = function () { resolve(true); };
+          req.onerror = function (e) { reject(e.target.error); };
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).catch(function () {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem(DB_NAME);
+          return true;
+        }
+      } catch (_) { /* blocked */ }
+      return false;
+    });
+  }
+
+  let saveTimer = null;
+  function scheduleAutoSave() {
+    if (typeof window === 'undefined') return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      savePersistedState(state);
+    }, 300);
+  }
+
   // Browser UI Controller
   let state = {
     layout: '4-grid',
@@ -120,7 +287,20 @@
     dom.btnZoomReset = document.getElementById('btn-zoom-reset');
 
     attachEvents();
-    renderSheets();
+    loadPersistedState().then(function (saved) {
+      if (saved) {
+        deserializeState(saved, state);
+        if (dom.layoutSelect) dom.layoutSelect.value = state.layout;
+        if (dom.orientSelect) dom.orientSelect.value = state.orientation;
+        if (dom.paperSelect) dom.paperSelect.value = state.paper;
+        if (dom.marginSelect) dom.marginSelect.value = state.margin;
+        if (dom.colorSelect) dom.colorSelect.value = state.bgColor;
+        document.documentElement.style.setProperty('--sheet-bg', state.bgColor);
+      }
+      renderSheets();
+    }).catch(function () {
+      renderSheets();
+    });
   }
 
   function attachEvents() {
@@ -129,6 +309,7 @@
       dom.layoutSelect.addEventListener('change', function () {
         state.layout = this.value;
         renderSheets();
+        scheduleAutoSave();
       });
     }
 
@@ -137,6 +318,7 @@
         state.orientation = this.value;
         updatePrintOrientation();
         renderSheets();
+        scheduleAutoSave();
       });
     }
 
@@ -145,6 +327,7 @@
         state.paper = this.value;
         updatePrintOrientation();
         renderSheets();
+        scheduleAutoSave();
       });
     }
 
@@ -152,6 +335,7 @@
       dom.marginSelect.addEventListener('change', function () {
         state.margin = this.value;
         renderSheets();
+        scheduleAutoSave();
       });
     }
 
@@ -160,6 +344,7 @@
         state.bgColor = this.value;
         document.documentElement.style.setProperty('--sheet-bg', state.bgColor);
         renderSheets();
+        scheduleAutoSave();
       });
     }
 
@@ -192,6 +377,7 @@
         const currentPages = calcTotalPages(state.photos.length, slotsPer, state.manualPages);
         state.manualPages = currentPages + 1;
         renderSheets();
+        scheduleAutoSave();
       });
     }
 
@@ -201,6 +387,7 @@
         if (confirm('Clear all photos from the collage?')) {
           state.photos = [];
           state.manualPages = 1;
+          clearPersistedState();
           renderSheets();
         }
       });
@@ -429,6 +616,7 @@
     }
 
     renderSheets();
+    scheduleAutoSave();
   }
 
   function handleSingleSlotFile(file, slotIndex) {
@@ -441,6 +629,7 @@
       }
       state.photos[slotIndex] = item;
       renderSheets();
+      scheduleAutoSave();
     };
     reader.readAsDataURL(file);
   }
@@ -525,6 +714,7 @@
       state.manualPages--;
     }
     renderSheets();
+    scheduleAutoSave();
   }
 
   function createSlotElement(photo, slotIndex) {
@@ -557,6 +747,7 @@
         if (sourceIdx !== slotIndex) {
           swapPhotos(state.photos, sourceIdx, slotIndex);
           renderSheets();
+          scheduleAutoSave();
           return;
         }
       }
@@ -632,6 +823,7 @@
         e.stopPropagation();
         rotatePhoto(photo, 90);
         applySlotRotationAndFit(img, slot, photo);
+        scheduleAutoSave();
       });
       controls.appendChild(rotateBtn);
 
@@ -646,6 +838,7 @@
         photo.fit = photo.fit === 'contain' ? 'cover' : 'contain';
         applySlotRotationAndFit(img, slot, photo);
         fitBtn.innerHTML = photo.fit === 'contain' ? 'Fit' : 'Fill';
+        scheduleAutoSave();
       });
       controls.appendChild(fitBtn);
 
@@ -659,6 +852,7 @@
         e.stopPropagation();
         state.photos[slotIndex] = null;
         renderSheets();
+        scheduleAutoSave();
       });
       controls.appendChild(removeBtn);
 
@@ -875,6 +1069,11 @@
     removePhotoAt: removePhotoAt,
     calcPrintSlotDimensions: calcPrintSlotDimensions,
     applySlotRotationAndFit: applySlotRotationAndFit,
+    serializeState: serializeState,
+    deserializeState: deserializeState,
+    savePersistedState: savePersistedState,
+    loadPersistedState: loadPersistedState,
+    clearPersistedState: clearPersistedState,
     getState: function () { return state; },
     initApp: initApp
   };
