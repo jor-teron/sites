@@ -205,6 +205,25 @@ button:disabled, .btn:disabled {
   box-shadow: none !important;
 }
 
+/* PC6: status + zoom sit at the right of the controls row */
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .topbar-meta {
+    margin-left: 0;
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+}
+
 /* SUBBAR */
 #subbar {
   display: flex;
