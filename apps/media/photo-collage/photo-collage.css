@@ -118,6 +118,11 @@ body.hub-titlebar #titlebar .titlebar-actions {
   display: none !important;
 }
 
+/* PC2: hide name in Hub title bar */
+body.hub-titlebar #titlebar {
+  display: none !important;
+}
+
 .controls-group {
   display: flex;
   align-items: center;
