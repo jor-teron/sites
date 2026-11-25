@@ -312,29 +312,79 @@
   }
 
   // Hub Window Title Bar Integration (H49 / H110 protocol)
+  // PC7: listen for Hub hello as soon as this file runs (do not wait for initApp / jsPDF)
   let hubTitleBarLinked = false;
-  function updateHubTitleBar() {
+  let hubTitleBarReady = false;
+
+  function hubTitleBarTarget() {
+    return (location.origin && location.origin !== 'null') ? location.origin : '*';
+  }
+
+  function hubTitleBarButtons() {
+    return [
+      { id: 'undo', label: 'Undo', icon: '↩', enabled: undoStack.length > 0, title: 'Undo (Ctrl+Z)' },
+      { id: 'redo', label: 'Redo', icon: '↪', enabled: redoStack.length > 0, title: 'Redo (Ctrl+Y)' },
+      { id: 'add-photos', label: 'Add Photos', icon: '📷', enabled: true, title: 'Add photos to collage' },
+      { id: 'add-page', label: '+ Page', icon: '📄', enabled: true, title: 'Add another empty page' },
+      { id: 'print', label: 'Print', icon: '⎙', enabled: true, title: 'Print collage (Ctrl+P)' },
+      { id: 'pdf', label: 'Save PDF', icon: '⤓', enabled: true, title: 'Save collage as PDF' },
+      { id: 'clear', label: 'Clear', icon: '✕', enabled: true, title: 'Clear all photos' }
+    ];
+  }
+
+  function applyHubTitleBarClass() {
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.add('hub-titlebar');
+    }
+  }
+
+  function sendHubTitleBar(op) {
     if (!hubTitleBarLinked || typeof window === 'undefined' || window.parent === window) return;
-    const target = (location.origin && location.origin !== 'null') ? location.origin : '*';
+    const msg = { v: 1, op: op, buttons: hubTitleBarButtons() };
+    if (op === 'set') msg.align = 'left';
     try {
-      window.parent.postMessage({
-        hubTitleBar: {
-          v: 1,
-          op: 'update',
-          buttons: [
-            { id: 'undo', label: 'Undo', icon: '↩', enabled: undoStack.length > 0, title: 'Undo (Ctrl+Z)' },
-            { id: 'redo', label: 'Redo', icon: '↪', enabled: redoStack.length > 0, title: 'Redo (Ctrl+Y)' },
-            { id: 'add-photos', label: 'Add Photos', icon: '📷', enabled: true, title: 'Add photos to collage' },
-            { id: 'add-page', label: '+ Page', icon: '📄', enabled: true, title: 'Add another empty page' },
-            { id: 'print', label: 'Print', icon: '⎙', enabled: true, title: 'Print collage (Ctrl+P)' },
-            { id: 'pdf', label: 'Save PDF', icon: '⤓', enabled: true, title: 'Save collage as PDF' },
-            { id: 'clear', label: 'Clear', icon: '✕', enabled: true, title: 'Clear all photos' }
-          ]
-        }
-      }, target);
+      window.parent.postMessage({ hubTitleBar: msg }, hubTitleBarTarget());
     } catch (_) {}
   }
 
+  function updateHubTitleBar() {
+    sendHubTitleBar('update');
+  }
+
+  function handleHubTitleBarHello() {
+    hubTitleBarLinked = true;
+    applyHubTitleBarClass();
+    if (hubTitleBarReady) sendHubTitleBar('set');
+  }
+
+  function handleHubTitleBarClick(id) {
+    if (!hubTitleBarReady) return;
+    if (id === 'undo') undo();
+    else if (id === 'redo') redo();
+    else if (id === 'add-photos' && dom.btnAddPhotos) dom.btnAddPhotos.click();
+    else if (id === 'add-page' && dom.btnAddPage) dom.btnAddPage.click();
+    else if (id === 'print' && dom.btnPrint) dom.btnPrint.click();
+    else if (id === 'pdf' && dom.btnPdf) dom.btnPdf.click();
+    else if (id === 'clear' && dom.btnClear) dom.btnClear.click();
+  }
+
+  if (typeof window !== 'undefined' && window.parent !== window) {
+    (function installHubTitleBarListener() {
+      const target = hubTitleBarTarget();
+      window.addEventListener('message', function (e) {
+        if (e.source !== window.parent || (target !== '*' && e.origin !== target)) return;
+        const d = e.data;
+        if (!d || typeof d !== 'object') return;
+        if (d.hubTitleBarHello && d.hubTitleBarHello.v === 1) {
+          handleHubTitleBarHello();
+        } else if (hubTitleBarLinked && d.hubTitleBarClick && d.hubTitleBarClick.v === 1 && d.hubTitleBarClick.kind === 'button') {
+          handleHubTitleBarClick(d.hubTitleBarClick.id);
+        }
+      });
+    })();
+  }
+
+  /* (before PC7)
   function initHubTitleBar() {
     if (typeof window === 'undefined' || window.parent === window) return;
     const target = (location.origin && location.origin !== 'null') ? location.origin : '*';
@@ -374,6 +424,16 @@
         else if (id === 'clear' && dom.btnClear) dom.btnClear.click();
       }
     });
+  }
+  */
+
+  function initHubTitleBar() {
+    if (typeof window === 'undefined' || window.parent === window) return;
+    hubTitleBarReady = true;
+    if (hubTitleBarLinked) {
+      applyHubTitleBarClass();
+      sendHubTitleBar('set');
+    }
   }
 
   function updateHistoryButtons() {
@@ -1090,13 +1150,62 @@
   }
 
   // Multi-page PDF Export via bundled jsPDF
+  // PC7: load jsPDF on demand (kept in vendor/, not on first paint)
+  let jsPdfLoadPromise = null;
+  function loadJsPdf() {
+    if (typeof window === 'undefined') return Promise.reject(new Error('no window'));
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if (jsPdfLoadPromise) return jsPdfLoadPromise;
+    jsPdfLoadPromise = new Promise(function (resolve, reject) {
+      const s = document.createElement('script');
+      s.src = 'vendor/jspdf.umd.min.js';
+      s.async = true;
+      s.onload = function () {
+        const lib = window.jspdf && window.jspdf.jsPDF;
+        if (lib) resolve(lib);
+        else {
+          jsPdfLoadPromise = null;
+          reject(new Error('jsPDF missing after load'));
+        }
+      };
+      s.onerror = function () {
+        jsPdfLoadPromise = null;
+        reject(new Error('jsPDF failed to load'));
+      };
+      (document.head || document.documentElement).appendChild(s);
+    });
+    return jsPdfLoadPromise;
+  }
+
   function exportToPdf() {
+    /* (before PC7)
     const J = window.jspdf && window.jspdf.jsPDF;
     if (!J) {
       alert('The PDF generation library is not loaded. Please use the Print button to Save as PDF.');
       return;
     }
+    */
+    const ready = window.jspdf && window.jspdf.jsPDF;
+    if (ready) {
+      exportToPdfWith(ready);
+      return;
+    }
+    if (dom.btnPdf) {
+      dom.btnPdf.disabled = true;
+      dom.btnPdf.textContent = 'Loading PDF…';
+    }
+    loadJsPdf().then(function (J) {
+      exportToPdfWith(J);
+    }).catch(function () {
+      if (dom.btnPdf) {
+        dom.btnPdf.disabled = false;
+        dom.btnPdf.textContent = 'Save PDF';
+      }
+      alert('The PDF generation library is not loaded. Please use the Print button to Save as PDF.');
+    });
+  }
 
+  function exportToPdfWith(J) {
     if (dom.btnPdf) {
       dom.btnPdf.disabled = true;
       dom.btnPdf.textContent = 'Generating PDF…';
