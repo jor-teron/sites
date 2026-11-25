@@ -311,6 +311,71 @@
     };
   }
 
+  // Hub Window Title Bar Integration (H49 / H110 protocol)
+  let hubTitleBarLinked = false;
+  function updateHubTitleBar() {
+    if (!hubTitleBarLinked || typeof window === 'undefined' || window.parent === window) return;
+    const target = (location.origin && location.origin !== 'null') ? location.origin : '*';
+    try {
+      window.parent.postMessage({
+        hubTitleBar: {
+          v: 1,
+          op: 'update',
+          buttons: [
+            { id: 'undo', label: 'Undo', icon: '↩', enabled: undoStack.length > 0, title: 'Undo (Ctrl+Z)' },
+            { id: 'redo', label: 'Redo', icon: '↪', enabled: redoStack.length > 0, title: 'Redo (Ctrl+Y)' },
+            { id: 'add-photos', label: 'Add Photos', icon: '📷', enabled: true, title: 'Add photos to collage' },
+            { id: 'add-page', label: '+ Page', icon: '📄', enabled: true, title: 'Add another empty page' },
+            { id: 'print', label: 'Print', icon: '⎙', enabled: true, title: 'Print collage (Ctrl+P)' },
+            { id: 'pdf', label: 'Save PDF', icon: '⤓', enabled: true, title: 'Save collage as PDF' },
+            { id: 'clear', label: 'Clear', icon: '✕', enabled: true, title: 'Clear all photos' }
+          ]
+        }
+      }, target);
+    } catch (_) {}
+  }
+
+  function initHubTitleBar() {
+    if (typeof window === 'undefined' || window.parent === window) return;
+    const target = (location.origin && location.origin !== 'null') ? location.origin : '*';
+    window.addEventListener('message', function (e) {
+      if (e.source !== window.parent || (target !== '*' && e.origin !== target)) return;
+      const d = e.data;
+      if (!d || typeof d !== 'object') return;
+      if (d.hubTitleBarHello && d.hubTitleBarHello.v === 1) {
+        hubTitleBarLinked = true;
+        document.body.classList.add('hub-titlebar');
+        try {
+          window.parent.postMessage({
+            hubTitleBar: {
+              v: 1,
+              op: 'set',
+              align: 'left',
+              buttons: [
+                { id: 'undo', label: 'Undo', icon: '↩', enabled: undoStack.length > 0, title: 'Undo (Ctrl+Z)' },
+                { id: 'redo', label: 'Redo', icon: '↪', enabled: redoStack.length > 0, title: 'Redo (Ctrl+Y)' },
+                { id: 'add-photos', label: 'Add Photos', icon: '📷', enabled: true, title: 'Add photos to collage' },
+                { id: 'add-page', label: '+ Page', icon: '📄', enabled: true, title: 'Add another empty page' },
+                { id: 'print', label: 'Print', icon: '⎙', enabled: true, title: 'Print collage (Ctrl+P)' },
+                { id: 'pdf', label: 'Save PDF', icon: '⤓', enabled: true, title: 'Save collage as PDF' },
+                { id: 'clear', label: 'Clear', icon: '✕', enabled: true, title: 'Clear all photos' }
+              ]
+            }
+          }, target);
+        } catch (_) {}
+      } else if (hubTitleBarLinked && d.hubTitleBarClick && d.hubTitleBarClick.v === 1 && d.hubTitleBarClick.kind === 'button') {
+        const id = d.hubTitleBarClick.id;
+        if (id === 'undo') undo();
+        else if (id === 'redo') redo();
+        else if (id === 'add-photos' && dom.btnAddPhotos) dom.btnAddPhotos.click();
+        else if (id === 'add-page' && dom.btnAddPage) dom.btnAddPage.click();
+        else if (id === 'print' && dom.btnPrint) dom.btnPrint.click();
+        else if (id === 'pdf' && dom.btnPdf) dom.btnPdf.click();
+        else if (id === 'clear' && dom.btnClear) dom.btnClear.click();
+      }
+    });
+  }
+
   function updateHistoryButtons() {
     if (dom.btnUndo) {
       dom.btnUndo.disabled = undoStack.length === 0;
@@ -318,6 +383,7 @@
     if (dom.btnRedo) {
       dom.btnRedo.disabled = redoStack.length === 0;
     }
+    updateHubTitleBar();
   }
 
   function syncDomControls() {
@@ -379,6 +445,7 @@
     dom.btnZoomReset = document.getElementById('btn-zoom-reset');
 
     attachEvents();
+    initHubTitleBar();
     loadPersistedState().then(function (saved) {
       if (saved) {
         deserializeState(saved, state);

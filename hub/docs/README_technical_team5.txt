@@ -440,6 +440,9 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Dedicated Undo and Redo toolbar buttons with dynamic disabled state reflection and standard hotkeys (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, Cmd variants).
   * Bounded 30-step history stack tracking photo drops, rotations, fit modes, slot swaps, deletions, page additions, layout/paper/margin changes, and accidental Clear All reversibility.
   * Synchronized seamlessly with the auto-save IndexedDB persistence layer.
+- Title Bar Re-organization & Hub OS Integration:
+  * Moved all action buttons (Undo, Redo, Add Photos, + Page, Print, Save PDF, Clear) to the top title bar (#titlebar), leaving canvas configuration selects on the sub-toolbar (#topbar).
+  * Implemented Hub OS desktop window title bar contract (H49 / H110 hubTitleBar protocol), relaying action buttons to the window frame when running inside the Hub desktop shell.
 - Print & PDF Export:
   * Native print stylesheet with @page and break-after: page isolating sheets without UI bars.
   * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).

@@ -9,13 +9,45 @@
 </head>
 <body>
   <div id="app">
-    <!-- TOP TOOLBAR -->
-    <header id="topbar">
+    <!-- TOP TITLE BAR -->
+    <header id="titlebar">
       <div class="brand">
-        <img src="photo-collage_icon.png" alt="" width="28" height="28">
+        <img src="photo-collage_icon.png" alt="" width="26" height="26">
         <h1>Photo Collage</h1>
       </div>
 
+      <div class="titlebar-actions">
+        <button type="button" id="btn-undo" class="btn secondary" title="Undo (Ctrl+Z)" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          Undo
+        </button>
+        <button type="button" id="btn-redo" class="btn secondary" title="Redo (Ctrl+Y or Ctrl+Shift+Z)" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+          Redo
+        </button>
+        <button type="button" id="btn-add-photos" class="btn primary" title="Add photos to collage">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><line x1="16" y1="5" x2="22" y2="5"/><line x1="19" y1="2" x2="19" y2="8"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          Add Photos
+        </button>
+        <button type="button" id="btn-add-page" class="btn" title="Add another empty page">
+          + Page
+        </button>
+        <button type="button" id="btn-print" class="btn secondary" title="Print collage (Ctrl+P)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print
+        </button>
+        <button type="button" id="btn-pdf" class="btn secondary" title="Save collage as PDF">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Save PDF
+        </button>
+        <button type="button" id="btn-clear" class="btn danger" title="Clear all photos">
+          Clear
+        </button>
+      </div>
+    </header>
+
+    <!-- OPTIONS TOOLBAR -->
+    <div id="topbar">
       <div class="controls-group">
         <div class="control-item">
           <label for="layout-select">Layout:</label>
@@ -62,36 +94,7 @@
           </select>
         </div>
       </div>
-
-      <div class="controls-group">
-        <button type="button" id="btn-undo" class="btn secondary" title="Undo (Ctrl+Z)" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-          Undo
-        </button>
-        <button type="button" id="btn-redo" class="btn secondary" title="Redo (Ctrl+Y or Ctrl+Shift+Z)" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
-          Redo
-        </button>
-        <button type="button" id="btn-add-photos" class="btn primary" title="Add photos to collage">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><line x1="16" y1="5" x2="22" y2="5"/><line x1="19" y1="2" x2="19" y2="8"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-          Add Photos
-        </button>
-        <button type="button" id="btn-add-page" class="btn" title="Add another empty page">
-          + Page
-        </button>
-        <button type="button" id="btn-print" class="btn secondary" title="Print collage (Ctrl+P)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Print
-        </button>
-        <button type="button" id="btn-pdf" class="btn secondary" title="Save collage as PDF">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Save PDF
-        </button>
-        <button type="button" id="btn-clear" class="btn danger" title="Clear all photos">
-          Clear
-        </button>
-      </div>
-    </header>
+    </div>
 
     <!-- SUBBAR STATS & TIPS -->
     <div id="subbar">

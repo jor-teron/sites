@@ -96,15 +96,20 @@ test('index.html redirects to photo-collage.html and detects theme', () => {
   assert.match(html, /sites-hub\.theme/);
 });
 
-test('photo-collage.html contains print and PDF buttons, toolbar controls, and drop zone', () => {
+test('photo-collage.html contains title bar action buttons, toolbar controls, and drop zone', () => {
   const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  assert.match(html, /id="titlebar"/);
+  assert.match(html, /class="titlebar-actions"/);
   assert.match(html, /id="layout-select"/);
   assert.match(html, /id="orient-select"/);
   assert.match(html, /id="paper-select"/);
-  assert.match(html, /id="btn-print"/);
-  assert.match(html, /id="btn-pdf"/);
+  assert.match(html, /id="btn-undo"/);
+  assert.match(html, /id="btn-redo"/);
   assert.match(html, /id="btn-add-photos"/);
   assert.match(html, /id="btn-add-page"/);
+  assert.match(html, /id="btn-print"/);
+  assert.match(html, /id="btn-pdf"/);
+  assert.match(html, /id="btn-clear"/);
   assert.match(html, /id="sheets-container"/);
   assert.match(html, /id="global-drop-zone"/);
   assert.match(html, /vendor\/jspdf\.umd\.min\.js/);
