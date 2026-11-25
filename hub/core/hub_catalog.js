@@ -92,6 +92,7 @@ name, path, icon, newtab, section, description
 Draw,            draw/,            , , Draw & Paint, Draw with finger stylus or mouse: pen - eraser - fill - shapes - export PNG
 Photo Editor v2, photo-editor-v2/, , , Photo, Edit photos: crop - rotate - resize - brightness - contrast - sharpen - B&W and sepia looks
 Hub Photo Studio, photo-studio/,   , , Photo, Bigger photo editor: layers - text - shapes - selections - masks - .hps projects - crop - rotate - resize - adjust - looks - undo and redo
+Photo Collage,   photo-collage/,   , , Photo, Printable photo collage: 2 or 4 photos per page - multi-page - drag & drop - rotate - PDF
 Camera,          camera/,          , , Photo, Take photos and record videos with the device camera
 Gallery,         gallery/,         , , Photo, Browse photos and videos from a folder or files on this device
 GIF Maker,       gif-maker/,       , , Photo, Turn a short video into an animated GIF on your device
@@ -264,6 +265,7 @@ Human Body Explorer,     human-body/,                , , Health, Tap body parts 
 Nutrition Plate,         nutrition-plate/,          , , Health, Build Indian and Assam meal plates and plan a week with personal portions and live nutrients with a balanced-plate guide
 Nutrition Calculator,    nutrition-calculator/,      nutrition-calculator/nutrition-calculator_icon.png, , Health, Work out calories and nutrients for your meals
 Blood Group,             blood-group/,               , , Health, Blood basics: the 8 groups - who can give to whom - donation and how a child gets a group
+Lab & Scan Explainer,    lab-tests/,                 , , Health, Decode blood tests - CT scans and imaging reports with values - ranges and plain explanations
 
 Knife Skills,            knife-skills/,              knife-skills/knife-skills_icon.png, , Cooking, Kitchen knife skills 101: basic cuts and safety tips
 Ingredient Swaps,        ingredient-substitutions/,  ingredient-substitutions/ingredient-substitutions_icon.png, , Cooking, Find substitutes for common cooking ingredients

@@ -410,6 +410,33 @@ Future roadmap and planned enhancements for upcoming development cycles:
    - Implement Driving School follow-ups (DS-6 traffic vehicles, DS-7 roadside vegetation, DS-8 town structures).
    - Expand Dictionary offline data cache in Service Worker.
 
+14. PHOTO COLLAGE APPLICATION (apps/media/photo-collage/)
+---------------------------------------------------------
+Team 5 built and delivered the Photo Collage printing application under Media (apps/media/photo-collage/):
+- Multi-photo auto-expansion across N pages:
+  * Automatically calculates required pages via Math.ceil(totalPhotos / slotsPerPage).
+  * Dropping 8 photos with 4/page yields 2 pages; 8 photos with 2/page yields 4 pages.
+  * Preserves manual page additions (+ Page) and supports page removal with clean reflow.
+- Flexible layouts per page:
+  * 4 Photos / Page (2x2 Grid)
+  * 2 Photos / Page (Vertical Split)
+  * 2 Photos / Page (Horizontal Split)
+  * 1 Photo / Page (Full Bleed)
+- Drag and drop:
+  * Full-window drop zone overlay for batch photo ingestion from OS file manager.
+  * Direct drop onto individual slots to fill or replace specific positions.
+  * Drag-to-swap between slots for rapid manual layout arrangement.
+- Per-tile controls:
+  * 90° clockwise rotation (0°, 90°, 180°, 270°) with CSS and canvas matrix transforms.
+  * Aspect ratio fit mode toggle (Cover vs Contain) preserved across rotations.
+- Print & PDF Export:
+  * Native print stylesheet with @page and break-after: page isolating sheets without UI bars.
+  * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).
+- Registry & Discoverability:
+  * Registered in apps/media/media-apps.csv (Photo section) and hub/core/hub_catalog.js.
+- Verification:
+  * 13/13 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
+
 ================================================================================
  End of 4-Day Compendium - Team 5 (Boss / Builder)
 ================================================================================

@@ -1,0 +1,145 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execSync } = require('node:child_process');
+
+const appDir = path.resolve(__dirname, '..');
+const PhotoCollage = require(path.join(appDir, 'photo_collage.js'));
+
+test('Syntax check on photo_collage.js via node --check', () => {
+  const jsPath = path.join(appDir, 'photo_collage.js');
+  assert.doesNotThrow(() => {
+    execSync(`node --check "${jsPath}"`);
+  });
+});
+
+test('LAYOUTS definition has 4-grid (4 slots), 2-stack (2 slots), 2-split (2 slots), 1-full (1 slot)', () => {
+  assert.equal(PhotoCollage.getSlotsPerPage('4-grid'), 4);
+  assert.equal(PhotoCollage.getSlotsPerPage('2-stack'), 2);
+  assert.equal(PhotoCollage.getSlotsPerPage('2-split'), 2);
+  assert.equal(PhotoCollage.getSlotsPerPage('1-full'), 1);
+  assert.equal(PhotoCollage.getSlotsPerPage('unknown'), 4);
+});
+
+test('calcTotalPages auto-expands pages dynamically for multi-photo drops', () => {
+  // Layout 4-grid (4 slots per page)
+  assert.equal(PhotoCollage.calcTotalPages(0, 4), 1, 'Empty state defaults to 1 page');
+  assert.equal(PhotoCollage.calcTotalPages(1, 4), 1);
+  assert.equal(PhotoCollage.calcTotalPages(4, 4), 1);
+  assert.equal(PhotoCollage.calcTotalPages(5, 4), 2, '5 photos expand to 2 pages');
+  assert.equal(PhotoCollage.calcTotalPages(8, 4), 2, '8 photos with 4 slots/page expand to 2 pages');
+  assert.equal(PhotoCollage.calcTotalPages(10, 4), 3, '10 photos expand to 3 pages');
+
+  // Layout 2-stack / 2-split (2 slots per page)
+  assert.equal(PhotoCollage.calcTotalPages(2, 2), 1);
+  assert.equal(PhotoCollage.calcTotalPages(3, 2), 2);
+  assert.equal(PhotoCollage.calcTotalPages(8, 2), 4, '8 photos with 2 slots/page expand to 4 pages');
+
+  // Manual page count overrides if larger than photo requirement
+  assert.equal(PhotoCollage.calcTotalPages(2, 4, 3), 3, 'Manual blank pages preserved');
+});
+
+test('createPhotoItem initializes clean photo record with 0 deg rotation and cover fit', () => {
+  const item = PhotoCollage.createPhotoItem('data:image/png;base64,sample', 'vacation.png');
+  assert.ok(item.id.startsWith('photo_'));
+  assert.equal(item.src, 'data:image/png;base64,sample');
+  assert.equal(item.name, 'vacation.png');
+  assert.equal(item.rotation, 0);
+  assert.equal(item.fit, 'cover');
+});
+
+test('rotatePhoto increments rotation in 90 degree clockwise increments', () => {
+  const photo = PhotoCollage.createPhotoItem('sample.jpg', 'sample.jpg');
+  assert.equal(photo.rotation, 0);
+
+  assert.equal(PhotoCollage.rotatePhoto(photo, 90), 90);
+  assert.equal(photo.rotation, 90);
+
+  assert.equal(PhotoCollage.rotatePhoto(photo, 90), 180);
+  assert.equal(PhotoCollage.rotatePhoto(photo, 90), 270);
+  assert.equal(PhotoCollage.rotatePhoto(photo, 90), 0, 'Cycles cleanly back to 0');
+
+  // Negative / counter-clockwise rotation
+  assert.equal(PhotoCollage.rotatePhoto(photo, -90), 270);
+});
+
+test('swapPhotos exchanges positions between two slots', () => {
+  const p1 = PhotoCollage.createPhotoItem('img1.png', 'p1');
+  const p2 = PhotoCollage.createPhotoItem('img2.png', 'p2');
+  const list = [p1, p2];
+
+  assert.ok(PhotoCollage.swapPhotos(list, 0, 1));
+  assert.equal(list[0].name, 'p2');
+  assert.equal(list[1].name, 'p1');
+
+  // Sparse swap
+  assert.ok(PhotoCollage.swapPhotos(list, 1, 3));
+  assert.equal(list[1], null);
+  assert.equal(list[3].name, 'p1');
+});
+
+test('removePhotoAt splices photo item from list', () => {
+  const p1 = PhotoCollage.createPhotoItem('img1.png', 'p1');
+  const p2 = PhotoCollage.createPhotoItem('img2.png', 'p2');
+  const list = [p1, p2];
+
+  const removed = PhotoCollage.removePhotoAt(list, 0);
+  assert.equal(removed.name, 'p1');
+  assert.equal(list.length, 1);
+  assert.equal(list[0].name, 'p2');
+});
+
+test('index.html redirects to photo-collage.html and detects theme', () => {
+  const html = fs.readFileSync(path.join(appDir, 'index.html'), 'utf8');
+  assert.match(html, /photo-collage\.html/);
+  assert.match(html, /sites-hub\.theme/);
+});
+
+test('photo-collage.html contains print and PDF buttons, toolbar controls, and drop zone', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  assert.match(html, /id="layout-select"/);
+  assert.match(html, /id="orient-select"/);
+  assert.match(html, /id="paper-select"/);
+  assert.match(html, /id="btn-print"/);
+  assert.match(html, /id="btn-pdf"/);
+  assert.match(html, /id="btn-add-photos"/);
+  assert.match(html, /id="btn-add-page"/);
+  assert.match(html, /id="sheets-container"/);
+  assert.match(html, /id="global-drop-zone"/);
+  assert.match(html, /vendor\/jspdf\.umd\.min\.js/);
+});
+
+test('photo-collage.css specifies @media print rules and sheet page sizing', () => {
+  const css = fs.readFileSync(path.join(appDir, 'photo-collage.css'), 'utf8');
+  assert.match(css, /@media print/);
+  assert.match(css, /@page/);
+  assert.match(css, /page-break-after:\s*always/);
+  assert.match(css, /break-after:\s*page/);
+  assert.match(css, /210mm/);
+  assert.match(css, /297mm/);
+});
+
+test('Bundled jspdf vendor file exists and is valid', () => {
+  const jspdfPath = path.join(appDir, 'vendor', 'jspdf.umd.min.js');
+  assert.ok(fs.existsSync(jspdfPath));
+  const stat = fs.statSync(jspdfPath);
+  assert.ok(stat.size > 100000, 'jsPDF vendor size should exceed 100KB');
+});
+
+test('photo-collage_icon.png exists and is a valid PNG', () => {
+  const iconPath = path.join(appDir, 'photo-collage_icon.png');
+  assert.ok(fs.existsSync(iconPath));
+  const buffer = fs.readFileSync(iconPath);
+  // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  assert.equal(buffer[0], 0x89);
+  assert.equal(buffer[1], 0x50);
+  assert.equal(buffer[2], 0x4e);
+  assert.equal(buffer[3], 0x47);
+});
+
+test('apps/media/media-apps.csv has Photo Collage registered under Photo section', () => {
+  const csvPath = path.resolve(appDir, '..', 'media-apps.csv');
+  const csv = fs.readFileSync(csvPath, 'utf8');
+  assert.match(csv, /^Photo Collage,\s*photo-collage\/,\s*,\s*,\s*Photo,/m);
+});
