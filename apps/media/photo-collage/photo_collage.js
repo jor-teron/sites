@@ -241,6 +241,96 @@
     }, 300);
   }
 
+  // Undo & Redo History Management
+  const MAX_HISTORY = 30;
+  let undoStack = [];
+  let redoStack = [];
+
+  function createSnapshot(st) {
+    return serializeState(st);
+  }
+
+  function restoreSnapshot(snap, targetState) {
+    return deserializeState(snap, targetState);
+  }
+
+  function pushHistory(st) {
+    const s = st || state;
+    const snap = createSnapshot(s);
+    if (!snap) return;
+    undoStack.push(snap);
+    if (undoStack.length > MAX_HISTORY) {
+      undoStack.shift();
+    }
+    redoStack = [];
+    updateHistoryButtons();
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return false;
+    const currentSnap = createSnapshot(state);
+    redoStack.push(currentSnap);
+    if (redoStack.length > MAX_HISTORY) {
+      redoStack.shift();
+    }
+    const prevSnap = undoStack.pop();
+    restoreSnapshot(prevSnap, state);
+    syncDomControls();
+    renderSheets();
+    scheduleAutoSave();
+    updateHistoryButtons();
+    return true;
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return false;
+    const currentSnap = createSnapshot(state);
+    undoStack.push(currentSnap);
+    if (undoStack.length > MAX_HISTORY) {
+      undoStack.shift();
+    }
+    const nextSnap = redoStack.pop();
+    restoreSnapshot(nextSnap, state);
+    syncDomControls();
+    renderSheets();
+    scheduleAutoSave();
+    updateHistoryButtons();
+    return true;
+  }
+
+  function clearHistory() {
+    undoStack = [];
+    redoStack = [];
+    updateHistoryButtons();
+  }
+
+  function getHistoryState() {
+    return {
+      undoCount: undoStack.length,
+      redoCount: redoStack.length
+    };
+  }
+
+  function updateHistoryButtons() {
+    if (dom.btnUndo) {
+      dom.btnUndo.disabled = undoStack.length === 0;
+    }
+    if (dom.btnRedo) {
+      dom.btnRedo.disabled = redoStack.length === 0;
+    }
+  }
+
+  function syncDomControls() {
+    if (dom.layoutSelect) dom.layoutSelect.value = state.layout;
+    if (dom.orientSelect) dom.orientSelect.value = state.orientation;
+    if (dom.paperSelect) dom.paperSelect.value = state.paper;
+    if (dom.marginSelect) dom.marginSelect.value = state.margin;
+    if (dom.colorSelect) dom.colorSelect.value = state.bgColor;
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--sheet-bg', state.bgColor);
+    }
+  }
+
   // Browser UI Controller
   let state = {
     layout: '4-grid',
@@ -267,6 +357,8 @@
     } catch (_) { /* blocked */ }
 
     // Cache elements
+    dom.btnUndo = document.getElementById('btn-undo');
+    dom.btnRedo = document.getElementById('btn-redo');
     dom.layoutSelect = document.getElementById('layout-select');
     dom.orientSelect = document.getElementById('orient-select');
     dom.paperSelect = document.getElementById('paper-select');
@@ -290,23 +382,56 @@
     loadPersistedState().then(function (saved) {
       if (saved) {
         deserializeState(saved, state);
-        if (dom.layoutSelect) dom.layoutSelect.value = state.layout;
-        if (dom.orientSelect) dom.orientSelect.value = state.orientation;
-        if (dom.paperSelect) dom.paperSelect.value = state.paper;
-        if (dom.marginSelect) dom.marginSelect.value = state.margin;
-        if (dom.colorSelect) dom.colorSelect.value = state.bgColor;
-        document.documentElement.style.setProperty('--sheet-bg', state.bgColor);
+        syncDomControls();
       }
       renderSheets();
+      updateHistoryButtons();
     }).catch(function () {
       renderSheets();
+      updateHistoryButtons();
     });
   }
 
   function attachEvents() {
+    // Undo / Redo controls
+    if (dom.btnUndo) {
+      dom.btnUndo.addEventListener('click', function () {
+        undo();
+      });
+    }
+    if (dom.btnRedo) {
+      dom.btnRedo.addEventListener('click', function () {
+        redo();
+      });
+    }
+
+    // Keyboard Shortcuts: Ctrl+Z / Cmd+Z, Ctrl+Y / Cmd+Y, Ctrl+Shift+Z / Cmd+Shift+Z
+    window.addEventListener('keydown', function (e) {
+      const isMod = e.ctrlKey || e.metaKey;
+      if (!isMod) return;
+
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+        return;
+      }
+
+      const key = e.key ? e.key.toLowerCase() : '';
+      if (key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if (key === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    });
+
     // Selectors
     if (dom.layoutSelect) {
       dom.layoutSelect.addEventListener('change', function () {
+        pushHistory(state);
         state.layout = this.value;
         renderSheets();
         scheduleAutoSave();
@@ -315,6 +440,7 @@
 
     if (dom.orientSelect) {
       dom.orientSelect.addEventListener('change', function () {
+        pushHistory(state);
         state.orientation = this.value;
         updatePrintOrientation();
         renderSheets();
@@ -324,6 +450,7 @@
 
     if (dom.paperSelect) {
       dom.paperSelect.addEventListener('change', function () {
+        pushHistory(state);
         state.paper = this.value;
         updatePrintOrientation();
         renderSheets();
@@ -333,6 +460,7 @@
 
     if (dom.marginSelect) {
       dom.marginSelect.addEventListener('change', function () {
+        pushHistory(state);
         state.margin = this.value;
         renderSheets();
         scheduleAutoSave();
@@ -341,6 +469,7 @@
 
     if (dom.colorSelect) {
       dom.colorSelect.addEventListener('change', function () {
+        pushHistory(state);
         state.bgColor = this.value;
         document.documentElement.style.setProperty('--sheet-bg', state.bgColor);
         renderSheets();
@@ -373,6 +502,7 @@
 
     if (dom.btnAddPage) {
       dom.btnAddPage.addEventListener('click', function () {
+        pushHistory(state);
         const slotsPer = getSlotsPerPage(state.layout);
         const currentPages = calcTotalPages(state.photos.length, slotsPer, state.manualPages);
         state.manualPages = currentPages + 1;
@@ -385,6 +515,7 @@
       dom.btnClear.addEventListener('click', function () {
         if (state.photos.length === 0) return;
         if (confirm('Clear all photos from the collage?')) {
+          pushHistory(state);
           state.photos = [];
           state.manualPages = 1;
           clearPersistedState();
@@ -604,6 +735,8 @@
   }
 
   function appendPhotosToState(newPhotos) {
+    if (!newPhotos || !newPhotos.length) return;
+    pushHistory(state);
     // Fill any null gaps in state.photos first, then push remaining
     let pIdx = 0;
     for (let i = 0; i < state.photos.length && pIdx < newPhotos.length; i++) {
@@ -623,6 +756,7 @@
     if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = function (e) {
+      pushHistory(state);
       const item = createPhotoItem(e.target.result, file.name);
       while (state.photos.length <= slotIndex) {
         state.photos.push(null);
@@ -708,6 +842,7 @@
   }
 
   function removePage(pageIndex, slotsPerPage) {
+    pushHistory(state);
     const startIdx = pageIndex * slotsPerPage;
     state.photos.splice(startIdx, slotsPerPage);
     if (state.manualPages > 1) {
@@ -745,6 +880,7 @@
       if (sourceIdxStr && !isNaN(sourceIdxStr)) {
         const sourceIdx = parseInt(sourceIdxStr, 10);
         if (sourceIdx !== slotIndex) {
+          pushHistory(state);
           swapPhotos(state.photos, sourceIdx, slotIndex);
           renderSheets();
           scheduleAutoSave();
@@ -821,6 +957,7 @@
       rotateBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg> 90°';
       rotateBtn.addEventListener('click', function (e) {
         e.stopPropagation();
+        pushHistory(state);
         rotatePhoto(photo, 90);
         applySlotRotationAndFit(img, slot, photo);
         scheduleAutoSave();
@@ -835,6 +972,7 @@
       fitBtn.innerHTML = photo.fit === 'contain' ? 'Fit' : 'Fill';
       fitBtn.addEventListener('click', function (e) {
         e.stopPropagation();
+        pushHistory(state);
         photo.fit = photo.fit === 'contain' ? 'cover' : 'contain';
         applySlotRotationAndFit(img, slot, photo);
         fitBtn.innerHTML = photo.fit === 'contain' ? 'Fit' : 'Fill';
@@ -850,6 +988,7 @@
       removeBtn.innerHTML = '✕';
       removeBtn.addEventListener('click', function (e) {
         e.stopPropagation();
+        pushHistory(state);
         state.photos[slotIndex] = null;
         renderSheets();
         scheduleAutoSave();
@@ -1074,6 +1213,13 @@
     savePersistedState: savePersistedState,
     loadPersistedState: loadPersistedState,
     clearPersistedState: clearPersistedState,
+    createSnapshot: createSnapshot,
+    restoreSnapshot: restoreSnapshot,
+    pushHistory: pushHistory,
+    undo: undo,
+    redo: redo,
+    clearHistory: clearHistory,
+    getHistoryState: getHistoryState,
     getState: function () { return state; },
     initApp: initApp
   };

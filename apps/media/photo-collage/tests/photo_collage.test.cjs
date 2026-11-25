@@ -271,3 +271,117 @@ test('deserializeState hydrates target state accurately and sanitizes invalid va
   assert.equal(PhotoCollage.deserializeState(null, targetState), false);
   assert.equal(PhotoCollage.deserializeState('string', targetState), false);
 });
+
+test('history manager createSnapshot and restoreSnapshot perform deep state cloning', () => {
+  const source = {
+    layout: '2-stack',
+    orientation: 'landscape',
+    paper: 'letter',
+    margin: 'wide',
+    bgColor: '#faf8f5',
+    manualPages: 2,
+    photos: [
+      { id: 'p1', src: 'data:img1', name: 'photo1.jpg', rotation: 90, fit: 'cover' }
+    ]
+  };
+
+  const snap = PhotoCollage.createSnapshot(source);
+  assert.equal(snap.layout, '2-stack');
+  assert.equal(snap.photos[0].rotation, 90);
+
+  const dest = { layout: '4-grid', photos: [] };
+  const ok = PhotoCollage.restoreSnapshot(snap, dest);
+  assert.ok(ok);
+  assert.equal(dest.layout, '2-stack');
+  assert.equal(dest.photos.length, 1);
+  assert.equal(dest.photos[0].id, 'p1');
+
+  // Mutating dest does not alter snapshot
+  dest.photos[0].rotation = 180;
+  assert.equal(snap.photos[0].rotation, 90);
+});
+
+test('pushHistory, undo, and redo manage bounded history stack reversibility', () => {
+  PhotoCollage.clearHistory();
+  const hist0 = PhotoCollage.getHistoryState();
+  assert.equal(hist0.undoCount, 0);
+  assert.equal(hist0.redoCount, 0);
+
+  // Undo and redo on empty stack return false
+  assert.equal(PhotoCollage.undo(), false);
+  assert.equal(PhotoCollage.redo(), false);
+
+  const currentState = PhotoCollage.getState();
+  currentState.layout = '4-grid';
+  currentState.photos = [];
+
+  // Action 1: Add a photo
+  PhotoCollage.pushHistory(currentState);
+  currentState.photos.push(PhotoCollage.createPhotoItem('data:img1', 'img1.jpg'));
+
+  let hist = PhotoCollage.getHistoryState();
+  assert.equal(hist.undoCount, 1);
+  assert.equal(hist.redoCount, 0);
+
+  // Action 2: Rotate photo to 90 deg
+  PhotoCollage.pushHistory(currentState);
+  currentState.photos[0].rotation = 90;
+
+  hist = PhotoCollage.getHistoryState();
+  assert.equal(hist.undoCount, 2);
+
+  // Undo 1: Reverts rotation back to 0
+  const undo1 = PhotoCollage.undo();
+  assert.ok(undo1);
+  assert.equal(currentState.photos[0].rotation, 0);
+  hist = PhotoCollage.getHistoryState();
+  assert.equal(hist.undoCount, 1);
+  assert.equal(hist.redoCount, 1);
+
+  // Redo 1: Re-applies rotation to 90
+  const redo1 = PhotoCollage.redo();
+  assert.ok(redo1);
+  assert.equal(currentState.photos[0].rotation, 90);
+  hist = PhotoCollage.getHistoryState();
+  assert.equal(hist.undoCount, 2);
+  assert.equal(hist.redoCount, 0);
+
+  // Undo 2: Reverts rotation to 0, then Undo 3: Reverts back to 0 photos
+  PhotoCollage.undo(); // back to rot 0
+  assert.equal(currentState.photos[0].rotation, 0);
+  PhotoCollage.undo(); // back to empty photos
+  assert.equal(currentState.photos.length, 0);
+
+  // History stack is bounded at 30 entries
+  PhotoCollage.clearHistory();
+  for (let i = 0; i < 35; i++) {
+    PhotoCollage.pushHistory(currentState);
+  }
+  hist = PhotoCollage.getHistoryState();
+  assert.equal(hist.undoCount, 30);
+});
+
+test('undo safely restores photos cleared via Clear All action', () => {
+  PhotoCollage.clearHistory();
+  const st = PhotoCollage.getState();
+  st.photos = [
+    PhotoCollage.createPhotoItem('data:sample1', 'sample1.jpg'),
+    PhotoCollage.createPhotoItem('data:sample2', 'sample2.jpg')
+  ];
+  st.manualPages = 2;
+
+  // Simulate user clicking Clear All
+  PhotoCollage.pushHistory(st);
+  st.photos = [];
+  st.manualPages = 1;
+
+  assert.equal(st.photos.length, 0);
+
+  // Undo restores both photos and page count
+  const reverted = PhotoCollage.undo();
+  assert.ok(reverted);
+  assert.equal(st.photos.length, 2);
+  assert.equal(st.photos[0].name, 'sample1.jpg');
+  assert.equal(st.photos[1].name, 'sample2.jpg');
+  assert.equal(st.manualPages, 2);
+});

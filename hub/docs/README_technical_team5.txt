@@ -436,13 +436,17 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Resumes seamless workspace state upon browser reload or accidental refresh.
   * Clear All cleans up workspace and removes persisted record from IndexedDB.
   * Graceful fallback to localStorage with quota-exceeded guards.
+- Undo & Redo History Management:
+  * Dedicated Undo and Redo toolbar buttons with dynamic disabled state reflection and standard hotkeys (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, Cmd variants).
+  * Bounded 30-step history stack tracking photo drops, rotations, fit modes, slot swaps, deletions, page additions, layout/paper/margin changes, and accidental Clear All reversibility.
+  * Synchronized seamlessly with the auto-save IndexedDB persistence layer.
 - Print & PDF Export:
   * Native print stylesheet with @page and break-after: page isolating sheets without UI bars.
   * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).
 - Registry & Discoverability:
   * Registered in apps/media/media-apps.csv (Photo section) and hub/core/hub_catalog.js.
 - Verification:
-  * 17/17 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
+  * 20/20 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
 
 ================================================================================
  End of 4-Day Compendium - Team 5 (Boss / Builder)
