@@ -351,14 +351,15 @@
               v: 1,
               op: 'set',
               align: 'left',
+              // PC3: icon + label
               buttons: [
-                { id: 'undo', label: 'Undo', icon: '↩', enabled: undoStack.length > 0, title: 'Undo (Ctrl+Z)' },
-                { id: 'redo', label: 'Redo', icon: '↪', enabled: redoStack.length > 0, title: 'Redo (Ctrl+Y)' },
-                { id: 'add-photos', label: 'Add Photos', icon: '📷', enabled: true, title: 'Add photos to collage' },
-                { id: 'add-page', label: '+ Page', icon: '📄', enabled: true, title: 'Add another empty page' },
-                { id: 'print', label: 'Print', icon: '⎙', enabled: true, title: 'Print collage (Ctrl+P)' },
-                { id: 'pdf', label: 'Save PDF', icon: '⤓', enabled: true, title: 'Save collage as PDF' },
-                { id: 'clear', label: 'Clear', icon: '✕', enabled: true, title: 'Clear all photos' }
+                { id: 'undo', label: 'Undo', icon: '↩', enabled: undoStack.length > 0, title: 'Undo (Ctrl+Z)', showLabel: true },
+                { id: 'redo', label: 'Redo', icon: '↪', enabled: redoStack.length > 0, title: 'Redo (Ctrl+Y)', showLabel: true },
+                { id: 'add-photos', label: 'Add Photos', icon: '📷', enabled: true, title: 'Add photos to collage', showLabel: true },
+                { id: 'add-page', label: '+ Page', icon: '📄', enabled: true, title: 'Add another empty page', showLabel: true },
+                { id: 'print', label: 'Print', icon: '⎙', enabled: true, title: 'Print collage (Ctrl+P)', showLabel: true },
+                { id: 'pdf', label: 'Save PDF', icon: '⤓', enabled: true, title: 'Save collage as PDF', showLabel: true },
+                { id: 'clear', label: 'Clear', icon: '✕', enabled: true, title: 'Clear all photos', showLabel: true }
               ]
             }
           }, target);
