@@ -40,13 +40,13 @@ test('calcTotalPages auto-expands pages dynamically for multi-photo drops', () =
   assert.equal(PhotoCollage.calcTotalPages(2, 4, 3), 3, 'Manual blank pages preserved');
 });
 
-test('createPhotoItem initializes clean photo record with 0 deg rotation and cover fit', () => {
+test('createPhotoItem initializes clean photo record with 0 deg rotation and contain (Full) fit', () => {
   const item = PhotoCollage.createPhotoItem('data:image/png;base64,sample', 'vacation.png');
   assert.ok(item.id.startsWith('photo_'));
   assert.equal(item.src, 'data:image/png;base64,sample');
   assert.equal(item.name, 'vacation.png');
   assert.equal(item.rotation, 0);
-  assert.equal(item.fit, 'cover');
+  assert.equal(item.fit, 'contain');
 });
 
 test('rotatePhoto increments rotation in 90 degree clockwise increments', () => {

@@ -44,7 +44,7 @@
       src: src || '',
       name: name || 'Photo',
       rotation: 0, // 0, 90, 180, 270
-      fit: 'cover' // 'cover' or 'contain'
+      fit: 'contain' // 'contain' (Full) or 'cover' (Fill)
     };
   }
 
@@ -964,18 +964,18 @@
       });
       controls.appendChild(rotateBtn);
 
-      // Fit mode (Cover / Contain) button
+      // Fit mode (Full / Fill) button
       const fitBtn = document.createElement('button');
       fitBtn.type = 'button';
       fitBtn.className = 'slot-btn';
-      fitBtn.title = 'Toggle Fit Mode (Cover / Contain)';
-      fitBtn.innerHTML = photo.fit === 'contain' ? 'Fit' : 'Fill';
+      fitBtn.title = 'Toggle Image Fit Mode (Full / Fill)';
+      fitBtn.innerHTML = photo.fit === 'contain' ? 'Full' : 'Fill';
       fitBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         pushHistory(state);
         photo.fit = photo.fit === 'contain' ? 'cover' : 'contain';
         applySlotRotationAndFit(img, slot, photo);
-        fitBtn.innerHTML = photo.fit === 'contain' ? 'Fit' : 'Fill';
+        fitBtn.innerHTML = photo.fit === 'contain' ? 'Full' : 'Fill';
         scheduleAutoSave();
       });
       controls.appendChild(fitBtn);

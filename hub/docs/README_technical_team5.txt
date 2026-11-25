@@ -429,7 +429,7 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
 - Per-tile controls & transverse rotation compensation:
   * 90° and 270° clockwise rotation (0°, 90°, 180°, 270°) with CSS and canvas matrix transforms.
   * Resolved landscape 2-photo aspect ratio bug (3:1 panoramic slots in 2-stack) by dynamically inverting image element dimensions (width = slotHeight, height = slotWidth) on transverse rotations.
-  * Aspect ratio fit mode toggle (Cover vs Contain) preserved across rotations with zero horizontal or vertical gaps.
+  * Aspect ratio fit mode defaults to Full ('contain') showing entire photo on load, with toggle to Fill ('cover') for edge-to-edge bleed; preserved across rotations with zero gaps.
   * Synchronized dynamic @media print slot millimeter dimensions for printed sheets.
 - Offline State Persistence (IndexedDB photo-collage-v1):
   * Debounced auto-save (300 ms) automatically serializes photos (with rotations and fit modes), layout, orientation, paper size, margins, and page counts to IndexedDB ('photo-collage-v1' store 'state').
