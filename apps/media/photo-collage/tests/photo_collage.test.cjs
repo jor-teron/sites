@@ -143,3 +143,59 @@ test('apps/media/media-apps.csv has Photo Collage registered under Photo section
   const csv = fs.readFileSync(csvPath, 'utf8');
   assert.match(csv, /^Photo Collage,\s*photo-collage\/,\s*,\s*,\s*Photo,/m);
 });
+
+test('calcPrintSlotDimensions computes 3:1 aspect ratio on 2-stack A4 landscape', () => {
+  const dims = PhotoCollage.calcPrintSlotDimensions('a4', 'landscape', '2-stack', 'normal');
+  assert.equal(dims.pageW, 297);
+  assert.equal(dims.pageH, 210);
+  assert.ok(dims.slotW > 280, 'Slot width should exceed 280mm');
+  assert.ok(dims.slotH < 95, 'Slot height should be ~93mm');
+  assert.ok(dims.aspect > 2.8 && dims.aspect < 3.2, 'Aspect ratio should be ~3:1');
+});
+
+test('applySlotRotationAndFit applies transverse dimensions to 90 and 270 deg rotated images in 2-photo slot', () => {
+  const photo = PhotoCollage.createPhotoItem('sample.jpg', 'sample.jpg');
+  const dummySlot = {
+    styleMap: {},
+    style: {
+      setProperty: function (k, v) { dummySlot.styleMap[k] = v; }
+    },
+    getBoundingClientRect: function () {
+      return { width: 300, height: 100 };
+    },
+    offsetWidth: 300,
+    offsetHeight: 100
+  };
+
+  const dummyImg = {
+    attrs: {},
+    style: {},
+    className: '',
+    setAttribute: function (k, v) { dummyImg.attrs[k] = String(v); }
+  };
+
+  // Test 0 deg
+  PhotoCollage.applySlotRotationAndFit(dummyImg, dummySlot, photo);
+  assert.equal(dummyImg.style.width, '100%');
+  assert.equal(dummyImg.style.height, '100%');
+  assert.equal(dummySlot.styleMap['--slot-w'], '300px');
+  assert.equal(dummySlot.styleMap['--slot-h'], '100px');
+
+  // Test 90 deg rotation -> transverse inversion (width becomes slotHeight, height becomes slotWidth)
+  photo.rotation = 90;
+  PhotoCollage.applySlotRotationAndFit(dummyImg, dummySlot, photo);
+  assert.equal(dummyImg.style.width, '100px', 'Rotated image width must match slot height to prevent horizontal gaps');
+  assert.equal(dummyImg.style.height, '300px', 'Rotated image height must match slot width');
+
+  // Test 270 deg rotation
+  photo.rotation = 270;
+  PhotoCollage.applySlotRotationAndFit(dummyImg, dummySlot, photo);
+  assert.equal(dummyImg.style.width, '100px');
+  assert.equal(dummyImg.style.height, '300px');
+
+  // Test 180 deg rotation
+  photo.rotation = 180;
+  PhotoCollage.applySlotRotationAndFit(dummyImg, dummySlot, photo);
+  assert.equal(dummyImg.style.width, '100%');
+  assert.equal(dummyImg.style.height, '100%');
+});

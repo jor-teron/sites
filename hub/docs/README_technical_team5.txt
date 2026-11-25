@@ -426,9 +426,11 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Full-window drop zone overlay for batch photo ingestion from OS file manager.
   * Direct drop onto individual slots to fill or replace specific positions.
   * Drag-to-swap between slots for rapid manual layout arrangement.
-- Per-tile controls:
-  * 90° clockwise rotation (0°, 90°, 180°, 270°) with CSS and canvas matrix transforms.
-  * Aspect ratio fit mode toggle (Cover vs Contain) preserved across rotations.
+- Per-tile controls & transverse rotation compensation:
+  * 90° and 270° clockwise rotation (0°, 90°, 180°, 270°) with CSS and canvas matrix transforms.
+  * Resolved landscape 2-photo aspect ratio bug (3:1 panoramic slots in 2-stack) by dynamically inverting image element dimensions (width = slotHeight, height = slotWidth) on transverse rotations.
+  * Aspect ratio fit mode toggle (Cover vs Contain) preserved across rotations with zero horizontal or vertical gaps.
+  * Synchronized dynamic @media print slot millimeter dimensions for printed sheets.
 - Print & PDF Export:
   * Native print stylesheet with @page and break-after: page isolating sheets without UI bars.
   * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).

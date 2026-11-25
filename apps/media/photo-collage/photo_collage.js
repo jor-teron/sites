@@ -265,6 +265,8 @@
         }
       });
     }
+
+    window.addEventListener('resize', updateAllSlotDimensions);
   }
 
   function isDragWithFiles(e) {
@@ -285,6 +287,80 @@
     }
   }
 
+  function calcPrintSlotDimensions(paperKey, orientKey, layoutKey, marginKey) {
+    const isLand = orientKey === 'landscape';
+    const paperDims = PAPER_SIZES[paperKey] || PAPER_SIZES.a4;
+    const pageW = isLand ? paperDims.landscape[0] : paperDims.portrait[0];
+    const pageH = isLand ? paperDims.landscape[1] : paperDims.portrait[1];
+
+    let marginMm = 8;
+    if (marginKey === 'none') marginMm = 0;
+    else if (marginKey === 'small') marginMm = 4;
+    else if (marginKey === 'wide') marginMm = 12;
+
+    const gapMm = marginMm;
+    const layout = LAYOUTS[layoutKey] || LAYOUTS['4-grid'];
+    const cols = layout.cols;
+    const rows = layout.rows;
+
+    const gridW = pageW - (marginMm * 2);
+    const gridH = pageH - (marginMm * 2);
+
+    const slotW = (gridW - (gapMm * (cols - 1))) / cols;
+    const slotH = (gridH - (gapMm * (rows - 1))) / rows;
+
+    return {
+      pageW: pageW,
+      pageH: pageH,
+      slotW: slotW,
+      slotH: slotH,
+      aspect: slotW / slotH
+    };
+  }
+
+  function applySlotRotationAndFit(img, slot, photo) {
+    if (!img || !photo) return;
+    const rot = (photo.rotation || 0) % 360;
+    img.setAttribute('data-rotation', rot);
+    img.className = 'photo-img fit-' + (photo.fit || 'cover');
+
+    if (!slot) return;
+    const rect = slot.getBoundingClientRect();
+    const w = rect.width || slot.offsetWidth || 0;
+    const h = rect.height || slot.offsetHeight || 0;
+
+    if (w && h) {
+      slot.style.setProperty('--slot-w', w + 'px');
+      slot.style.setProperty('--slot-h', h + 'px');
+    }
+
+    const isRotated90 = rot === 90 || rot === 270;
+    if (isRotated90 && w && h) {
+      img.style.width = h + 'px';
+      img.style.height = w + 'px';
+      img.style.maxWidth = 'none';
+      img.style.maxHeight = 'none';
+    } else {
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.maxWidth = '';
+      img.style.maxHeight = '';
+    }
+  }
+
+  function updateAllSlotDimensions() {
+    if (!dom.sheetsContainer) return;
+    const slots = dom.sheetsContainer.querySelectorAll('.photo-slot.filled');
+    slots.forEach(function (slot) {
+      const idx = parseInt(slot.getAttribute('data-slot-index'), 10);
+      const photo = state.photos[idx];
+      const img = slot.querySelector('.photo-img');
+      if (photo && img) {
+        applySlotRotationAndFit(img, slot, photo);
+      }
+    });
+  }
+
   function updatePrintOrientation() {
     let styleEl = document.getElementById('dynamic-print-style');
     if (!styleEl) {
@@ -294,7 +370,24 @@
     }
     const paperName = state.paper === 'letter' ? 'letter' : 'A4';
     const orient = state.orientation === 'landscape' ? 'landscape' : 'portrait';
-    styleEl.textContent = '@page { size: ' + paperName + ' ' + orient + '; margin: 0; }';
+    const dims = calcPrintSlotDimensions(state.paper, state.orientation, state.layout, state.margin);
+
+    styleEl.textContent =
+      '@page { size: ' + paperName + ' ' + orient + '; margin: 0; }\n' +
+      '@media print {\n' +
+      '  .sheet-page .photo-img[data-rotation="90"],\n' +
+      '  .sheet-page .photo-img[data-rotation="270"] {\n' +
+      '    width: ' + dims.slotH.toFixed(2) + 'mm !important;\n' +
+      '    height: ' + dims.slotW.toFixed(2) + 'mm !important;\n' +
+      '    max-width: none !important;\n' +
+      '    max-height: none !important;\n' +
+      '  }\n' +
+      '  .sheet-page .photo-img[data-rotation="0"],\n' +
+      '  .sheet-page .photo-img[data-rotation="180"] {\n' +
+      '    width: 100% !important;\n' +
+      '    height: 100% !important;\n' +
+      '  }\n' +
+      '}';
   }
 
   // File loading & pagination expansion
@@ -419,6 +512,10 @@
       pageWrapper.appendChild(sheetPage);
       dom.sheetsContainer.appendChild(pageWrapper);
     }
+    updatePrintOrientation();
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(updateAllSlotDimensions);
+    }
   }
 
   function removePage(pageIndex, slotsPerPage) {
@@ -502,6 +599,7 @@
 
       imgContainer.appendChild(img);
       slot.appendChild(imgContainer);
+      applySlotRotationAndFit(img, slot, photo);
 
       // Slot Action Buttons (Overlay)
       const controls = document.createElement('div');
@@ -533,7 +631,7 @@
       rotateBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         rotatePhoto(photo, 90);
-        img.setAttribute('data-rotation', photo.rotation);
+        applySlotRotationAndFit(img, slot, photo);
       });
       controls.appendChild(rotateBtn);
 
@@ -546,7 +644,7 @@
       fitBtn.addEventListener('click', function (e) {
         e.stopPropagation();
         photo.fit = photo.fit === 'contain' ? 'cover' : 'contain';
-        img.className = 'photo-img fit-' + photo.fit;
+        applySlotRotationAndFit(img, slot, photo);
         fitBtn.innerHTML = photo.fit === 'contain' ? 'Fit' : 'Fill';
       });
       controls.appendChild(fitBtn);
@@ -775,6 +873,8 @@
     rotatePhoto: rotatePhoto,
     swapPhotos: swapPhotos,
     removePhotoAt: removePhotoAt,
+    calcPrintSlotDimensions: calcPrintSlotDimensions,
+    applySlotRotationAndFit: applySlotRotationAndFit,
     getState: function () { return state; },
     initApp: initApp
   };
