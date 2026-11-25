@@ -477,7 +477,8 @@
       const isMod = e.ctrlKey || e.metaKey;
       if (!isMod) return;
 
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+      const tag = e.target && e.target.tagName;
+      if (e.target && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable)) {
         return;
       }
 
@@ -492,6 +493,15 @@
       } else if (key === 'y') {
         e.preventDefault();
         redo();
+      } else if (key === '=' || key === '+') {
+        e.preventDefault();
+        setZoom(state.zoom + 0.1);
+      } else if (key === '-') {
+        e.preventDefault();
+        setZoom(state.zoom - 0.1);
+      } else if (key === '0') {
+        e.preventDefault();
+        setZoom(1.0);
       }
     });
 
@@ -606,22 +616,27 @@
     // Zoom
     if (dom.btnZoomIn) {
       dom.btnZoomIn.addEventListener('click', function () {
-        state.zoom = Math.min(2.0, state.zoom + 0.1);
-        applyZoom();
+        setZoom(state.zoom + 0.1);
       });
     }
     if (dom.btnZoomOut) {
       dom.btnZoomOut.addEventListener('click', function () {
-        state.zoom = Math.max(0.4, state.zoom - 0.1);
-        applyZoom();
+        setZoom(state.zoom - 0.1);
       });
     }
     if (dom.btnZoomReset) {
       dom.btnZoomReset.addEventListener('click', function () {
-        state.zoom = 1.0;
-        applyZoom();
+        setZoom(1.0);
       });
     }
+
+    // PC4: Ctrl+wheel / Ctrl+=/-/0 in-app zoom
+    document.addEventListener('wheel', function (e) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      if (e.deltaY > 0) setZoom(state.zoom - 0.1);
+      else if (e.deltaY < 0) setZoom(state.zoom + 0.1);
+    }, { passive: false });
 
     // Global drag & drop
     window.addEventListener('dragenter', function (e) {
@@ -660,6 +675,12 @@
       if (e.dataTransfer.types[i] === 'Files') return true;
     }
     return false;
+  }
+
+  function setZoom(z) {
+    const next = Math.round((Number(z) || 0) * 100) / 100;
+    state.zoom = Math.max(0.4, Math.min(2.0, next));
+    applyZoom();
   }
 
   function applyZoom() {
