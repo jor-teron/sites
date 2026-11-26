@@ -16,7 +16,7 @@
     padding: 0 !important;
   }
 
-  #titlebar, #topbar, #subbar, #crop-modal, .sheet-header-bar, .slot-controls, #global-drop-zone, .slot-placeholder {
+  #titlebar, #topbar, #subbar, #crop-modal, #confirm-modal, .sheet-header-bar, .slot-controls, #global-drop-zone, .slot-placeholder {
     display: none !important;
   }
 

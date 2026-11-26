@@ -1,0 +1,80 @@
+/* Photo Collage — Custom confirmation dialog (ui/pc_confirm_modal.css) */
+
+.confirm-modal[hidden] {
+  display: none !important;
+}
+
+.confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background-color: rgba(12, 14, 18, 0.56);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.confirm-modal-card {
+  width: 100%;
+  max-width: 380px;
+  background-color: var(--panel-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.confirm-modal-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.confirm-modal-body {
+  padding: 16px;
+}
+
+.confirm-modal-body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.confirm-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.confirm-modal-actions .btn.danger-solid {
+  background-color: var(--danger);
+  color: #ffffff;
+  border-color: var(--danger);
+}
+
+.confirm-modal-actions .btn.danger-solid:hover {
+  background-color: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+
+html.dark .confirm-modal-actions .btn.danger-solid {
+  color: #121417;
+}

@@ -14,6 +14,7 @@
       hubTitlebar: require('./core/pc_hub_titlebar.js'),
       cropCache: require('./core/pc_crop_cache.js'),
       cropModal: require('./core/pc_crop_modal.js'),
+      confirmModal: require('./core/pc_confirm_modal.js'),
       files: require('./core/pc_files.js'),
       render: require('./core/pc_render.js'),
       pdf: require('./core/pc_pdf.js')
@@ -64,7 +65,7 @@
     }
   }
 
-  var historyMgr, cropModalCtrl, fileLoader, renderer, pdfExporter;
+  var historyMgr, cropModalCtrl, confirmModalCtrl, fileLoader, renderer, pdfExporter;
 
   function updateHistoryButtons() {
     var counts = historyMgr.getHistoryState();
@@ -82,6 +83,8 @@
     },
     onChanged: updateHistoryButtons
   });
+
+  confirmModalCtrl = core.confirmModal.createConfirmModalController({ dom: dom });
 
   cropModalCtrl = core.cropModal.createCropModalController({
     state: state,
@@ -210,13 +213,20 @@
     if (dom.btnClear) {
       dom.btnClear.addEventListener('click', function () {
         if (state.photos.length === 0) return;
-        if (confirm('Clear all photos from the collage?')) {
-          historyMgr.pushHistory(state);
-          state.photos = [];
-          state.manualPages = 1;
-          storage.clearPersistedState();
-          renderer.renderSheets();
-        }
+        confirmModalCtrl.open({
+          title: 'Clear Collage?',
+          message: 'Clear all photos from the collage? You can still undo this action.',
+          cancelText: 'Cancel',
+          confirmText: 'Clear All',
+          danger: true,
+          onConfirm: function () {
+            historyMgr.pushHistory(state);
+            state.photos = [];
+            state.manualPages = 1;
+            storage.clearPersistedState();
+            renderer.renderSheets();
+          }
+        });
       });
     }
 
@@ -300,7 +310,13 @@
       btnCropClose: 'btn-crop-close',
       btnCropReset: 'btn-crop-reset',
       btnCropCancel: 'btn-crop-cancel',
-      btnCropApply: 'btn-crop-apply'
+      btnCropApply: 'btn-crop-apply',
+      confirmModal: 'confirm-modal',
+      confirmTitle: 'confirm-modal-title',
+      confirmMessage: 'confirm-modal-message',
+      btnConfirmClose: 'btn-confirm-close',
+      btnConfirmCancel: 'btn-confirm-cancel',
+      btnConfirmOk: 'btn-confirm-ok'
     };
     Object.keys(ids).forEach(function (k) {
       dom[k] = document.getElementById(ids[k]);
@@ -308,6 +324,7 @@
 
     attachEvents();
     cropModalCtrl.attachCropModalEvents();
+    confirmModalCtrl.attachConfirmModalEvents();
     core.hubTitlebar.initHubTitleBar({
       getHistoryState: historyMgr.getHistoryState,
       onCommand: function (id) {

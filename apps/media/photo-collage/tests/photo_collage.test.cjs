@@ -23,7 +23,7 @@ test('Syntax check on photo_collage.js and modular core/*.js files via node --ch
   });
   const coreDir = path.join(appDir, 'core');
   const coreFiles = fs.readdirSync(coreDir).filter((name) => name.endsWith('.js'));
-  assert.equal(coreFiles.length, 11, 'Expected 11 modular JS files in core/');
+  assert.equal(coreFiles.length, 12, 'Expected 12 modular JS files in core/');
   coreFiles.forEach((name) => {
     const modPath = path.join(coreDir, name);
     assert.doesNotThrow(() => {
@@ -31,7 +31,7 @@ test('Syntax check on photo_collage.js and modular core/*.js files via node --ch
     });
   });
   const uiFiles = fs.readdirSync(path.join(appDir, 'ui')).filter((name) => name.endsWith('.css'));
-  assert.equal(uiFiles.length, 6, 'Expected 6 modular CSS files in ui/');
+  assert.equal(uiFiles.length, 7, 'Expected 7 modular CSS files in ui/');
 });
 
 test('LAYOUTS definition has 4-grid (4 slots), 2-stack (2 slots), 2-split (2 slots), 1-full (1 slot)', () => {
@@ -603,4 +603,95 @@ test('applyZoom uses CSS zoom when supported and falls back to top-left transfor
   assert.equal(fallbackDom.sheetsContainer.style.transform, 'scale(0.5)');
   assert.equal(fallbackDom.sheetsContainer.style.transformOrigin, 'top left');
   assert.equal(fallbackDom.btnZoomReset.textContent, '50%');
+});
+
+test('Clear button uses custom #confirm-modal without native window confirm()', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  const mainJs = fs.readFileSync(path.join(appDir, 'photo_collage.js'), 'utf8');
+  const printCss = fs.readFileSync(path.join(appDir, 'ui', 'pc_print.css'), 'utf8');
+  const modalCss = fs.readFileSync(path.join(appDir, 'ui', 'pc_confirm_modal.css'), 'utf8');
+
+  assert.match(html, /ui\/pc_confirm_modal\.css/);
+  assert.match(html, /core\/pc_confirm_modal\.js/);
+  assert.match(html, /id="confirm-modal"/);
+  assert.match(html, /id="btn-confirm-cancel"/);
+  assert.match(html, /id="btn-confirm-ok"/);
+  assert.match(printCss, /#confirm-modal/);
+  assert.match(modalCss, /\.confirm-modal\[hidden\]/);
+  assert.doesNotMatch(mainJs, /\bconfirm\s*\(/);
+});
+
+test('createConfirmModalController handles confirm, cancel, backdrop click, and Escape', () => {
+  const { createConfirmModalController } = require(path.join(appDir, 'core', 'pc_confirm_modal.js'));
+  function makeStubEl() {
+    const handlers = {};
+    return {
+      hidden: true,
+      textContent: '',
+      className: '',
+      focused: false,
+      addEventListener(type, fn) { handlers[type] = fn; },
+      dispatch(type, extra) {
+        if (handlers[type]) handlers[type](Object.assign({ target: this, preventDefault() {} }, extra));
+      },
+      focus() { this.focused = true; }
+    };
+  }
+
+  const docHandlers = {};
+  const fakeDoc = {
+    activeElement: null,
+    addEventListener(type, fn) { docHandlers[type] = fn; }
+  };
+  const dom = {
+    confirmModal: makeStubEl(),
+    confirmTitle: makeStubEl(),
+    confirmMessage: makeStubEl(),
+    btnConfirmClose: makeStubEl(),
+    btnConfirmCancel: makeStubEl(),
+    btnConfirmOk: makeStubEl()
+  };
+
+  const ctrl = createConfirmModalController({ dom, doc: fakeDoc });
+  ctrl.attachConfirmModalEvents();
+
+  let confirmed = 0;
+  let canceled = 0;
+  ctrl.open({
+    title: 'Clear Collage?',
+    message: 'Clear all photos?',
+    onConfirm() { confirmed += 1; },
+    onCancel() { canceled += 1; }
+  });
+  assert.equal(dom.confirmModal.hidden, false);
+  assert.equal(ctrl.isOpen(), true);
+  assert.equal(dom.confirmTitle.textContent, 'Clear Collage?');
+  assert.equal(dom.btnConfirmCancel.focused, true);
+
+  // Cancel closes without calling onConfirm
+  dom.btnConfirmCancel.dispatch('click');
+  assert.equal(dom.confirmModal.hidden, true);
+  assert.equal(confirmed, 0);
+  assert.equal(canceled, 1);
+
+  // Backdrop click closes without calling onConfirm
+  ctrl.open({ onConfirm() { confirmed += 1; }, onCancel() { canceled += 1; } });
+  dom.confirmModal.dispatch('click', { target: dom.confirmModal });
+  assert.equal(ctrl.isOpen(), false);
+  assert.equal(confirmed, 0);
+  assert.equal(canceled, 2);
+
+  // Escape closes without calling onConfirm
+  ctrl.open({ onConfirm() { confirmed += 1; }, onCancel() { canceled += 1; } });
+  docHandlers.keydown({ key: 'Escape', preventDefault() {} });
+  assert.equal(ctrl.isOpen(), false);
+  assert.equal(confirmed, 0);
+  assert.equal(canceled, 3);
+
+  // Confirm button closes and calls onConfirm
+  ctrl.open({ onConfirm() { confirmed += 1; }, onCancel() { canceled += 1; } });
+  dom.btnConfirmOk.dispatch('click');
+  assert.equal(ctrl.isOpen(), false);
+  assert.equal(confirmed, 1);
+  assert.equal(canceled, 3);
 });
