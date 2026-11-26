@@ -390,3 +390,97 @@ test('undo safely restores photos cleared via Clear All action', () => {
   assert.equal(st.photos[1].name, 'sample2.jpg');
   assert.equal(st.manualPages, 2);
 });
+
+test('photo-collage.html and photo-collage.css contain crop modal and tile crop button support', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  const css = fs.readFileSync(path.join(appDir, 'photo-collage.css'), 'utf8');
+  assert.match(html, /id="crop-modal"/);
+  assert.match(html, /id="crop-canvas"/);
+  assert.match(html, /id="crop-box"/);
+  assert.match(html, /id="btn-crop-apply"/);
+  assert.match(html, /id="btn-crop-reset"/);
+  assert.match(css, /\.crop-modal\b/);
+  assert.match(css, /\.crop-box\b/);
+  assert.match(css, /\.crop-handle\b/);
+});
+
+test('normalizeCrop clamps out-of-bounds values and treats full frame as null', () => {
+  assert.equal(PhotoCollage.normalizeCrop(null), null);
+  assert.equal(PhotoCollage.normalizeCrop({ x: 0, y: 0, w: 1, h: 1 }), null);
+  assert.equal(PhotoCollage.normalizeCrop({ x: -0.1, y: 0, w: 1.2, h: 1.1 }), null);
+  assert.equal(PhotoCollage.normalizeCrop({ x: 0, y: 0, w: 0, h: 0.5 }), null);
+
+  const clamped = PhotoCollage.normalizeCrop({ x: -0.2, y: 0.98, w: 0.01, h: 0.5 });
+  assert.ok(clamped);
+  assert.equal(clamped.x, 0);
+  assert.ok(clamped.y <= 0.95);
+  assert.ok(clamped.w >= 0.05);
+  assert.ok(clamped.y + clamped.h <= 1.0001);
+});
+
+test('cropToVisual and visualToCrop round-trip across 0, 90, 180, and 270 degree rotations', () => {
+  const orig = { x: 0.1, y: 0.2, w: 0.4, h: 0.3 };
+  [0, 90, 180, 270].forEach((rot) => {
+    const visual = PhotoCollage.cropToVisual(orig, rot);
+    const back = PhotoCollage.visualToCrop(visual, rot);
+    assert.ok(back, 'Round-trip should not be null for rotation ' + rot);
+    assert.ok(Math.abs(back.x - orig.x) < 1e-3, 'x mismatch at ' + rot);
+    assert.ok(Math.abs(back.y - orig.y) < 1e-3, 'y mismatch at ' + rot);
+    assert.ok(Math.abs(back.w - orig.w) < 1e-3, 'w mismatch at ' + rot);
+    assert.ok(Math.abs(back.h - orig.h) < 1e-3, 'h mismatch at ' + rot);
+  });
+});
+
+test('calcSourceCropRect and computeAspectCropRect compute pixel bounds and centered ratios accurately', () => {
+  const full = PhotoCollage.calcSourceCropRect(2000, 1000, null);
+  assert.deepEqual(full, { sx: 0, sy: 0, sw: 2000, sh: 1000 });
+
+  const sub = PhotoCollage.calcSourceCropRect(2000, 1000, { x: 0.25, y: 0.1, w: 0.5, h: 0.8 });
+  assert.deepEqual(sub, { sx: 500, sy: 100, sw: 1000, sh: 800 });
+
+  const squareOnWide = PhotoCollage.computeAspectCropRect(2000, 1000, 1);
+  assert.equal(squareOnWide.w, 0.5);
+  assert.equal(squareOnWide.h, 1);
+  assert.equal(squareOnWide.x, 0.25);
+  assert.equal(squareOnWide.y, 0);
+});
+
+test('stepCropBoxDrag supports moving, free resize, and aspect-locked corner resize', () => {
+  const moved = PhotoCollage.stepCropBoxDrag({ x: 0.2, y: 0.2, w: 0.4, h: 0.4 }, 'move', 0.9, -0.5, 1000, 1000, null);
+  assert.equal(moved.x, 0.6);
+  assert.equal(moved.y, 0);
+  assert.equal(moved.w, 0.4);
+
+  const freeSe = PhotoCollage.stepCropBoxDrag({ x: 0.1, y: 0.1, w: 0.4, h: 0.4 }, 'se', 0.2, -0.1, 1000, 1000, null);
+  assert.equal(freeSe.x, 0.1);
+  assert.equal(freeSe.y, 0.1);
+  assert.equal(freeSe.w, 0.6);
+  assert.equal(freeSe.h, 0.3);
+
+  const lockedSe = PhotoCollage.stepCropBoxDrag({ x: 0.1, y: 0.1, w: 0.4, h: 0.2 }, 'se', 0.2, 0.05, 1000, 1000, 2);
+  assert.equal(lockedSe.w, 0.6);
+  assert.equal(lockedSe.h, 0.3);
+});
+
+test('serializeState, deserializeState, and Undo/Redo preserve photo crop metadata', () => {
+  PhotoCollage.clearHistory();
+  const st = PhotoCollage.getState();
+  const item = PhotoCollage.createPhotoItem('data:img1', 'portrait.jpg');
+  assert.equal(item.crop, null);
+  st.photos = [item];
+
+  PhotoCollage.pushHistory(st);
+  item.crop = { x: 0.1, y: 0.15, w: 0.7, h: 0.65 };
+
+  const serialized = PhotoCollage.serializeState(st);
+  assert.deepEqual(serialized.photos[0].crop, { x: 0.1, y: 0.15, w: 0.7, h: 0.65 });
+
+  const restored = { layout: '4-grid', orientation: 'portrait', paper: 'a4', margin: 'normal', bgColor: '#ffffff', manualPages: 1, photos: [] };
+  assert.ok(PhotoCollage.deserializeState(serialized, restored));
+  assert.deepEqual(restored.photos[0].crop, { x: 0.1, y: 0.15, w: 0.7, h: 0.65 });
+
+  assert.ok(PhotoCollage.undo());
+  assert.equal(st.photos[0].crop, null);
+  assert.ok(PhotoCollage.redo());
+  assert.deepEqual(st.photos[0].crop, { x: 0.1, y: 0.15, w: 0.7, h: 0.65 });
+});

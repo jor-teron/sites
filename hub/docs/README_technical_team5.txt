@@ -428,17 +428,18 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Drag-to-swap between slots for rapid manual layout arrangement.
 - Per-tile controls & transverse rotation compensation:
   * 90° and 270° clockwise rotation (0°, 90°, 180°, 270°) with CSS and canvas matrix transforms.
+  * Non-destructive per-tile Crop editor (#crop-modal) with drag/8-handle resize, aspect presets (Free, Match Tile, 1:1, 4:3, 3:2, 16:9), rotation-aware coordinate mapping, Reset, offscreen canvas preview cache, and direct PDF source cropping.
   * Resolved landscape 2-photo aspect ratio bug (3:1 panoramic slots in 2-stack) by dynamically inverting image element dimensions (width = slotHeight, height = slotWidth) on transverse rotations.
   * Aspect ratio fit mode defaults to Full ('contain') showing entire photo on load, with toggle to Fill ('cover') for edge-to-edge bleed; preserved across rotations with zero gaps.
   * Synchronized dynamic @media print slot millimeter dimensions for printed sheets.
 - Offline State Persistence (IndexedDB photo-collage-v1):
-  * Debounced auto-save (300 ms) automatically serializes photos (with rotations and fit modes), layout, orientation, paper size, margins, and page counts to IndexedDB ('photo-collage-v1' store 'state').
+  * Debounced auto-save (300 ms) automatically serializes photos (with rotations, fit modes, and crops), layout, orientation, paper size, margins, and page counts to IndexedDB ('photo-collage-v1' store 'state').
   * Resumes seamless workspace state upon browser reload or accidental refresh.
   * Clear All cleans up workspace and removes persisted record from IndexedDB.
   * Graceful fallback to localStorage with quota-exceeded guards.
 - Undo & Redo History Management:
   * Dedicated Undo and Redo toolbar buttons with dynamic disabled state reflection and standard hotkeys (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, Cmd variants).
-  * Bounded 30-step history stack tracking photo drops, rotations, fit modes, slot swaps, deletions, page additions, layout/paper/margin changes, and accidental Clear All reversibility.
+  * Bounded 30-step history stack tracking photo drops, rotations, crops, fit modes, slot swaps, deletions, page additions, layout/paper/margin changes, and accidental Clear All reversibility.
   * Synchronized seamlessly with the auto-save IndexedDB persistence layer.
 - Title Bar Re-organization & Hub OS Integration:
   * Moved all action buttons (Undo, Redo, Add Photos, + Page, Print, Save PDF, Clear) to the top title bar (#titlebar), leaving canvas configuration selects on the sub-toolbar (#topbar).
@@ -450,7 +451,7 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
 - Registry & Discoverability:
   * Registered in apps/media/media-apps.csv (Photo section) and hub/core/hub_catalog.js.
 - Verification:
-  * 20/20 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
+  * 26/26 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
 
 ================================================================================
  End of 4-Day Compendium - Team 5 (Boss / Builder)

@@ -133,6 +133,51 @@
       <p>Supports multi-page auto expansion</p>
     </div>
 
+    <!-- CROP MODAL -->
+    <div id="crop-modal" class="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-modal-title" hidden>
+      <div class="crop-modal-card">
+        <div class="crop-modal-header">
+          <h2 id="crop-modal-title">Crop Photo</h2>
+          <button type="button" id="btn-crop-close" class="btn" aria-label="Close crop dialog" title="Close (Esc)">✕</button>
+        </div>
+
+        <div class="crop-presets" role="group" aria-label="Crop aspect ratio presets">
+          <button type="button" class="btn crop-preset-btn active" data-aspect="free">Free</button>
+          <button type="button" class="btn crop-preset-btn" data-aspect="slot">Match Tile</button>
+          <button type="button" class="btn crop-preset-btn" data-aspect="1:1">1:1</button>
+          <button type="button" class="btn crop-preset-btn" data-aspect="4:3">4:3</button>
+          <button type="button" class="btn crop-preset-btn" data-aspect="3:2">3:2</button>
+          <button type="button" class="btn crop-preset-btn" data-aspect="16:9">16:9</button>
+        </div>
+
+        <div class="crop-stage" id="crop-stage">
+          <div class="crop-stage-frame" id="crop-stage-frame">
+            <canvas id="crop-canvas"></canvas>
+            <div class="crop-box" id="crop-box" tabindex="0" aria-label="Crop selection">
+              <div class="crop-grid" aria-hidden="true"></div>
+              <span class="crop-handle handle-nw" data-handle="nw"></span>
+              <span class="crop-handle handle-n" data-handle="n"></span>
+              <span class="crop-handle handle-ne" data-handle="ne"></span>
+              <span class="crop-handle handle-e" data-handle="e"></span>
+              <span class="crop-handle handle-se" data-handle="se"></span>
+              <span class="crop-handle handle-s" data-handle="s"></span>
+              <span class="crop-handle handle-sw" data-handle="sw"></span>
+              <span class="crop-handle handle-w" data-handle="w"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="crop-modal-footer">
+          <span class="crop-dimensions" id="crop-dimensions">Full image</span>
+          <div class="crop-modal-actions">
+            <button type="button" id="btn-crop-reset" class="btn">Reset</button>
+            <button type="button" id="btn-crop-cancel" class="btn">Cancel</button>
+            <button type="button" id="btn-crop-apply" class="btn primary">Apply Crop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- HIDDEN INPUTS -->
     <input type="file" id="file-input" multiple accept="image/*" hidden>
     <input type="file" id="slot-file-input" accept="image/*" hidden>
