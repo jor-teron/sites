@@ -433,6 +433,9 @@ test('photo-collage.html and ui/*.css contain crop modal and tile crop button su
   assert.match(css, /calc\(100dvh - 10px\)/);
   assert.match(css, /\.crop-box\b/);
   assert.match(css, /\.crop-handle\b/);
+  assert.doesNotMatch(html, /class="crop-modal-footer"/);
+  assert.doesNotMatch(css, /\.crop-modal-footer/);
+  assert.match(html, /<div class="crop-modal-header">[\s\S]*?id="crop-dimensions"[\s\S]*?class="crop-presets"[\s\S]*?id="btn-crop-apply"[\s\S]*?id="btn-crop-close"/);
 });
 
 test('normalizeCrop clamps out-of-bounds values and treats full frame as null', () => {

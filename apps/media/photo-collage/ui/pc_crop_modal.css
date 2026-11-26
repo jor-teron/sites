@@ -37,24 +37,30 @@
 .crop-modal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border);
+}
+
+.crop-modal-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .crop-modal-header h2 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .crop-presets {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--border);
 }
 
 .crop-preset-btn.active {
@@ -130,23 +136,16 @@
 .crop-handle.handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
 .crop-handle.handle-w  { top: 50%; left: -6px; margin-top: -6px; cursor: ew-resize; }
 
-.crop-modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
-}
-
 .crop-dimensions {
   font-size: 12px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .crop-modal-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
 }
