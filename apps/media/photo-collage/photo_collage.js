@@ -100,6 +100,7 @@
     pushHistory: historyMgr.pushHistory,
     scheduleAutoSave: scheduleAutoSave,
     openCropModal: cropModalCtrl.openCropModal,
+    openConfirmModal: confirmModalCtrl.open,
     getFileLoader: function () { return fileLoader; }
   });
 

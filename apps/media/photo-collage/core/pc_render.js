@@ -26,6 +26,7 @@
     var pushHistory = deps.pushHistory;
     var scheduleAutoSave = deps.scheduleAutoSave;
     var openCropModal = deps.openCropModal;
+    var openConfirmModal = deps.openConfirmModal;
     var getFileLoader = deps.getFileLoader;
 
     function applyZoom() {
@@ -92,7 +93,7 @@
         '}';
     }
 
-    function removePage(pageIndex, slotsPerPage) {
+    function performRemovePage(pageIndex, slotsPerPage) {
       pushHistory(state);
       var startIdx = pageIndex * slotsPerPage;
       state.photos.splice(startIdx, slotsPerPage);
@@ -101,6 +102,29 @@
       }
       renderSheets();
       scheduleAutoSave();
+    }
+
+    function removePage(pageIndex, slotsPerPage) {
+      var startIdx = pageIndex * slotsPerPage;
+      var pagePhotoCount = state.photos.slice(startIdx, startIdx + slotsPerPage).filter(Boolean).length;
+      if (typeof openConfirmModal === 'function') {
+        var pageNum = pageIndex + 1;
+        var message = pagePhotoCount > 0
+          ? 'Remove Page ' + pageNum + ' and its ' + pagePhotoCount + ' photo' + (pagePhotoCount === 1 ? '' : 's') + '? Remaining pages will shift up. You can still undo this action.'
+          : 'Remove empty Page ' + pageNum + '? You can still undo this action.';
+        openConfirmModal({
+          title: 'Remove Page ' + pageNum + '?',
+          message: message,
+          cancelText: 'Cancel',
+          confirmText: 'Remove Page',
+          danger: true,
+          onConfirm: function () {
+            performRemovePage(pageIndex, slotsPerPage);
+          }
+        });
+        return;
+      }
+      performRemovePage(pageIndex, slotsPerPage);
     }
 
     function createSlotElement(photo, slotIndex) {

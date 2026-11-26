@@ -851,3 +851,107 @@ test('Filled slots allow direct drag-and-drop photo swapping without a Swap butt
     global.requestAnimationFrame = prevRaf;
   }
 });
+
+test('Remove Page button prompts confirm dialog before deleting populated or empty pages', () => {
+  const { createRenderer } = require(path.join(appDir, 'core', 'pc_render.js'));
+
+  function makeDomEl(tag) {
+    return {
+      tagName: String(tag).toUpperCase(),
+      className: '',
+      children: [],
+      attrs: {},
+      handlers: {},
+      innerHTML: '',
+      textContent: '',
+      style: { setProperty() {} },
+      classList: { add() {}, remove() {}, contains() { return false; } },
+      clientWidth: 200,
+      clientHeight: 200,
+      offsetWidth: 200,
+      offsetHeight: 200,
+      appendChild(child) { this.children.push(child); return child; },
+      contains(target) { return target === this || this.children.some((c) => c.contains(target)); },
+      setAttribute(k, v) { this.attrs[k] = String(v); },
+      getAttribute(k) { return this.attrs[k]; },
+      addEventListener(type, fn) { this.handlers[type] = fn; },
+      dispatch(type, extra) {
+        if (this.handlers[type]) {
+          this.handlers[type](Object.assign({ target: this, preventDefault() {}, stopPropagation() {} }, extra));
+        }
+      },
+      getBoundingClientRect() { return { width: 200, height: 200 }; }
+    };
+  }
+
+  const prevDocument = global.document;
+  const prevRaf = global.requestAnimationFrame;
+  global.document = { createElement: makeDomEl, getElementById: () => null, head: makeDomEl('head') };
+  global.requestAnimationFrame = () => {};
+
+  try {
+    const sheetsContainer = makeDomEl('div');
+    const state = {
+      layout: '2-split',
+      orientation: 'portrait',
+      paper: 'a4',
+      margin: 'small',
+      bgColor: '#ffffff',
+      zoom: 1,
+      manualPages: 2,
+      photos: [
+        { src: 'data:image/png;base64,A', name: 'p1.png', rotation: 0, fit: 'cover' },
+        null,
+        { src: 'data:image/png;base64,B', name: 'p3.png', rotation: 0, fit: 'cover' }
+      ]
+    };
+    let historyPushes = 0;
+    let saveCalls = 0;
+    const modalPrompts = [];
+
+    const renderer = createRenderer({
+      state,
+      dom: { sheetsContainer, statusText: makeDomEl('div') },
+      pushHistory() { historyPushes += 1; },
+      scheduleAutoSave() { saveCalls += 1; },
+      openConfirmModal(opts) { modalPrompts.push(opts); },
+      getFileLoader: () => null,
+      openCropModal() {}
+    });
+
+    renderer.renderSheets();
+    assert.equal(sheetsContainer.children.length, 2);
+
+    const page1RemoveBtn = sheetsContainer.children[0].children[0].children[0];
+    assert.equal(page1RemoveBtn.textContent, '✕ Remove Page');
+
+    // Clicking Remove Page opens prompt without mutating state
+    page1RemoveBtn.dispatch('click');
+    assert.equal(modalPrompts.length, 1);
+    assert.equal(modalPrompts[0].title, 'Remove Page 1?');
+    assert.match(modalPrompts[0].message, /1 photo/);
+    assert.equal(state.photos.length, 3);
+    assert.equal(state.manualPages, 2);
+    assert.equal(historyPushes, 0);
+
+    // Confirming removes Page 1 and shifts Page 2's photo up
+    modalPrompts[0].onConfirm();
+    assert.equal(historyPushes, 1);
+    assert.equal(saveCalls, 1);
+    assert.equal(state.manualPages, 1);
+    assert.equal(state.photos.length, 1);
+    assert.equal(state.photos[0].name, 'p3.png');
+
+    // Empty page message check
+    state.manualPages = 2;
+    renderer.renderSheets();
+    const emptyPageBtn = sheetsContainer.children[1].children[0].children[0];
+    emptyPageBtn.dispatch('click');
+    assert.equal(modalPrompts.length, 2);
+    assert.equal(modalPrompts[1].title, 'Remove Page 2?');
+    assert.match(modalPrompts[1].message, /empty Page 2/);
+  } finally {
+    global.document = prevDocument;
+    global.requestAnimationFrame = prevRaf;
+  }
+});
