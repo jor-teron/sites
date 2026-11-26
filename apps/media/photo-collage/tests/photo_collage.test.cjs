@@ -959,11 +959,61 @@ test('Remove Page button prompts confirm dialog before deleting populated or emp
   }
 });
 
-test('Top row #status-text omits "Drop photos anywhere to populate slots"', () => {
+test('Top row #status-text omits drop hint, paper size, and orientation labels', () => {
   const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
   const renderJs = fs.readFileSync(path.join(appDir, 'core', 'pc_render.js'), 'utf8');
   const statusMatch = html.match(/id="status-text">([\s\S]*?)<\/div>/);
   assert.ok(statusMatch);
-  assert.doesNotMatch(statusMatch[1], /Drop photos anywhere/);
+  assert.doesNotMatch(statusMatch[1], /Drop photos anywhere|portrait|landscape|\bA4\b/i);
   assert.doesNotMatch(renderJs, /Drop photos anywhere/);
+
+  const { createRenderer } = require(path.join(appDir, 'core', 'pc_render.js'));
+  function makeStub(tag) {
+    return {
+      tagName: String(tag).toUpperCase(),
+      className: '',
+      children: [],
+      innerHTML: '',
+      textContent: '',
+      style: { setProperty() {} },
+      classList: { add() {}, remove() {}, contains() { return false; } },
+      appendChild(c) { this.children.push(c); return c; },
+      contains(t) { return t === this || this.children.some((c) => c.contains(t)); },
+      setAttribute() {},
+      addEventListener() {},
+      getBoundingClientRect() { return { width: 200, height: 200 }; }
+    };
+  }
+  const prevDoc = global.document;
+  const prevRaf = global.requestAnimationFrame;
+  global.document = { createElement: makeStub, getElementById: () => null, head: makeStub('head') };
+  global.requestAnimationFrame = () => {};
+  try {
+    const statusText = makeStub('div');
+    const renderer = createRenderer({
+      state: {
+        layout: '4-grid',
+        orientation: 'portrait',
+        paper: 'a4',
+        margin: 'small',
+        bgColor: '#ffffff',
+        zoom: 1,
+        manualPages: 1,
+        photos: [
+          { src: 'data:image/png;base64,A', name: 'a.png', rotation: 0, fit: 'cover' },
+          { src: 'data:image/png;base64,B', name: 'b.png', rotation: 0, fit: 'cover' }
+        ]
+      },
+      dom: { sheetsContainer: makeStub('div'), statusText },
+      pushHistory() {},
+      scheduleAutoSave() {},
+      getFileLoader: () => null,
+      openCropModal() {}
+    });
+    renderer.renderSheets();
+    assert.equal(statusText.textContent, '2 photos • 1 page');
+  } finally {
+    global.document = prevDoc;
+    global.requestAnimationFrame = prevRaf;
+  }
 });

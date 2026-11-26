@@ -309,10 +309,8 @@
       var totalPages = cfg.calcTotalPages(state.photos.length, slotsPerPage, state.manualPages);
 
       if (dom.statusText) {
-        var paperLabel = cfg.PAPER_SIZES[state.paper] ? cfg.PAPER_SIZES[state.paper].name : state.paper.toUpperCase();
         dom.statusText.textContent = populatedCount + ' photo' + (populatedCount === 1 ? '' : 's') +
-          ' • ' + totalPages + ' page' + (totalPages === 1 ? '' : 's') +
-          ' (' + paperLabel + ' ' + state.orientation + ')';
+          ' • ' + totalPages + ' page' + (totalPages === 1 ? '' : 's');
       }
 
       dom.sheetsContainer.innerHTML = '';
