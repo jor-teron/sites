@@ -1469,7 +1469,8 @@
     visualH: 1,
     rotation: 0,
     vcrop: { x: 0, y: 0, w: 1, h: 1 },
-    drag: null
+    drag: null,
+    img: null
   };
 
   function updateCropBoxUI() {
@@ -1505,6 +1506,44 @@
     return null;
   }
 
+  function renderCropStageCanvas() {
+    if (!cropModalState.open || !cropModalState.img || !dom.cropCanvas) return;
+    const img = cropModalState.img;
+    const isRot90 = cropModalState.rotation === 90 || cropModalState.rotation === 270;
+    const vw = cropModalState.visualW;
+    const vh = cropModalState.visualH;
+
+    const stageRect = dom.cropStage ? dom.cropStage.getBoundingClientRect() : { width: 800, height: 600 };
+    const maxW = Math.max(200, (stageRect.width || 800) - 32);
+    const maxH = Math.max(180, (stageRect.height || 600) - 32);
+    const scale = Math.min(maxW / vw, maxH / vh);
+    const cssW = Math.max(80, Math.round(vw * scale));
+    const cssH = Math.max(80, Math.round(vh * scale));
+
+    const canvas = dom.cropCanvas;
+    const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    if (dom.cropStageFrame) {
+      dom.cropStageFrame.style.width = cssW + 'px';
+      dom.cropStageFrame.style.height = cssH + 'px';
+    }
+
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.translate(cssW / 2, cssH / 2);
+    ctx.rotate((cropModalState.rotation * Math.PI) / 180);
+    const drawW = isRot90 ? cssH : cssW;
+    const drawH = isRot90 ? cssW : cssH;
+    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+
+    updateCropBoxUI();
+  }
+
   function openCropModal(slotIndex, slotEl) {
     const photo = state.photos[slotIndex];
     if (!photo || !photo.src || !dom.cropModal || !dom.cropCanvas) return;
@@ -1524,6 +1563,7 @@
     cropModalState.preset = 'free';
     cropModalState.aspect = null;
     cropModalState.vcrop = cropToVisual(photo.crop, cropModalState.rotation);
+    cropModalState.img = null;
     updateCropPresetButtons();
 
     dom.cropModal.hidden = false;
@@ -1534,42 +1574,12 @@
       const nw = img.naturalWidth || 1;
       const nh = img.naturalHeight || 1;
       const isRot90 = cropModalState.rotation === 90 || cropModalState.rotation === 270;
-      const vw = isRot90 ? nh : nw;
-      const vh = isRot90 ? nw : nh;
       cropModalState.naturalW = nw;
       cropModalState.naturalH = nh;
-      cropModalState.visualW = vw;
-      cropModalState.visualH = vh;
-
-      const stageRect = dom.cropStage ? dom.cropStage.getBoundingClientRect() : { width: 640, height: 420 };
-      const maxW = Math.max(200, (stageRect.width || 640) - 32);
-      const maxH = Math.max(180, (stageRect.height || 420) - 32);
-      const scale = Math.min(1, maxW / vw, maxH / vh);
-      const cssW = Math.max(80, Math.round(vw * scale));
-      const cssH = Math.max(80, Math.round(vh * scale));
-
-      const canvas = dom.cropCanvas;
-      const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
-      canvas.width = Math.round(cssW * dpr);
-      canvas.height = Math.round(cssH * dpr);
-      canvas.style.width = cssW + 'px';
-      canvas.style.height = cssH + 'px';
-      if (dom.cropStageFrame) {
-        dom.cropStageFrame.style.width = cssW + 'px';
-        dom.cropStageFrame.style.height = cssH + 'px';
-      }
-
-      const ctx = canvas.getContext('2d');
-      ctx.save();
-      ctx.scale(dpr, dpr);
-      ctx.translate(cssW / 2, cssH / 2);
-      ctx.rotate((cropModalState.rotation * Math.PI) / 180);
-      const drawW = isRot90 ? cssH : cssW;
-      const drawH = isRot90 ? cssW : cssH;
-      ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-      ctx.restore();
-
-      updateCropBoxUI();
+      cropModalState.visualW = isRot90 ? nh : nw;
+      cropModalState.visualH = isRot90 ? nw : nh;
+      cropModalState.img = img;
+      renderCropStageCanvas();
     };
     img.src = photo.src;
   }
@@ -1577,6 +1587,7 @@
   function closeCropModal() {
     cropModalState.open = false;
     cropModalState.drag = null;
+    cropModalState.img = null;
     if (dom.cropModal) {
       dom.cropModal.hidden = true;
     }
@@ -1696,6 +1707,12 @@
       dom.cropBox.addEventListener('pointerup', endDrag);
       dom.cropBox.addEventListener('pointercancel', endDrag);
     }
+
+    window.addEventListener('resize', function () {
+      if (cropModalState.open) {
+        renderCropStageCanvas();
+      }
+    });
   }
 
   // Multi-page PDF Export via bundled jsPDF
