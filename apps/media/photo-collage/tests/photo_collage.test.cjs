@@ -400,8 +400,8 @@ test('photo-collage.html and photo-collage.css contain crop modal and tile crop 
   assert.match(html, /id="btn-crop-apply"/);
   assert.match(html, /id="btn-crop-reset"/);
   assert.match(css, /\.crop-modal\b/);
-  assert.match(css, /95dvw/);
-  assert.match(css, /95dvh/);
+  assert.match(css, /calc\(100dvw - 10px\)/);
+  assert.match(css, /calc\(100dvh - 10px\)/);
   assert.match(css, /\.crop-box\b/);
   assert.match(css, /\.crop-handle\b/);
 });

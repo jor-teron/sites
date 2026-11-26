@@ -621,12 +621,12 @@ html.dark #subbar {
 }
 
 .crop-modal-card {
-  width: 95vw;
-  width: 95dvw;
-  height: 95vh;
-  height: 95dvh;
-  max-width: 95dvw;
-  max-height: 95dvh;
+  width: calc(100vw - 10px);
+  width: calc(100dvw - 10px);
+  height: calc(100vh - 10px);
+  height: calc(100dvh - 10px);
+  max-width: calc(100dvw - 10px);
+  max-height: calc(100dvh - 10px);
   background-color: var(--panel-bg);
   color: var(--text);
   border: 1px solid var(--border);

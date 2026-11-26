@@ -428,7 +428,7 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Drag-to-swap between slots for rapid manual layout arrangement.
 - Per-tile controls & transverse rotation compensation:
   * 90° and 270° clockwise rotation (0°, 90°, 180°, 270°) with CSS and canvas matrix transforms.
-  * Non-destructive per-tile Crop editor (#crop-modal, 95dvw × 95dvh) with drag/8-handle resize, aspect presets (Free, Match Tile, 1:1, 4:3, 3:2, 16:9), rotation-aware coordinate mapping, Reset, offscreen canvas preview cache, and direct PDF source cropping.
+  * Non-destructive per-tile Crop editor (#crop-modal, calc(100dvw - 10px) × calc(100dvh - 10px)) with drag/8-handle resize, aspect presets (Free, Match Tile, 1:1, 4:3, 3:2, 16:9), rotation-aware coordinate mapping, Reset, offscreen canvas preview cache, and direct PDF source cropping.
   * Resolved landscape 2-photo aspect ratio bug (3:1 panoramic slots in 2-stack) by dynamically inverting image element dimensions (width = slotHeight, height = slotWidth) on transverse rotations.
   * Aspect ratio fit mode defaults to Full ('contain') showing entire photo on load, with toggle to Fill ('cover') for edge-to-edge bleed; preserved across rotations with zero gaps.
   * Synchronized dynamic @media print slot millimeter dimensions for printed sheets.
