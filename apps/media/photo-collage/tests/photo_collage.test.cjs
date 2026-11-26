@@ -695,3 +695,159 @@ test('createConfirmModalController handles confirm, cancel, backdrop click, and 
   assert.equal(confirmed, 1);
   assert.equal(canceled, 3);
 });
+
+test('ui/pc_slots.css gives filled .photo-img-container grab cursor and removes .slot-drag-handle', () => {
+  const slotsCss = fs.readFileSync(path.join(appDir, 'ui', 'pc_slots.css'), 'utf8');
+  assert.match(slotsCss, /\.photo-slot\.filled\s+\.photo-img-container\s*\{[\s\S]*?cursor:\s*grab;/);
+  assert.match(slotsCss, /\.photo-slot\.dragging\s*\{[\s\S]*?opacity:\s*0\.45;/);
+  assert.doesNotMatch(slotsCss, /\.slot-drag-handle/);
+});
+
+test('Filled slots allow direct drag-and-drop photo swapping without a Swap button', () => {
+  const { createRenderer } = require(path.join(appDir, 'core', 'pc_render.js'));
+
+  function makeClassList() {
+    const set = new Set();
+    return {
+      add(c) { set.add(c); },
+      remove(c) { set.delete(c); },
+      contains(c) { return set.has(c); }
+    };
+  }
+
+  function makeDomEl(tag) {
+    const el = {
+      tagName: String(tag).toUpperCase(),
+      className: '',
+      children: [],
+      attrs: {},
+      handlers: {},
+      innerHTML: '',
+      textContent: '',
+      style: {
+        setProperty() {}
+      },
+      classList: makeClassList(),
+      clientWidth: 200,
+      clientHeight: 200,
+      offsetWidth: 200,
+      offsetHeight: 200,
+      appendChild(child) {
+        this.children.push(child);
+        return child;
+      },
+      contains(target) {
+        if (target === this) return true;
+        return this.children.some((c) => c.contains(target));
+      },
+      setAttribute(k, v) { this.attrs[k] = String(v); },
+      getAttribute(k) { return this.attrs[k]; },
+      addEventListener(type, fn) { this.handlers[type] = fn; },
+      dispatch(type, extra) {
+        if (this.handlers[type]) {
+          this.handlers[type](Object.assign({
+            target: this,
+            preventDefault() {},
+            stopPropagation() {}
+          }, extra));
+        }
+      },
+      getBoundingClientRect() { return { width: 200, height: 200 }; }
+    };
+    return el;
+  }
+
+  const prevDocument = global.document;
+  const prevRaf = global.requestAnimationFrame;
+  global.document = {
+    createElement: makeDomEl,
+    getElementById: () => null,
+    head: makeDomEl('head')
+  };
+  global.requestAnimationFrame = () => {};
+
+  try {
+    const sheetsContainer = makeDomEl('div');
+    const state = {
+      layout: '4-grid',
+      orientation: 'portrait',
+      paper: 'a4',
+      margin: 'small',
+      bgColor: '#ffffff',
+      zoom: 1,
+      manualPages: 1,
+      photos: [
+        { src: 'data:image/png;base64,A', name: 'first.png', rotation: 0, fit: 'cover' },
+        { src: 'data:image/png;base64,B', name: 'second.png', rotation: 0, fit: 'cover' }
+      ]
+    };
+    let historyPushes = 0;
+    let saveCalls = 0;
+
+    const renderer = createRenderer({
+      state,
+      dom: { sheetsContainer, statusText: makeDomEl('div') },
+      pushHistory() { historyPushes += 1; },
+      scheduleAutoSave() { saveCalls += 1; },
+      getFileLoader: () => null,
+      openCropModal() {}
+    });
+
+    renderer.renderSheets();
+
+    const pageWrapper = sheetsContainer.children[0];
+    const sheetPage = pageWrapper.children[1];
+    const grid = sheetPage.children[0];
+    const slot0 = grid.children[0];
+    const slot1 = grid.children[1];
+    const slot2 = grid.children[2];
+
+    const imgContainer0 = slot0.children.find((c) => c.className === 'photo-img-container');
+    const controls0 = slot0.children.find((c) => c.className === 'slot-controls');
+
+    assert.ok(imgContainer0, 'Filled slot should render .photo-img-container');
+    assert.equal(imgContainer0.getAttribute('draggable'), 'true');
+    assert.equal(
+      controls0.children.some((btn) => /slot-drag-handle/.test(btn.className) || /\bSwap\b/.test(btn.innerHTML)),
+      false,
+      'Duplicate Swap button should be removed from slot controls'
+    );
+
+    const transferData = {};
+    const dt = {
+      effectAllowed: '',
+      setData(k, v) { transferData[k] = v; },
+      getData(k) { return transferData[k] || ''; }
+    };
+
+    imgContainer0.dispatch('dragstart', { dataTransfer: dt });
+    assert.equal(slot0.classList.contains('dragging'), true);
+    assert.equal(dt.effectAllowed, 'move');
+    assert.equal(transferData['application/x-photo-collage-slot'], '0');
+
+    slot1.dispatch('dragover', { dataTransfer: dt });
+    assert.equal(slot1.classList.contains('dragover'), true);
+    slot1.dispatch('drop', { dataTransfer: dt });
+    assert.equal(slot1.classList.contains('dragover'), false);
+
+    assert.equal(state.photos[0].name, 'second.png');
+    assert.equal(state.photos[1].name, 'first.png');
+    assert.equal(historyPushes, 1);
+    assert.equal(saveCalls, 1);
+
+    imgContainer0.dispatch('dragend');
+    assert.equal(slot0.classList.contains('dragging'), false);
+
+    // Dragging a filled photo onto an empty slot moves it cleanly
+    const dtMove = {
+      setData(k, v) { transferData[k] = v; },
+      getData(k) { return k === 'application/x-photo-collage-slot' ? '1' : ''; }
+    };
+    slot2.dispatch('drop', { dataTransfer: dtMove });
+    assert.equal(state.photos[1], null);
+    assert.equal(state.photos[2].name, 'first.png');
+  } finally {
+    global.document = prevDocument;
+    global.requestAnimationFrame = prevRaf;
+  }
+});

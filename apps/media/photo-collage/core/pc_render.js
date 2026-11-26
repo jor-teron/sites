@@ -117,6 +117,9 @@
       slot.addEventListener('dragleave', function (e) {
         e.preventDefault();
         e.stopPropagation();
+        if (e && e.relatedTarget && slot.contains && slot.contains(e.relatedTarget)) {
+          return;
+        }
         slot.classList.remove('dragover');
       });
 
@@ -126,10 +129,14 @@
         slot.classList.remove('dragover');
 
         // Internal swap
-        var sourceIdxStr = e.dataTransfer ? e.dataTransfer.getData('text/plain') : '';
-        if (sourceIdxStr && !isNaN(sourceIdxStr)) {
+        var sourceIdxStr = '';
+        if (e.dataTransfer) {
+          sourceIdxStr = e.dataTransfer.getData('application/x-photo-collage-slot') ||
+            e.dataTransfer.getData('text/plain') || '';
+        }
+        if (/^\d+$/.test(sourceIdxStr)) {
           var sourceIdx = parseInt(sourceIdxStr, 10);
-          if (sourceIdx !== slotIndex) {
+          if (sourceIdx >= 0 && sourceIdx !== slotIndex) {
             pushHistory(state);
             photoMod.swapPhotos(state.photos, sourceIdx, slotIndex);
             renderSheets();
@@ -166,6 +173,19 @@
       } else {
         var imgContainer = document.createElement('div');
         imgContainer.className = 'photo-img-container';
+        imgContainer.setAttribute('draggable', 'true');
+        imgContainer.addEventListener('dragstart', function (e) {
+          e.stopPropagation();
+          slot.classList.add('dragging');
+          if (e.dataTransfer) {
+            e.dataTransfer.setData('application/x-photo-collage-slot', String(slotIndex));
+            e.dataTransfer.setData('text/plain', String(slotIndex));
+            e.dataTransfer.effectAllowed = 'move';
+          }
+        });
+        imgContainer.addEventListener('dragend', function () {
+          slot.classList.remove('dragging');
+        });
 
         var img = document.createElement('img');
         img.className = 'photo-img fit-' + (photo.fit || 'cover');
@@ -192,22 +212,6 @@
 
         var controls = document.createElement('div');
         controls.className = 'slot-controls';
-
-        // Drag swap handle
-        var dragHandle = document.createElement('button');
-        dragHandle.type = 'button';
-        dragHandle.className = 'slot-btn slot-drag-handle';
-        dragHandle.title = 'Drag to swap photo position';
-        dragHandle.setAttribute('draggable', 'true');
-        dragHandle.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg> Swap';
-        dragHandle.addEventListener('dragstart', function (e) {
-          e.stopPropagation();
-          if (e.dataTransfer) {
-            e.dataTransfer.setData('text/plain', String(slotIndex));
-            e.dataTransfer.effectAllowed = 'move';
-          }
-        });
-        controls.appendChild(dragHandle);
 
         // Rotate 90 deg button
         var rotateBtn = document.createElement('button');

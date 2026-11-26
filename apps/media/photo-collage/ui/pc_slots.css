@@ -65,6 +65,10 @@
   background-color: transparent;
 }
 
+.photo-slot.dragging {
+  opacity: 0.45;
+}
+
 .photo-img-container {
   width: 100%;
   height: 100%;
@@ -73,6 +77,14 @@
   justify-content: center;
   overflow: hidden;
   position: relative;
+}
+
+.photo-slot.filled .photo-img-container {
+  cursor: grab;
+}
+
+.photo-slot.filled .photo-img-container:active {
+  cursor: grabbing;
 }
 
 .photo-img {
@@ -162,13 +174,6 @@
 
 .slot-btn.danger:hover {
   background-color: rgba(239, 68, 68, 0.8);
-}
-
-.slot-drag-handle {
-  cursor: grab;
-}
-.slot-drag-handle:active {
-  cursor: grabbing;
 }
 
 /* GLOBAL DROP OVERLAY */
