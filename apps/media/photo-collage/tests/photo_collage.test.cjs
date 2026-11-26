@@ -7,11 +7,31 @@ const { execSync } = require('node:child_process');
 const appDir = path.resolve(__dirname, '..');
 const PhotoCollage = require(path.join(appDir, 'photo_collage.js'));
 
-test('Syntax check on photo_collage.js via node --check', () => {
+function readAllUiCss() {
+  const uiDir = path.join(appDir, 'ui');
+  return fs.readdirSync(uiDir)
+    .filter((name) => name.endsWith('.css'))
+    .sort()
+    .map((name) => fs.readFileSync(path.join(uiDir, name), 'utf8'))
+    .join('\n');
+}
+
+test('Syntax check on photo_collage.js and modular core/*.js files via node --check', () => {
   const jsPath = path.join(appDir, 'photo_collage.js');
   assert.doesNotThrow(() => {
     execSync(`node --check "${jsPath}"`);
   });
+  const coreDir = path.join(appDir, 'core');
+  const coreFiles = fs.readdirSync(coreDir).filter((name) => name.endsWith('.js'));
+  assert.equal(coreFiles.length, 11, 'Expected 11 modular JS files in core/');
+  coreFiles.forEach((name) => {
+    const modPath = path.join(coreDir, name);
+    assert.doesNotThrow(() => {
+      execSync(`node --check "${modPath}"`);
+    });
+  });
+  const uiFiles = fs.readdirSync(path.join(appDir, 'ui')).filter((name) => name.endsWith('.css'));
+  assert.equal(uiFiles.length, 6, 'Expected 6 modular CSS files in ui/');
 });
 
 test('LAYOUTS definition has 4-grid (4 slots), 2-stack (2 slots), 2-split (2 slots), 1-full (1 slot)', () => {
@@ -96,8 +116,18 @@ test('index.html redirects to photo-collage.html and detects theme', () => {
   assert.match(html, /sites-hub\.theme/);
 });
 
-test('photo-collage.html contains title bar action buttons, toolbar controls, and drop zone', () => {
+test('photo-collage.html links modular ui/*.css and core/*.js files and contains toolbar/drop zone', () => {
   const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  assert.match(html, /ui\/pc_base\.css/);
+  assert.match(html, /ui\/pc_toolbar\.css/);
+  assert.match(html, /ui\/pc_sheets\.css/);
+  assert.match(html, /ui\/pc_slots\.css/);
+  assert.match(html, /ui\/pc_crop_modal\.css/);
+  assert.match(html, /ui\/pc_print\.css/);
+  assert.match(html, /core\/pc_config\.js/);
+  assert.match(html, /core\/pc_crop_math\.js/);
+  assert.match(html, /core\/pc_render\.js/);
+  assert.match(html, /core\/pc_pdf\.js/);
   assert.match(html, /id="titlebar"/);
   assert.match(html, /class="titlebar-actions"/);
   assert.match(html, /id="layout-select"/);
@@ -112,11 +142,10 @@ test('photo-collage.html contains title bar action buttons, toolbar controls, an
   assert.match(html, /id="btn-clear"/);
   assert.match(html, /id="sheets-container"/);
   assert.match(html, /id="global-drop-zone"/);
-  assert.match(html, /vendor\/jspdf\.umd\.min\.js/);
 });
 
-test('photo-collage.css specifies @media print rules and sheet page sizing', () => {
-  const css = fs.readFileSync(path.join(appDir, 'photo-collage.css'), 'utf8');
+test('ui/*.css specifies @media print rules and sheet page sizing', () => {
+  const css = readAllUiCss();
   assert.match(css, /@media print/);
   assert.match(css, /@page/);
   assert.match(css, /page-break-after:\s*always/);
@@ -391,9 +420,9 @@ test('undo safely restores photos cleared via Clear All action', () => {
   assert.equal(st.manualPages, 2);
 });
 
-test('photo-collage.html and photo-collage.css contain crop modal and tile crop button support', () => {
+test('photo-collage.html and ui/*.css contain crop modal and tile crop button support', () => {
   const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
-  const css = fs.readFileSync(path.join(appDir, 'photo-collage.css'), 'utf8');
+  const css = readAllUiCss();
   assert.match(html, /id="crop-modal"/);
   assert.match(html, /id="crop-canvas"/);
   assert.match(html, /id="crop-box"/);
@@ -487,9 +516,9 @@ test('serializeState, deserializeState, and Undo/Redo preserve photo crop metada
   assert.deepEqual(st.photos[0].crop, { x: 0.1, y: 0.15, w: 0.7, h: 0.65 });
 });
 
-test('India Legal paper size (215x345mm) is configured across JS, HTML, CSS, and PDF helpers', () => {
+test('India Legal paper size (215x345mm) is configured across JS, HTML, ui/*.css, and PDF helpers', () => {
   const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
-  const css = fs.readFileSync(path.join(appDir, 'photo-collage.css'), 'utf8');
+  const css = readAllUiCss();
   assert.match(html, /<option value="india-legal">India Legal<\/option>/);
   assert.match(css, /\.sheet-page\.india-legal-portrait/);
   assert.match(css, /\.sheet-page\.india-legal-landscape/);

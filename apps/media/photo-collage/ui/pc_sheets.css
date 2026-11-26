@@ -1,0 +1,122 @@
+/* Photo Collage — Workspace viewport, paper sheets, layouts, and margins (ui/pc_sheets.css) */
+
+/* WORKSPACE VIEWPORT */
+#workspace {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  padding: 28px 16px 64px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  scroll-behavior: smooth;
+}
+
+/* SHEET PAGES */
+.sheet-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 650px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.sheet-page {
+  position: relative;
+  background-color: var(--sheet-bg);
+  box-shadow: var(--card-shadow);
+  border-radius: 4px;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, width 0.2s ease, height 0.2s ease;
+  /* Screen preview baseline sizes (scaled in CSS) */
+  width: 620px;
+  height: 877px; /* A4 ~1:1.414 */
+}
+
+/* Page aspect ratio classes */
+.sheet-page.a4-portrait {
+  width: 620px;
+  height: 877px;
+}
+.sheet-page.a4-landscape {
+  width: 877px;
+  height: 620px;
+}
+.sheet-page.letter-portrait {
+  width: 630px;
+  height: 815px;
+}
+.sheet-page.letter-landscape {
+  width: 815px;
+  height: 630px;
+}
+.sheet-page.india-legal-portrait {
+  width: 620px;
+  height: 995px;
+}
+.sheet-page.india-legal-landscape {
+  width: 995px;
+  height: 620px;
+}
+
+/* COLLAGE GRID */
+.collage-grid {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  box-sizing: border-box;
+}
+
+/* Layout variants */
+.collage-grid[data-layout="4-grid"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.collage-grid[data-layout="2-stack"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.collage-grid[data-layout="2-split"] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+}
+
+.collage-grid[data-layout="1-full"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+/* Margin / spacing variants */
+.collage-grid[data-margin="none"] {
+  padding: 0;
+  gap: 0;
+}
+.collage-grid[data-margin="small"] {
+  padding: 10px;
+  gap: 8px;
+}
+.collage-grid[data-margin="normal"] {
+  padding: 20px;
+  gap: 16px;
+}
+.collage-grid[data-margin="wide"] {
+  padding: 32px;
+  gap: 24px;
+}

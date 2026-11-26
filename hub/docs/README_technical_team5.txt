@@ -451,6 +451,9 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).
 - Registry & Discoverability:
   * Registered in apps/media/media-apps.csv (Photo section) and hub/core/hub_catalog.js.
+- Modular Architecture (core/ + ui/):
+  * Refactored CSS into 6 tiny stylesheets under ui/ (pc_base.css, pc_toolbar.css, pc_sheets.css, pc_slots.css, pc_crop_modal.css, pc_print.css).
+  * Refactored JS into 11 single-purpose vanilla UMD modules under core/ (pc_config.js, pc_photo.js, pc_crop_math.js, pc_storage.js, pc_history.js, pc_hub_titlebar.js, pc_crop_cache.js, pc_crop_modal.js, pc_files.js, pc_render.js, pc_pdf.js) orchestrated by photo_collage.js.
 - Verification:
   * 28/28 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
 

@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Photo Collage</title>
   <link rel="icon" href="photo-collage_icon.png">
-  <link rel="stylesheet" href="photo-collage.css">
+  <link rel="stylesheet" href="ui/pc_base.css">
+  <link rel="stylesheet" href="ui/pc_toolbar.css">
+  <link rel="stylesheet" href="ui/pc_sheets.css">
+  <link rel="stylesheet" href="ui/pc_slots.css">
+  <link rel="stylesheet" href="ui/pc_crop_modal.css">
+  <link rel="stylesheet" href="ui/pc_print.css">
 </head>
 <body>
   <div id="app">
@@ -185,9 +190,17 @@
   </div>
 
   <!-- SCRIPT INCLUDES -->
-  <!-- (before PC7)
-  <script src="vendor/jspdf.umd.min.js"></script>
-  -->
+  <script src="core/pc_config.js"></script>
+  <script src="core/pc_photo.js"></script>
+  <script src="core/pc_crop_math.js"></script>
+  <script src="core/pc_storage.js"></script>
+  <script src="core/pc_history.js"></script>
+  <script src="core/pc_hub_titlebar.js"></script>
+  <script src="core/pc_crop_cache.js"></script>
+  <script src="core/pc_crop_modal.js"></script>
+  <script src="core/pc_files.js"></script>
+  <script src="core/pc_render.js"></script>
+  <script src="core/pc_pdf.js"></script>
   <script src="photo_collage.js"></script>
 </body>
 </html>

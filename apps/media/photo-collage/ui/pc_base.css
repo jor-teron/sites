@@ -1,0 +1,54 @@
+/* Photo Collage — Base theme tokens, reset, and app shell (ui/pc_base.css) */
+
+:root {
+  --bg: #f0f2f5;
+  --panel-bg: #ffffff;
+  --text: #202124;
+  --text-muted: #5f6368;
+  --border: #dadce0;
+  --accent: #1a73e8;
+  --accent-hover: #1557b0;
+  --danger: #d93025;
+  --danger-hover: #b3261e;
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+  --sheet-bg: #ffffff;
+}
+
+html.dark {
+  --bg: #121417;
+  --panel-bg: #1c1f24;
+  --text: #e8eaed;
+  --text-muted: #9aa0a6;
+  --border: #383c44;
+  --accent: #8ab4f8;
+  --accent-hover: #aecbfa;
+  --danger: #f28b82;
+  --danger-hover: #f6aea9;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
+  --sheet-bg: #ffffff; /* printed sheets remain white by default */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+}

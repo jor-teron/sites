@@ -1,0 +1,211 @@
+/* Photo Collage — Photo slots, rotations, slot controls, and drag-drop overlay (ui/pc_slots.css) */
+
+/* PHOTO SLOTS */
+.photo-slot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(128, 128, 128, 0.05);
+  box-sizing: border-box;
+}
+
+.photo-slot.empty {
+  border: 2px dashed rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.photo-slot.empty:hover {
+  border-color: var(--accent);
+  background-color: rgba(26, 115, 232, 0.05);
+}
+
+.photo-slot.dragover {
+  border-color: var(--accent) !important;
+  background-color: rgba(26, 115, 232, 0.15) !important;
+  outline: 2px solid var(--accent);
+}
+
+.slot-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  pointer-events: none;
+  text-align: center;
+  padding: 12px;
+}
+
+.slot-placeholder svg {
+  width: 36px;
+  height: 36px;
+  opacity: 0.6;
+}
+
+.slot-placeholder span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.slot-placeholder small {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* FILLED SLOT */
+.photo-slot.filled {
+  border: none;
+  background-color: transparent;
+}
+
+.photo-img-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.photo-img {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  transform-origin: center center;
+}
+
+.photo-img.fit-cover {
+  object-fit: cover;
+}
+.photo-img.fit-contain {
+  object-fit: contain;
+}
+
+/* ROTATION TRANSFORMATIONS */
+.photo-img[data-rotation="0"] {
+  transform: rotate(0deg);
+  width: 100%;
+  height: 100%;
+}
+.photo-img[data-rotation="90"] {
+  transform: rotate(90deg);
+  width: var(--slot-h, 100%);
+  height: var(--slot-w, 100%);
+  max-width: none !important;
+  max-height: none !important;
+}
+.photo-img[data-rotation="180"] {
+  transform: rotate(180deg);
+  width: 100%;
+  height: 100%;
+}
+.photo-img[data-rotation="270"] {
+  transform: rotate(270deg);
+  width: var(--slot-h, 100%);
+  height: var(--slot-w, 100%);
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* SLOT CONTROLS OVERLAY */
+.slot-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: rgba(18, 20, 24, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+}
+
+.photo-slot:hover .slot-controls,
+.photo-slot:focus-within .slot-controls,
+.slot-controls:hover {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.slot-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.slot-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: transparent;
+}
+
+.slot-btn.danger:hover {
+  background-color: rgba(239, 68, 68, 0.8);
+}
+
+.slot-drag-handle {
+  cursor: grab;
+}
+.slot-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* GLOBAL DROP OVERLAY */
+#global-drop-zone {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(26, 115, 232, 0.85);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+#global-drop-zone.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#global-drop-zone svg {
+  width: 64px;
+  height: 64px;
+}
+
+#global-drop-zone h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+#global-drop-zone p {
+  margin: 0;
+  font-size: 15px;
+  opacity: 0.9;
+}

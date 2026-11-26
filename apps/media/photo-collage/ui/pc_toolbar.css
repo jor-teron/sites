@@ -1,0 +1,226 @@
+/* Photo Collage — Title bar, controls toolbar, buttons, status, and zoom (ui/pc_toolbar.css) */
+
+/* TITLEBAR */
+#titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background-color: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+  z-index: 25;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand img {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.titlebar-actions .btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  height: 28px;
+}
+
+/* CONTROLS TOOLBAR */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 16px;
+  background-color: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
+  z-index: 20;
+  font-size: 12px;
+}
+
+/* Hub OS title bar mode: hide in-app title bar action buttons when relayed to window title bar */
+body.hub-titlebar #titlebar .titlebar-actions {
+  display: none !important;
+}
+
+/* PC2: hide name in Hub title bar */
+body.hub-titlebar #titlebar {
+  display: none !important;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.control-item label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+select, button {
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--panel-bg);
+  color: var(--text);
+  padding: 4px 8px;
+  height: 28px;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+select:hover, button:hover {
+  border-color: var(--accent);
+}
+
+select:focus, button:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.btn {
+  font-size: 12px;
+  font-weight: 500;
+  height: 28px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn.primary {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+html.dark .btn.primary {
+  color: #121417;
+}
+
+.btn.primary:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn.secondary {
+  background-color: rgba(26, 115, 232, 0.08);
+  color: var(--accent);
+  border-color: rgba(26, 115, 232, 0.3);
+}
+
+.btn.danger {
+  color: var(--danger);
+  border-color: rgba(217, 48, 37, 0.3);
+}
+.btn.danger:hover {
+  background-color: rgba(217, 48, 37, 0.08);
+  border-color: var(--danger);
+}
+
+button:disabled, .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none !important;
+}
+
+/* PC6: status + zoom sit at the right of the controls row */
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .topbar-meta {
+    margin-left: 0;
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+}
+
+/* SUBBAR */
+#subbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-muted);
+  gap: 12px;
+}
+html.dark #subbar {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.subbar-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoom-controls button {
+  padding: 4px 8px;
+  font-size: 12px;
+  height: 28px;
+  line-height: 1;
+}
+
+#btn-zoom-reset {
+  min-width: 44px;
+  text-align: center;
+}
