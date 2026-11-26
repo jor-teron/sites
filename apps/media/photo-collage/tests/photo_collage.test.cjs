@@ -486,3 +486,30 @@ test('serializeState, deserializeState, and Undo/Redo preserve photo crop metada
   assert.ok(PhotoCollage.redo());
   assert.deepEqual(st.photos[0].crop, { x: 0.1, y: 0.15, w: 0.7, h: 0.65 });
 });
+
+test('India Legal paper size (215x345mm) is configured across JS, HTML, CSS, and PDF helpers', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  const css = fs.readFileSync(path.join(appDir, 'photo-collage.css'), 'utf8');
+  assert.match(html, /<option value="india-legal">India Legal<\/option>/);
+  assert.match(css, /\.sheet-page\.india-legal-portrait/);
+  assert.match(css, /\.sheet-page\.india-legal-landscape/);
+  assert.match(css, /215mm/);
+  assert.match(css, /345mm/);
+
+  assert.deepEqual(PhotoCollage.PAPER_SIZES['india-legal'].portrait, [215, 345]);
+  assert.deepEqual(PhotoCollage.PAPER_SIZES['india-legal'].landscape, [345, 215]);
+  assert.equal(PhotoCollage.getPageSizeCss('india-legal', 'portrait'), '215mm 345mm');
+  assert.equal(PhotoCollage.getPageSizeCss('india-legal', 'landscape'), '345mm 215mm');
+  assert.deepEqual(PhotoCollage.getPdfFormat('india-legal'), [215, 345]);
+
+  const dims = PhotoCollage.calcPrintSlotDimensions('india-legal', 'portrait', '4-grid', 'small');
+  assert.equal(dims.pageW, 215);
+  assert.equal(dims.pageH, 345);
+});
+
+test('Small margin is selected as default in both initial state and HTML markup', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  assert.match(html, /<option value="small" selected>Small<\/option>/);
+  assert.doesNotMatch(html, /<option value="normal" selected>/);
+  assert.equal(PhotoCollage.getState().margin, 'small');
+});

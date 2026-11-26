@@ -343,6 +343,14 @@ html.dark #subbar {
   width: 815px;
   height: 630px;
 }
+.sheet-page.india-legal-portrait {
+  width: 620px;
+  height: 995px;
+}
+.sheet-page.india-legal-landscape {
+  width: 995px;
+  height: 620px;
+}
 
 /* COLLAGE GRID */
 .collage-grid {
@@ -833,6 +841,14 @@ html.dark #subbar {
   .sheet-page.letter-landscape {
     width: 279.4mm !important;
     height: 215.9mm !important;
+  }
+  .sheet-page.india-legal-portrait {
+    width: 215mm !important;
+    height: 345mm !important;
+  }
+  .sheet-page.india-legal-landscape {
+    width: 345mm !important;
+    height: 215mm !important;
   }
 
   .photo-slot.empty {

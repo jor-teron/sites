@@ -24,7 +24,8 @@
 
   const PAPER_SIZES = {
     'a4': { name: 'A4', portrait: [210, 297], landscape: [297, 210] },
-    'letter': { name: 'Letter', portrait: [215.9, 279.4], landscape: [279.4, 215.9] }
+    'letter': { name: 'Letter', portrait: [215.9, 279.4], landscape: [279.4, 215.9] },
+    'india-legal': { name: 'India Legal', portrait: [215, 345], landscape: [345, 215] }
   };
 
   function getSlotsPerPage(layoutKey) {
@@ -572,7 +573,7 @@
     layout: '4-grid',
     orientation: 'portrait',
     paper: 'a4',
-    margin: 'normal',
+    margin: 'small',
     bgColor: '#ffffff',
     zoom: 1.0,
     photos: [], // Array of photo objects or nulls
@@ -962,6 +963,21 @@
     });
   }
 
+  function getPageSizeCss(paperKey, orientKey) {
+    const orient = orientKey === 'landscape' ? 'landscape' : 'portrait';
+    if (paperKey === 'a4') return 'A4 ' + orient;
+    if (paperKey === 'letter') return 'letter ' + orient;
+    const paperDims = PAPER_SIZES[paperKey] || PAPER_SIZES.a4;
+    const dims = orient === 'landscape' ? paperDims.landscape : paperDims.portrait;
+    return dims[0] + 'mm ' + dims[1] + 'mm';
+  }
+
+  function getPdfFormat(paperKey) {
+    if (paperKey === 'letter') return 'letter';
+    if (paperKey === 'a4' || !PAPER_SIZES[paperKey]) return 'a4';
+    return PAPER_SIZES[paperKey].portrait;
+  }
+
   function updatePrintOrientation() {
     let styleEl = document.getElementById('dynamic-print-style');
     if (!styleEl) {
@@ -969,12 +985,11 @@
       styleEl.id = 'dynamic-print-style';
       document.head.appendChild(styleEl);
     }
-    const paperName = state.paper === 'letter' ? 'letter' : 'A4';
-    const orient = state.orientation === 'landscape' ? 'landscape' : 'portrait';
+    const pageSizeCss = getPageSizeCss(state.paper, state.orientation);
     const dims = calcPrintSlotDimensions(state.paper, state.orientation, state.layout, state.margin);
 
     styleEl.textContent =
-      '@page { size: ' + paperName + ' ' + orient + '; margin: 0; }\n' +
+      '@page { size: ' + pageSizeCss + '; margin: 0; }\n' +
       '@media print {\n' +
       '  .sheet-page .photo-img[data-rotation="90"],\n' +
       '  .sheet-page .photo-img[data-rotation="270"] {\n' +
@@ -1061,9 +1076,10 @@
 
     // Update status text
     if (dom.statusText) {
+      const paperLabel = PAPER_SIZES[state.paper] ? PAPER_SIZES[state.paper].name : state.paper.toUpperCase();
       dom.statusText.textContent = populatedCount + ' photo' + (populatedCount === 1 ? '' : 's') +
         ' • ' + totalPages + ' page' + (totalPages === 1 ? '' : 's') +
-        ' (' + (state.paper.toUpperCase()) + ' ' + state.orientation + ')' +
+        ' (' + paperLabel + ' ' + state.orientation + ')' +
         ' • Drop photos anywhere to populate slots';
     }
 
@@ -1783,11 +1799,12 @@
         const paperDims = PAPER_SIZES[state.paper] || PAPER_SIZES.a4;
         const mmWidth = isLand ? paperDims.landscape[0] : paperDims.portrait[0];
         const mmHeight = isLand ? paperDims.landscape[1] : paperDims.portrait[1];
+        const pdfFormat = getPdfFormat(state.paper);
 
         const doc = new J({
           orientation: isLand ? 'landscape' : 'portrait',
           unit: 'mm',
-          format: state.paper === 'letter' ? 'letter' : 'a4',
+          format: pdfFormat,
           compress: true
         });
 
@@ -1809,7 +1826,7 @@
 
           renderPageToCanvas(pageIdx, mmWidth, mmHeight, slotsPerPage, function (canvas) {
             if (pageIdx > 0) {
-              doc.addPage(state.paper === 'letter' ? 'letter' : 'a4', isLand ? 'landscape' : 'portrait');
+              doc.addPage(pdfFormat, isLand ? 'landscape' : 'portrait');
             }
             const imgData = canvas.toDataURL('image/jpeg', 0.94);
             doc.addImage(imgData, 'JPEG', 0, 0, mmWidth, mmHeight);
@@ -1977,6 +1994,8 @@
     swapPhotos: swapPhotos,
     removePhotoAt: removePhotoAt,
     calcPrintSlotDimensions: calcPrintSlotDimensions,
+    getPageSizeCss: getPageSizeCss,
+    getPdfFormat: getPdfFormat,
     applySlotRotationAndFit: applySlotRotationAndFit,
     serializeState: serializeState,
     deserializeState: deserializeState,

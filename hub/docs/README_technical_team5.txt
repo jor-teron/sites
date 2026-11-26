@@ -446,12 +446,13 @@ Team 5 built and delivered the Photo Collage printing application under Media (a
   * Implemented Hub OS desktop window title bar contract (H49 / H110 hubTitleBar protocol), relaying action buttons to the window frame when running inside the Hub desktop shell.
   * Standardized all toolbar type, dropdowns, labels, and zoom button heights to 12px font-size and 28px height.
 - Print & PDF Export:
+  * Supports A4 (210 × 297 mm), Letter (215.9 × 279.4 mm), and India Legal (215 × 345 mm) in portrait and landscape, with Small margin set as the default.
   * Native print stylesheet with @page and break-after: page isolating sheets without UI bars.
   * Client-side offline multi-page PDF generation via bundled jsPDF (vendor/jspdf.umd.min.js).
 - Registry & Discoverability:
   * Registered in apps/media/media-apps.csv (Photo section) and hub/core/hub_catalog.js.
 - Verification:
-  * 26/26 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
+  * 28/28 passing automated unit tests in apps/media/photo-collage/tests/photo_collage.test.cjs.
 
 ================================================================================
  End of 4-Day Compendium - Team 5 (Boss / Builder)
