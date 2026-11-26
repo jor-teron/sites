@@ -55,9 +55,11 @@
     img.className = 'photo-img fit-' + (photo.fit || 'cover');
 
     if (!slot) return;
-    var rect = slot.getBoundingClientRect();
-    var w = rect.width || slot.offsetWidth || 0;
-    var h = rect.height || slot.offsetHeight || 0;
+    var rect = (!slot.clientWidth && !slot.offsetWidth && slot.getBoundingClientRect)
+      ? slot.getBoundingClientRect()
+      : null;
+    var w = slot.clientWidth || slot.offsetWidth || (rect && rect.width) || 0;
+    var h = slot.clientHeight || slot.offsetHeight || (rect && rect.height) || 0;
 
     if (w && h) {
       slot.style.setProperty('--slot-w', w + 'px');

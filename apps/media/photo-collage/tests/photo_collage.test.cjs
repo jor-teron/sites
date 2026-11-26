@@ -542,3 +542,65 @@ test('Small margin is selected as default in both initial state and HTML markup'
   assert.doesNotMatch(html, /<option value="normal" selected>/);
   assert.equal(PhotoCollage.getState().margin, 'small');
 });
+
+test('ui/pc_sheets.css arranges #sheets-container in wrapping flex rows with block workspace and unclipped headers', () => {
+  const css = fs.readFileSync(path.join(appDir, 'ui', 'pc_sheets.css'), 'utf8');
+  assert.match(css, /#workspace\s*\{[\s\S]*?display:\s*block;/);
+  assert.match(css, /#sheets-container\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-wrap:\s*wrap;[\s\S]*?justify-content:\s*flex-start;[\s\S]*?align-items:\s*flex-start;/);
+  assert.match(css, /\.sheet-wrapper\s*\{[\s\S]*?flex:\s*0\s+0\s+auto;/);
+  assert.doesNotMatch(css, /\.sheet-header-bar\s*\{[^}]*max-width:\s*650px/);
+});
+
+test('applySlotRotationAndFit uses layout pixel dimensions before getBoundingClientRect under CSS zoom', () => {
+  const styles = new Map();
+  const dummyImg = {
+    attrs: {},
+    className: '',
+    style: {},
+    setAttribute(k, v) { this.attrs[k] = String(v); }
+  };
+  const dummySlot = {
+    clientWidth: 300,
+    clientHeight: 100,
+    offsetWidth: 300,
+    offsetHeight: 100,
+    style: {
+      setProperty(k, v) { styles.set(k, v); },
+      getProperty(k) { return styles.get(k); }
+    },
+    getBoundingClientRect() {
+      // Simulate 50% CSS zoom reporting half-sized visual bounding rect
+      return { width: 150, height: 50 };
+    }
+  };
+
+  PhotoCollage.applySlotRotationAndFit(dummyImg, dummySlot, { rotation: 90, fit: 'cover' });
+  assert.equal(styles.get('--slot-w'), '300px');
+  assert.equal(styles.get('--slot-h'), '100px');
+  assert.equal(dummyImg.style.width, '100px');
+  assert.equal(dummyImg.style.height, '300px');
+});
+
+test('applyZoom uses CSS zoom when supported and falls back to top-left transform scale', () => {
+  const { createRenderer } = require(path.join(appDir, 'core', 'pc_render.js'));
+  const zoomDom = {
+    sheetsContainer: { style: { zoom: '1', transform: 'scale(1)', transformOrigin: 'top center' } },
+    btnZoomReset: { textContent: '' }
+  };
+  const zoomRenderer = createRenderer({ state: { zoom: 0.65 }, dom: zoomDom });
+  zoomRenderer.applyZoom();
+  assert.equal(zoomDom.sheetsContainer.style.zoom, '0.65');
+  assert.equal(zoomDom.sheetsContainer.style.transform, '');
+  assert.equal(zoomDom.sheetsContainer.style.transformOrigin, '');
+  assert.equal(zoomDom.btnZoomReset.textContent, '65%');
+
+  const fallbackDom = {
+    sheetsContainer: { style: { transform: '', transformOrigin: '' } },
+    btnZoomReset: { textContent: '' }
+  };
+  const fallbackRenderer = createRenderer({ state: { zoom: 0.5 }, dom: fallbackDom });
+  fallbackRenderer.applyZoom();
+  assert.equal(fallbackDom.sheetsContainer.style.transform, 'scale(0.5)');
+  assert.equal(fallbackDom.sheetsContainer.style.transformOrigin, 'top left');
+  assert.equal(fallbackDom.btnZoomReset.textContent, '50%');
+});

@@ -30,8 +30,14 @@
 
     function applyZoom() {
       if (dom.sheetsContainer) {
-        dom.sheetsContainer.style.transform = 'scale(' + state.zoom + ')';
-        dom.sheetsContainer.style.transformOrigin = 'top center';
+        if ('zoom' in dom.sheetsContainer.style) {
+          dom.sheetsContainer.style.zoom = String(state.zoom);
+          dom.sheetsContainer.style.transform = '';
+          dom.sheetsContainer.style.transformOrigin = '';
+        } else {
+          dom.sheetsContainer.style.transform = 'scale(' + state.zoom + ')';
+          dom.sheetsContainer.style.transformOrigin = 'top left';
+        }
       }
       if (dom.btnZoomReset) {
         dom.btnZoomReset.textContent = Math.round(state.zoom * 100) + '%';
