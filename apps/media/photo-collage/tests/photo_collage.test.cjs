@@ -973,7 +973,12 @@ test('Top row #status-text omits drop hint, paper size, and orientation labels',
       tagName: String(tag).toUpperCase(),
       className: '',
       children: [],
-      innerHTML: '',
+      _innerHTML: '',
+      get innerHTML() { return this._innerHTML; },
+      set innerHTML(v) {
+        this._innerHTML = v;
+        if (v === '') this.children = [];
+      },
       textContent: '',
       style: { setProperty() {} },
       classList: { add() {}, remove() {}, contains() { return false; } },
@@ -1012,6 +1017,133 @@ test('Top row #status-text omits drop hint, paper size, and orientation labels',
     });
     renderer.renderSheets();
     assert.equal(statusText.textContent, '2 photos • 1 page');
+  } finally {
+    global.document = prevDoc;
+    global.requestAnimationFrame = prevRaf;
+  }
+});
+
+test('Transparent background option works in HTML, CSS, renderer, persistence, and PDF export', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  const sheetsCss = fs.readFileSync(path.join(appDir, 'ui', 'pc_sheets.css'), 'utf8');
+  const printCss = fs.readFileSync(path.join(appDir, 'ui', 'pc_print.css'), 'utf8');
+
+  assert.match(html, /<option value="#ffffff" selected>White<\/option>/);
+  assert.match(html, /<option value="transparent">Transparent<\/option>/);
+  assert.match(sheetsCss, /\.sheet-page\.bg-transparent\s*\{[\s\S]*?background-color:\s*transparent;/);
+  assert.match(printCss, /\.sheet-page\.bg-transparent\s*\{[\s\S]*?background-image:\s*none\s*!important;/);
+
+  const restored = { layout: '4-grid', orientation: 'portrait', paper: 'a4', margin: 'small', bgColor: '#ffffff', manualPages: 1, photos: [] };
+  assert.equal(PhotoCollage.deserializeState({ bgColor: 'transparent' }, restored), true);
+  assert.equal(restored.bgColor, 'transparent');
+
+  const { createRenderer } = require(path.join(appDir, 'core', 'pc_render.js'));
+  const { createPdfExporter } = require(path.join(appDir, 'core', 'pc_pdf.js'));
+
+  const fillRectCalls = [];
+  const toDataUrlCalls = [];
+  const pdfImages = [];
+
+  function makeStub(tag) {
+    return {
+      tagName: String(tag).toUpperCase(),
+      className: '',
+      children: [],
+      _innerHTML: '',
+      get innerHTML() { return this._innerHTML; },
+      set innerHTML(v) {
+        this._innerHTML = v;
+        if (v === '') this.children = [];
+      },
+      textContent: '',
+      width: 0,
+      height: 0,
+      style: { setProperty() {} },
+      classList: { add() {}, remove() {}, contains() { return false; } },
+      appendChild(c) { this.children.push(c); return c; },
+      contains(t) { return t === this || this.children.some((c) => c.contains(t)); },
+      setAttribute() {},
+      addEventListener() {},
+      getBoundingClientRect() { return { width: 200, height: 200 }; },
+      getContext() {
+        return {
+          fillStyle: '',
+          fillRect(x, y, w, h) { fillRectCalls.push({ x, y, w, h, fillStyle: this.fillStyle }); }
+        };
+      },
+      toDataURL(mime) {
+        toDataUrlCalls.push(mime);
+        return 'data:' + mime + ';base64,MOCK';
+      }
+    };
+  }
+
+  const prevDoc = global.document;
+  const prevRaf = global.requestAnimationFrame;
+  global.document = { createElement: makeStub, getElementById: () => null, head: makeStub('head') };
+  global.requestAnimationFrame = () => {};
+
+  try {
+    const sheetsContainer = makeStub('div');
+    const state = {
+      layout: '4-grid',
+      orientation: 'portrait',
+      paper: 'a4',
+      margin: 'small',
+      bgColor: 'transparent',
+      zoom: 1,
+      manualPages: 1,
+      photos: []
+    };
+    const renderer = createRenderer({
+      state,
+      dom: { sheetsContainer },
+      pushHistory() {},
+      scheduleAutoSave() {},
+      getFileLoader: () => null,
+      openCropModal() {}
+    });
+    renderer.renderSheets();
+    const sheetPage = sheetsContainer.children[0].children[1];
+    assert.match(sheetPage.className, /\bbg-transparent\b/);
+    assert.equal(sheetPage.style.backgroundColor, 'transparent');
+
+    state.bgColor = '#ffffff';
+    renderer.renderSheets();
+    const whitePage = sheetsContainer.children[0].children[1];
+    assert.doesNotMatch(whitePage.className, /\bbg-transparent\b/);
+
+    function FakeJsPdf() {}
+    FakeJsPdf.prototype.addPage = () => {};
+    FakeJsPdf.prototype.addImage = (data, fmt) => { pdfImages.push({ data, fmt }); };
+    FakeJsPdf.prototype.save = () => {};
+
+    const exporter = createPdfExporter({ state, dom: {} });
+    // Synchronous page render on empty sheet works immediately
+    state.bgColor = 'transparent';
+    exporter.renderPageToCanvas(0, 210, 297, 4, () => {});
+    assert.equal(fillRectCalls.length, 0);
+
+    state.bgColor = '#ffffff';
+    exporter.renderPageToCanvas(0, 210, 297, 4, () => {});
+    assert.equal(fillRectCalls.length, 1);
+
+    // Export using PNG for transparent and JPEG for opaque
+    const prevSetTimeout = global.setTimeout;
+    global.setTimeout = (fn) => fn();
+    try {
+      state.bgColor = 'transparent';
+      exporter.exportToPdfWith(FakeJsPdf);
+      assert.equal(toDataUrlCalls[0], 'image/png');
+      assert.equal(pdfImages[0].fmt, 'PNG');
+
+      state.bgColor = '#ffffff';
+      exporter.exportToPdfWith(FakeJsPdf);
+      assert.equal(toDataUrlCalls[1], 'image/jpeg');
+      assert.equal(pdfImages[1].fmt, 'JPEG');
+    } finally {
+      global.setTimeout = prevSetTimeout;
+    }
   } finally {
     global.document = prevDoc;
     global.requestAnimationFrame = prevRaf;

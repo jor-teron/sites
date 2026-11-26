@@ -341,7 +341,8 @@
 
         var sheetPage = document.createElement('div');
         var sizeClass = state.paper + '-' + state.orientation;
-        sheetPage.className = 'sheet-page ' + sizeClass;
+        var bgClass = state.bgColor === 'transparent' ? ' bg-transparent' : '';
+        sheetPage.className = 'sheet-page ' + sizeClass + bgClass;
         sheetPage.style.backgroundColor = state.bgColor;
 
         var grid = document.createElement('div');

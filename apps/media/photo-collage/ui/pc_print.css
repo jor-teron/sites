@@ -62,6 +62,12 @@
     break-inside: avoid !important;
   }
 
+  .sheet-page.bg-transparent {
+    background-color: transparent !important;
+    background-image: none !important;
+    outline: none !important;
+  }
+
   /* Physical print paper dimensions */
   .sheet-page.a4-portrait {
     width: 210mm !important;

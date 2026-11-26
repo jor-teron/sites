@@ -102,8 +102,10 @@
       canvas.height = pxH;
       var ctx = canvas.getContext('2d');
 
-      ctx.fillStyle = state.bgColor || '#ffffff';
-      ctx.fillRect(0, 0, pxW, pxH);
+      if (state.bgColor !== 'transparent') {
+        ctx.fillStyle = state.bgColor || '#ffffff';
+        ctx.fillRect(0, 0, pxW, pxH);
+      }
 
       var marginMm = 8;
       if (state.margin === 'none') marginMm = 0;
@@ -202,8 +204,12 @@
               if (pageIdx > 0) {
                 doc.addPage(pdfFormat, isLand ? 'landscape' : 'portrait');
               }
-              var imgData = canvas.toDataURL('image/jpeg', 0.94);
-              doc.addImage(imgData, 'JPEG', 0, 0, mmWidth, mmHeight);
+              var isTransparent = state.bgColor === 'transparent';
+              var imgFormat = isTransparent ? 'PNG' : 'JPEG';
+              var imgData = isTransparent
+                ? canvas.toDataURL('image/png')
+                : canvas.toDataURL('image/jpeg', 0.94);
+              doc.addImage(imgData, imgFormat, 0, 0, mmWidth, mmHeight);
               processNextPage(pageIdx + 1);
             });
           }
