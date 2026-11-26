@@ -958,3 +958,12 @@ test('Remove Page button prompts confirm dialog before deleting populated or emp
     global.requestAnimationFrame = prevRaf;
   }
 });
+
+test('Top row #status-text omits "Drop photos anywhere to populate slots"', () => {
+  const html = fs.readFileSync(path.join(appDir, 'photo-collage.html'), 'utf8');
+  const renderJs = fs.readFileSync(path.join(appDir, 'core', 'pc_render.js'), 'utf8');
+  const statusMatch = html.match(/id="status-text">([\s\S]*?)<\/div>/);
+  assert.ok(statusMatch);
+  assert.doesNotMatch(statusMatch[1], /Drop photos anywhere/);
+  assert.doesNotMatch(renderJs, /Drop photos anywhere/);
+});
